@@ -1,4 +1,4 @@
-import { db, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, query, where } from '../firebase';
+import { db, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy } from '../firebase';
 import { Questionnaire, QuestionnaireAssignment, QuestionnairePack, QuestionnaireResponse } from '../types';
 import {
   forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos,
@@ -304,10 +304,35 @@ export async function getQuestionnaireById(id: string): Promise<Questionnaire | 
   }
 }
 
+/** Ventana de respuestas que se bajan por atleta: las últimas 26 semanas (Dani, 27-10). */
+export const SEMANAS_RESPUESTAS_ATLETA = 26;
+
+/** ISO del día de hace `semanas` semanas (00:00 local), para acotar `submittedAt`. */
+export function desdeHaceSemanas(semanas: number, hoy = new Date()): string {
+  const d = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - semanas * 7);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T00:00:00.000Z`;
+}
+
 export async function getResponsesForAthlete(email: string): Promise<QuestionnaireResponse[]> {
   if (forceLocalOnly) return getLocalQResponses().filter(r => r.athleteId === email);
   try {
-    const snap = await getDocs(query(collection(db, 'questionnaireResponses'), where('athleteId', '==', email)));
+    // Solo las últimas 26 semanas: la colección crece una por cuestionario y
+    // semana, y cada apertura de la ficha se la bajaba entera. Necesita el
+    // índice athleteId + submittedAt (firestore.indexes.json); si aún no está
+    // desplegado, se cae a la consulta completa de siempre en vez de a local.
+    let snap;
+    try {
+      snap = await getDocs(query(
+        collection(db, 'questionnaireResponses'),
+        where('athleteId', '==', email),
+        where('submittedAt', '>=', desdeHaceSemanas(SEMANAS_RESPUESTAS_ATLETA)),
+        orderBy('submittedAt', 'desc'),
+      ));
+    } catch (err) {
+      if ((err as { code?: string }).code !== 'failed-precondition') throw err;
+      console.warn('getResponsesForAthlete: falta el índice athleteId+submittedAt, consulta completa');
+      snap = await getDocs(query(collection(db, 'questionnaireResponses'), where('athleteId', '==', email)));
+    }
     return snap.docs.map(d => ({ id: d.id, ...d.data() } as QuestionnaireResponse));
   } catch (err) {
     console.warn('getResponsesForAthlete Firestore failed, using local:', err);

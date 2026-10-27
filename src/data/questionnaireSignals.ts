@@ -1,5 +1,5 @@
 import { MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, QuestionnaireQuestion } from '../types.js';
-import { ZONAS_IEM, type ZonaIem } from '../utils/cdg/zonas.js';
+import type { ZonaIem } from '../utils/cdg/zonas.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SEÑALES DE CUESTIONARIO — las pocas respuestas que un motor lee de verdad.
@@ -26,7 +26,7 @@ export type VolumeSignalKey =
 // src/utils/athleteProfileSignals.ts, src/utils/wellnessTrend.ts.
 export type PerfilSignalKey = 'perfil.sexo_biologico' | 'perfil.antiguedad_entrenamiento_anios';
 export type WellnessSignalKey = 'wellness.sleep_hours_weekly' | 'wellness.stress_weekly' | 'wellness.motivation_weekly' | 'wellness.fatigue_post_weekly';
-/** Agujetas a las 48 h, escala 1-5 del curso, por zona de IEM (utils/cdg/zonas.ts). */
+/** Agujetas por zona de IEM en la escala 1-5 del curso. Ya no se preguntan así (se usa el DOM's semanal 0-10); el tipo se conserva por las respuestas que pudiera haber. */
 export type AgujetasSignalKey = `agujetas.${ZonaIem}`;
 
 /** Unión de TODAS las señales que puede llevar una pregunta, para tipar los helpers de preset. */
@@ -56,11 +56,10 @@ export const SEÑALES_WELLNESS: { key: WellnessSignalKey; label: string; tipos: 
   { key: 'wellness.fatigue_post_weekly', label: 'Cansancio al acabar las sesiones (1-10)', tipos: ['scale', 'numeric'] },
 ];
 
-/** Todas las señales que el editor puede asignar a una pregunta. */
-export const SEÑALES_AGUJETAS_48H: { key: AgujetasSignalKey; label: string; tipos: string[] }[] =
-  ZONAS_IEM.map(z => ({ key: `agujetas.${z.clave}` as AgujetasSignalKey, label: `Agujetas 48 h (1-5) · ${z.nombre}`, tipos: ['scale', 'numeric'] }));
-
-export const SEÑALES_DISPONIBLES = [...SEÑALES_FIN_MESOCICLO, ...SEÑALES_DOMS, ...SEÑALES_AGUJETAS_48H, ...SEÑALES_PERFIL, ...SEÑALES_WELLNESS];
+/** Todas las señales que el editor puede asignar a una pregunta. Las agujetas
+ *  por zona en 1-5 (`agujetas.<zona>`) no se ofrecen: las agujetas se preguntan
+ *  una vez a la semana en el DOM's 0-10 (Dani, 27-10) y el CDG las convierte. */
+export const SEÑALES_DISPONIBLES = [...SEÑALES_FIN_MESOCICLO, ...SEÑALES_DOMS, ...SEÑALES_PERFIL, ...SEÑALES_WELLNESS];
 
 export function esSeñalDoms(key: string): MuscleGroup | null {
   if (!key.startsWith('doms.')) return null;

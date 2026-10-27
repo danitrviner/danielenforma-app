@@ -5,12 +5,13 @@
  * puntos») y las agujetas se preguntan por zona. Una zona es la SUMA del IEM de
  * sus músculos CDG (como hacen los «IEM [COMPUESTO]» de la hoja): no cambia
  * ninguna fórmula del motor, solo agrupa. Las mismas zonas sirven para el IEM
- * objetivo del bloque, el cuestionario de agujetas a las 48 h y el freno/acelerador.
+ * objetivo del bloque, las agujetas del DOM's semanal y el freno/acelerador.
  *
- * `sensible`: músculos propensos a agujetas por el trabajo en estiramiento. La
- * guía del Índice de Hipertrofia solo nombra los isquios («con un 4, esperar una
- * semana») y el aductor mayor (se estira mucho en sentadillas y zancadas); con
- * un 4 en el resto de grupos «poco propensos» ya se baja.
+ * `sensible`: músculos propensos a agujetas por el trabajo en estiramiento. El
+ * curso nombra los isquios («con un 4, esperar una semana»), el aductor mayor
+ * (sentadillas y zancadas) y el glúteo (búlgaras, flexión de cadera; en el caso
+ * práctico 3 sus DOMS se tratan quitando estiramiento, no series). Decisión de
+ * Dani, 27-10. Con un 4 en el resto de grupos «poco propensos» ya se baja.
  * `articulaciones`: zonas de estrés articular que carga sobre todo esa musculatura.
  */
 import type { MuscleGroup } from '../../types.js'
@@ -28,7 +29,7 @@ export const ZONAS_IEM = [
   { clave: 'abdomen', nombre: 'Abdomen y oblicuos', musculos: ['Abdomen', 'Oblicuos'], grupos: ['core'], sensible: false, articulaciones: ['Columna Sagital flexión', 'Columna Rotacional'] },
   { clave: 'cuadriceps', nombre: 'Cuádriceps', musculos: ['Cuádriceps vastos lateral, medial e intermedio', 'Cuádriceps recto anterior'], grupos: ['cuadriceps'], sensible: false, articulaciones: ['Rodilla Articular', 'Rodilla Tendinoso Compresivo', 'Rodilla Tendinoso Tensil'] },
   { clave: 'isquios', nombre: 'Isquiotibiales', musculos: ['Isquios'], grupos: ['isquios'], sensible: true, articulaciones: ['Cadera Articular', 'Columna Cizalla'] },
-  { clave: 'gluteo', nombre: 'Glúteo (mayor y medio)', musculos: ['Glúteo mayor f. superiores', 'Glúteo mayor f. inferiores', 'Glúteo medio'], grupos: ['gluteo'], sensible: false, articulaciones: ['Cadera Articular'] },
+  { clave: 'gluteo', nombre: 'Glúteo (mayor y medio)', musculos: ['Glúteo mayor f. superiores', 'Glúteo mayor f. inferiores', 'Glúteo medio'], grupos: ['gluteo'], sensible: true, articulaciones: ['Cadera Articular'] },
   { clave: 'aductores', nombre: 'Aductores', musculos: ['Aductores'], grupos: ['aductores'], sensible: true, articulaciones: ['Cadera Articular'] },
   { clave: 'gemelos', nombre: 'Gemelos', musculos: ['Plantiflexores sóleo', 'Plantiflexores gastrocnemios'], grupos: ['gemelo'], sensible: false, articulaciones: [] },
 ] as const satisfies ReadonlyArray<{ clave: string; nombre: string; musculos: readonly string[]; grupos: readonly MuscleGroup[]; sensible: boolean; articulaciones: readonly string[] }>

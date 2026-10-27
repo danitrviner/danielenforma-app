@@ -7,13 +7,16 @@ import {
   semanasRealizadasDelMeso, cargaAgudaCronicaDelMeso, rendimientoDelCiclo, incrementoAntropometria, semanasAnterioresAlBloque,
   UMBRALES_CARGA_POR_DEFECTO, sinMusculos, SEMANAS_CARGA_CRONICA, type UmbralesCarga,
   ZONAS_IEM, iemPorZona, variacion, propuestaZona, SENSIBILIDADES, VELOCIDADES, tipoDeBloque, contextoDeLaSemana,
-  UMBRALES_PROTOCOLO, agujetasVigentes, sensibilidadDeZona, type ZonaIem,
+  UMBRALES_PROTOCOLO, agujetasVigentes, sensibilidadDeZona, semanaPorDefecto, type ZonaIem,
   type TipoDeBloque, type Sensibilidad, type Velocidad, type TonoPropuesta,
   leerRendimiento, indicadoresCambioDeBloque, avisosIemIea, type SemanaParaLectura, type Contexto,
   tipoSugerido, semanasHastaAburrirse, avisoDeFiabilidad, referenciasToleradas
 } from '../../utils/cdg';
 import { useAgujetasCdg } from '../../hooks/useAgujetasCdg';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
+import { mesocycleWeekNumber } from '../../utils/progression';
+import { contextoPesoCorporal } from '../../utils/pesoCorporal';
+import { useAthleteWeight } from '../../hooks/useAthleteWeight';
 import { useQuery } from '@tanstack/react-query';
 import { getDossier } from '../../db/dossier';
 import { dossierKey } from '../DossierPanel';
@@ -29,8 +32,10 @@ import { Button, Collapsible, Select } from '../ui';
 
    La semana realizada agrupa las sesiones por `Workout.dayIndex`. El RM es el
    de CDG (reps + RIR hasta el fallo; Epley con 10-15 reps, media de tres
-   fórmulas con el resto). Series a peso corporal (0 kg) no cuentan, como en la
-   hoja.
+   fórmulas con el resto). Las series a peso corporal (dominadas, fondos…)
+   cuentan con el peso del atleta cuando se conoce (CR5, Dani 27-10); sin peso
+   registrado, se saltan como en la hoja. La semana del calendario en curso no
+   entra en la carga crónica.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
@@ -40,7 +45,7 @@ interface Props {
   cicloDias: number;
   vueltas: number;
   /** Rutinas del bloque agrupadas por día (con `dayIndex` y los ids de cada semana). */
-  grupos: Array<{ dayIndex?: number; workoutIds: string[]; exercises: WorkoutExercise[] }>;
+  grupos: Array<{ name?: string; dayIndex?: number; workoutIds: string[]; exercises: WorkoutExercise[] }>;
   allExercises: Exercise[];
   umbrales?: UmbralesCarga;
   onGuardarUmbrales: (u: UmbralesCarga) => void;
@@ -72,7 +77,7 @@ function Seccion ({ titulo, children, abierta = false }: { titulo: string; child
 }
 
 const Th = ({ children, derecha }: { children?: React.ReactNode; derecha?: boolean }) => (
-  <th className={`py-1 font-normal uppercase tracking-wide text-ink-3 ${derecha ? 'text-right' : 'text-left'}`}>{children}</th>
+  <th className={`py-1 px-2 first:pl-0 last:pr-0 font-normal uppercase tracking-wide text-ink-3 whitespace-nowrap ${derecha ? 'text-right' : 'text-left'}`}>{children}</th>
 );
 
 export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, vueltas, grupos, allExercises, umbrales, onGuardarUmbrales, onCambiarTipo, onCambiarModo }: Props) {
@@ -86,6 +91,9 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
   const { contexto, motivos } = contextoDeLaSemana({ estres: estres?.value, sueñoHoras: sueño?.value, motivacion: motivacion?.value });
   const { motor, cargando, noSubido, error } = useMotorCdg();
   const { all: medidas } = useBodyMeasurements(athleteEmail);
+  const { current: pesoKg } = useAthleteWeight(athleteEmail);
+  const pesoCorporal = useMemo(() => contextoPesoCorporal(allExercises, pesoKg), [allExercises, pesoKg]);
+  const semanaEnCurso = mesocycleWeekNumber(meso.startDate, hoyIsoLocal(), cicloDias);
   const porId = useMemo(() => new Map(allExercises.map(e => [e.id, e])), [allExercises]);
   const nombreCdgDe = useMemo(() => (id: string) => porId.get(id)?.cdgNombre, [porId]);
   const sesionPorWorkout = useMemo(() => {
@@ -93,16 +101,32 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
     grupos.forEach((g, i) => g.workoutIds.forEach(id => m.set(id, g.dayIndex ?? i)));
     return m;
   }, [grupos]);
+  // P4: la hoja dice «Sesión N»; aquí se enseña el nombre del día (Torso A…) y
+  // se ocultan los huecos 5-7 que un ciclo de 4 sesiones no usa.
+  const nombrePorHueco = useMemo(() => {
+    const m = new Map<number, string>();
+    grupos.forEach((g, i) => { const d = g.dayIndex ?? i; if (d >= 0 && d <= 6 && g.name) m.set(d, g.name); });
+    return m;
+  }, [grupos]);
+  const huecosUsados = useMemo(() => new Set(grupos.map((g, i) => g.dayIndex ?? i)), [grupos]);
+  const nombreSesion = (etiqueta: string) => {
+    const m = /^Sesión (\d+)$/.exec(etiqueta);
+    return m ? (nombrePorHueco.get(Number(m[1]) - 1) ?? etiqueta) : etiqueta;
+  };
+  const huecoVacio = (etiqueta: string) => {
+    const m = /^Sesión (\d+)$/.exec(etiqueta);
+    return !!m && !huecosUsados.has(Number(m[1]) - 1);
+  };
 
   const datos = useMemo(() => {
     if (!motor) return null;
     const { semanas, descartados } = semanasRealizadasDelMeso({
-      logs, meso, cicloDias, vueltas, motor, nombreCdgDe, sesionDeWorkout: id => sesionPorWorkout.get(id)
+      logs, meso, cicloDias, vueltas, motor, nombreCdgDe, sesionDeWorkout: id => sesionPorWorkout.get(id), pesoCorporal,
     });
     // Semanas de bloques anteriores (E-10): completan la crónica cuando este
     // bloque aún no tiene 6, y dan la comparación «bloque anterior vs este».
-    const anteriores = semanasAnterioresAlBloque({ logs: logs.filter(l => l.mesocycleId !== meso.id), inicio: meso.startDate, motor, nombreCdgDe });
-    const carga = cargaAgudaCronicaDelMeso({ motor, semanas, grupos, meso, vueltas, nombreCdgDe, umbrales, semanasAnteriores: anteriores });
+    const anteriores = semanasAnterioresAlBloque({ logs: logs.filter(l => l.mesocycleId !== meso.id), inicio: meso.startDate, motor, nombreCdgDe, pesoCorporal });
+    const carga = cargaAgudaCronicaDelMeso({ motor, semanas, grupos, meso, vueltas, nombreCdgDe, umbrales, semanasAnteriores: anteriores, semanaEnCurso });
     const media = (cs: Array<{ IF: number[]; IEM: number[][] }>) => cs.length === 0 ? null : {
       IF: cs.reduce((a, c) => a + c.IF.reduce((x, y) => x + y, 0), 0) / cs.length,
       IEM: cs.reduce((a, c) => a + c.IEM.reduce((x, d) => x + d.reduce((p, q) => p + q, 0), 0), 0) / cs.length,
@@ -110,10 +134,14 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
     };
     const comparacionBloques = { antes: media(anteriores), ahora: media(semanas.map(s => s.calculo)) };
     return { semanas, descartados, carga, comparacionBloques, ciclo: rendimientoDelCiclo(motor, semanas) };
-  }, [motor, logs, meso, cicloDias, vueltas, nombreCdgDe, sesionPorWorkout, grupos, umbrales]);
+  }, [motor, logs, meso, cicloDias, vueltas, nombreCdgDe, sesionPorWorkout, grupos, umbrales, pesoCorporal, semanaEnCurso]);
 
   const [semanaSel, setSemanaSel] = useState<string>('');
-  const semanaActiva = datos?.semanas.find(s => String(s.semana) === semanaSel) ?? datos?.semanas[datos.semanas.length - 1];
+  // Por defecto, la última semana COMPLETA: la que está en curso tiene pocas
+  // sesiones y sus «vs anterior» no dicen nada todavía.
+  const sesionesPorCiclo = Math.max(1, grupos.length);
+  const semanaActiva = datos?.semanas.find(s => String(s.semana) === semanaSel) ?? (datos ? semanaPorDefecto(datos.semanas, sesionesPorCiclo) : undefined);
+  const semanaIncompleta = !!semanaActiva && semanaActiva.logs < sesionesPorCiclo;
 
   const [inf, setInf] = useState(String((umbrales ?? UMBRALES_CARGA_POR_DEFECTO).inferior));
   const [sup, setSup] = useState(String((umbrales ?? UMBRALES_CARGA_POR_DEFECTO).superior));
@@ -157,6 +185,9 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
             No se han podido colocar {descartados.sinSesion} sesiones (rutina sin día del ciclo, o día 8-10 de un ciclo largo) y {descartados.fueraDeSemana} fuera de las fechas del bloque.
           </p>
         )}
+        <p className="font-sans text-caption text-ink-3">
+          {pesoKg ? `Las series a peso corporal cuentan con el peso del atleta (${n1(pesoKg)} kg).` : 'Sin peso registrado: las series a peso corporal (0 kg) no cuentan, como en la hoja.'}
+        </p>
         {sinVinculo.size > 0 && (
           <p className="font-sans text-caption text-warning">
             Sin vínculo CDG (no cuentan): {[...sinVinculo].map(id => porId.get(id)?.name ?? id).join(', ')}.
@@ -169,8 +200,13 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
           label="Semana"
           value={String(semanaActiva?.semana ?? '')}
           onChange={setSemanaSel}
-          options={semanas.map(s => ({ value: String(s.semana), label: `Semana ${s.semana}` }))}
+          options={semanas.map(s => ({ value: String(s.semana), label: `Semana ${s.semana}${s.logs < sesionesPorCiclo ? ` · ${s.logs} de ${sesionesPorCiclo} sesiones` : ''}` }))}
         />
+      )}
+      {semanaIncompleta && semanaActiva && (
+        <p className="font-sans text-caption text-warning">
+          Semana incompleta: {semanaActiva.logs} de {sesionesPorCiclo} sesiones registradas. El IEM y las variaciones frente a la anterior no son comparables hasta que termine.
+        </p>
       )}
 
       <Seccion titulo="Freno / acelerador por zona" abierta>
@@ -196,6 +232,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                 agujetas: vigente ? lectura?.valor : undefined, anterior: vigente ? lectura?.anterior : undefined, sensible: z.sensible,
                 tipo: { ...tipo, sensibilidad: modo }, esObjetivo: objetivo != null,
                 iem: ahora?.[z.clave] ?? 0, contexto, fatigaPost: fatigaPost?.value, objetivo,
+                primeraSemanaTrasParon: !!meso.vuelveDeParon && semanaActiva?.semana === 1,
               })
             };
           }).filter(f => f.iem > 0.005 || f.lectura || f.objetivo != null);
@@ -235,18 +272,40 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                   Al salir de las sesiones: {fatigaPost ? <b className={fatigaPost.value >= UMBRALES_PROTOCOLO.fatigaPostAlta ? 'text-warning' : 'text-ink'}>{fatigaPost.value}/10</b> : 'sin dato'}
                   {fatigaPost && fatigaPost.value >= UMBRALES_PROTOCOLO.fatigaPostAlta ? ' — no subir IEM; mejor bajar el IF manteniéndolo.' : ` (0-${UMBRALES_PROTOCOLO.fatigaPostAlta - 1}: hay margen).`}
                 </li>
-                <li>Agujetas a las 48 h contra el IEM de cada zona (tabla).</li>
+                <li>Agujetas de la semana (DOM's 0-10, convertidas a 1-5) contra el IEM de cada zona (tabla).</li>
                 <li>Rendimiento: RM y tonelaje (abajo).</li>
               </ol>
               {(!estres && !motivacion && !fatigaPost) && (
                 <p className="font-sans text-caption text-ink-3">
-                  El contexto y el cansancio salen del cuestionario «Agujetas a las 48 h» (motivación y cansancio al salir) y de la revisión semanal (estrés y sueño).
+                  El contexto y el cansancio salen del DOM's semanal (motivación y cansancio al salir, si las preguntas están) y de la revisión semanal (estrés y sueño).
                 </p>
               )}
-              {filas.length === 0 ? <p className="font-sans text-caption text-ink-3">Sin estímulo registrado ni agujetas todavía.</p> : (
-                <div className="overflow-x-auto">
+              {filas.length === 0 ? <p className="font-sans text-caption text-ink-3">Sin estímulo registrado ni agujetas todavía.</p> : (<>
+                {/* P3: en móvil, tarjetas; la tabla de 7 columnas hacía filas de 180 px. */}
+                <ul className="sm:hidden space-y-2">
+                  {filas.map(f => (
+                    <li key={f.z.clave} className="rounded-control border border-hairline px-3 py-2 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`font-sans text-body-s ${f.objetivo != null ? 'font-bold text-ink' : 'text-ink-2'}`}>{f.z.nombre}</span>
+                        <button type="button" disabled={!onCambiarModo}
+                          onClick={() => onCambiarModo?.(f.z.clave, f.modo === 'dinamico' ? 'estatico' : 'dinamico')}
+                          className={`rounded-chip border px-2 py-0.5 font-sans text-caption ${f.modo === 'dinamico' ? 'border-accent-line text-accent-ink' : 'border-hairline text-ink-2'}`}>
+                          {SENSIBILIDADES.find(a => a.value === f.modo)?.label}
+                        </button>
+                      </div>
+                      <p className="font-mono text-caption text-ink-2 tabular-nums">
+                        Agujetas {f.lectura ? (f.vigente ? <b className={f.lectura.valor >= 5 ? 'text-danger' : f.lectura.valor >= 4 ? 'text-warning' : 'text-ink'}>{f.lectura.valor}/5</b> : `${f.lectura.valor}/5 · antigua`) : '—'}
+                        {' · '}IEM {f.iem > 0.005 ? n1(f.iem) : '·'}{f.vs != null ? ` (${pct(f.vs)})` : ''}{f.objetivo != null ? ` · objetivo ${n1(f.objetivo)}` : ''}
+                      </p>
+                      <p className={`font-sans text-caption ${TONO[f.propuesta.tono]}`}>
+                        <b>{ETIQUETA_TONO[f.propuesta.tono]}</b>{f.propuesta.iemPropuesto != null && <span className="font-mono"> → {n1(f.propuesta.iemPropuesto)}</span>} · {f.propuesta.texto}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+                <div className="hidden sm:block overflow-x-auto">
                   <table className="w-full font-sans text-caption">
-                    <thead><tr><Th>Zona</Th><Th>Modo</Th><Th derecha>Agujetas 48 h</Th><Th derecha>IEM S{semanaActiva?.semana ?? '—'}</Th><Th derecha>vs anterior</Th><Th derecha>Objetivo</Th><Th>Propuesta</Th></tr></thead>
+                    <thead><tr><Th>Zona</Th><Th>Modo</Th><Th derecha>Agujetas</Th><Th derecha>IEM S{semanaActiva?.semana ?? '—'}</Th><Th derecha>vs anterior</Th><Th derecha>Objetivo</Th><Th>Propuesta</Th></tr></thead>
                     <tbody>
                       {filas.map(f => (
                         <tr key={f.z.clave} className="border-t border-hairline align-top">
@@ -260,7 +319,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                             </button>
                           </td>
                           <td className="py-1 px-2 text-right font-mono tabular-nums" title={f.lectura ? `${f.lectura.fecha}${f.lectura.deEscala10 ? ' · cuestionario 0-10 convertido' : ''}` : undefined}>
-                            {f.lectura && !f.vigente ? <span className="text-ink-3" title={`Última lectura: ${f.lectura.fecha}`}>{f.lectura.valor} · antigua</span> : f.lectura ? <>{f.lectura.anterior != null && <span className="text-ink-3">{f.lectura.anterior} → </span>}<b className={f.lectura.valor >= 5 ? 'text-danger' : f.lectura.valor >= 4 ? 'text-warning' : 'text-ink'}>{f.lectura.valor}</b>{f.lectura.deEscala10 ? '*' : ''}</> : <span className="text-ink-3">—</span>}
+                            {f.lectura && !f.vigente ? <span className="text-ink-3" title={`Última lectura: ${f.lectura.fecha}`}>{f.lectura.valor} · antigua</span> : f.lectura ? <>{f.lectura.anterior != null && <span className="text-ink-3">{f.lectura.anterior} → </span>}<b className={f.lectura.valor >= 5 ? 'text-danger' : f.lectura.valor >= 4 ? 'text-warning' : 'text-ink'}>{f.lectura.valor}</b></> : <span className="text-ink-3">—</span>}
                           </td>
                           <td className="py-1 px-2 text-right font-mono tabular-nums text-ink">{f.iem > 0.005 ? n1(f.iem) : '·'}</td>
                           <td className="py-1 px-2 text-right font-mono tabular-nums text-ink-2">{pct(f.vs)}</td>
@@ -275,14 +334,14 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                     </tbody>
                   </table>
                 </div>
-              )}
+              </>)}
               {!UMBRALES_PROTOCOLO.validados && (
                 <p className="font-sans text-caption text-warning">
                   Umbrales pendientes de validar: contexto malo con estrés ≥ {UMBRALES_PROTOCOLO.estresMalo}, sueño &lt; {UMBRALES_PROTOCOLO.sueñoMaloHoras} h o motivación ≤ {UMBRALES_PROTOCOLO.motivacionMala}; no subir con cansancio ≥ {UMBRALES_PROTOCOLO.fatigaPostAlta}; con IEM ≥ {UMBRALES_PROTOCOLO.iemBaseAlta}, subir como mucho un {UMBRALES_PROTOCOLO.subidaMaxBaseAlta} %. Agujetas de los últimos {UMBRALES_PROTOCOLO.diasVigenciaAgujetas} días.
                 </p>
               )}
               <p className="font-sans text-caption text-ink-3">
-                Agujetas en escala 1-5 del cuestionario «Agujetas a las 48 h»{ZONAS_IEM.some(z => agujetas?.[z.clave]?.deEscala10) ? ' (* = del DOM\'s 0-10, convertido)' : ''}. No se leen a ciegas: los ejercicios en estiramiento y los tempos excéntricos largos dan más agujetas con el mismo IEM.
+                Agujetas del DOM's semanal (0-10) convertidas a la escala 1-5 del curso; solo cuentan las de los últimos {UMBRALES_PROTOCOLO.diasVigenciaAgujetas} días. No se leen a ciegas: los ejercicios en estiramiento y los tempos excéntricos largos dan más agujetas con el mismo IEM.
               </p>
             </>
           );
@@ -294,9 +353,9 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
           <table className="w-full font-sans text-caption">
             <thead><tr><Th>Sesión</Th><Th derecha>IF</Th><Th derecha>Músculos &gt; 0</Th><Th derecha>Zonas &gt; 0</Th></tr></thead>
             <tbody>
-              {semanaActiva.gestion.map(f => (
+              {semanaActiva.gestion.filter(f => !huecoVacio(f.sesion)).map(f => (
                 <tr key={f.sesion} className={`border-t ${f.sesion === 'Total' ? 'border-strong font-bold' : 'border-hairline'}`}>
-                  <td className="py-1.5 text-ink">{f.sesion}</td>
+                  <td className="py-1.5 text-ink">{nombreSesion(f.sesion)}</td>
                   <td className="py-1.5 text-right font-mono text-ink">{n1(f.IF)}</td>
                   <td className="py-1.5 text-right font-mono text-ink-2">{f.IEM.filter(v => v > 0.005).length}</td>
                   <td className="py-1.5 text-right font-mono text-ink-2">{f.estresArticular.filter(v => v > 0.005).length}</td>
@@ -324,9 +383,9 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
             <table className="w-full font-sans text-caption">
               <thead><tr><Th>Sesión</Th><Th derecha>IF aguda / crónica</Th></tr></thead>
               <tbody>
-                {carga.avisos.sesionesIF.map(s => (
+                {carga.avisos.sesionesIF.filter(s => !huecoVacio(s.sesion)).map(s => (
                   <tr key={s.sesion} className="border-t border-hairline">
-                    <td className="py-1.5 text-ink">{s.sesion}</td>
+                    <td className="py-1.5 text-ink">{nombreSesion(s.sesion)}</td>
                     <td className={`py-1.5 text-right font-mono ${s.fuera ? 'text-warning font-bold' : 'text-ink'}`}>{n2(s.valor)}</td>
                   </tr>
                 ))}
@@ -334,8 +393,8 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
             </table>
             {(carga.avisos.musculos.length > 0 || carga.avisos.articulaciones.length > 0) && (
               <ul className="space-y-0.5 font-sans text-caption text-warning">
-                {carga.avisos.musculos.map((a, i) => <li key={`m${i}`}>{a.sesion} · {a.nombre}: {n2(a.valor)}</li>)}
-                {carga.avisos.articulaciones.map((a, i) => <li key={`a${i}`}>{a.sesion} · {a.nombre}: {n2(a.valor)}</li>)}
+                {carga.avisos.musculos.map((a, i) => <li key={`m${i}`}>{nombreSesion(a.sesion)} · {a.nombre}: {n2(a.valor)}× la media (fuera de {n2((umbrales ?? UMBRALES_CARGA_POR_DEFECTO).inferior)}–{n2((umbrales ?? UMBRALES_CARGA_POR_DEFECTO).superior)})</li>)}
+                {carga.avisos.articulaciones.map((a, i) => <li key={`a${i}`}>{nombreSesion(a.sesion)} · {a.nombre}: {n2(a.valor)}× la media (fuera de {n2((umbrales ?? UMBRALES_CARGA_POR_DEFECTO).inferior)}–{n2((umbrales ?? UMBRALES_CARGA_POR_DEFECTO).superior)})</li>)}
               </ul>
             )}
           </>
@@ -372,7 +431,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
             <tbody>
               {semanaActiva.rendimiento.map((f, i) => (
                 <tr key={i} className="border-t border-hairline">
-                  <td className="py-1.5 text-ink-2 whitespace-nowrap pr-2">{f.sesion}</td>
+                  <td className="py-1.5 text-ink-2 whitespace-nowrap pr-2">{nombreSesion(f.sesion)}</td>
                   <td className="py-1.5 text-ink">{sinMusculos(f.ejercicio)}</td>
                   <td className="py-1.5 text-right font-mono text-ink">{n1(f.rm)}</td>
                   <td className="py-1.5 text-right font-mono text-ink-2">{Math.round(f.tonelaje).toLocaleString('es-ES')}</td>
