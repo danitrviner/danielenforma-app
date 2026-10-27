@@ -33,6 +33,7 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { cargarCatalogoAlimentos } from './_lib/cargarCatalogoAlimentos';
 import { abrirDb } from './_lib/firestoreDb.mjs';
+import { FieldValue } from 'firebase-admin/firestore';
 import { mapRecipe } from './lib/mapearReceta.mjs';
 import { aplicarVinculo, calcularIngredientes, candidatosDe, emparejarRevisado, mismoResultado, palabrasDe, vinculoAutomatico, type RecetaCruda } from '../src/utils/recetaVinculada';
 import type { AlimentoCatalogo } from '../src/utils/catalogoAlimentos';
@@ -52,6 +53,10 @@ const porId = new Map(catalogo.map(a => [a.id, a]));
 const ahora = new Date().toISOString();
 
 let total = 0, yaVinculadas = 0, vinculadas = 0, revinculadas = 0, desvinculadas = 0, iguales = 0;
+/** Todas las recetas tal y como quedan en los JSON: con --firestore se suben
+ *  todas, también las que no tienen vínculo, para que una que lo perdió en
+ *  un pase anterior no se quede con el vínculo viejo en su documento. */
+const todas: RecetaCruda[] = [];
 const dudas = new Map<string, number>();
 const cambiadas: RecetaCruda[] = [];
 /** Las que ya traían vínculo y no cambian: se suben también, para que Firestore quede igual que los JSON. */
@@ -129,6 +134,7 @@ for (const archivo of readdirSync(DIR).filter(f => /^recetas_.*\.json$/.test(f))
   let tocado = false;
   json.recipes = json.recipes.map(receta => {
     total++;
+    todas.push(receta);
     if (receta.vinculo && (!REVINCULAR || receta.basica === true)) { yaVinculadas++; conVinculo.push(receta); return receta; }
     const v = resolverPorKcal(receta);
     if ('dudosos' in v) {
@@ -212,20 +218,26 @@ if (FIRESTORE) {
   if (!sa) { console.error('Falta GOOGLE_APPLICATION_CREDENTIALS.'); process.exit(1); }
   const db = abrirDb(JSON.parse(readFileSync(resolve(sa), 'utf8')));
   // Solo lo que cambia al vincular: macros, kcal, peso, intercambios y vínculo.
-  // Todas las vinculadas (las de ahora y las que ya lo estaban en los JSON):
-  // idempotente, deja Firestore igual que los ficheros.
-  const subir = [...conVinculo, ...cambiadas];
+  // TODAS las recetas, tal y como quedan en los JSON (idempotente): las sin
+  // vínculo lo borran del documento, porque pueden haberlo perdido en un pase
+  // anterior y Firestore aún lo tendría.
+  const porIdReceta = new Map<string, RecetaCruda>();
+  for (const r of [...todas, ...cambiadas]) porIdReceta.set(r.id, r);
+  const subir = [...porIdReceta.values()];
+  let sinVinculo = 0;
   for (let i = 0; i < subir.length; i += 400) {
     const lote = db.batch();
     for (const r of subir.slice(i, i + 400)) {
       const d = mapRecipe(r);
+      if (!r.vinculo) sinVinculo++;
       lote.set(db.collection('recipes').doc(r.id), {
-        macros: d.macros, kcal: d.kcal, weight: d.weight, exchanges: d.exchanges, vinculo: d.vinculo,
+        macros: d.macros, kcal: d.kcal, weight: d.weight, exchanges: d.exchanges,
+        vinculo: r.vinculo ? d.vinculo : FieldValue.delete(),
       }, { merge: true });
     }
     await lote.commit();
   }
-  console.log(`Firestore: ${subir.length} recetas actualizadas.`);
+  console.log(`Firestore: ${subir.length} recetas actualizadas (${sinVinculo} sin vínculo, con el vínculo borrado del documento).`);
 } else if (!APLICAR) {
   console.log('EN SECO: no se ha escrito nada. --aplicar reescribe los JSON; --aplicar --firestore sube además las recetas.');
 }
