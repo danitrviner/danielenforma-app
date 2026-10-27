@@ -30,7 +30,15 @@ Rama `tanda1-emparejado`, cinco commits (79ba626 → e58f8dc). Nada pusheado, na
 - El historial del coach lista alimentos y gramos. Una sola tolerancia de «día en objetivo» (10 % o 100 kcal). El historial de volumen cuenta series del grupo principal.
 - El 1RM estimado exige peso y 3 o más repeticiones (una serie de calentamiento con RIR vacío ya no es «récord»).
 
-## Tanda 6 · decisiones de criterio que te quedan (no las he tocado)
+## Añadido el 27-10 (misma rama, mismo PR)
+
+- **Desempate por kcal al revincular** (tu idea: «¿no lo puedes saber tú con las kcal?»): cuando todo menos un ingrediente está vinculado y ese tiene varias presentaciones del mismo alimento (garbanzo seco/cocido, arándano fresco/deshidratado, coco natural/rallado…), gana la que deja las kcal de la receta más cerca de las declaradas, solo si el error cabe en el margen (30 kcal o 7 %) y el segundo candidato queda claramente peor. 160 recetas desempatadas (`scripts/out/vincular-por-kcal.csv`): Arroz basmati→seco 44, Garbanzo→seco 38, Lentejas→seco 31, Arándano rojo→deshidratado 14…
+- **Cinco alimentos nuevos** en el catálogo local (valores USDA/BEDCA): calabaza cruda, arroz basmati e integral en seco, pan rallado, harina de garbanzo. Están en `scripts/out/catalogo-nuevos-2026-10-26.csv` para importarlos a Firestore con `importarCatalogoAlimentos.ts` antes de subir las recetas. Sin vincular: 1.304 → **960**.
+- **CR2** aplicado: ritmo de volumen 0,2-0,35 %/sem en Cuerpo y en la doctrina (centro 0,275 %: 80 kg → 0,22 kg/sem).
+- **CR5** aplicado: dominadas, fondos, flexiones… suman el peso del atleta en tonelaje, 1RM, récords, señal de fuerza y CDG cuando se conoce (`Exercise.pesoCorporal` o el nombre). Falta pasar el peso desde la pantalla de Revisión y el planificador CDG.
+- Decidido por Dani: CR1, CR4 y CR8 **no** se aplican; CR3 se queda con los 100 g fijos.
+
+## Tanda 6 · lo que decidiste no tocar
 
 | | Hoy | Propuesta del informe | Mi recomendación |
 |---|---|---|---|
