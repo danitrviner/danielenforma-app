@@ -228,7 +228,6 @@ export function candidatosDe(nombre: string, catalogo: AlimentoCatalogo[]): Cand
 export function emparejar(nombre: string, catalogo: AlimentoCatalogo[]): { alimento?: AlimentoCatalogo; confianza: Confianza } {
   const ps = palabras(nombre);
   const estadoEscrito = ps.map(w => ESTADOS_EN_TEXTO[w]).find(Boolean);
-  type Candidato = CandidatoDeAlimento;
   const candidatos = candidatosDe(nombre, catalogo);
   if (candidatos.length === 0) return { confianza: 'ninguna' };
   const mejor = candidatos[0];

@@ -340,6 +340,8 @@ export interface RevisionParams {
   questionnaires?: Questionnaire[];
   /** Check-ins — solo para resolver el periodo «desde la última revisión». */
   checkins?: WeightCheckIn[];
+  /** Peso del atleta: suma a las series de dominadas, fondos… (CR5). */
+  pesoCorporalKg?: number | null;
 }
 
 export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
@@ -352,7 +354,7 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
 
   const ventana = resolverPeriodoRevision(periodo, mesocycles, hoy, checkins);
   const comun = {
-    logs, exercises, mesocycles,
+    logs, exercises, mesocycles, pesoCorporalKg: params.pesoCorporalKg,
     periodStart: ventana.desde, periodEnd: ventana.hasta,
     comparison: ventana.comparison,
   };

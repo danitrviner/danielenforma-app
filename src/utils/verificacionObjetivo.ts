@@ -1,6 +1,7 @@
-import { BodyweightLog, BodyMeasurement, WorkoutLog } from '../types.js';
+import { BodyweightLog, BodyMeasurement, Exercise, WorkoutLog } from '../types.js';
 import { rmDeSerie } from './oneRepMax.js';
 import { addDays } from './trainingWeek.js';
+import { contextoPesoCorporal, pesoDeSerie, type ContextoPesoCorporal } from './pesoCorporal.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Verificación del objetivo corporal
@@ -257,6 +258,7 @@ export function senalFuerza(
   logs: readonly Pick<WorkoutLog, 'date' | 'entries'>[],
   desde: string,
   hoy: string,
+  ctx?: ContextoPesoCorporal | null,
 ): { senal: Senal; cambioPct: number | null; ejercicios: number } {
   const dias = diasEntre(desde, hoy);
   if (dias < 14) return { senal: 'sin-datos', cambioPct: null, ejercicios: 0 };
@@ -268,7 +270,7 @@ export function senalFuerza(
     const mitad = log.date < corte ? 0 : 1;
     for (const e of log.entries ?? []) {
       for (const s of e.sets ?? []) {
-        const rm = rmDeSerie(s);
+        const rm = rmDeSerie({ ...s, weight: pesoDeSerie(s.weight, e.exerciseId, ctx) });
         if (!rm) continue;
         const par = mejor.get(e.exerciseId) ?? [0, 0];
         par[mitad] = Math.max(par[mitad], rm);
@@ -299,6 +301,8 @@ export function verificarObjetivo(entrada: {
   hoy: string;
   medidas?: readonly Pick<BodyMeasurement, 'date' | 'metricKey' | 'value'>[];
   entrenos?: readonly Pick<WorkoutLog, 'date' | 'entries'>[];
+  /** Para sumar el peso corporal a dominadas, fondos… en la señal de fuerza (CR5). */
+  ejercicios?: readonly Pick<Exercise, 'id' | 'name' | 'pesoCorporal'>[];
 }): Verificacion {
   const { objetivo, pesos, hoy } = entrada;
   const { tipo, desde } = objetivo;
@@ -404,7 +408,7 @@ export function verificarObjetivo(entrada: {
   if (tipo === 'mantenimiento') return { ...base, estado: estadoPeso };
 
   const cintura = senalCintura(entrada.medidas ?? [], desde);
-  const fuerza = senalFuerza(entrada.entrenos ?? [], desde, hoy);
+  const fuerza = senalFuerza(entrada.entrenos ?? [], desde, hoy, entrada.ejercicios ? contextoPesoCorporal(entrada.ejercicios, pesoActual) : null);
   let estado: EstadoVerificacion;
   if (estadoPeso !== 'en-rango' && estadoPeso !== 'sin-datos') estado = estadoPeso;
   else if (estadoPeso === 'sin-datos') estado = 'sin-datos';

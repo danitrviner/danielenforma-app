@@ -362,6 +362,11 @@ export interface Exercise {
   // el filtro de la IA) sigue usando únicamente `muscleGroup`.
   secondaryMuscleGroups?: MuscleGroup[];
   type: 'fuerza' | 'cardio' | 'estiramiento' | 'pliometría';
+  /** El atleta mueve su propio peso (dominadas, fondos, flexiones…). Sus
+   *  series se registran a 0 kg o con el lastre: para el 1RM, el tonelaje y
+   *  el CDG se les suma el peso corporal (utils/pesoCorporal.ts, CR5
+   *  26-10-2026). Sin el campo, se deduce del nombre. */
+  pesoCorporal?: boolean;
   enduranceProfile?: 'ascendente' | 'campana' | 'descendente'; // curva de esfuerzo a lo largo de la serie (cardio)
   // Dónde carga más el ejercicio de fuerza dentro de su rango de movimiento —
   // no es lo mismo que enduranceProfile (esa es la curva de esfuerzo dentro

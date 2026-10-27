@@ -1,6 +1,7 @@
 import { WorkoutLog, Exercise, Mesocycle, MuscleGroup, MUSCLE_LABELS } from '../types.js';
 import { rmDeSerie } from './oneRepMax.js';
 import { addDays } from './trainingWeek.js';
+import { contextoPesoCorporal, pesoDeSerie, type ContextoPesoCorporal } from './pesoCorporal.js';
 
 // Deterministic training-performance report engine (no LLM/external API), same
 // style as src/utils/nutritionAnalysis.ts. Powers the weekly report the coach
@@ -82,7 +83,7 @@ export interface Agg {
 // Exportada además del uso interno: movementPatterns.ts la reutiliza para
 // construir el bloque "Rendimiento" (por patrón de movimiento en vez de por
 // grupo muscular) sin duplicar la lógica de tonelaje/1RM por sesión.
-export function aggregate(logs: WorkoutLog[]): Agg {
+export function aggregate(logs: WorkoutLog[], ctx?: ContextoPesoCorporal | null): Agg {
   const perExercise = new Map<string, { sets: number; reps: number; tonnage: number; bestOrm: number }>();
   const dates = new Set<string>();
   let tonnage = 0;
@@ -92,7 +93,8 @@ export function aggregate(logs: WorkoutLog[]): Agg {
       let row = perExercise.get(entry.exerciseId);
       if (!row) { row = { sets: 0, reps: 0, tonnage: 0, bestOrm: 0 }; perExercise.set(entry.exerciseId, row); }
       for (const s of entry.sets) {
-        const w = Number(s.weight) || 0;
+        // Dominadas y fondos: lo apuntado más el peso del atleta (CR5).
+        const w = pesoDeSerie(s.weight, entry.exerciseId, ctx);
         const r = Number(s.repsDone) || 0;
         if (!s.segmento) row.sets++;
         row.reps += r;
@@ -101,8 +103,8 @@ export function aggregate(logs: WorkoutLog[]): Agg {
         tonnage = round1(tonnage + t);
         // Una serie de calentamiento mal apuntada (RIR vacío = 0) no es un
         // récord: el 1RM solo se estima con peso y 3+ repeticiones (B13, 26-10-2026).
-        if (!cuentaParaRm(s)) continue;
-        const orm = rmDeSerie(s);
+        if (!cuentaParaRm({ ...s, weight: w })) continue;
+        const orm = rmDeSerie({ ...s, weight: w });
         if (orm > row.bestOrm) row.bestOrm = orm;
       }
     }
@@ -121,14 +123,15 @@ export function cuentaParaRm(s: { weight?: number | null; repsDone?: number | nu
 // Exportada además del uso interno del reporte: TrainingScreen la reutiliza para
 // detectar un PR en vivo justo al terminar la sesión (mismo criterio: exige
 // historial previo, un primer registro nunca cuenta como récord).
-export function allTimeBestBefore(logs: WorkoutLog[], beforeDate: string): Map<string, number> {
+export function allTimeBestBefore(logs: WorkoutLog[], beforeDate: string, ctx?: ContextoPesoCorporal | null): Map<string, number> {
   const best = new Map<string, number>();
   for (const log of logs) {
     if (log.date >= beforeDate) continue;
     for (const entry of log.entries) {
       for (const s of entry.sets) {
-        if (!cuentaParaRm(s)) continue;
-        const orm = rmDeSerie(s);
+        const serie = { ...s, weight: pesoDeSerie(s.weight, entry.exerciseId, ctx) };
+        if (!cuentaParaRm(serie)) continue;
+        const orm = rmDeSerie(serie);
         if (orm > (best.get(entry.exerciseId) ?? 0)) best.set(entry.exerciseId, orm);
       }
     }
@@ -214,15 +217,18 @@ export function buildTrainingReport(params: {
   periodStart: string;
   periodEnd: string;
   comparison: ComparisonMode;
+  /** Peso del atleta: suma a las series de dominadas, fondos… (CR5, 26-10-2026). */
+  pesoCorporalKg?: number | null;
 }): TrainingReport {
   const { logs, exercises, mesocycles, periodStart, periodEnd, comparison } = params;
+  const ctx = contextoPesoCorporal(exercises, params.pesoCorporalKg);
   const w = resolveWindows(periodStart, periodEnd, comparison, mesocycles);
 
   const curLogs = logs.filter(l => inRange(l.date, w.curStart, w.curEnd));
   const prevLogs = w.prevStart && w.prevEnd ? logs.filter(l => inRange(l.date, w.prevStart!, w.prevEnd!)) : [];
 
-  const cur = aggregate(curLogs);
-  const prev = aggregate(prevLogs);
+  const cur = aggregate(curLogs, ctx);
+  const prev = aggregate(prevLogs, ctx);
   const priorBest = allTimeBestBefore(logs, w.curStart);
 
   const nameOf = (id: string) => exercises.find(e => e.id === id)?.name ?? `Ejercicio (…${id.slice(-6)})`;
