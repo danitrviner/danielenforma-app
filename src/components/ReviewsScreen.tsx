@@ -10,6 +10,7 @@ import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { atletasActivos } from '../utils/atletas';
 import { Avatar, Badge, PageHeader, Button, Dialog, Icon } from './ui';
 import { pulsable } from '../utils/a11y';
+import ColaDelDia from './revision/ColaDelDia';
 
 interface ReviewsScreenProps {
   checkins: WeightCheckIn[];
@@ -238,6 +239,8 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId }: 
           </div>
         }
       />
+
+      <ColaDelDia atletas={athletes} responses={allResponses} questionnaires={questionnaires} onAbrir={goToAthleteProfile} />
 
       {successMsg && (
         <div className="bg-accent/15 border border-accent/30 text-ink p-4 rounded-surface text-body-s flex items-center gap-2">
