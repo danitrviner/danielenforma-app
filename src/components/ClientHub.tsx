@@ -1,4 +1,5 @@
 import { useDireccionDePestana } from './ui/internal/useDireccionDePestana';
+import { nombreDeTransicion } from '../utils/transicionDeVista';
 import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { pantallaDiferida } from '../utils/pantallaDiferida';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -801,7 +802,7 @@ export default function ClientHub({
           <Avatar src={athlete.avatarUrl} name={athlete.displayName} className="w-11 h-11 rounded-full border border-accent/30 object-cover" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-display font-black uppercase text-ink text-title-l leading-tight tracking-tight">{athlete.displayName}</h1>
+              <h1 className="font-display font-black uppercase text-ink text-title-l leading-tight tracking-tight" style={{ viewTransitionName: nombreDeTransicion('atleta', athlete.userId) }}>{athlete.displayName}</h1>
               {planBadge}
             </div>
             <p className="font-mono text-caption text-ink-2">

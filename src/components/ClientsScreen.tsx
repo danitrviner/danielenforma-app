@@ -1,3 +1,4 @@
+import { nombreDeTransicion } from '../utils/transicionDeVista';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQueries, useQuery, useIsFetching, useIsMutating } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -73,7 +74,7 @@ const AthleteRow = React.memo(function AthleteRow({ athlete, onOpen }: {
         <Avatar src={athlete.avatarUrl} name={athlete.displayName} className="w-full h-full object-cover" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-sans font-bold text-ink text-body truncate">{athlete.displayName}</p>
+        <p className="font-sans font-bold text-ink text-body truncate" style={{ viewTransitionName: nombreDeTransicion('atleta', athlete.userId) }}>{athlete.displayName}</p>
         <p className="font-mono text-caption text-ink-3 truncate mt-0.5">{metaLine}</p>
       </div>
     </button>
@@ -194,7 +195,8 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
   const openAthleteHub = useCallback((athlete: UserProfile & { setupPct?: number }, tab?: HubTab) => {
     const landingTab = tab ?? ((athlete.setupPct ?? 100) < 100 ? 'setup' : undefined);
-    navigate(`/clients/${encodeURIComponent(athlete.email)}${landingTab ? `/${landingTab}` : ''}`);
+    // El nombre del atleta «vuela» de la fila a la cabecera del Hub (transición de vista).
+    navigate(`/clients/${encodeURIComponent(athlete.email)}${landingTab ? `/${landingTab}` : ''}`, { viewTransition: true });
   }, [navigate]);
 
   // Busca en allProfiles, no en athletes: un enlace desde "Archivados" apunta

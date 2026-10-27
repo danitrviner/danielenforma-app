@@ -1020,7 +1020,25 @@
    recorrido de scroll del tutorial, una cuenta atrás) no pasa por CSS: ese
    usa el hook `useReducedMotion` (`ui/internal/useReducedMotion.ts`) para
    decidir en el propio código si interpola o salta al estado final. */
+/* Transiciones de vista (lista → detalle, Clientes → Hub): el fundido de la
+   página y el «vuelo» del nombre van con la duración y la curva del sistema,
+   no con las del navegador. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--duration-base);
+  animation-timing-function: var(--ease-brand);
+}
+::view-transition-group(*) {
+  animation-duration: var(--duration-slide);
+  animation-timing-function: var(--ease-brand);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

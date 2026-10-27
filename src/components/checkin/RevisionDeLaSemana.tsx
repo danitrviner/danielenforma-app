@@ -1,3 +1,4 @@
+import { useRecienHecho } from '../../hooks/useRecienHecho';
 import React, { useState } from 'react';
 import { Icon, Button, Banner } from '../ui';
 import type { PasoRevision, RevisionSemanal } from '../../utils/revisionSemanal';
@@ -54,36 +55,9 @@ export default function RevisionDeLaSemana({ revision, enviada, onAbrirPaso, onE
       </div>
 
       <ol className="divide-y divide-hairline rounded-field border border-hairline">
-        {revision.pasos.map((p, i) => {
-          const esSiguiente = revision.siguiente?.id === p.id;
-          return (
-            <li key={p.id} className="animate-fade-up stagger-child" style={{ '--i': i } as React.CSSProperties}>
-              <button
-                type="button"
-                onClick={() => onAbrirPaso(p)}
-                className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-raised"
-              >
-                <span
-                  className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full font-mono text-caption font-bold ${
-                    p.hecho ? 'bg-success text-on-fill' : esSiguiente ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2'
-                  }`}
-                >
-                  {p.hecho ? <Icon name="check" size="s" /> : i + 1}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block font-sans font-semibold text-body-s text-ink">{p.titulo}</span>
-                  <span className="block font-sans text-caption text-ink-2">{p.detalle}</span>
-                </span>
-                {esSiguiente && !p.hecho && (
-                  <span className="flex-shrink-0 rounded-control bg-accent-bg px-2 py-0.5 font-mono text-caption font-bold uppercase text-accent-ink">
-                    Sigue aquí
-                  </span>
-                )}
-                <Icon name="chevron_right" size="s" className="flex-shrink-0 text-ink-3" />
-              </button>
-            </li>
-          );
-        })}
+        {revision.pasos.map((p, i) => (
+          <Paso key={p.id} paso={p} indice={i} esSiguiente={revision.siguiente?.id === p.id} onAbrir={onAbrirPaso} />
+        ))}
       </ol>
 
       <p className="flex items-center gap-2 font-sans text-caption text-ink-2">
@@ -112,5 +86,46 @@ export default function RevisionDeLaSemana({ revision, enviada, onAbrirPaso, onE
         </div>
       )}
     </section>
+  );
+}
+
+
+/* Un paso de la revisión. Al pasar a hecho, el círculo sella (`seal-pop`) y
+   la fila hace un destello verde que se apaga en 600 ms: la confirmación de
+   «esto ya está», sin confeti. Solo en la transición, no al volver con pasos
+   ya hechos. */
+function Paso({ paso: p, indice: i, esSiguiente, onAbrir }: {
+  paso: PasoRevision; indice: number; esSiguiente: boolean; onAbrir: (p: PasoRevision) => void;
+  /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Badge). */
+  key?: React.Key;
+}) {
+  const sellando = useRecienHecho(p.hecho);
+  return (
+    <li className="animate-fade-up stagger-child" style={{ '--i': i } as React.CSSProperties}>
+      <button
+        type="button"
+        onClick={() => onAbrir(p)}
+        className="relative flex w-full items-center gap-3 overflow-hidden p-3 text-left transition-colors hover:bg-raised"
+      >
+        {sellando && <span aria-hidden className="pointer-events-none absolute inset-0 bg-success animate-flash-exito" />}
+        <span
+          className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full font-mono text-caption font-bold ${
+            p.hecho ? 'bg-success text-on-fill' : esSiguiente ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2'
+          } ${sellando ? 'animate-seal-pop' : ''}`}
+        >
+          {p.hecho ? <Icon name="check" size="s" /> : i + 1}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-sans font-semibold text-body-s text-ink">{p.titulo}</span>
+          <span className="block font-sans text-caption text-ink-2">{p.detalle}</span>
+        </span>
+        {esSiguiente && !p.hecho && (
+          <span className="flex-shrink-0 rounded-control bg-accent-bg px-2 py-0.5 font-mono text-caption font-bold uppercase text-accent-ink">
+            Sigue aquí
+          </span>
+        )}
+        <Icon name="chevron_right" size="s" className="flex-shrink-0 text-ink-3" />
+      </button>
+    </li>
   );
 }

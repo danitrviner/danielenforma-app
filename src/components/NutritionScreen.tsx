@@ -1,6 +1,8 @@
 import { useReglasDeReceta, useListaDeMenu, useSeleccionDeRecetas } from '../hooks/useReglasDeReceta';
 import { quiereAlgunaDieta } from '../utils/seleccionDeRecetas';
 import { recetaPermitida, type AmbitoDeRegla } from '../utils/reglasDeReceta';
+import SelloHecho from './ui/SelloHecho';
+import { useDireccionDeFecha } from './ui/internal/useDireccionDeFecha';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -203,6 +205,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
      cualquier día pasado se puede editar igual que hoy. */
   const { fecha: hoyFecha } = useDiaActual();
   const [viewDate, setViewDate] = useState(hoyFecha);
+  const direccionDia = useDireccionDeFecha(viewDate);
   const viendoHoy = viewDate === hoyFecha;
   /* Hacia delante se puede planificar, no solo mirar: hasta 7 días, para que
      el atleta que sabe que el sábado come fuera pueda dejarlo apuntado antes
@@ -2047,15 +2050,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const circuloComido = (mealId: string, idxs: number[], nombre: string) => {
     const hecho = idxs.length > 0 && idxs.every(i => itemStates[`${mealId}_${i}`]?.done);
     return (
-      <button
-        type="button"
+      <SelloHecho
+        hecho={hecho}
         onClick={() => alternarComido(mealId, idxs)}
-        aria-pressed={hecho}
-        aria-label={hecho ? `Desmarcar ${nombre}` : `Marcar ${nombre} como comido`}
-        className={`flex h-7 w-7 flex-none items-center justify-center rounded-full border-2 transition-colors active:scale-90 ${hecho ? 'border-accent bg-accent text-on-accent' : 'border-ink-4 text-transparent hover:border-accent/60'}`}
-      >
-        <Icon name="check" size="s" />
-      </button>
+        label={hecho ? `Desmarcar ${nombre}` : `Marcar ${nombre} como comido`}
+      />
     );
   };
   /** Tocar una fila: su ficha con los gramos, para cambiarlos (o moverla de
@@ -2167,7 +2166,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           {selectedDiet && (
             <React.Fragment key={selectedDiet.id}>
               {/* ── 01 · Tarjeta del día ─────────────────────────────────────────── */}
-              <div ref={trackerTargetRef} className="protagonista">
+              {/* `key` por día: al cambiar de día la tarjeta se remonta, las cifras vuelven a
+                  contar y entra desde el lado hacia el que vas (ayer ← · → mañana). */}
+              <div ref={trackerTargetRef} key={viewDate} className={direccionDia || 'protagonista'}>
                 <TarjetaDelDia
                   {...navTarjeta}
                   comido={resumenMacros.kcal}
