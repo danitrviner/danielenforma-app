@@ -1,5 +1,6 @@
 import { MuscleGroup, Questionnaire, QuestionnaireResponse, MUSCLE_ORDER } from '../types';
 import { historialDeSeñal } from './signalReading';
+import { ZONAS_IEM } from './cdg/zonas';
 
 // DOMS crónico — sin cartas de control (no hay historial suficiente para
 // I-MR), una media simple de las últimas N lecturas por zona. Constantes
@@ -26,10 +27,25 @@ export function domsCronicoDeGrupoEn(
   responses: QuestionnaireResponse[],
   questionnaires: Questionnaire[],
 ): number | null {
-  const serie = historialDeSeñal(`doms.${group}`, responses, questionnaires).filter(p => p.date <= fecha);
+  const serie = serieDeAgujetas0a10(group, responses, questionnaires).filter(p => p.date <= fecha);
   if (serie.length < DOMS_CRONICO_N_LECTURAS) return null;
   const ultimas = serie.slice(-DOMS_CRONICO_N_LECTURAS);
   return round1(ultimas.reduce((s, p) => s + p.value, 0) / ultimas.length);
+}
+
+/**
+ * Serie 0-10 de agujetas de un grupo: la del DOM's (`doms.<grupo>`) y, desde el
+ * paquete oficial (27-10), también la escala 1-5 por zona del IEM
+ * (`agujetas.<zona>`) pasada a 0-10 con (v − 1) × 2,5. Sin esto el DOMS crónico
+ * y el índice de disponibilidad se quedarían sin datos al dejar el DOM's.
+ */
+function serieDeAgujetas0a10(group: MuscleGroup, responses: QuestionnaireResponse[], questionnaires: Questionnaire[]) {
+  const doms = historialDeSeñal(`doms.${group}`, responses, questionnaires);
+  const zona = ZONAS_IEM.find(z => (z.grupos as readonly string[]).includes(group));
+  const nueva = zona
+    ? historialDeSeñal(`agujetas.${zona.clave}`, responses, questionnaires).map(p => ({ ...p, value: (Math.min(5, Math.max(1, p.value)) - 1) * 2.5 }))
+    : [];
+  return [...doms, ...nueva].sort((x, y) => x.date.localeCompare(y.date));
 }
 
 export function domsCronicoDeGrupo(
