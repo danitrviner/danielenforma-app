@@ -100,11 +100,11 @@ describe('freno / acelerador', () => {
     expect(propuestaZona({ ...base, agujetas: 2 }).tono).toBe('mantener')
     expect(propuestaZona({ ...base, tipo: dinamico, agujetas: 3 })).toMatchObject({ tono: 'acelerar', pct: 20, iemPropuesto: 24 })
   })
-  it('la velocidad decide cuánto; el contexto neutro lo deja a la mitad; desfavorable no sube', () => {
+  it('la velocidad decide cuánto; el contexto neutro y el desfavorable lo dejan a la mitad', () => {
     const agresivo = { sensibilidad: 'dinamico', velocidad: 'agresivo' } as const
     expect(propuestaZona({ ...base, tipo: agresivo, agujetas: 2 }).pct).toBe(30)
     expect(propuestaZona({ ...base, tipo: agresivo, agujetas: 2, contexto: 'neutro' }).pct).toBe(15)
-    expect(propuestaZona({ ...base, tipo: agresivo, agujetas: 2, contexto: 'desfavorable' }).tono).toBe('mantener')
+    expect(propuestaZona({ ...base, tipo: agresivo, agujetas: 2, contexto: 'desfavorable' })).toMatchObject({ tono: 'acelerar', pct: 15 })
   })
   it('con base alta no más de un 10 %', () => {
     const agresivo = { sensibilidad: 'dinamico', velocidad: 'agresivo' } as const
@@ -159,5 +159,20 @@ describe('modo por zona (Dani, 25-10)', () => {
     expect(sensibilidadDeZona({}, 'pectoral')).toBe('estatico')
     expect(sensibilidadDeZona(m, 'pectoral')).toBe('estatico')
     expect(sensibilidadDeZona(m, 'dorsal')).toBe('dinamico')
+  })
+})
+
+describe('zonas propensas (Dani, 27-10)', () => {
+  it('isquios, glúteo y aductores esperan una semana con un 4', () => {
+    expect(ZONAS_IEM.filter(z => z.sensible).map(z => z.clave).sort()).toEqual(['aductores', 'gluteo', 'isquios'])
+  })
+})
+
+describe('primera semana tras parón (P5)', () => {
+  const base = { sensible: false, tipo: { sensibilidad: 'estatico', velocidad: 'suave' } as const, esObjetivo: false, iem: 20 }
+  it('con un 4 o un 5 no frena: vigila', () => {
+    expect(propuestaZona({ ...base, agujetas: 5, primeraSemanaTrasParon: true }).tono).toBe('vigilar')
+    expect(propuestaZona({ ...base, agujetas: 4, primeraSemanaTrasParon: true }).tono).toBe('vigilar')
+    expect(propuestaZona({ ...base, agujetas: 5 }).tono).toBe('freno')
   })
 })

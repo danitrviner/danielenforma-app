@@ -104,7 +104,13 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <PersistQueryClientProvider
         client={queryClient}
-        persistOptions={{ persister, maxAge: 24 * 60 * 60_000, buster: __APP_RELEASE__ }}
+        persistOptions={{
+          persister, maxAge: 24 * 60 * 60_000, buster: __APP_RELEASE__,
+          // El catálogo CDG (~390 KB, solo el coach) no se persiste: con los
+          // 1.037 ejercicios era un tercio del localStorage y basta con una
+          // lectura por sesión (decisión de Dani, 27-10).
+          dehydrateOptions: { shouldDehydrateQuery: q => q.state.status === 'success' && q.queryKey[0] !== 'cdgCatalogo' },
+        }}
       >
         <BrowserRouter>
           <App />

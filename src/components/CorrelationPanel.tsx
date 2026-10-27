@@ -67,6 +67,11 @@ type Familia = {
    data salían dos veces—, así que dos series distintas podían pintarse igual en
    la misma gráfica. Ahora usa `colorSerie`, los 5 tokens del DS. */
 
+/** Números del eje y del tooltip con coma decimal y sin decimales basura. */
+export function fmtNum(v: number): string {
+  return (Math.round(v * 10) / 10).toLocaleString('es-ES', { maximumFractionDigits: 1 });
+}
+
 function fmtDate(dateStr: string): string {
   try {
     const d = new Date(dateStr + 'T12:00:00');
@@ -716,6 +721,7 @@ export default function CorrelationPanel({
                     <YAxis
                       tick={TICK_GRAFICA}
                       {...EJE_GRAFICA}
+                      tickFormatter={(v: number) => fmtNum(v)}
                       unit={multiNorm ? '%' : (selectedSeries[0]?.unit ? ` ${selectedSeries[0].unit}` : '')}
                       width={multiNorm ? 40 : 55}
                       domain={multiNorm ? [0, 100] : (singleDomain ?? ['auto', 'auto'])}
@@ -728,9 +734,9 @@ export default function CorrelationPanel({
                         if (!s) return [null, name];
                         if (multiNorm) {
                           const raw = item.payload?.[`${name}_raw`] ?? value;
-                          return [`${Number(raw).toFixed(1)}${s.unit ? ` ${s.unit}` : ''}`, s.label];
+                          return [`${fmtNum(Number(raw))}${s.unit ? ` ${s.unit}` : ''}`, s.label];
                         }
-                        return [`${Number(value).toFixed(1)}${s.unit ? ` ${s.unit}` : ''}`, s.label];
+                        return [`${fmtNum(Number(value))}${s.unit ? ` ${s.unit}` : ''}`, s.label];
                       }}
                     />
                     {selectedSeries.length > 1 && (

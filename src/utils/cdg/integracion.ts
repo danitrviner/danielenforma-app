@@ -75,6 +75,18 @@ export function semanasRealizadasDelMeso (e: EntradaSemanas) {
   return { semanas, descartados }
 }
 
+/**
+ * Semana que enseña el seguimiento por defecto: la última con TODAS las
+ * sesiones del ciclo registradas. La semana en curso suele tener una o dos
+ * sesiones, y compararla con la anterior da «−100 %» en media tabla.
+ * Si ninguna está completa, la última.
+ */
+export function semanaPorDefecto<T extends { logs: number }> (semanas: readonly T[], sesionesPorCiclo: number): T | undefined {
+  if (semanas.length === 0) return undefined
+  for (let i = semanas.length - 1; i >= 0; i--) if (semanas[i].logs >= sesionesPorCiclo) return semanas[i]
+  return semanas[semanas.length - 1]
+}
+
 export interface GrupoDelDia { dayIndex?: number; exercises: WorkoutExercise[] }
 
 /** Lo programado para la semana `semana`, ya resuelto (cambios por semana, descarga, test), en 7 huecos. */
@@ -114,7 +126,8 @@ export type CargaAgudaCronicaDelMeso =
  *  - si no llegan, se completan con las más recientes de bloques anteriores
  *    (`semanasAnteriores`, la más reciente primero) y solo se comparan los
  *    TOTALES de la semana: las sesiones de otro bloque no se corresponden;
- *  - con 3 a 5 semanas se calcula avisando de que es poco fiable; con menos, no.
+ *  - con 3 a 5 semanas se calcula avisando de que es poco fiable; con menos, no;
+ *  - la semana del calendario en curso (`semanaEnCurso`) no cuenta: está a medias.
  */
 export function cargaAgudaCronicaDelMeso (args: {
   motor: MotorCdg
@@ -129,6 +142,10 @@ export function cargaAgudaCronicaDelMeso (args: {
   /** Semana programada a comparar (la que mira el coach en Volumen, 11-a). Sin ella,
    *  la siguiente a la última realizada, como en Seguimiento. */
   semanaReferencia?: number
+  /** La semana del calendario en curso (`mesocycleWeekNumber(startDate, hoy)`): no
+   *  entra en la crónica aunque tenga sesiones, porque está a medias y bajaría
+   *  la media (decisión de Dani, 27-10). */
+  semanaEnCurso?: number
 }): CargaAgudaCronicaDelMeso {
   const { motor, semanas, grupos, meso, vueltas, nombreCdgDe } = args
   const elegida = args.semanaReferencia
@@ -136,7 +153,7 @@ export function cargaAgudaCronicaDelMeso (args: {
   if (elegida == null && semanas.length === 0) return { disponible: false, motivo: 'Todavía no hay sesiones registradas en este bloque.' }
   const ref = elegida ?? semanas[semanas.length - 1].semana + 1
   if (ref > vueltas) return { disponible: false, motivo: 'La última semana del bloque ya está realizada: no hay semana siguiente que comparar.' }
-  const previas = semanas.filter(s => s.semana < ref).slice(-SEMANAS_CARGA_CRONICA).reverse()
+  const previas = semanas.filter(s => s.semana < ref && s.semana !== args.semanaEnCurso).slice(-SEMANAS_CARGA_CRONICA).reverse()
   const deOtros = previas.length < SEMANAS_CARGA_CRONICA
     ? (args.semanasAnteriores ?? []).slice(0, SEMANAS_CARGA_CRONICA - previas.length)
     : []

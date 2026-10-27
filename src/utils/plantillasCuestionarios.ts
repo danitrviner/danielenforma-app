@@ -57,8 +57,7 @@ export const PLANTILLAS: PlantillaCuestionarios[] = [
     filas: [
       { etiqueta: 'Check-in semanal', cuestionarioTitulo: 'Revisión Semanal', cuando: 'Lunes de cada semana · 08:00', canal: 'App + push', tipo: 'Obligatorio', schedule: { kind: 'semanal', weekdays: [1] } },
       { etiqueta: 'Foto + medidas', cuestionarioTitulo: 'Mediciones', cuando: 'Día 1 y día 42 del bloque', canal: 'App', tipo: 'Obligatorio', schedule: { kind: 'dias-del-bloque', dias: [1, 42] } },
-      { etiqueta: 'Agujetas a las 48 h (CDG)', cuestionarioTitulo: 'Agujetas a las 48 h', cuando: 'Miércoles de cada semana', canal: 'App', tipo: 'Opcional', schedule: { kind: 'semanal', weekdays: [3] } },
-      { etiqueta: 'Agujetas tras pierna', cuestionarioTitulo: 'DOM\'s o "agujetas"', cuando: 'Viernes de semanas 2, 4 y 6', canal: 'App', tipo: 'Opcional', schedule: { kind: 'semanal', weekdays: [5], cadaNSemanas: 2, primeraSemanaConOcurrencia: 2 } },
+      { etiqueta: 'Agujetas de la semana (CDG)', cuestionarioTitulo: 'DOM\'s o "agujetas"', cuando: 'Viernes de cada semana', canal: 'App', tipo: 'Opcional', schedule: { kind: 'semanal', weekdays: [5] } },
       { etiqueta: 'Revisión de mitad de bloque', cuestionarioTitulo: 'Revisión Semana 3', cuando: 'Día 21 · con videollamada', canal: 'Coach', tipo: 'Obligatorio', schedule: { kind: 'dias-del-bloque', dias: [21] } },
       { etiqueta: 'Feedback de sesión de pierna', cuestionarioTitulo: '', cuando: 'Tras cada sesión de pierna', canal: 'In-app al cerrar sesión', tipo: 'Opcional', schedule: { kind: 'evento' } },
       { etiqueta: 'Test de fuerza · cierre de bloque', cuestionarioTitulo: 'Datos sobre final de mesociclo', cuando: 'Día 41 del bloque', canal: 'App', tipo: 'Obligatorio', schedule: { kind: 'dias-del-bloque', dias: [41] } },

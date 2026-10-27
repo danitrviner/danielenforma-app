@@ -30,13 +30,13 @@ describe('expandirPlantilla', () => {
     expect(ocurrencias.map(o => o.fecha)).toEqual(['2026-01-01', '2026-02-11']);
   });
 
-  it('"viernes de semanas 2, 4 y 6" da exactamente 3 fechas espaciadas 14 días', () => {
+  it('las agujetas se preguntan una vez a la semana, en viernes (Dani, 27-10)', () => {
     const { inicio, fin } = rangoDelBloque({ startDate: '2026-01-05', weeks: 6 }); // lunes
     const ocurrencias = expandirPlantilla(tpl('Hipertrofia · 6 sem'), inicio, fin)
-      .filter(o => o.fila.etiqueta === 'Agujetas tras pierna');
-    expect(ocurrencias).toHaveLength(3);
+      .filter(o => o.fila.etiqueta === 'Agujetas de la semana (CDG)');
+    expect(ocurrencias).toHaveLength(6);
     expect(ocurrencias.every(o => new Date(o.fecha + 'T00:00:00').getDay() === 5)).toBe(true);
-    expect(new Date(ocurrencias[1].fecha).getTime() - new Date(ocurrencias[0].fecha).getTime()).toBe(14 * 86400000);
+    expect(new Date(ocurrencias[1].fecha).getTime() - new Date(ocurrencias[0].fecha).getTime()).toBe(7 * 86400000);
   });
 
   it('las 4 plantillas expanden sin lanzar y con al menos 1 ocurrencia sobre su bloque sugerido', () => {

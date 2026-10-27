@@ -55,7 +55,7 @@ export interface ZonaDeLaPropuesta {
   semanaDePartida: number;
   /** Semanas seguidas sin mejorar el tonelaje con más carga (2 = vigilar, 3+ = bajar). */
   semanasSinMejorar: number;
-  /** Agujetas a las 48 h vigentes de la zona (1-5), si hay. */
+  /** Agujetas vigentes de la zona (1-5, del DOM's semanal), si hay. */
   agujetas?: number;
 }
 
