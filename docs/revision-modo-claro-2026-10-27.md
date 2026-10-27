@@ -482,3 +482,21 @@ mío.
 
 Mismo script de contraste, 20 rutas + 12 estados, claro y oscuro, 375 y 1280 px, tras la tanda 5.
 Resultado en la sección siguiente.
+
+## Resultado de la auditoría final (tras `ce9dbc9`)
+
+16.986 textos e iconos y 1.440 bordes medidos (20 rutas + 12 estados × 2 temas × 2 tamaños).
+
+**Texto e iconos:** quedan 10 fallos por tema y **todos son controles deshabilitados** (botón
+primario «Acepto y continúo» / «Añadir» apagado, chevrones de mover en Orden del ciclo, «−» del
+stepper al mínimo, icono de candado del showcase). La norma los exime. Ningún texto legible
+queda por debajo de 4,5:1 ni ningún icono activo por debajo de 3:1, en ninguno de los dos temas.
+
+**Bordes:** todos los campos de formulario pasan 3:1 (`control-line`). Lo que queda por debajo es
+lo que la regla de superficies resuelve con relleno y no con línea:
+- `hairline` en tarjetas y botones neutros (1,33:1 claro / 1,2:1 oscuro): la tarjeta se lee por
+  el blanco sobre gris; el botón neutro, por su relleno un escalón distinto.
+- `strong` en chips sin seleccionar (1,9:1): el chip gris sobre tarjeta blanca.
+- Bloques de fase del Calendario (1,4:1): son bandas de color con etiqueta, no controles.
+- Oro `accent` sólido sobre blanco (2,86:1, 2 sitios: círculo «hecho» del diario y una celda
+  cambiada en Progresión): el relleno es oro, el borde solo lo remata.
