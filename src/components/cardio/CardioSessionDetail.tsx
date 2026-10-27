@@ -161,7 +161,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
         {error && <p className="font-sans text-caption text-danger">{error}</p>}
 
         <button onClick={handleSave} disabled={saving}
-          className="w-full py-3 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
+          className="w-full py-3 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-50">
           {saving ? 'Guardando...' : 'Guardar'}
         </button>
       </div>

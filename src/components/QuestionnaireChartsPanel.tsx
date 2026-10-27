@@ -269,7 +269,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses, oc
               <button
                 key={label}
                 onClick={() => setWeekly(i === 1)}
-                className={`px-3 min-h-[44px] rounded-control font-sans text-caption uppercase font-bold transition-all ${
+                className={`px-3 min-h-[44px] rounded-control font-sans text-caption uppercase font-bold transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                   weekly === (i === 1)
                     ? 'bg-accent text-on-accent shadow'
                     : 'text-ink-2 hover:text-ink'

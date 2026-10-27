@@ -47,7 +47,7 @@ export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth
   const hoyPct = (diaDelAnio(hoy, anio) / totalDias) * 100;
 
   return (
-    <div className="space-y-3.5" style={{ animation: 'fade-up 260ms cubic-bezier(0.2,0.8,0.2,1) both' }}>
+    <div className="space-y-3.5" style={{ animation: 'fade-up var(--duration-base) var(--ease-brand) both' }}>
       {/* Tarjeta de bandas de periodización */}
       <div className="bg-surface border border-hairline rounded-surface px-5 pt-[18px] pb-3.5">
         <div className={`flex items-center justify-between flex-wrap gap-3 ${mostrarBandas ? 'mb-3.5' : ''}`}>
@@ -134,7 +134,7 @@ export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth
               data-mes={mi}
               onClick={() => onOpenMonth(mi)}
               className="text-left bg-surface border rounded-surface px-[18px] pt-4 pb-3.5 transition-colors hover:border-accent-line"
-              style={{ borderColor: esAhora ? 'color-mix(in oklab, var(--color-accent) 60%, transparent)' : 'var(--color-hairline)', transitionDuration: '160ms' }}
+              style={{ borderColor: esAhora ? 'color-mix(in oklab, var(--color-accent) 60%, transparent)' : 'var(--color-hairline)', transitionDuration: 'var(--duration-state)' }}
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">

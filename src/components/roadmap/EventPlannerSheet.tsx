@@ -198,7 +198,7 @@ export default function EventPlannerSheet({
             {(Object.keys(LANE_LABEL) as Lane[]).map(l => (
               <button
                 key={l} type="button" onClick={() => selectLane(l)}
-                className={`px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+                className={`px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                   lane === l ? 'bg-strong border-hairline text-ink' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'
                 }`}
               >{LANE_LABEL[l]}</button>

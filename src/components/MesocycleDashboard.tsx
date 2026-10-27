@@ -256,7 +256,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
                         if (next.has(g)) next.delete(g); else next.add(g);
                         return next;
                       })}
-                      className={`px-2 rounded-control font-sans text-caption uppercase font-bold border transition-all ${
+                      className={`px-2 rounded-control font-sans text-caption uppercase font-bold border transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                         hidden
                           ? 'bg-transparent border-hairline text-ink-3'
                           : 'border-transparent'

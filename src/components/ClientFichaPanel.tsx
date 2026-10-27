@@ -337,7 +337,7 @@ export default function ClientFichaPanel({
           <button
             onClick={onSavePlan}
             disabled={savingPlan}
-            className="px-3 py-2 min-h-[36px] bg-accent text-on-accent font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+            className="px-3 py-2 min-h-[36px] bg-accent text-on-accent font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-50"
           >
             {savingPlan ? '...' : 'Guardar'}
           </button>
@@ -843,7 +843,7 @@ export default function ClientFichaPanel({
             </div>
             <button
               onClick={() => setEditingOnboarding(true)}
-              className="shrink-0 flex items-center gap-2 px-4 py-3 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
+              className="shrink-0 flex items-center gap-2 px-4 py-3 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             >
               <span className="material-symbols-outlined text-body-s">add</span>Crear ficha
             </button>

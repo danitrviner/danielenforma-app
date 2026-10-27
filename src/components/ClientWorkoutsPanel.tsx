@@ -428,7 +428,7 @@ export default function ClientWorkoutsPanel({
           </button>
           <button
             onClick={() => { setAssignWorkoutId(workouts[0]?.id || ''); setAssignDate(hoyIsoLocal()); setShowAssignModal(true); }}
-            className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent-ink hover:bg-accent/20 font-mono text-caption uppercase rounded-control transition-all"
+            className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent-ink hover:bg-accent/20 font-mono text-caption uppercase rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
           >
             <span className="material-symbols-outlined text-body-s">add</span>
             Asignar

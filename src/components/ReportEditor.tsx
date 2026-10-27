@@ -119,7 +119,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
             <button
               onClick={() => run('delete', () => onDelete(draft))}
               disabled={busy !== null}
-              className="px-4 py-3 border border-hairline text-ink-2 hover:border-danger/40 hover:text-danger font-mono text-caption font-bold uppercase rounded-control transition-all disabled:opacity-40"
+              className="px-4 py-3 border border-hairline text-ink-2 hover:border-danger/40 hover:text-danger font-mono text-caption font-bold uppercase rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-40"
             >
               {busy === 'delete' ? 'Eliminando…' : 'Eliminar'}
             </button>

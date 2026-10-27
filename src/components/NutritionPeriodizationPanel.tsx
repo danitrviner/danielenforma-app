@@ -187,7 +187,7 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
                   outline: isActive ? '2px solid var(--color-ink)' : 'none',
                   outlineOffset: '-2px',
                 }}
-                className="flex flex-col items-center justify-center px-1 py-2 transition-all relative"
+                className="flex flex-col items-center justify-center px-1 py-2 transition-[color,background-color,border-color,opacity,transform,box-shadow] relative"
               >
                 {isActive && (
                   <span
@@ -795,7 +795,7 @@ export default function NutritionPeriodizationPanel({
 
         <button
           onClick={addPhase}
-          className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-hairline hover:border-chart-3/40 text-ink-2 hover:text-ink text-label font-sans rounded-control transition-all"
+          className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-hairline hover:border-chart-3/40 text-ink-2 hover:text-ink text-label font-sans rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
         >
           <Icon name="add" size="s" />
           Añadir fase

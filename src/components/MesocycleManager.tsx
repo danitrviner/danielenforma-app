@@ -164,7 +164,7 @@ function PrioritySelector({ value, onChange }: {
       {opts.map(o => (
         <button
           key={o.v} onClick={() => onChange(o.v)} title={o.label}
-          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 px-2 rounded-control text-title-s sm:text-label font-mono transition-all flex items-center justify-center ${
+          className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 px-2 rounded-control text-title-s sm:text-label font-mono transition-[color,background-color,border-color,opacity,transform,box-shadow] flex items-center justify-center ${
             value === o.v ? 'bg-accent text-on-accent font-bold' : 'bg-raised text-ink-2 hover:bg-raised'
           }`}
         >{o.icon}</button>
@@ -1206,7 +1206,7 @@ function MesoExercisesTabs({
               <div className="flex gap-2">
                 <button
                   onClick={() => onAddExercise(g)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                 >
                   <Icon name="add" size="s" />
                   Añadir ejercicio
@@ -1215,7 +1215,7 @@ function MesoExercisesTabs({
                   <button
                     onClick={() => setLibraryPickerFor(g)}
                     title="Copiar los ejercicios de una rutina de la biblioteca a este día"
-                    className="flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-all"
+                    className="flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                   >
                     <Icon name="library_books" size="s" />
                     Usar de biblioteca
@@ -1408,7 +1408,7 @@ function MesoExercisesTabs({
               <button
                 key={w.id}
                 onClick={() => { if (libraryPickerFor) { onUseLibraryWorkout(libraryPickerFor, w); setLibraryPickerFor(null); } }}
-                className="w-full flex items-center justify-between gap-3 p-3 bg-raised border border-hairline rounded-surface hover:border-accent/40 transition-all text-left"
+                className="w-full flex items-center justify-between gap-3 p-3 bg-raised border border-hairline rounded-surface hover:border-accent/40 transition-[color,background-color,border-color,opacity,transform,box-shadow] text-left"
               >
                 <span className="font-sans font-bold text-body-s text-ink">{w.name}</span>
                 <span className="font-mono text-caption text-ink-2">{w.exercises.length} ejerc.</span>
@@ -1453,7 +1453,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup, onApplySuggestion
         </div>
         <button
           onClick={() => setShowSuggest(true)}
-          className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/40 text-accent-ink font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent/20 active:scale-95 transition-all"
+          className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/40 text-accent-ink font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent/20 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
         >
           <Icon name="auto_awesome" size="s" />
           Sugerir volumen
@@ -3079,14 +3079,14 @@ export default function MesocycleManager({
           <div className={`xl:w-64 flex-shrink-0 space-y-3 ${modoPlantilla ? 'hidden' : ''}`}>
             <button
               onClick={handleNew} disabled={creating}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-accent text-on-accent font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-accent text-on-accent font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-body-s">add</span>
               {creating ? 'Creando…' : 'Nuevo mesociclo'}
             </button>
             <button
               onClick={handleOpenTemplatePicker}
-              className="w-full flex items-center justify-center gap-2 py-2 border border-hairline text-ink-2 font-sans text-caption font-bold uppercase tracking-wider rounded-control hover:border-accent/40 hover:text-accent-ink transition-all"
+              className="w-full flex items-center justify-center gap-2 py-2 border border-hairline text-ink-2 font-sans text-caption font-bold uppercase tracking-wider rounded-control hover:border-accent/40 hover:text-accent-ink transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             >
               <span className="material-symbols-outlined text-body-s">library_books</span>
               Usar plantilla
@@ -3106,7 +3106,7 @@ export default function MesocycleManager({
               <button
                 key={m.id}
                 onClick={() => { setEditing(m); setEditorTab('progression'); setConfirmDelete(false); setGenPhase('idle'); setVolcado({ estado: 'idle', mensaje: '' }); setCalAtleta({ estado: 'idle', mensaje: '' }); }}
-                className={`w-full text-left p-3 rounded-control border transition-all ${
+                className={`w-full text-left p-3 rounded-control border transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                   editing?.id === m.id
                     ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press'
                     : 'border-hairline bg-surface hover:border-hairline'
@@ -3229,7 +3229,7 @@ export default function MesocycleManager({
                             setEditing(updated);
                             scheduleAutoSave(updated);
                           }}
-                          className={`w-11 h-11 flex-shrink-0 rounded-control font-mono text-label font-bold transition-all ${
+                          className={`w-11 h-11 flex-shrink-0 rounded-control font-mono text-label font-bold transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                             editing.daysPerWeek === d ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2 hover:bg-raised'
                           }`}
                         >{d}</button>
@@ -3257,7 +3257,7 @@ export default function MesocycleManager({
                   <div className="flex gap-1 items-center overflow-x-auto hide-scrollbar pb-1">
                     <button
                       onClick={() => cambiarDuracionCiclo(undefined)}
-                      className={`px-3 h-11 flex-shrink-0 rounded-control font-mono text-label font-bold transition-all ${
+                      className={`px-3 h-11 flex-shrink-0 rounded-control font-mono text-label font-bold transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                         editing.cycleDays === undefined ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2 hover:text-ink'
                       }`}
                     >Semanal</button>
@@ -3265,7 +3265,7 @@ export default function MesocycleManager({
                       <button
                         key={d}
                         onClick={() => cambiarDuracionCiclo(d)}
-                        className={`w-11 h-11 flex-shrink-0 rounded-control font-mono text-label font-bold transition-all ${
+                        className={`w-11 h-11 flex-shrink-0 rounded-control font-mono text-label font-bold transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                           editing.cycleDays === d ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2 hover:text-ink'
                         }`}
                       >{d}</button>
@@ -3561,7 +3561,7 @@ export default function MesocycleManager({
                                       setEditing(updated);
                                       scheduleAutoSave(updated);
                                     }}
-                                    className={`px-3 py-2 rounded-control border font-sans text-label text-left transition-all flex items-center gap-2 ${
+                                    className={`px-3 py-2 rounded-control border font-sans text-label text-left transition-[color,background-color,border-color,opacity,transform,box-shadow] flex items-center gap-2 ${
                                       editing.splitId === split.id && !editing.reparto
                                         ? 'bg-accent border-accent-press text-on-accent'
                                         : 'bg-raised border-hairline text-ink-2 hover:border-accent/40 hover:text-ink'
@@ -3639,7 +3639,7 @@ export default function MesocycleManager({
                         <button
                           onClick={handleGenerateDistribution}
                           disabled={!!customCrudo && !customValido}
-                          className="flex items-center gap-2 px-4 py-3 bg-accent text-on-accent font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                          className="flex items-center gap-2 px-4 py-3 bg-accent text-on-accent font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-40 disabled:pointer-events-none"
                         >
                           <span className="material-symbols-outlined text-body-s">shuffle</span>
                           Distribución Automática
@@ -3768,7 +3768,7 @@ export default function MesocycleManager({
                             <button
                               onClick={handleGenerate}
                               disabled={genPhase === 'loading'}
-                              className="flex items-center gap-2 px-4 py-3 bg-raised border border-accent/40 text-accent-ink font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent/10 active:scale-95 transition-all disabled:opacity-50"
+                              className="flex items-center gap-2 px-4 py-3 bg-raised border border-accent/40 text-accent-ink font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent/10 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-50"
                             >
                               {genPhase === 'loading' ? (
                                 <><span className="material-symbols-outlined text-body-s animate-spin">refresh</span>Analizando…</>
@@ -3825,7 +3825,7 @@ export default function MesocycleManager({
                       <div className="max-w-xs mx-auto">
                         <div className="bg-track rounded-full h-2 overflow-hidden">
                           <div
-                            className="bg-accent h-2 rounded-full transition-all duration-300"
+                            className="bg-accent h-2 rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-300"
                             style={{ width: `${assignProgress.total ? (assignProgress.done / assignProgress.total) * 100 : 0}%` }}
                           />
                         </div>
@@ -3848,7 +3848,7 @@ export default function MesocycleManager({
                       </div>
                       <button
                         onClick={() => setGenPhase('idle')}
-                        className="px-4 py-2 font-sans text-label text-ink-2 border border-hairline rounded-control hover:text-ink hover:border-hairline transition-all"
+                        className="px-4 py-2 font-sans text-label text-ink-2 border border-hairline rounded-control hover:text-ink hover:border-hairline transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                       >
                         Volver a la distribución
                       </button>
@@ -3992,10 +3992,10 @@ export default function MesocycleManager({
                   <div className="flex items-center gap-3">
                     <span className="font-sans text-label text-danger">¿Eliminar este mesociclo?</span>
                     <button onClick={handleDelete}
-                      className="px-3 py-2 bg-danger/20 border border-danger/40 text-danger font-sans text-label rounded-control hover:bg-danger/30 transition-all"
+                      className="px-3 py-2 bg-danger/20 border border-danger/40 text-danger font-sans text-label rounded-control hover:bg-danger/30 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     >Confirmar</button>
                     <button onClick={() => setConfirmDelete(false)}
-                      className="px-3 py-2 bg-raised text-ink-2 font-mono text-label rounded-control hover:bg-raised transition-all"
+                      className="px-3 py-2 bg-raised text-ink-2 font-mono text-label rounded-control hover:bg-raised transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     >Cancelar</button>
                   </div>
                 )}
@@ -4046,7 +4046,7 @@ export default function MesocycleManager({
                 const totalWeeks = tpl.stages.reduce((s, st) => s + st.weeks, 0);
                 return (
                   <button key={tpl.id} onClick={() => handleApplyTemplate(tpl)} disabled={applyingTemplate}
-                    className="w-full text-left p-4 bg-surface border border-hairline rounded-control hover:border-accent/40 hover:bg-accent-bg transition-all disabled:opacity-50 group">
+                    className="w-full text-left p-4 bg-surface border border-hairline rounded-control hover:border-accent/40 hover:bg-accent-bg transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-50 group">
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div>
                         <p className="font-sans font-bold text-ink text-body-s group-hover:text-accent-ink transition-colors">{tpl.name}</p>

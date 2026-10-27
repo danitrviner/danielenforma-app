@@ -173,7 +173,7 @@ function ChipSeccion({ etiqueta, valor, activa, abierta, onClick, discreto }: {
       type="button"
       onClick={onClick}
       aria-expanded={abierta}
-      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-chip border font-mono text-caption font-bold uppercase tracking-wider transition-all ${tono}`}
+      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-chip border font-mono text-caption font-bold uppercase tracking-wider transition-[color,background-color,border-color,opacity,transform,box-shadow] ${tono}`}
     >
       {activa && !abierta && <span className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />}
       {etiqueta}
@@ -385,7 +385,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
             <button
               type="button"
               onClick={() => setTechnique(undefined)}
-              className={`px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+              className={`px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                 !we.technique
                   ? 'bg-strong border-hairline text-ink'
                   : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'
@@ -399,7 +399,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
                 type="button"
                 onClick={() => setTechnique(we.technique === t ? undefined : t)}
                 title={TECHNIQUE_DESCRIPTION[t]}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                   we.technique === t
                     ? TECHNIQUE_COLOR[t]
                     : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'
@@ -517,7 +517,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
           ))}
           <button
             onClick={addProgressionRule}
-            className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-all"
+            className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
           >
             <Icon name="add" size="s" />
             Añadir escalón de progresión
@@ -688,7 +688,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
 
         <button
           onClick={hasGroups ? addGroup : enableGroups}
-          className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-all"
+          className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
         >
           <Icon name="add" size="s" />
           Añadir bloque con otra configuración

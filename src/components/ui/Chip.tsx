@@ -62,7 +62,7 @@ export default function Chip({
         // aproxima a 8/12 (los pasos más cercanos) en vez de forzar valores
         // arbitrarios — mismo criterio que el padding de Card.
         `inline-flex items-center gap-1 rounded-chip border pl-3 ${onRemove ? 'pr-2' : 'pr-3'} py-2 `
-        + `transition-colors duration-(--duration-state) ${tonoBorde} ${disabled ? 'opacity-40' : ''} ${className}`
+        + `transition-[color,background-color,border-color,transform] duration-(--duration-state) ease-brand active:scale-[.96] ${tonoBorde} ${disabled ? 'opacity-40' : ''} ${className}`
       }
     >
       {onClick ? (

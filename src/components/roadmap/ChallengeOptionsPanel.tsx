@@ -143,7 +143,7 @@ export default function ChallengeOptionsPanel({
               <button
                 onClick={() => assignOption(opt)}
                 disabled={assigning !== null}
-                className="w-full py-2 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+                className="w-full py-2 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-50"
               >
                 {assigning === opt.kind ? 'Enviando...' : 'Enviar'}
               </button>

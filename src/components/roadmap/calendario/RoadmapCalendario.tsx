@@ -453,7 +453,7 @@ export default function RoadmapCalendario(props: Props) {
         onPointerMove={onPointerMovePinch}
         onPointerUp={onPointerUpPinch}
         onPointerCancel={onPointerUpPinch}
-        style={{ transform: pinchScale !== 1 ? `scale(${pinchScale})` : undefined, transition: pinchScale === 1 ? 'transform 200ms ease' : 'none' }}
+        style={{ transform: pinchScale !== 1 ? `scale(${pinchScale})` : undefined, transition: pinchScale === 1 ? 'transform var(--duration-state) ease' : 'none' }}
       >
         {level === 'year' && (
           <NivelAno

@@ -57,7 +57,7 @@ export default function RevisionDeLaSemana({ revision, enviada, onAbrirPaso, onE
         {revision.pasos.map((p, i) => {
           const esSiguiente = revision.siguiente?.id === p.id;
           return (
-            <li key={p.id}>
+            <li key={p.id} className="animate-fade-up stagger-child" style={{ '--i': i } as React.CSSProperties}>
               <button
                 type="button"
                 onClick={() => onAbrirPaso(p)}

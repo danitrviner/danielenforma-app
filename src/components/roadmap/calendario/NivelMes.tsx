@@ -145,7 +145,7 @@ export default function NivelMes({
   }
 
   return (
-    <div className="space-y-3.5" style={{ animation: 'fade-up 260ms cubic-bezier(0.2,0.8,0.2,1) both' }}>
+    <div className="space-y-3.5" style={{ animation: 'fade-up var(--duration-base) var(--ease-brand) both' }}>
     <div className="flex flex-col xl:flex-row gap-3.5 items-start">
       <div className="flex-1 min-w-0 bg-surface border border-hairline rounded-surface px-5 pt-[18px] pb-[22px] w-full">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">

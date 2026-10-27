@@ -72,6 +72,7 @@ export function DonutMacros({ kcal, p, hc, g, size = 96 }: { kcal: number; p: nu
             strokeDasharray={`${largo} ${c - largo}`}
             strokeDashoffset={-acumulado * c}
             transform="rotate(-90 50 50)"
+            style={{ transition: 'stroke-dasharray var(--duration-bar) var(--ease-brand), stroke-dashoffset var(--duration-bar) var(--ease-brand)' }}
           />
         );
         acumulado += t.v;

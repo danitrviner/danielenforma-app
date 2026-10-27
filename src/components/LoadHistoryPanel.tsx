@@ -403,7 +403,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
               <button
                 key={m}
                 onClick={() => toggleMetric(m)}
-                className={`px-3 min-h-[44px] rounded-full font-sans text-label uppercase tracking-wider transition-all border ${
+                className={`px-3 min-h-[44px] rounded-full font-sans text-label uppercase tracking-wider transition-[color,background-color,border-color,opacity,transform,box-shadow] border ${
                   activeMetrics.has(m)
                     ? 'font-bold'
                     : 'bg-transparent text-ink-2 border-hairline hover:border-hairline'
@@ -421,7 +421,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 <button
                   key={s}
                   onClick={toggle}
-                  className={`px-3 min-h-[44px] rounded-full font-mono text-label uppercase tracking-wider transition-all border ${
+                  className={`px-3 min-h-[44px] rounded-full font-mono text-label uppercase tracking-wider transition-[color,background-color,border-color,opacity,transform,box-shadow] border ${
                     active ? 'bg-strong border-hairline text-ink' : 'border-hairline text-ink-3 hover:text-ink-2'
                   }`}
                 >
@@ -468,7 +468,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   <button
                     key={g}
                     onClick={() => setGranularity(g)}
-                    className={`px-3 py-1 rounded-control font-mono text-caption font-bold transition-all ${
+                    className={`px-3 py-1 rounded-control font-mono text-caption font-bold transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                       granularity === g ? 'bg-data/15 text-data' : 'text-ink-3 hover:text-ink-2'
                     }`}
                   >
@@ -500,7 +500,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   key={b.id}
                   onClick={() => toggleBucket(b.id)}
                   title={b.orm != null ? `${b.orm} kg` : b.filledOrm != null ? `${b.filledOrm} kg (estimado)` : 'Sin datos'}
-                  className={`min-w-[44px] min-h-[44px] px-2 rounded-control font-sans text-caption font-bold border transition-all flex flex-col items-center justify-center ${
+                  className={`min-w-[44px] min-h-[44px] px-2 rounded-control font-sans text-caption font-bold border transition-[color,background-color,border-color,opacity,transform,box-shadow] flex flex-col items-center justify-center ${
                     included
                       ? 'bg-data/10 border-data/40 text-data'
                       : 'bg-transparent border-hairline text-ink-3 opacity-50'

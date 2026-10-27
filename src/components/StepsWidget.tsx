@@ -189,7 +189,7 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
           <div className="h-[26px] flex items-center">
             <div className="h-1.5 w-full bg-track rounded-full overflow-hidden">
               <div
-                className="h-full bg-accent rounded-full transition-all duration-(--duration-slide)"
+                className="h-full bg-accent rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-(--duration-slide)"
                 style={{ width: `${pct}%` }}
               />
             </div>
@@ -283,7 +283,7 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
             </p>
           </div>
           <div className="h-1.5 bg-track rounded-full overflow-hidden">
-            <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+            <div className="h-full bg-accent rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-300" style={{ width: `${pct}%` }} />
           </div>
         </>
       )}

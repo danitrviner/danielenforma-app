@@ -492,6 +492,13 @@
   --animate-seal-pop:       seal-pop var(--duration-stagger-item) var(--ease-brand) both;
   --animate-sheet-in:       sheet-in var(--duration-sheet) var(--ease-brand) both;
   --animate-toast-in:       toast-in var(--duration-slide) var(--ease-brand) both;
+  /* 27-10 (revisión de animaciones): las SALIDAS. Dialog y toast desaparecían
+     de golpe; ahora se van en `--duration-exit`, el paso más corto de la
+     escala, como manda el handoff («las salidas siempre más rápidas que las
+     entradas»). Menos recorrido que la entrada: lo que se va no "cae", se
+     asienta y se funde. */
+  --animate-dialog-out:     dialog-out var(--duration-exit) var(--ease-brand) both;
+  --animate-toast-out:      toast-out var(--duration-exit) var(--ease-brand) both;
 
   /* fade-up — entrada por defecto de tarjetas y filas escalonadas. */
   @keyframes fade-up {
@@ -543,6 +550,15 @@
   @keyframes sheet-in {
     from { transform: translateY(26px) scale(0.985); opacity: 0; }
     to   { transform: none; opacity: 1; }
+  }
+
+  @keyframes dialog-out {
+    from { transform: none; opacity: 1; }
+    to   { transform: translateY(6px) scale(0.985); opacity: 0; }
+  }
+  @keyframes toast-out {
+    from { transform: none; opacity: 1; }
+    to   { transform: translateY(8px); opacity: 0; }
   }
 
   /* toast-in — más corto y con menos recorrido que sheet-in: un toast no

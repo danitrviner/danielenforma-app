@@ -80,7 +80,7 @@ export default function PendingTray({
         <button
           key={item.key}
           onClick={item.onClick}
-          className="flex items-center gap-2 bg-warning/10 border border-warning/25 hover:border-warning/50 text-warning px-3 py-2 rounded-control font-mono text-caption font-bold transition-all"
+          className="flex items-center gap-2 bg-warning/10 border border-warning/25 hover:border-warning/50 text-warning px-3 py-2 rounded-control font-mono text-caption font-bold transition-[color,background-color,border-color,opacity,transform,box-shadow]"
         >
           <Icon name={item.icon} size="m" />
           {item.text}

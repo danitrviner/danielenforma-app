@@ -389,10 +389,10 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   </p>
                 </div>
                 <div className="flex items-center justify-end gap-1 px-4 pb-4">
-                  <button onClick={() => openEdit(recipe)} aria-label="Editar" className="text-ink-2 hover:text-accent-ink p-2 rounded-control transition-all">
+                  <button onClick={() => openEdit(recipe)} aria-label="Editar" className="text-ink-2 hover:text-accent-ink p-2 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]">
                     <Icon name="edit" size="s" />
                   </button>
-                  <button onClick={() => setConfirmDelete(recipe.id)} aria-label="Eliminar" className="text-ink-2 hover:text-danger p-2 rounded-control transition-all">
+                  <button onClick={() => setConfirmDelete(recipe.id)} aria-label="Eliminar" className="text-ink-2 hover:text-danger p-2 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]">
                     <Icon name="delete" size="s" />
                   </button>
                 </div>
@@ -416,7 +416,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
               <button
                 key={cat}
                 onClick={() => setRecetasCat(cat)}
-                className={`px-4 py-2 rounded-full font-mono text-caption font-bold whitespace-nowrap transition-all ${
+                className={`px-4 py-2 rounded-full font-mono text-caption font-bold whitespace-nowrap transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                   recetasCat === cat
                     ? 'bg-data text-on-fill'
                     : 'bg-raised border border-hairline text-ink-2 hover:border-strong hover:text-ink'

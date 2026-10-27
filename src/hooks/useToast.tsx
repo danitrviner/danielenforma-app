@@ -8,6 +8,8 @@ import Icon from '../components/ui/Icon';
 type ToastKind = 'error' | 'success' | 'info';
 
 interface Toast {
+  /** Marcado 140 ms antes de retirarse: la salida animada. */
+  saliendo?: boolean;
   id: number;
   kind: ToastKind;
   message: string;
@@ -39,6 +41,8 @@ const TONO: Record<ToastKind, { icono: string; color: string }> = {
 
 /** 3,2 s en pantalla (handoff) — no los 4 s que tenía antes. */
 const DURACION_MS = 3200;
+/** = `--duration-exit`. */
+const SALIDA_MS = 140;
 
 let nextId = 0;
 
@@ -52,6 +56,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const showToast = useCallback((message: string, kind: ToastKind = 'error', options?: ToastOptions) => {
     const id = nextId++;
     setToasts(prev => [...prev, { id, kind, message, ...options }]);
+    // Salida en dos tiempos: primero se marca `saliendo` (140 ms de fundido,
+    // `--duration-exit`) y después se retira del DOM. Antes desaparecía de golpe.
+    setTimeout(() => setToasts(prev => prev.map(t => (t.id === id ? { ...t, saliendo: true } : t))), DURACION_MS - SALIDA_MS);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), DURACION_MS);
   }, []);
 
@@ -63,7 +70,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <div
             key={t.id}
             role={t.kind === 'error' ? 'alert' : 'status'}
-            className="animate-toast-in pointer-events-auto flex w-full items-center gap-3 rounded-field border border-hairline bg-surface px-4 py-3 shadow-e2"
+            className={`${t.saliendo ? 'animate-toast-out' : 'animate-toast-in'} pointer-events-auto flex w-full items-center gap-3 rounded-field border border-hairline bg-surface px-4 py-3 shadow-e2`}
           >
             <Icon name={TONO[t.kind].icono} size="m" className={`shrink-0 ${TONO[t.kind].color}`} />
             <span className="min-w-0 flex-1 font-sans text-body-s font-medium text-ink">{t.message}</span>

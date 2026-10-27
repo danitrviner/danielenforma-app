@@ -287,7 +287,7 @@ function TemplateEditor({
             </div>
             <button
               onClick={addStage}
-              className="flex items-center gap-1 px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-caption rounded-control hover:border-accent/40 hover:text-accent-ink transition-all"
+              className="flex items-center gap-1 px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-caption rounded-control hover:border-accent/40 hover:text-accent-ink transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             >
               <Icon name="add" size="s" />
               Añadir mesociclo
@@ -362,7 +362,7 @@ function TemplateCard({
   const topGroups = getTopMuscleGroups(mergeStageGroups(tpl.stages), 3);
 
   return (
-    <div className="bg-surface border border-hairline rounded-canvas p-4 hover:border-accent/30 transition-all">
+    <div className="bg-surface border border-hairline rounded-canvas p-4 hover:border-accent/30 transition-[color,background-color,border-color,opacity,transform,box-shadow]">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
           <p className="font-sans font-bold text-ink text-body-s truncate">{tpl.name}</p>
@@ -385,14 +385,14 @@ function TemplateCard({
         <div className="flex gap-2 flex-shrink-0">
           <button
             onClick={onEdit}
-            className="p-2 rounded-control bg-raised border border-hairline text-data hover:border-data/40 transition-all"
+            className="p-2 rounded-control bg-raised border border-hairline text-data hover:border-data/40 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             title="Editar plantilla"
           >
             <Icon name="edit" size="s" />
           </button>
           <button
             onClick={onDelete}
-            className="p-2 rounded-control bg-raised border border-hairline text-ink-2 hover:text-danger hover:border-danger/30 transition-all"
+            className="p-2 rounded-control bg-raised border border-hairline text-ink-2 hover:text-danger hover:border-danger/30 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             title="Eliminar plantilla"
           >
             <Icon name="delete" size="s" />

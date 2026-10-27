@@ -48,7 +48,7 @@ export default function CooldownPrompt({ bpm, onDone }: Props) {
         </div>
 
         <button onClick={onDone}
-          className="w-full py-3 border border-hairline text-ink-2 font-sans font-bold text-label uppercase rounded-control hover:text-ink hover:border-strong transition-all">
+          className="w-full py-3 border border-hairline text-ink-2 font-sans font-bold text-label uppercase rounded-control hover:text-ink hover:border-strong transition-[color,background-color,border-color,opacity,transform,box-shadow]">
           Saltar y guardar ya
         </button>
       </div>

@@ -66,7 +66,7 @@ export default function CeldaDia({ fecha, dia, filter, hoy, selected, onOpen, dr
         padding: '10px 11px 8px', borderRadius: 16, background: fondo,
         border: `1px ${bordeStyle} ${borde}`,
         boxShadow: dia?.destacado ? `0 0 22px -10px ${dia.destacado.color}` : undefined,
-        transitionDuration: '160ms',
+        transitionDuration: 'var(--duration-state)',
       }}
     >
       <div className="flex items-start justify-between gap-1.5">

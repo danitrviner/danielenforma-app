@@ -156,7 +156,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
                   )}
                   <button
                     onClick={() => openEditor(q)}
-                    className="p-2 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-all"
+                    className="p-2 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     title="Editar"
                   >
                     <Icon name="edit" size="s" />
@@ -164,7 +164,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
                   <button
                     onClick={() => handleDelete(q.id)}
                     disabled={deleting === q.id}
-                    className="p-2 bg-raised border border-hairline text-ink-2 hover:text-danger hover:border-danger/30 rounded-control transition-all"
+                    className="p-2 bg-raised border border-hairline text-ink-2 hover:text-danger hover:border-danger/30 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     title="Eliminar"
                   >
                     <Icon name={deleting === q.id ? 'progress_activity' : 'delete'} size="s" className={deleting === q.id ? 'animate-spin' : ''} />

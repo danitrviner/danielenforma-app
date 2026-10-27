@@ -64,7 +64,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
           </div>
           <div className="h-2 rounded-full bg-track overflow-hidden">
             <div
-              className="h-full rounded-full transition-all duration-500"
+              className="h-full rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-500"
               style={{ width: `${Math.max(4, weightStatus.pct)}%`, backgroundColor: colorDeTema(phase.color) }}
             />
           </div>

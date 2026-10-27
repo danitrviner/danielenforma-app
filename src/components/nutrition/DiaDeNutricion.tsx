@@ -37,6 +37,7 @@ function AnilloDia({ pct, activo }: { pct: number | null; activo: boolean }) {
         <circle
           cx="20" cy="20" r={r} fill="none" stroke={pct > 105 ? 'var(--color-danger)' : 'var(--color-accent)'} strokeWidth="2.5" strokeLinecap="round"
           strokeDasharray={`${Math.min(1, pct / 100) * c} ${c}`} transform="rotate(-90 20 20)"
+          style={{ transition: 'stroke-dasharray var(--duration-bar) var(--ease-brand)' }}
         />
       )}
     </svg>
@@ -94,7 +95,8 @@ function Arco({ quedan, pct, texto }: { quedan: number; pct: number; texto: stri
           strokeDasharray={`${largo} 999`} transform="rotate(135 62 62)" />
         {lleno > 0 && (
           <circle cx="62" cy="62" r={r} fill="none" stroke={pasado ? 'var(--color-danger)' : 'var(--color-accent)'} strokeWidth="8" strokeLinecap="round"
-            strokeDasharray={`${lleno} 999`} transform="rotate(135 62 62)" />
+            strokeDasharray={`${lleno} 999`} transform="rotate(135 62 62)"
+            style={{ transition: 'stroke-dasharray var(--duration-ring) var(--ease-brand)' }} />
         )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -176,7 +178,7 @@ export function TarjetaDelDia(p: {
               <span className="block font-sans text-body-s font-bold text-ink">{m.etiqueta}</span>
               <span className={`block font-mono text-caption ${pasado ? 'text-danger' : 'text-ink-2'}`}>{p.fmtMacro(m.comido, m.objetivo)}</span>
               <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-hairline">
-                <span className="block h-full rounded-full" style={{ width: `${m.objetivo > 0 ? Math.min(100, (m.comido / m.objetivo) * 100) : 0}%`, background: pasado ? 'var(--color-danger)' : m.color }} />
+                <span className="block h-full rounded-full transition-[width] duration-(--duration-bar) ease-brand" style={{ width: `${m.objetivo > 0 ? Math.min(100, (m.comido / m.objetivo) * 100) : 0}%`, background: pasado ? 'var(--color-danger)' : m.color }} />
               </span>
             </div>
           );

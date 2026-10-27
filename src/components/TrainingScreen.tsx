@@ -772,7 +772,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     return (
       <div
         key={a.id}
-        className={`border p-4 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
+        className={`border p-4 transition-[color,background-color,border-color,opacity,transform,box-shadow] flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
           isNext
             ? 'rounded-canvas bg-accent-bg border-accent/50 shadow-glow'
             : estado === 'perdido'

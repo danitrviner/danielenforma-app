@@ -492,8 +492,10 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             <EmptyState icon="search_off" title={`Ningún atleta coincide con "${search}".`} />
           ) : (
             <div className="flex flex-col gap-1.5">
-              {filteredAthletes.map(athlete => (
-                <AthleteRow key={athlete.userId} athlete={athlete} onOpen={openAthleteHub} />
+              {filteredAthletes.map((athlete, i) => (
+                <div key={athlete.userId} className="animate-fade-up stagger-child" style={{ '--i': Math.min(i, 8) } as React.CSSProperties}>
+                  <AthleteRow athlete={athlete} onOpen={openAthleteHub} />
+                </div>
               ))}
             </div>
           )

@@ -464,7 +464,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                         <div className="flex items-center gap-2 justify-end">
                           <button
                             onClick={() => abrirFicha(ex)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-control font-mono text-caption text-ink-2 hover:text-accent-ink hover:bg-accent/10 transition-all"
+                            className="flex items-center gap-1 px-2 py-1 rounded-control font-mono text-caption text-ink-2 hover:text-accent-ink hover:bg-accent/10 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                             title="Ver la ficha del ejercicio"
                             aria-label={`Ver la ficha de ${ex.name}`}
                           >
@@ -475,14 +475,14 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                           <>
                             <button
                               onClick={() => openEdit(ex)}
-                              className="text-ink-2 hover:text-accent-ink p-2 rounded-control hover:bg-accent/10 transition-all"
+                              className="text-ink-2 hover:text-accent-ink p-2 rounded-control hover:bg-accent/10 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                               title="Editar"
                             >
                               <Icon name="edit" size="s" />
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(ex.id)}
-                              className="text-ink-2 hover:text-danger p-2 rounded-control hover:bg-danger/10 transition-all"
+                              className="text-ink-2 hover:text-danger p-2 rounded-control hover:bg-danger/10 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                               title="Eliminar"
                             >
                               <Icon name="delete" size="s" />
@@ -538,15 +538,15 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   </div>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => abrirFicha(ex)} aria-label={`Ver la ficha de ${ex.name}`} title="Ver la ficha del ejercicio" className="text-ink-2 hover:text-accent-ink p-2 rounded-control transition-all">
+                <button onClick={() => abrirFicha(ex)} aria-label={`Ver la ficha de ${ex.name}`} title="Ver la ficha del ejercicio" className="text-ink-2 hover:text-accent-ink p-2 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]">
                   <Icon name="query_stats" size="s" />
                 </button>
                 {canEdit(ex) ? (
                   <>
-                    <button onClick={() => openEdit(ex)} aria-label="Editar" className="text-ink-2 hover:text-accent-ink p-2 rounded-control transition-all">
+                    <button onClick={() => openEdit(ex)} aria-label="Editar" className="text-ink-2 hover:text-accent-ink p-2 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]">
                       <Icon name="edit" size="s" />
                     </button>
-                    <button onClick={() => setDeleteConfirm(ex.id)} aria-label="Eliminar" className="text-ink-2 hover:text-danger p-2 rounded-control transition-all">
+                    <button onClick={() => setDeleteConfirm(ex.id)} aria-label="Eliminar" className="text-ink-2 hover:text-danger p-2 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]">
                       <Icon name="delete" size="s" />
                     </button>
                   </>
@@ -788,7 +788,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))}
                   placeholder="ej. Mantén la espalda neutra durante todo el recorrido..."
                   rows={3}
-                  className="w-full bg-surface border border-hairline rounded-control px-4 py-3 text-title-s text-ink placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent transition-all resize-none"
+                  className="w-full bg-surface border border-hairline rounded-control px-4 py-3 text-title-s text-ink placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent transition-[color,background-color,border-color,opacity,transform,box-shadow] resize-none"
                 />
               </div>
 

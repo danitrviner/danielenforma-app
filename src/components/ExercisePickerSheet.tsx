@@ -95,7 +95,7 @@ export default function ExercisePickerSheet({
             <button
               key={ex.id}
               onClick={() => onSelect(ex)}
-              className="w-full flex items-center justify-between gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
+              className="w-full flex items-center justify-between gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-[color,background-color,border-color,opacity,transform,box-shadow] group"
             >
               <div className="min-w-0">
                 <p className="font-sans text-label text-ink group-hover:text-accent-ink transition-colors leading-snug truncate">{ex.name}</p>

@@ -1118,7 +1118,7 @@ function AppContent() {
                     key={tab.id}
                     onClick={() => goToNav(tab.id)}
                     aria-current={activa ? 'page' : undefined}
-                    className={`flex items-center gap-4 p-3 rounded-control transition-all text-left group ${activa ? 'bg-accent text-on-accent font-bold' : 'text-ink-2 hover:bg-raised hover:text-ink'}`}
+                    className={`flex items-center gap-4 p-3 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow] text-left group ${activa ? 'bg-accent text-on-accent font-bold' : 'text-ink-2 hover:bg-raised hover:text-ink'}`}
                   >
                     <Icon name={tab.icon} size="l" filled={activa} className="group-hover:scale-110 transition-transform" />
                     <span className="font-sans text-label uppercase tracking-wider font-bold flex-1">{tab.label}</span>

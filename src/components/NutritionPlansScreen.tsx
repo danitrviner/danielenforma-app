@@ -634,13 +634,13 @@ export default function NutritionPlansScreen({
                   <div className="flex gap-2 pt-3 border-t border-hairline">
                     <button
                       onClick={() => openEdit(dt)}
-                      className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-data hover:border-data/40 font-mono text-caption uppercase rounded-control transition-all"
+                      className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-data hover:border-data/40 font-mono text-caption uppercase rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     >
                       <Icon name="edit" size="s" />Editar
                     </button>
                     <button
                       onClick={() => setDeleteId(dt.id)}
-                      className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-ink-2 hover:text-danger hover:border-danger/30 font-mono text-caption uppercase rounded-control transition-all"
+                      className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-ink-2 hover:text-danger hover:border-danger/30 font-mono text-caption uppercase rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     >
                       <Icon name="delete" size="s" />Eliminar
                     </button>
@@ -722,7 +722,7 @@ export default function NutritionPlansScreen({
                   </span>
                 </div>
                 <div className="h-1 w-full bg-track rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${pct}%` }} />
+                  <div className={`h-full rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-300 ${barColor}`} style={{ width: `${pct}%` }} />
                 </div>
               </div>
             );
@@ -795,7 +795,7 @@ export default function NutritionPlansScreen({
           {phaseTargetKcal != null && onboardingData ? (
             <button
               onClick={ajustarAlObjetivoDeLaFase}
-              className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent-ink hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent-ink hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             >
               <Icon name="timeline" size="s" />
               Ajustar al objetivo de la fase
@@ -810,7 +810,7 @@ export default function NutritionPlansScreen({
                   g: Math.round(onboardingData.macroGrams.grasa),
                 },
               }))}
-              className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent-ink hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent-ink hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             >
               <Icon name="auto_fix_high" size="s" />
               Prefijar desde macros
@@ -912,7 +912,7 @@ export default function NutritionPlansScreen({
           <div className="flex gap-2">
             <button
               onClick={addMeal}
-              className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-accent-ink hover:border-accent/40 font-sans text-caption uppercase rounded-control transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-accent-ink hover:border-accent/40 font-sans text-caption uppercase rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             >
               <Icon name="add" size="s" />Añadir comida
             </button>
@@ -1130,7 +1130,7 @@ export default function NutritionPlansScreen({
                 const reciente = pickerRecentlyAdded === food.id;
                 return (
                   <button key={food.id} onClick={() => handleSelectFood(food)}
-                    className={`w-full flex items-center justify-between p-4 rounded-control border text-left transition-all group ${
+                    className={`w-full flex items-center justify-between p-4 rounded-control border text-left transition-[color,background-color,border-color,opacity,transform,box-shadow] group ${
                       reciente ? 'bg-success/10 border-success/40' : 'bg-surface hover:bg-raised border-hairline hover:border-accent/40'
                     }`}
                   >

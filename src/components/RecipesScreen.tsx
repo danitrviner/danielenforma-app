@@ -149,7 +149,7 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, isFav, large = false
   return (
     <article
       {...pulsable(() => onOpen(recipe), `Abrir la receta ${recipe.name}`)}
-      className={`${colSpan} group relative rounded-surface overflow-hidden bg-raised border border-hairline ${minH} flex flex-col justify-end cursor-pointer hover:border-accent/40 transition-all`}
+      className={`${colSpan} group relative rounded-surface overflow-hidden bg-raised border border-hairline ${minH} flex flex-col justify-end cursor-pointer hover:border-accent/40 transition-[color,background-color,border-color,opacity,transform,box-shadow]`}
     >
       <FotoDeReceta
         src={photo}
@@ -258,7 +258,7 @@ export function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, s
             onClick={() => onToggleDislike(recipe.id)}
             disabled={savingFav}
             title={isDisliked ? 'Quitar el "no me gusta"' : 'No me gusta — que no salga en mis menús'}
-            className="flex items-center gap-2 text-label font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+            className="flex items-center gap-2 text-label font-mono font-bold uppercase tracking-wider transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-50"
             style={{ color: isDisliked ? 'var(--color-danger)' : 'var(--color-ink-2)' }}
           >
             <span
@@ -533,7 +533,7 @@ export function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, s
                     className="flex gap-3 group cursor-pointer"
                   >
                     <div className="flex flex-col items-center shrink-0">
-                      <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center font-mono text-caption font-bold transition-all ${done ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-2 group-hover:border-accent/50'}`}>
+                      <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center font-mono text-caption font-bold transition-[color,background-color,border-color,opacity,transform,box-shadow] ${done ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-2 group-hover:border-accent/50'}`}>
                         {done ? <span className="material-symbols-outlined text-label font-bold">check</span> : idx + 1}
                       </div>
                     </div>
