@@ -2313,7 +2313,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                               type="button"
                               onClick={() => handleApplyRecipe(r, meal.id)}
                               title={`Añadir «${r.name}» a ${meal.name}`}
-                              className="max-w-[14rem] truncate rounded-chip border border-hairline px-2.5 py-1 font-sans text-caption text-ink-2 hover:text-accent-ink hover:border-accent-line transition-colors"
+                              className="max-w-[14rem] truncate rounded-chip border border-strong px-2.5 py-1 font-sans text-caption text-ink-2 hover:text-accent-ink hover:border-accent-line transition-colors"
                             >
                               + {r.name}
                             </button>
@@ -2528,7 +2528,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 })}
                 <button
                   onClick={addMeal}
-                  className="w-full py-3 rounded-control border border-dashed border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent-ink transition-[color,background-color,border-color,opacity,transform,box-shadow]"
+                  className="w-full py-3 rounded-control border border-dashed border-strong text-ink-2 font-sans text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent-ink transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                 >
                   + Añadir comida
                 </button>

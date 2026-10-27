@@ -124,7 +124,7 @@ otras no».
 | Pista | `track` | #DFDBD2 | #DBD6CC | Barra de progreso vacía |
 | Línea | `hairline` | 12 % | **14 %** | Separador entre filas y borde de tarjeta blanca sobre crema |
 | Línea fuerte | `strong` | 18 % | **30 %** | Borde de control en reposo (chip, botón secundario neutro) y hover. Hoy casi igual a hairline |
-| Nueva: línea de campo | `control-line` | — | **46 % (#969594)** | Borde de input/select/textarea: 2,98:1 sobre blanco. Es el único alfa que roza el 3:1 sin parecer un marco negro. Si se prefiere más suave, 40 % (#A4A3A2, 2,5:1) y que el relleno crema haga el resto |
+| Nueva: línea de campo | `control-line` | — | **48 % (#92918F)** | Borde de input/select/textarea: 3,16:1 sobre blanco. Es el único alfa que roza el 3:1 sin parecer un marco negro. Si se prefiere más suave, 40 % (#A4A3A2, 2,5:1) y que el relleno crema haga el resto |
 
 Texto sobre las nuevas superficies: `ink-4` sobre el nuevo `bg` da 5,34; `accent-ink` 5,18.
 Nada cae por debajo. Oscuro: **no cambia ningún valor** (la escalera de oscuro ya tiene escalón;

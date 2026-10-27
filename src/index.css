@@ -256,7 +256,9 @@
      papel medía 1,27:1 y el campo, blanco sobre blanco, no existía. Aquí es
      la línea que WCAG pide para el contorno de un control (3:1): tinta al
      46 % en claro; en oscuro vale lo mismo que `strong`, porque allí el
-     relleno `field` ya distingue el campo y la línea solo acompaña. */
+     relleno `field` ya distingue el campo y la línea solo acompaña. Los
+     chips y botones neutros NO lo usan: llevan `strong` + relleno un escalón
+     distinto del padre, que es lo que los hace «pulsables». */
   --color-control-line: var(--p-control-line);
 
   /* ── Marca · 2 ──────────────────────────────────────────────────────────────
@@ -648,12 +650,12 @@
      define una tarjeta blanca sobre una página casi blanca. */
   /* 27-10: hairline sube al 14 % (separador y borde de tarjeta blanca sobre
      el gris); `strong` al 30 % es el borde de un control en reposo (chip,
-     botón secundario neutro) y su hover; `control-line` al 46 % (#969594,
-     2,98:1 sobre blanco) es el contorno de un campo. Medido: al 12 % y al
+     botón secundario neutro) y su hover; `control-line` al 48 % (#92918F,
+     3,16:1 sobre blanco) es el contorno de un campo. Medido: al 12 % y al
      18 % ningún borde de la app pasaba de 1,5:1. */
   --p-hairline:     rgba(27, 25, 22, 0.14);
   --p-strong:       rgba(27, 25, 22, 0.30);
-  --p-control-line: rgba(27, 25, 22, 0.46);
+  --p-control-line: rgba(27, 25, 22, 0.48);
   /* Oro al 55 % medía 2,06:1 sobre el papel: el borde del botón secundario,
      el anillo de foco y el contorno del chip seleccionado no llegaban al 3:1.
      Pasa a ser el oro pulsado SÓLIDO (4,0:1 sobre blanco, 3,8 sobre la
