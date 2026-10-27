@@ -512,3 +512,39 @@ solo (lo hacían todas las pantallas a la vez, como un bloque); ahora cada panta
 suyo. Perfil y Hub del cliente remontan el contenido de la pestaña con `key`, así cada pestaña
 entra igual que la pantalla. Una `.pantalla` dentro de otra no se funde dos veces
 (`.pantalla > :has(> .pantalla)` se queda quieta). `prefers-reduced-motion` lo apaga.
+
+## Segunda capa de movimiento (27-10, «que quede bonito y trabajado»)
+
+Propuestas enseñadas en demo y aprobadas todas. Tres commits:
+
+**Capa 1 (CSS, `5978a23`)** — la entrada de pantalla pasa de `fade-up` a **`asentar`** (14 px,
+escala .985 y un desenfoque de 4 px que enfoca al 60 %); Inicio, Nutrición, Entreno y Revisión
+llevan además **`pantalla-b`**: la cabecera baja desde arriba y la tarjeta `.protagonista` llega
+con rebote (620 ms, `--ease-rebote`, la única segunda curva del sistema, documentada). El icono de
+la barra inferior hace **pop** al elegirlo; el toast **se posa** (28 px y rebote mínimo); las
+barras de progreso **llenan desde la izquierda** al entrar (`scale-x-in`); las filas pulsables
+**acusan el toque** al instante y lo sueltan en 550 ms (`.fila-pulsable`); los chevrones de Orden
+del ciclo y las «×» de los chips tienen **zona táctil de 44 px**; las fotos llevan **contorno
+neutro** al 10 %; toda cifra mono es **tabular**.
+
+**Capa 2 (`ed7b9ed`, `7860d68`)** — **P2** `useCuentaAlMontar`: kcal comidas/quedan/objetivo
+cuentan hasta su valor con el arco creciendo a la par; también la racha de Inicio, sesiones y
+récords de la Revisión del coach y la adherencia del Calendario. Nunca cronómetro, reps ni FC.
+La tarjeta del día **late** una vez al cerrarse (`useRecienHecho`: solo en la transición).
+**P3** `useDireccionDePestana`: el contenido de pestaña entra desde el lado hacia el que vas en
+Perfil, Hub del cliente, Nutrición y Biblioteca; el subrayado de `Tabs` se desliza entre
+vecinas y salta en las lejanas (respeta la decisión previa de no «recorrer»).
+
+**Capa 3 (`dc49ca9`)** — **P5** `SelloHecho`: alimento comido, serie hecha y paso de la revisión
+sellan con `seal-pop` (y la fila de revisión destella en verde 600 ms), solo al pasar a hecho.
+**Cambio de día** en Nutrición desde el lado hacia el que vas, con las cifras volviendo a contar
+(`useDireccionDeFecha`). **Continuidad lista → detalle**: el nombre del atleta vuela de la fila
+de Clientes a la cabecera del Hub (`navigate(…, { viewTransition: true })` +
+`view-transition-name`; donde no hay soporte, navegación normal).
+
+**P6**: el contenido que sustituye a un esqueleto ya entra con `asentar` por ser hijo nuevo de
+`.pantalla`; el esqueleto no se funde al salir (necesitaría quedarse montado). El toast sí.
+
+No se ha hecho: encoger el fondo al abrir una hoja (un `transform` en `#root` rompe los
+`position: fixed` de cabecera y barra), esqueletos con la forma real de cada tarjeta (8
+pantallas, aparte), radio concéntrico (toca muchos sitios, por primitivas, aparte).

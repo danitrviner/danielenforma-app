@@ -226,6 +226,13 @@ chips, anillos con `--duration-ring`, listas con `stagger-child` (tope `--i` 8),
 pantalla y de cada panel de pestaña (los hijos directos hacen `fade-up` con 40 ms de
 escalón, tope en el 8.º); al cambiar de pestaña el contenido se remonta con `key`. Una
 `.pantalla` dentro de otra no se funde dos veces. Una pantalla nueva lleva la clase, siempre.
+**Segunda capa (27-10):** entrada `asentar`; `pantalla-b` + `.protagonista` solo en Inicio,
+Nutrición, Entreno y Revisión; `--ease-rebote` es la ÚNICA segunda curva (protagonista, pop de la
+barra, toast). Hooks: `useCuentaAlMontar` (cifras estáticas cuentan; nunca cronómetro/reps/FC),
+`useRecienHecho` (celebrar una transición, no un estado), `useDireccionDePestana` /
+`useDireccionDeFecha` (el contenido entra desde el lado hacia el que vas). Primitiva `SelloHecho`
+para todo círculo de «hecho». Lista → detalle con `viewTransition: true` y
+`nombreDeTransicion()`. `.fila-pulsable` en filas que navegan; `.zona-tactil` en iconos de 20 px.
 
 ---
 

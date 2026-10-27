@@ -14,14 +14,20 @@ import React from 'react';
    que te mueves tú, como la pastilla del segmentado.
    ═══════════════════════════════════════════════════════════════════════════ */
 export function useDireccionDePestana(ids: readonly string[], value: string): string {
-  const anterior = React.useRef<{ ids: string; value: string } | null>(null);
+  // Estado derivado durante el render, no un ref (ver useDireccionDeFecha):
+  // sobrevive al doble render de StrictMode y la clase se mantiene hasta el
+  // siguiente cambio, sin cortar la animación.
   const clave = ids.join('|');
-  const previo = anterior.current;
-  anterior.current = { ids: clave, value };
-  if (!previo || previo.value === value) return '';
-  if (previo.ids !== clave) return 'animate-fade-up';
-  const de = ids.indexOf(previo.value);
-  const a = ids.indexOf(value);
-  if (de < 0 || a < 0 || Math.abs(a - de) !== 1) return 'animate-fade-up';
-  return a > de ? 'animate-desde-der' : 'animate-desde-izq';
+  const [estado, setEstado] = React.useState({ clave, value, clase: '' });
+  if (estado.value !== value || estado.clave !== clave) {
+    let clase = 'animate-fade-up';
+    if (estado.clave === clave) {
+      const de = ids.indexOf(estado.value);
+      const a = ids.indexOf(value);
+      if (de >= 0 && a >= 0 && Math.abs(a - de) === 1) clase = a > de ? 'animate-desde-der' : 'animate-desde-izq';
+    }
+    setEstado({ clave, value, clase });
+    return clase;
+  }
+  return estado.clase;
 }

@@ -7,9 +7,15 @@ import React from 'react';
    no devuelve nada: la pantalla ya escalona su entrada.
    ═══════════════════════════════════════════════════════════════════════════ */
 export function useDireccionDeFecha(valor: string): string {
-  const anterior = React.useRef<string | null>(null);
-  const previo = anterior.current;
-  anterior.current = valor;
-  if (previo === null || previo === valor) return '';
-  return valor > previo ? 'animate-desde-der' : 'animate-desde-izq';
+  // Estado derivado durante el render (no un ref): un ref «valor anterior»
+  // falla con el doble render de StrictMode y, al actualizarse, retiraría la
+  // clase en el siguiente re-render y cortaría la animación a mitad. Así la
+  // clase se calcula UNA vez por cambio de valor y se queda hasta el siguiente.
+  const [estado, setEstado] = React.useState({ valor, clase: '' });
+  if (estado.valor !== valor) {
+    const clase = valor > estado.valor ? 'animate-desde-der' : 'animate-desde-izq';
+    setEstado({ valor, clase });
+    return clase;
+  }
+  return estado.clase;
 }
