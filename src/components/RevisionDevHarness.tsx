@@ -7,6 +7,8 @@ import {
 import { bodyweightForAthleteKey, pesoPrimeroKey, pesoUltimoKey } from '../hooks/useAthleteWeight';
 import { bodyMeasurementsForAthleteKey } from '../hooks/useBodyMeasurements';
 import CheckInScreen from './CheckInScreen';
+import { presetPorTitulo, buildQuestionnaireFromPreset, TITULO_TU_SEMANA } from '../data/questionnairePresets';
+import { desdeDeLaSemana } from '../utils/cuestionarioAuto';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Banco de pruebas de Perfil › Revisión — ruta `/dev/revision`, solo en
@@ -57,7 +59,15 @@ const Q_MEDICIONES: Questionnaire = {
   ],
 };
 
+// Paquete oficial (27-10): «Tu semana» (con agujetas) y un hito limpio, los
+// dos pendientes hoy, para ver el asistente nuevo.
+const deOficial = (titulo: string, id: string): Questionnaire => ({ ...buildQuestionnaireFromPreset(presetPorTitulo(titulo)!, 'coach'), id });
+const Q_TU_SEMANA = deOficial(TITULO_TU_SEMANA, 'q_tu_semana');
+const Q_PRIMERA = deOficial('Primera Semana', 'q_primera');
+
 const ASIGNACIONES: QuestionnaireAssignment[] = [
+  { id: 'as_tu_semana', questionnaireId: 'q_tu_semana', athleteId: EMAIL, schedule: { type: 'once' }, startDate: haceDias(0), active: true, createdAt: haceDias(1) },
+  { id: 'as_primera', questionnaireId: 'q_primera', athleteId: EMAIL, schedule: { type: 'once' }, startDate: haceDias(0), active: true, createdAt: haceDias(1) },
   { id: 'as_semanal', questionnaireId: 'q_semanal', athleteId: EMAIL, schedule: { type: 'weekdays', weekdays: [0] }, startDate: haceDias(60), active: true, createdAt: haceDias(60) },
   { id: 'as_doms', questionnaireId: 'q_doms', athleteId: EMAIL, schedule: { type: 'interval', intervalDays: 14 }, startDate: haceDias(56), active: true, createdAt: haceDias(56) },
   { id: 'as_medic', questionnaireId: 'q_medic', athleteId: EMAIL, schedule: { type: 'monthly', dayOfMonth: 26 }, startDate: haceDias(90), active: true, createdAt: haceDias(90) },
@@ -140,7 +150,19 @@ export default function RevisionDevHarness() {
     qc.setQueryData(bodyMeasurementsForAthleteKey(EMAIL), MEDIDAS);
     qc.setQueryData(['assignmentsForAthlete', EMAIL], ASIGNACIONES);
     qc.setQueryData(['responsesForAthlete', EMAIL], RESPUESTAS);
-    for (const q of [Q_SEMANAL, Q_DOMS, Q_MEDICIONES]) qc.setQueryData(['questionnaireById', q.id], q);
+    for (const q of [Q_SEMANAL, Q_DOMS, Q_MEDICIONES, Q_TU_SEMANA, Q_PRIMERA]) qc.setQueryData(['questionnaireById', q.id], q);
+    // Lo que la app ya sabe de la semana: pasos, sesiones y ejercicios.
+    qc.setQueryData(['stepsForAthlete', EMAIL, desdeDeLaSemana(haceDias(0))], [1, 2, 3, 4, 5].map(d => ({ date: haceDias(d), steps: 8000 + d * 300 })));
+    qc.setQueryData(['exercises'], [
+      { id: 'ex_sent', name: 'Sentadilla', muscleGroup: 'cuadriceps' }, { id: 'ex_peso', name: 'Peso muerto rumano', muscleGroup: 'isquios' },
+      { id: 'ex_dom', name: 'Dominadas', muscleGroup: 'dorsal' }, { id: 'ex_curl', name: 'Curl', muscleGroup: 'biceps' },
+      { id: 'ex_hip', name: 'Hip thrust', muscleGroup: 'gluteo' }, { id: 'ex_aduc', name: 'Aductor', muscleGroup: 'aductores' },
+    ]);
+    qc.setQueryData(['workoutLogs', EMAIL], [
+      { id: 'wl1', athleteId: EMAIL, workoutId: 'pierna', assignmentId: 'a1', date: haceDias(4), completedAt: '', entries: ['ex_sent', 'ex_peso', 'ex_hip', 'ex_aduc'].map(exerciseId => ({ exerciseId, sets: [] })) },
+      { id: 'wl2', athleteId: EMAIL, workoutId: 'tiron', assignmentId: 'a2', date: haceDias(2), completedAt: '', entries: ['ex_dom', 'ex_curl'].map(exerciseId => ({ exerciseId, sets: [] })) },
+    ]);
+    qc.setQueryData(['workoutAssignmentsForAthlete', EMAIL], [4, 2, 1].map((d, i) => ({ id: `wa${i}`, date: haceDias(d) })));
     qc.setQueryData(['mesocycles', EMAIL], []);
     qc.setQueryData(['photoAssignmentsForAthlete', EMAIL], ASIG_FOTOS);
     qc.setQueryData(['progressPhotos', EMAIL], FOTOS);

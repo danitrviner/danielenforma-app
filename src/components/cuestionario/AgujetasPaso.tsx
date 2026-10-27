@@ -26,6 +26,9 @@ export const NOTAS_AGUJETAS: { n: number; titulo: string; detalle: string }[] = 
   { n: 5, titulo: 'Duelen incluso en reposo', detalle: 'Quieto ya las noto' },
 ];
 
+/** «Bíceps (flexores de codo)» → «Bíceps»: en la fila del móvil no cabe más. */
+const nombreCorto = (z: ZonaIem) => ZONA_POR_CLAVE[z].nombre.split(' (')[0];
+
 const zonaDe = (q: QuestionnaireQuestion): ZonaIem | null => {
   const z = q.signalKey?.slice('agujetas.'.length) ?? '';
   return esZonaIem(z) ? z : null;
@@ -64,12 +67,12 @@ export default function AgujetasPaso({ preguntas, answers, setAnswer, entrenadas
     const valor = notas[z];
     const fecha = fechaDe.get(z);
     return (
-      <div key={z} className={`flex items-center gap-3 bg-surface border rounded-control px-3 py-2 ${!valor && fecha ? 'border-accent-line' : 'border-hairline'}`}>
+      <div key={z} className={`flex items-center gap-2 bg-surface border rounded-control pl-3 pr-2 py-2 ${!valor && fecha ? 'border-accent-line' : 'border-hairline'}`}>
         <button type="button" onClick={() => setDetalle(q)} className="min-w-0 flex-1 text-left">
-          <span className="block font-sans text-label font-bold text-ink truncate">{ZONA_POR_CLAVE[z].nombre}</span>
-          <span className="block font-sans text-caption text-ink-4">{fecha ? `Entrenada el ${diaDeLaSemana(fecha)}` : 'No registrada esta semana'}</span>
+          <span className="block font-sans text-label font-bold text-ink truncate">{nombreCorto(z)}</span>
+          <span className="block font-sans text-caption text-ink-4 truncate">{fecha ? diaDeLaSemana(fecha) : 'sin registrar'}</span>
         </button>
-        <div className="flex gap-1" role="radiogroup" aria-label={`Agujetas en ${ZONA_POR_CLAVE[z].nombre}`}>
+        <div className="flex gap-1 shrink-0" role="radiogroup" aria-label={`Agujetas en ${ZONA_POR_CLAVE[z].nombre}`}>
           {NOTAS_AGUJETAS.map(({ n, titulo }) => (
             <button
               key={n}
@@ -78,7 +81,7 @@ export default function AgujetasPaso({ preguntas, answers, setAnswer, entrenadas
               aria-checked={valor === n}
               aria-label={`${n}: ${titulo}`}
               onClick={() => setAnswer(q.id, n)}
-              className={`w-8 h-8 rounded-[8px] font-mono text-caption tabular-nums transition-transform active:scale-95 ${valor === n ? 'font-bold text-on-accent' : 'bg-raised border border-hairline text-ink-3'}`}
+              className={`w-7 h-8 rounded-[8px] font-mono text-caption tabular-nums transition-transform active:scale-95 ${valor === n ? 'font-bold text-on-accent' : 'bg-raised border border-hairline text-ink-3'}`}
               style={valor === n ? { background: colorDeNota(n), color: n <= 2 ? 'var(--color-ink)' : undefined } : undefined}
             >{n}</button>
           ))}

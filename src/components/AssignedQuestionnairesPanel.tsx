@@ -520,7 +520,7 @@ export default function AssignedQuestionnairesPanel({
                       </div>
 
                       <div className="col-start-1 sm:col-start-2 flex items-center gap-2 min-w-0">
-                        <Badge tone="info" icon="schedule" className="whitespace-nowrap">{cadenciaParaTabla(a.schedule)}</Badge>
+                        <Badge tone="info" icon="schedule" className="whitespace-nowrap">{cadenciaParaTabla(fijarAlViernes(a, diaRevision).schedule)}</Badge>
                         {/* En móvil no hay columna propia para la próxima fecha: se
                             pega a la cadencia en vez de partir la fila en tres. */}
                         {proxima && (
@@ -622,19 +622,23 @@ export default function AssignedQuestionnairesPanel({
         title="Paquetes"
         subtitle="Conjuntos de cuestionarios con su cadencia, listos para aplicar de una vez"
         action={
-          <div className="flex gap-2">
-            {!hayOficial && (
-              <Button size="s" variant="primary" icon="inventory_2" onClick={crearOficial} loading={creandoOficial} loadingLabel="Creando">
-                Paquete oficial
-              </Button>
-            )}
-            <Button size="s" variant="secondary" icon="add" onClick={() => abrirConstructorDePack()}>
-              Crear paquete
-            </Button>
-          </div>
+          <Button size="s" variant="secondary" icon="add" onClick={() => abrirConstructorDePack()}>
+            Crear paquete
+          </Button>
         }
         padding="none"
       >
+        {!hayOficial && (
+          <div className="mx-5 mt-1 mb-3 flex flex-wrap items-center gap-3 rounded-control border border-accent-line bg-accent-bg/40 px-4 py-3">
+            <div className="flex-1 min-w-[12rem]">
+              <p className="font-sans font-bold text-label text-ink">Paquete oficial</p>
+              <p className="font-sans text-caption text-ink-3 text-pretty">Tu semana con agujetas, quincenal, hitos del cliente, mediciones y cierre de bloque: listo para aplicar.</p>
+            </div>
+            <Button size="s" variant="primary" icon="inventory_2" onClick={crearOficial} loading={creandoOficial} loadingLabel="Creando">
+              Crearlo
+            </Button>
+          </div>
+        )}
         {packs.length === 0 ? (
           <p className="px-5 py-4 font-sans text-body-s text-ink-2 text-pretty">
             Todavía no hay paquetes. Móntalo aquí con «Crear paquete», o deja a un atleta
@@ -902,7 +906,7 @@ export default function AssignedQuestionnairesPanel({
                       const real = fijarAlViernesAlCrear({ schedule: cedulaDeCadencia(), startDate: assignStartDate });
                       const p = proximaDe(real);
                       return <>
-                        Se le pedirá <strong className="text-ink">{cadenciaEnCristiano(real.schedule).toLowerCase()}</strong>
+                        Se le pedirá <strong className="text-ink">{cadenciaEnCristiano(fijarAlViernes(real, diaRevision).schedule).toLowerCase()}</strong>
                         {p ? <> · primera vez: <strong className="text-ink">{p}</strong></> : null}
                       </>;
                     })()}
