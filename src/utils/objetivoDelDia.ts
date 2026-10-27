@@ -3,6 +3,7 @@ import { computeActivePhase } from './fasesNutricion';
 import { dietaDeLaSemana, diaDeLaSemana, kcalDeDieta, macrosDeCupo } from './semanasNutricion';
 import { addDays } from './trainingWeek';
 import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
+import { objetivoDeDieta } from './macrosLegado';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    EL OBJETIVO DEL DÍA — una sola respuesta a «¿qué le toca comer hoy a este
@@ -115,7 +116,8 @@ export function objetivoDelDia({ diets, config, program, fecha, entrena }: Entra
 
   return {
     fecha, origen, dieta, dietaBase: base, faseId: fase?.id,
-    kcal, intercambios, gramos: intercambios ? gramosDeIntercambios(intercambios) : null,
+    // Los gramos son los del objetivo de la dieta, no una traducción del cupo (B3, 26-10-2026).
+    kcal, intercambios, gramos: dieta ? (({ p, hc, g }) => ({ p: Math.round(p), hc: Math.round(hc), g: Math.round(g) }))(objetivoDeDieta(dieta)) : null,
     avisos,
   };
 }

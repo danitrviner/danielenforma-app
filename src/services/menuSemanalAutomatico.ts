@@ -4,13 +4,13 @@ import {
   getAthleteDietConfig, getAthleteNutritionConfig, getOnboarding, getRecipeFavorites, getReglasDeReceta, getAccesoGlobalARecetas, getRecipes,
   queryRecetasForGenerator, getFoodItems, createNotificationDeduped,
 } from '../dbService';
-import { generateWeek, slotsFromOnboarding, recipeMatchesSlot, type GeneratorPrefs } from '../utils/menuEngine';
+import { generateWeek, slotsFromOnboarding, recipeMatchesSlot, filtroDuro, type GeneratorPrefs } from '../utils/menuEngine';
 import { listaDeMenuVigente } from '../utils/accesoARecetas';
 import { quiereAlgunaDieta } from '../utils/seleccionDeRecetas';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import type { DishType } from '../utils/dishTypes';
-import { semanaQueNecesitaMenu, ajustesDeLaSemana, aplicarAjustes } from '../utils/semanasNutricion';
+import { semanaQueNecesitaMenu, ajustesDeLaSemana, aplicarAjustes, gramosDeMantenimiento } from '../utils/semanasNutricion';
 import { calendarioDeMenu } from '../utils/objetivoDelDia';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 
@@ -48,7 +48,7 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
 
   const ajustes = ajustesDeLaSemana(program, semana);
   const mantenimiento = (program.semanasMantenimiento ?? []).includes(semana);
-  const dietas = dietasDelCoach.map(d => aplicarAjustes(d, ajustes, { mantenimiento }));
+  const dietas = dietasDelCoach.map(d => aplicarAjustes(d, ajustes, { mantenimiento, mantenimientoG: gramosDeMantenimiento(program) }));
 
   // Mismo reparto, variedad y preferencias que el editor (WeeklyMenuEditor).
   const slots = slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount);
@@ -73,7 +73,7 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
   const tambien = quiereAlgunaDieta(prefs.seleccion, prefs.paquetes);
   const pools: Record<number, Recipe[]> = {};
   for (const slot of Array.from(new Set<number>(slots.map(s => s.slot)))) {
-    const recetas = await queryRecetasForGenerator(slot, 300, prefs.listaMenu, tambien);
+    const recetas = await queryRecetasForGenerator(slot, 300, prefs.listaMenu, tambien, filtroDuro(prefs));
     pools[slot] = [...recetas, ...delCoach.filter(r => recipeMatchesSlot(r, slot))];
   }
   const days = generateWeek({

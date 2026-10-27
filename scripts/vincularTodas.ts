@@ -4,9 +4,16 @@
  * pueda ajustar cada alimento por separado (solo el arroz, solo el pollo…).
  *
  * Solo se vinculan las recetas en las que TODO lo que cuenta empareja con el
- * catálogo con confianza alta o media (`vinculoAutomatico`); las demás quedan
- * en una lista de dudas para revisar y siguen escalándose enteras. Las que ya
- * tienen vínculo (Rápidas, revisadas a mano) no se tocan.
+ * catálogo con confianza alta o es un sinónimo revisado (`vinculoAutomatico`);
+ * las demás quedan en una lista de dudas para revisar y siguen escalándose
+ * enteras. Las que ya tienen vínculo no se tocan… salvo con --revincular.
+ *
+ * --revincular (revisión de motores 26-10-2026): recalcula el vínculo de las
+ * recetas ya vinculadas que NO son Rápidas (`basica`, revisadas a mano). La
+ * que ahora da duda pierde el vínculo y recupera sus macros de `antes`; la que
+ * cambia de alimento o de porCien se reescribe. Deja en scripts/out/ un CSV con
+ * cada receta que cambia y otro con los pares ingrediente → alimento que
+ * cambian, con cuántas recetas tocan.
  *
  * Al vincular, la receta recalcula sus kcal, macros y peso con el catálogo
  * (`aplicarVinculo`, que guarda el «antes»): las kcal que se enseñan son las
@@ -17,7 +24,7 @@
  * índice (`node scripts/generarIndiceRecetas.mjs`) y, para que la ficha de la
  * receta lo vea, subir los documentos con --firestore (solo con OK de Dani).
  *
- *   npx tsx scripts/vincularTodas.ts [--catalogo-json catalogo.json] [--aplicar] [--firestore]
+ *   npx tsx scripts/vincularTodas.ts [--catalogo-json catalogo.json] [--revincular] [--aplicar] [--firestore]
  *
  * Sin --catalogo-json, el catálogo se lee de Firestore (GOOGLE_APPLICATION_CREDENTIALS).
  */
@@ -27,7 +34,7 @@ import { fileURLToPath } from 'url';
 import { cargarCatalogoAlimentos } from './_lib/cargarCatalogoAlimentos';
 import { abrirDb } from './_lib/firestoreDb.mjs';
 import { mapRecipe } from './lib/mapearReceta.mjs';
-import { aplicarVinculo, vinculoAutomatico, type RecetaCruda } from '../src/utils/recetaVinculada';
+import { aplicarVinculo, calcularIngredientes, candidatosDe, emparejarRevisado, mismoResultado, palabrasDe, vinculoAutomatico, type RecetaCruda } from '../src/utils/recetaVinculada';
 import type { AlimentoCatalogo } from '../src/utils/catalogoAlimentos';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -35,6 +42,7 @@ const DIR = resolve(__dirname, '../public/recetas');
 const args = process.argv.slice(2);
 const APLICAR = args.includes('--aplicar');
 const FIRESTORE = args.includes('--firestore');
+const REVINCULAR = args.includes('--revincular');
 const iJson = args.indexOf('--catalogo-json');
 
 const catalogo: AlimentoCatalogo[] = iJson >= 0
@@ -43,11 +51,76 @@ const catalogo: AlimentoCatalogo[] = iJson >= 0
 const porId = new Map(catalogo.map(a => [a.id, a]));
 const ahora = new Date().toISOString();
 
-let total = 0, yaVinculadas = 0, vinculadas = 0;
+let total = 0, yaVinculadas = 0, vinculadas = 0, revinculadas = 0, desvinculadas = 0, iguales = 0;
 const dudas = new Map<string, number>();
 const cambiadas: RecetaCruda[] = [];
-/** Las que ya traían vínculo: se suben también, para que Firestore quede igual que los JSON. */
+/** Las que ya traían vínculo y no cambian: se suben también, para que Firestore quede igual que los JSON. */
 const conVinculo: RecetaCruda[] = [];
+/** --revincular: una fila por receta que cambia. */
+const filasRecetas: string[][] = [['receta', 'nombre', 'que', 'kcal_antes', 'kcal_despues', 'ingredientes_que_cambian']];
+/** --revincular: ingrediente → alimento antes → alimento ahora, con cuántas recetas lo tienen. */
+const pares = new Map<string, number>();
+
+/** Quita el vínculo y devuelve los macros a los de «antes» (la receta queda como antes de vincularla). */
+function desvincular(receta: RecetaCruda): RecetaCruda {
+  const { vinculo, ...resto } = receta;
+  const a = vinculo?.antes;
+  if (!a) return resto as RecetaCruda;
+  return { ...resto, macros: a.macros ?? undefined, kcal: a.kcal ?? undefined, weight: a.weight ?? undefined } as RecetaCruda;
+}
+
+/** Nombre del ingrediente n de la receta. */
+const nombreIng = (receta: RecetaCruda, n: number) => receta.ingredients[n]?.name ?? `#${n}`;
+
+/* Desempate por las kcal de la receta (Dani, 26-10-2026: «¿no lo puedes saber
+   tú con las kcal?»). Si TODO menos UN ingrediente está vinculado y ese tiene
+   varios candidatos (garbanzo seco o cocido, arándano fresco o deshidratado,
+   coco natural o rallado…), se prueba cada uno y gana el que deja las kcal de
+   la receta más cerca de las que declara el recetario. Solo se acepta si el
+   error queda dentro del margen y el segundo mejor está claramente peor. */
+const MARGEN_KCAL_RESOLVER = 30;
+const MARGEN_PCT_RESOLVER = 0.07;
+/** Palabras que distinguen presentaciones del MISMO alimento. Un candidato solo
+ *  entra en el desempate si ingrediente y alimento se diferencian en estas:
+ *  «Garbanzo» puede ser garbanzo seco o cocido, nunca harina de garbanzo;
+ *  «Arándano rojo» puede ser el fresco o el deshidratado, nunca la mermelada. */
+const VARIANTES = new Set(['deshidratado', 'deshidratada', 'natural', 'rallado', 'rallada', 'lata', 'conserva', 'bote', 'escurrido', 'escurrida',
+  'congelado', 'congelada', 'fresco', 'fresca', 'seco', 'seca', 'cocido', 'cocida', 'crudo', 'cruda', 'agua', 'entero', 'entera', 'troceado', 'troceada',
+  'copo', 'grano', 'pelado', 'pelada', 'vasito', 'envasado', 'envasada', 'integral']);
+function mismoAlimento(ingrediente: string, alimento: string): boolean {
+  const a = new Set(palabrasDe(ingrediente));
+  const b = new Set(palabrasDe(alimento));
+  const distintas = [...a].filter(w => !b.has(w)).concat([...b].filter(w => !a.has(w)));
+  return distintas.every(w => VARIANTES.has(w));
+}
+let resueltasPorKcal = 0;
+const paresPorKcal = new Map<string, number>();
+function resolverPorKcal(receta: RecetaCruda): ReturnType<typeof vinculoAutomatico> {
+  const v = vinculoAutomatico(receta, catalogo);
+  if (!('dudosos' in v) || v.dudosos.length !== 1) return v;
+  const kcalDeclaradas = receta.vinculo?.antes?.kcal ?? receta.kcal;
+  if (!kcalDeclaradas || kcalDeclaradas <= 0) return v;
+  const n = receta.ingredients.findIndex(i => i.name === v.dudosos[0]);
+  if (n < 0) return v;
+  const candidatos = candidatosDe(v.dudosos[0], catalogo).filter(c => mismoAlimento(v.dudosos[0], c.alimento.nombre));
+  if (candidatos.length === 0) return v;
+  const pruebas = candidatos.map(c => {
+    const vv = vinculoAutomatico(receta, catalogo, new Map([[n, c.alimento]]));
+    if ('dudosos' in vv) return null;
+    const calc = calcularIngredientes(vv.ingredientes, porId);
+    if (!calc.ok) return null;
+    return { alimento: c.alimento, error: Math.abs(calc.kcal - kcalDeclaradas), v: vv };
+  }).filter((p): p is NonNullable<typeof p> => p !== null).sort((a, b) => a.error - b.error);
+  if (pruebas.length === 0) return v;
+  const [mejor, segundo] = pruebas;
+  const margen = Math.max(MARGEN_KCAL_RESOLVER, kcalDeclaradas * MARGEN_PCT_RESOLVER);
+  if (mejor.error > margen) return v;
+  if (segundo && segundo.alimento.id !== mejor.alimento.id && segundo.error < mejor.error * 2 && segundo.error <= margen) return v;
+  resueltasPorKcal++;
+  const clave = `${v.dudosos[0]};${mejor.alimento.id}`;
+  paresPorKcal.set(clave, (paresPorKcal.get(clave) ?? 0) + 1);
+  return mejor.v;
+}
 
 for (const archivo of readdirSync(DIR).filter(f => /^recetas_.*\.json$/.test(f)).sort()) {
   const ruta = resolve(DIR, archivo);
@@ -56,15 +129,52 @@ for (const archivo of readdirSync(DIR).filter(f => /^recetas_.*\.json$/.test(f))
   let tocado = false;
   json.recipes = json.recipes.map(receta => {
     total++;
-    if (receta.vinculo) { yaVinculadas++; conVinculo.push(receta); return receta; }
-    const v = vinculoAutomatico(receta, catalogo);
+    if (receta.vinculo && (!REVINCULAR || receta.basica === true)) { yaVinculadas++; conVinculo.push(receta); return receta; }
+    const v = resolverPorKcal(receta);
     if ('dudosos' in v) {
       for (const d of v.dudosos) dudas.set(d, (dudas.get(d) ?? 0) + 1);
-      return receta;
+      if (!receta.vinculo) return receta;
+      // Estaba vinculada con las reglas viejas y ahora no pasa: fuera el vínculo.
+      desvinculadas++;
+      tocado = true;
+      const sinVinculo = desvincular(receta);
+      for (const i of receta.vinculo.ingredientes) {
+        if (!i.alimentoId) continue;
+        const ahoraId = v.dudosos.includes(nombreIng(receta, i.n)) ? '(duda)' : emparejarRevisado(nombreIng(receta, i.n), catalogo).alimento?.id ?? '(duda)';
+        const clave = `${nombreIng(receta, i.n)};${i.alimentoId};${ahoraId}`;
+        if (i.alimentoId !== ahoraId) pares.set(clave, (pares.get(clave) ?? 0) + 1);
+      }
+      filasRecetas.push([receta.id, receta.name, 'se desvincula', String(receta.kcal ?? ''), String(sinVinculo.kcal ?? ''), v.dudosos.join(' | ')]);
+      cambiadas.push(sinVinculo);
+      return sinVinculo;
     }
-    const { receta: nueva, calculo } = aplicarVinculo(receta, (v as { ingredientes: Parameters<typeof aplicarVinculo>[1] }).ingredientes, porId, ahora);
+    const base = receta.vinculo ? desvincular(receta) : receta;
+    // El «antes» original se conserva aunque se recalcule.
+    const conAntes = receta.vinculo ? { ...base, vinculo: { ...receta.vinculo } } : base;
+    const { receta: nueva, calculo } = aplicarVinculo(conAntes, (v as { ingredientes: Parameters<typeof aplicarVinculo>[1] }).ingredientes, porId, ahora);
     if (!calculo.ok) return receta;
-    vinculadas++;
+    const vinculoPrevio = receta.vinculo;
+    if (vinculoPrevio) {
+      if (mismoResultado(receta, nueva)) { iguales++; conVinculo.push(receta); return receta; }
+      revinculadas++;
+      const cambios: string[] = [];
+      for (const i of nueva.vinculo!.ingredientes) {
+        const previo = vinculoPrevio.ingredientes.find(x => x.n === i.n);
+        const antesId = previo?.alimentoId ?? null;
+        if (antesId !== i.alimentoId) {
+          const clave = `${nombreIng(receta, i.n)};${antesId ?? '(no cuenta)'};${i.alimentoId ?? '(no cuenta)'}`;
+          pares.set(clave, (pares.get(clave) ?? 0) + 1);
+          cambios.push(`${nombreIng(receta, i.n)}: ${antesId ?? '—'} → ${i.alimentoId ?? '—'}`);
+        } else if (previo && JSON.stringify(previo.porCien ?? null) !== JSON.stringify(i.porCien ?? null)) {
+          cambios.push(`${nombreIng(receta, i.n)}: porCien`);
+        } else if (previo && (previo.min !== i.min || previo.max !== i.max || previo.gramos !== i.gramos)) {
+          cambios.push(`${nombreIng(receta, i.n)}: rango ${previo.min}-${previo.max} → ${i.min}-${i.max}`);
+        }
+      }
+      filasRecetas.push([receta.id, receta.name, 'cambia', String(receta.kcal ?? ''), String(nueva.kcal ?? ''), cambios.join(' | ')]);
+    } else {
+      vinculadas++;
+    }
     tocado = true;
     cambiadas.push(nueva);
     return nueva;
@@ -77,8 +187,24 @@ mkdirSync(resolve(__dirname, 'out'), { recursive: true });
 const informe = resolve(__dirname, 'out/vincular-dudas.csv');
 writeFileSync(informe, '﻿ingrediente;recetas\n' + [...dudas.entries()].sort((a, b) => b[1] - a[1]).map(([n, c]) => `${n};${c}`).join('\n') + '\n');
 
-console.log(`Recetas: ${total} · ya vinculadas: ${yaVinculadas} · se vinculan ahora: ${vinculadas} · quedan sin vincular: ${total - yaVinculadas - vinculadas}`);
+if (REVINCULAR) {
+  const csv = (filas: string[][]) => '\ufeff' + filas.map(f => f.map(c => c.includes(';') || c.includes('"') ? `"${c.replace(/"/g, '""')}"` : c).join(';')).join('\n') + '\n';
+  const rutaRecetas = resolve(__dirname, 'out/revincular-recetas.csv');
+  const rutaPares = resolve(__dirname, 'out/revincular-pares.csv');
+  writeFileSync(rutaRecetas, csv(filasRecetas));
+  writeFileSync(rutaPares, csv([['ingrediente', 'alimento_antes', 'alimento_ahora', 'recetas'],
+    ...[...pares.entries()].sort((a, b) => b[1] - a[1]).map(([k, c]) => [...k.split(';'), String(c)])]));
+  console.log(`Recetas: ${total} · Rápidas (no se tocan): ${yaVinculadas} · siguen igual: ${iguales} · cambian de vínculo: ${revinculadas} · se desvinculan: ${desvinculadas} · se vinculan nuevas: ${vinculadas} · sin vincular al final: ${total - yaVinculadas - iguales - revinculadas - vinculadas}`);
+  console.log(`Detalle: ${rutaRecetas} · pares que cambian: ${pares.size} → ${rutaPares}`);
+} else {
+  console.log(`Recetas: ${total} · ya vinculadas: ${yaVinculadas} · se vinculan ahora: ${vinculadas} · quedan sin vincular: ${total - yaVinculadas - vinculadas}`);
+}
 console.log(`Dudas: ${dudas.size} ingredientes distintos → ${informe}`);
+if (resueltasPorKcal > 0) {
+  const rutaKcal = resolve(__dirname, 'out/vincular-por-kcal.csv');
+  writeFileSync(rutaKcal, '\ufeffingrediente;alimento;recetas\n' + [...paresPorKcal.entries()].sort((a, b) => b[1] - a[1]).map(([k, c]) => `${k};${c}`).join('\n') + '\n');
+  console.log(`Desempatadas por las kcal de la receta: ${resueltasPorKcal} → ${rutaKcal}`);
+}
 
 if (FIRESTORE) {
   if (!APLICAR) { console.log('--firestore necesita --aplicar.'); process.exit(1); }

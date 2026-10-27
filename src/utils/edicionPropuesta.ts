@@ -119,11 +119,16 @@ export function describirEdicion(original: AiProposal, editado: AiProposalPayloa
     const a = antes as NutritionProgramProposalPayload;
     const b = editado as NutritionProgramProposalPayload;
     if (a.startDate !== b.startDate) cambios.push(`inicio ${a.startDate} → ${b.startDate}`);
-    const quitadas = a.phases.filter(f => !b.phases.some(x => x.name === f.name)).map(f => f.name);
+    // Con el mismo número de fases se emparejan por posición: renombrar una
+    // fase no es quitarla (B15, 26-10-2026). Si el número cambia, por nombre.
+    const porPosicion = a.phases.length === b.phases.length;
+    const pareja = (fa: (typeof a.phases)[number], i: number) => porPosicion ? b.phases[i] : b.phases.find(x => x.name === fa.name);
+    const quitadas = a.phases.filter((f, i) => !pareja(f, i)).map(f => f.name);
     if (quitadas.length) cambios.push(`quitó las fases ${quitadas.join(', ')}`);
-    for (const fa of a.phases) {
-      const fb = b.phases.find(x => x.name === fa.name);
+    for (const [i, fa] of a.phases.entries()) {
+      const fb = pareja(fa, i);
       if (!fb) continue;
+      if (fa.name !== fb.name) cambios.push(`fase ${fa.name} → ${fb.name}`);
       if (fa.weeks !== fb.weeks) cambios.push(`${fa.name} ${fa.weeks} → ${fb.weeks} semanas`);
       if (fa.targetKcal !== fb.targetKcal) cambios.push(`${fa.name} ${fa.targetKcal ?? 'sin kcal'} → ${fb.targetKcal ?? 'sin kcal'} kcal`);
     }
@@ -183,7 +188,9 @@ export function motivoParaNoAprobar(kind: AiProposal['kind'], payload: AiProposa
   }
   if (kind === 'diet') {
     const v = payload as Omit<Diet, 'id'>;
-    if ((v.meals ?? []).length === 0) return 'La dieta se ha quedado sin comidas.';
+    // Sin comidas se puede aprobar: desde 10-2026 el coach pauta el objetivo
+    // y el atleta elige los alimentos («Mi plan»). Solo se para si lo puesto
+    // no cuadra con el objetivo.
     // El mismo margen que usa el validador del asistente: el 10 % o 10 g por
     // macro (5 g en grasa), lo que sea mayor.
     const lineas = (v.meals ?? []).flatMap(m => m.items);

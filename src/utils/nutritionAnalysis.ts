@@ -2,8 +2,9 @@ import {
   Diet, DietCompletionLog, StepLog, BodyweightLog, OnboardingData, FoodCategory,
   MenuCompletionLog, WeeklyMenu, WeekDay, NutritionPhase,
 } from '../types';
-import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
 import { adherenciaDelDia, adherenciaPorKcal } from './diaDeDieta';
+import { objetivoDeDieta } from './macrosLegado';
+import { pesoRepresentativo } from './verificacionObjetivo';
 import { hoyIsoLocal, addDays } from './trainingWeek';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -207,10 +208,13 @@ export function computeMacroDeviation(
   if (!diet || !onboarding?.macroGrams) return [];
   const cats: ('HC' | 'PROT' | 'GRASA')[] = ['HC', 'PROT', 'GRASA'];
   const targetByCat = objetivoEnGramos(onboarding, faseActiva ?? null);
+  // El objetivo de la dieta (kcal y gramos, o el cupo viejo con mixtos repartidos).
+  const o = objetivoDeDieta(diet);
+  const enGramos = { HC: o.hc, PROT: o.p, GRASA: o.g };
   return cats.flatMap(cat => {
     const targetGrams = targetByCat[cat];
     if (typeof targetGrams !== 'number' || !Number.isFinite(targetGrams)) return [];
-    const planGrams = round1(diet.budget[cat] * GRAMS_PER_EXCHANGE[cat]);
+    const planGrams = round1(enGramos[cat]);
     const deviationPct = targetGrams > 0 ? round1(((planGrams - targetGrams) / targetGrams) * 100) : 0;
     return [{ category: cat, targetGrams, planGrams, deviationPct }];
   });
@@ -257,9 +261,14 @@ export function computeWeightTrend(
   const window = fechasDeLaVentana(thresholds);
   const inWindow = logs.filter(l => window.has(l.date)).sort((a, b) => a.date.localeCompare(b.date));
   if (inWindow.length === 0) return { latestWeight: null, deltaFromFirst: null, towardsTarget: null };
-  const first = inWindow[0].weight;
+  // El cambio se mide entre el peso representativo de la primera mitad de la
+  // ventana y el de la segunda (mediana con 3+ pesajes), no entre dos pesajes
+  // sueltos: un 83 raro entre 81 ya no vale +1,2 kg (M4, 26-10-2026).
+  const mitad = Math.max(1, Math.floor(inWindow.length / 2));
+  const first = round1(pesoRepresentativo(inWindow.slice(0, mitad).map(l => l.weight)));
   const latest = inWindow[inWindow.length - 1].weight;
-  const delta = round1(latest - first);
+  const ultimos = round1(pesoRepresentativo(inWindow.slice(mitad).map(l => l.weight)));
+  const delta = inWindow.length < 2 ? 0 : round1(ultimos - first);
   const towardsTarget = targetWeight == null ? null : (
     targetWeight === first ? Math.abs(latest - targetWeight) <= Math.abs(delta) :
     targetWeight > first ? latest >= first : latest <= first
@@ -286,7 +295,7 @@ export function detectDeficitsExcesses(
   // Solo se avisa si de verdad hay días CON cupo: sin objetivo la media es 0 y
   // saldría una alerta de adherencia baja para alguien que aún no tiene dieta.
   if (adherence.daysWithBudget > 0 && adherence.avgPct < thresholds.adherenceOkPct) {
-    flags.push(`Adherencia baja: se ha comido el ${adherence.avgPct}% de su cupo de intercambios (últimos ${adherence.windowDays} días).`);
+    flags.push(`Adherencia baja: ha comido el ${adherence.avgPct} % de su objetivo de kcal (últimos ${adherence.windowDays} días).`);
   }
   macroDeviation.forEach(m => {
     if (Math.abs(m.deviationPct) > thresholds.macroDeviationOkPct) {

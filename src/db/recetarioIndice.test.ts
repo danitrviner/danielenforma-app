@@ -121,6 +121,12 @@ describe('queryRecetasForGenerator', () => {
     expect(recetas).toHaveLength(2);
   });
 
+  it('aplica el filtro duro ANTES de recortar: el tope se llena con recetas válidas (26-10-2026)', async () => {
+    const recetas = await queryRecetasForGenerator(1, 2, undefined, undefined, r => r.id !== 'a');
+    expect(recetas).toHaveLength(2);
+    expect(recetas.map(r => r.id)).not.toContain('a');
+  });
+
   it('devuelve lista vacía si ningún plato encaja, sin reventar el generador', async () => {
     expect(await queryRecetasForGenerator(99, 10)).toEqual([]);
   });

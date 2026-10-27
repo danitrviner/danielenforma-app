@@ -87,6 +87,25 @@ describe('buildCierreMesociclo', () => {
     expect(c.volumen.totalRealizadas).toBe(4);
   });
 
+  it('en curso, lo programado es lo que ya ha pasado del bloque (26-10-2026)', () => {
+    const logs = [log('2026-06-02', 'press', [{ weight: 80, repsDone: 8 }, { weight: 80, repsDone: 8 }])];
+    // Hoy es el día 10 del bloque: semana 2 de 4.
+    const c = buildCierreMesociclo({
+      meso: meso(), mesocycles: [meso()], logs, assignments: [], exercises: EJERCICIOS, hoy: '2026-06-10',
+    });
+    const pecho = c.volumen.filas.find(f => f.group === 'pecho')!;
+    expect(pecho.programadas).toBe(20); // 10 series/sem × 2 semanas vividas, no × 4
+    expect(pecho.realizadas).toBe(2);
+  });
+
+  it('un registro con mesocycleId de otro bloque no cuenta aunque caiga en las fechas', () => {
+    const logs = [{ ...log('2026-06-02', 'press', [{ weight: 80, repsDone: 8 }]), mesocycleId: 'otro' }];
+    const c = buildCierreMesociclo({
+      meso: meso(), mesocycles: [meso()], logs, assignments: [], exercises: EJERCICIOS, hoy: '2026-08-01',
+    });
+    expect(c.volumen.filas.find(f => f.group === 'pecho')!.realizadas).toBe(0);
+  });
+
   it('deja fuera los grupos sin volumen programado ni series registradas', () => {
     const c = buildCierreMesociclo({
       meso: meso(), mesocycles: [meso()], logs: [], assignments: [], exercises: EJERCICIOS, hoy: '2026-07-15',

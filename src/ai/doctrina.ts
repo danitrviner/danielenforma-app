@@ -293,8 +293,8 @@ desvío real respecto a lo calculado.
 4. Ajuste según objetivo.
 
 ### 5. Superávit (ganar músculo)
-Lo que manda es el RITMO, no las calorías: 150-250 g de peso a la semana, en torno al 0,2% del peso
-corporal. Ni un gramo más. El músculo se gana despacio, y todo lo que suba por encima de ese ritmo
+Lo que manda es el RITMO, no las calorías: 150-300 g de peso a la semana, entre el 0,2 y el 0,35 % del
+peso corporal (es lo que mide la app en Cuerpo). Ni un gramo más. El músculo se gana despacio, y todo lo que suba por encima de ese ritmo
 es grasa.
 Las calorías son solo el punto de partida para llegar ahí: +200-500 sobre el gasto, más agresivo
 (400-600) en principiantes, ectomorfos y gente con mucho NEAT; más conservador (200-300) en

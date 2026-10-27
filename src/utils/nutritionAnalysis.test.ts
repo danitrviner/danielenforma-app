@@ -101,6 +101,16 @@ describe('computeMacroDeviation con altas incompletas', () => {
     expect(r.map(m => m.category)).toEqual(['HC', 'GRASA']);
   });
 
+  it('usa el objetivo de la dieta en gramos, con los mixtos de las dietas viejas repartidos (26-10-2026)', () => {
+    const alta = { macroGrams: { hc: 200, prot: 175, grasa: 44 } } as unknown as OnboardingData;
+    // Vieja con mixtos: HC 6 + MIX_HC 4/2 + MIX_GRASA 2/2 = 200 g; antes se leía budget × 25 = 150 g.
+    const vieja: Diet = { ...dieta, budget: { HC: 6, PROT: 4, GRASA: 3, MIX_HC: 4, MIX_GRASA: 2 } };
+    expect(computeMacroDeviation(vieja, alta).map(m => [m.category, m.planGrams, m.deviationPct])).toEqual([['HC', 200, 0], ['PROT', 175, 0], ['GRASA', 44, 0]]);
+    // Nueva con objetivo en gramos: manda el objetivo, no el cupo.
+    const nueva: Diet = { ...dieta, objetivo: { kcal: 1896, p: 175, hc: 200, g: 44 } };
+    expect(computeMacroDeviation(nueva, alta)[0]).toEqual({ category: 'HC', targetGrams: 200, planGrams: 200, deviationPct: 0 });
+  });
+
   it('con el alta completa calcula la desviación de las tres', () => {
     const alta = { macroGrams: { hc: 250, prot: 175, grasa: 44 } } as unknown as OnboardingData;
     const r = computeMacroDeviation(dieta, alta);

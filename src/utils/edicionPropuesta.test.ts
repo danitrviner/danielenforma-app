@@ -107,6 +107,14 @@ describe('describirEdicion — periodización nutricional', () => {
     refeedDays: conRecarga ? [{ date: '2026-10-01', note: 'sube 500 kcal de HC' }] : [],
   });
 
+  it('renombrar una fase no es quitarla: con el mismo número de fases se emparejan por posición (26-10-2026)', () => {
+    const p = propuesta('nutritionProgram', programa(8, false));
+    const renombrada = { ...programa(8, false), phases: [{ name: 'Definición', weeks: 8, targetKcal: 2000 }, { name: 'Mantenimiento', weeks: 2, targetKcal: 2400 }] };
+    const texto = describirEdicion(p, renombrada);
+    expect(texto).not.toContain('quitó');
+    expect(texto).toContain('fase Déficit → Definición');
+  });
+
   it('recoge las semanas movidas y la recarga quitada', () => {
     const p = propuesta('nutritionProgram', programa(8, true));
     const texto = describirEdicion(p, programa(10, false));
@@ -164,6 +172,10 @@ describe('motivoParaNoAprobar — lo que Dani puede romper editando', () => {
 
   it('deja aprobar la dieta mientras el presupuesto cuadra con lo puesto', () => {
     expect(motivoParaNoAprobar('diet', dieta(8))).toBeNull();
+  });
+
+  it('una dieta sin comidas se puede aprobar: el coach pauta el objetivo, no los alimentos (26-10-2026)', () => {
+    expect(motivoParaNoAprobar('diet', { ...dieta(8), meals: [] })).toBeNull();
   });
 
   it('no deja aprobar una dieta cuyo presupuesto ya no cuadra con las comidas', () => {

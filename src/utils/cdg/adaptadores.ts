@@ -11,6 +11,7 @@ import { parsearReps, rirARpe, type CdgSerie, type CdgTecnica, type MotorCdg } f
 import type { CdgSerieRealizada, SemanaRealizada, CargaPorSesion } from './seguimiento.js'
 import { seriesPrincipales } from '../seriesPrincipales.js'
 import { seriesConTecnica } from '../tecnicaDeSerie.js'
+import { pesoDeSerie, type ContextoPesoCorporal } from '../pesoCorporal.js'
 
 export type NombreCdgDe = (exerciseId: string) => string | undefined
 
@@ -64,18 +65,20 @@ export function seriesProgramadas (
 export function seriesRealizadas (
   entry: WorkoutLog['entries'][number],
   nombreCdgDe: NombreCdgDe,
-  { contarSinPeso = false, tecnica = null as CdgTecnica | null } = {}
+  { contarSinPeso = false, tecnica = null as CdgTecnica | null, pesoCorporal = null as ContextoPesoCorporal | null } = {}
 ): CdgSerieRealizada[] {
   const nombre = nombreCdgDe(entry.exerciseId)
   if (!nombre) return []
   const out: CdgSerieRealizada[] = []
   for (const s of seriesPrincipales(entry.sets)) {
     if (!s.repsDone) continue
-    if (!contarSinPeso && !s.weight) continue
+    // Dominadas, fondos…: lo apuntado más el peso del atleta, si se conoce (CR5).
+    const kg = pesoDeSerie(s.weight, entry.exerciseId, pesoCorporal)
+    if (!contarSinPeso && !kg) continue
     out.push({
       exerciseName: nombre,
       repetitions: { min: s.repsDone, max: s.repsDone, raw: String(s.repsDone) },
-      weight: s.weight ?? 0,
+      weight: kg,
       rpe: rirARpe(s.alFallo ? 0 : s.rir),
       intensification: ''
     })

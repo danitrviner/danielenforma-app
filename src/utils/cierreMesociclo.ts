@@ -4,7 +4,7 @@ import {
 } from '../types';
 import { buildTrainingReport, TrainingReport } from './trainingReport';
 import { buildMovementPatternReport, PatternPerf } from './movementPatterns';
-import { addDays, hoyIsoLocal} from './trainingWeek';
+import { addDays, hoyIsoLocal, diasEntreFechas } from './trainingWeek';
 import { adherenciaDeMesociclo } from './adherence';
 import { seriesRealizadasPorGrupo } from './programacion';
 
@@ -122,7 +122,12 @@ export function buildCierreMesociclo(params: {
   // ── Adherencia ──────────────────────────────────────────────────────────
   const asigMeso = assignments.filter(a => a.mesocycleId === meso.id);
   const completadas = asigMeso.filter(a => a.status === 'completed').length;
-  const logsMeso = logs.filter(l => l.date >= inicio && l.date <= fin);
+  // Por `mesocycleId` cuando el registro lo trae; por fechas para los antiguos.
+  const logsMeso = logs.filter(l => l.mesocycleId ? l.mesocycleId === meso.id : (l.date >= inicio && l.date <= fin));
+  // En curso, lo programado es lo que ya ha pasado del bloque: en la semana 2
+  // de 8 antes salía «hizo el 25 % del volumen» (M5, 26-10-2026).
+  const semanasVividas = enCurso ? Math.max(1, Math.ceil((diasEntreFechas(inicio, hoy) + 1) / 7)) : meso.weeks;
+  const semanasProgramadas = Math.min(meso.weeks, semanasVividas);
   const registradas = new Set(logsMeso.map(l => l.date)).size;
 
   // ── Volumen programado vs realizado ─────────────────────────────────────
@@ -130,7 +135,7 @@ export function buildCierreMesociclo(params: {
   const filas: FilaVolumenGrupo[] = MUSCLE_ORDER
     .map(group => {
       const semanales = meso.groups[group]?.series ?? 0;
-      const programadas = semanales * meso.weeks;
+      const programadas = semanales * semanasProgramadas;
       const realizadas = realizadasPorGrupo.get(group) ?? 0;
       return {
         group,

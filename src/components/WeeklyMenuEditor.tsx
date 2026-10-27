@@ -8,12 +8,12 @@ import {
   Macros, MenuMeal,
 } from '../types';
 import { queryRecetasForGenerator, getRecipes, getRecipeById, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites, getNutritionProgram } from '../dbService';
-import { semanaDelPrograma, totalSemanas, ajustesDeLaSemana, aplicarAjustes, kcalDeDieta } from '../utils/semanasNutricion';
+import { semanaDelPrograma, totalSemanas, ajustesDeLaSemana, aplicarAjustes, kcalDeDieta, gramosDeMantenimiento } from '../utils/semanasNutricion';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 import {
   slotsFromOnboarding, generateWeek, generateDay, isDayWithinTolerance,
   dayGlobalDeviation, rankCandidates, slotTargets, recipeMatchesSlot,
-  buildBatchPlan, reajustarDia, MealSlotSpec, GeneratorPrefs, MenuCandidate,
+  buildBatchPlan, reajustarDia, MealSlotSpec, GeneratorPrefs, MenuCandidate, filtroDuro,
 } from '../utils/menuEngine';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
@@ -159,7 +159,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     const ajustes = ajustesDeLaSemana(programa, semanaElegida);
     const mantenimiento = (programa.semanasMantenimiento ?? []).includes(semanaElegida);
     if (ajustes.length === 0 && !mantenimiento) return diets;
-    return diets.map(d => aplicarAjustes(d, ajustes, { mantenimiento }));
+    return diets.map(d => aplicarAjustes(d, ajustes, { mantenimiento, mantenimientoG: gramosDeMantenimiento(programa) }));
   }, [diets, programa, semanaElegida]);
 
   const schedule = dietConfig?.weeklySchedule ?? {};
@@ -247,7 +247,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   async function ensurePool(slot: number): Promise<Recipe[]> {
     const cached = pools[slot];
     if (cached) return cached;
-    const [recetas, builder] = await Promise.all([queryRecetasForGenerator(slot, 300, listaMenu, quiereAlgunaDieta(seleccion, paquetes)), ensureBuilderRecipes()]);
+    const [recetas, builder] = await Promise.all([queryRecetasForGenerator(slot, 300, listaMenu, quiereAlgunaDieta(seleccion, paquetes), filtroDuro(prefs)), ensureBuilderRecipes()]);
     const combined = [...recetas, ...builder.filter(r => recipeMatchesSlot(r, slot))];
     setPools(prev => ({ ...prev, [slot]: combined }));
     return combined;

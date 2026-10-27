@@ -248,7 +248,8 @@ describe('reps_ejercicio', () => {
 describe('adherencia a la dieta', () => {
   const diet: Diet = {
     id: 'd1', athleteId: 'a@x.com', name: 'Dieta',
-    budget: { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 },
+    // 10 intercambios de HC = 1.000 kcal de objetivo; cada línea marcada son 100 kcal (10 %).
+    budget: { HC: 10, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 },
     meals: [{ id: 'm1', name: 'Comida', items: Array.from({ length: 10 }, (_, i) => ({ category: 'HC' as const, foodLabel: `alimento ${i}`, quantity: 1 })) }],
   };
 
@@ -267,10 +268,11 @@ describe('adherencia a la dieta', () => {
     expect(adh.metric.target - adh.metric.baseline!).toBeLessThanOrEqual(10);
   });
 
-  it('nunca pide el 100% de adherencia', () => {
-    const opts = generateChallengeOptions(input({ coachDiets: [diet], completionLogs: completions(100) }));
-    const adh = opts.find(o => o.kind === 'adherencia_dieta')!;
-    expect(adh.metric.target).toBe(97);
+  it('la adherencia es en kcal: el techo es el 100 % y a quien ya se lo come todo no se le propone (26-10-2026)', () => {
+    const casi = generateChallengeOptions(input({ coachDiets: [diet], completionLogs: completions(90) }));
+    expect(casi.find(o => o.kind === 'adherencia_dieta')!.metric.target).toBe(95);
+    const todo = generateChallengeOptions(input({ coachDiets: [diet], completionLogs: completions(100) }));
+    expect(todo.find(o => o.kind === 'adherencia_dieta')).toBeUndefined();
   });
 });
 

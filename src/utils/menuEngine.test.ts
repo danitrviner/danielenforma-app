@@ -5,7 +5,7 @@ import { aplicarAjustes, ajustesDeLaSemana } from './semanasNutricion';
 import {
   bestScaleFit, rankCandidates, generateDay, generateWeek,
   isDayWithinTolerance, findSwapAlternatives, GeneratorPrefs,
-  buildBatchPlan, isMenuStale, fillComplements, reajustarDia, MealSlotSpec,
+  buildBatchPlan, isMenuStale, fillComplements, reajustarDia, MealSlotSpec, escalasPermitidas, filtroDuro,
 } from './menuEngine';
 import { buildShoppingList } from './menuShoppingList';
 import { computeMenuAdherenceRate } from './nutritionAnalysis';
@@ -44,6 +44,83 @@ describe('bestScaleFit', () => {
     const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
     const fit = bestScaleFit(r, mx(target));
     expect(fit).toMatchObject({ scale: 1, score: 0 });
+  });
+});
+
+describe('topes de escala y palancas (revisión 26-10-2026, M2/CR7)', () => {
+  it('un plato pequeño no se sirve a media ración y uno grande no pasa de ×3; el mediano admite todo', () => {
+    expect(escalasPermitidas(200)[0]).toBe(0.75);
+    expect(escalasPermitidas(500).at(-1)).toBe(3);
+    expect(escalasPermitidas(400)).toHaveLength(15);
+  });
+
+  it('entre un plato que cabe a ≤×3 y otro que necesita ×4, gana el primero aunque el segundo clave las kcal', () => {
+    const grande  = recipe({ id: 'grande',  exchanges: { HC: 3, PROT: 2, GRASA: 0 } });     // 500 kcal → ×4 = 2.000 clavado
+    const mediano = recipe({ id: 'mediano', exchanges: { HC: 4, PROT: 2.75, GRASA: 0 } });  // 675 kcal → ×3 = 2.025
+    const target: BudgetVec = { HC: 12, PROT: 8, GRASA: 0 };                                 // 2.000 kcal
+    const ranked = rankCandidates([grande, mediano], mx(target), basePrefs, new Set());
+    expect(ranked[0].recipe.id).toBe('mediano');
+    // Solo con el grande, se sirve igual (antes que dejar la comida vacía), a ×4.
+    expect(bestScaleFit(grande, mx(target))?.scale).toBe(4);
+  });
+
+  it('las palancas se mueven como mucho un 30 % de la ración y el aceite no sube más de 10 g', () => {
+    const ARROZ = { kcal: 354, p: 7, hc: 78, g: 0.9 };
+    const POLLO = { kcal: 110, p: 23, hc: 0, g: 1.5 };
+    const ACEITE = { kcal: 900, p: 0, hc: 0, g: 100 };
+    const r = recipe({
+      id: 'arroz-pollo', kcal: 596, macros: { prot: 41.5, carb: 78, fat: 13.2 },
+      ingredientsText: [{ name: 'Arroz', quantity: 100 }, { name: 'Pollo', quantity: 150 }, { name: 'Aceite', quantity: 10 }] as Recipe['ingredientsText'],
+      vinculo: { ingredientes: [
+        { n: 0, alimentoId: 'arroz', gramos: 100, min: 50, max: 200, palanca: 'hc', porCien: ARROZ },
+        { n: 1, alimentoId: 'pollo', gramos: 150, min: 75, max: 300, palanca: 'proteina', porCien: POLLO },
+        { n: 2, alimentoId: 'aceite', gramos: 10, min: 5, max: 20, palanca: 'grasa', porCien: ACEITE },
+      ], calculadoEn: '2026-10-26' },
+    });
+    // Mitad de hidratos con la misma proteína: antes el arroz bajaba a 50 g (−50 %).
+    const menosHc = bestScaleFit(r, { kcal: 440, p: 41.5, hc: 39, g: 13.2 });
+    expect(menosHc).not.toBeNull();
+    if (menosHc?.ajuste) {
+      const arroz = menosHc.ajuste.gramos.find(g => g.n === 0)!.gramos;
+      expect(arroz).toBeGreaterThanOrEqual(0.7 * 100 * menosHc.scale - 0.5);
+    }
+    // Mucha más grasa: el aceite no pasa de su ración + 10 g.
+    const masGrasa = bestScaleFit(r, { kcal: 821, p: 41.5, hc: 78, g: 38.2 });
+    if (masGrasa?.ajuste) {
+      const aceite = masGrasa.ajuste.gramos.find(g => g.n === 2)!.gramos;
+      expect(aceite).toBeLessThanOrEqual(10 * masGrasa.scale + 10 + 0.5);
+    }
+    // Los macros son los de los gramos enteros que se enseñan (B1).
+    if (menosHc?.ajuste) {
+      const porN = new Map(menosHc.ajuste.gramos.map(g => [g.n, g.gramos]));
+      const hc = (porN.get(0)! * ARROZ.hc) / 100;
+      expect(menosHc.macros.hc).toBeCloseTo(hc, 0);
+    }
+  });
+
+  it('el filtro duro deja fuera alergias, condiciones y tipo de dieta antes de recortar la franja', () => {
+    const f = filtroDuro({ allergies: ['cacahuete'], dietType: 'vegano' });
+    expect(f(recipe({ id: 'v', ingredientsText: [{ name: 'Tofu', quantity: 100 }] }))).toBe(true);
+    expect(f(recipe({ id: 'n', ingredientsText: [{ name: 'Cacahuetes', quantity: 30 }] }))).toBe(false);
+    expect(f(recipe({ id: 'p', ingredientsText: [{ name: 'Pechuga de pollo', quantity: 150 }] }))).toBe(false);
+  });
+
+  it('los acompañamientos del día no pasan de 400 kcal entre todas las comidas', () => {
+    // Platos de 200 kcal para una dieta de 3.000: cada comida se queda muy corta
+    // y el comodín querría meter 300 kcal en cada una (5 × 300 = 1.500).
+    const frutas = [
+      { id: 'f1', mode: 'OMNIVORO' as const, category: 'HC' as const, label: '1 intercambio = 1 manzana' },
+      { id: 'f2', mode: 'OMNIVORO' as const, category: 'PROT' as const, label: '1 intercambio = 1 yogur proteico' },
+    ];
+    const pequeno = [recipe({ id: 'peq', exchanges: { HC: 1, PROT: 1, GRASA: 0 } })];
+    const pools = { 1: pequeno, 2: pequeno, 3: pequeno, 4: pequeno, 5: pequeno };
+    const slots = [1, 2, 3, 4, 5].map(s => ({ slot: s, name: `Comida ${s}`, pct: 20 }));
+    const day = generateDay({
+      day: 'mon', diet: diet({ budget: { HC: 15, PROT: 12, GRASA: 6, MIX_HC: 0, MIX_GRASA: 0 } }),
+      slots, pools, foods: frutas, prefs: basePrefs, usedIds: new Set(),
+    });
+    const kcalAcomp = day.meals.flatMap(m => m.complements).reduce((s, c) => s + macrosDeIntercambios({ [c.category]: c.quantity }).kcal, 0);
+    expect(kcalAcomp).toBeLessThanOrEqual(400);
   });
 });
 

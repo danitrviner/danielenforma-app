@@ -1,6 +1,7 @@
-import { BodyweightLog, BodyMeasurement, WorkoutLog } from '../types.js';
+import { BodyweightLog, BodyMeasurement, Exercise, WorkoutLog } from '../types.js';
 import { rmDeSerie } from './oneRepMax.js';
 import { addDays } from './trainingWeek.js';
+import { contextoPesoCorporal, pesoDeSerie, type ContextoPesoCorporal } from './pesoCorporal.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Verificación del objetivo corporal
@@ -43,7 +44,9 @@ export const OBJETIVOS_ORDEN: ObjetivoCorporalTipo[] = [
 
 /** Rango de ritmo en % del peso por semana, con signo. `min` < `max` siempre. */
 export const RANGO_PCT_SEMANA: Partial<Record<ObjetivoCorporalTipo, { min: number; max: number }>> = {
-  volumen:           { min: 0.25, max: 0.4 },
+  // 0,2-0,35 %/sem (Iraki 2019, Helms 2014; doctrina §5). Hasta el 26-10-2026
+  // era 0,25-0,4 y daba por «lento» lo que la doctrina llamaba ideal.
+  volumen:           { min: 0.2, max: 0.35 },
   deficit:           { min: -0.6, max: -0.4 },
   // El borde −0,6 cuenta como «en rango» en los dos: justo en la frontera
   // no hay nada que corregir, sea cual sea la etiqueta.
@@ -255,6 +258,7 @@ export function senalFuerza(
   logs: readonly Pick<WorkoutLog, 'date' | 'entries'>[],
   desde: string,
   hoy: string,
+  ctx?: ContextoPesoCorporal | null,
 ): { senal: Senal; cambioPct: number | null; ejercicios: number } {
   const dias = diasEntre(desde, hoy);
   if (dias < 14) return { senal: 'sin-datos', cambioPct: null, ejercicios: 0 };
@@ -266,7 +270,7 @@ export function senalFuerza(
     const mitad = log.date < corte ? 0 : 1;
     for (const e of log.entries ?? []) {
       for (const s of e.sets ?? []) {
-        const rm = rmDeSerie(s);
+        const rm = rmDeSerie({ ...s, weight: pesoDeSerie(s.weight, e.exerciseId, ctx) });
         if (!rm) continue;
         const par = mejor.get(e.exerciseId) ?? [0, 0];
         par[mitad] = Math.max(par[mitad], rm);
@@ -297,6 +301,8 @@ export function verificarObjetivo(entrada: {
   hoy: string;
   medidas?: readonly Pick<BodyMeasurement, 'date' | 'metricKey' | 'value'>[];
   entrenos?: readonly Pick<WorkoutLog, 'date' | 'entries'>[];
+  /** Para sumar el peso corporal a dominadas, fondos… en la señal de fuerza (CR5). */
+  ejercicios?: readonly Pick<Exercise, 'id' | 'name' | 'pesoCorporal'>[];
 }): Verificacion {
   const { objetivo, pesos, hoy } = entrada;
   const { tipo, desde } = objetivo;
@@ -402,7 +408,7 @@ export function verificarObjetivo(entrada: {
   if (tipo === 'mantenimiento') return { ...base, estado: estadoPeso };
 
   const cintura = senalCintura(entrada.medidas ?? [], desde);
-  const fuerza = senalFuerza(entrada.entrenos ?? [], desde, hoy);
+  const fuerza = senalFuerza(entrada.entrenos ?? [], desde, hoy, entrada.ejercicios ? contextoPesoCorporal(entrada.ejercicios, pesoActual) : null);
   let estado: EstadoVerificacion;
   if (estadoPeso !== 'en-rango' && estadoPeso !== 'sin-datos') estado = estadoPeso;
   else if (estadoPeso === 'sin-datos') estado = 'sin-datos';

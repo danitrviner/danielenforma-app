@@ -337,16 +337,17 @@ describe('pesoVsSemanaPasada', () => {
   const peso = (date: string, weight: number): BodyweightLog =>
     ({ id: date, athleteId: 'a@b.com', date, weight, createdAt: `${date}T08:00:00.000Z` });
 
-  it('compara MEDIAS, no el último registro de cada semana', () => {
-    // Un día alto y otro bajo en la misma semana: la media los promedia. Con el
-    // último registro, el resultado dependería de qué día se pesó.
+  it('compara el peso representativo de cada semana (mediana con 3+, media con menos), no el último registro', () => {
+    // Un día alto y otro bajo en la misma semana: con tres pesajes manda la
+    // mediana (26-10-2026); con dos, la media. Con el último registro, el
+    // resultado dependería de qué día se pesó.
     const r = pesoVsSemanaPasada([
       peso('2026-09-07', 81.0), peso('2026-09-10', 80.0), peso('2026-09-13', 80.6),
       peso('2026-09-14', 80.2), peso('2026-09-15', 79.6),
     ], DESDE, HASTA);
-    expect(r.semanaAnterior).toBe(80.5);
+    expect(r.semanaAnterior).toBe(80.6);
     expect(r.estaSemana).toBe(79.9);
-    expect(r.deltaKg).toBe(-0.6);
+    expect(r.deltaKg).toBe(-0.7);
     expect(r.registrosEstaSemana).toBe(2);
   });
 

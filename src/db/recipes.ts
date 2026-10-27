@@ -389,6 +389,9 @@ export async function queryRecetasForGenerator(
   /** Recetas que quiere alguna dieta del atleta (`quiereAlgunaDieta`): se suman
    *  a la muestra, hasta `maxResults` más, para que sus filtros tengan dónde elegir. */
   tambien?: (r: Recipe) => boolean,
+  /** Filtros duros del atleta (`filtroDuro(prefs)` en menuEngine): se aplican
+   *  ANTES del recorte, para que a un vegano no le queden 20 recetas de 300. */
+  filtro?: (r: Recipe) => boolean,
 ): Promise<Recipe[]> {
   let franja = recetasGeneratorCache.get(intakeType);
   if (!franja) {
@@ -401,11 +404,11 @@ export async function queryRecetasForGenerator(
   }
   // La lista del coach se aplica ANTES de recortar: si no, las 300 elegidas al
   // azar podían no incluir ninguna de las suyas y la lista no tenía efecto.
-  const delaLista = filtrarPorLista(franja, lista);
+  const delaLista = filtrarPorLista(filtro ? franja.filter(filtro) : franja, lista);
   const muestra = maxResults >= delaLista.length ? delaLista : delaLista.slice(0, maxResults);
   if (!tambien) return muestra;
   const ya = new Set(muestra.map(r => r.id));
-  const extra = franja.filter(r => !ya.has(r.id) && tambien(r));
+  const extra = franja.filter(r => !ya.has(r.id) && tambien(r) && (!filtro || filtro(r)));
   return [...muestra, ...(maxResults >= extra.length ? extra : extra.slice(0, maxResults))];
 }
 

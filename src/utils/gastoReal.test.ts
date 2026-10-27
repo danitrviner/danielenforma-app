@@ -86,6 +86,6 @@ describe('evolucionDelGasto y kcalParaObjetivo', () => {
   it('kcal para el centro del rango', () => {
     expect(kcalParaObjetivo(2800, 'deficit', 80)).toBe(2350);  // −0,5 % de 80 = −0,4 kg/sem ≈ −440
     expect(kcalParaObjetivo(2800, 'mantenimiento', 80)).toBe(2800);
-    expect(kcalParaObjetivo(2800, 'volumen', 80)).toBe(3100);  // +0,325 % = +0,26 kg ≈ +286
+    expect(kcalParaObjetivo(2800, 'volumen', 80)).toBe(3050);  // centro 0,275 % = +0,22 kg ≈ +242 (rango 0,2-0,35 desde 26-10-2026)
   });
 });

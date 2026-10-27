@@ -56,6 +56,7 @@ import { buscarEnIndiceOff, extrasDeRacion, type EntradaIndiceOff, type OffProdu
 import { buscarEnCatalogo, comoProducto, nombreDeAlimento, type AlimentoCatalogo } from '../utils/catalogoAlimentos';
 import { NotaDeFuente } from './FuentesCientificasSheet';
 
+import { filtroDuro } from '../utils/menuEngine';
 import {
   COACH_EMAIL, makeId, dietSnapshot, estructuraDeDia, sembrarDiaDelPlan, plantillaDeComidas,
   WD_FULL,
@@ -1451,7 +1452,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     // puñado): el recetario entero quedaba fuera del "Cambiar comida". Ahora se
     // trae el bloque del recetario correspondiente al momento del día.
     const recetario = slot != null
-      ? await queryRecetasForGenerator(slot, 300, listaMenu, quiereAlgunaDieta(seleccion, paquetes)).catch(() => [] as Recipe[])
+      ? await queryRecetasForGenerator(slot, 300, listaMenu, quiereAlgunaDieta(seleccion, paquetes), filtroDuro({ ...swapPrefs, allergies: swapPrefs.allergies ?? [], seleccion })).catch(() => [] as Recipe[])
       : [];
     setSwapPool([...recetario, ...recipes]);
     setSwapLoading(false);

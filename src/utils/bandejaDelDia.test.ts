@@ -95,6 +95,13 @@ describe('lo que hay que contestar hoy', () => {
     expect(r.texto).toBe('2 revisiones pendientes');
   });
 
+  it('un check-in aprobado sin texto ya no está pendiente (26-10-2026)', () => {
+    const s = construirBandejaDelDia(entrada({
+      checkins: [checkin('2026-09-14', { approved: true, coachFeedback: '' })],
+    }));
+    expect(s.find(x => x.categoria === 'revision')).toBeUndefined();
+  });
+
   it('un check-in contestado pero sin aprobar sigue contando', () => {
     const s = construirBandejaDelDia(entrada({
       checkins: [checkin('2026-09-14', { approved: false, coachFeedback: 'te contesto' })],

@@ -140,7 +140,10 @@ export function useProposalActions(
       } else if (p.kind === 'diet') {
         const dietPayload = conObjetivo(p.payload as Omit<Diet, 'id'>);
         if (p.baseEntityId) {
-          await updateDiet(p.baseEntityId, dietPayload);
+          // Sobre una dieta existente, una propuesta sin comidas solo cambia
+          // el objetivo: no borra las que el coach tiene colocadas.
+          const { meals, ...soloObjetivo } = dietPayload;
+          await updateDiet(p.baseEntityId, meals.length > 0 ? dietPayload : soloObjetivo);
           await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.baseEntityId });
         } else {
           const created = await createDiet(dietPayload);

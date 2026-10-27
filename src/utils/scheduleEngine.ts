@@ -70,7 +70,9 @@ export function isDueToday(a: Scheduled, ctx?: ScheduleContext): boolean {
   if (type === 'once') return a.startDate === todayStr();
   if (type === 'weekdays') return (a.schedule.weekdays ?? []).includes(today.getDay());
   if (type === 'interval') {
-    const diff = Math.floor((today.getTime() - start.getTime()) / 86400000);
+    // round, no floor: entre marzo y octubre un día son 24 h ± 1 h y floor
+    // daba n − 1, con lo que el pulso caía al día siguiente (revisión 26-10-2026).
+    const diff = Math.round((today.getTime() - start.getTime()) / 86400000);
     return diff % (a.schedule.intervalDays ?? 7) === 0;
   }
   if (type === 'monthly') return today.getDate() === (a.schedule.dayOfMonth ?? 1);

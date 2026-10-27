@@ -1,8 +1,9 @@
 import { Diet, NutritionProgram, NutritionPhase, OnboardingData, BodyweightLog, DietCompletionLog, StepLog } from '../types.js';
 import { computePhaseStartDate } from './fasesNutricion.js';
 import { estimateMaintenanceKcal, KCAL_PER_KG } from './energyCalc.js';
-import { exchangeToKcal } from './nutritionConstants.js';
-import { adherenciaDelDia } from './diaDeDieta.js';
+import { objetivoDeDieta } from './macrosLegado.js';
+import { adherenciaPorKcal } from './diaDeDieta.js';
+import { calcularGastoReal } from './gastoReal.js';
 import { addDays } from './trainingWeek.js';
 
 // Deterministic engine that turns a NutritionProgram (phases with weeks +
@@ -49,7 +50,10 @@ export function resolvePhaseTargetKcal(
   diet: Diet | undefined,
 ): { kcal: number | null; source: 'manual' | 'diet' | 'none' } {
   if (phase.targetKcal != null) return { kcal: phase.targetKcal, source: 'manual' };
-  if (diet) return { kcal: exchangeToKcal(diet.budget), source: 'diet' };
+  // El objetivo de la dieta en kcal (o su cupo viejo con los mixtos repartidos):
+  // lo mismo que ve el atleta en Nutrición. Con `exchangeToKcal(budget)` una
+  // dieta vieja con mixtos salía 600 kcal por debajo (revisión 26-10-2026).
+  if (diet) return { kcal: Math.round(objetivoDeDieta(diet).kcal), source: 'diet' };
   return { kcal: null, source: 'none' };
 }
 
@@ -135,13 +139,15 @@ function averageKnown(series: (number | null)[], uptoIdx: number): number | null
   return known.reduce((s, v) => s + v, 0) / known.length;
 }
 
+/** Adherencia semanal en % de kcal comidas sobre el objetivo (26-10-2026;
+ *  antes líneas marcadas). Los días sin objetivo no entran. */
 export function weeklyDietAdherencePct(
   logs: DietCompletionLog[], diets: Diet[], programStart: string, weekCount: number,
 ): (number | null)[] {
   const entries = logs
     .map(l => {
-      const value = adherenciaDelDia(l, diets);
-      return value === null ? null : { date: l.date, value };
+      const value = adherenciaPorKcal(l, diets)?.pct;
+      return value === undefined ? null : { date: l.date, value };
     })
     .filter((x): x is { date: string; value: number } => x != null);
   return bucketAverage(entries, programStart, weekCount);
@@ -158,7 +164,7 @@ export function recentDietAdherencePct(
   const windowStart = addDays(today, -windowDays);
   const values = logs
     .filter(l => l.date >= windowStart && l.date <= today)
-    .map(l => adherenciaDelDia(l, diets))
+    .map(l => adherenciaPorKcal(l, diets)?.pct)
     .filter((v): v is number => v != null);
   if (values.length === 0) return undefined;
   return values.reduce((s, v) => s + v, 0) / values.length;
@@ -313,7 +319,11 @@ export interface PeriodizationPerformance {
   explainedByAdherenceKg: number | null;  // expectedAdherence - expected100 — the slice of the gap explained by logged (non-)compliance
   explainedByMetabolicKg: number | null;  // real - expectedAdherence — the residual, attributed to estimation/metabolic error
   estimatedMaintenanceKcal: number | null; // Mifflin-St Jeor estimate at the athlete's current real weight
-  realMaintenanceKcal: number | null;      // backed out from actual intake/steps/weight change over the recent window
+  /** Gasto real (utils/gastoReal.ts: kcal registradas y tendencia de peso de las
+   *  últimas semanas). Null sin datos suficientes o con sospecha de
+   *  infra-registro. Hasta el 26-10-2026 era `kcal objetivo × adherencia por
+   *  líneas`, que con la adherencia al 100 % no medía nada (M3). */
+  realMaintenanceKcal: number | null;
   maintenanceGapKcal: number | null;       // realMaintenanceKcal - estimatedMaintenanceKcal
 }
 
@@ -325,9 +335,11 @@ export function computePeriodizationPerformance(params: {
   stepGoal: number;
   kcalPerStep: number;
   windowWeeks?: number;
+  /** Lo que hace falta para el gasto real; sin esto, `realMaintenanceKcal` queda a null. */
+  gastoReal?: { pesos: readonly Pick<BodyweightLog, 'date' | 'weight'>[]; registros: readonly DietCompletionLog[]; diets: Diet[]; hoy: string };
 }): PeriodizationPerformance {
-  const { projection, onboarding, stepGoal, kcalPerStep } = params;
-  const { points, currentWeek, totalWeeks, startWeightKg, dietAdherenceWeekly, stepAdherenceWeekly } = projection;
+  const { projection, onboarding } = params;
+  const { points, currentWeek, totalWeeks, startWeightKg } = projection;
   const empty: PeriodizationPerformance = {
     currentWeek, totalWeeks, startWeightKg: null,
     expected100ToDate: null, expectedAdherenceToDate: null, realToDate: null,
@@ -353,10 +365,12 @@ export function computePeriodizationPerformance(params: {
   const explainedByMetabolicKg = (realToDate != null && expectedAdherenceToDate != null)
     ? round2(realToDate - expectedAdherenceToDate) : null;
 
-  const stepsKcalPautado = Math.round(stepGoal * kcalPerStep);
   const windowWeeks = params.windowWeeks ?? REAL_MAINTENANCE_WINDOW_WEEKS;
-  const realMaintenanceKcal = computeRealMaintenanceKcal(points, dietAdherenceWeekly, stepAdherenceWeekly, stepsKcalPautado, currentWeek, windowWeeks);
   const estimatedMaintenanceKcal = estimateMaintenanceKcal(onboarding ?? {}, realToDate ?? startWeightKg);
+  const gasto = params.gastoReal
+    ? calcularGastoReal({ ...params.gastoReal, hasta: params.gastoReal.hoy, semanas: windowWeeks, gastoFormula: estimatedMaintenanceKcal })
+    : null;
+  const realMaintenanceKcal = gasto && gasto.kcal != null && !gasto.sospechaInfraRegistro ? gasto.kcal : null;
   const maintenanceGapKcal = (realMaintenanceKcal != null && estimatedMaintenanceKcal != null)
     ? realMaintenanceKcal - estimatedMaintenanceKcal : null;
 
@@ -368,37 +382,3 @@ export function computePeriodizationPerformance(params: {
   };
 }
 
-// Backs out the athlete's real maintenance from an energy-balance identity over
-// a recent window: weightDeltaKg × 7700 = totalIntake − totalExpenditure(days).
-// Solving for the (unknown) maintenance term inside totalExpenditure:
-//   maintenance = avgIntake − avgActualStepsKcal − (weightDeltaKg × 7700) / days
-// Approximates actual intake as the phase's target kcal scaled by logged diet
-// adherence (%), since the app tracks "items marked done" rather than kcal eaten.
-function computeRealMaintenanceKcal(
-  points: WeeklyProjectionPoint[],
-  dietAdherenceWeekly: (number | null)[],
-  stepAdherenceWeekly: (number | null)[],
-  stepsKcalPautado: number,
-  currentWeek: number,
-  windowWeeks: number,
-): number | null {
-  const from = Math.max(0, currentWeek - windowWeeks);
-  const rows: { targetKcal: number; dietPct: number; stepPct: number; realWeight: number }[] = [];
-  for (let w = from; w <= currentWeek; w++) {
-    const p = points[w];
-    const dietPct = dietAdherenceWeekly[w];
-    const stepPct = stepAdherenceWeekly[w];
-    if (!p || p.targetKcal == null || p.real == null || dietPct == null || stepPct == null) continue;
-    rows.push({ targetKcal: p.targetKcal, dietPct, stepPct, realWeight: p.real });
-  }
-  if (rows.length < 2) return null;
-
-  const first = rows[0];
-  const last = rows[rows.length - 1];
-  const weightDeltaKg = last.realWeight - first.realWeight;
-  const avgIntakeKcal = rows.reduce((s, r) => s + r.targetKcal * (r.dietPct / 100), 0) / rows.length;
-  const avgStepsKcalActual = rows.reduce((s, r) => s + stepsKcalPautado * (r.stepPct / 100), 0) / rows.length;
-  const days = (rows.length - 1) * 7;
-  if (days <= 0) return null;
-  return Math.round(avgIntakeKcal - avgStepsKcalActual - (weightDeltaKg * KCAL_PER_KG) / days);
-}

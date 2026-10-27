@@ -93,7 +93,8 @@ function ultimoPulso(a: QuestionnaireAssignment, today: string): Date | null {
   if (s.type === 'interval') {
     const intervalDays = s.intervalDays ?? 7;
     const start = startOfDay(a.startDate);
-    const diff = Math.floor((now.getTime() - start.getTime()) / 86400000);
+    // round, no floor: con el cambio de hora un día no son 24 h justas.
+    const diff = Math.round((now.getTime() - start.getTime()) / 86400000);
     const sinceLastPulse = ((diff % intervalDays) + intervalDays) % intervalDays;
     const pulse = new Date(now);
     pulse.setDate(pulse.getDate() - sinceLastPulse);

@@ -362,6 +362,11 @@ export interface Exercise {
   // el filtro de la IA) sigue usando únicamente `muscleGroup`.
   secondaryMuscleGroups?: MuscleGroup[];
   type: 'fuerza' | 'cardio' | 'estiramiento' | 'pliometría';
+  /** El atleta mueve su propio peso (dominadas, fondos, flexiones…). Sus
+   *  series se registran a 0 kg o con el lastre: para el 1RM, el tonelaje y
+   *  el CDG se les suma el peso corporal (utils/pesoCorporal.ts, CR5
+   *  26-10-2026). Sin el campo, se deduce del nombre. */
+  pesoCorporal?: boolean;
   enduranceProfile?: 'ascendente' | 'campana' | 'descendente'; // curva de esfuerzo a lo largo de la serie (cardio)
   // Dónde carga más el ejercicio de fuerza dentro de su rango de movimiento —
   // no es lo mismo que enduranceProfile (esa es la curva de esfuerzo dentro
@@ -1443,8 +1448,12 @@ export interface NutritionProgram {
    *  esa si `solo`. Se aplican sobre la dieta que toque cada día, sea de la
    *  fase que sea. Ver utils/semanasNutricion.ts. */
   cambiosSemana?: CambioNutricionSemana[];
-  /** Semanas del programa de mantenimiento (diet break): +1 HC en cada comida. */
+  /** Semanas del programa de mantenimiento (diet break): el objetivo del día
+   *  sube `mantenimientoG` g de hidratos (100 g = 400 kcal si no se dice). Hasta
+   *  el 26-10-2026 era +1 intercambio de HC por comida, que con una dieta sin
+   *  comidas no subía nada y con cinco sumaba 500 kcal. */
   semanasMantenimiento?: number[];
+  mantenimientoG?: number;
   comidasLibres?: ComidaLibre[];
   suplementos?: Suplemento[];
   /** Hidratos distintos según si ese día entrena o descansa (días altos/bajos). */

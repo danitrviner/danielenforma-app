@@ -113,13 +113,16 @@ describe('revisarCalidadDelPlan · nutrición', () => {
   const dieta = (id: string, comidas: number): Diet =>
     ({ id, athleteId: 'ana@x.com', name: `Dieta ${id}`, budget: {}, meals: Array(comidas).fill({}) } as unknown as Diet);
 
-  it('una dieta activa sin comidas bloquea', () => {
+  it('una dieta activa sin comidas avisa pero no bloquea: el atleta elige los alimentos (26-10-2026)', () => {
     const d = revisarCalidadDelPlan(entrada({
       diets: [dieta('d1', 0)],
       dietConfig: { athleteId: 'ana@x.com', activeDietIds: ['d1'] } as AthleteDietConfig,
     }));
-    const fallo = d.find(x => x.id === 'dieta_activa_sin_comidas')!;
-    expect(fallo.gravedad).toBe('bloquea');
+    const aviso = d.find(x => x.id === 'dieta_activa_sin_comidas')!;
+    expect(aviso.gravedad).toBe('revisa');
+    expect(aviso.consecuencia).toContain('kcal');
+    expect(aviso.consecuencia).not.toContain('intercambios');
+    expect(defectosQueBloquean(d)).toHaveLength(0);
   });
 
   it('una dieta activa que ya no existe bloquea', () => {

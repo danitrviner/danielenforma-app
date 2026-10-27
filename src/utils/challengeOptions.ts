@@ -378,7 +378,9 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
     if (input.coachDiets.length > 0) {
       const from = addDays(weekStart, -28);
       const { avg, days } = dailyDietPcts(input.completionLogs, input.coachDiets, from, histTo);
-      if (days >= 7) {
+      // Desde 26-10-2026 la adherencia es kcal comidas / objetivo: por encima
+      // del 100 % no hay reto que pedir (ya se lo come todo o más).
+      if (days >= 7 && avg < 100) {
         const tuning = difficultyFor('adherencia_dieta', memory);
         // Antes esto era `max(media, 80)`: al que venía del 55% le plantaba un
         // 80% de golpe (+25 puntos, imposible) y al que venía del 96% le
@@ -386,7 +388,7 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
         // sobre lo que ya hace, y el techo es 97: exigir el 100% de adherencia
         // una semana entera solo enseña a mentir en los checks.
         const inc = clamp(5 * tuning.factor, 2, 10);
-        const target = clamp(Math.round(avg + inc), 60, 97);
+        const target = clamp(Math.round(avg + inc), 60, 100);
         options.push({
           kind: 'adherencia_dieta',
           score: 55 + (avg < 80 ? 15 : 0),

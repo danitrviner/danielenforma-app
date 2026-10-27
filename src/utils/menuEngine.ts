@@ -12,6 +12,7 @@ import { slotPercents } from './slotWeights';
 import { ingredientMatch, violatesDietType } from './foodPrefs';
 import { violatesHealthConditions } from './dietaryRestrictions';
 import { ajustarReceta, sePuedeAjustar } from './ajusteDeReceta';
+import type { IngredienteVinculado } from '../types';
 import { simpleComplementsFor, encajaEnCategoria } from './menuComplements';
 import { dishType, DishType } from './dishTypes';
 import { fotoDeReceta } from './fotoDeReceta';
@@ -21,7 +22,7 @@ import {
   macrosDeLaComida, macrosDelPlato, macrosDeRaciones, macrosDeRacionesExtra, macrosDeAcompanamientos,
   objetivoDeLaComida, objetivoDelDiaDeMenu, macrosDelDiaDeMenu,
 } from './menuMacros';
-import { ajustesDeLaSemana, aplicarAjustes, semanaDelPrograma } from './semanasNutricion';
+import { ajustesDeLaSemana, aplicarAjustes, semanaDelPrograma, gramosDeMantenimiento } from './semanasNutricion';
 import { hoyIsoLocal } from './trainingWeek';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -61,6 +62,33 @@ import { hoyIsoLocal } from './trainingWeek';
 export const MENU_SCALES = [
   0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4,
 ] as const;
+/* Topes de escala por tamaño del plato (revisión 26-10-2026, criterio CR7): en
+   el banco salían 375 comidas a media ración (193 por debajo de 200 kcal:
+   «media tostada», «medio muffin») y 313 a ×3,5-×4 (platos de 1.100-1.900
+   kcal). Un plato pequeño no se sirve a menos de ¾; uno grande no pasa de ×3:
+   mejor otra receta o un acompañamiento que multiplicar el mismo plato. */
+const KCAL_PLATO_PEQUENO = 250;
+const ESCALA_MIN_PLATO_PEQUENO = 0.75;
+const KCAL_PLATO_GRANDE = 450;
+const ESCALA_MAX_PLATO_GRANDE = 3;
+/** Escalas a las que se prefiere servir una receta de `baseKcal` por ración. */
+export function escalasPermitidas(baseKcal: number): readonly number[] {
+  return MENU_SCALES.filter(s =>
+    (baseKcal >= KCAL_PLATO_PEQUENO || s >= ESCALA_MIN_PLATO_PEQUENO)
+    && (baseKcal <= KCAL_PLATO_GRANDE || s <= ESCALA_MAX_PLATO_GRANDE));
+}
+/** Si con las escalas preferidas no hay encaje, se admite cualquier escala
+ *  (Dani, 2026-09-05: antes que dejar la comida vacía, se multiplica) pero con
+ *  este castigo en el encaje, para que gane cualquier plato que sí quepa. */
+const CASTIGO_ESCALA_EXTREMA = 150;
+/* Palancas (ajuste por alimento, N-06): cada alimento se mueve como mucho un
+   30 % sobre su ración ya escalada, y el aceite no sube más de 10 g. Con el
+   rango entero (½-2×) salían 405 comidas con el arroz recortado a la mitad y
+   191 con 30 g o más de aceite. */
+const PALANCA_PCT = 0.3;
+const ACEITE_MAX_EXTRA_G = 10;
+/** Aceites y grasas puras: casi toda su energía es grasa. */
+const esGrasaPura = (i: { porCien?: { g: number; kcal: number } }) => !!i.porCien && i.porCien.g >= 90;
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 const KCAL_G = { p: 4, hc: 4, g: 9 } as const;
@@ -98,6 +126,9 @@ const MAX_ACOMPANAMIENTOS_POR_COMIDA = 2;
 /** Y cuántas kcal pueden sumar entre todos: el comodín ayuda a cuadrar, no es
  *  media comida colgando del plato. */
 const MAX_KCAL_ACOMPANAMIENTOS = 300;
+/** Tope de acompañamientos en el DÍA: sin él, cinco comidas al tope sumaban
+ *  924 kcal de acompañamientos en un día (revisión 26-10-2026, A7). */
+const MAX_KCAL_ACOMPANAMIENTOS_DIA = 400;
 /** Lo lejos que puede quedarse una receta del objetivo de su franja (a su
  *  ración máxima) y aun así valer: justo lo que el comodín puede cerrar. */
 const MARGEN_COMODIN_KCAL = MAX_KCAL_ACOMPANAMIENTOS;
@@ -379,26 +410,63 @@ export function bestScaleFit(
 ): { scale: number; macros: Macros; score: number; ajuste?: AjusteDeReceta } | null {
   if (target.kcal <= 0) return null;
   const base = macrosBaseDeReceta(recipe, mode);
-  const vinculados = recipe.vinculo?.ingredientes;
-  if (sePuedeAjustar(vinculados) && base) {
-    const ajustada = mejorEscalaAjustada(recipe, vinculados, target, base);
-    if (ajustada) return ajustada;
-    // Ni moviendo sus alimentos encaja: se escala entera, como cualquier otra.
-  }
   if (!base) return null;
+  const preferidas = escalasPermitidas(base.kcal);
+  const conEscalas = (escalas: readonly number[]) => {
+    const vinculados = recipe.vinculo?.ingredientes;
+    if (sePuedeAjustar(vinculados)) {
+      const ajustada = mejorEscalaAjustada(recipe, vinculados, target, base, escalas);
+      if (ajustada) return ajustada;
+      // Ni moviendo sus alimentos encaja: se escala entera, como cualquier otra.
+    }
+    return mejorEscalaEntera(base, target, escalas);
+  };
+  const mejor = conEscalas(preferidas);
+  if (mejor || preferidas.length === MENU_SCALES.length) return mejor;
+  const extrema = conEscalas(MENU_SCALES);
+  return extrema ? { ...extrema, score: extrema.score + CASTIGO_ESCALA_EXTREMA } : null;
+}
+
+function mejorEscalaEntera(base: Macros, target: Macros, escalas: readonly number[]): { scale: number; macros: Macros; score: number } | null {
   const ideal = target.kcal / base.kcal;
-  if (ideal < MENU_SCALES[0]) return null;
-  const maxima = MENU_SCALES[MENU_SCALES.length - 1];
+  if (ideal < escalas[0]) return null;
+  const maxima = escalas[escalas.length - 1];
   if (ideal > maxima && base.kcal * maxima < target.kcal - MARGEN_COMODIN_KCAL) return null;
 
   const pesos = pesosPorMacro(target);
   let mejor: { scale: number; macros: Macros; score: number } | null = null;
-  for (const scale of MENU_SCALES) {
+  for (const scale of escalas) {
     const macros = redondearMacros(escalarMacros(base, scale));
     const score = errorPonderado(target, macros, pesos);
     if (!mejor || score < mejor.score) mejor = { scale, macros, score };
   }
   return mejor;
+}
+
+/** Un ingrediente vinculado a la escala `scale`, con su palanca acotada a
+ *  ±30 % de esa ración (y el aceite, a +10 g) sin salirse del rango del vínculo. */
+function palancaAcotada(i: IngredienteVinculado, scale: number): IngredienteVinculado {
+  const gramos = i.gramos * scale;
+  if (i.fijo || !i.palanca) return { ...i, gramos, min: gramos, max: gramos };
+  let min = Math.max(i.min * scale, gramos * (1 - PALANCA_PCT));
+  let max = Math.min(i.max * scale, gramos * (1 + PALANCA_PCT));
+  if (esGrasaPura(i)) max = Math.min(max, gramos + ACEITE_MAX_EXTRA_G);
+  min = Math.min(min, gramos);
+  max = Math.max(max, gramos);
+  return { ...i, gramos, min, max };
+}
+
+/** Macros de una receta vinculada con los gramos finales de cada ingrediente. */
+function macrosDeGramosVinculados(ings: IngredienteVinculado[], gramos: { n: number; gramos: number }[]): Macros {
+  const porN = new Map(gramos.map(g => [g.n, g.gramos]));
+  const t = { p: 0, hc: 0, g: 0 };
+  for (const i of ings) {
+    if (!i.porCien || !i.alimentoId) continue;
+    const f = (porN.get(i.n) ?? i.gramos) / 100;
+    t.p += i.porCien.p * f; t.hc += i.porCien.hc * f; t.g += i.porCien.g * f;
+  }
+  const r1 = (n: number) => Math.round(n * 10) / 10;
+  return { kcal: kcalDeGramos(t), p: r1(t.p), hc: r1(t.hc), g: r1(t.g) };
 }
 
 /* Escala + ajuste por alimento (Dani, 26-10-2026: «que solo se escale el
@@ -409,23 +477,27 @@ export function bestScaleFit(
    ya los finales (con la escala aplicada). */
 function mejorEscalaAjustada(
   recipe: Recipe, vinculados: NonNullable<Recipe['vinculo']>['ingredientes'], target: Macros, base: Macros,
+  escalas: readonly number[] = escalasPermitidas(base.kcal),
 ): { scale: number; macros: Macros; score: number; ajuste: AjusteDeReceta } | null {
   const ideal = target.kcal / base.kcal;
   const nombres = (recipe.ingredientsText ?? []).map(i => i.name);
   const pesos = pesosPorMacro(target);
   let mejor: { scale: number; macros: Macros; score: number; ajuste: AjusteDeReceta; orden: number } | null = null;
-  for (const scale of MENU_SCALES) {
+  for (const scale of escalas) {
     if (Math.abs(scale - ideal) > 0.5) continue;
-    const escalados = vinculados.map(i => ({ ...i, gramos: i.gramos * scale, min: i.min * scale, max: i.max * scale }));
+    const escalados = vinculados.map(i => palancaAcotada(i, scale));
     const r = ajustarReceta(escalados, { p: target.p, hc: target.hc, g: target.g }, nombres);
     if (!r.encaja) continue;
-    const macros: Macros = { kcal: r.total.kcal, p: r.total.p, hc: r.total.hc, g: r.total.g };
+    // Los gramos que se enseñan son enteros: los macros se calculan de ESOS
+    // gramos, no de los decimales del ajuste (B1: 4-5 kcal de diferencia).
+    const gramos = r.gramos.map(g => ({ n: g.n, gramos: Math.round(g.gramos) }));
+    const macros = macrosDeGramosVinculados(escalados, gramos);
     const score = errorPonderado(target, macros, pesos);
     // A igualdad, la que menos alimentos toca y la escala más cercana a la ideal.
     const orden = score + r.cambios.length * 5 + Math.abs(scale - ideal) * 10;
     if (!mejor || orden < mejor.orden) {
       const cambios = r.cambios.map(c => ({ ...c, antes: Math.round(c.antes), despues: Math.round(c.despues) }));
-      mejor = { scale, macros, score, ajuste: { gramos: r.gramos.map(g => ({ n: g.n, gramos: Math.round(g.gramos) })), cambios }, orden };
+      mejor = { scale, macros, score, ajuste: { gramos, cambios }, orden };
     }
   }
   return mejor ? { scale: mejor.scale, macros: mejor.macros, score: mejor.score, ajuste: mejor.ajuste } : null;
@@ -448,6 +520,29 @@ export interface RankOptions {
   // Dish types already placed (per day and/or week) with how many times — used to
   // penalize serving the same *kind* of meal repeatedly (the "always a batido" fix).
   usedDishTypes?: ReadonlyMap<DishType, number>;
+}
+
+/**
+ * Los filtros duros que no dependen del día ni de la lista del coach, para
+ * aplicarlos ANTES de recortar la franja a 300 recetas (A7, 26-10-2026): con
+ * vegano quedaban 20-40 recetas de las 300 y un 32 % de los días salían fuera
+ * de tolerancia. El tiempo de cocina entra solo si no manda la selección por
+ * dieta (`prefs.seleccion`), que puede traer el suyo.
+ */
+export interface PrefsDeFiltroDuro {
+  allergies: string[];
+  conditions?: readonly number[];
+  dietType?: DietType;
+  cookingMaxTime?: number;
+  seleccion?: SeleccionDeRecetas;
+}
+export function filtroDuro(prefs: PrefsDeFiltroDuro): (r: Recipe) => boolean {
+  const conTiempoPropio = !!prefs.seleccion;
+  return r =>
+    !prefs.allergies.some(f => ingredientMatch(r, f)) &&
+    !violatesHealthConditions(r, prefs.conditions) &&
+    !violatesDietType(r, prefs.dietType) &&
+    !superaElTiempo(r, conTiempoPropio ? undefined : prefs.cookingMaxTime);
 }
 
 // Filtros duros (nunca salen): alergias, condiciones de salud, tipo de dieta,
@@ -631,13 +726,14 @@ function subirRaciones(
 
 /** El comodín, acotado: como mucho dos piezas y 300 kcal entre todas. Lo que
  *  no quepa NO se tapa: ese plato no era el adecuado para esa comida. */
-function acotarAcompanamientos(propuestos: MenuComplement[]): MenuComplement[] {
+function acotarAcompanamientos(propuestos: MenuComplement[], topeKcal = MAX_KCAL_ACOMPANAMIENTOS): MenuComplement[] {
   const out: MenuComplement[] = [];
   let kcal = 0;
+  const tope = Math.min(MAX_KCAL_ACOMPANAMIENTOS, topeKcal);
   for (const c of propuestos) {
     if (out.length >= MAX_ACOMPANAMIENTOS_POR_COMIDA) break;
     const porRacion = macrosDeRaciones(c.category, 1).kcal;
-    const cabe = Math.floor(Math.min(c.quantity, (MAX_KCAL_ACOMPANAMIENTOS - kcal) / porRacion) / PASO_RACION + 1e-9) * PASO_RACION;
+    const cabe = Math.floor(Math.min(c.quantity, (tope - kcal) / porRacion) / PASO_RACION + 1e-9) * PASO_RACION;
     if (cabe < PASO_RACION) break;
     out.push(cabe === c.quantity ? c : { ...c, quantity: round2(cabe) });
     kcal += porRacion * cabe;
@@ -706,6 +802,7 @@ function finalizeDay(
     repartirGramos(restanteDelDia[m], pesos).forEach((v, i) => { reparto[i][m] = v; });
   }
 
+  let kcalAcompDia = 0;
   meals.forEach((meal, i) => {
     // Lo que esta comida debería sumar: su plato más lo que el día le asigna.
     // Se guarda porque es el tope de los extras (`topeDeExtra`).
@@ -716,7 +813,9 @@ function finalizeDay(
     const { raciones, restante } = subirRaciones(receta, conKcal(reparto[i]), foods, mode);
     if (raciones.length > 0) meal.racionesExtra = raciones;
     if (!sinExtrasPorLaSemana(balanceSemanaKcal)) {
-      meal.complements.push(...acotarAcompanamientos(fillComplements(restante, foods, mode, conditions)));
+      const nuevos = acotarAcompanamientos(fillComplements(restante, foods, mode, conditions), MAX_KCAL_ACOMPANAMIENTOS_DIA - kcalAcompDia);
+      meal.complements.push(...nuevos);
+      kcalAcompDia += nuevos.reduce((s, c) => s + macrosDeRaciones(c.category, c.quantity).kcal, 0);
     }
   });
   for (const meal of meals) meal.kcal = kcalDeLaComida(meal);
@@ -974,9 +1073,14 @@ export function findSwapAlternatives(
   const acompanamientos = macrosDeAcompanamientos(meal.complements);
   const objetivoDeLaComidaAhora = macrosDeLaComida(meal);
   const otras = sumarMacros(acompanamientos, ...day.meals.filter(m => m.id !== mealId).map(macrosDeLaComida));
-  // Una comida sin plato apunta a lo que le falta al día, no a cero.
+  // Una comida sin plato apunta a lo que le falta al día, no a cero. Con
+  // plato, se busca contra lo que la comida DEBERÍA sumar (su objetivo menos
+  // los acompañamientos), no contra el plato actual: si no, se replicaba el
+  // desencaje del plato que se sustituye (B2, 26-10-2026).
   const platoVacio = !meal.recipeId || plato.kcal < 25;
-  const objetivoPlato = platoVacio ? conKcal(sinNegativos(restarMacros(objetivoDia, otras))) : plato;
+  const objetivoPlato = platoVacio ? conKcal(sinNegativos(restarMacros(objetivoDia, otras)))
+    : meal.objetivoMacros ? conKcal(sinNegativos(restarMacros(meal.objetivoMacros, acompanamientos)))
+    : plato;
   const usedIds = new Set(day.meals.filter(m => m.id !== mealId).map(m => m.recipeId));
 
   // Cómo está el día AHORA: un cambio no puede dejarlo peor de lo que ya estaba.
@@ -1091,7 +1195,7 @@ export function isMenuStale(
     if (!currentDietId) continue;
     const diet = dietsById.get(currentDietId);
     if (!diet) return true;
-    const ahora = objetivoDeDieta(ajustes.length > 0 || mantenimiento ? aplicarAjustes(diet, ajustes, { mantenimiento }) : diet);
+    const ahora = objetivoDeDieta(ajustes.length > 0 || mantenimiento ? aplicarAjustes(diet, ajustes, { mantenimiento, mantenimientoG: gramosDeMantenimiento(program) }) : diet);
     const entonces = objetivoDelDiaDeMenu(day);
     if (MACROS.some(m => Math.abs(ahora[m] - entonces[m]) > 1)) return true;
   }
