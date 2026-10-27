@@ -29,8 +29,14 @@ export default function RespuestaDelCoach({ responses }: { responses: Questionna
       </div>
       {rc.texto && <p className="font-sans text-body-s text-ink-2 whitespace-pre-wrap text-pretty">{rc.texto}</p>}
       {rc.mediaUrl && (rc.mediaKind === 'audio'
-        ? <audio controls src={rc.mediaUrl} className="w-full" />
-        : <video controls src={rc.mediaUrl} className="w-full rounded-control max-h-72" />)}
+        ? (
+          // eslint-disable-next-line jsx-a11y/media-has-caption -- audio o vídeo grabado por el coach: no hay subtítulos que enlazar
+          <audio controls src={rc.mediaUrl} className="w-full" />
+          )
+        : (
+          // eslint-disable-next-line jsx-a11y/media-has-caption -- audio o vídeo grabado por el coach: no hay subtítulos que enlazar
+          <video controls src={rc.mediaUrl} className="w-full rounded-control max-h-72" />
+        ))}
     </section>
   );
 }

@@ -70,8 +70,14 @@ export default function RespuestaCoachBox({ respuesta, onGuardada }: Props) {
         </div>
         {existente.texto && <p className="font-sans text-label text-ink whitespace-pre-wrap">{existente.texto}</p>}
         {existente.mediaUrl && (existente.mediaKind === 'audio'
-          ? <audio controls src={existente.mediaUrl} className="w-full" />
-          : <video controls src={existente.mediaUrl} className="w-full rounded-control max-h-64" />)}
+          ? (
+            // eslint-disable-next-line jsx-a11y/media-has-caption -- audio o vídeo grabado por el coach: no hay subtítulos que enlazar
+            <audio controls src={existente.mediaUrl} className="w-full" />
+            )
+          : (
+            // eslint-disable-next-line jsx-a11y/media-has-caption -- audio o vídeo grabado por el coach: no hay subtítulos que enlazar
+            <video controls src={existente.mediaUrl} className="w-full rounded-control max-h-64" />
+        ))}
       </div>
     );
   }
