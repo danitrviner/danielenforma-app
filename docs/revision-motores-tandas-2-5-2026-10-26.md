@@ -51,8 +51,13 @@ Rama `tanda1-emparejado`, cinco commits (79ba626 → e58f8dc). Nada pusheado, na
 | CR7 platos del menú | escalas ×0,5–×4 | topes por tamaño | **Hecho en la tanda 4** como preferencia con reserva |
 | CR8 cardio | 3 sesiones Z2 fijas | 2 con ≥ 5 días de fuerza | Hacerlo |
 
+## Cerrado el 27-10
+
+- PR #16 mergeado a main; producción desplegada en Vercel (573e9ac).
+- Firestore: catálogo con los 5 alimentos nuevos (473), 8.929 recetas actualizadas (929 sin vínculo, con el vínculo borrado del documento) y 79 Rápidas reescritas, todo con el catálogo vivo.
+- Las Rápidas y el recetario llevan los valores por 100 g del catálogo de Firestore (la copia local traía 66 derivados de intercambios: patata, garbanzo, lentejas, coco…).
+
 ## Pendiente fuera del código
 
-- Firestore: `vincularTodas.ts --aplicar --firestore` e `importarBasicas.mjs --aplicar` (con tu OK), y desplegar la web.
-- Catálogo: calabaza, arroz basmati/integral en seco, garbanzo y lenteja en seco, pan rallado, arándano deshidratado, coco rallado, harina de garbanzo (devuelven ~450 recetas).
+- Catálogo: quedan 929 recetas sin vincular (`scripts/out/vincular-dudas.csv`); las dudas grandes ya no son de catálogo sino de ingredientes ambiguos.
 - QA en la app: semana de mantenimiento, aprobar dieta sin comidas, menú vegano, cierre de mesociclo en curso.
