@@ -1,3 +1,5 @@
+import { useCuentaAlMontar } from '../../hooks/useCuentaAlMontar';
+import { useRecienHecho } from '../../hooks/useRecienHecho';
 import React from 'react';
 import { Icon } from '../ui';
 import { addDays } from '../../utils/trainingWeek';
@@ -137,8 +139,15 @@ export function TarjetaDelDia(p: {
   nota?: React.ReactNode;
 }) {
   const quedan = p.objetivo - p.comido;
+  // P2: las tres cifras cuentan hasta su valor al montar y el arco crece con
+  // ellas (va de la cifra animada, no de la real). Al cerrar el día, la tarjeta
+  // late una vez (solo en la transición, no al volver con el día ya cerrado).
+  const comidoAnim = useCuentaAlMontar(p.comido);
+  const objetivoAnim = useCuentaAlMontar(p.objetivo);
+  const quedanAnim = objetivoAnim - comidoAnim;
+  const recienCerrado = useRecienHecho(!!p.cerrado);
   return (
-    <div className="overflow-hidden rounded-canvas bg-surface">
+    <div className={`overflow-hidden rounded-canvas bg-surface ${recienCerrado ? 'animate-latido' : ''}`}>
       <div className="flex items-center justify-between border-b border-hairline px-3 py-2">
         <span aria-hidden className="h-10 w-10" />
         <div className="flex items-center gap-1">
@@ -157,12 +166,12 @@ export function TarjetaDelDia(p: {
 
       <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2">
         <div className="w-20 text-center">
-          <span className="block font-mono text-title-m font-bold text-ink">{p.fmt(p.comido)}</span>
+          <span className="block font-mono text-title-m font-bold text-ink">{p.fmt(comidoAnim)}</span>
           <span className="font-sans text-body-s text-ink-2">{p.etiquetaComido}</span>
         </div>
-        <Arco quedan={quedan} pct={p.objetivo > 0 ? p.comido / p.objetivo : 0} texto={p.fmt(Math.abs(quedan))} />
+        <Arco quedan={quedan} pct={p.objetivo > 0 ? comidoAnim / p.objetivo : 0} texto={p.fmt(Math.abs(quedanAnim))} />
         <div className="w-20 text-center">
-          <span className="block font-mono text-title-m font-bold text-ink">{p.fmt(p.objetivo)}</span>
+          <span className="block font-mono text-title-m font-bold text-ink">{p.fmt(objetivoAnim)}</span>
           <span className="font-sans text-body-s text-ink-2">objetivo</span>
         </div>
       </div>

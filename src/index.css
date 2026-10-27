@@ -996,7 +996,7 @@
   .pantalla > :nth-child(8) { animation-delay: 280ms; }
   .pantalla > :nth-child(n + 9) { animation-delay: 320ms; }
   .pantalla > .pantalla,
-  .pantalla > :has(> .pantalla) {
+  .pantalla > :has(> .pantalla):not([class*="animate-"]) {
     animation: none;
   }
 

@@ -1,3 +1,4 @@
+import { useCuentaAlMontar } from '../../../hooks/useCuentaAlMontar';
 import React, { useMemo, useRef, useState } from 'react';
 import {
   Mesocycle, MesocycleTemplate, NutritionProgram, Roadmap, WorkoutAssignment, WorkoutLog, Workout, Exercise,
@@ -210,6 +211,8 @@ export default function RoadmapCalendario(props: Props) {
   const bandaActiva = bandaEnFecha<BandaEntreno>(bandasEntreno, hoy);
   const mesoActivo = bandaActiva ? mesocycles.find(m => m.id === bandaActiva.id) : undefined;
   const adherenciaBloque = mesoActivo ? adherenciaDeMesociclo(workoutAssignments, mesoActivo.id) : null;
+  // La cifra cuenta hasta su valor al montar (P2); el hook va DESPUÉS del cálculo, no arriba.
+  const adherenciaAnimada = useCuentaAlMontar(adherenciaBloque ?? 0);
   const semanaDelBloque = bandaActiva ? Math.floor((new Date(hoy + 'T00:00:00').getTime() - new Date(bandaActiva.inicio + 'T00:00:00').getTime()) / 86400000 / 7) + 1 : null;
 
   // Absorción del timeline horizontal: marcadores de subida de volumen y
@@ -429,7 +432,7 @@ export default function RoadmapCalendario(props: Props) {
           </div>
           <div className="w-px h-8 bg-hairline hidden sm:block" />
           <div className="flex items-baseline gap-2">
-            <span className="font-mono text-title-l font-semibold text-success">{adherenciaBloque !== null ? `${adherenciaBloque}%` : '—'}</span>
+            <span className="font-mono text-title-l font-semibold text-success">{adherenciaBloque !== null ? `${Math.round(adherenciaAnimada)}%` : '—'}</span>
             <span className="text-label text-ink-3 font-sans">adherencia del bloque</span>
           </div>
           {proximoHito && (
