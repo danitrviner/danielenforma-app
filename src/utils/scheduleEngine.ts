@@ -1,6 +1,6 @@
-import { QSchedule, Mesocycle } from '../types';
-import { hoyIsoLocal } from './trainingWeek';
-import { fechasSemanaDelBloque, type PausaRevisiones } from './cicloRevision';
+import { QSchedule, Mesocycle } from '../types.js';
+import { hoyIsoLocal } from './trainingWeek.js';
+import { fechasSemanaDelBloque, type PausaRevisiones } from './cicloRevision.js';
 
 // Generic recurring-schedule evaluation, extracted from questionnaireSchedule.ts
 // so it can be reused for anything scheduled with a QSchedule (currently

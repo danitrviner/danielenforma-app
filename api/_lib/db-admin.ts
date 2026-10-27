@@ -18,6 +18,7 @@ import type {
   AppNotification, AthleteDietConfig, BodyweightLog, CardioSession, Diet,
   DietCompletionLog, Exercise, LevelLadder, NutritionProgram, Roadmap, StepLog,
   UserProfile, WeeklyChallenge, WorkoutAssignment, WorkoutLog,
+  Mesocycle, QuestionnaireAssignment, QuestionnaireResponse,
 } from '../../src/types.js';
 import { atletasActivos } from '../../src/utils/atletas.js';
 import { getAdminDb } from './auth.js';
@@ -102,6 +103,25 @@ export async function leerConfigDeDieta(
   const snap = await db.collection('athleteDietConfigs').doc(email).get();
   if (!snap.exists) return null;
   return { athleteId: email, ...(snap.data() as object) } as AthleteDietConfig;
+}
+
+/** Cuestionarios asignados y activos (recordatorios de la revisión). */
+export async function leerCuestionariosAsignados(db: Firestore, email: string): Promise<QuestionnaireAssignment[]> {
+  const snap = await db.collection('questionnaireAssignments').where('athleteId', '==', email).where('active', '==', true).get();
+  return snap.docs.map(d => conId<QuestionnaireAssignment>(d));
+}
+
+/** Respuestas de cuestionario desde una fecha (ISO). */
+export async function leerRespuestasDeCuestionarios(db: Firestore, email: string, desde: string): Promise<QuestionnaireResponse[]> {
+  // Sin `submittedAt >=` en la consulta: (athleteId, submittedAt) no tiene
+  // índice compuesto y la consulta fallaría. Se filtra en memoria.
+  const snap = await db.collection('questionnaireResponses').where('athleteId', '==', email).get();
+  return snap.docs.map(d => conId<QuestionnaireResponse>(d)).filter(r => (r.submittedAt ?? '') >= desde);
+}
+
+export async function leerMesociclos(db: Firestore, email: string): Promise<Mesocycle[]> {
+  const snap = await db.collection('mesocycles').where('athleteId', '==', email).get();
+  return snap.docs.map(d => conId<Mesocycle>(d));
 }
 
 export async function leerDietas(db: Firestore, email: string): Promise<Diet[]> {

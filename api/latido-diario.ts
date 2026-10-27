@@ -33,7 +33,9 @@ import {
   leerRegistrosDeComida, leerRoadmap, leerSesionesDeCardio,
   marcarSesionPerdida, guardarConfigDeDieta, marcarFaseVista, guardarNivelesConseguidos,
   actualizarPeldanos, guardarReto, leerReto, crearAvisoUnaVez,
+  leerCuestionariosAsignados, leerRespuestasDeCuestionarios, leerMesociclos,
 } from './_lib/db-admin.js';
+import { recordatoriosDeRevision } from '../src/utils/recordatoriosRevision.js';
 import { planificarLatido } from '../src/utils/latidoDiario.js';
 import { ejecutarRetoSemanal, type AlmacenDeRetos } from '../src/utils/motorRetoSemanal.js';
 import { DEFAULT_LEVEL_LADDER } from '../src/data/defaultLevelLadder.js';
@@ -224,6 +226,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       else if (reto.challenge) hecho.push(`reto: ${reto.challenge.status}`);
 
       if (cardio.length > 0) hecho.push(`${cardio.length} sesiones de cardio en ${DIAS_DE_HISTORIAL} días`);
+
+      // ── 3. Recordatorios de la revisión (27-10) ──────────────────────────
+      // El día que se abre y la víspera de caducar, solo si le falta algo. Va
+      // en su propio try: un fallo aquí no debe borrar lo ya hecho arriba.
+      try {
+        const [cuestionarios, respuestas, mesociclos] = await Promise.all([
+          leerCuestionariosAsignados(db, email),
+          leerRespuestasDeCuestionarios(db, email, addDays(hoy, -21)),
+          leerMesociclos(db, email),
+        ]);
+        const avisos = recordatoriosDeRevision({ hoy, perfil, asignaciones: cuestionarios, respuestas, mesociclos });
+        if (!enSeco) for (const r of avisos) await crearAvisoUnaVez(db, r.dedupeKey, r.notificacion);
+        if (avisos.length > 0) hecho.push(`recordatorio de revisión: ${avisos.length}`);
+      } catch (err) {
+        hecho.push(`recordatorio de revisión: error (${(err as Error)?.message ?? err})`);
+      }
 
       resumen.push({ email, hecho });
     } catch (err) {

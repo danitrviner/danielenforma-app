@@ -1,13 +1,13 @@
-import { QuestionnaireAssignment, QuestionnaireResponse } from '../types';
-import { isoLocal } from './trainingWeek';
+import { QuestionnaireAssignment, QuestionnaireResponse } from '../types.js';
+import { isoLocal } from './trainingWeek.js';
 import {
   todayStr, isDueToday, isUpcoming, ScheduleContext,
   startOfDay, planWeekDueDate, mesocycleEndDate,
-} from './scheduleEngine';
+} from './scheduleEngine.js';
 import {
   DIA_REVISION_POR_DEFECTO, diasDelCiclo, aperturaDelCiclo, caducidadDelCiclo, aperturaDesde,
   enPausa, fechasSemanaDelBloque,
-} from './cicloRevision';
+} from './cicloRevision.js';
 
 // Shared "is this recurring questionnaire due, and has the athlete already answered
 // this occurrence" logic — used by CheckInScreen (to show the pending list) and by

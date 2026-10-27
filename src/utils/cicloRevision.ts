@@ -1,5 +1,5 @@
-import type { Mesocycle, QSchedule } from '../types';
-import { addDays } from './trainingWeek';
+import type { Mesocycle, QSchedule } from '../types.js';
+import { addDays } from './trainingWeek.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Ciclo de revisión de un atleta (paquete oficial, 27-10)
