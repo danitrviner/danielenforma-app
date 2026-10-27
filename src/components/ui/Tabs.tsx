@@ -61,6 +61,24 @@ export default function Tabs({ items, value, onChange, label, className = '' }: 
   const refs = React.useRef<(HTMLButtonElement | null)[]>([]);
   const { ref: scrollRef, maskImage } = useScrollEdgeMask<HTMLDivElement>([items]);
 
+  /* 27-10 (P3): un solo subrayado que se DESLIZA entre pestañas vecinas y
+     SALTA (sin transición) cuando la pestaña nueva no es la de al lado. Así
+     se mantiene lo que el comentario de arriba defendía —no «recorrer» la
+     barra en un salto de tres pestañas— y se gana la continuidad del
+     segmentado en el caso normal, que es ir a la de al lado. Se mide del DOM
+     (offsetLeft/offsetWidth del botón dentro del tablist, que es `relative`),
+     no de «ancho / nº de pestañas»: no miden lo mismo. */
+  const [subrayado, setSubrayado] = React.useState<{ left: number; width: number; desliza: boolean } | null>(null);
+  const indiceAnterior = React.useRef<number>(-1);
+  React.useLayoutEffect(() => {
+    const idx = items.findIndex(i => i.id === value);
+    const boton = refs.current[idx];
+    if (idx < 0 || !boton) { setSubrayado(null); return; }
+    const vecina = indiceAnterior.current >= 0 && Math.abs(idx - indiceAnterior.current) === 1;
+    indiceAnterior.current = idx;
+    setSubrayado({ left: boton.offsetLeft, width: boton.offsetWidth, desliza: vecina });
+  }, [value, items]);
+
   const alPulsarTecla = (e: React.KeyboardEvent, indice: number) => {
     const salto = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
     let destino: number;
@@ -82,9 +100,16 @@ export default function Tabs({ items, value, onChange, label, className = '' }: 
       ref={scrollRef}
       role="tablist"
       aria-label={label}
-      className={`flex gap-5 overflow-x-auto hide-scrollbar border-b border-hairline ${className}`}
+      className={`relative flex gap-5 overflow-x-auto hide-scrollbar border-b border-hairline ${className}`}
       style={{ scrollSnapType: 'x proximity', ...(maskImage ? { maskImage, WebkitMaskImage: maskImage } : {}) }}
     >
+      {subrayado && (
+        <span
+          aria-hidden
+          className={`pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-accent ${subrayado.desliza ? 'transition-[transform,width] duration-(--duration-slide) ease-brand' : 'transition-none'}`}
+          style={{ width: subrayado.width, transform: `translateX(${subrayado.left}px)` }}
+        />
+      )}
       {items.map((item, i) => {
         const activa = item.id === value;
         return (
@@ -112,16 +137,6 @@ export default function Tabs({ items, value, onChange, label, className = '' }: 
                 {item.count}
               </span>
             )}
-            {/* Subrayado propio, no compartido: entra/sale por opacidad
-                (240 ms), nunca por ancho — así no "recorre" la barra al
-                cambiar de pestaña lejana. */}
-            <span
-              aria-hidden
-              className={
-                'absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-accent transition-opacity duration-(--duration-state) '
-                + (activa ? 'opacity-100' : 'opacity-0')
-              }
-            />
           </button>
         );
       })}

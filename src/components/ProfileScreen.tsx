@@ -1,3 +1,4 @@
+import { useDireccionDePestana } from './ui/internal/useDireccionDePestana';
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -112,6 +113,8 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
   const activeTab: ProfileTab = PROFILE_TABS.some(t => t.id === normalizedTab)
     ? (normalizedTab as ProfileTab)
     : 'resumen';
+  // P3: el contenido entra desde el lado hacia el que te mueves.
+  const direccion = useDireccionDePestana(PROFILE_TABS.map(t => t.id), activeTab);
   /* `replace` para que el botón atrás salga de Perfil, en vez de ir
      deshaciendo una a una todas las pestañas que hayas mirado. */
   const setActiveTab = (id: ProfileTab) => setSearchParams({ tab: id }, { replace: true });
@@ -483,7 +486,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
       {!isCoach && (
         <div ref={progressRowRef}>
           <Tabs items={PROFILE_TABS} value={activeTab} onChange={id => setActiveTab(id as ProfileTab)} label="Secciones de Perfil" />
-          <div key={activeTab} className="pantalla mt-4">{renderTab()}</div>
+          <div key={activeTab} className={`${direccion} mt-4`}>{renderTab()}</div>
         </div>
       )}
 

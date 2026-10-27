@@ -1,3 +1,4 @@
+import { useDireccionDePestana } from './ui/internal/useDireccionDePestana';
 import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { pantallaDiferida } from '../utils/pantallaDiferida';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -775,6 +776,8 @@ export default function ClientHub({
     }
   };
 
+  // P3: el panel entra desde el lado hacia el que te mueves (solo entre pestañas vecinas de la misma zona).
+  const direccion = useDireccionDePestana(ZONE_TABS[activeZone] as readonly string[], activeTab);
   return (
     <div className="pantalla space-y-6">
       {/* Header */}
@@ -871,7 +874,7 @@ export default function ClientHub({
           recorrido. Duplicar el JSX habría significado duplicar veinte props
           por panel y que los dos se desincronizaran a la primera. */}
       {/* `key`: al cambiar de pestaña el panel se remonta y entra escalonado (`.pantalla` en su raíz). */}
-      <div key={activeTab}>{panelDePestana(activeTab)}</div>
+      <div key={`${activeZone}/${activeTab}`} className={direccion}>{panelDePestana(activeTab)}</div>
 
       {/* ── El editor a pantalla completa ──────────────────────────────────
           Implantación abre aquí el editor de verdad del paso en el que está el
