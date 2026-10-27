@@ -124,11 +124,6 @@ const AsignadosHarness = import.meta.env.DEV
   ? pantallaDiferida('AsignadosDevHarness', () => import('./components/AsignadosDevHarness'))
   : null;
 
-// TEMPORAL (revisión modo claro): lista de clientes del coach (ruta /dev/clientes).
-const ClientesHarness = import.meta.env.DEV
-  ? pantallaDiferida('ClientesDevHarness', () => import('./components/ClientesDevHarness'))
-  : null;
-
 // Banco de pruebas de Nutrición › Recetas, portada «Descubrir» (ruta /dev/recetario).
 const RecetarioHarness = import.meta.env.DEV
   ? pantallaDiferida('RecetarioDevHarness', () => import('./components/RecetarioDevHarness'))
@@ -826,14 +821,6 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <ProgresionHarness />
-      </Suspense>
-    );
-  }
-
-  if (ClientesHarness && location.pathname === '/dev/clientes') {
-    return (
-      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
-        <ClientesHarness />
       </Suspense>
     );
   }

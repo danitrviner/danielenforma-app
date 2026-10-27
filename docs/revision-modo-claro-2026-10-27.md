@@ -1,8 +1,8 @@
 # Revisión del modo claro y de las animaciones · 2026-10-27
 
 Fase 1: informe y maquetas. **No se ha tocado la app** salvo un banco de pruebas temporal
-(`/dev/clientes`, `src/components/ClientesDevHarness.tsx`) para poder ver la lista de clientes
-sin sesión de coach. Rama `modo-claro-3` (worktree `/Users/dani/en-forma-modo-claro-3`), sobre
+(`/dev/clientes`) para poder ver la lista de clientes sin sesión de coach, retirado al cerrar
+la fase 2 por decisión de Dani (las capturas de Clientes de este informe salen de él). Rama `modo-claro-3` (worktree `/Users/dani/en-forma-modo-claro-3`), sobre
 `origin/main` 3120665.
 
 Las maquetas están en `docs/revision-modo-claro-2026-10-27/` (hojas `sel-*` = variantes de

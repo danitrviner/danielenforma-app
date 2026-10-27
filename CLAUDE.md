@@ -224,8 +224,6 @@ fila de tabla 14, etiqueta de campo 14/500; nada fuera de `--text-*`. **Movimien
 chips, anillos con `--duration-ring`, listas con `stagger-child` (tope `--i` 8), nada de
 `transition-all`.
 
-Banco temporal `/dev/clientes` (`ClientesDevHarness.tsx`): lista de clientes del coach sin sesión.
-
 ---
 
 ## Sesión 2026-09-23 — Objetivo corporal, verificación por tendencia y gasto real (rama `objetivo-corporal`, SIN mergear)
