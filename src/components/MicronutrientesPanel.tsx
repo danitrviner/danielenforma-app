@@ -144,7 +144,7 @@ export default function MicronutrientesPanel({ athleteEmail }: Props) {
               </span>
             </div>
             <div className="h-1.5 rounded-full bg-track overflow-hidden">
-              <div className={`h-full rounded-full transition-all ${STATUS_BAR_COLOR[m.status]}`} style={{ width: `${Math.min(100, m.rdaPct)}%` }} />
+              <div className={`h-full rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow] ${STATUS_BAR_COLOR[m.status]}`} style={{ width: `${Math.min(100, m.rdaPct)}%` }} />
             </div>
           </div>
         ))}

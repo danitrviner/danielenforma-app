@@ -1,3 +1,4 @@
+import { nombreDeTransicion } from '../utils/transicionDeVista';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQueries, useQuery, useIsFetching, useIsMutating } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -63,7 +64,7 @@ const AthleteRow = React.memo(function AthleteRow({ athlete, onOpen }: {
   return (
     <button
       onClick={() => onOpen(athlete)}
-      className="flex items-center gap-3 bg-raised border border-hairline rounded-control px-3 py-2.5 text-left hover:border-accent/40 transition-colors"
+      className="fila-pulsable flex items-center gap-3 bg-raised border border-hairline rounded-control px-3 py-2.5 text-left hover:border-accent/40"
     >
       {/* El nombre es lo que el coach viene a buscar, así que manda en la fila:
           sube de 12 px a 15 px (`text-body`) y el avatar crece con él. Antes el
@@ -73,7 +74,7 @@ const AthleteRow = React.memo(function AthleteRow({ athlete, onOpen }: {
         <Avatar src={athlete.avatarUrl} name={athlete.displayName} className="w-full h-full object-cover" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-sans font-bold text-ink text-body truncate">{athlete.displayName}</p>
+        <p className="font-sans font-bold text-ink text-body truncate" style={{ viewTransitionName: nombreDeTransicion('atleta', athlete.userId) }}>{athlete.displayName}</p>
         <p className="font-mono text-caption text-ink-3 truncate mt-0.5">{metaLine}</p>
       </div>
     </button>
@@ -194,7 +195,8 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
   const openAthleteHub = useCallback((athlete: UserProfile & { setupPct?: number }, tab?: HubTab) => {
     const landingTab = tab ?? ((athlete.setupPct ?? 100) < 100 ? 'setup' : undefined);
-    navigate(`/clients/${encodeURIComponent(athlete.email)}${landingTab ? `/${landingTab}` : ''}`);
+    // El nombre del atleta «vuela» de la fila a la cabecera del Hub (transición de vista).
+    navigate(`/clients/${encodeURIComponent(athlete.email)}${landingTab ? `/${landingTab}` : ''}`, { viewTransition: true });
   }, [navigate]);
 
   // Busca en allProfiles, no en athletes: un enlace desde "Archivados" apunta
@@ -386,7 +388,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   }
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* Header */}
       <header className="pb-4">
         {isSyncing && (
@@ -451,7 +453,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             <button
               type="button"
               onClick={() => setInviteOpen(true)}
-              className="flex items-center gap-1.5 font-mono text-caption font-bold uppercase text-accent-ink border border-accent/35 rounded-control px-2.5 py-1.5 whitespace-nowrap"
+              className="flex items-center gap-1.5 font-mono text-caption font-bold uppercase text-accent-ink border border-accent-line rounded-control px-2.5 py-1.5 whitespace-nowrap"
             >
               <span className="material-symbols-outlined text-body-s">person_add</span>
               Invitar atleta
@@ -492,8 +494,10 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             <EmptyState icon="search_off" title={`Ningún atleta coincide con "${search}".`} />
           ) : (
             <div className="flex flex-col gap-1.5">
-              {filteredAthletes.map(athlete => (
-                <AthleteRow key={athlete.userId} athlete={athlete} onOpen={openAthleteHub} />
+              {filteredAthletes.map((athlete, i) => (
+                <div key={athlete.userId} className="animate-fade-up stagger-child" style={{ '--i': Math.min(i, 8) } as React.CSSProperties}>
+                  <AthleteRow athlete={athlete} onOpen={openAthleteHub} />
+                </div>
               ))}
             </div>
           )

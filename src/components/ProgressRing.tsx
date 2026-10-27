@@ -23,7 +23,7 @@ export default function ProgressRing({ pct, color = 'var(--color-accent-ink)', l
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          className="transition-all duration-500"
+          className="transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-500"
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">

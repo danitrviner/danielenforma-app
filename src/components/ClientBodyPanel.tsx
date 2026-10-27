@@ -51,7 +51,7 @@ export default function ClientBodyPanel({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* ── Fotos de progreso ─────────────────────────────────────────── */}
       <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
         <div className="p-4 border-b border-hairline flex items-center justify-between bg-raised">
@@ -128,7 +128,7 @@ export default function ClientBodyPanel({
             <span className="material-symbols-outlined text-accent-ink text-body-s">battery_charging_full</span>
             Readiness (IRP)
           </h3>
-          <p className={`font-mono font-black text-3xl leading-none ${irp.valor < 0 ? 'text-danger' : irp.valor < 3 ? 'text-warning' : 'text-ink'}`}>
+          <p className={`font-mono font-black text-display leading-none ${irp.valor < 0 ? 'text-danger' : irp.valor < 3 ? 'text-warning' : 'text-ink'}`}>
             {irp.valor}
           </p>
           <p className="font-mono text-caption text-ink-2">

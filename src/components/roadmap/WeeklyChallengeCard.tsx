@@ -108,7 +108,7 @@ export default function WeeklyChallengeCard({ challenge, progress, streak = 0, d
         </div>
         <div className="h-2.5 rounded-full bg-track overflow-hidden">
           <div
-            className="h-full rounded-full transition-all duration-500"
+            className="h-full rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-500"
             style={{ width: `${Math.max(4, progress.pct)}%`, backgroundColor: accent }}
           />
         </div>

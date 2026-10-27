@@ -101,7 +101,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
 
   // ── List view ─────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="font-sans font-bold text-title-m text-ink">Cuestionarios</h2>
         <div className="flex items-center gap-2">
@@ -156,7 +156,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
                   )}
                   <button
                     onClick={() => openEditor(q)}
-                    className="p-2 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-all"
+                    className="p-2 bg-raised border border-hairline text-data hover:border-data/40 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     title="Editar"
                   >
                     <Icon name="edit" size="s" />
@@ -164,7 +164,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
                   <button
                     onClick={() => handleDelete(q.id)}
                     disabled={deleting === q.id}
-                    className="p-2 bg-raised border border-hairline text-ink-2 hover:text-danger hover:border-danger/30 rounded-control transition-all"
+                    className="p-2 bg-raised border border-hairline text-ink-2 hover:text-danger hover:border-danger/30 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     title="Eliminar"
                   >
                     <Icon name={deleting === q.id ? 'progress_activity' : 'delete'} size="s" className={deleting === q.id ? 'animate-spin' : ''} />

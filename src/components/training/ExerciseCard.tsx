@@ -1,3 +1,4 @@
+import { useRecienHecho } from '../../hooks/useRecienHecho';
 import React from 'react';
 import { Exercise, WorkoutEntryLog, WorkoutExercise } from '../../types';
 import { Icon } from '../ui';
@@ -329,7 +330,7 @@ export default React.memo(function ExerciseCard({
           onChange={e => onNoteChange(e.target.value)}
           placeholder="ej. Molestia leve en el hombro derecho..."
           rows={2}
-          className="w-full bg-bg border border-hairline rounded-control p-3 text-title-s text-ink placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+          className="w-full bg-bg border border-control-line rounded-control p-3 text-title-s text-ink placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
         />
       </div>
 
@@ -457,21 +458,17 @@ function NormalTable({
                     value={setInput.rir}
                     onChange={e => onUpdateSet(sIdx, 'rir', e.target.value)}
                     disabled={setInput.done}
-                    className={`w-14 sm:w-16 appearance-none bg-field border border-hairline rounded-control px-1 sm:px-2 py-2 text-center font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${rirClaseColor(setInput.rir)}`}
+                    className={`w-14 sm:w-16 appearance-none bg-field border border-control-line rounded-control px-1 sm:px-2 py-2 text-center font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${rirClaseColor(setInput.rir)}`}
                   >
                     {RIR_OPCIONES.map(v => <option key={v} value={v}>{rirTexto(v)}</option>)}
                   </select>
                 </td>
                 <td className="px-2 sm:px-4 py-2 text-center">
-                  <button
+                  <BotonSerieHecha
                     ref={sIdx === 0 ? firstSetRowTargetRef : undefined}
+                    hecha={setInput.done}
                     onClick={() => onMarkDone(sIdx, !setInput.done)}
-                    className={`mx-auto flex h-11 w-11 items-center justify-center rounded-control border transition-colors duration-(--duration-state) ${
-                      setInput.done ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-3 hover:border-accent-line hover:text-accent-ink'
-                    }`}
-                  >
-                    <Icon name={setInput.done ? 'check_circle' : 'radio_button_unchecked'} size="m" filled={setInput.done} />
-                  </button>
+                  />
                 </td>
               </tr>
             );
@@ -533,7 +530,7 @@ function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, on
                 onChange={e => onUpdateSet(sIdx, 'weight', e.target.value)}
                 placeholder={sugerido != null ? String(sugerido).replace('.', ',') : 'kg'}
                 disabled={s.done}
-                className="w-16 rounded-control border border-hairline bg-field px-2 py-1.5 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+                className="w-16 rounded-control border border-control-line bg-field px-2 py-1.5 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
               />
               <span className="font-mono text-label text-ink-3">kg ×</span>
               <input
@@ -542,7 +539,7 @@ function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, on
                 onChange={e => onUpdateSet(sIdx, 'repsDone', e.target.value)}
                 placeholder="reps"
                 disabled={s.done}
-                className="w-14 rounded-control border border-hairline bg-field px-2 py-1.5 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+                className="w-14 rounded-control border border-control-line bg-field px-2 py-1.5 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
               />
               </div>
               {caida != null && caida > 0 && <span className="mt-1 block font-mono text-label font-bold text-danger">−{caida}% de peso</span>}
@@ -660,3 +657,29 @@ function MyorepsRows({ exSets, serie, indices, pauta, onUpdateSet, onMarkDone, o
     </div>
   );
 }
+
+
+/* El botón de «serie hecha»: al marcarla, el check entra con el sello
+   (`seal-pop`, el mismo que cierra el anillo del día). Solo en la transición:
+   abrir un entreno con series ya hechas no sella nada. */
+const BotonSerieHecha = React.forwardRef<HTMLButtonElement, { hecha: boolean; onClick: () => void }>(
+  function BotonSerieHecha({ hecha, onClick }, ref) {
+    const sellando = useRecienHecho(hecha);
+    return (
+      <button
+        ref={ref}
+        type="button"
+        onClick={onClick}
+        aria-pressed={hecha}
+        aria-label={hecha ? 'Desmarcar serie' : 'Marcar serie como hecha'}
+        className={`mx-auto flex h-11 w-11 items-center justify-center rounded-control border transition-colors duration-(--duration-state) active:scale-90 ${
+          hecha ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-3 hover:border-accent-line hover:text-accent-ink'
+        }`}
+      >
+        <span className={`flex ${sellando ? 'animate-seal-pop' : ''}`}>
+          <Icon name={hecha ? 'check_circle' : 'radio_button_unchecked'} size="m" filled={hecha} />
+        </span>
+      </button>
+    );
+  }
+);

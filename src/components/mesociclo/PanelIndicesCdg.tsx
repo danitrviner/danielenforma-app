@@ -430,7 +430,7 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
               placeholder="—"
               inputMode="decimal"
               aria-label={`IEM objetivo de ${f.z.nombre}`}
-              className="w-16 bg-raised border border-hairline rounded-control px-1.5 py-1 text-right font-mono text-body-s text-ink"
+              className="w-16 bg-raised border border-control-line rounded-control px-1.5 py-1 text-right font-mono text-body-s text-ink"
               onBlur={e => { const v = leerNumero(e.currentTarget.value); if (v !== f.objetivo) onCambiarObjetivo(f.z.clave, v); }}
               onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
             />

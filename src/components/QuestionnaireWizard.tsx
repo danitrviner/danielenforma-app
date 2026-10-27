@@ -280,12 +280,12 @@ export default function QuestionnaireWizard({
 
   /* ── Controles ─────────────────────────────────────────────────────────── */
 
-  const campoTexto = 'w-full bg-raised border border-hairline rounded-control text-ink text-body p-3 focus:ring-2 focus:ring-accent-bg focus:border-accent-line transition-colors';
-  const campoNumero = 'w-full bg-raised border border-hairline rounded-control text-ink font-mono text-title-m tabular-nums p-3 focus:ring-2 focus:ring-accent-bg focus:border-accent-line transition-colors';
+  const campoTexto = 'w-full bg-raised border border-control-line rounded-control text-ink text-body p-3 focus:ring-2 focus:ring-accent-bg focus:border-accent-line transition-colors';
+  const campoNumero = 'w-full bg-raised border border-control-line rounded-control text-ink font-mono text-title-m tabular-nums p-3 focus:ring-2 focus:ring-accent-bg focus:border-accent-line transition-colors';
 
   /** Dos botones grandes que se excluyen (sí/no, mantener/cambiar). */
   const dosOpciones = (question: QuestionnaireQuestion, opciones: [string | boolean, string][]) => (
-    <div className="grid grid-cols-2 gap-1 bg-raised border border-hairline rounded-control p-1" role="radiogroup" aria-label={question.label}>
+    <div className="grid grid-cols-2 gap-1 bg-raised border border-control-line rounded-control p-1" role="radiogroup" aria-label={question.label}>
       {opciones.map(([v, etiqueta]) => {
         const sel = answers[question.id] === v;
         return (

@@ -133,7 +133,7 @@ const Fila: React.FC<{
           aria-pressed={recomendada}
           aria-label={`${recomendada ? 'Dejar de recomendar' : 'Recomendar'}: ${receta.name}`}
           className={`flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-control border transition-colors disabled:opacity-50 ${
-            recomendada ? 'border-accent text-accent-ink bg-accent-bg' : 'border-hairline text-ink-3 hover:text-ink hover:border-strong'
+            recomendada ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-3 hover:text-ink hover:border-strong'
           }`}
           title={recomendada ? 'Recomendada: sale arriba de su recetario' : 'Recomendársela: saldrá arriba de su recetario'}
         >
@@ -388,7 +388,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
               onChange={e => cambiarFiltro({ texto: e.target.value })}
               placeholder="Buscar por nombre"
               aria-label="Buscar receta del pool por nombre"
-              className="bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-base text-ink focus:outline-none focus:border-accent"
+              className="bg-bg border border-control-line rounded-control px-3 min-h-[44px] font-sans text-body text-ink focus:outline-none focus:border-accent"
             />
             <div className="flex gap-2">
               <input
@@ -397,7 +397,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
                 onChange={e => cambiarFiltro({ ingrediente: e.target.value })}
                 placeholder="Ingrediente (atún, huevo…)"
                 aria-label="Filtrar por ingrediente"
-                className="min-w-0 flex-1 bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-base text-ink focus:outline-none focus:border-accent"
+                className="min-w-0 flex-1 bg-bg border border-control-line rounded-control px-3 min-h-[44px] font-sans text-body text-ink focus:outline-none focus:border-accent"
               />
               <div role="group" aria-label="Con o sin ese ingrediente" className="flex flex-shrink-0 border border-hairline rounded-control overflow-hidden">
                 {(['con', 'sin'] as const).map(m => (
@@ -458,7 +458,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
                     aria-pressed={on}
                     title={suya ? 'Ya la tiene: su pool ya cumple esta condición' : c.help}
                     className={`min-h-[32px] px-2.5 rounded-chip border font-sans text-caption transition-colors ${
-                      on ? 'border-accent bg-accent/15 text-ink' : 'border-hairline text-ink-2 hover:text-ink'
+                      on ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-2 hover:text-ink'
                     }`}
                   >
                     {c.label}{suya ? ' · suya' : ''}
@@ -481,7 +481,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
                     aria-pressed={on}
                     title={a.ayuda}
                     className={`min-h-[32px] px-2.5 rounded-chip border font-sans text-caption transition-colors ${
-                      on ? 'border-accent bg-accent/15 text-ink' : 'border-hairline text-ink-2 hover:text-ink'
+                      on ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-2 hover:text-ink'
                     }`}
                   >{a.etiqueta}</button>
                 );

@@ -83,8 +83,8 @@ function CarrilFase({ icono, label, segmentos, onEditar }: { icono: string; labe
               <Icon name={s.banda.icono} size="s" style={{ color: s.banda.color, flexShrink: 0 }} />
               {mostrarTexto && (
                 <div className="flex flex-col gap-0.5 min-w-0 overflow-hidden items-start">
-                  <span className="font-sans font-bold text-[12.5px] whitespace-nowrap" style={{ letterSpacing: '-0.01em' }}>{s.banda.nombre}</span>
-                  <span className="font-mono text-caption opacity-60 whitespace-nowrap">{rango}</span>
+                  <span className="font-sans font-bold text-label whitespace-nowrap" style={{ letterSpacing: '-0.01em' }}>{s.banda.nombre}</span>
+                  <span className="font-mono text-caption text-ink-3 whitespace-nowrap">{rango}</span>
                 </div>
               )}
             </button>
@@ -145,7 +145,7 @@ export default function NivelMes({
   }
 
   return (
-    <div className="space-y-3.5" style={{ animation: 'fade-up 260ms cubic-bezier(0.2,0.8,0.2,1) both' }}>
+    <div className="space-y-3.5" style={{ animation: 'fade-up var(--duration-base) var(--ease-brand) both' }}>
     <div className="flex flex-col xl:flex-row gap-3.5 items-start">
       <div className="flex-1 min-w-0 bg-surface border border-hairline rounded-surface px-5 pt-[18px] pb-[22px] w-full">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
@@ -169,7 +169,7 @@ export default function NivelMes({
             {FILTROS.map(f => (
               <button
                 key={f} type="button" onClick={() => onFilterChange(f)}
-                className="rounded-control text-[12.5px] font-sans transition-colors"
+                className="rounded-control text-label font-sans transition-colors"
                 style={{
                   padding: '6px 13px',
                   background: filter === f ? 'var(--color-track)' : 'transparent',
@@ -302,7 +302,7 @@ export default function NivelMes({
               {conflictosDelMes.map((c, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <Icon name="warning" size="s" filled style={{ color: 'var(--color-danger)', marginTop: 1, flexShrink: 0 }} />
-                  <span className="text-[12.5px] text-ink-2 font-sans leading-relaxed">{c.message}</span>
+                  <span className="text-label text-ink-2 font-sans leading-relaxed">{c.message}</span>
                 </div>
               ))}
             </div>
@@ -349,7 +349,7 @@ export default function NivelMes({
 
         <div className="bg-surface rounded-surface px-5 py-4 flex items-center gap-2.5 text-ink-3" style={{ border: '1px dashed var(--color-hairline)' }}>
           <Icon name="drag_indicator" size="m" />
-          <span className="text-[12.5px] font-sans leading-relaxed">Arrastra un entreno o un hito a otro día para reprogramarlo</span>
+          <span className="text-label font-sans leading-relaxed">Arrastra un entreno o un hito a otro día para reprogramarlo</span>
         </div>
 
         {sinFecha.length > 0 && (

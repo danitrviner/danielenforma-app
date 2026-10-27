@@ -99,7 +99,7 @@ function IndiceDeLaRevision({ pendientes }: { pendientes: number }) {
           <Icon name={s.icono} size="s" />
           {s.label}
           {s.id === 'revision-cuestionarios' && pendientes > 0 && (
-            <span className="rounded-full bg-warning/20 px-1.5 font-bold text-warning">{pendientes}</span>
+            <span className="rounded-full bg-warning/12 px-1.5 font-bold text-warning">{pendientes}</span>
           )}
         </button>
       ))}
@@ -294,18 +294,20 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   };
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla pantalla-b space-y-6">
       <RespuestaDelCoach responses={responses} />
 
       {/* Tu revisión de esta semana: el recorrido único (K-03). Se oculta sola
           fuera de la ventana de revisión (viernes a lunes). */}
       {!loadingQ && !loadingPhotoAssignments && (
+        <div className="protagonista">
         <RevisionDeLaSemana
           revision={revision}
           enviada={!!progreso?.enviadaEn}
           onAbrirPaso={abrirPaso}
           onEnviar={enviarRevision}
         />
+        </div>
       )}
 
       {/* Peso corporal (handoff §1) — primera sección, antes del check-in
@@ -393,7 +395,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                     className={`w-full flex items-start gap-3 p-4 text-left transition-colors hover:bg-raised group ${i < listaCuestionarios.length - 1 ? 'border-b border-hairline' : ''}`}
                   >
                     <span className={`w-9 h-9 rounded-control flex items-center justify-center shrink-0 mt-0.5 ${estado === 'pendiente' ? 'bg-warning/12' : estado === 'aldia' ? 'bg-success/12' : 'bg-raised'}`}>
-                      <span className={`material-symbols-outlined text-[18px] ${estado === 'pendiente' ? 'text-warning' : estado === 'aldia' ? 'text-success' : 'text-ink-2'}`}>{info.icono}</span>
+                      <span className={`material-symbols-outlined text-title-m ${estado === 'pendiente' ? 'text-warning' : estado === 'aldia' ? 'text-success' : 'text-ink-2'}`}>{info.icono}</span>
                     </span>
                     {/* El estado va DEBAJO del título, no a su derecha: en
                         móvil una insignia de ~110 px dejaba el título en
@@ -503,7 +505,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       {/* ── Fotografías de progreso (centralizado aquí) ──────────────────────── */}
       <section id="revision-fotos" className="scroll-mt-20">
         <h2 className="font-sans font-bold text-body-s text-ink mb-3 flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent-ink text-[18px]">photo_camera</span>
+          <span className="material-symbols-outlined text-accent-ink text-title-m">photo_camera</span>
           Fotografías de progreso
         </h2>
         <PhotosScreen profile={profile} />
@@ -554,7 +556,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       {/* ── El hilo de revisiones (F3.13c) ───────────────────────────────────── */}
       <section id="revision-historial" className="scroll-mt-20">
         <div className="flex items-center gap-2 mb-3.5">
-          <span className="material-symbols-outlined text-accent-ink text-[18px]">history</span>
+          <span className="material-symbols-outlined text-accent-ink text-title-m">history</span>
           <h2 className="font-sans font-bold text-body-s text-ink flex-1">Revisiones</h2>
           {checkins.length > 0 && (
             <span className="font-mono text-label text-ink-2">

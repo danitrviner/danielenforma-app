@@ -133,14 +133,14 @@ function TarjetaEtapa({ stage, idx, total, onEditar, onCambio, onMover, onBorrar
               aria-label="Semanas entre revisiones"
               value={stage.reviewCadenceWeeks}
               onChange={e => onCambio({ ...stage, reviewCadenceWeeks: Math.max(1, parseInt(e.target.value) || 1) })}
-              className="w-14 bg-surface border border-hairline rounded-control px-2 py-1 text-center text-caption text-ink font-mono focus:outline-none focus:border-accent"
+              className="w-14 bg-surface border border-control-line rounded-control px-2 py-1 text-center text-caption text-ink font-mono focus:outline-none focus:border-accent"
             />
             <span className="font-sans text-caption text-ink-3">semanas ·</span>
             <select
               aria-label="Tipo de revisión"
               value={stage.reviewType ?? 'revision'}
               onChange={e => onCambio({ ...stage, reviewType: e.target.value as TaskType })}
-              className="bg-surface border border-hairline rounded-control px-2 py-1 text-caption text-ink font-sans focus:outline-none focus:border-accent cursor-pointer"
+              className="bg-surface border border-control-line rounded-control px-2 py-1 text-caption text-ink font-sans focus:outline-none focus:border-accent cursor-pointer"
             >
               <option value="revision">Check-in</option>
               <option value="cuestionario">Cuestionario</option>
@@ -269,7 +269,7 @@ function TemplateEditor({
                     type="button"
                     aria-pressed={on}
                     onClick={() => setForm(f => ({ ...f, etiquetas: on ? f.etiquetas.filter(x => x !== t) : [...f.etiquetas, t] }))}
-                    className={`px-2.5 py-1 rounded-full border font-sans text-caption transition-colors ${on ? 'bg-accent/10 border-accent text-accent-ink' : 'bg-raised border-hairline text-ink-2 hover:text-ink'}`}
+                    className={`px-2.5 py-1 rounded-full border font-sans text-caption transition-colors ${on ? 'bg-accent border-accent-press text-on-accent' : 'bg-raised border-hairline text-ink-2 hover:text-ink'}`}
                   >{t}</button>
                 );
               })}
@@ -287,7 +287,7 @@ function TemplateEditor({
             </div>
             <button
               onClick={addStage}
-              className="flex items-center gap-1 px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-caption rounded-control hover:border-accent/40 hover:text-accent-ink transition-all"
+              className="flex items-center gap-1 px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-caption rounded-control hover:border-accent/40 hover:text-accent-ink transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             >
               <Icon name="add" size="s" />
               Añadir mesociclo
@@ -362,7 +362,7 @@ function TemplateCard({
   const topGroups = getTopMuscleGroups(mergeStageGroups(tpl.stages), 3);
 
   return (
-    <div className="bg-surface border border-hairline rounded-canvas p-4 hover:border-accent/30 transition-all">
+    <div className="bg-surface border border-hairline rounded-canvas p-4 hover:border-accent/30 transition-[color,background-color,border-color,opacity,transform,box-shadow]">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
           <p className="font-sans font-bold text-ink text-body-s truncate">{tpl.name}</p>
@@ -385,14 +385,14 @@ function TemplateCard({
         <div className="flex gap-2 flex-shrink-0">
           <button
             onClick={onEdit}
-            className="p-2 rounded-control bg-raised border border-hairline text-data hover:border-data/40 transition-all"
+            className="p-2 rounded-control bg-raised border border-hairline text-data hover:border-data/40 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             title="Editar plantilla"
           >
             <Icon name="edit" size="s" />
           </button>
           <button
             onClick={onDelete}
-            className="p-2 rounded-control bg-raised border border-hairline text-ink-2 hover:text-danger hover:border-danger/30 transition-all"
+            className="p-2 rounded-control bg-raised border border-hairline text-ink-2 hover:text-danger hover:border-danger/30 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             title="Eliminar plantilla"
           >
             <Icon name="delete" size="s" />
@@ -516,7 +516,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="pantalla space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -539,7 +539,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
               type="button"
               aria-pressed={filtro === t}
               onClick={() => setFiltro(f => (f === t ? null : t))}
-              className={`px-2.5 py-1 rounded-full border font-sans text-caption transition-colors ${filtro === t ? 'bg-accent/10 border-accent text-accent-ink' : 'bg-raised border-hairline text-ink-2 hover:text-ink'}`}
+              className={`px-2.5 py-1 rounded-full border font-sans text-caption transition-colors ${filtro === t ? 'bg-accent border-accent-press text-on-accent' : 'bg-raised border-hairline text-ink-2 hover:text-ink'}`}
             >{t}</button>
           ))}
         </div>

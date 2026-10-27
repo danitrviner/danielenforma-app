@@ -105,7 +105,7 @@ function TarjetaTitular({ r }: { r: ResumenMetrica; key?: React.Key }) {
     <div className="bg-surface border border-hairline rounded-canvas p-4 flex flex-col gap-3">
       <p className="font-sans text-caption text-ink-2 uppercase tracking-wider truncate">{r.label}</p>
       <div className="flex items-baseline gap-2">
-        <span className="font-mono font-extrabold text-display text-ink leading-none">{r.ultimo}</span>
+        <span className="font-mono font-bold text-display text-ink leading-none">{r.ultimo}</span>
         {r.unit && <span className="font-sans text-label text-ink-2">{r.unit}</span>}
       </div>
       <div className="flex items-center justify-between gap-3">
@@ -638,7 +638,7 @@ export default function CorrelationPanel({
                       <div key={f.id} className="flex items-center gap-2">
                         <button
                           onClick={() => toggleSeries(f.id)}
-                          className={`flex items-center gap-2 px-3 py-2 min-h-[44px] sm:min-h-0 rounded-full font-mono text-label font-bold border transition-all ${
+                          className={`flex items-center gap-2 px-3 py-2 min-h-[44px] sm:min-h-0 rounded-full font-mono text-label font-bold border transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                             active ? '' : 'bg-transparent text-ink-2 border-hairline hover:border-hairline hover:text-ink'
                           }`}
                           style={active ? { backgroundColor: color, borderColor: color, color: tintaSobre(color) } : {}}
@@ -672,7 +672,7 @@ export default function CorrelationPanel({
                     <button
                       key={s.id}
                       onClick={() => toggleSeries(s.id)}
-                      className={`flex items-center gap-2 px-3 py-2 min-h-[44px] sm:min-h-0 rounded-full font-mono text-label font-bold border transition-all ${
+                      className={`flex items-center gap-2 px-3 py-2 min-h-[44px] sm:min-h-0 rounded-full font-mono text-label font-bold border transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                         active ? '' : 'bg-transparent text-ink-2 border-hairline hover:border-hairline hover:text-ink'
                       }`}
                       style={active ? { backgroundColor: color, borderColor: color, color: tintaSobre(color) } : {}}
@@ -777,7 +777,7 @@ export default function CorrelationPanel({
                   ) : (
                     <>
                       <div className="flex items-baseline gap-3">
-                        <span className="font-mono font-extrabold text-display" style={{
+                        <span className="font-mono font-bold text-display" style={{
                           color: Math.abs(correlationResult.r) > 0.7
                             ? 'var(--color-accent-ink)'
                             : Math.abs(correlationResult.r) >= 0.4

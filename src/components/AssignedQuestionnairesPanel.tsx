@@ -598,7 +598,7 @@ export default function AssignedQuestionnairesPanel({
                     onChange={e => setNombrePack(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') guardarComoPack(); if (e.key === 'Escape') setFormPackAbierto(false); }}
                     placeholder="Nombre del paquete (ej. Alta de cliente)"
-                    className="flex-1 min-w-[12rem] bg-bg border border-hairline rounded-control px-3 py-2.5 text-body-s text-ink font-sans focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="flex-1 min-w-[12rem] bg-bg border border-control-line rounded-control px-3 py-2.5 text-body-s text-ink font-sans focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                   <Button size="s" onClick={guardarComoPack} disabled={!nombrePack.trim()} loading={guardandoPack} loadingLabel="Guardando">
                     Guardar paquete
@@ -731,7 +731,7 @@ export default function AssignedQuestionnairesPanel({
                 value={packNombre}
                 onChange={e => setPackNombre(e.target.value)}
                 placeholder="Alta de cliente"
-                className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-ink font-sans focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-bg border border-control-line rounded-control px-3 py-3 text-title-s text-ink font-sans focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
 
@@ -760,7 +760,7 @@ export default function AssignedQuestionnairesPanel({
                       value={it.questionnaireId}
                       onChange={e => cambiarPlantillaDeFila(it.key, e.target.value)}
                       aria-label={`Cuestionario ${idx + 1} del paquete`}
-                      className="flex-1 min-w-0 bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-ink font-sans focus:outline-none focus:ring-1 focus:ring-accent"
+                      className="flex-1 min-w-0 bg-bg border border-control-line rounded-control px-3 py-3 text-title-s text-ink font-sans focus:outline-none focus:ring-1 focus:ring-accent"
                     >
                       <option value="">— Seleccionar plantilla —</option>
                       {coachQuestionnaires.map(q => (
@@ -865,7 +865,7 @@ export default function AssignedQuestionnairesPanel({
                   id="asignar-plantilla"
                   value={assignQId}
                   onChange={e => elegirPlantilla(e.target.value)}
-                  className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-ink font-sans focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="w-full bg-bg border border-control-line rounded-control px-3 py-3 text-title-s text-ink font-sans focus:outline-none focus:ring-1 focus:ring-accent"
                 >
                   <option value="">— Seleccionar plantilla —</option>
                   {coachQuestionnaires.map(q => (
@@ -967,7 +967,7 @@ export default function AssignedQuestionnairesPanel({
                                     disabled={hidden}
                                     placeholder={q.label}
                                     aria-label={`Reformular «${q.label}» para este cliente`}
-                                    className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-ink font-sans focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-40"
+                                    className="w-full bg-bg border border-control-line rounded-control px-2 py-2 text-title-s text-ink font-sans focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-40"
                                   />
                                   <label className="flex items-center gap-1.5 cursor-pointer w-fit py-1">
                                     <input
@@ -998,13 +998,13 @@ export default function AssignedQuestionnairesPanel({
                                   onChange={e => setAssignExtra(prev => prev.map((qq, i) => i === idx ? { ...qq, label: e.target.value } : qq))}
                                   placeholder="Pregunta exclusiva de este cliente"
                                   aria-label="Pregunta exclusiva de este cliente"
-                                  className="flex-1 min-w-0 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-ink font-sans focus:outline-none focus:ring-1 focus:ring-data"
+                                  className="flex-1 min-w-0 bg-bg border border-control-line rounded-control px-2 py-2 text-title-s text-ink font-sans focus:outline-none focus:ring-1 focus:ring-data"
                                 />
                                 <select
                                   value={q.type}
                                   onChange={e => setAssignExtra(prev => prev.map((qq, i) => i === idx ? { ...qq, ...applyTypeChange({ type: e.target.value as QuestionnaireQuestion['type'] }) } : qq))}
                                   aria-label="Tipo de respuesta"
-                                  className="bg-raised border border-hairline rounded-control px-2 py-2 text-caption font-mono text-ink focus:outline-none focus:ring-1 focus:ring-data shrink-0"
+                                  className="bg-raised border border-control-line rounded-control px-2 py-2 text-caption font-mono text-ink focus:outline-none focus:ring-1 focus:ring-data shrink-0"
                                 >
                                   <option value="text">Texto</option>
                                   <option value="numeric">Número</option>
@@ -1028,7 +1028,7 @@ export default function AssignedQuestionnairesPanel({
                                   placeholder={'Opción A\nOpción B'}
                                   aria-label="Opciones, una por línea"
                                   rows={2}
-                                  className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-body-s text-ink font-mono focus:outline-none focus:ring-1 focus:ring-data resize-none"
+                                  className="w-full bg-bg border border-control-line rounded-control px-2 py-2 text-body-s text-ink font-mono focus:outline-none focus:ring-1 focus:ring-data resize-none"
                                 />
                               )}
                             </div>

@@ -90,7 +90,7 @@ export default function AnadirAlimentoCalorias({
               role="tab"
               aria-selected={activa}
               onClick={() => onPestana(p.id)}
-              className={`flex-none border-b-2 pb-2.5 font-sans text-[14px] transition-colors ${activa ? 'border-ink font-bold text-ink' : 'border-transparent text-ink-2 hover:text-ink'}`}
+              className={`flex-none border-b-2 pb-2.5 font-sans text-body-s transition-colors ${activa ? 'border-ink font-bold text-ink' : 'border-transparent text-ink-2 hover:text-ink'}`}
             >
               {p.texto}
             </button>
@@ -109,14 +109,14 @@ export default function AnadirAlimentoCalorias({
         ) : secciones.map(s => s.filas.length === 0 ? null : (
           <section key={s.titulo} className="space-y-2">
             <h3 className="px-1 font-sans text-title-s font-bold text-ink">{s.titulo}</h3>
-            {s.filas.map(f => (
-              <div key={f.clave} className={`flex items-center gap-2 rounded-surface border ${f.anadido ? 'border-success/40 bg-success/10' : 'border-transparent bg-surface'}`}>
+            {s.filas.map((f, i) => (
+              <div key={f.clave} className={`animate-fade-up stagger-child flex items-center gap-2 rounded-surface border ${f.anadido ? 'border-success/40 bg-success/10' : 'border-hairline bg-surface'}`} style={{ '--i': Math.min(i, 8) } as React.CSSProperties}>
                 <button type="button" onClick={f.onAbrir} className="min-w-0 flex-1 py-3.5 pl-4 text-left">
-                  <span className="block font-sans text-body font-bold leading-snug text-ink">
+                  <span className="block font-sans text-title-s font-semibold leading-snug text-ink">
                     {f.nombre}
                     {f.tuyo && <span className="ml-2 align-middle font-mono text-caption font-bold uppercase text-accent-ink">tuyo</span>}
                   </span>
-                  {f.detalle && <span className="mt-0.5 block font-sans text-body-s text-ink-2">{f.detalle}</span>}
+                  {f.detalle && <span className="mt-0.5 block font-mono text-body-s text-ink-2">{f.detalle}</span>}
                 </button>
                 {f.onEditar && (
                   <button type="button" onClick={f.onEditar} aria-label={`Editar ${f.nombre}`} className="flex h-10 w-10 flex-none items-center justify-center text-ink-3 hover:text-ink">

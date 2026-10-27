@@ -251,6 +251,15 @@
   --color-hairline: var(--p-hairline);
   --color-strong: var(--p-strong);
   --color-accent-line: var(--p-accent-line);
+  /* 27-10: borde de un CONTROL de formulario (input, select, textarea,
+     buscador). Es un token aparte porque `hairline` es un separador: sobre
+     papel medía 1,27:1 y el campo, blanco sobre blanco, no existía. Aquí es
+     la línea que WCAG pide para el contorno de un control (3:1): tinta al
+     46 % en claro; en oscuro vale lo mismo que `strong`, porque allí el
+     relleno `field` ya distingue el campo y la línea solo acompaña. Los
+     chips y botones neutros NO lo usan: llevan `strong` + relleno un escalón
+     distinto del padre, que es lo que los hace «pulsables». */
+  --color-control-line: var(--p-control-line);
 
   /* ── Marca · 2 ──────────────────────────────────────────────────────────────
      El oro significa exactamente una cosa: lo siguiente que tienes que hacer.
@@ -380,6 +389,15 @@
   --color-macro-grasa:     var(--p-macro-grasa);
   --color-macro-mix-hc:    var(--p-macro-mix-hc);
   --color-macro-mix-grasa: var(--p-macro-mix-grasa);
+  /* 27-10: el macro cuando hace de RELLENO (anillo de kcal, barra de macros,
+     segmento del donut), no de texto. Mismo desdoble que el oro: para que el
+     amarillo de hidratos se lea como texto sobre papel hay que bajarlo hasta
+     un ocre que Dani vetó («esa tonalidad no existe en la app»); como relleno
+     de un trazo grueso sobre una pista gris puede ser el ámbar de verdad. En
+     oscuro valen lo mismo que el texto. Solo los tres macros con anillo. */
+  --color-macro-hc-fill:    var(--p-macro-hc-fill);
+  --color-macro-prot-fill:  var(--p-macro-prot-fill);
+  --color-macro-grasa-fill: var(--p-macro-grasa-fill);
 
   /* ── Zonas de FC · 5 + fuera ────────────────────────────────────────────────
      Las zonas tienen el mismo desdoble que el oro, y por el mismo motivo. El
@@ -461,6 +479,11 @@
      números que el usuario lee mientras cambian —cronómetros, reps— no se
      animan nunca, entren por donde entren. */
   --ease-brand: cubic-bezier(0.2, 0.9, 0.2, 1);
+  /* 27-10: la ÚNICA segunda curva, y solo para tres gestos que piden rebote
+     (una tarjeta protagonista que llega, el icono de la barra al elegirlo,
+     el toast al posarse). Sobrepasa un 10 % y vuelve. No se usa en salidas
+     ni en nada que el usuario lea mientras se mueve. */
+  --ease-rebote: cubic-bezier(0.34, 1.4, 0.64, 1);
 
   /* Animaciones de entrada/estado nombradas — Tailwind v4 las expone como
      `animate-fade-up`, `animate-scale-y-in`, etc. Sus `@keyframes` van justo
@@ -475,7 +498,27 @@
   --animate-ghost-tap:      ghost-tap 1.1s var(--ease-brand) infinite;
   --animate-seal-pop:       seal-pop var(--duration-stagger-item) var(--ease-brand) both;
   --animate-sheet-in:       sheet-in var(--duration-sheet) var(--ease-brand) both;
-  --animate-toast-in:       toast-in var(--duration-slide) var(--ease-brand) both;
+  /* 27-10: el toast se POSA (28 px y un rebote mínimo), ya no solo se asienta. */
+  --animate-toast-in:       toast-in 520ms var(--ease-rebote) both;
+  /* 27-10 (segunda capa de movimiento, decisión de Dani: «que quede bonito y
+     trabajado»). Entradas con dirección, barras que llenan, el icono que
+     responde, el latido de una confirmación y el fundido de salida de un
+     esqueleto. Todas sobre transform/opacity (y un desenfoque corto en la
+     entrada de pantalla). */
+  --animate-pop:            pop 420ms var(--ease-rebote) both;
+  --animate-scale-x-in:     scale-x-in var(--duration-bar) var(--ease-brand) both;
+  --animate-desde-der:      desde-der var(--duration-base) var(--ease-brand) both;
+  --animate-desde-izq:      desde-izq var(--duration-base) var(--ease-brand) both;
+  --animate-latido:         latido 600ms var(--ease-brand) both;
+  --animate-fade-out:       fade-out var(--duration-exit) var(--ease-brand) both;
+  --animate-flash-exito:    flash-exito 600ms var(--ease-brand) both;
+  /* 27-10 (revisión de animaciones): las SALIDAS. Dialog y toast desaparecían
+     de golpe; ahora se van en `--duration-exit`, el paso más corto de la
+     escala, como manda el handoff («las salidas siempre más rápidas que las
+     entradas»). Menos recorrido que la entrada: lo que se va no "cae", se
+     asienta y se funde. */
+  --animate-dialog-out:     dialog-out var(--duration-exit) var(--ease-brand) both;
+  --animate-toast-out:      toast-out var(--duration-exit) var(--ease-brand) both;
 
   /* fade-up — entrada por defecto de tarjetas y filas escalonadas. */
   @keyframes fade-up {
@@ -529,11 +572,80 @@
     to   { transform: none; opacity: 1; }
   }
 
+  @keyframes dialog-out {
+    from { transform: none; opacity: 1; }
+    to   { transform: translateY(6px) scale(0.985); opacity: 0; }
+  }
+  @keyframes toast-out {
+    from { transform: none; opacity: 1; }
+    to   { transform: translateY(8px); opacity: 0; }
+  }
+
   /* toast-in — más corto y con menos recorrido que sheet-in: un toast no
      "sube desde el borde", solo se asienta. */
   @keyframes toast-in {
-    from { transform: translateY(22px) scale(0.97); opacity: 0; }
+    from { transform: translateY(28px) scale(0.96); opacity: 0; }
     to   { transform: none; opacity: 1; }
+  }
+
+  /* asentar — la entrada de pantalla: cada bloque sube 14 px, enfoca desde
+     un desenfoque de 4 px y asienta con una escala de .985. El desenfoque
+     termina al 60 % para que el texto sea legible antes de que acabe el
+     recorrido. */
+  @keyframes asentar {
+    from { opacity: 0; transform: translateY(14px) scale(0.985); filter: blur(4px); }
+    60%  { filter: blur(0); }
+    to   { opacity: 1; transform: none; filter: blur(0); }
+  }
+  /* bajar — la cabecera de una pantalla con protagonista llega desde arriba. */
+  @keyframes bajar {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: none; }
+  }
+  /* protagonista — la tarjeta que manda en la pantalla: más recorrido, escala
+     desde .94 y la curva con rebote. Una por pantalla. */
+  @keyframes protagonista {
+    from { opacity: 0; transform: translateY(18px) scale(0.94); }
+    to   { opacity: 1; transform: none; }
+  }
+  /* pop — el icono de la barra inferior al elegirlo: encoge, sobrepasa, vuelve. */
+  @keyframes pop {
+    0%   { transform: scale(0.85); }
+    55%  { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+  /* scale-x-in — una barra de progreso llena desde la izquierda al entrar
+     (transform-origin lo pone el componente: origin-left). */
+  @keyframes scale-x-in {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  /* desde-der / desde-izq — contenido de pestaña o de día que entra desde el
+     lado hacia el que te mueves. 16 px, sin escalón. */
+  @keyframes desde-der {
+    from { opacity: 0; transform: translateX(16px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes desde-izq {
+    from { opacity: 0; transform: translateX(-16px); }
+    to   { opacity: 1; transform: none; }
+  }
+  /* latido — una confirmación grande (día cerrado, entreno terminado): la
+     tarjeta late UNA vez. */
+  @keyframes latido {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+  /* fade-out — el esqueleto se va mientras el contenido entra. */
+  @keyframes fade-out {
+    to { opacity: 0; }
+  }
+  /* flash-exito — destello verde de una fila al marcarla hecha; el color lo
+     pone el componente (bg-success), esto solo lo enciende y apaga. */
+  @keyframes flash-exito {
+    0%   { opacity: 0.18; }
+    100% { opacity: 0; }
   }
 }
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -561,7 +673,7 @@
 /* ── Claro ─────────────────────────────────────────────────────────────────
    No es «el oscuro invertido». En oscuro la elevación sube de negro hacia
    gris; en claro el papel NO puede subir por encima del blanco, así que la
-   escalera se reordena: la página es un hueso cálido, la tarjeta es blanca, y
+   escalera se reordena: la página es un gris tibio, la tarjeta es blanca, y
    lo hundido baja. `raised` y `surface` comparten valor a propósito —una
    tarjeta sobre otra tarjeta se separa con el borde `hairline`, igual que en
    oscuro— y lo que en oscuro era «más claro que su padre» aquí es «más
@@ -573,16 +685,26 @@
   color-scheme: light;
 
   /* Superficies */
-  --p-bg:      #F8F6F2;
+  /* 27-10 (revisión del modo claro, decisión de Dani): la página pasa del
+     crema #F8F6F2 a un gris tibio, el gris con un 2 % de cálido que usan
+     iOS y macOS en sus fondos agrupados. Lee como gris pero no ensucia el
+     oro. Y la escalera gana escalones de verdad:
+       · la página es gris tibio;
+       · lo que contiene (tarjeta, hoja, barra) es blanco: 1,12:1, se lee;
+       · lo que SE TOCA dentro de blanco (chip, campo, botón de icono, pista
+         del segmentado, toast) vuelve a ser el gris de la página —`raised` y
+         `field` valen lo mismo que `bg` a propósito: un control dentro de
+         una tarjeta es «un escalón abajo», no «casi blanco». El #FAF9F6 de
+         antes medía 1,05:1 contra la tarjeta: no existía;
+       · lo hundido (`inset`) baja otro escalón (1,125:1 contra la página);
+       · `track` es solo pista de barra.
+     Nada es «casi blanco». */
+  --p-bg:      #F3F2F0;
   --p-surface: #FFFFFF;
-  /* `raised` vive DENTRO de tarjetas blancas (chips, filas, hover del botón
-     fantasma, Badge neutral): con #FFF idéntico a `surface` desaparecía.
-     Blanco roto, entre `surface` (#FFF) y `bg` (#F8F6F2): 1,04:1 contra la
-     tarjeta, lo justo para leerse como «un escalón» sin ensuciarla. */
-  --p-raised:  #FAF9F6;
-  --p-field:   #FFFFFF;
-  --p-inset:   #EBE8E1;
-  --p-track:   #DFDBD2;
+  --p-raised:  #F3F2F0;
+  --p-field:   #F3F2F0;
+  --p-inset:   #E6E5E2;
+  --p-track:   #DAD9D5;
 
   /* Texto — mismas cinco alfas que en oscuro, sobre tinta cálida en vez de
      sobre hueso. 15,9:1 el principal sobre la página: de sobra. */
@@ -604,9 +726,20 @@
   /* Líneas — negro con alfa, no blanco. Un poco más marcadas que en oscuro:
      sobre papel una línea al 7 % desaparece, y aquí el borde es lo único que
      define una tarjeta blanca sobre una página casi blanca. */
-  --p-hairline:    rgba(27, 25, 22, 0.12);
-  --p-strong:      rgba(27, 25, 22, 0.18);
-  --p-accent-line: rgba(154, 110, 12, 0.55);
+  /* 27-10: hairline sube al 14 % (separador y borde de tarjeta blanca sobre
+     el gris); `strong` al 30 % es el borde de un control en reposo (chip,
+     botón secundario neutro) y su hover; `control-line` al 48 % (#92918F,
+     3,16:1 sobre blanco) es el contorno de un campo. Medido: al 12 % y al
+     18 % ningún borde de la app pasaba de 1,5:1. */
+  --p-hairline:     rgba(27, 25, 22, 0.14);
+  --p-strong:       rgba(27, 25, 22, 0.30);
+  --p-control-line: rgba(27, 25, 22, 0.48);
+  /* Oro al 55 % medía 2,06:1 sobre el papel: el borde del botón secundario,
+     el anillo de foco y el contorno del chip seleccionado no llegaban al 3:1.
+     Pasa a ser el oro pulsado SÓLIDO (4,0:1 sobre blanco, 3,8 sobre la
+     página). Ya no es «oro con alfa», pero el nombre se queda: sigue siendo
+     la línea de oro, y 120 consumidores no tienen por qué enterarse. */
+  --p-accent-line: #A87510;
 
   /* Marca. `accent` se oscurece lo justo para que el relleno siga leyéndose
      como ORO (6,2:1 con la tinta encima) y `accent-ink` baja hasta el ámbar
@@ -655,7 +788,7 @@
   --p-phase-fuerza:   #2F6BD4;
   --p-phase-hiper:    #7345C9;
   --p-phase-defi:     #12855A;
-  --p-phase-mant:     #8A7A60;
+  --p-phase-mant:     #6B5C44;   /* 27-10: #8A7A60 daba 3,7:1 como etiqueta de 12 px */
   --p-phase-descarga: #6B7280;
   --p-cat-cardio:     #A8720F;
   --p-refeed:         #C2521B;
@@ -664,16 +797,24 @@
      proteína azul, grasa naranja, mezclas violeta y rosa) y baja hasta pasar
      4,5:1 sobre su propio tinte al 10 %, que es como se pintan las pastillas
      de categoría. Medido: 5,8 / 5,7 / 6,0 / 5,9 / 5,2. */
-  --p-macro-hc:        #7D5300;
+  /* 27-10: hidratos como TEXTO deja de ser el ocre #7D5300 (Dani: «esa
+     tonalidad no existe en la app») y pasa a ser `accent-ink`, el único oro
+     de texto que la app ya usa en enlaces y cifras. 5,16:1 sobre su tinte.
+     Como RELLENO (anillo, barra, donut) cada macro tiene su `-fill`: ámbar,
+     azul y naranja de verdad, sobre la pista gris. */
+  --p-macro-hc:        #875C05;
   --p-macro-prot:      #1D4FD8;
   --p-macro-grasa:     #8F4208;
   --p-macro-mix-hc:    #6A3BC4;
   --p-macro-mix-grasa: #B32573;
+  --p-macro-hc-fill:    #D9A21B;
+  --p-macro-prot-fill:  #2F6BD4;
+  --p-macro-grasa-fill: #E8732A;
 
   /* Zonas como texto. Medido sobre su tinte/10: 5,6 / 5,9 / 5,8 / 5,2 / 5,8. */
   --p-zone-1-ink:   #1F5FA8;
   --p-zone-2-ink:   #0A6375;
-  --p-zone-3-ink:   #7D5300;
+  --p-zone-3-ink:   #875C05;   /* el mismo oro de texto que accent-ink, no el ocre */
   --p-zone-4-ink:   #A8420A;
   --p-zone-5-ink:   #B02219;
   --p-zone-out-ink: #4B5563;
@@ -706,9 +847,15 @@
   --p-ink-5:     rgba(245, 245, 244, 0.32);
   --p-on-accent: #121212;
 
-  --p-hairline:    rgba(255, 255, 255, 0.07);
-  --p-strong:      rgba(255, 255, 255, 0.12);
-  --p-accent-line: rgba(227, 179, 65, 0.45);
+  --p-hairline:     rgba(255, 255, 255, 0.07);
+  --p-strong:       rgba(255, 255, 255, 0.12);
+  /* 27-10: medido, `field` sobre `bg` en oscuro es 1,2:1 y `strong` 1,4:1: el
+     campo tampoco tenía contorno aquí. Blanco al 34 % (#686868) da 3,1:1. */
+  --p-control-line: rgba(255, 255, 255, 0.34);
+  /* 27-10: del 45 % (2,83:1) al 60 % (4,0:1) para que el borde del botón
+     secundario pase el 3:1 también aquí. Es el único valor de oscuro que
+     cambia en la revisión del modo claro. */
+  --p-accent-line: rgba(227, 179, 65, 0.60);
 
   --p-accent:       #E3B341;
   --p-accent-press: #C79B32;
@@ -750,6 +897,10 @@
   --p-macro-grasa:     #fdba74;
   --p-macro-mix-hc:    #c4b5fd;
   --p-macro-mix-grasa: #f9a8d4;
+  /* En oscuro el texto ya es brillante: el relleno vale lo mismo. */
+  --p-macro-hc-fill:    #fcd34d;
+  --p-macro-prot-fill:  #93c5fd;
+  --p-macro-grasa-fill: #fdba74;
 
   /* En oscuro, idénticos al relleno: el color de señal ya se lee sobre negro. */
   --p-zone-1-ink:   #4a90d9;
@@ -784,6 +935,71 @@
 }
 
 @layer utilities {
+  /* ── Entrada de pantalla (27-10) ────────────────────────────────────────────
+     Dani: «quiero que todo tenga algo de animación, como cuando abres la app».
+     Una clase en la raíz de cada pantalla y sus hijos directos entran
+     escalonados con `fade-up`: cabecera primero, cada bloque 40 ms después,
+     tope en el octavo (320 ms) para que una pantalla larga no haga esperar.
+     Solo al montar: cambiar de pestaña remonta el contenido con `key` y la
+     entrada se repite; una lista que se refresca no parpadea.
+
+     Una pantalla dentro de otra (NutritionScreen dentro del hub de
+     Nutrición, un panel dentro del Hub del cliente) NO se funde dos veces: el
+     contenedor que envuelve a otra `.pantalla` se queda quieto y deja que la
+     de dentro escalone sus propios hijos. `prefers-reduced-motion` lo apaga
+     todo desde el bloque global de abajo. */
+  .pantalla > * {
+    animation: asentar var(--duration-stagger-item) var(--ease-brand) both;
+  }
+  /* Variante B («cascada con protagonista»), solo en Inicio, Nutrición,
+     Entreno y Revisión: la cabecera baja desde arriba, la tarjeta marcada
+     `.protagonista` llega con rebote y el resto escalona más despacio. */
+  .pantalla-b > :first-child { animation-name: bajar; }
+  .pantalla-b .protagonista { animation: protagonista 620ms var(--ease-rebote) both; animation-delay: 60ms; }
+  .pantalla-b > :nth-child(2) { animation-delay: 60ms; }
+  .pantalla-b > :nth-child(3) { animation-delay: 150ms; }
+  .pantalla-b > :nth-child(4) { animation-delay: 210ms; }
+  .pantalla-b > :nth-child(5) { animation-delay: 260ms; }
+
+  /* Fila pulsable: acusa el toque al instante (escala y fondo sin
+     transición) y lo suelta despacio (550 ms), para que se vea que respondió
+     aunque la navegación tarde. */
+  .fila-pulsable {
+    transition: transform var(--duration-base) var(--ease-brand), background-color var(--duration-stagger-item) var(--ease-brand);
+  }
+  .fila-pulsable:active {
+    transform: scale(0.985);
+    background-color: var(--color-raised);
+    transition-duration: var(--duration-exit), 0ms;
+  }
+
+  /* Zona táctil de 44 px para un icono de 20: el pseudo-elemento ensancha
+     el objetivo sin cambiar lo que se ve. El elemento debe ser `relative`. */
+  .zona-tactil::before {
+    content: "";
+    position: absolute;
+    inset: -12px;
+  }
+
+  /* Contorno neutro de una foto (receta, progreso, avatar): 1 px de tinta al
+     10 %, hacia dentro, para que una foto clara no se funda con la tarjeta. */
+  .contorno-foto {
+    outline: 1px solid color-mix(in oklab, var(--color-ink) 10%, transparent);
+    outline-offset: -1px;
+  }
+  .pantalla > :nth-child(2) { animation-delay: 40ms; }
+  .pantalla > :nth-child(3) { animation-delay: 80ms; }
+  .pantalla > :nth-child(4) { animation-delay: 120ms; }
+  .pantalla > :nth-child(5) { animation-delay: 160ms; }
+  .pantalla > :nth-child(6) { animation-delay: 200ms; }
+  .pantalla > :nth-child(7) { animation-delay: 240ms; }
+  .pantalla > :nth-child(8) { animation-delay: 280ms; }
+  .pantalla > :nth-child(n + 9) { animation-delay: 320ms; }
+  .pantalla > .pantalla,
+  .pantalla > :has(> .pantalla):not([class*="animate-"]) {
+    animation: none;
+  }
+
   /* Stagger sin hook de JS: cada hijo lleva `style={{ '--i': idx }}` y esta
      clase multiplica por 40 ms — el paso que fija el handoff entre elementos
      de una misma lista. `--i` por defecto 0 para que un elemento suelto (sin
@@ -804,7 +1020,25 @@
    recorrido de scroll del tutorial, una cuenta atrás) no pasa por CSS: ese
    usa el hook `useReducedMotion` (`ui/internal/useReducedMotion.ts`) para
    decidir en el propio código si interpola o salta al estado final. */
+/* Transiciones de vista (lista → detalle, Clientes → Hub): el fundido de la
+   página y el «vuelo» del nombre van con la duración y la curva del sistema,
+   no con las del navegador. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--duration-base);
+  animation-timing-function: var(--ease-brand);
+}
+::view-transition-group(*) {
+  animation-duration: var(--duration-slide);
+  animation-timing-function: var(--ease-brand);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
@@ -886,6 +1120,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @layer base {
+  /* Toda cifra en mono va tabular: kcal, pesos, cronómetro. Sin esto los
+     dígitos «bailan» al cambiar (un 1 es más estrecho que un 8). */
+  [class~="font-mono"] {
+    font-variant-numeric: tabular-nums;
+  }
+
   /* iOS amplía la página al enfocar un control con fuente < 16px y no la
      devuelve (ver index.html). Suelo de 16px en móvil para TODO control de
      formulario, aunque el diseño le pida un tamaño de texto menor. */

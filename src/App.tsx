@@ -1023,7 +1023,7 @@ function AppContent() {
       {!isCoach && <CardioMiniPlayer currentPath={location.pathname} onOpen={() => navigate('/cardio')} />}
 
       {/* TOP DESKTOP HEADER */}
-      <header className="hidden md:flex justify-between items-center w-full px-8 h-[var(--header-h)] pt-[var(--safe-top)] bg-bg fixed top-0 left-0 border-b border-hairline z-[var(--z-header)]">
+      <header className="hidden md:flex justify-between items-center w-full px-8 h-[var(--header-h)] pt-[var(--safe-top)] bg-bg fixed top-0 left-0 border-b border-hairline shadow-e1 z-[var(--z-header)]">
         <div className="flex items-center gap-2 text-accent-ink">
           <AtlasLogo alt="En Forma" className="w-6 h-6 object-contain" />
           <Wordmark />
@@ -1044,7 +1044,7 @@ function AppContent() {
       </header>
 
       {/* MOBILE HEADER */}
-      <header className={`md:hidden flex justify-between items-center w-full px-4 h-[var(--header-h)] bg-bg border-b border-hairline sticky top-0 z-[var(--z-header)] ${avisoConexion === 'ok' ? 'pt-[var(--safe-top)]' : ''}`}>
+      <header className={`md:hidden flex justify-between items-center w-full px-4 h-[var(--header-h)] bg-bg border-b border-hairline shadow-e1 sticky top-0 z-[var(--z-header)] ${avisoConexion === 'ok' ? 'pt-[var(--safe-top)]' : ''}`}>
         <div className="flex items-center gap-2 text-accent-ink">
           <AtlasLogo alt="En Forma" className="w-6 h-6 object-contain" />
           <Wordmark />
@@ -1072,7 +1072,7 @@ function AppContent() {
                   flotante del propio panel, que es `md:` — en el móvil no
                   había nada que dijera que hay propuestas esperando. */}
               {propuestasPendientes > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-warning text-on-fill font-mono text-[10px] font-bold flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-warning text-on-fill font-mono text-caption font-bold flex items-center justify-center">
                   {propuestasPendientes}
                 </span>
               )}
@@ -1106,7 +1106,7 @@ function AppContent() {
                     key={tab.id}
                     onClick={() => goToNav(tab.id)}
                     aria-current={activa ? 'page' : undefined}
-                    className={`flex items-center gap-4 p-3 rounded-control transition-all text-left group ${activa ? 'bg-accent text-on-accent font-bold' : 'text-ink-2 hover:bg-raised hover:text-ink'}`}
+                    className={`flex items-center gap-4 p-3 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow] text-left group ${activa ? 'bg-accent text-on-accent font-bold' : 'text-ink-2 hover:bg-raised hover:text-ink'}`}
                   >
                     <Icon name={tab.icon} size="l" filled={activa} className="group-hover:scale-110 transition-transform" />
                     <span className="font-sans text-label uppercase tracking-wider font-bold flex-1">{tab.label}</span>
@@ -1145,7 +1145,7 @@ function AppContent() {
             pathTab, no la ruta completa, así que navegar dentro de una misma
             pestaña (p. ej. entre clientes del CRM) no reinicia la animación
             ni el estado de scroll cada vez. */}
-        <div key={pathTab} className="animate-fade-up">
+        <div key={pathTab}>
         <Routes>
           <Route path="/" element={<Navigate to={isCoach ? '/clients' : '/home'} replace />} />
 
@@ -1265,7 +1265,7 @@ function AppContent() {
         ref={navTabsRef}
         aria-hidden={tecladoAbierto || undefined}
         className={
-          'md:hidden fixed bottom-0 w-full z-[var(--z-nav)] flex items-stretch gap-1 px-2 py-4 bg-surface/95 dark:bg-bg/92 backdrop-blur-md border-t border-hairline select-none'
+          'md:hidden fixed bottom-0 w-full z-[var(--z-nav)] flex items-stretch gap-1 px-2 py-4 bg-surface/95 dark:bg-bg/92 backdrop-blur-md border-t border-hairline shadow-e1 select-none'
           + (tecladoAbierto ? ' invisible' : '')
         }
         style={{
@@ -1322,7 +1322,10 @@ function AppContent() {
                   + (activa ? '-translate-y-px text-accent-ink' : 'text-ink-2')
                 }
               >
-                <Icon name={tab.icon} size="l" filled={activa} />
+                {/* `key` cambia con el estado: el icono elegido se remonta y hace su pop. */}
+                <span key={activa ? 'on' : 'off'} className={activa ? 'inline-flex animate-pop' : 'inline-flex'}>
+                  <Icon name={tab.icon} size="l" filled={activa} />
+                </span>
                 {tab.id === 'home' && !isCoach && gimnasioPendiente && (
                   <span
                     aria-label="Tienes el catálogo de máquinas a medias"

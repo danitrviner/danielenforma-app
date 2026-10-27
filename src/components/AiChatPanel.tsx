@@ -121,7 +121,7 @@ function DoctrinaEditor({ descripcion, valor, onChange, esDefault, onRestaurar, 
         value={valor}
         onChange={e => onChange(e.target.value)}
         rows={16}
-        className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-body-s font-mono text-ink outline-none"
+        className="w-full resize-none bg-surface border border-control-line focus:border-accent/50 rounded-control px-4 py-3 text-body-s font-mono text-ink outline-none"
       />
       <p className="text-caption text-ink-2">
         Se manda entero en cada conversación. Escribe reglas concretas y accionables — cuanto más vago, menos cambia lo que hace el asistente.
@@ -645,7 +645,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             <ListRow
               key={c.id}
               onClick={() => openChat(c)}
-              className={`rounded-surface border ${c.id === chat.id ? 'border-accent/40 bg-accent/5' : 'border-hairline bg-surface'}`}
+              className={`rounded-surface border ${c.id === chat.id ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press' : 'border-hairline bg-surface'}`}
               title={c.title || 'Chat sin título'}
               subtitle={`${c.updatedAt.slice(0, 10)}${c.athleteId ? ` · ${c.athleteId}` : ''}`}
               trailing={
@@ -850,7 +850,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   rows={Math.min(4, Math.max(1, input.split('\n').length))}
                   placeholder={busy ? 'Trabajando…' : listening ? 'Escuchando…' : 'Escribe al asistente…'}
                   disabled={busy}
-                  className="flex-1 resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-title-s text-ink placeholder-ink-2/50 outline-none disabled:opacity-50"
+                  className="flex-1 resize-none bg-surface border border-control-line focus:border-accent/50 rounded-control px-4 py-3 text-title-s text-ink placeholder-ink-2/50 outline-none disabled:opacity-50"
                 />
                 {speechSupported && (
                   <Button
@@ -934,7 +934,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     onChange={e => setInstructionsDraft(e.target.value)}
                     rows={8}
                     placeholder="Escribe tus reglas, una por línea…"
-                    className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-title-s text-ink placeholder-ink-2/50 outline-none"
+                    className="w-full resize-none bg-surface border border-control-line focus:border-accent/50 rounded-control px-4 py-3 text-title-s text-ink placeholder-ink-2/50 outline-none"
                   />
                 </>
               )}

@@ -24,7 +24,7 @@ export default function NutritionCoachScreen({ coachId }: Props) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* Sin cabecera propia: la pone Biblioteca (CoachLibraryScreen). */}
 
       <Tabs items={tabs} value={activeTab} onChange={id => setActiveTab(id as Tab)} label="Secciones de Nutrición" />

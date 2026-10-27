@@ -99,7 +99,7 @@ export default function Card({
         onClick={onClick}
         aria-label={label}
         className={
-          `${base} flex w-full flex-col gap-3 text-left transition-colors hover:border-strong `
+          `${base} flex w-full flex-col gap-3 text-left transition-[border-color,transform] duration-(--duration-base) ease-brand hover:border-strong active:scale-[.99] `
           + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line '
           + `focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${className}`
         }

@@ -61,7 +61,7 @@ function EditorAbierto({ paquete, recetas, onCerrar, onGuardar, onBorrar }: Prop
           onChange={e => setNombre(e.target.value)}
           placeholder="Cenas en 10 minutos"
           aria-label="Nombre del paquete"
-          className="w-full bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-base text-ink focus:outline-none focus:border-accent"
+          className="w-full bg-bg border border-control-line rounded-control px-3 min-h-[44px] font-sans text-body text-ink focus:outline-none focus:border-accent"
         />
         <p className="font-mono text-caption text-ink-3">Sirve para cualquier atleta: lo añades a su plan con un toque.</p>
         <input
@@ -70,7 +70,7 @@ function EditorAbierto({ paquete, recetas, onCerrar, onGuardar, onBorrar }: Prop
           onChange={e => setBusqueda(e.target.value)}
           placeholder="Buscar receta para añadir"
           aria-label="Buscar receta para añadir al paquete"
-          className="w-full bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-base text-ink focus:outline-none focus:border-accent"
+          className="w-full bg-bg border border-control-line rounded-control px-3 min-h-[44px] font-sans text-body text-ink focus:outline-none focus:border-accent"
         />
         {resultados.length > 0 && (
           <ul className="m-0 p-0 list-none border border-hairline rounded-control">

@@ -20,7 +20,7 @@ export default function TrainingCoachScreen({ coachId }: TrainingCoachScreenProp
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* Sin cabecera propia: esta pantalla se monta dentro de Biblioteca
           (CoachLibraryScreen), que ya pone la ceja y el título. */}
       <Tabs items={tabs} value={activeTab} onChange={id => setActiveTab(id as Tab)} label="Secciones de Entrenamiento" />

@@ -1,3 +1,4 @@
+import { useDireccionDePestana } from './ui/internal/useDireccionDePestana';
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { UserProfile, RecetaPendiente } from '../types';
@@ -29,6 +30,7 @@ const TABS: { id: NutritionTab; label: string; icon: string }[] = [
 export default function NutritionHubScreen({ profile }: NutritionHubScreenProps) {
   const nutritionConfigKey = ['athleteNutritionConfig', profile.email] as const;
   const [activeSubTab, setActiveSubTab] = useState<NutritionTab>('mi-plan');
+  const direccion = useDireccionDePestana(TABS.map(t => t.id), activeSubTab);
   const [pendingRecipe, setPendingRecipe] = useState<RecetaPendiente | null>(null);
   // 1.4.1 de Apple: las citas de las recomendaciones de salud tienen que ser
   // fáciles de encontrar. Este es el sitio — la cabecera de Nutrición, visible
@@ -50,7 +52,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
   };
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {nutritionConfig?.sharedReportSnapshot && (
         <div className="bg-surface border border-hairline rounded-surface p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -70,6 +72,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
 
       <Tabs items={TABS} value={activeSubTab} onChange={id => setActiveSubTab(id as NutritionTab)} label="Secciones de Nutrición" />
 
+      <div key={activeSubTab} className={direccion}>
       {activeSubTab === 'mi-plan' && (
         <NutritionScreen
           profile={profile}
@@ -82,6 +85,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
       {activeSubTab === 'periodizacion' && (
         <NutritionPerformanceDashboard athleteEmail={profile.email} targetWeightKg={profile.targetWeight} />
       )}
+      </div>
 
       <EnlaceFuentes onClick={() => setShowFuentes(true)} />
       <FuentesCientificasSheet open={showFuentes} onClose={() => setShowFuentes(false)} />

@@ -225,7 +225,7 @@ export default function ClientFichaPanel({
     : athlete.actualWeight || null;
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* ══ 1. ESTADO — cómo va. Lo que más se mira, así que va primero y sin
              plegar. Lo urgente (plan sin publicar, próxima revisión) se queda
              en ClientAlertsBar; esto es lo descriptivo. */}
@@ -323,12 +323,12 @@ export default function ClientFichaPanel({
             type="date"
             value={planStart}
             onChange={e => onPlanStartChange(e.target.value)}
-            className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
+            className="bg-raised border border-control-line rounded-control px-2 py-2 text-title-s font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
           />
           <select
             value={planMonths}
             onChange={e => onPlanMonthsChange(Number(e.target.value) as 3 | 6 | 12)}
-            className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
+            className="bg-raised border border-control-line rounded-control px-2 py-2 text-title-s font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
           >
             <option value={3}>3 meses</option>
             <option value={6}>6 meses</option>
@@ -337,7 +337,7 @@ export default function ClientFichaPanel({
           <button
             onClick={onSavePlan}
             disabled={savingPlan}
-            className="px-3 py-2 min-h-[36px] bg-accent text-on-accent font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+            className="px-3 py-2 min-h-[36px] bg-accent text-on-accent font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-50"
           >
             {savingPlan ? '...' : 'Guardar'}
           </button>
@@ -843,7 +843,7 @@ export default function ClientFichaPanel({
             </div>
             <button
               onClick={() => setEditingOnboarding(true)}
-              className="shrink-0 flex items-center gap-2 px-4 py-3 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
+              className="shrink-0 flex items-center gap-2 px-4 py-3 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             >
               <span className="material-symbols-outlined text-body-s">add</span>Crear ficha
             </button>

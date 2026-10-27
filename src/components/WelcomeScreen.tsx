@@ -111,7 +111,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
           la única marca de color de la pantalla, el cian se retira. */}
       <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-accent/6 blur-[120px] rounded-full" aria-hidden />
 
-      <div className="w-full max-w-md bg-surface border border-hairline p-8 rounded-canvas shadow-e2 z-10">
+      <div className="animate-fade-up w-full max-w-md bg-surface border border-hairline p-8 rounded-canvas shadow-e2 z-10">
         {/* En Forma Header */}
         <div className="flex flex-col items-center mb-6 gap-2">
           <AtlasLogo alt="" className="w-16 h-16 object-contain" />
@@ -162,7 +162,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               placeholder="••••••"
               autoComplete="current-password"
               required
-              className="h-[54px] w-full rounded-field border border-hairline bg-field px-4 font-sans text-title-s text-ink transition-colors duration-(--duration-state) focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent focus:ring-inset"
+              className="h-[54px] w-full rounded-field border border-control-line bg-field px-4 font-sans text-title-s text-ink transition-colors duration-(--duration-state) focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent focus:ring-inset"
             />
           </div>
 

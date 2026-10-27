@@ -56,7 +56,7 @@ export default function TrainingLoadPanel({ sessions }: Props) {
           {(['undertraining', 'optimal', 'peaking', 'overreaching', 'at_risk'] as const).map(s => (
             <div key={s} className="h-full flex-1" style={{ backgroundColor: TLR_STATE_COLOR[s] }} />
           ))}
-          <div className="absolute top-[-2px] w-1 h-3 bg-ink rounded-full transition-all duration-500"
+          <div className="absolute top-[-2px] w-1 h-3 bg-ink rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-500"
             style={{ left: `${Math.min(Math.max(today.tlr / 2, 0), 1) * 100}%` }} />
         </div>
       </div>

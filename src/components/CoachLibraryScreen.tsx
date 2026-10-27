@@ -1,3 +1,4 @@
+import { useDireccionDePestana } from './ui/internal/useDireccionDePestana';
 import React from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { PageHeader, Tabs } from './ui';
@@ -49,6 +50,7 @@ export default function CoachLibraryScreen() {
   const location = useLocation();
 
   const seccion = location.pathname.split('/')[2] ?? DEFAULT_LIBRARY_SECTION;
+  const direccion = useDireccionDePestana(LIBRARY_SECTIONS.map(s => s.id), seccion);
 
   return (
     <div className="space-y-6">
@@ -61,7 +63,9 @@ export default function CoachLibraryScreen() {
         label="Catálogos del entrenador"
       />
 
-      <Outlet />
+      <div key={seccion} className={direccion}>
+        <Outlet />
+      </div>
     </div>
   );
 }

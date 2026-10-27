@@ -219,7 +219,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId }: 
   };
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       <PageHeader
         title="Revisiones"
         subtitle={`Check-ins pendientes de revisar y respuestas de cuestionarios de los últimos ${DIAS_DE_BANDEJA} días, más antiguo primero. Las más antiguas están en la ficha de cada cliente.`}
@@ -300,7 +300,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId }: 
                     <div
                       {...pulsable(toggle)}
                       aria-expanded={isExpanded}
-                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
+                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-[color,background-color,border-color,opacity,transform,box-shadow] hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                     >
                       <div className="w-7 h-7 rounded-full overflow-hidden border border-hairline flex-shrink-0">
                         <Avatar src={athleteProfile?.avatarUrl} name={athleteName} alt="" className="w-full h-full object-cover" />
@@ -376,7 +376,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId }: 
                               type="button"
                               onClick={() => insertQuickReply(r)}
                               title={r}
-                              className="max-w-[180px] truncate text-caption font-mono text-ink-2 hover:text-accent-ink hover:border-accent/40 border border-hairline px-2 py-1 rounded-control transition-all"
+                              className="max-w-[180px] truncate text-caption font-mono text-ink-2 hover:text-accent-ink hover:border-accent/40 border border-hairline px-2 py-1 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                             >
                               {r}
                             </button>
@@ -395,12 +395,12 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId }: 
                             value={expandedId === key ? feedbackText : (c.coachFeedback || '')}
                             onChange={e => setFeedbackText(e.target.value)}
                             placeholder="Escribe tu feedback para el atleta..."
-                            className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-ink focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
+                            className="w-full bg-raised border border-control-line rounded-control p-3 text-title-s text-ink focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
                           />
                           <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="h-[36px] px-5 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control flex items-center gap-2 hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+                            className="h-[36px] px-5 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control flex items-center gap-2 hover:bg-accent-press active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-50"
                           >
                             {isSubmitting ? 'Guardando...' : hasNextPending ? 'Enviar y siguiente' : 'Enviar y Aprobar'}
                             <span className="material-symbols-outlined text-body-s">{hasNextPending ? 'skip_next' : 'send'}</span>
@@ -430,7 +430,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId }: 
                   <div
                     {...pulsable(toggle)}
                     aria-expanded={isExpanded}
-                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
+                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-[color,background-color,border-color,opacity,transform,box-shadow] hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                   >
                     <div className="w-7 h-7 rounded-full overflow-hidden border border-hairline flex-shrink-0">
                       <Avatar src={athleteProfile?.avatarUrl} name={athleteName} alt="" className="w-full h-full object-cover" />
@@ -512,7 +512,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId }: 
                   value={r}
                   onChange={e => setQuickReplyDraft(prev => prev.map((x, xi) => xi === i ? e.target.value : x))}
                   placeholder="ej. Buen trabajo esta semana, sigue así."
-                  className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="flex-1 bg-raised border border-control-line rounded-control px-3 py-2 text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <Button
                   variant="ghost"

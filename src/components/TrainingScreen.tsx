@@ -772,9 +772,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     return (
       <div
         key={a.id}
-        className={`border p-4 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
+        className={`border p-4 transition-[color,background-color,border-color,opacity,transform,box-shadow] flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
           isNext
-            ? 'rounded-canvas bg-accent-bg border-accent/50 shadow-glow'
+            ? 'protagonista rounded-canvas bg-accent-bg border-accent/50 shadow-glow'
             : estado === 'perdido'
               ? 'rounded-surface bg-surface border-danger/40'
               : 'rounded-surface bg-surface border-hairline'
@@ -882,7 +882,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
   // ── Render: LIST + PROGRESSION ─────────────────────────────────────────────
   return (
-    <div className="space-y-6">
+    <div className="pantalla pantalla-b space-y-6">
       {/* Header */}
       <header className="flex flex-col lg:flex-row lg:items-end justify-between pb-4 gap-3">
         <div>

@@ -47,7 +47,7 @@ export default function Chip({
   onClick,
   className = '',
 }: Props) {
-  const tonoBorde = selected ? 'border-accent-line bg-accent/16 text-accent-ink' : 'border-hairline bg-raised text-ink-2';
+  const tonoBorde = selected ? 'bg-accent border-accent-press text-on-accent' : 'border-strong bg-raised text-ink-2';
   const contenido = (
     <>
       {icon && <Icon name={icon} size="s" filled={selected} />}
@@ -62,7 +62,7 @@ export default function Chip({
         // aproxima a 8/12 (los pasos más cercanos) en vez de forzar valores
         // arbitrarios — mismo criterio que el padding de Card.
         `inline-flex items-center gap-1 rounded-chip border pl-3 ${onRemove ? 'pr-2' : 'pr-3'} py-2 `
-        + `transition-colors duration-(--duration-state) ${tonoBorde} ${disabled ? 'opacity-40' : ''} ${className}`
+        + `transition-[color,background-color,border-color,transform] duration-(--duration-state) ease-brand active:scale-[.96] ${tonoBorde} ${disabled ? 'opacity-40' : ''} ${className}`
       }
     >
       {onClick ? (
@@ -91,7 +91,7 @@ export default function Chip({
           disabled={disabled}
           aria-label="Quitar"
           className={
-            'flex h-5 w-5 items-center justify-center rounded-full '
+            'relative zona-tactil flex h-5 w-5 items-center justify-center rounded-full '
             + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line '
             + (disabled ? 'pointer-events-none' : 'hover:bg-strong')
           }
