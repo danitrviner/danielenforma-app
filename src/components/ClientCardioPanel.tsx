@@ -134,7 +134,7 @@ export default function ClientCardioPanel({ athlete }: Props) {
   const ultimasSemanas = [...semanas.entries()].sort(([a], [b]) => b.localeCompare(a)).slice(0, 6);
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       <ConfirmDialog />
 
       <Button variant="primary" size="s" icon="add" onClick={() => setMostrandoFormulario(true)} fullWidth>

@@ -217,12 +217,12 @@ export default function PlanificadorProgresion(p: Props) {
                         <span className={`font-mono text-caption font-bold ${s === p.semanaActual ? 'rounded-[5px] bg-accent px-1 text-on-accent' : 'text-ink'}`}>
                           {s === 0 ? 'Base' : `S${s}`}
                         </span>
-                        {descargas.includes(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5" title="Descarga: la mitad de series">D</span>}
-                        {tests.includes(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-warning border border-warning rounded-[5px] px-0.5" title="Semana de test">T</span>}
+                        {descargas.includes(s) && <span className="font-mono text-caption leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5" title="Descarga: la mitad de series">D</span>}
+                        {tests.includes(s) && <span className="font-mono text-caption leading-[11px] font-bold text-warning border border-warning rounded-[5px] px-0.5" title="Semana de test">T</span>}
                         {aviso && <span className={`w-1.5 h-1.5 rounded-full ${aviso === 'peligro' ? 'bg-danger' : 'bg-warning'}`} aria-hidden />}
                       </span>
-                      {propuesta && s === pr.semana && <span className="block font-sans text-[10px] font-bold text-accent-ink">propuesta</span>}
-                      {propuesta && borradorDe(s) && <span className="block font-sans text-[10px] text-ink-3">borrador</span>}
+                      {propuesta && s === pr.semana && <span className="block font-sans text-caption font-bold text-accent-ink">propuesta</span>}
+                      {propuesta && borradorDe(s) && <span className="block font-sans text-caption text-ink-3">borrador</span>}
                     </th>
                   );
                 })}
@@ -308,7 +308,7 @@ export default function PlanificadorProgresion(p: Props) {
                               real?.novedadesVistas === true ? 'Leyó el aviso de cambios' : real?.novedadesVistas === false ? 'No leyó el aviso de cambios' : null,
                             ].filter(Boolean).join('\n')}
                             className={`relative w-full rounded-control border px-2 py-1.5 text-left transition-colors ${
-                              cambia ? 'border-accent bg-accent/12' : 'border-hairline bg-bg hover:border-strong'}`}
+                              cambia ? 'border-accent-line bg-accent/12' : 'border-hairline bg-bg hover:border-strong'}`}
                           >
                             {propio && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-accent" aria-hidden />}
                             {otro && <span className="block font-sans text-caption font-bold text-accent-ink truncate">{p.nombreDe(r.exerciseId)}</span>}
@@ -489,7 +489,7 @@ function SelectorDeEjercicios({ dias, seleccion, onSeleccion, nombreDe, grupoDe,
   const clavesVisibles = [...new Set(dias.flatMap(d => d.exercises.filter(we => !filtro || grupoDe(we) === filtro).map(we => claveEjercicioClave(d, we.exerciseId))))];
   const todosMarcados = clavesVisibles.length > 0 && clavesVisibles.every(k => seleccion.has(k));
   const chip = (activo: boolean) => `rounded-chip border px-2.5 py-1 font-sans text-caption font-bold transition-colors ${
-    activo ? 'border-accent text-accent-ink bg-accent/12' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`;
+    activo ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`;
 
   return (
     <div className="space-y-3">
@@ -723,7 +723,7 @@ function ProgresionesDeLaSeleccion({ open, onClose, vueltas, descargas, cuantos,
                   value={rirSemanas[w] ?? ''}
                   onChange={e => setRirSemanas(prev => ({ ...prev, [w]: e.target.value }))}
                   aria-label={`RIR de la semana ${w}`}
-                  className={`h-10 w-full rounded-field border bg-field px-2 font-mono text-body-s text-ink focus:outline-none focus:border-accent ${rirSemanas[w] ? 'border-accent' : 'border-hairline'}`}
+                  className={`h-10 w-full rounded-field border bg-field px-2 font-mono text-body-s text-ink focus:outline-none focus:border-accent ${rirSemanas[w] ? 'border-accent' : 'border-control-line'}`}
                 >
                   <option value="">—</option>
                   {[0, 1, 2, 3, 4, 5].map(n => <option key={n} value={String(n)}>RIR {n}</option>)}
@@ -781,7 +781,7 @@ function ProgresionesDeLaSeleccion({ open, onClose, vueltas, descargas, cuantos,
                   value={repsSemanas[w] ?? ''}
                   onChange={e => setRepsSemanas(prev => ({ ...prev, [w]: e.target.value }))}
                   aria-label={`Repeticiones de la semana ${w}`}
-                  className={`h-10 w-full rounded-field border bg-field px-2 text-center font-mono text-body-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent ${repsSemanas[w]?.trim() ? 'border-accent' : 'border-hairline'}`}
+                  className={`h-10 w-full rounded-field border bg-field px-2 text-center font-mono text-body-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent ${repsSemanas[w]?.trim() ? 'border-accent' : 'border-control-line'}`}
                 />
               </label>
             ))}

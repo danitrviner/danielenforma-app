@@ -634,13 +634,13 @@ export default function NutritionPlansScreen({
                   <div className="flex gap-2 pt-3 border-t border-hairline">
                     <button
                       onClick={() => openEdit(dt)}
-                      className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-data hover:border-data/40 font-mono text-caption uppercase rounded-control transition-all"
+                      className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-data hover:border-data/40 font-mono text-caption uppercase rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     >
                       <Icon name="edit" size="s" />Editar
                     </button>
                     <button
                       onClick={() => setDeleteId(dt.id)}
-                      className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-ink-2 hover:text-danger hover:border-danger/30 font-mono text-caption uppercase rounded-control transition-all"
+                      className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-ink-2 hover:text-danger hover:border-danger/30 font-mono text-caption uppercase rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     >
                       <Icon name="delete" size="s" />Eliminar
                     </button>
@@ -674,7 +674,7 @@ export default function NutritionPlansScreen({
   // ── Render: editor ────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="pantalla space-y-6 max-w-2xl">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button onClick={handleBack} variant="secondary" size="s" icon="arrow_back">
@@ -722,7 +722,7 @@ export default function NutritionPlansScreen({
                   </span>
                 </div>
                 <div className="h-1 w-full bg-track rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${pct}%` }} />
+                  <div className={`h-full rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-300 ${barColor}`} style={{ width: `${pct}%` }} />
                 </div>
               </div>
             );
@@ -749,7 +749,7 @@ export default function NutritionPlansScreen({
             onChange={e => setForm(f => ({ ...f, coachNote: e.target.value }))}
             rows={3}
             placeholder="Indicaciones para el atleta: objetivos, recomendaciones, contexto…"
-            className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+            className="w-full bg-bg border border-control-line rounded-control px-3 py-3 text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
       </div>
@@ -795,7 +795,7 @@ export default function NutritionPlansScreen({
           {phaseTargetKcal != null && onboardingData ? (
             <button
               onClick={ajustarAlObjetivoDeLaFase}
-              className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent-ink hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent-ink hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             >
               <Icon name="timeline" size="s" />
               Ajustar al objetivo de la fase
@@ -810,7 +810,7 @@ export default function NutritionPlansScreen({
                   g: Math.round(onboardingData.macroGrams.grasa),
                 },
               }))}
-              className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent-ink hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent-ink hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             >
               <Icon name="auto_fix_high" size="s" />
               Prefijar desde macros
@@ -912,7 +912,7 @@ export default function NutritionPlansScreen({
           <div className="flex gap-2">
             <button
               onClick={addMeal}
-              className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-accent-ink hover:border-accent/40 font-sans text-caption uppercase rounded-control transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-accent-ink hover:border-accent/40 font-sans text-caption uppercase rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             >
               <Icon name="add" size="s" />Añadir comida
             </button>
@@ -941,8 +941,8 @@ export default function NutritionPlansScreen({
                 title={meal.slot != null && !manualSlotMealIds.has(meal.id) ? 'Deducido del nombre' : undefined}
                 className={`flex-shrink-0 bg-bg border rounded-control px-2 py-1 text-caption font-mono focus:outline-none focus:border-accent/50 ${
                   meal.slot != null && !manualSlotMealIds.has(meal.id)
-                    ? 'border-hairline text-ink-3'
-                    : 'border-hairline text-ink'
+                    ? 'border-control-line text-ink-3'
+                    : 'border-control-line text-ink'
                 }`}
               >
                 <option value="">— sin franja —</option>
@@ -1130,7 +1130,7 @@ export default function NutritionPlansScreen({
                 const reciente = pickerRecentlyAdded === food.id;
                 return (
                   <button key={food.id} onClick={() => handleSelectFood(food)}
-                    className={`w-full flex items-center justify-between p-4 rounded-control border text-left transition-all group ${
+                    className={`w-full flex items-center justify-between p-4 rounded-control border text-left transition-[color,background-color,border-color,opacity,transform,box-shadow] group ${
                       reciente ? 'bg-success/10 border-success/40' : 'bg-surface hover:bg-raised border-hairline hover:border-accent/40'
                     }`}
                   >

@@ -45,7 +45,7 @@ export default function SegmentedControl({ options, value, onChange, label, clas
       ref={contenedorRef}
       role="radiogroup"
       aria-label={label}
-      className={`relative flex h-[46px] items-center gap-1 rounded-control bg-surface p-1 ${className}`}
+      className={`relative flex h-[46px] items-center gap-1 rounded-control bg-inset p-1 ${className}`}
     >
       {pastilla && (
         <span

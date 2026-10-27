@@ -130,7 +130,7 @@ export default function ProposalCard({
           value={nota}
           onChange={e => setNota(e.target.value)}
           placeholder="Por qué la apruebas así (opcional)"
-          className="w-full bg-field border border-hairline rounded-control px-3 py-2 text-caption text-ink placeholder:text-ink-4 focus:border-accent-line focus:outline-none"
+          className="w-full bg-field border border-control-line rounded-control px-3 py-2 text-caption text-ink placeholder:text-ink-4 focus:border-accent-line focus:outline-none"
         />
       )}
 
@@ -177,7 +177,7 @@ export default function ProposalCard({
             onChange={e => setMotivo(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') void confirmarRechazo(); }}
             placeholder="Demasiado volumen para su semana de descarga…"
-            className="bg-field border border-hairline rounded-control px-3 py-2 text-caption text-ink placeholder:text-ink-4 focus:border-accent-line focus:outline-none"
+            className="bg-field border border-control-line rounded-control px-3 py-2 text-caption text-ink placeholder:text-ink-4 focus:border-accent-line focus:outline-none"
           />
           <div className="flex gap-2">
             <Button variant="danger" size="s" disabled={ocupada} onClick={() => void confirmarRechazo()}>
@@ -200,7 +200,7 @@ export default function ProposalCard({
               void acciones.comentar(p, comentario).then(() => setComentario(''));
             }}
             placeholder="Comenta sin aprobar ni rechazar…"
-            className="flex-1 bg-field border border-hairline rounded-control px-3 py-2 text-caption text-ink placeholder:text-ink-4 focus:border-accent-line focus:outline-none"
+            className="flex-1 bg-field border border-control-line rounded-control px-3 py-2 text-caption text-ink placeholder:text-ink-4 focus:border-accent-line focus:outline-none"
           />
           <Button
             variant="secondary"

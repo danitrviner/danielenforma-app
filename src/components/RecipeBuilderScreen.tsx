@@ -389,10 +389,10 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   </p>
                 </div>
                 <div className="flex items-center justify-end gap-1 px-4 pb-4">
-                  <button onClick={() => openEdit(recipe)} aria-label="Editar" className="text-ink-2 hover:text-accent-ink p-2 rounded-control transition-all">
+                  <button onClick={() => openEdit(recipe)} aria-label="Editar" className="text-ink-2 hover:text-accent-ink p-2 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]">
                     <Icon name="edit" size="s" />
                   </button>
-                  <button onClick={() => setConfirmDelete(recipe.id)} aria-label="Eliminar" className="text-ink-2 hover:text-danger p-2 rounded-control transition-all">
+                  <button onClick={() => setConfirmDelete(recipe.id)} aria-label="Eliminar" className="text-ink-2 hover:text-danger p-2 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]">
                     <Icon name="delete" size="s" />
                   </button>
                 </div>
@@ -416,7 +416,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
               <button
                 key={cat}
                 onClick={() => setRecetasCat(cat)}
-                className={`px-4 py-2 rounded-full font-mono text-caption font-bold whitespace-nowrap transition-all ${
+                className={`px-4 py-2 rounded-full font-mono text-caption font-bold whitespace-nowrap transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                   recetasCat === cat
                     ? 'bg-data text-on-fill'
                     : 'bg-raised border border-hairline text-ink-2 hover:border-strong hover:text-ink'
@@ -692,7 +692,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   onChange={e => setNewExtra(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addExtra(); } }}
                   placeholder="Ej. Sal al gusto"
-                  className="flex-1 bg-raised border border-hairline rounded-control px-4 py-2 text-title-s text-ink placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
+                  className="flex-1 bg-raised border border-control-line rounded-control px-4 py-2 text-title-s text-ink placeholder-ink-2/50 focus:border-accent/50 focus:outline-none"
                 />
                 <button type="button" onClick={addExtra} className="px-4 py-2 bg-raised rounded-control text-ink-2 hover:text-ink transition-colors font-sans text-label uppercase">Añadir</button>
               </div>
@@ -719,7 +719,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   onChange={e => setNewStep(e.target.value)}
                   placeholder="Describe el paso..."
                   rows={2}
-                  className="flex-1 bg-raised border border-hairline rounded-control px-4 py-2 text-title-s text-ink placeholder-ink-2/50 focus:border-accent/50 focus:outline-none resize-none"
+                  className="flex-1 bg-raised border border-control-line rounded-control px-4 py-2 text-title-s text-ink placeholder-ink-2/50 focus:border-accent/50 focus:outline-none resize-none"
                 />
                 <button type="button" onClick={addStep} className="px-4 py-2 bg-raised rounded-control text-ink-2 hover:text-ink transition-colors font-sans text-label uppercase self-end mb-0">Añadir</button>
               </div>

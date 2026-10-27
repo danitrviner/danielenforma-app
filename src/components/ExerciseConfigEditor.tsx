@@ -162,7 +162,7 @@ function ChipSeccion({ etiqueta, valor, activa, abierta, onClick, discreto }: {
   key?: React.Key;
 }) {
   const tono = abierta
-    ? 'bg-accent/16 border-accent text-accent-ink'
+    ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press text-ink'
     : activa
       ? 'bg-transparent border-accent-line text-accent-ink'
       : discreto
@@ -173,7 +173,7 @@ function ChipSeccion({ etiqueta, valor, activa, abierta, onClick, discreto }: {
       type="button"
       onClick={onClick}
       aria-expanded={abierta}
-      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-chip border font-mono text-caption font-bold uppercase tracking-wider transition-all ${tono}`}
+      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-chip border font-mono text-caption font-bold uppercase tracking-wider transition-[color,background-color,border-color,opacity,transform,box-shadow] ${tono}`}
     >
       {activa && !abierta && <span className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />}
       {etiqueta}
@@ -385,7 +385,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
             <button
               type="button"
               onClick={() => setTechnique(undefined)}
-              className={`px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+              className={`px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                 !we.technique
                   ? 'bg-strong border-hairline text-ink'
                   : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'
@@ -399,7 +399,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
                 type="button"
                 onClick={() => setTechnique(we.technique === t ? undefined : t)}
                 title={TECHNIQUE_DESCRIPTION[t]}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                   we.technique === t
                     ? TECHNIQUE_COLOR[t]
                     : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'
@@ -443,7 +443,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
                     value={s.weight}
                     onChange={e => updateManualWarmupSet(wIdx, 'weight', parseFloat(e.target.value) || 0)}
                     placeholder="kg"
-                    className="w-20 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-20 bg-inset border border-control-line rounded-control px-2 py-1 text-center text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                   <span className="text-ink-2 text-label">×</span>
                   <input
@@ -451,7 +451,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
                     value={s.reps}
                     onChange={e => updateManualWarmupSet(wIdx, 'reps', parseInt(e.target.value) || 1)}
                     placeholder="reps"
-                    className="w-16 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-16 bg-inset border border-control-line rounded-control px-2 py-1 text-center text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                   <button
                     onClick={() => removeManualWarmupSet(wIdx)}
@@ -491,7 +491,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
                   max={mesoWeeks}
                   value={rule.atWeek}
                   onChange={e => updateProgressionRule(idx, { atWeek: Math.min(mesoWeeks, Math.max(1, parseInt(e.target.value) || 1)) })}
-                  className="w-14 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="w-14 bg-inset border border-control-line rounded-control px-2 py-1 text-center text-ink font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
               <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -502,7 +502,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
                   max={10}
                   value={rule.addSets ?? 0}
                   onChange={e => updateProgressionRule(idx, { addSets: parseInt(e.target.value) || 0 })}
-                  className="w-14 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="w-14 bg-inset border border-control-line rounded-control px-2 py-1 text-center text-ink font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <span className="font-sans text-caption text-ink-2 flex-shrink-0">series</span>
               </div>
@@ -517,7 +517,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
           ))}
           <button
             onClick={addProgressionRule}
-            className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-all"
+            className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
           >
             <Icon name="add" size="s" />
             Añadir escalón de progresión
@@ -532,7 +532,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
             onClick={toggleRecordVideo}
             aria-pressed={!!we.recordVideoSet}
             className={`w-9 h-9 rounded-control flex items-center justify-center flex-shrink-0 transition-colors border ${
-              we.recordVideoSet ? 'bg-accent/14 border-accent text-accent-ink' : 'bg-surface border-hairline text-ink-2 hover:text-ink hover:border-strong'
+              we.recordVideoSet ? 'bg-accent border-accent-press text-on-accent' : 'bg-surface border-hairline text-ink-2 hover:text-ink hover:border-strong'
             }`}
           >
             <Icon name="videocam" size="s" />
@@ -544,7 +544,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
             <select
               value={we.recordVideoSet}
               onChange={e => onChange({ recordVideoSet: e.target.value === 'all' ? 'all' : parseInt(e.target.value) })}
-              className="ml-auto bg-surface border border-hairline rounded-control px-2 py-1.5 text-caption font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+              className="ml-auto bg-surface border border-control-line rounded-control px-2 py-1.5 text-caption font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="all">Todas las series</option>
               {Array.from({ length: we.sets }, (_, i) => i + 1).map(n => (
@@ -566,7 +566,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
     const marca = (campo: string) => marcas[campo];
     const conMarca = (campo: string, clases: string) => marca(campo) ? `${clases} ring-1 ring-accent-line` : clases;
     const etiqueta = (campo: string) => marca(campo) ? (
-      <span className="absolute -top-2 right-1 px-1 rounded-[5px] bg-accent text-on-accent font-mono text-[9px] leading-[12px] font-bold pointer-events-none">{marca(campo)}</span>
+      <span className="absolute -top-2 right-1 px-1 rounded-[5px] bg-accent text-on-accent font-mono text-caption leading-[12px] font-bold pointer-events-none">{marca(campo)}</span>
     ) : null;
     const celda = celdaBase;
     const inputReps = (valor: string, cambiar: (v: string) => void) => (
@@ -688,7 +688,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
 
         <button
           onClick={hasGroups ? addGroup : enableGroups}
-          className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-all"
+          className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
         >
           <Icon name="add" size="s" />
           Añadir bloque con otra configuración

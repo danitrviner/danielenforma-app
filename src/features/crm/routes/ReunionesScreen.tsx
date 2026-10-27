@@ -92,7 +92,7 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
   };
 
   return (
-    <div className="space-y-4">
+    <div className="pantalla space-y-4">
       <header className="flex items-center justify-between gap-2">
         <div>
           <h1 className="font-sans font-bold text-title-m text-ink">Reuniones</h1>

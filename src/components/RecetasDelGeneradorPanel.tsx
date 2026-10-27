@@ -434,7 +434,7 @@ export default function RecetasDelGeneradorPanel({
                               value={copiarA}
                               onChange={e => setCopiarA(e.target.value)}
                               aria-label="Copiar estos filtros a otra dieta"
-                              className="min-h-[36px] px-2 rounded-control border border-hairline bg-bg font-sans text-caption text-ink-2 focus:outline-none focus:border-accent"
+                              className="min-h-[36px] px-2 rounded-control border border-control-line bg-bg font-sans text-caption text-ink-2 focus:outline-none focus:border-accent"
                             >
                               <option value="">Copiar a…</option>
                               {tarjetas.filter(x => x.clave !== t.clave).map(x => <option key={x.clave} value={x.clave}>{x.nombre}</option>)}

@@ -198,7 +198,7 @@ export default function EventPlannerSheet({
             {(Object.keys(LANE_LABEL) as Lane[]).map(l => (
               <button
                 key={l} type="button" onClick={() => selectLane(l)}
-                className={`px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+                className={`px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                   lane === l ? 'bg-strong border-hairline text-ink' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'
                 }`}
               >{LANE_LABEL[l]}</button>
@@ -287,21 +287,21 @@ export default function EventPlannerSheet({
                     <select
                       value={row.metric}
                       onChange={e => setConditionRows(rows => rows.map((r, i) => i === idx ? { ...r, metric: e.target.value } : r))}
-                      className="min-w-0 flex-1 bg-inset border border-hairline rounded-control px-2 py-1.5 text-caption text-ink font-sans focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                      className="min-w-0 flex-1 bg-inset border border-control-line rounded-control px-2 py-1.5 text-caption text-ink font-sans focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                     >
                       {CONDITION_METRICS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                     </select>
                     <select
                       value={row.operator}
                       onChange={e => setConditionRows(rows => rows.map((r, i) => i === idx ? { ...r, operator: e.target.value } : r))}
-                      className="bg-inset border border-hairline rounded-control px-2 py-1.5 text-caption text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer flex-shrink-0"
+                      className="bg-inset border border-control-line rounded-control px-2 py-1.5 text-caption text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer flex-shrink-0"
                     >
                       {CONDITION_OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                     <input
                       type="text" value={row.value}
                       onChange={e => setConditionRows(rows => rows.map((r, i) => i === idx ? { ...r, value: e.target.value } : r))}
-                      className="w-16 bg-inset border border-hairline rounded-control px-2 py-1.5 text-center text-caption text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent flex-shrink-0"
+                      className="w-16 bg-inset border border-control-line rounded-control px-2 py-1.5 text-center text-caption text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent flex-shrink-0"
                     />
                     {conditionRows.length > 1 && (
                       <button onClick={() => setConditionRows(rows => rows.filter((_, i) => i !== idx))} className="text-ink-3 hover:text-danger flex-shrink-0">

@@ -278,7 +278,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                     value={phase.name}
                     onChange={e => updatePhase(phase.id, { name: e.target.value })}
                     placeholder="Nombre de la fase"
-                    className="flex-1 min-w-[140px] bg-bg border border-hairline rounded-control p-2 text-title-s font-bold text-ink focus:outline-none focus:border-accent"
+                    className="flex-1 min-w-[140px] bg-bg border border-control-line rounded-control p-2 text-title-s font-bold text-ink focus:outline-none focus:border-accent"
                   />
                   <span
                     className={`font-mono text-caption uppercase tracking-widest px-2 py-1 rounded-full flex-shrink-0 ${
@@ -298,7 +298,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                   value={phase.motto ?? ''}
                   onChange={e => updatePhase(phase.id, { motto: e.target.value })}
                   placeholder="Frase motivadora (opcional)"
-                  className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
+                  className="w-full bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
                 />
 
                 <textarea
@@ -306,7 +306,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                   onChange={e => updatePhase(phase.id, { description: e.target.value })}
                   placeholder="Descripción de la fase"
                   rows={2}
-                  className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent resize-none"
+                  className="w-full bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent resize-none"
                 />
 
                 <div className="flex flex-wrap gap-2 items-start">
@@ -331,7 +331,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                       min={1}
                       value={phase.suggestedWeeks ?? ''}
                       onChange={e => updatePhase(phase.id, { suggestedWeeks: e.target.value === '' ? undefined : Number(e.target.value) })}
-                      className="w-24 bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
+                      className="w-24 bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
                     />
                   </label>
                   <label className="flex flex-col ">
@@ -339,7 +339,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                     <select
                       value={phase.weightDirection ?? 'mantenimiento'}
                       onChange={e => updatePhase(phase.id, { weightDirection: e.target.value as WeightDirection })}
-                      className="bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
+                      className="bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
                     >
                       {(Object.keys(WEIGHT_DIRECTION_LABEL) as WeightDirection[]).map(d => (
                         <option key={d} value={d}>{WEIGHT_DIRECTION_LABEL[d]}</option>
@@ -354,7 +354,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                       min={0}
                       value={phase.weightRateKgWeek ?? ''}
                       onChange={e => updatePhase(phase.id, { weightRateKgWeek: e.target.value === '' ? undefined : Number(e.target.value) })}
-                      className="w-24 bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
+                      className="w-24 bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
                     />
                   </label>
                 </div>
@@ -366,7 +366,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                       <select
                         value={m.kind}
                         onChange={e => updateMetric(phase.id, m.id, { kind: e.target.value as PhaseMetricKind })}
-                        className="bg-raised border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none"
+                        className="bg-raised border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none"
                       >
                         {(Object.keys(METRIC_KIND_LABEL) as PhaseMetricKind[]).map(k => (
                           <option key={k} value={k}>{METRIC_KIND_LABEL[k]}</option>
@@ -376,7 +376,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                         value={m.label}
                         onChange={e => updateMetric(phase.id, m.id, { label: e.target.value })}
                         placeholder="Etiqueta (ej. Bajar a 82 kg)"
-                        className="flex-1 min-w-[120px] bg-raised border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none"
+                        className="flex-1 min-w-[120px] bg-raised border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none"
                       />
                       {m.kind !== 'manual' && (
                         <input
@@ -384,7 +384,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                           value={m.targetValue ?? ''}
                           onChange={e => updateMetric(phase.id, m.id, { targetValue: e.target.value === '' ? undefined : Number(e.target.value) })}
                           placeholder="Objetivo"
-                          className="w-20 bg-raised border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none"
+                          className="w-20 bg-raised border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none"
                         />
                       )}
                       {m.kind === 'manual' && (
@@ -412,7 +412,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                   onChange={e => updatePhase(phase.id, { exitCriteria: e.target.value })}
                   placeholder="Criterios para pasar a la siguiente fase"
                   rows={2}
-                  className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent resize-none"
+                  className="w-full bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent resize-none"
                 />
 
                 <div className="flex items-center gap-2 pt-1">

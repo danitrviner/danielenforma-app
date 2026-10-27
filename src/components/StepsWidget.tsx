@@ -189,7 +189,7 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
           <div className="h-[26px] flex items-center">
             <div className="h-1.5 w-full bg-track rounded-full overflow-hidden">
               <div
-                className="h-full bg-accent rounded-full transition-all duration-(--duration-slide)"
+                className="h-full bg-accent rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-(--duration-slide)"
                 style={{ width: `${pct}%` }}
               />
             </div>
@@ -221,7 +221,7 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
             placeholder="0"
             autoFocus
             aria-label="Pasos de hoy"
-            className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full bg-raised border border-control-line rounded-control px-3 py-2 text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <p className="mt-2 font-mono text-caption text-ink-3">Objetivo de hoy: {goal.toLocaleString('es-ES')}</p>
         </Sheet>
@@ -259,7 +259,7 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
             placeholder="0"
             autoFocus
-            className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+            className="flex-1 bg-raised border border-control-line rounded-control px-3 py-2 text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <Button size="s" onClick={handleSave} loading={saving} icon="check" label="Guardar" />
         </div>
@@ -283,7 +283,7 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
             </p>
           </div>
           <div className="h-1.5 bg-track rounded-full overflow-hidden">
-            <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+            <div className="h-full bg-accent rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-300" style={{ width: `${pct}%` }} />
           </div>
         </>
       )}

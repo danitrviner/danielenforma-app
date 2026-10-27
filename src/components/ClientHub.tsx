@@ -1,3 +1,5 @@
+import { useDireccionDePestana } from './ui/internal/useDireccionDePestana';
+import { nombreDeTransicion } from '../utils/transicionDeVista';
 import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { pantallaDiferida } from '../utils/pantallaDiferida';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -775,14 +777,16 @@ export default function ClientHub({
     }
   };
 
+  // P3: el panel entra desde el lado hacia el que te mueves (solo entre pestañas vecinas de la misma zona).
+  const direccion = useDireccionDePestana(ZONE_TABS[activeZone] as readonly string[], activeTab);
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* Header */}
       <div className="pb-4 space-y-4">
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={guardedBack}
-            className="p-1 px-3 bg-raised hover:bg-raised text-accent-ink border border-hairline text-label font-sans rounded-control flex items-center gap-1 active:scale-95 transition-all"
+            className="p-1 px-3 bg-raised hover:bg-raised text-accent-ink border border-hairline text-label font-sans rounded-control flex items-center gap-1 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
           >
             <span className="material-symbols-outlined text-body-s">arrow_back</span>
             Clientes
@@ -791,14 +795,14 @@ export default function ClientHub({
             onClick={() => { if (confirmDiscardPlanChanges()) setSwitcherOpen(true); }}
             title="Cambiar de atleta"
             aria-label="Cambiar de atleta"
-            className="p-1 px-2 bg-raised hover:bg-raised text-ink-2 hover:text-accent-ink border border-hairline rounded-control flex items-center active:scale-95 transition-all"
+            className="p-1 px-2 bg-raised hover:bg-raised text-ink-2 hover:text-accent-ink border border-hairline rounded-control flex items-center active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
           >
             <span className="material-symbols-outlined text-body-s">swap_horiz</span>
           </button>
           <Avatar src={athlete.avatarUrl} name={athlete.displayName} className="w-11 h-11 rounded-full border border-accent/30 object-cover" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-display font-black uppercase text-ink text-title-l leading-tight tracking-tight">{athlete.displayName}</h1>
+              <h1 className="font-display font-black uppercase text-ink text-title-l leading-tight tracking-tight" style={{ viewTransitionName: nombreDeTransicion('atleta', athlete.userId) }}>{athlete.displayName}</h1>
               {planBadge}
             </div>
             <p className="font-mono text-caption text-ink-2">
@@ -870,7 +874,8 @@ export default function ClientHub({
           abre Implantación para que el coach no tenga que salirse del
           recorrido. Duplicar el JSX habría significado duplicar veinte props
           por panel y que los dos se desincronizaran a la primera. */}
-      {panelDePestana(activeTab)}
+      {/* `key`: al cambiar de pestaña el panel se remonta y entra escalonado (`.pantalla` en su raíz). */}
+      <div key={`${activeZone}/${activeTab}`} className={direccion}>{panelDePestana(activeTab)}</div>
 
       {/* ── El editor a pantalla completa ──────────────────────────────────
           Implantación abre aquí el editor de verdad del paso en el que está el

@@ -131,7 +131,7 @@ export default function RenovacionesTab({ cliente, coachEmail }: { cliente: Clie
             type="month"
             value={mes}
             onChange={e => setMes(e.target.value)}
-            className="bg-field border border-hairline rounded-control px-2 py-1 font-mono text-caption text-ink"
+            className="bg-field border border-control-line rounded-control px-2 py-1 font-mono text-caption text-ink"
           />
         </label>
         {tasa != null && (

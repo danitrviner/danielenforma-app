@@ -91,7 +91,7 @@ export default function AccesoCoach({ coachEmail }: { coachEmail: string }) {
               <select
                 value={curso?.id ?? ''}
                 onChange={e => setCursoElegido(e.target.value)}
-                className="mt-1 w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
+                className="mt-1 w-full bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
               >
                 {publicados.map(c => <option key={c.id} value={c.id}>{c.title}{c.inicial ? ' · inicial' : ''}</option>)}
               </select>

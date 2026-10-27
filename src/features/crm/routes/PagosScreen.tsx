@@ -108,7 +108,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
   }, [pagos, filtro, busqueda]);
 
   return (
-    <div className="space-y-4">
+    <div className="pantalla space-y-4">
       <header>
         <h1 className="font-sans font-bold text-title-m text-ink">Pagos</h1>
       </header>
@@ -137,7 +137,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 aria-pressed={periodo === id}
                 className={`shrink-0 px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
                   periodo === id
-                    ? 'bg-accent/15 text-accent-ink border border-accent/30'
+                    ? 'bg-accent text-on-accent border border-accent-press'
                     : 'bg-field text-ink-2 border border-hairline hover:border-strong'
                 }`}
               >
@@ -155,7 +155,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 type="date"
                 value={desde}
                 onChange={e => setParam('desde', e.target.value)}
-                className="px-2 py-1.5 rounded-control bg-field border border-hairline text-body-s text-ink focus:outline-none focus:border-accent/40"
+                className="px-2 py-1.5 rounded-control bg-field border border-control-line text-body-s text-ink focus:outline-none focus:border-accent/40"
               />
             </label>
             <label className="flex items-center gap-2 font-mono text-caption text-ink-2">
@@ -164,7 +164,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 type="date"
                 value={hasta}
                 onChange={e => setParam('hasta', e.target.value)}
-                className="px-2 py-1.5 rounded-control bg-field border border-hairline text-body-s text-ink focus:outline-none focus:border-accent/40"
+                className="px-2 py-1.5 rounded-control bg-field border border-control-line text-body-s text-ink focus:outline-none focus:border-accent/40"
               />
             </label>
           </div>
@@ -223,7 +223,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
               onChange={e => setParam('q', e.target.value)}
               placeholder="Buscar por cliente o concepto"
               aria-label="Buscar pagos"
-              className="w-full pl-8 pr-2 py-2 rounded-control bg-field border border-hairline text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
+              className="w-full pl-8 pr-2 py-2 rounded-control bg-field border border-control-line text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
             />
           </div>
           <div className="flex items-center gap-1 min-w-0 overflow-x-auto hide-scrollbar" role="group" aria-label="Filtrar por estado">
@@ -238,7 +238,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 aria-pressed={filtro === id}
                 className={`shrink-0 px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
                   filtro === id
-                    ? 'bg-accent/15 text-accent-ink border border-accent/30'
+                    ? 'bg-accent text-on-accent border border-accent-press'
                     : 'bg-field text-ink-2 border border-hairline hover:border-strong'
                 }`}
               >

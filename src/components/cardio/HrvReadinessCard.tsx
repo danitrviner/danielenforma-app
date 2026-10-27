@@ -54,7 +54,7 @@ export default function HrvReadinessCard({ readings, onMeasure }: Props) {
           el botón llevaba directo al error de HrvTestScreen: mejor no ofrecerlo
           y decir de qué depende. */}
       {isBleAvailable() ? (
-        <button onClick={onMeasure} className="w-full py-3 bg-bg border border-data/30 text-data font-sans font-bold text-label uppercase rounded-control hover:bg-data/10 active:scale-95 transition-all">
+        <button onClick={onMeasure} className="w-full py-3 bg-bg border border-data/30 text-data font-sans font-bold text-label uppercase rounded-control hover:bg-data/10 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow]">
           {measuredToday ? 'Medir de nuevo' : 'Medir ahora'}
         </button>
       ) : (

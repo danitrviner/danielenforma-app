@@ -99,7 +99,7 @@ export default function AjustesDeTecnicaEditor({ we, totalSets, onChange, alcanc
           const on = marcadas.includes(n);
           return (
             <li key={n} className="space-y-1.5">
-              <div className={`flex items-center justify-between gap-2 rounded-control border px-2.5 py-2 ${on ? 'border-accent-line bg-accent/8' : 'border-hairline bg-surface'}`}>
+              <div className={`flex items-center justify-between gap-2 rounded-control border px-2.5 py-2 ${on ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press' : 'border-hairline bg-surface'}`}>
                 <span className="min-w-0 font-sans text-label text-ink">
                   <b className="font-mono">Serie {n}</b> · {f.reps} · RIR {f.rir}{f.label ? <span className="text-ink-3"> · {f.label}</span> : null}
                 </span>

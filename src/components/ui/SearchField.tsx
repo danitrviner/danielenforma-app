@@ -35,7 +35,7 @@ export default function SearchField({ value, onChange, placeholder = 'Buscar…'
       <div
         className={
           'relative flex flex-1 items-center rounded-field border bg-field transition-[height,border-color] duration-(--duration-state) ease-brand '
-          + (enfocado ? 'h-[54px] border-accent' : 'h-12 border-hairline')
+          + (enfocado ? 'h-[54px] border-accent' : 'h-12 border-control-line')
         }
       >
         <span className={`ui-icon text-icon-m pointer-events-none absolute left-4 transition-colors duration-(--duration-state) ${enfocado ? 'text-accent-ink' : 'text-ink-3'}`} aria-hidden>

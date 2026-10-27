@@ -109,7 +109,7 @@ export default function ModalPlantillaCuestionarios({ mesocycle, questionnaires,
           {PLANTILLAS.map(p => (
             <button
               key={p.clave} type="button" onClick={() => setTpl(p)}
-              className="rounded-control text-[12.5px] font-sans"
+              className="rounded-control text-label font-sans"
               style={{
                 padding: '7px 13px',
                 background: tpl.clave === p.clave ? 'color-mix(in oklab, var(--color-accent) 12%, transparent)' : 'transparent',
@@ -137,10 +137,10 @@ export default function ModalPlantillaCuestionarios({ mesocycle, questionnaires,
               const esEvento = f.schedule.kind === 'evento';
               return (
                 <div key={f.etiqueta} className="grid gap-3 items-center bg-inset border border-hairline rounded-field px-3.5 py-3 min-w-[520px]" style={{ gridTemplateColumns: '1.5fr 1.6fr 0.5fr 1.2fr 0.9fr' }}>
-                  <div className="text-[13.5px] font-semibold text-ink font-sans">{f.etiqueta}</div>
-                  <div className="text-[12.5px] text-ink-2 font-sans">{f.cuando}</div>
+                  <div className="text-label font-semibold text-ink font-sans">{f.etiqueta}</div>
+                  <div className="text-label text-ink-2 font-sans">{f.cuando}</div>
                   <div className="font-mono text-label text-ink-2">{esEvento ? '—' : `×${vecesReales}`}</div>
-                  <div className="text-[12.5px] text-ink-3 font-sans">{f.canal}</div>
+                  <div className="text-label text-ink-3 font-sans">{f.canal}</div>
                   <span
                     className="font-mono text-caption uppercase tracking-wider px-2.5 py-1 rounded-control justify-self-start"
                     style={{ color: f.tipo === 'Obligatorio' ? 'var(--color-accent-ink)' : 'var(--color-ink-3)', background: f.tipo === 'Obligatorio' ? 'color-mix(in oklab, var(--color-accent) 10%, transparent)' : 'var(--color-cell)' }}

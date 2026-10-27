@@ -131,7 +131,7 @@ export default function FoodPreferencesPanel({
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-2 px-3 py-2 bg-accent text-on-accent font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-2 bg-accent text-on-accent font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-body-s">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
               {saving ? 'Guardando…' : saved ? 'Guardado' : 'Guardar'}
@@ -165,9 +165,9 @@ export default function FoodPreferencesPanel({
               <button
                 key={g.id}
                 onClick={() => irAGrupo(i)}
-                className={`flex flex-col items-center gap-2 p-3 rounded-control border transition-all active:scale-95 ${
+                className={`flex flex-col items-center gap-2 p-3 rounded-control border transition-[color,background-color,border-color,opacity,transform,box-shadow] active:scale-95 ${
                   hasAny
-                    ? 'bg-accent-bg border-accent/30 hover:border-accent/60'
+                    ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press'
                     : 'bg-surface border-hairline hover:border-hairline'
                 }`}
               >
@@ -233,7 +233,7 @@ export default function FoodPreferencesPanel({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-3 py-2 bg-accent text-on-accent font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
+            className="flex items-center gap-2 px-3 py-2 bg-accent text-on-accent font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-50 flex-shrink-0"
           >
             <span className="material-symbols-outlined text-body-s">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
             {saving ? '…' : saved ? 'OK' : 'Guardar'}
@@ -249,7 +249,7 @@ export default function FoodPreferencesPanel({
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar alimento…"
-          className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-2 text-title-s text-ink placeholder-ink-3 focus:outline-none focus:border-accent/50 font-mono"
+          className="w-full bg-raised border border-control-line rounded-control pl-10 pr-4 py-2 text-title-s text-ink placeholder-ink-3 focus:outline-none focus:border-accent/50 font-mono"
         />
         {search && (
           <button
@@ -295,7 +295,7 @@ export default function FoodPreferencesPanel({
                   <div className="flex gap-1 flex-shrink-0">
                     <button
                       onClick={() => toggle(food, 'dislike')}
-                      className={`w-11 h-11 rounded-control flex items-center justify-center transition-all active:scale-90 ${
+                      className={`w-11 h-11 rounded-control flex items-center justify-center transition-[color,background-color,border-color,opacity,transform,box-shadow] active:scale-90 ${
                         pref === 'dislike'
                           ? 'bg-danger/20 border border-danger/50 text-danger'
                           : 'bg-raised border border-hairline text-ink-3 hover:text-danger hover:border-danger/30'
@@ -306,7 +306,7 @@ export default function FoodPreferencesPanel({
                     </button>
                     <button
                       onClick={() => toggle(food, 'favorite')}
-                      className={`w-11 h-11 rounded-control flex items-center justify-center transition-all active:scale-90 ${
+                      className={`w-11 h-11 rounded-control flex items-center justify-center transition-[color,background-color,border-color,opacity,transform,box-shadow] active:scale-90 ${
                         pref === 'favorite'
                           ? 'bg-warning/20 border border-warning/50 text-warning'
                           : 'bg-raised border border-hairline text-ink-3 hover:text-warning hover:border-warning/30'
@@ -334,14 +334,14 @@ export default function FoodPreferencesPanel({
           disabled={activeIndex === 0}
           aria-label="Grupo anterior"
           title="Grupo anterior"
-          className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-control border border-hairline bg-raised text-ink-2 transition-all active:scale-95 disabled:opacity-30 disabled:active:scale-100"
+          className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-control border border-hairline bg-raised text-ink-2 transition-[color,background-color,border-color,opacity,transform,box-shadow] active:scale-95 disabled:opacity-30 disabled:active:scale-100"
         >
           <span className="material-symbols-outlined text-title-s">chevron_left</span>
         </button>
         {esUltimoGrupo ? (
           <button
             onClick={() => irAGrupo(null, true)}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-control bg-accent text-on-accent font-sans font-bold text-caption uppercase transition-all active:scale-95"
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-control bg-accent text-on-accent font-sans font-bold text-caption uppercase transition-[color,background-color,border-color,opacity,transform,box-shadow] active:scale-95"
           >
             <span className="material-symbols-outlined text-body-s">check</span>
             Listo, he terminado
@@ -349,7 +349,7 @@ export default function FoodPreferencesPanel({
         ) : (
           <button
             onClick={() => irAGrupo(Math.min(FOOD_GROUPS.length - 1, idx + 1))}
-            className="flex-1 min-w-0 flex items-center justify-center gap-2 px-3 py-2 rounded-control bg-accent text-on-accent transition-all active:scale-95"
+            className="flex-1 min-w-0 flex items-center justify-center gap-2 px-3 py-2 rounded-control bg-accent text-on-accent transition-[color,background-color,border-color,opacity,transform,box-shadow] active:scale-95"
           >
             <span className="min-w-0 text-left">
               <span className="block font-mono text-caption uppercase opacity-70 leading-tight">Siguiente grupo</span>

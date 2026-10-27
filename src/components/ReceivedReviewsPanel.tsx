@@ -286,13 +286,13 @@ export default function ReceivedReviewsPanel({
                       <label htmlFor="rev-peso" className="block font-mono text-caption text-ink-2 uppercase mb-1">Peso (kg)</label>
                       <input id="rev-peso" type="number" step="0.1" value={checkinEditForm.weight}
                         onChange={e => setCheckinEditForm(f => f && ({ ...f, weight: parseFloat(e.target.value) || 0 }))}
-                        className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-mono" />
+                        className="w-full bg-raised border border-control-line rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-mono" />
                     </div>
                     <div>
                       <label htmlFor="rev-fecha" className="block font-mono text-caption text-ink-2 uppercase mb-1">Fecha</label>
                       <input id="rev-fecha" type="text" value={checkinEditForm.dateStr}
                         onChange={e => setCheckinEditForm(f => f && ({ ...f, dateStr: e.target.value }))}
-                        className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-mono" />
+                        className="w-full bg-raised border border-control-line rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-mono" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -300,7 +300,7 @@ export default function ReceivedReviewsPanel({
                       <label htmlFor="rev-adherencia" className="block font-mono text-caption text-ink-2 uppercase mb-1">Adherencia</label>
                       <select id="rev-adherencia" value={checkinEditForm.adherence}
                         onChange={e => setCheckinEditForm(f => f && ({ ...f, adherence: e.target.value as WeightCheckIn['adherence'] }))}
-                        className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-mono">
+                        className="w-full bg-raised border border-control-line rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-mono">
                         {['Sí', 'Parcial', 'No'].map(v => <option key={v} value={v}>{v}</option>)}
                       </select>
                     </div>
@@ -308,7 +308,7 @@ export default function ReceivedReviewsPanel({
                       <label htmlFor="rev-humor" className="block font-mono text-caption text-ink-2 uppercase mb-1">Humor</label>
                       <select id="rev-humor" value={checkinEditForm.mood}
                         onChange={e => setCheckinEditForm(f => f && ({ ...f, mood: e.target.value }))}
-                        className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-mono">
+                        className="w-full bg-raised border border-control-line rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-mono">
                         {['😩', '😴', '😐', '😊', '🔥'].map(v => <option key={v} value={v}>{v}</option>)}
                       </select>
                     </div>
@@ -317,7 +317,7 @@ export default function ReceivedReviewsPanel({
                     <label htmlFor="rev-notas" className="block font-mono text-caption text-ink-2 uppercase mb-1">Notas</label>
                     <textarea id="rev-notas" value={checkinEditForm.notes}
                       onChange={e => setCheckinEditForm(f => f && ({ ...f, notes: e.target.value }))}
-                      className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-sans resize-none min-h-[60px]" />
+                      className="w-full bg-raised border border-control-line rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-sans resize-none min-h-[60px]" />
                   </div>
                   <div className="flex gap-2">
                     <Button size="s" icon="save" onClick={() => guardarEdicionCheckin(c.id)} loading={guardandoEdicion} loadingLabel="Guardando">
@@ -369,7 +369,7 @@ export default function ReceivedReviewsPanel({
                       value={feedbackText}
                       onChange={e => setFeedbackText(e.target.value)}
                       placeholder="Ajustes nutricionales, indicaciones de cargas, observaciones motivacionales..."
-                      className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-ink focus:ring-1 focus:ring-accent focus:outline-none min-h-[96px] resize-none font-sans"
+                      className="w-full bg-raised border border-control-line rounded-control p-3 text-title-s text-ink focus:ring-1 focus:ring-accent focus:outline-none min-h-[96px] resize-none font-sans"
                     />
                     <Button type="submit" iconTrailing="send" loading={enviando} loadingLabel="Enviando">
                       Enviar y aprobar
@@ -412,24 +412,24 @@ export default function ReceivedReviewsPanel({
                         {isChoice && question?.options ? (
                           <select value={String(ans.value)} aria-label={question?.label ?? ans.questionId}
                             onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value } : a))}
-                            className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-mono w-32">
+                            className="bg-raised border border-control-line rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-mono w-32">
                             {question.options.map(o => <option key={o} value={o}>{o}</option>)}
                           </select>
                         ) : isBool ? (
                           <select value={String(ans.value)} aria-label={question?.label ?? ans.questionId}
                             onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value === 'true' } : a))}
-                            className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-sans w-24">
+                            className="bg-raised border border-control-line rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-sans w-24">
                             <option value="true">{question?.labelTrue ?? 'Sí'}</option>
                             <option value="false">{question?.labelFalse ?? 'No'}</option>
                           </select>
                         ) : isNum ? (
                           <input type="number" value={String(ans.value)} aria-label={question?.label ?? ans.questionId}
                             onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: parseFloat(e.target.value) || 0 } : a))}
-                            className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-mono w-24 text-right tabular-nums" />
+                            className="bg-raised border border-control-line rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-mono w-24 text-right tabular-nums" />
                         ) : (
                           <input type="text" value={String(ans.value)} aria-label={question?.label ?? ans.questionId}
                             onChange={e => setResponseEditAnswers(prev => prev.map((a, i) => i === idx ? { ...a, value: e.target.value } : a))}
-                            className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-mono flex-1 min-w-0" />
+                            className="bg-raised border border-control-line rounded-control px-2 py-2 text-title-s text-ink focus:outline-none focus:border-data/50 font-mono flex-1 min-w-0" />
                         )}
                       </div>
                     );

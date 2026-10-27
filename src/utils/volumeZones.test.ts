@@ -2,9 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { heatmapBg, heatmapText } from './volumeZones';
 
 
-// El texto de zona se mezcla con la tinta: el color de estado puro no pasa 4,5:1
-// sobre su propio tinte en claro (el chip MEV daba 3,2:1).
-const mezcla = (t: string) => `color-mix(in oklab, var(--color-${t}) 55%, var(--color-ink))`;
+// 27-10 (revisión del modo claro): la cifra de la celda va en TINTA en todas
+// las zonas con color. El texto teñido (estado al 55 % con la tinta) medía
+// 3,3:1 en oscuro sobre la celda verde y 4,4:1 sobre la roja; el fondo ya
+// lleva el color de la zona, el texto no tiene que repetirlo.
+const tinta = 'var(--color-ink)';
 
 describe('los colores genéricos reproducen los umbrales de siempre', () => {
   /* `MesocycleTemplateLibrary` llevaba su propia copia de estos colores con los
@@ -13,10 +15,10 @@ describe('los colores genéricos reproducen los umbrales de siempre', () => {
      el fallo sale aquí y no en una pantalla pintando otra cosa que el resto. */
   const casos: [number, string][] = [
     [0, 'var(--color-ink-3)'],
-    [1, mezcla('info')], [4, mezcla('info')],
-    [5, mezcla('success')], [9, mezcla('success')],
-    [10, mezcla('warning')], [14, mezcla('warning')],
-    [15, mezcla('danger')], [30, mezcla('danger')],
+    [1, tinta], [4, tinta],
+    [5, tinta], [9, tinta],
+    [10, tinta], [14, tinta],
+    [15, tinta], [30, tinta],
   ];
 
   it.each(casos)('con %i series el texto va en %s', (series, color) => {

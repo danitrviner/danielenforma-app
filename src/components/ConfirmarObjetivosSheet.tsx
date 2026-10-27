@@ -158,7 +158,7 @@ export default function ConfirmarObjetivosSheet({ open, onClose, athletes }: Pro
                         aria-label={`Objetivo de ${fase.name}`}
                         value={valor(program.athleteId, fase.id, deducido?.tipo ?? null)}
                         onChange={e => setElegido(prev => ({ ...prev, [clave]: e.target.value as Eleccion }))}
-                        className={`bg-raised border text-title-s font-sans rounded-control px-2 py-2 ${dudoso ? 'border-warning text-warning' : 'border-hairline text-ink'}`}
+                        className={`bg-raised border text-title-s font-sans rounded-control px-2 py-2 ${dudoso ? 'border-warning text-warning' : 'border-control-line text-ink'}`}
                       >
                         <option value="">Sin objetivo</option>
                         {OBJETIVOS_ORDEN.map(t => <option key={t} value={t}>{OBJETIVO_LABEL[t]}</option>)}

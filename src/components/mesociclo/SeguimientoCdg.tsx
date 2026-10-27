@@ -353,11 +353,11 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
         <div className="flex flex-wrap items-end gap-2 pt-1">
           <label className="flex flex-col gap-1">
             <span className="text-caption font-sans uppercase tracking-wide text-ink-3">Aviso por debajo de</span>
-            <input value={inf} onChange={e => setInf(e.target.value)} inputMode="decimal" aria-label="Umbral inferior" className="h-10 w-24 rounded-field border border-hairline bg-field px-2 font-mono text-body-s text-ink" />
+            <input value={inf} onChange={e => setInf(e.target.value)} inputMode="decimal" aria-label="Umbral inferior" className="h-10 w-24 rounded-field border border-control-line bg-field px-2 font-mono text-body-s text-ink" />
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-caption font-sans uppercase tracking-wide text-ink-3">Aviso por encima de</span>
-            <input value={sup} onChange={e => setSup(e.target.value)} inputMode="decimal" aria-label="Umbral superior" className="h-10 w-24 rounded-field border border-hairline bg-field px-2 font-mono text-body-s text-ink" />
+            <input value={sup} onChange={e => setSup(e.target.value)} inputMode="decimal" aria-label="Umbral superior" className="h-10 w-24 rounded-field border border-control-line bg-field px-2 font-mono text-body-s text-ink" />
           </label>
           <Button size="s" variant="secondary" disabled={!umbralesValidos} onClick={() => onGuardarUmbrales({ inferior: Number(inf.replace(',', '.')), superior: Number(sup.replace(',', '.')) })}>
             Guardar para este atleta

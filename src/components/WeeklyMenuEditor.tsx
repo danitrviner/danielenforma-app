@@ -500,7 +500,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
                 <input id="weeklymenueditor-ingestas-de-la-anamnesis-ajustable"
                   type="number" min={0} max={100} value={sl.pct}
                   onChange={e => { slotsTocados.current = true; setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s)); }}
-                  className="w-16 text-right bg-raised border border-hairline rounded-control px-2 py-1 text-title-s text-ink font-mono focus:outline-none focus:border-accent/50"
+                  className="w-16 text-right bg-raised border border-control-line rounded-control px-2 py-1 text-title-s text-ink font-mono focus:outline-none focus:border-accent/50"
                 />
                 <span className="font-mono text-ink-3 text-label">%</span>
               </div>
@@ -511,7 +511,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
         {/* Batch cooking — supersedes variety when on */}
         <button
           onClick={() => setBatch(b => !b)}
-          className={`w-full flex items-center gap-3 p-4 rounded-control border text-left transition-all ${batch ? 'bg-accent/10 border-accent/40' : 'bg-surface border-hairline hover:border-strong'}`}
+          className={`w-full flex items-center gap-3 p-4 rounded-control border text-left transition-[color,background-color,border-color,opacity,transform,box-shadow] ${batch ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press' : 'bg-surface border-hairline hover:border-strong'}`}
         >
           <span className={`w-5 h-5 rounded-control flex-shrink-0 border-2 flex items-center justify-center transition-colors ${batch ? 'bg-accent border-accent' : 'border-hairline'}`}>
             {batch && <Icon name="check" size="s" className="text-on-accent" />}
@@ -536,7 +536,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
               <button
                 key={v}
                 onClick={() => setVariety(v)}
-                className={`flex-1 py-3 rounded-control font-mono font-bold text-body-s transition-all ${variety === v ? 'bg-accent text-on-accent' : 'bg-surface border border-hairline text-ink-2 hover:text-ink'}`}
+                className={`flex-1 py-3 rounded-control font-mono font-bold text-body-s transition-[color,background-color,border-color,opacity,transform,box-shadow] ${variety === v ? 'bg-accent text-on-accent' : 'bg-surface border border-hairline text-ink-2 hover:text-ink'}`}
               >
                 {v}
               </button>
@@ -566,7 +566,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
                 <button
                   key={dt.id}
                   onClick={() => cycleDishType(dt.id)}
-                  className={`flex items-center gap-1 px-3 py-2 rounded-control border font-mono text-caption font-bold transition-all ${cls}`}
+                  className={`flex items-center gap-1 px-3 py-2 rounded-control border font-mono text-caption font-bold transition-[color,background-color,border-color,opacity,transform,box-shadow] ${cls}`}
                 >
                   <Icon name={dt.icon} size="s" />
                   {dt.label}

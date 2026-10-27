@@ -80,7 +80,7 @@ export default function AgujetasConjuntasChart({ series }: Props) {
               type="button"
               onClick={() => setVentana(v.n)}
               aria-pressed={ventana === v.n}
-              className={`px-3 min-h-[44px] rounded-control font-sans text-caption uppercase font-bold transition-all ${
+              className={`px-3 min-h-[44px] rounded-control font-sans text-caption uppercase font-bold transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                 ventana === v.n ? 'bg-accent text-on-accent shadow' : 'text-ink-2 hover:text-ink'
               }`}
             >{v.label}</button>

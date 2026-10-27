@@ -128,7 +128,7 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
               <p className="text-body-s text-ink mt-3">Túmbate con la banda puesta y quédate quieto 3 minutos. Mejor nada más despertar, antes de levantarte.</p>
             </div>
             {error && <p className="text-label text-danger font-sans">{error}</p>}
-            <button onClick={start} className="w-full py-3 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
+            <button onClick={start} className="w-full py-3 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow]">
               Empezar
             </button>
             <button onClick={onClose} className="w-full py-2 text-caption font-sans uppercase text-ink-2 hover:text-ink transition-colors">

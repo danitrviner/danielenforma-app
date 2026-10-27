@@ -222,7 +222,7 @@ export default function ClientRevisionPanel({
     // El agrandado vive en `.revision-presentando` (src/index.css), no aquí:
     // necesita una media query —en móvil el zoom rompe la contención de las
     // tablas— y eso no se puede escribir en un `style` en línea.
-    <div className={`space-y-8 ${presentando ? 'revision-presentando' : ''}`}>
+    <div className={`pantalla space-y-8 ${presentando ? 'revision-presentando' : ''}`}>
       {presentando && (
         <p className="font-mono text-caption text-ink-3 text-right">
           Modo presentación · P o Esc para salir

@@ -52,7 +52,7 @@ export default function Avatar({ src, name = '', className = '', alt }: Props) {
       alt={alt ?? name}
       loading="lazy"
       decoding="async"
-      className={className}
+      className={`contorno-foto ${className}`}
       onError={() => setFallo(true)}
     />
   );

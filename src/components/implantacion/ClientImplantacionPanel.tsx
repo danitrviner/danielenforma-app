@@ -291,7 +291,7 @@ export default function ClientImplantacionPanel({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="pantalla space-y-5">
       {/* ── Cabecera ──────────────────────────────────────────────────────── */}
       <Card className="flex flex-wrap items-center gap-4">
         {/* UN solo hijo: `RingSeal` centra lo que reciba en un flex horizontal,

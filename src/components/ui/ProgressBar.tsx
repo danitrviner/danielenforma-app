@@ -44,7 +44,7 @@ export default function ProgressBar({ value, label, className = '', widthClassNa
     >
       <div
         className={
-          'h-full rounded-[4px] transition-[width,background-color] duration-(--duration-bar) ease-brand '
+          'origin-left animate-scale-x-in h-full rounded-[4px] transition-[width,background-color] duration-(--duration-bar) ease-brand '
           + (pasado ? 'bg-danger' : 'bg-accent')
         }
         style={{ width: `${ancho}%` }}

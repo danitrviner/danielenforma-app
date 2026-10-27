@@ -1,3 +1,4 @@
+import { useCuentaAlMontar } from '../../hooks/useCuentaAlMontar';
 import React from 'react';
 import { UserProfile } from '../../types';
 import { VentanaRevision, PesoVsSemanaPasada } from '../../utils/revisionCoach';
@@ -26,6 +27,12 @@ interface Props {
 }
 
 /** «29 ago» — sin año, que el rango siempre cae dentro del mismo o del anterior. */
+/** Una cifra entera que cuenta hasta su valor al montar (sesiones, récords). */
+function Cuenta({ valor }: { valor: number }) {
+  const v = useCuentaAlMontar(valor);
+  return <>{Math.round(v)}</>;
+}
+
 function Cifra({ label, valor, sub, tono = 'ink' }: {
   label: string; valor: React.ReactNode; sub?: React.ReactNode; tono?: 'ink' | 'atenuado';
 }) {
@@ -35,7 +42,7 @@ function Cifra({ label, valor, sub, tono = 'ink' }: {
       <span
         className="font-mono font-semibold text-title-l tabular-nums block leading-tight"
         style={{ color: tono === 'atenuado' ? 'var(--color-ink-3)' : 'var(--color-ink)' }}
-      >{valor}</span>
+      >{typeof valor === 'number' ? <Cuenta valor={valor} /> : valor}</span>
       {sub && <span className="font-mono text-caption text-ink-3 block">{sub}</span>}
     </div>
   );

@@ -146,7 +146,7 @@ export default function PanelPeso({ bodyweightLogs, initialWeight, nutritionProg
   // Sin nada que dibujar en la ventana: se dice, no se pinta un cero.
   if (logsRango.length === 0 && planRango.length === 0) {
     return (
-      <div className="bg-surface border border-hairline rounded-surface p-4 flex flex-wrap items-center gap-4" style={{ animation: 'fade-up 200ms cubic-bezier(0.2,0.8,0.2,1) both' }}>
+      <div className="bg-surface border border-hairline rounded-surface p-4 flex flex-wrap items-center gap-4" style={{ animation: 'fade-up var(--duration-state) cubic-bezier(0.2,0.8,0.2,1) both' }}>
         {selector}
         <p className="text-label text-ink-3 font-sans">Sin registros de peso en {titulo}.</p>
         <div className="flex-1" />
@@ -179,7 +179,7 @@ export default function PanelPeso({ bodyweightLogs, initialWeight, nutritionProg
     : Math.abs(desvio) <= 0.15 ? 'var(--color-success)' : 'var(--color-warning)';
 
   return (
-    <div className="bg-surface border border-hairline rounded-surface p-4 flex flex-wrap items-center gap-x-5 gap-y-3" style={{ animation: 'fade-up 200ms cubic-bezier(0.2,0.8,0.2,1) both' }}>
+    <div className="bg-surface border border-hairline rounded-surface p-4 flex flex-wrap items-center gap-x-5 gap-y-3" style={{ animation: 'fade-up var(--duration-state) cubic-bezier(0.2,0.8,0.2,1) both' }}>
       {selector}
 
       <div className="flex flex-col gap-0.5">

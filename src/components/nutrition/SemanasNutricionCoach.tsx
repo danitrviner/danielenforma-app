@@ -169,7 +169,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
             aria-pressed={varias}
             onClick={() => { setVarias(v => !v); setSel(new Set(varias ? [] : [semana])); }}
             className={`inline-flex items-center gap-1.5 rounded-chip border px-2.5 py-1.5 font-mono text-caption font-bold uppercase tracking-wider transition-colors ${
-              varias ? 'border-accent text-accent-ink bg-accent/12' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`}
+              varias ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`}
           >
             <Icon name="done_all" size="s" />Varias semanas
           </button>
@@ -216,8 +216,8 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
                     <span className={`absolute bottom-0 w-full rounded-t-[4px] ${mant.includes(s) ? 'bg-info/60' : activa ? 'bg-accent' : 'bg-strong'}`}
                       style={{ height: k ? Math.max(4, Math.round(30 * (k - min) / Math.max(1, max - min))) : 3 }} />
                   </span>
-                  <span className="font-mono text-[10px] leading-none text-ink-3 tabular-nums">{k ? k.toLocaleString('es-ES') : '—'}</span>
-                  {mant.includes(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">M</span>}
+                  <span className="font-mono text-caption leading-none text-ink-3 tabular-nums">{k ? k.toLocaleString('es-ES') : '—'}</span>
+                  {mant.includes(s) && <span className="font-mono text-caption leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">M</span>}
                 </button>
               );
             })}
@@ -398,7 +398,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
               <div className="flex gap-2 items-end flex-wrap">
                 <input id="pasos-semana" aria-label="Pasos al día" inputMode="numeric" placeholder="10000" value={pasos}
                   onChange={e => setPasos(e.target.value.replace(/\D/g, ''))}
-                  className="h-9 w-28 bg-inset border border-hairline rounded-control px-2 font-mono text-label text-ink focus:outline-none focus:ring-1 focus:ring-accent" />
+                  className="h-9 w-28 bg-inset border border-control-line rounded-control px-2 font-mono text-label text-ink focus:outline-none focus:ring-1 focus:ring-accent" />
                 <Button size="s" icon="add" disabled={!pasos} onClick={() => {
                   const lista = [...(program.pasosPorSemana ?? []).filter(x => x.semana !== semana), { semana, pasos: Number(pasos) }].sort((a, b) => a.semana - b.semana);
                   guardar({ ...program, pasosPorSemana: lista });
@@ -448,11 +448,11 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
               <div className="grid grid-cols-3 gap-2 items-end">
                 <label className="flex flex-col gap-1 font-mono text-caption text-ink-2 uppercase tracking-wider">Agua (L)
                   <input id="min-agua" inputMode="decimal" value={minimos.agua} onChange={e => setMinimos({ ...minimos, agua: e.target.value.replace(',', '.') })}
-                    className="h-9 bg-inset border border-hairline rounded-control px-2 font-mono text-label text-ink normal-case focus:outline-none focus:ring-1 focus:ring-accent" />
+                    className="h-9 bg-inset border border-control-line rounded-control px-2 font-mono text-label text-ink normal-case focus:outline-none focus:ring-1 focus:ring-accent" />
                 </label>
                 <label className="flex flex-col gap-1 font-mono text-caption text-ink-2 uppercase tracking-wider">Verdura y fruta
                   <input id="min-raciones" inputMode="numeric" value={minimos.raciones} onChange={e => setMinimos({ ...minimos, raciones: e.target.value.replace(/\D/g, '') })}
-                    className="h-9 bg-inset border border-hairline rounded-control px-2 font-mono text-label text-ink normal-case focus:outline-none focus:ring-1 focus:ring-accent" />
+                    className="h-9 bg-inset border border-control-line rounded-control px-2 font-mono text-label text-ink normal-case focus:outline-none focus:ring-1 focus:ring-accent" />
                 </label>
                 <Select label="Proteína mín." value={String(protMin)} onChange={v => guardar({ ...program, proteinaMinGKg: Number(v) })}
                   options={['1.4', '1.6', '1.8', '2', '2.2'].map(v => ({ value: v, label: `${v.replace('.', ',')} g/kg` }))} />
@@ -485,11 +485,11 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
               )}
               <div className="grid grid-cols-2 gap-2">
                 <input id="sup-nombre" aria-label="Suplemento" placeholder="Creatina" value={sup.nombre} onChange={e => setSup({ ...sup, nombre: e.target.value })}
-                  className="h-9 bg-inset border border-hairline rounded-control px-2 font-sans text-label text-ink focus:outline-none focus:ring-1 focus:ring-accent" />
+                  className="h-9 bg-inset border border-control-line rounded-control px-2 font-sans text-label text-ink focus:outline-none focus:ring-1 focus:ring-accent" />
                 <input id="sup-dosis" aria-label="Dosis" placeholder="5 g" value={sup.dosis} onChange={e => setSup({ ...sup, dosis: e.target.value })}
-                  className="h-9 bg-inset border border-hairline rounded-control px-2 font-sans text-label text-ink focus:outline-none focus:ring-1 focus:ring-accent" />
+                  className="h-9 bg-inset border border-control-line rounded-control px-2 font-sans text-label text-ink focus:outline-none focus:ring-1 focus:ring-accent" />
                 <input id="sup-momento" aria-label="Cuándo" placeholder="Con el desayuno" value={sup.momento} onChange={e => setSup({ ...sup, momento: e.target.value })}
-                  className="h-9 bg-inset border border-hairline rounded-control px-2 font-sans text-label text-ink focus:outline-none focus:ring-1 focus:ring-accent" />
+                  className="h-9 bg-inset border border-control-line rounded-control px-2 font-sans text-label text-ink focus:outline-none focus:ring-1 focus:ring-accent" />
                 <Select label="" value={sup.hasta} onChange={v => setSup({ ...sup, hasta: v })}
                   options={[{ value: '', label: 'Hasta el final' }, ...Array.from({ length: n - semana + 1 }, (_, k) => ({ value: String(semana + k), label: `Hasta S${semana + k}` }))]} />
               </div>
@@ -537,7 +537,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
             <div className="flex gap-2 items-end flex-wrap">
               <label className="flex flex-col gap-1 font-mono text-caption text-ink-2 uppercase tracking-wider">Objetivo kcal
                 <input id="salida-kcal" inputMode="numeric" value={salida} onChange={e => setSalida(e.target.value.replace(/\D/g, ''))}
-                  className="h-9 w-28 bg-inset border border-hairline rounded-control px-2 font-mono text-label text-ink normal-case focus:outline-none focus:ring-1 focus:ring-accent" />
+                  className="h-9 w-28 bg-inset border border-control-line rounded-control px-2 font-mono text-label text-ink normal-case focus:outline-none focus:ring-1 focus:ring-accent" />
               </label>
               <Button size="s" icon="trending_up" disabled={!salida} onClick={() => { guardar(salidaDeDeficit(program, diets, semana, Number(salida))); setProgAbierto(false); }}>
                 Programar desde S{semana}
@@ -565,7 +565,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
                 options={['1', '2', '3', '4'].map(v => ({ value: v, label: v === '1' ? 'semana' : `${v} semanas` }))} />
               <label className="flex flex-col gap-1 font-mono text-caption text-ink-2 uppercase tracking-wider">Sin bajar de (kcal)
                 <input id="bajada-suelo" inputMode="numeric" value={bajada.suelo} onChange={e => setBajada({ ...bajada, suelo: e.target.value.replace(/\D/g, '') })}
-                  className="h-9 bg-inset border border-hairline rounded-control px-2 font-mono text-label text-ink normal-case focus:outline-none focus:ring-1 focus:ring-accent" />
+                  className="h-9 bg-inset border border-control-line rounded-control px-2 font-mono text-label text-ink normal-case focus:outline-none focus:ring-1 focus:ring-accent" />
               </label>
             </div>
             <Button size="s" icon="trending_down" disabled={!bajada.suelo} onClick={() => {

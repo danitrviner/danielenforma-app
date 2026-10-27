@@ -145,7 +145,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
           </h3>
           <button
             onClick={addQ}
-            className="flex items-center gap-2 px-3 py-2 bg-raised border border-accent/40 text-accent-ink font-sans text-caption uppercase rounded-control hover:border-accent/70 transition-all"
+            className="flex items-center gap-2 px-3 py-2 bg-raised border border-accent/40 text-accent-ink font-sans text-caption uppercase rounded-control hover:border-accent/70 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
           >
             <span className="material-symbols-outlined text-body-s">add</span>Añadir pregunta
           </button>
@@ -188,7 +188,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 value={q.type}
                 onChange={e => setQ(idx, applyTypeChange({ type: e.target.value as QuestionType }))}
                 aria-label={`Tipo de la pregunta ${idx + 1}`}
-                className="bg-raised border border-hairline rounded-control px-2 py-2 text-label font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                className="bg-raised border border-control-line rounded-control px-2 py-2 text-label font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent"
               >
                 {(Object.keys(QUESTION_TYPE_LABELS) as QuestionType[]).map(t => (
                   <option key={t} value={t}>{QUESTION_TYPE_LABELS[t]}</option>
@@ -241,7 +241,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 <select
                   value={q.signalKey ?? ''}
                   onChange={e => setQ(idx, { signalKey: e.target.value || undefined })}
-                  className="bg-raised border border-hairline rounded-control px-2 py-1 text-caption font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent max-w-full"
+                  className="bg-raised border border-control-line rounded-control px-2 py-1 text-caption font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent max-w-full"
                 >
                   <option value="">Ninguna (respuesta normal)</option>
                   {SEÑALES_DISPONIBLES
@@ -373,7 +373,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               )}
               {q.type === 'metric' && (
                 <div className="w-56">
-                  <label htmlFor={`q-${q.id}-que-mide`} className="block font-mono text-[9px] text-ink-3 uppercase mb-1">Qué mide</label>
+                  <label htmlFor={`q-${q.id}-que-mide`} className="block font-mono text-caption text-ink-3 uppercase mb-1">Qué mide</label>
                   <select id={`q-${q.id}-que-mide`}
                     value={q.metricKey ?? ''}
                     onChange={e => setQ(idx, { metricKey: (e.target.value || undefined) as BodyMetricKey | undefined })}
@@ -389,7 +389,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               {q.type === 'media' && (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label htmlFor={`q-${q.id}-tipo`} className="block font-mono text-[9px] text-ink-3 uppercase mb-1">Tipo</label>
+                    <label htmlFor={`q-${q.id}-tipo`} className="block font-mono text-caption text-ink-3 uppercase mb-1">Tipo</label>
                     <select id={`q-${q.id}-tipo`}
                       value={q.mediaKind ?? ''}
                       onChange={e => setQ(idx, { mediaKind: (e.target.value || undefined) as 'video' | 'image' | undefined })}
@@ -401,7 +401,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                     </select>
                   </div>
                   <div>
-                    <label htmlFor={`q-${q.id}-tamano-max-mb`} className="block font-mono text-[9px] text-ink-3 uppercase mb-1">Tamaño máx. (MB)</label>
+                    <label htmlFor={`q-${q.id}-tamano-max-mb`} className="block font-mono text-caption text-ink-3 uppercase mb-1">Tamaño máx. (MB)</label>
                     <input id={`q-${q.id}-tamano-max-mb`} type="number" value={q.maxSizeMb ?? ''} min={1} max={50}
                       onChange={e => setQ(idx, { maxSizeMb: e.target.value === '' ? undefined : Number(e.target.value) })}
                       placeholder="50" className={`w-full ${MINI_INPUT_CLS}`} />
