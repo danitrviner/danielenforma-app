@@ -100,7 +100,7 @@ export type { RecetasCursor, RecetasFilters } from './db/recipes';
 export {
   getProgressPhotos, uploadProgressPhoto, deleteProgressPhoto,
   assignPhotoCheckIn, getPhotoAssignmentsForAthlete, deactivatePhotoAssignment,
-  uploadQuestionnaireMedia,
+  uploadQuestionnaireMedia, uploadRespuestaCoachMedia,
 } from './db/media';
 
 // ─── QUESTIONNAIRES + ASIGNACIONES + RESPUESTAS ───────────────────────────────
@@ -110,7 +110,7 @@ export {
   getQuestionnairesByCoach, createQuestionnaire, updateQuestionnaire, deleteQuestionnaire,
   assignQuestionnaire, assignQuestionnairesBatch, getAssignmentsForAthlete, deactivateAssignment,
   submitResponse, getQuestionnaireById, getResponsesForAthlete, getResponsesByQuestionnaireIds,
-  updateQuestionnaireResponse, deleteQuestionnaireResponse, marcarRespuestaVista,
+  updateQuestionnaireResponse, deleteQuestionnaireResponse, marcarRespuestaVista, guardarRespuestaCoach,
   getQuestionnairePacksByCoach, createQuestionnairePack, updateQuestionnairePack, deleteQuestionnairePack,
 } from './db/questionnaires';
 

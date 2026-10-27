@@ -9,9 +9,9 @@ import type { BorradorDeCuestionario } from '../components/QuestionnaireWizard';
    documento `revisionProgreso`. Escribir es siempre «guardar y seguir»: el
    borrador no debe frenar ni asustar al atleta (ver db/revisionProgreso). */
 
-export function useProgresoRevision(email: string, cargar = true) {
+export function useProgresoRevision(email: string, cargar = true, diaRevision?: number) {
   const queryClient = useQueryClient();
-  const ciclo = viernesDelCiclo(todayStr());
+  const ciclo = viernesDelCiclo(todayStr(), diaRevision);
   const key = ['revisionProgreso', email, ciclo] as const;
 
   // `cargar: false` solo mira la caché (el contador del «+» no lee nada al arrancar).

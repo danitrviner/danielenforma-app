@@ -13,7 +13,8 @@
 // justo el objetivo de este proyecto.
 
 import { QuestionnaireQuestion, QSchedule, BodyMetricKey, Questionnaire, MuscleGroup } from '../types.js';
-import { OPCIONES_GRUPOS, VolumeSignalKey, SignalKey } from './questionnaireSignals.js';
+import { OPCIONES_GRUPOS, VolumeSignalKey, SignalKey, AgujetasSignalKey } from './questionnaireSignals.js';
+import { ZONAS_IEM } from '../utils/cdg/zonas.js';
 
 export interface QuestionnairePresetDef {
   title: string;
@@ -70,6 +71,21 @@ function metric(label: string, metricKey: BodyMetricKey, required = true): Omit<
 }
 function media(label: string, required = false, mediaKind?: 'video' | 'image'): Omit<QuestionnaireQuestion, 'id'> {
   return { label, type: 'media', required, mediaKind };
+}
+
+// ── Presentación (asistente conversación + selección, 27-10) ─────────────────
+type Presentacion = Pick<QuestionnaireQuestion, 'bloque' | 'contexto' | 'tituloCorto' | 'conComentario' | 'presentacion' | 'autoRelleno' | 'helpText'>;
+/** Añade bloque, contexto, título corto… a una pregunta. */
+function con(q: Omit<QuestionnaireQuestion, 'id'>, p: Presentacion): Omit<QuestionnaireQuestion, 'id'> {
+  return { ...q, ...p };
+}
+/** «¿Lo mantenemos o cambiamos algo?» — si cambia, se le pide qué. */
+function mantenerCambiar(label: string, labels: { mantener?: string; cambiar?: string } = {}): Omit<QuestionnaireQuestion, 'id'> {
+  return { label, type: 'keep_change', required: false, labelTrue: labels.mantener, labelFalse: labels.cambiar };
+}
+/** Escala 1-10 con comentario opcional debajo. */
+function notaConComentario(label: string, opts: Parameters<typeof scale>[1] = {}): Omit<QuestionnaireQuestion, 'id'> {
+  return { ...scale(label, opts), conComentario: true };
 }
 
 // ── 1. Entrenamiento (alta) ───────────────────────────────────────────────────
@@ -164,9 +180,9 @@ const DOMS_ZONES: { zona: string; group: MuscleGroup }[] = [
   { zona: 'HOMBRO',         group: 'deltoide_lat' },
 ];
 
-// Una vez a la semana (Dani, 27-10): es la única lectura de agujetas, también
-// para el freno/acelerador del CDG, que la convierte a 1-5. Las dos preguntas
-// de contexto del protocolo (cansancio al salir y motivación) van aquí.
+// DOM's 0-10 por grupo, una vez a la semana. El paquete oficial ya no lo usa:
+// las agujetas van en 1-5 por zona dentro de «Tu semana» (Dani, 27-10, PR #20).
+// Se conserva para quien lo tenga asignado; el CDG lo convierte a 1-5.
 const DOMS: QuestionnairePresetDef = {
   title: "DOM's o \"agujetas\"",
   description: 'Una vez a la semana. Escala de 0 (nada) a 10 (muchísimo) por grupo muscular, pensando en cómo quedaste a los dos días de entrenarlo.',
@@ -209,16 +225,16 @@ const MEDICIONES: QuestionnairePresetDef = {
 
 const REVISION_SEMANA_3: QuestionnairePresetDef = {
   title: 'Revisión Semana 3',
-  description: 'Pulso de satisfacción y riesgo de abandono a las 3 semanas de empezar el plan.',
+  description: 'Tres semanas dentro: cómo lo vives, qué cuesta y si necesitas algo más de mí.',
   suggestedSchedule: { type: 'plan_week', planWeek: 3 },
   questions: [
-    scale('¿Cómo calificarías tu satisfacción general con el programa hasta ahora?', { required: true }),
-    text('¿Qué aspectos te han gustado más estas tres semanas y por qué?', true),
-    text('¿Qué partes del entrenamiento o de la nutrición no te están gustando o se te hacen difíciles de seguir?', true),
-    text('¿Te has encontrado con obstáculos que te impidan cumplir el plan (horarios, lesiones, falta de motivación, logística)?', true),
-    scale('¿En qué medida sientes que recibes el apoyo que necesitas por mi parte?', { required: true }),
-    scale('¿Qué probabilidad hay de que continúes con el programa después de esta semana?', { required: true }),
-    text('¿Hay algún otro comentario, sugerencia o preocupación que quieras compartir?'),
+    con(scaleSignal('¿Cómo calificarías tu satisfacción general con el programa hasta ahora?', 'retencion.satisfaccion', { required: true }), { bloque: 'Cómo va', tituloCorto: 'Satisfacción' }),
+    con(text('¿Qué aspectos te han gustado más estas tres semanas y por qué?', true), { bloque: 'Cómo va', tituloCorto: 'Lo que más te gusta' }),
+    con(text('¿Qué partes del entrenamiento o de la nutrición no te están gustando o se te hacen difíciles de seguir?', true), { bloque: 'Cómo va', tituloCorto: 'Lo que cuesta' }),
+    con(text('¿Te has encontrado con obstáculos que te impidan cumplir el plan?', true, 'Horarios, lesiones, falta de motivación, logística…'), { bloque: 'Cómo va', tituloCorto: 'Obstáculos' }),
+    con(scale('¿En qué medida sientes que recibes el apoyo que necesitas por mi parte?', { required: true }), { bloque: 'Soporte', tituloCorto: 'Apoyo' }),
+    con(scaleSignal('¿Qué probabilidad hay de que continúes con el programa después de esta semana?', 'retencion.continuar', { required: true }), { bloque: 'Soporte', tituloCorto: 'Ganas de seguir' }),
+    con(text('¿Hay algún otro comentario, sugerencia o preocupación que quieras compartir?'), { bloque: 'Soporte', tituloCorto: 'Comentarios' }),
   ],
 };
 
@@ -292,11 +308,11 @@ const CHECK_MES_5: QuestionnairePresetDef = {
   description: 'Pulso corto de mitad de programa semestral.',
   suggestedSchedule: { type: 'once' },
   questions: [
-    scale('En cuánto al entrenamiento... ¿Has tenido buenas sensaciones? (del 1 al 10)'),
-    scale('¿Qué puntuación le darías a la motivación actual? (del 1 al 10)'),
-    numeric('¿Cuántos días te gustaría y podrías entrenar durante la próxima fase de la rutina de entrenamiento?', { unit: 'días' }),
-    text('¿En qué aspectos crees que YO podría mejorar para darte aún mejores resultados?'),
-    text('SUGERENCIAS aquí:'),
+    con(scale('En cuanto al entrenamiento, ¿has tenido buenas sensaciones?', { minLabel: 'Malas', maxLabel: 'Muy buenas' }), { tituloCorto: 'Sensaciones' }),
+    con(scaleSignal('¿Qué puntuación le darías a tu motivación actual?', 'retencion.continuar'), { tituloCorto: 'Motivación' }),
+    con(numeric('¿Cuántos días te gustaría y podrías entrenar durante la próxima fase?', { unit: 'días' }), { tituloCorto: 'Días de entreno' }),
+    con(text('¿En qué aspectos crees que yo podría mejorar para darte aún mejores resultados?'), { tituloCorto: 'En qué puedo mejorar' }),
+    con(text('Sugerencias'), { tituloCorto: 'Sugerencias' }),
   ],
 };
 
@@ -307,18 +323,22 @@ const CHECK_MES_5: QuestionnairePresetDef = {
 
 const REVISION_SEMANA_10: QuestionnairePresetDef = {
   title: 'Revisión Semana 10 (mitad de fase)',
-  description: 'Check de mitad de la primera fase (semana 10 de 24) antes de preparar el siguiente bloque.',
+  description: 'Mitad de la primera fase: me sirve para preparar tu nuevo plan de entrenamiento.',
   suggestedSchedule: { type: 'plan_week', planWeek: 10 },
   questions: [
-    text('Este FORMULARIO es IMPORTANTE porque me servirá muchísimo para poder ir preparándote el NUEVO PLAN de ENTRENAMIENTO que está por caer... Ahora llevamos muchas semanas adaptándonos y mejorando semana tras semana con el mismo patrón de movimiento, es hora de ir al siguiente nivel para seguir avanzando.'),
-    text('¿Crees que has entrenado lo suficientemente fuerte y constante durante estas primeras semanas de tu plan de entrenamiento?'),
-    text('¿Qué puntuación le darías a los resultados obtenidos durante esta primera fase del programa?'),
-    scale('En cuánto al entrenamiento... ¿Has tenido buenas sensaciones? (del 1 al 10)'),
-    scale('¿Qué puntuación le darías a la motivación actual? (del 1 al 10)'),
-    numeric('¿Cuántos días te gustaría y podrías entrenar durante la próxima fase de la rutina de entrenamiento?', { unit: 'días' }),
-    text('¿En qué aspectos crees que YO podría mejorar para darte aún mejores resultados?'),
-    text('¿Algo que quieras añadir o sugerencia de cara a ir preparando la nueva planificación de la siguiente fase del programa?'),
-    text('🚀Pronto empezamos la mitad de la 1a parte del programa, es decir, la semana 12 de 24... Ahora llevamos 10 semanas, así que a por ello tío, esto solo acaba de empezar y no te imaginas cómo estaremos en 3, 6 y 12 meses vista!'),
+    con(text('¿Crees que has entrenado lo suficientemente fuerte y constante durante estas primeras semanas?'), {
+      bloque: 'Estas semanas', tituloCorto: 'Constancia',
+      contexto: 'Este formulario es importante: me sirve para preparar el nuevo plan de entrenamiento que está por llegar. Llevamos muchas semanas mejorando con los mismos patrones de movimiento y toca subir de nivel.',
+    }),
+    con(text('¿Qué puntuación le darías a los resultados obtenidos durante esta primera fase del programa?'), { bloque: 'Estas semanas', tituloCorto: 'Resultados' }),
+    con(scale('En cuanto al entrenamiento, ¿has tenido buenas sensaciones?', { minLabel: 'Malas', maxLabel: 'Muy buenas' }), { bloque: 'Estas semanas', tituloCorto: 'Sensaciones' }),
+    con(scale('¿Qué puntuación le darías a tu motivación actual?', { minLabel: 'Ninguna', maxLabel: 'Muchísima' }), { bloque: 'Estas semanas', tituloCorto: 'Motivación' }),
+    con(numeric('¿Cuántos días te gustaría y podrías entrenar durante la próxima fase?', { unit: 'días' }), { bloque: 'Próxima fase', tituloCorto: 'Días de entreno' }),
+    con(text('¿En qué aspectos crees que yo podría mejorar para darte aún mejores resultados?'), { bloque: 'Próxima fase', tituloCorto: 'En qué puedo mejorar' }),
+    con(text('¿Algo que quieras añadir o sugerir para preparar la planificación de la siguiente fase?'), {
+      bloque: 'Próxima fase', tituloCorto: 'Sugerencias',
+      helpText: 'Pronto llegamos a la semana 12 de 24. Esto solo acaba de empezar.',
+    }),
   ],
 };
 
@@ -328,17 +348,27 @@ const REVISION_SEMANA_10: QuestionnairePresetDef = {
 
 const PRIMERA_SEMANA: QuestionnairePresetDef = {
   title: 'Primera Semana',
-  description: 'Primer contacto tras 7 días de plan — entendimiento del programa y primeras sensaciones.',
+  description: 'Primer contacto tras 7 días de plan: cómo entiendes el programa y tus primeras sensaciones.',
   suggestedSchedule: { type: 'plan_week', planWeek: 1 },
   questions: [
-    text('Ahora que llevas tu primera semana en el programa... ¿Cómo lo estás llevando a nivel general?'),
-    text('Lo más importante antes de hacerte más preguntas... ¿Has entendido e interiorizado todos los conceptos del programa (funcionamiento, soporte, dieta, entrenamiento, normas a cumplir, metodología, etc.)?'),
-    text('⚠️Llevas 7 días ENTRENANDO y probando la nueva rutina que te he preparado... ¿Te está gustando para mantenértelo o quieres introducir algún cambio antes de dejarla tal cuál está y empezar a progresar y ver ese cambio físico que estamos buscando?'),
-    text('⚠️Llevas 7 días SIGUIENDO EL PLAN NUTRICIONAL... ¿Te está gustando para mantenértelo o quieres introducir algún cambio antes de dejarla tal cuál está hasta que yo decida que sea oportuno cambiar las cantidades, macronutrientes y/o la metodología de la dieta?'),
-    text('¿Del 1 al 10 cómo están siendo tus sensaciones en cuánto al ENTRENAMIENTO se refiere? ¿Algo que quieras comentar?'),
-    text('¿Del 1 al 10 cómo están siendo tus sensaciones en cuánto a la NUTRICIÓN se refiere? ¿Algo que quieras comentar?'),
-    text('¿Del 1 al 10 cómo están siendo tus sensaciones en cuánto al SOPORTE se refiere? ¿Algo que quieras comentar? Ten en cuenta que todavía no hemos pasado ninguna revisión, eso es lo mejor del seguimiento que aún está por llegar'),
-    text('¿Algo que quieras comentar? ;)'),
+    con(text('¿Cómo lo estás llevando a nivel general?'), { bloque: 'General', tituloCorto: 'Cómo lo llevas', contexto: 'Ya llevas tu primera semana en el programa.' }),
+    con(text('¿Has entendido e interiorizado todos los conceptos del programa?', false, 'Funcionamiento, soporte, dieta, entrenamiento, normas, metodología…'), {
+      bloque: 'General', tituloCorto: 'Conceptos del programa', contexto: 'Lo más importante antes de hacerte más preguntas:',
+    }),
+    con(mantenerCambiar('¿Te está gustando para mantenerla o quieres introducir algún cambio?'), {
+      bloque: 'Tu plan', tituloCorto: 'Rutina',
+      contexto: 'Llevas 7 días entrenando y probando la nueva rutina que te he preparado. Antes de dejarla tal cual y empezar a progresar hacia el cambio físico que buscamos…',
+    }),
+    con(mantenerCambiar('¿Te está gustando para mantenerlo o quieres introducir algún cambio?'), {
+      bloque: 'Tu plan', tituloCorto: 'Plan nutricional',
+      contexto: 'Llevas 7 días siguiendo el plan nutricional. Las cantidades, los macros y la metodología los cambiaré yo cuando sea oportuno.',
+    }),
+    con(notaConComentario('Del 1 al 10, ¿cómo están siendo tus sensaciones con el entrenamiento?', { minLabel: 'Muy malas', maxLabel: 'Perfectas' }), { bloque: 'Sensaciones', tituloCorto: 'Entrenamiento' }),
+    con(notaConComentario('Del 1 al 10, ¿cómo están siendo tus sensaciones con la nutrición?', { minLabel: 'Muy malas', maxLabel: 'Perfectas' }), { bloque: 'Sensaciones', tituloCorto: 'Nutrición' }),
+    con(notaConComentario('Del 1 al 10, ¿cómo están siendo tus sensaciones con el soporte?', { minLabel: 'Muy malas', maxLabel: 'Perfectas' }), {
+      bloque: 'Sensaciones', tituloCorto: 'Soporte', helpText: 'Aún no hemos pasado ninguna revisión: lo mejor del seguimiento está por llegar.',
+    }),
+    con(text('¿Algo que quieras comentar?'), { bloque: 'Cierre', tituloCorto: 'Comentarios' }),
   ],
 };
 
@@ -348,18 +378,24 @@ const PRIMERA_SEMANA: QuestionnairePresetDef = {
 
 const REVISION_MES_1: QuestionnairePresetDef = {
   title: 'Revisión Mes 1 (4 semanas)',
-  description: 'Primer mes cerrado — adherencia, obstáculos y si mantener o variar la rutina.',
+  description: 'Primer mes cerrado: adherencia, obstáculos y si mantener o variar la rutina.',
   suggestedSchedule: { type: 'plan_week', planWeek: 4 },
   questions: [
-    text('¿Qué tal llevas estas 4 semanas?'),
-    text('⚠️Te cuento en cuánto al ENTRENAMIENTO: Lo más óptimo para seguir progresando es seguir con la misma rutina de entrenamiento un par de semanas más porque así consigues sacarle el jugo a los patrones de movimiento que has interiorizado estas 4 semanas... SIN EMBARGO... Somos conscientes de que a veces os puede resultar aburrido o monótono hacer siempre lo mismo, o incluso a veces nos comentáis que preferís tener un cambio ya que estáis pagando dinero (cosa que no tiene sentido)... ENTONCES MI PREGUNTA ES (respóndeme con sinceridad que tenemos confianza)... ¿Quieres seguir con la misma rutina para maximizar los resultados o prefieres cambiar de rutina para tener más variedad y diversión sacrificando un pequeño % de resultados a medio / largo plazo?'),
-    text('¿Principales obstáculos encontrados a lo largo de estas 4 semanas trabajando juntos?'),
-    text('¿Qué es lo que más te está costando del proceso?'),
-    text('¿Qué aspectos te gustaría incluir al servicio para que sea aún mejor?'),
-    scale('¿Del 1 al 10 cuánto has cumplido con el plan?'),
-    scale('¿Del 1 al 10 cómo de motivado estás?'),
-    text('Ahora que ya llevas 4 semanas progresando y trabajando juntos y conocemos tus objetivos a corto plazo... ¿Qué objetivos tendrías a medio (6 meses) y largo plazo (12 meses)? Para tenerlo en cuenta a la hora de cambiarte la dieta y el entreno cuándo sea necesario ;)'),
-    text('Comenta lo que quieras:'),
+    con(text('¿Qué tal llevas estas 4 semanas?'), { bloque: 'Este mes', tituloCorto: 'Cómo lo llevas' }),
+    con(mantenerCambiar('¿Quieres seguir con la misma rutina para maximizar resultados o prefieres cambiar para tener más variedad?', { mantener: 'Misma rutina', cambiar: 'Cambiar de rutina' }), {
+      bloque: 'Tu rutina', tituloCorto: 'Rutina',
+      contexto: 'Lo más óptimo para seguir progresando es mantener la misma rutina un par de semanas más y sacarle todo el jugo a los movimientos que ya dominas. Aun así, sé que a veces se hace monótono. Respóndeme con sinceridad: cambiar da más variedad a cambio de un pequeño porcentaje de resultados a medio y largo plazo.',
+    }),
+    con(text('¿Principales obstáculos encontrados a lo largo de estas 4 semanas?'), { bloque: 'Este mes', tituloCorto: 'Obstáculos' }),
+    con(text('¿Qué es lo que más te está costando del proceso?'), { bloque: 'Este mes', tituloCorto: 'Lo que más cuesta' }),
+    con(text('¿Qué aspectos te gustaría incluir en el servicio para que sea aún mejor?'), { bloque: 'Este mes', tituloCorto: 'Mejoras del servicio' }),
+    con(scaleSignal('Del 1 al 10, ¿cuánto has cumplido con el plan?', 'retencion.satisfaccion'), { bloque: 'Notas', tituloCorto: 'Cumplimiento' }),
+    con(scaleSignal('Del 1 al 10, ¿cómo de motivado estás?', 'retencion.continuar'), { bloque: 'Notas', tituloCorto: 'Motivación' }),
+    con(text('¿Qué objetivos tendrías a medio (6 meses) y largo plazo (12 meses)?'), {
+      bloque: 'Objetivos', tituloCorto: 'Objetivos a 6 y 12 meses',
+      contexto: 'Ya llevamos 4 semanas trabajando juntos y conocemos tus objetivos a corto plazo. Lo tendré en cuenta cuando toque cambiar dieta y entreno.',
+    }),
+    con(text('Comenta lo que quieras'), { bloque: 'Objetivos', tituloCorto: 'Comentarios' }),
   ],
 };
 
@@ -369,16 +405,19 @@ const REVISION_MES_1: QuestionnairePresetDef = {
 
 const REVISION_MES_2: QuestionnairePresetDef = {
   title: 'Revisión Mes 2 (8 semanas)',
-  description: 'Segundo mes cerrado — comparación con el punto de partida y objetivos a medio/largo plazo.',
+  description: 'Segundo mes cerrado: de dónde partías, dónde estás y hacia dónde vamos.',
   suggestedSchedule: { type: 'plan_week', planWeek: 8 },
   questions: [
-    text('¿Qué tal estás llevando estas 8 semanas?'),
-    text('¿Cómo estabas antes de empezar a trabajar conmigo y cómo estás ahora (a nivel mental y físico)?'),
-    text('¿Cuáles son tus objetivos a corto medio y largo plazo?'),
-    text('¿Cuál ha sido tu mayor victoria y porqué?'),
-    text('¿Qué cosa te ha fallado y cómo crees que podríamos solucionarlo?'),
-    text('¿En qué sientes que podría echarte un cable extra?'),
-    text('Hace 1 mes te pregunté por tus objetivos a corto (3 meses), medio (6 meses) y largo plazo (12 meses)... ¿Quieres añadir algo más a esos objetivos o los mantenemos igual de momento?'),
+    con(text('¿Qué tal estás llevando estas 8 semanas?'), { bloque: 'Estos dos meses', tituloCorto: 'Cómo lo llevas' }),
+    con(text('¿Cómo estabas antes de empezar a trabajar conmigo y cómo estás ahora?', false, 'A nivel mental y físico.'), { bloque: 'Estos dos meses', tituloCorto: 'Antes y ahora' }),
+    con(text('¿Cuál ha sido tu mayor victoria y por qué?'), { bloque: 'Estos dos meses', tituloCorto: 'Mayor victoria' }),
+    con(text('¿Qué cosa te ha fallado y cómo crees que podríamos solucionarlo?'), { bloque: 'Estos dos meses', tituloCorto: 'Lo que ha fallado' }),
+    con(text('¿En qué sientes que podría echarte un cable extra?'), { bloque: 'Estos dos meses', tituloCorto: 'Dónde ayudarte' }),
+    con(text('¿Cuáles son tus objetivos a corto, medio y largo plazo?'), { bloque: 'Objetivos', tituloCorto: 'Objetivos' }),
+    con(text('¿Quieres añadir algo a esos objetivos o los mantenemos igual de momento?'), {
+      bloque: 'Objetivos', tituloCorto: 'Cambios en los objetivos',
+      contexto: 'Hace un mes te pregunté por tus objetivos a corto (3 meses), medio (6 meses) y largo plazo (12 meses).',
+    }),
   ],
 };
 
@@ -430,6 +469,108 @@ const REVISION_QUINCENAL: QuestionnairePresetDef = {
   ],
 };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// PAQUETE OFICIAL (27-10)
+//
+// Una revisión por semana, el día del coach, montada por módulos: «Tu semana»
+// (con las agujetas dentro) cada semana, la quincenal cada dos, los hitos del
+// cliente por semana del plan y mediciones + cierre por semana del BLOQUE (se
+// recolocan solos si el bloque dura 4, 6 u 8 semanas). Todo lo que contestan
+// va a un motor: ver la señal de cada pregunta.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const TITULO_TU_SEMANA = 'Tu semana';
+
+const TU_SEMANA: QuestionnairePresetDef = {
+  title: TITULO_TU_SEMANA,
+  description: 'Tu revisión de cada semana: unos minutos para que pueda ajustar tu plan.',
+  suggestedSchedule: { type: 'weekdays', weekdays: [5] },
+  questions: [
+    con(scaleSignal('¿Cuánto has cumplido con los entrenos?', 'adherencia.entrenos', { required: true, min: 1, max: 5, minLabel: 'Nada', maxLabel: 'Todo' }), {
+      bloque: 'Tu semana', tituloCorto: 'Entrenos', autoRelleno: 'cumplimiento_entrenos',
+    }),
+    con(scaleSignal('¿Cuánto has cumplido con la nutrición?', 'adherencia.nutricion', { required: true, min: 1, max: 5, minLabel: 'Nada', maxLabel: 'Todo' }), { bloque: 'Tu semana', tituloCorto: 'Nutrición' }),
+    con(numeric('Pasos de media', { unit: 'pasos' }), { bloque: 'Tu semana', tituloCorto: 'Pasos', autoRelleno: 'pasos_media', helpText: 'Si tienes el reloj conectado ya sale puesto.' }),
+    con(numericSignal('Horas de sueño de media', 'wellness.sleep_hours_weekly', { unit: 'h', required: true }), { bloque: 'Tu semana', tituloCorto: 'Sueño' }),
+    con(scaleSignal('¿Cuánto estrés has tenido esta semana?', 'wellness.stress_weekly', { required: true, minLabel: 'Nada', maxLabel: 'Muchísimo' }), { bloque: 'Tu semana', tituloCorto: 'Estrés' }),
+    con(scaleSignal('¿Cómo de cansado sales de las sesiones?', 'wellness.fatigue_post_weekly', { minLabel: 'Fresco', maxLabel: 'Destrozado' }), { bloque: 'Tu semana', tituloCorto: 'Cansancio' }),
+    con(scaleSignal('¿Cuántas ganas tienes de entrenar?', 'wellness.motivation_weekly', { minLabel: 'Ninguna', maxLabel: 'Muchísimas' }), { bloque: 'Tu semana', tituloCorto: 'Ganas' }),
+    ...ZONAS_IEM.map(z => con(
+      scaleSignal(z.nombre, `agujetas.${z.clave}` as AgujetasSignalKey, { required: false, min: 1, max: 5, minLabel: 'Apenas noté trabajo', maxLabel: 'Duele en reposo' }),
+      { bloque: 'Agujetas', tituloCorto: z.nombre },
+    )),
+    con(text('¿De qué estás orgulloso esta semana?', false, 'Verte mejor, sentirte más fuerte, subir peso…'), { bloque: 'Cierre', tituloCorto: 'Logro de la semana' }),
+    con(media('Corrección de técnica en vídeo', false, 'video'), { bloque: 'Cierre', tituloCorto: 'Vídeo de técnica', helpText: 'Grábate sin que te lo tenga que pedir.' }),
+  ],
+};
+
+const QUINCENAL: QuestionnairePresetDef = {
+  title: 'Quincenal',
+  description: 'Cada dos semanas: molestias, récords y si estás consiguiendo progresar.',
+  suggestedSchedule: { type: 'interval', intervalDays: 14 },
+  questions: [
+    // La molestia avisa al coach en el momento (utils/alertasRevision.ts).
+    con({ ...boolQ('¿Tienes alguna lesión o molestia?'), signalKey: 'alerta.molestia' }, { bloque: 'Quincenal', tituloCorto: 'Molestias', conComentario: true }),
+    con(text('Récords de estas dos semanas', false, 'Ejercicio, kilos y repeticiones. Ej.: banca 90 kg × 6.'), { bloque: 'Quincenal', tituloCorto: 'Récords' }),
+    con(choice('¿Has conseguido la sobrecarga progresiva en los básicos?', ['Sí', 'A medias', 'No']), { bloque: 'Quincenal', tituloCorto: 'Sobrecarga en básicos' }),
+    con(choice('¿Y en los accesorios?', ['Sí', 'A medias', 'No']), { bloque: 'Quincenal', tituloCorto: 'Sobrecarga en accesorios' }),
+    con(text('¿Qué crees que te ha fallado desde la última revisión?'), { bloque: 'Quincenal', tituloCorto: 'Lo que ha fallado' }),
+    con(text('¿En qué podría mejorar yo para que sigas consiguiendo tus objetivos?'), { bloque: 'Quincenal', tituloCorto: 'En qué puedo mejorar' }),
+  ],
+};
+
+const CIERRE_BLOQUE: QuestionnairePresetDef = {
+  title: 'Cierre de bloque',
+  description: 'Última semana del bloque: lo que mantener, lo que cambiar y cómo ha respondido tu cuerpo.',
+  suggestedSchedule: { type: 'mesocycle_week', semanaDelBloque: 'ultima' },
+  questions: [
+    con(scaleSignal('¿Cómo valorarías este bloque de entrenamiento?', 'meso_end.rating', { required: true, minLabel: 'Muy mal', maxLabel: 'Perfecto' }), { bloque: 'El bloque', tituloCorto: 'Valoración' }),
+    con(scaleSignal('¿Cómo de bien te has recuperado entre sesiones?', 'meso_end.recovery', { minLabel: 'Fatal', maxLabel: 'Perfecto' }), { bloque: 'El bloque', tituloCorto: 'Recuperación' }),
+    con(scaleSignal('¿Cómo de exigentes te han parecido las series?', 'meso_end.effort', { minLabel: 'Me sobraba', maxLabel: 'Al límite' }), { bloque: 'El bloque', tituloCorto: 'Exigencia' }),
+    con(choice('¿Cómo te ha resultado la duración de las sesiones?', ['Corta', 'Bien', 'Demasiado larga']), { bloque: 'El bloque', tituloCorto: 'Duración de la sesión' }),
+    con(choiceGroups('¿Qué grupos quieres priorizar en el siguiente bloque?', 'meso_end.priority_groups', 'Toca las zonas en el dibujo.'), { bloque: 'Siguiente bloque', tituloCorto: 'Grupos a priorizar', presentacion: 'mapa' }),
+    con(choiceGroups('¿En qué grupos sentiste que el volumen fue demasiado?', 'meso_end.overload_groups', 'Puedes marcar varios, o ninguno.'), { bloque: 'Siguiente bloque', tituloCorto: 'Demasiado volumen', presentacion: 'mapa' }),
+    con(text('¿Qué ejercicios quieres mantener sí o sí, y qué te apetece probar o cambiar?'), { bloque: 'Siguiente bloque', tituloCorto: 'Mantener y probar' }),
+    con(text('¿Tienes algún objetivo concreto para el próximo bloque?', false, 'Más fuerza, más masa en una zona, mejor condición física…'), { bloque: 'Siguiente bloque', tituloCorto: 'Objetivo' }),
+    con(text('¿Hay alguna molestia articular o muscular que tengamos que tener en cuenta?'), { bloque: 'Siguiente bloque', tituloCorto: 'Molestias' }),
+  ],
+};
+
+const MEDICIONES_BLOQUE: QuestionnairePresetDef = {
+  title: 'Mediciones del bloque',
+  description: 'Perímetros al cerrar cada bloque. Sigue el orden del vídeo del protocolo: https://www.youtube.com/watch?v=cCQ8SPp9jdc',
+  suggestedSchedule: { type: 'mesocycle_week', semanaDelBloque: 'ultima' },
+  questions: [
+    con(metric('Contorno de pecho', 'pecho'), { bloque: 'Mediciones', tituloCorto: 'Pecho' }),
+    con(metric('Perímetro de cintura', 'cintura'), { bloque: 'Mediciones', tituloCorto: 'Cintura' }),
+    con(metric('Perímetro de abdomen', 'abdomen'), { bloque: 'Mediciones', tituloCorto: 'Abdomen' }),
+    con(metric('Perímetro de cadera', 'cadera'), { bloque: 'Mediciones', tituloCorto: 'Cadera' }),
+    con(metric('Bíceps derecho relajado', 'biceps_der_relajado'), { bloque: 'Mediciones', tituloCorto: 'Bíceps relajado' }),
+    con(metric('Bíceps derecho contraído', 'biceps_der_contraido'), { bloque: 'Mediciones', tituloCorto: 'Bíceps contraído' }),
+    con(metric('Muslo derecho relajado', 'muslo_der_relajado'), { bloque: 'Mediciones', tituloCorto: 'Muslo relajado' }),
+    con(metric('Muslo derecho contraído', 'muslo_der_contraido'), { bloque: 'Mediciones', tituloCorto: 'Muslo contraído' }),
+  ],
+};
+
+/** El paquete oficial: qué plantilla y con qué calendario. Mediciones va dos
+ *  veces: al cerrar cada bloque y, en bloques de 8 semanas o más, también a
+ *  mitad. */
+export const PAQUETE_OFICIAL: { nombre: string; items: { titulo: string; schedule: QSchedule }[] } = {
+  nombre: 'Paquete oficial',
+  items: [
+    { titulo: TITULO_TU_SEMANA, schedule: { type: 'weekdays', weekdays: [5] } },
+    { titulo: 'Quincenal', schedule: { type: 'interval', intervalDays: 14 } },
+    { titulo: 'Primera Semana', schedule: { type: 'plan_week', planWeek: 1 } },
+    { titulo: 'Revisión Semana 3', schedule: { type: 'plan_week', planWeek: 3 } },
+    { titulo: 'Revisión Mes 1 (4 semanas)', schedule: { type: 'plan_week', planWeek: 4 } },
+    { titulo: 'Revisión Mes 2 (8 semanas)', schedule: { type: 'plan_week', planWeek: 8 } },
+    { titulo: 'Revisión Semana 10 (mitad de fase)', schedule: { type: 'plan_week', planWeek: 10 } },
+    { titulo: 'Mediciones del bloque', schedule: { type: 'mesocycle_week', semanaDelBloque: 'ultima' } },
+    { titulo: 'Mediciones del bloque', schedule: { type: 'mesocycle_week', semanaDelBloque: 'mitad', minSemanasBloque: 8 } },
+    { titulo: 'Cierre de bloque', schedule: { type: 'mesocycle_week', semanaDelBloque: 'ultima' } },
+  ],
+};
+
 export const QUESTIONNAIRE_PRESETS: QuestionnairePresetDef[] = [
   ENTRENAMIENTO,
   EVALUACION_DOLOR,
@@ -445,7 +586,16 @@ export const QUESTIONNAIRE_PRESETS: QuestionnairePresetDef[] = [
   REVISION_MES_2,
   REVISION_EXPRESS,
   REVISION_QUINCENAL,
+  TU_SEMANA,
+  QUINCENAL,
+  CIERRE_BLOQUE,
+  MEDICIONES_BLOQUE,
 ];
+
+/** Preset por título exacto. */
+export function presetPorTitulo(title: string): QuestionnairePresetDef | undefined {
+  return QUESTIONNAIRE_PRESETS.find(p => p.title === title);
+}
 
 export function suggestedScheduleForTitle(title: string): QSchedule | undefined {
   return QUESTIONNAIRE_PRESETS.find(p => p.title === title)?.suggestedSchedule;

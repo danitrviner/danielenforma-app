@@ -38,6 +38,9 @@ export function applyTypeChange(patch: { type: QuestionType }): Partial<Question
     // La señal describe QUÉ significa la respuesta, y eso depende del tipo:
     // 'grupos a priorizar' solo existe sobre una pregunta de opción múltiple.
     signalKey: undefined,
+    // Lo que depende del tipo (comentario, mapa, autorrelleno) también se va;
+    // bloque, contexto y título corto no: describen la pregunta, no el control.
+    conComentario: undefined, presentacion: undefined, autoRelleno: undefined,
     maxChars: undefined,
     labelTrue: undefined, labelFalse: undefined,
     metricKey: undefined,
@@ -53,6 +56,7 @@ export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   boolean: 'Sí / No',
   metric:  'Medida corporal',
   media:   'Foto / Vídeo',
+  keep_change: 'Mantener / cambiar',
 };
 
 const BODY_METRIC_KEYS = Object.keys(BODY_METRIC_LABELS) as BodyMetricKey[];
@@ -235,7 +239,74 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 están asignados en Firestore se crearon sin ella: sin esto habría
                 que recrearlos desde cero para que el sugeridor de volumen
                 pudiera leer el cierre de mesociclo. */}
-            {(q.type === 'scale' || q.type === 'numeric' || q.type === 'choice') && (
+            {/* Conversación (27-10): bloque, contexto, título corto y extras del
+                control. Plegado para no alargar cada tarjeta. */}
+            <details className="pl-0 sm:pl-10 group" open={!!(q.bloque || q.contexto || q.tituloCorto)}>
+              <summary className="font-mono text-caption text-ink-3 uppercase tracking-wider cursor-pointer select-none list-none inline-flex items-center gap-1">
+                <Icon name="expand_more" size="s" className="transition-transform group-open:rotate-180" />
+                Presentación al atleta
+              </summary>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <input
+                  value={q.bloque ?? ''}
+                  onChange={e => setQ(idx, { bloque: e.target.value || undefined })}
+                  list={`bloques-${idx}`}
+                  placeholder="Bloque (Tu semana, Sensaciones…)"
+                  aria-label={`Bloque de la pregunta ${idx + 1}`}
+                  className={`w-full ${MINI_INPUT_CLS} text-caption`}
+                />
+                <datalist id={`bloques-${idx}`}>
+                  {[...new Set(form.questions.map(x => x.bloque).filter(Boolean))].map(b => <option key={b} value={b} />)}
+                </datalist>
+                <input
+                  value={q.tituloCorto ?? ''}
+                  onChange={e => setQ(idx, { tituloCorto: e.target.value || undefined })}
+                  placeholder="Título corto para el repaso (Rutina, Sueño…)"
+                  aria-label={`Título corto de la pregunta ${idx + 1}`}
+                  className={`w-full ${MINI_INPUT_CLS} text-caption`}
+                />
+                <textarea
+                  value={q.contexto ?? ''}
+                  onChange={e => { setQ(idx, { contexto: e.target.value || undefined }); ajustarAlto(e.target); }}
+                  ref={ajustarAlto}
+                  rows={1}
+                  placeholder="Contexto antes de la pregunta («Llevas 7 días entrenando…»)"
+                  aria-label={`Contexto de la pregunta ${idx + 1}`}
+                  className={`sm:col-span-2 w-full resize-none overflow-hidden ${MINI_INPUT_CLS} text-caption font-sans`}
+                />
+                <div className="sm:col-span-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+                  {(q.type === 'scale' || q.type === 'keep_change' || q.type === 'boolean') && (
+                    <label className="inline-flex items-center gap-1.5 font-mono text-caption text-ink-2 cursor-pointer">
+                      <input type="checkbox" checked={!!q.conComentario} onChange={() => setQ(idx, { conComentario: !q.conComentario || undefined })} />
+                      {q.type === 'boolean' ? 'Pedir detalle si responde «sí»' : 'Comentario opcional'}
+                    </label>
+                  )}
+                  {q.type === 'choice' && q.multiSelect && (
+                    <label className="inline-flex items-center gap-1.5 font-mono text-caption text-ink-2 cursor-pointer">
+                      <input type="checkbox" checked={q.presentacion === 'mapa'} onChange={() => setQ(idx, { presentacion: q.presentacion === 'mapa' ? undefined : 'mapa' })} />
+                      Mapa corporal (grupos musculares)
+                    </label>
+                  )}
+                  {(q.type === 'numeric' || q.type === 'scale') && (
+                    <label className="inline-flex items-center gap-1.5 font-mono text-caption text-ink-2">
+                      La app lo propone:
+                      <select
+                        value={q.autoRelleno ?? ''}
+                        onChange={e => setQ(idx, { autoRelleno: (e.target.value || undefined) as QuestionnaireQuestion['autoRelleno'] })}
+                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-caption font-mono text-ink-2"
+                      >
+                        <option value="">No</option>
+                        <option value="pasos_media">Pasos de media</option>
+                        <option value="peso_medio">Peso medio</option>
+                        <option value="cumplimiento_entrenos">Cumplimiento de entrenos (1-5)</option>
+                      </select>
+                    </label>
+                  )}
+                </div>
+              </div>
+            </details>
+
+            {(q.type === 'scale' || q.type === 'numeric' || q.type === 'choice' || q.type === 'boolean') && (
               <div className="pl-0 sm:pl-10 flex items-center gap-2 flex-wrap">
                 <span className="font-mono text-caption text-ink-3 uppercase tracking-wider">Señal</span>
                 <select
@@ -369,6 +440,23 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                       onChange={e => setQ(idx, { labelFalse: e.target.value || undefined })}
                       placeholder="No" className={`w-full ${MINI_INPUT_CLS}`} />
                   </div>
+                </div>
+              )}
+              {q.type === 'keep_change' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label htmlFor={`q-${q.id}-mantener`} className="block font-mono text-caption text-ink-2 uppercase mb-1">Mantener</label>
+                    <input id={`q-${q.id}-mantener`} value={q.labelTrue ?? ''}
+                      onChange={e => setQ(idx, { labelTrue: e.target.value || undefined })}
+                      placeholder="Lo mantengo" className={`w-full ${MINI_INPUT_CLS}`} />
+                  </div>
+                  <div>
+                    <label htmlFor={`q-${q.id}-cambiar`} className="block font-mono text-caption text-ink-2 uppercase mb-1">Cambiar</label>
+                    <input id={`q-${q.id}-cambiar`} value={q.labelFalse ?? ''}
+                      onChange={e => setQ(idx, { labelFalse: e.target.value || undefined })}
+                      placeholder="Quiero un cambio" className={`w-full ${MINI_INPUT_CLS}`} />
+                  </div>
+                  <p className="col-span-2 font-sans text-caption text-ink-4">Si elige cambiar, se le pide qué cambiaría.</p>
                 </div>
               )}
               {q.type === 'metric' && (

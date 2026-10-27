@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAcademyAccess } from '../dbService';
 import { useRevisionDeLaSemana } from '../hooks/useRevisionDeLaSemana';
+import type { AjustesRevision } from '../utils/cicloRevision';
 import { Icon, Sheet } from './ui';
 
 type Destino = 'academy' | 'cardio' | 'checkin';
@@ -10,6 +11,8 @@ interface Props {
   open: boolean;
   onClose: () => void;
   athleteEmail: string;
+  /** Día de revisión y pausa del atleta (su perfil). */
+  ajustesRevision?: AjustesRevision;
   onGo: (destino: Destino) => void;
 }
 
@@ -30,7 +33,7 @@ interface Fila {
  * Orden: Training Lab, Cardio, Check-ins. Cardio no va el primero: la regla del
  * módulo es que nunca aparece por delante del entreno de fuerza.
  */
-export default function HojaHerramientas({ open, onClose, athleteEmail, onGo }: Props) {
+export default function HojaHerramientas({ open, onClose, athleteEmail, ajustesRevision, onGo }: Props) {
   // Misma clave que AcademyScreen: una sola lectura. Mientras carga se trata
   // como disponible; si el entrenador no ha dado acceso, la fila se atenúa.
   const { data: acceso, isPending } = useQuery({
@@ -41,7 +44,7 @@ export default function HojaHerramientas({ open, onClose, athleteEmail, onGo }: 
   const sinTrainingLab = !isPending && !acceso?.enabled;
   // Al abrir la hoja se cargan los datos de la revisión (si no estaban ya): así
   // la fila dice cuántos pasos faltan y el «+» de la barra se pone al día.
-  const { faltan } = useRevisionDeLaSemana(athleteEmail, open);
+  const { faltan } = useRevisionDeLaSemana(athleteEmail, open, ajustesRevision);
 
   const filas: Fila[] = [
     {

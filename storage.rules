@@ -83,6 +83,17 @@ service firebase.storage {
       allow delete: if isCoach() || isOwnerEmail(email);
     }
 
+    // ── respuestasCoach/{email}/{fileName} — audio o vídeo con el que el coach
+    // contesta una revisión (27-10). Lo sube el coach; lo lee el atleta dueño.
+    match /respuestasCoach/{email}/{fileName} {
+      allow read: if isCoach() || isOwnerEmail(email);
+      allow write: if isCoach()
+                   && request.resource.size < 100 * 1024 * 1024
+                   && (request.resource.contentType.matches('audio/.*')
+                       || request.resource.contentType.matches('video/.*'));
+      allow delete: if isCoach();
+    }
+
     // ── exerciseVideos/{exerciseId}.mp4 — demos del catálogo de ejercicios ───
     // Mismo patrón que maquinas/: contenido de producto, no dato personal de
     // nadie, así que lectura para cualquier autenticado y escritura solo del

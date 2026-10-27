@@ -1,5 +1,5 @@
 import { MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, QuestionnaireQuestion } from '../types.js';
-import type { ZonaIem } from '../utils/cdg/zonas.js';
+import { ZONAS_IEM, type ZonaIem } from '../utils/cdg/zonas.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SEÑALES DE CUESTIONARIO — las pocas respuestas que un motor lee de verdad.
@@ -26,11 +26,19 @@ export type VolumeSignalKey =
 // src/utils/athleteProfileSignals.ts, src/utils/wellnessTrend.ts.
 export type PerfilSignalKey = 'perfil.sexo_biologico' | 'perfil.antiguedad_entrenamiento_anios';
 export type WellnessSignalKey = 'wellness.sleep_hours_weekly' | 'wellness.stress_weekly' | 'wellness.motivation_weekly' | 'wellness.fatigue_post_weekly';
-/** Agujetas por zona de IEM en la escala 1-5 del curso. Ya no se preguntan así (se usa el DOM's semanal 0-10); el tipo se conserva por las respuestas que pudiera haber. */
+/** Agujetas por zona de IEM en la escala 1-5 del curso: las pregunta el módulo de agujetas de «Tu semana» (paquete oficial). */
 export type AgujetasSignalKey = `agujetas.${ZonaIem}`;
 
+/** Alertas (27-10): una respuesta que avisa al coach en el momento de enviarse. */
+export type AlertaSignalKey = 'alerta.molestia';
+/** Retención (27-10): satisfacción y probabilidad de seguir, 1-10, en los hitos. */
+export type RetencionSignalKey = 'retencion.satisfaccion' | 'retencion.continuar';
+/** Adherencia semanal 1-5 («Tu semana»). */
+export type AdherenciaSignalKey = 'adherencia.entrenos' | 'adherencia.nutricion';
+
 /** Unión de TODAS las señales que puede llevar una pregunta, para tipar los helpers de preset. */
-export type SignalKey = VolumeSignalKey | PerfilSignalKey | WellnessSignalKey | AgujetasSignalKey;
+export type SignalKey = VolumeSignalKey | PerfilSignalKey | WellnessSignalKey | AgujetasSignalKey
+  | AlertaSignalKey | RetencionSignalKey | AdherenciaSignalKey;
 
 /** Señales sueltas (no las 17 de DOM's) que el selector del editor ofrece. */
 export const SEÑALES_FIN_MESOCICLO: { key: VolumeSignalKey; label: string; tipos: string[] }[] = [
@@ -56,10 +64,23 @@ export const SEÑALES_WELLNESS: { key: WellnessSignalKey; label: string; tipos: 
   { key: 'wellness.fatigue_post_weekly', label: 'Cansancio al acabar las sesiones (1-10)', tipos: ['scale', 'numeric'] },
 ];
 
-/** Todas las señales que el editor puede asignar a una pregunta. Las agujetas
- *  por zona en 1-5 (`agujetas.<zona>`) no se ofrecen: las agujetas se preguntan
- *  una vez a la semana en el DOM's 0-10 (Dani, 27-10) y el CDG las convierte. */
-export const SEÑALES_DISPONIBLES = [...SEÑALES_FIN_MESOCICLO, ...SEÑALES_DOMS, ...SEÑALES_PERFIL, ...SEÑALES_WELLNESS];
+/** Agujetas 1-5 por zona del IEM. El editor las ofrece porque las lleva el
+ *  módulo de agujetas de «Tu semana» (paquete oficial, mapa corporal); sin
+ *  ellas en la lista, editar esa plantilla enseñaría «Ninguna» y podría
+ *  borrarlas. El CDG las usa tal cual (utils/cdg/agujetas.ts). */
+export const SEÑALES_AGUJETAS_48H: { key: AgujetasSignalKey; label: string; tipos: string[] }[] =
+  ZONAS_IEM.map(z => ({ key: `agujetas.${z.clave}` as AgujetasSignalKey, label: `Agujetas (1-5) · ${z.nombre}`, tipos: ['scale', 'numeric'] }));
+
+export const SEÑALES_SEGUIMIENTO: { key: AlertaSignalKey | RetencionSignalKey | AdherenciaSignalKey; label: string; tipos: string[] }[] = [
+  { key: 'alerta.molestia',        label: 'Molestia o lesión (avisa al coach)', tipos: ['boolean'] },
+  { key: 'retencion.satisfaccion', label: 'Satisfacción con el programa (1-10)', tipos: ['scale', 'numeric'] },
+  { key: 'retencion.continuar',    label: 'Probabilidad de seguir (1-10)', tipos: ['scale', 'numeric'] },
+  { key: 'adherencia.entrenos',    label: 'Cumplimiento de entrenos (1-5)', tipos: ['scale', 'numeric'] },
+  { key: 'adherencia.nutricion',   label: 'Cumplimiento de nutrición (1-5)', tipos: ['scale', 'numeric'] },
+];
+
+/** Todas las señales que el editor puede asignar a una pregunta. */
+export const SEÑALES_DISPONIBLES = [...SEÑALES_FIN_MESOCICLO, ...SEÑALES_DOMS, ...SEÑALES_AGUJETAS_48H, ...SEÑALES_PERFIL, ...SEÑALES_WELLNESS, ...SEÑALES_SEGUIMIENTO];
 
 export function esSeñalDoms(key: string): MuscleGroup | null {
   if (!key.startsWith('doms.')) return null;

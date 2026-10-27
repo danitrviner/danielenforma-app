@@ -7,8 +7,12 @@ import {
 import {
   assignQuestionnaire, assignQuestionnairesBatch, deactivateAssignment, createQuestionnaire,
   getQuestionnairePacksByCoach, createQuestionnairePack, updateQuestionnairePack, deleteQuestionnairePack,
+  getMesocycles,
 } from '../dbService';
-import { fijarAlViernesAlCrear } from '../utils/questionnaireSchedule';
+import { fijarAlViernes, fijarAlViernesAlCrear, type ScheduleContext } from '../utils/questionnaireSchedule';
+import DiaRevisionAtleta from './revision/DiaRevisionAtleta';
+import { crearPaqueteOficial, itemsPendientes } from '../utils/paqueteOficial';
+import { PAQUETE_OFICIAL } from '../data/questionnairePresets';
 import {
   cadenciaEnCristiano, cadenciaParaTabla, proximaOcurrencia, etiquetaFechaCorta, hoyLocalStr,
 } from '../utils/scheduleEngine';
@@ -59,6 +63,18 @@ export default function AssignedQuestionnairesPanel({
     () => athleteQAssignments.filter(a => a.active),
     [athleteQAssignments],
   );
+
+  // Día de revisión del atleta (editable aquí mismo) y sus bloques: con ellos
+  // la columna «Próxima» dice la fecha real, no la de un viernes genérico.
+  const [diaRevision, setDiaRevision] = useState(athlete.diaRevision);
+  const { data: mesocycles = [] } = useQuery({
+    queryKey: ['mesocycles', athlete.email],
+    queryFn: () => getMesocycles(athlete.email),
+    enabled: !!athlete.email,
+  });
+  const ctxAtleta: ScheduleContext = useMemo(() => ({ mesocycles, diaRevision }), [mesocycles, diaRevision]);
+  const proximaDe = (a: Parameters<typeof proximaOcurrencia>[0]) =>
+    etiquetaFechaCorta(proximaOcurrencia(fijarAlViernes(a, diaRevision), ctxAtleta));
 
   // ── Paquetes ───────────────────────────────────────────────────────────────
   const packsKey = ['questionnairePacks', coachId] as const;
@@ -310,9 +326,28 @@ export default function AssignedQuestionnairesPanel({
   };
 
   // ── Paquetes: aplicar y guardar ────────────────────────────────────────────
+  // Paquete oficial (27-10): se crea con un toque desde las plantillas oficiales.
+  const [creandoOficial, setCreandoOficial] = useState(false);
+  const hayOficial = packs.some(p => p.name === PAQUETE_OFICIAL.nombre);
+  const crearOficial = async () => {
+    setCreandoOficial(true);
+    try {
+      const { pack, creadas } = await crearPaqueteOficial(coachId, coachQuestionnaires, { createQuestionnaire, createQuestionnairePack });
+      if (creadas.length > 0) setCoachQuestionnaires(prev => [...prev, ...creadas]);
+      queryClient.setQueryData<QuestionnairePack[]>(packsKey, prev => [...(prev ?? []), pack]);
+      showToast(`Paquete oficial creado · ${creadas.length} plantilla${creadas.length === 1 ? '' : 's'} nueva${creadas.length === 1 ? '' : 's'}`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast(mensajeDeErrorFirestore(err, 'crear el paquete oficial'));
+    } finally {
+      setCreandoOficial(false);
+    }
+  };
+
   const aplicarPack = async (pack: QuestionnairePack) => {
-    const yaPuestos = new Set(activas.map(a => a.questionnaireId));
-    const pendientes = pack.items.filter(i => !yaPuestos.has(i.questionnaireId));
+    // Plantilla viva y que no tenga ya con ese calendario: Mediciones va dos
+    // veces (fin y mitad de bloque) y una fila con la plantilla borrada se salta.
+    const pendientes = itemsPendientes(pack, activas, coachQuestionnaires);
     if (pendientes.length === 0) {
       showToast(`${athlete.displayName || 'El atleta'} ya tiene todos los cuestionarios de «${pack.name}».`);
       return;
@@ -408,6 +443,7 @@ export default function AssignedQuestionnairesPanel({
         }
         padding="none"
       >
+        <DiaRevisionAtleta athlete={athlete} onCambio={c => { if ('diaRevision' in c) setDiaRevision(c.diaRevision); }} />
         {activas.length === 0 ? (
           <div className="p-5">
             <EmptyState
@@ -445,7 +481,7 @@ export default function AssignedQuestionnairesPanel({
                 const ultima = athleteQResponses
                   .filter(r => r.assignmentId === a.id || r.questionnaireId === a.questionnaireId)
                   .sort((x, y) => y.submittedAt.localeCompare(x.submittedAt))[0];
-                const proxima = etiquetaFechaCorta(proximaOcurrencia(a));
+                const proxima = proximaDe(a);
 
                 return (
                   <li key={a.id} className="px-5 py-3">
@@ -484,7 +520,7 @@ export default function AssignedQuestionnairesPanel({
                       </div>
 
                       <div className="col-start-1 sm:col-start-2 flex items-center gap-2 min-w-0">
-                        <Badge tone="info" icon="schedule" className="whitespace-nowrap">{cadenciaParaTabla(a.schedule)}</Badge>
+                        <Badge tone="info" icon="schedule" className="whitespace-nowrap">{cadenciaParaTabla(fijarAlViernes(a, diaRevision).schedule)}</Badge>
                         {/* En móvil no hay columna propia para la próxima fecha: se
                             pega a la cadencia en vez de partir la fila en tres. */}
                         {proxima && (
@@ -592,6 +628,17 @@ export default function AssignedQuestionnairesPanel({
         }
         padding="none"
       >
+        {!hayOficial && (
+          <div className="mx-5 mt-1 mb-3 flex flex-wrap items-center gap-3 rounded-control border border-accent-line bg-accent-bg/40 px-4 py-3">
+            <div className="flex-1 min-w-[12rem]">
+              <p className="font-sans font-bold text-label text-ink">Paquete oficial</p>
+              <p className="font-sans text-caption text-ink-3 text-pretty">Tu semana con agujetas, quincenal, hitos del cliente, mediciones y cierre de bloque: listo para aplicar.</p>
+            </div>
+            <Button size="s" variant="primary" icon="inventory_2" onClick={crearOficial} loading={creandoOficial} loadingLabel="Creando">
+              Crearlo
+            </Button>
+          </div>
+        )}
         {packs.length === 0 ? (
           <p className="px-5 py-4 font-sans text-body-s text-ink-2 text-pretty">
             Todavía no hay paquetes. Móntalo aquí con «Crear paquete», o deja a un atleta
@@ -601,8 +648,8 @@ export default function AssignedQuestionnairesPanel({
         ) : (
           <ul className="divide-y divide-hairline/50">
             {packs.map(pack => {
-              const yaPuestos = new Set(activas.map(a => a.questionnaireId));
-              const pendientes = pack.items.filter(i => !yaPuestos.has(i.questionnaireId)).length;
+              const pendientes = itemsPendientes(pack, activas, coachQuestionnaires).length;
+              const rotas = pack.items.filter(i => !coachQuestionnaires.some(q => q.id === i.questionnaireId)).length;
               return (
                 <li key={pack.id} className="px-5 py-3 flex flex-wrap items-center gap-3">
                   <Icon name="inventory_2" size="m" className="text-data shrink-0" />
@@ -614,6 +661,11 @@ export default function AssignedQuestionnairesPanel({
                         .filter(Boolean)
                         .join(' · ') || `${pack.items.length} cuestionarios`}
                     </p>
+                    {rotas > 0 && (
+                      <p className="font-sans text-caption text-accent-ink">
+                        {rotas} fila{rotas === 1 ? '' : 's'} con un cuestionario que ya no existe: se salta{rotas === 1 ? '' : 'n'} al aplicar.
+                      </p>
+                    )}
                   </div>
                   <Button
                     size="s"
@@ -852,9 +904,9 @@ export default function AssignedQuestionnairesPanel({
                     {(() => {
                       // Lo que de verdad se guardará: semanal o quincenal, siempre en viernes.
                       const real = fijarAlViernesAlCrear({ schedule: cedulaDeCadencia(), startDate: assignStartDate });
-                      const p = etiquetaFechaCorta(proximaOcurrencia(real));
+                      const p = proximaDe(real);
                       return <>
-                        Se le pedirá <strong className="text-ink">{cadenciaEnCristiano(real.schedule).toLowerCase()}</strong>
+                        Se le pedirá <strong className="text-ink">{cadenciaEnCristiano(fijarAlViernes(real, diaRevision).schedule).toLowerCase()}</strong>
                         {p ? <> · primera vez: <strong className="text-ink">{p}</strong></> : null}
                       </>;
                     })()}

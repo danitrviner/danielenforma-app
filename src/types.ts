@@ -32,7 +32,15 @@ export type NotificationType =
   | 'coach_task_due'
   // Menú semanal generado solo al empezar una semana en la que la dieta del
   // atleta cambia (periodización). Llega como borrador: el coach lo publica.
-  | 'menu_draft_ready';
+  | 'menu_draft_ready'
+  // Cuestionarios (paquete oficial, 27-10): recordatorio al atleta cuando se
+  // abre su revisión y 24 h antes de que caduque (los crea el latido diario).
+  | 'revision_recordatorio'
+  // Aviso al coach EN EL MOMENTO de enviar una revisión con una molestia o un
+  // 5 de agujetas: no espera a su día de revisión.
+  | 'revision_alerta'
+  // El coach ha contestado la revisión del atleta (texto, audio o vídeo).
+  | 'revision_respondida';
 
 export interface AppNotification {
   id: string;                   // deterministic dedup key
@@ -136,6 +144,16 @@ export interface UserProfile {
   direccion?: string;
   telefono?: { prefijo: string; numero: string }; // prefijo con '+' («+34»)
   estadoCrm?: EstadoCrm;                          // ausente ⇒ se trata como 'activo'
+
+  /** Día de la semana en que el coach revisa a este atleta (0=dom…6=sáb).
+   *  Ausente = lunes (1), la regla de siempre: la revisión se le abre el
+   *  viernes y caduca el martes. Se abre 3 días antes y caduca el día después
+   *  (ver `diasDelCiclo` en utils/questionnaireSchedule.ts). Lo elige el
+   *  coach: bloqueado en las reglas para el atleta. */
+  diaRevision?: number;
+  /** Vacaciones o pausa (YYYY-MM-DD, ambos inclusive): los ciclos que se abren
+   *  dentro no se piden ni cuentan como no respondidos. */
+  pausaRevisiones?: { desde: string; hasta: string };
 
   // ── Bienvenida guiada / tutorial (F3.12, Fase 3) ──────────────────────────
   // Dato del propio atleta (su progreso viendo el tour), no una decisión
@@ -786,9 +804,16 @@ export interface WorkoutAssignment {
 
 // ─── QUESTIONNAIRES ───────────────────────────────────────────────────────────
 
-export type QuestionType = 'numeric' | 'scale' | 'choice' | 'text' | 'boolean' | 'metric' | 'media';
+// 'keep_change' (27-10): «¿lo mantenemos o cambiamos algo?». Valor 'mantener' o
+// 'cambiar'; el texto de qué cambiaría va en la respuesta `${id}__comentario`.
+export type QuestionType = 'numeric' | 'scale' | 'choice' | 'text' | 'boolean' | 'metric' | 'media' | 'keep_change';
 
-export type QScheduleType = 'once' | 'weekdays' | 'interval' | 'monthly' | 'plan_week' | 'mesocycle_end';
+// 'mesocycle_week' (27-10): una semana CONCRETA de cada bloque (primera, mitad o
+// última), así mediciones y cierre encajan en bloques de cualquier duración y se
+// recalculan solos si el bloque se alarga o se acorta.
+export type QScheduleType = 'once' | 'weekdays' | 'interval' | 'monthly' | 'plan_week' | 'mesocycle_end' | 'mesocycle_week';
+
+export type SemanaDelBloque = 'primera' | 'mitad' | 'ultima';
 
 export interface QSchedule {
   type: QScheduleType;
@@ -798,6 +823,10 @@ export interface QSchedule {
   planWeek?: number;          // (for 'plan_week') 1-indexed week since assignment.startDate
   planWeekday?: number;       // (for 'plan_week') 0=Sun..6=Sat, default = startDate's weekday
   mesocycleOffsetDays?: number; // (for 'mesocycle_end') days before/after the mesocycle's last day, default 0
+  semanaDelBloque?: SemanaDelBloque; // (for 'mesocycle_week')
+  /** (for 'mesocycle_week') solo en bloques de al menos N semanas: «mitad» de
+   *  las mediciones solo tiene sentido en bloques largos. */
+  minSemanasBloque?: number;
 }
 
 // Perímetros y peso corporal recogidos vía preguntas tipo 'metric'. El peso
@@ -858,7 +887,27 @@ export interface QuestionnaireQuestion {
   // media
   mediaKind?: 'video' | 'image';
   maxSizeMb?: number;        // default 50
+
+  // ── Presentación (asistente conversación + selección, 27-10) ─────────────
+  // Todo opcional: una pregunta sin estos campos se ve como siempre.
+  /** Bloque al que pertenece («Tu plan», «Sensaciones»…). Las preguntas
+   *  seguidas del mismo bloque forman la barra de pasos del asistente. */
+  bloque?: string;
+  /** Contexto que va ANTES de la pregunta, en la burbuja del coach («Llevas 7
+   *  días entrenando…»). `label` queda solo para la pregunta en sí. */
+  contexto?: string;
+  /** Nombre corto para el repaso antes de enviar («Rutina», «Sueño»). */
+  tituloCorto?: string;
+  /** Escala o mantener/cambiar con un comentario opcional debajo. El texto se
+   *  guarda como otra respuesta con id `${id}__comentario`. */
+  conComentario?: boolean;
+  /** Choice de grupos musculares pintado como mapa corporal. */
+  presentacion?: 'mapa';
+  /** La app ya sabe la respuesta y la propone: el atleta solo confirma. */
+  autoRelleno?: AutoRelleno;
 }
+
+export type AutoRelleno = 'pasos_media' | 'sueno_media' | 'peso_medio' | 'cumplimiento_entrenos';
 
 export interface Questionnaire {
   id: string;
@@ -928,6 +977,9 @@ export interface QuestionnaireResponse {
    * trabajo.
    */
   reviewedAt?: string;
+  /** Lo que el coach le contesta sobre esta revisión (texto y, si quiere, un
+   *  audio o vídeo). Al guardarla se marca también `reviewedAt`. */
+  respuestaCoach?: { texto: string; mediaUrl?: string; mediaKind?: 'audio' | 'video'; enviadaEn: string };
 }
 
 /**

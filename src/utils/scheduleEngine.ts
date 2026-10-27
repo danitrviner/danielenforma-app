@@ -1,5 +1,6 @@
-import { QSchedule, Mesocycle } from '../types';
-import { hoyIsoLocal } from './trainingWeek';
+import { QSchedule, Mesocycle } from '../types.js';
+import { hoyIsoLocal } from './trainingWeek.js';
+import { fechasSemanaDelBloque, type PausaRevisiones } from './cicloRevision.js';
 
 // Generic recurring-schedule evaluation, extracted from questionnaireSchedule.ts
 // so it can be reused for anything scheduled with a QSchedule (currently
@@ -15,6 +16,15 @@ export interface Scheduled {
 // atleta dueño de `a` — scheduleEngine no conoce el athleteId de `a`.
 export interface ScheduleContext {
   mesocycles?: Mesocycle[];
+  /** Día de revisión del atleta (0-6). Ausente = lunes. Ver utils/cicloRevision.ts. */
+  diaRevision?: number;
+  /** Vacaciones o pausa: los ciclos que se abren dentro no se piden. */
+  pausa?: PausaRevisiones;
+}
+
+/** Fechas de un 'mesocycle_week' para el contexto dado. */
+function fechasDeBloque(schedule: QSchedule, ctx?: ScheduleContext): string[] {
+  return fechasSemanaDelBloque(schedule, ctx?.mesocycles ?? [], ctx?.diaRevision);
 }
 
 /* Era `hoyIsoLocal()`, o sea el día en UTC. El resto
@@ -83,6 +93,7 @@ export function isDueToday(a: Scheduled, ctx?: ScheduleContext): boolean {
     const offset = a.schedule.mesocycleOffsetDays ?? 0;
     return (ctx?.mesocycles ?? []).some(m => mesocycleEndDate(m, offset).getTime() === today.getTime());
   }
+  if (type === 'mesocycle_week') return fechasDeBloque(a.schedule, ctx).includes(todayStr());
   return false;
 }
 
@@ -101,6 +112,7 @@ export function isUpcoming(a: Scheduled, ctx?: ScheduleContext): boolean {
     const offset = a.schedule.mesocycleOffsetDays ?? 0;
     return (ctx?.mesocycles ?? []).some(m => mesocycleEndDate(m, offset).getTime() > today.getTime());
   }
+  if (type === 'mesocycle_week') return fechasDeBloque(a.schedule, ctx).some(f => f > todayStr());
   return today <= start || type !== 'once';
 }
 
@@ -153,9 +165,13 @@ export function cadenciaEnCristiano(schedule: QSchedule): string {
         ? `${off} día${off === 1 ? '' : 's'} antes de acabar el bloque`
         : `${-off} día${-off === 1 ? '' : 's'} después de acabar el bloque`;
     }
+    case 'mesocycle_week': return `${SEMANA_BLOQUE_LARGA[schedule.semanaDelBloque ?? 'ultima']} de cada bloque`;
     default: return 'Sin fecha fija';
   }
 }
+
+const SEMANA_BLOQUE_LARGA = { primera: 'La primera semana', mitad: 'A mitad', ultima: 'La última semana' } as const;
+const SEMANA_BLOQUE_CORTA = { primera: '1.ª semana', mitad: 'Mitad', ultima: 'Última semana' } as const;
 
 export function scheduleLabel(schedule: QSchedule): string {
   const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -170,6 +186,7 @@ export function scheduleLabel(schedule: QSchedule): string {
       if (off === 0) return 'Fin de bloque';
       return off > 0 ? `${off}d antes de fin de bloque` : `${-off}d después de fin de bloque`;
     }
+    case 'mesocycle_week': return `${SEMANA_BLOQUE_CORTA[schedule.semanaDelBloque ?? 'ultima']} del bloque`;
     default:         return '—';
   }
 }
@@ -250,6 +267,9 @@ export function proximaOcurrencia(a: Scheduled, ctx?: ScheduleContext): string |
       return futuras.length > 0 ? ymdLocal(futuras[0]) : null;
     }
 
+    case 'mesocycle_week':
+      return fechasDeBloque(a.schedule, ctx).find(f => f >= ymdLocal(hoy)) ?? null;
+
     default:
       return null;
   }
@@ -306,6 +326,10 @@ export function cadenciaParaTabla(schedule: QSchedule): string {
       const off = schedule.mesocycleOffsetDays ?? 0;
       if (off === 0) return 'Fin de bloque';
       return off > 0 ? `${off} d antes del fin` : `${-off} d tras el fin`;
+    }
+    case 'mesocycle_week': {
+      const base = `${SEMANA_BLOQUE_CORTA[schedule.semanaDelBloque ?? 'ultima']} del bloque`;
+      return schedule.minSemanasBloque ? `${base} (≥ ${schedule.minSemanasBloque} sem.)` : base;
     }
     default: return 'Sin fecha fija';
   }

@@ -161,13 +161,16 @@ service cloud.firestore {
       // COACH decide mostrarle el plan al atleta — si el atleta pudiera
       // escribirlo, se abriría su propio plan desde la consola del navegador
       // sin que el coach hubiera pulsado "Mostrar el plan al atleta".
+      // `diaRevision` y `pausaRevisiones` (27-10): el día en que el coach le
+      // revisa y sus vacaciones. Los decide el coach; si el atleta pudiera
+      // tocarlos se quitaría las revisiones pendientes desde la consola.
       allow update: if isCoach()
                     || (isOwnerUid(userId)
                         && !request.resource.data.diff(resource.data).affectedKeys()
                             .hasAny(['planStartDate', 'planDurationMonths', 'role', 'setupSummary',
                                      'currentStreak', 'maxStreak', 'estadoCrm',
                                      'fechaBaja', 'motivoBaja', 'motivoBajaDetalle', 'origen',
-                                     'planPublishedAt', 'archivadoCrm']));
+                                     'planPublishedAt', 'archivadoCrm', 'diaRevision', 'pausaRevisiones']));
       allow delete: if isCoach();
     }
 
