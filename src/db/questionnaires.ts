@@ -415,6 +415,29 @@ export async function marcarRespuestaVista(id: string, vista: boolean): Promise<
   }
 }
 
+/** Guarda la respuesta del coach a una revisión y la da por vista. */
+export async function guardarRespuestaCoach(
+  id: string,
+  respuesta: NonNullable<QuestionnaireResponse['respuestaCoach']>,
+): Promise<void> {
+  const reviewedAt = respuesta.enviadaEn;
+  const patch = (list: QuestionnaireResponse[]) =>
+    list.map(r => r.id === id ? { ...r, respuestaCoach: respuesta, reviewedAt } : r);
+  if (forceLocalOnly) {
+    escribirLocal(LOCAL_Q_RESPONSES, JSON.stringify(patch(getLocalQResponses())));
+    return;
+  }
+  try {
+    await updateDoc(doc(db, 'questionnaireResponses', id), stripUndefined({ respuestaCoach: stripUndefined(respuesta), reviewedAt }));
+    escribirLocal(LOCAL_Q_RESPONSES, JSON.stringify(patch(getLocalQResponses())));
+  } catch (err) {
+    console.warn('guardarRespuestaCoach failed:', err);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
+    escribirLocal(LOCAL_Q_RESPONSES, JSON.stringify(patch(getLocalQResponses())));
+  }
+}
+
 export async function deleteQuestionnaireResponse(id: string): Promise<void> {
   const remove = (list: QuestionnaireResponse[]) => list.filter(r => r.id !== id);
   if (forceLocalOnly) {

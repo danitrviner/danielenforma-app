@@ -113,6 +113,12 @@ export async function deleteProgressPhoto(photo: ProgressPhoto): Promise<void> {
 // valor de la respuesta ES la URL (no hay doc propio, vive dentro de
 // QuestionnaireResponse.answers como cualquier otro tipo de pregunta).
 
+/** Audio o vídeo con el que el coach contesta una revisión (27-10). */
+export async function uploadRespuestaCoachMedia(athleteEmail: string, file: File): Promise<string> {
+  const path = `respuestasCoach/${athleteEmail}/${Date.now()}_${file.name.replace(/[^\w.-]+/g, '_')}`;
+  return subirArchivo(path, file);
+}
+
 export async function uploadQuestionnaireMedia(
   athleteEmail: string,
   questionId: string,

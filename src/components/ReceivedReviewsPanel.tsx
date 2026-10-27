@@ -8,6 +8,8 @@ import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Badge, Button, Icon } from './ui';
 import { pulsable } from '../utils/a11y';
+import RespuestaCoachBox from './revision/RespuestaCoachBox';
+import { textoDeRespuesta, esComentario } from '../utils/textoDeRespuesta';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    ReceivedReviewsPanel — «lo que ha mandado el atleta» (Revisiones › Recibidas)
@@ -444,23 +446,34 @@ export default function ReceivedReviewsPanel({
                   </div>
                 </div>
               ) : (
+                <>
                 <ol className="divide-y divide-hairline/40">
-                  {r.answers.map((ans, idx) => {
+                  {r.answers.filter(a => !esComentario(a.questionId)).map((ans, idx) => {
                     const question = q?.questions.find(qq => qq.id === ans.questionId);
+                    // El comentario de una escala o de mantener/cambiar viaja
+                    // como otra respuesta (`${id}__comentario`): va debajo.
+                    const coment = r.answers.find(a => a.questionId === `${ans.questionId}__comentario`)?.value;
                     return (
                       <li key={ans.questionId} className="py-2.5 flex items-start gap-3">
                         <span className="font-mono text-caption text-ink-3 tabular-nums w-5 shrink-0">{idx + 1}</span>
                         <div className="flex-1 min-w-0 space-y-1">
-                          <p className="font-sans text-label text-ink-2 text-pretty">{question?.label ?? ans.questionId}</p>
+                          <p className="font-sans text-label text-ink-2 text-pretty">{question?.tituloCorto ?? question?.label ?? ans.questionId}</p>
                           <p className="font-mono text-label text-ink font-bold whitespace-pre-wrap break-words">
-                            {String(ans.value)}{question?.unit ? ` ${question.unit}` : ''}
-                            {question?.type === 'boolean' ? (ans.value ? ' ✓' : ' ✗') : ''}
+                            {textoDeRespuesta(question, ans.value)}
                           </p>
+                          {typeof coment === 'string' && coment && (
+                            <p className="font-sans text-label text-ink-2 whitespace-pre-wrap break-words border-l-2 border-accent-line pl-2">{coment}</p>
+                          )}
                         </div>
                       </li>
                     );
                   })}
                 </ol>
+                <RespuestaCoachBox
+                  respuesta={r}
+                  onGuardada={nueva => setAthleteQResponses(prev => prev.map(x => x.id === nueva.id ? nueva : x))}
+                />
+                </>
               )}
             </div>
           );
