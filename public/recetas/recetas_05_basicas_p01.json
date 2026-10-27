@@ -72,19 +72,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 72,
-          "percentage": 54
+          "grams": 79,
+          "percentage": 59
         },
         "protein": {
-          "grams": 41,
-          "percentage": 30
+          "grams": 42,
+          "percentage": 31
         },
         "fat": {
-          "grams": 10,
-          "percentage": 16
+          "grams": 6,
+          "percentage": 10
         }
       },
-      "kcal": 551,
+      "kcal": 553,
       "weight": 320,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -126,14 +126,14 @@
             "max": 160,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -216,19 +216,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 72,
-          "percentage": 54
+          "grams": 79,
+          "percentage": 59
         },
         "protein": {
-          "grams": 42,
-          "percentage": 31
+          "grams": 43,
+          "percentage": 32
         },
         "fat": {
-          "grams": 9,
-          "percentage": 15
+          "grams": 5,
+          "percentage": 9
         }
       },
-      "kcal": 546,
+      "kcal": 549,
       "weight": 320,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -270,14 +270,14 @@
             "max": 160,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -361,19 +361,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 72,
-          "percentage": 53
+          "grams": 79,
+          "percentage": 59
         },
         "protein": {
-          "grams": 47,
-          "percentage": 35
+          "grams": 35,
+          "percentage": 26
         },
         "fat": {
-          "grams": 7,
-          "percentage": 12
+          "grams": 9,
+          "percentage": 15
         }
       },
-      "kcal": 548,
+      "kcal": 551,
       "weight": 300,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -402,9 +402,9 @@
             "palanca": "proteina",
             "porCien": {
               "kcal": 125,
-              "p": 31.3,
+              "p": 21,
               "hc": 0,
-              "g": 0
+              "g": 4.3
             }
           },
           {
@@ -415,14 +415,14 @@
             "max": 160,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -510,19 +510,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 64,
-          "percentage": 47
+          "grams": 72,
+          "percentage": 52
         },
         "protein": {
-          "grams": 41,
-          "percentage": 29
+          "grams": 42,
+          "percentage": 30
         },
         "fat": {
-          "grams": 15,
-          "percentage": 24
+          "grams": 11,
+          "percentage": 18
         }
       },
-      "kcal": 567,
+      "kcal": 570,
       "weight": 340,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -578,14 +578,14 @@
             "max": 160,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -669,19 +669,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 72,
-          "percentage": 58
+          "grams": 79,
+          "percentage": 63
         },
         "protein": {
-          "grams": 34,
-          "percentage": 27
+          "grams": 35,
+          "percentage": 28
         },
         "fat": {
-          "grams": 8,
-          "percentage": 15
+          "grams": 5,
+          "percentage": 9
         }
       },
-      "kcal": 504,
+      "kcal": 507,
       "weight": 280,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -723,14 +723,14 @@
             "max": 160,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -815,19 +815,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 82,
-          "percentage": 58
+          "grams": 83,
+          "percentage": 56
         },
         "protein": {
-          "grams": 41,
-          "percentage": 29
+          "grams": 44,
+          "percentage": 30
         },
         "fat": {
-          "grams": 8,
-          "percentage": 13
+          "grams": 9,
+          "percentage": 14
         }
       },
-      "kcal": 571,
+      "kcal": 601,
       "weight": 395,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -869,10 +869,10 @@
             "max": 300,
             "palanca": "hc",
             "porCien": {
-              "kcal": 25,
-              "p": 0,
-              "hc": 6.3,
-              "g": 0
+              "kcal": 45,
+              "p": 2.5,
+              "hc": 7,
+              "g": 0.5
             }
           },
           {
@@ -890,7 +890,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -974,19 +974,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 65,
-          "percentage": 48
+          "grams": 72,
+          "percentage": 53
         },
         "protein": {
-          "grams": 46,
-          "percentage": 34
+          "grams": 47,
+          "percentage": 35
         },
         "fat": {
-          "grams": 11,
-          "percentage": 18
+          "grams": 7,
+          "percentage": 12
         }
       },
-      "kcal": 551,
+      "kcal": 553,
       "weight": 320,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -1028,14 +1028,14 @@
             "max": 160,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -1120,19 +1120,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 66,
-          "percentage": 41
+          "grams": 75,
+          "percentage": 47
         },
         "protein": {
-          "grams": 35,
+          "grams": 36,
           "percentage": 22
         },
         "fat": {
-          "grams": 27,
-          "percentage": 37
+          "grams": 22,
+          "percentage": 31
         }
       },
-      "kcal": 652,
+      "kcal": 655,
       "weight": 320,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -1174,14 +1174,14 @@
             "max": 200,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -1265,19 +1265,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 66,
-          "percentage": 48
+          "grams": 75,
+          "percentage": 54
         },
         "protein": {
-          "grams": 39,
-          "percentage": 28
+          "grams": 41,
+          "percentage": 29
         },
         "fat": {
-          "grams": 15,
-          "percentage": 24
+          "grams": 11,
+          "percentage": 17
         }
       },
-      "kcal": 566,
+      "kcal": 569,
       "weight": 340,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -1319,14 +1319,14 @@
             "max": 200,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -1411,19 +1411,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 65,
-          "percentage": 52
+          "grams": 72,
+          "percentage": 58
         },
         "protein": {
-          "grams": 39,
+          "grams": 41,
           "percentage": 32
         },
         "fat": {
-          "grams": 9,
-          "percentage": 16
+          "grams": 5,
+          "percentage": 10
         }
       },
-      "kcal": 504,
+      "kcal": 507,
       "weight": 280,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -1465,14 +1465,14 @@
             "max": 160,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -1879,19 +1879,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 80,
-          "percentage": 58
+          "grams": 87,
+          "percentage": 63
         },
         "protein": {
-          "grams": 36,
-          "percentage": 26
+          "grams": 38,
+          "percentage": 27
         },
         "fat": {
-          "grams": 10,
-          "percentage": 16
+          "grams": 6,
+          "percentage": 10
         }
       },
-      "kcal": 569,
+      "kcal": 571,
       "weight": 450,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -1933,14 +1933,14 @@
             "max": 160,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -2019,19 +2019,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 59,
-          "percentage": 53
+          "grams": 61,
+          "percentage": 51
         },
         "protein": {
-          "grams": 35,
-          "percentage": 31
+          "grams": 42,
+          "percentage": 34
         },
         "fat": {
-          "grams": 7,
-          "percentage": 16
+          "grams": 8,
+          "percentage": 15
         }
       },
-      "kcal": 444,
+      "kcal": 479,
       "weight": 505,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -2045,10 +2045,10 @@
             "max": 700,
             "palanca": "hc",
             "porCien": {
-              "kcal": 67,
-              "p": 0,
-              "hc": 16.7,
-              "g": 0
+              "kcal": 77,
+              "p": 2,
+              "hc": 17.5,
+              "g": 0.1
             }
           },
           {
@@ -2080,7 +2080,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -2151,19 +2151,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 51,
-          "percentage": 49
+          "grams": 53,
+          "percentage": 48
         },
         "protein": {
-          "grams": 15,
-          "percentage": 15
+          "grams": 21,
+          "percentage": 19
         },
         "fat": {
-          "grams": 16,
-          "percentage": 36
+          "grams": 17,
+          "percentage": 33
         }
       },
-      "kcal": 417,
+      "kcal": 447,
       "weight": 425,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -2177,10 +2177,10 @@
             "max": 600,
             "palanca": "hc",
             "porCien": {
-              "kcal": 67,
-              "p": 0,
-              "hc": 16.7,
-              "g": 0
+              "kcal": 77,
+              "p": 2,
+              "hc": 17.5,
+              "g": 0.1
             }
           },
           {
@@ -2212,7 +2212,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -2286,19 +2286,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 50,
-          "percentage": 49
+          "grams": 53,
+          "percentage": 48
         },
         "protein": {
-          "grams": 35,
-          "percentage": 34
+          "grams": 41,
+          "percentage": 37
         },
         "fat": {
-          "grams": 7,
-          "percentage": 17
+          "grams": 8,
+          "percentage": 15
         }
       },
-      "kcal": 410,
+      "kcal": 440,
       "weight": 455,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -2312,10 +2312,10 @@
             "max": 600,
             "palanca": "hc",
             "porCien": {
-              "kcal": 67,
-              "p": 0,
-              "hc": 16.7,
-              "g": 0
+              "kcal": 77,
+              "p": 2,
+              "hc": 17.5,
+              "g": 0.1
             }
           },
           {
@@ -2347,7 +2347,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -2422,19 +2422,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 50,
-          "percentage": 46
+          "grams": 53,
+          "percentage": 45
         },
         "protein": {
-          "grams": 47,
-          "percentage": 43
+          "grams": 38,
+          "percentage": 32
         },
         "fat": {
-          "grams": 5,
-          "percentage": 11
+          "grams": 12,
+          "percentage": 23
         }
       },
-      "kcal": 433,
+      "kcal": 463,
       "weight": 455,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -2448,10 +2448,10 @@
             "max": 600,
             "palanca": "hc",
             "porCien": {
-              "kcal": 67,
-              "p": 0,
-              "hc": 16.7,
-              "g": 0
+              "kcal": 77,
+              "p": 2,
+              "hc": 17.5,
+              "g": 0.1
             }
           },
           {
@@ -2463,9 +2463,9 @@
             "palanca": "proteina",
             "porCien": {
               "kcal": 125,
-              "p": 31.3,
+              "p": 21,
               "hc": 0,
-              "g": 0
+              "g": 4.3
             }
           },
           {
@@ -2483,7 +2483,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -2561,19 +2561,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 50,
-          "percentage": 48
+          "grams": 53,
+          "percentage": 46
         },
         "protein": {
-          "grams": 34,
-          "percentage": 33
+          "grams": 40,
+          "percentage": 36
         },
         "fat": {
           "grams": 9,
-          "percentage": 19
+          "percentage": 18
         }
       },
-      "kcal": 417,
+      "kcal": 447,
       "weight": 505,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -2587,10 +2587,10 @@
             "max": 600,
             "palanca": "hc",
             "porCien": {
-              "kcal": 67,
-              "p": 0,
-              "hc": 16.7,
-              "g": 0
+              "kcal": 77,
+              "p": 2,
+              "hc": 17.5,
+              "g": 0.1
             }
           },
           {
@@ -2622,7 +2622,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -2845,19 +2845,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 51,
-          "percentage": 45
+          "grams": 53,
+          "percentage": 44
         },
         "protein": {
-          "grams": 36,
-          "percentage": 32
+          "grams": 42,
+          "percentage": 34
         },
         "fat": {
           "grams": 12,
-          "percentage": 23
+          "percentage": 22
         }
       },
-      "kcal": 450,
+      "kcal": 480,
       "weight": 575,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -2871,10 +2871,10 @@
             "max": 600,
             "palanca": "hc",
             "porCien": {
-              "kcal": 67,
-              "p": 0,
-              "hc": 16.7,
-              "g": 0
+              "kcal": 77,
+              "p": 2,
+              "hc": 17.5,
+              "g": 0.1
             }
           },
           {
@@ -2928,7 +2928,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -3017,19 +3017,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 69,
-          "percentage": 49
+          "grams": 74,
+          "percentage": 53
         },
         "protein": {
-          "grams": 52,
-          "percentage": 37
+          "grams": 40,
+          "percentage": 29
         },
         "fat": {
-          "grams": 9,
-          "percentage": 14
+          "grams": 12,
+          "percentage": 18
         }
       },
-      "kcal": 585,
+      "kcal": 587,
       "weight": 380,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -3072,9 +3072,9 @@
             "palanca": "proteina",
             "porCien": {
               "kcal": 125,
-              "p": 31.3,
+              "p": 21,
               "hc": 0,
-              "g": 0
+              "g": 4.3
             }
           },
           {
@@ -3085,14 +3085,14 @@
             "max": 120,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -3330,19 +3330,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 38,
-          "percentage": 35
+          "grams": 44,
+          "percentage": 40
         },
         "protein": {
-          "grams": 42,
-          "percentage": 39
+          "grams": 43,
+          "percentage": 40
         },
         "fat": {
-          "grams": 12,
-          "percentage": 26
+          "grams": 10,
+          "percentage": 20
         }
       },
-      "kcal": 456,
+      "kcal": 458,
       "weight": 380,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -3384,14 +3384,14 @@
             "max": 120,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -4929,15 +4929,15 @@
           "percentage": 54
         },
         "protein": {
-          "grams": 37,
-          "percentage": 25
+          "grams": 39,
+          "percentage": 26
         },
         "fat": {
           "grams": 14,
-          "percentage": 21
+          "percentage": 20
         }
       },
-      "kcal": 605,
+      "kcal": 613,
       "weight": 460,
       "categoria": "Desayuno y dulces",
       "basica": true,
@@ -4993,14 +4993,14 @@
             "max": 60,
             "palanca": "hc",
             "porCien": {
-              "kcal": 333,
-              "p": 0,
-              "hc": 83.3,
-              "g": 0
+              "kcal": 357,
+              "p": 7.5,
+              "hc": 84,
+              "g": 0.4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -5088,19 +5088,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 83,
+          "grams": 89,
           "percentage": 60
         },
         "protein": {
-          "grams": 32,
-          "percentage": 23
+          "grams": 35,
+          "percentage": 24
         },
         "fat": {
           "grams": 11,
-          "percentage": 17
+          "percentage": 16
         }
       },
-      "kcal": 544,
+      "kcal": 576,
       "weight": 505,
       "categoria": "Desayuno y dulces",
       "basica": true,
@@ -5128,10 +5128,10 @@
             "max": 50,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 333,
-              "p": 83.3,
-              "hc": 0,
-              "g": 0
+              "kcal": 380,
+              "p": 78,
+              "hc": 6,
+              "g": 5
             }
           },
           {
@@ -5142,10 +5142,10 @@
             "max": 100,
             "palanca": "hc",
             "porCien": {
-              "kcal": 333,
-              "p": 0,
-              "hc": 83.3,
-              "g": 0
+              "kcal": 357,
+              "p": 7.5,
+              "hc": 84,
+              "g": 0.4
             }
           },
           {
@@ -5156,10 +5156,10 @@
             "max": 20,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 495,
-              "p": 0,
-              "hc": 0,
-              "g": 55
+              "kcal": 578,
+              "p": 8,
+              "hc": 40,
+              "g": 42
             }
           },
           {
@@ -5177,7 +5177,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -5264,19 +5264,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 80,
-          "percentage": 54
+          "grams": 86,
+          "percentage": 55
         },
         "protein": {
           "grams": 38,
-          "percentage": 26
+          "percentage": 25
         },
         "fat": {
           "grams": 14,
           "percentage": 20
         }
       },
-      "kcal": 582,
+      "kcal": 602,
       "weight": 465,
       "categoria": "Desayuno y dulces",
       "basica": true,
@@ -5304,10 +5304,10 @@
             "max": 50,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 333,
-              "p": 83.3,
-              "hc": 0,
-              "g": 0
+              "kcal": 380,
+              "p": 78,
+              "hc": 6,
+              "g": 5
             }
           },
           {
@@ -5332,10 +5332,10 @@
             "max": 20,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 495,
-              "p": 0,
-              "hc": 0,
-              "g": 55
+              "kcal": 578,
+              "p": 8,
+              "hc": 40,
+              "g": 42
             }
           },
           {
@@ -5353,7 +5353,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -5885,19 +5885,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 60,
-          "percentage": 61
+          "grams": 61,
+          "percentage": 62
         },
         "protein": {
-          "grams": 26,
-          "percentage": 27
+          "grams": 28,
+          "percentage": 28
         },
         "fat": {
-          "grams": 5,
-          "percentage": 12
+          "grams": 4,
+          "percentage": 10
         }
       },
-      "kcal": 372,
+      "kcal": 374,
       "weight": 395,
       "categoria": "Desayuno y dulces",
       "basica": true,
@@ -5939,10 +5939,10 @@
             "max": 10,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 330,
-              "p": 0,
-              "hc": 0,
-              "g": 36.7
+              "kcal": 362,
+              "p": 22,
+              "hc": 19,
+              "g": 11
             }
           },
           {
@@ -5960,7 +5960,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -6185,19 +6185,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 42,
-          "percentage": 39
+          "grams": 46,
+          "percentage": 43
         },
         "protein": {
-          "grams": 28,
-          "percentage": 26
+          "grams": 29,
+          "percentage": 27
         },
         "fat": {
-          "grams": 17,
-          "percentage": 35
+          "grams": 14,
+          "percentage": 30
         }
       },
-      "kcal": 434,
+      "kcal": 436,
       "weight": 250,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -6225,10 +6225,10 @@
             "max": 100,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           },
           {
@@ -6260,7 +6260,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -6799,19 +6799,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 67,
-          "percentage": 49
+          "grams": 74,
+          "percentage": 54
         },
         "protein": {
-          "grams": 21,
-          "percentage": 15
+          "grams": 22,
+          "percentage": 16
         },
         "fat": {
-          "grams": 22,
-          "percentage": 36
+          "grams": 18,
+          "percentage": 30
         }
       },
-      "kcal": 554,
+      "kcal": 556,
       "weight": 280,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -6853,14 +6853,14 @@
             "max": 160,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -7106,19 +7106,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 76,
-          "percentage": 60
+          "grams": 72,
+          "percentage": 52
         },
         "protein": {
-          "grams": 35,
-          "percentage": 27
+          "grams": 49,
+          "percentage": 35
         },
         "fat": {
-          "grams": 7,
+          "grams": 9,
           "percentage": 13
         }
       },
-      "kcal": 513,
+      "kcal": 578,
       "weight": 385,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -7132,10 +7132,10 @@
             "max": 160,
             "palanca": "hc",
             "porCien": {
-              "kcal": 333,
-              "p": 0,
-              "hc": 83.3,
-              "g": 0
+              "kcal": 376,
+              "p": 12.8,
+              "hc": 77.4,
+              "g": 0.6
             }
           },
           {
@@ -7160,10 +7160,10 @@
             "max": 300,
             "palanca": "hc",
             "porCien": {
-              "kcal": 25,
-              "p": 0,
-              "hc": 6.3,
-              "g": 0
+              "kcal": 45,
+              "p": 2.5,
+              "hc": 7,
+              "g": 0.5
             }
           },
           {
@@ -7181,7 +7181,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -7265,19 +7265,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 68,
-          "percentage": 47
+          "grams": 75,
+          "percentage": 51
         },
         "protein": {
-          "grams": 27,
+          "grams": 28,
           "percentage": 19
         },
         "fat": {
-          "grams": 23,
-          "percentage": 34
+          "grams": 19,
+          "percentage": 30
         }
       },
-      "kcal": 590,
+      "kcal": 592,
       "weight": 290,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -7319,14 +7319,14 @@
             "max": 160,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -8026,19 +8026,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 43,
-          "percentage": 41
+          "grams": 45,
+          "percentage": 40
         },
         "protein": {
-          "grams": 26,
-          "percentage": 24
+          "grams": 31,
+          "percentage": 27
         },
         "fat": {
           "grams": 17,
-          "percentage": 35
+          "percentage": 33
         }
       },
-      "kcal": 435,
+      "kcal": 460,
       "weight": 475,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -8052,10 +8052,10 @@
             "max": 500,
             "palanca": "hc",
             "porCien": {
-              "kcal": 67,
-              "p": 0,
-              "hc": 16.7,
-              "g": 0
+              "kcal": 77,
+              "p": 2,
+              "hc": 17.5,
+              "g": 0.1
             }
           },
           {
@@ -8101,7 +8101,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -8184,19 +8184,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 51,
-          "percentage": 55
+          "grams": 53,
+          "percentage": 52
         },
         "protein": {
-          "grams": 34,
-          "percentage": 36
+          "grams": 39,
+          "percentage": 39
         },
         "fat": {
           "grams": 4,
           "percentage": 9
         }
       },
-      "kcal": 369,
+      "kcal": 399,
       "weight": 440,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -8210,10 +8210,10 @@
             "max": 600,
             "palanca": "hc",
             "porCien": {
-              "kcal": 67,
-              "p": 0,
-              "hc": 16.7,
-              "g": 0
+              "kcal": 77,
+              "p": 2,
+              "hc": 17.5,
+              "g": 0.1
             }
           },
           {
@@ -8245,7 +8245,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -8329,19 +8329,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 51,
-          "percentage": 41
+          "grams": 59,
+          "percentage": 44
         },
         "protein": {
-          "grams": 23,
-          "percentage": 19
+          "grams": 30,
+          "percentage": 23
         },
         "fat": {
-          "grams": 22,
-          "percentage": 40
+          "grams": 20,
+          "percentage": 33
         }
       },
-      "kcal": 498,
+      "kcal": 530,
       "weight": 490,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -8355,10 +8355,10 @@
             "max": 600,
             "palanca": "hc",
             "porCien": {
-              "kcal": 67,
-              "p": 0,
-              "hc": 16.7,
-              "g": 0
+              "kcal": 77,
+              "p": 2,
+              "hc": 17.5,
+              "g": 0.1
             }
           },
           {
@@ -8383,14 +8383,14 @@
             "max": 120,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:20:06.750Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -8596,19 +8596,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 42,
+          "grams": 44,
           "percentage": 35
         },
         "protein": {
-          "grams": 27,
-          "percentage": 22
+          "grams": 32,
+          "percentage": 25
         },
         "fat": {
-          "grams": 22,
-          "percentage": 43
+          "grams": 23,
+          "percentage": 40
         }
       },
-      "kcal": 482,
+      "kcal": 507,
       "weight": 385,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -8622,10 +8622,10 @@
             "max": 500,
             "palanca": "hc",
             "porCien": {
-              "kcal": 67,
-              "p": 0,
-              "hc": 16.7,
-              "g": 0
+              "kcal": 77,
+              "p": 2,
+              "hc": 17.5,
+              "g": 0.1
             }
           },
           {
@@ -8657,7 +8657,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -8732,19 +8732,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 51,
-          "percentage": 47
+          "grams": 54,
+          "percentage": 46
         },
         "protein": {
-          "grams": 31,
-          "percentage": 28
+          "grams": 37,
+          "percentage": 31
         },
         "fat": {
           "grams": 12,
-          "percentage": 25
+          "percentage": 23
         }
       },
-      "kcal": 446,
+      "kcal": 476,
       "weight": 455,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -8758,10 +8758,10 @@
             "max": 600,
             "palanca": "hc",
             "porCien": {
-              "kcal": 67,
-              "p": 0,
-              "hc": 16.7,
-              "g": 0
+              "kcal": 77,
+              "p": 2,
+              "hc": 17.5,
+              "g": 0.1
             }
           },
           {
@@ -8793,7 +8793,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -8867,19 +8867,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 50,
-          "percentage": 45
+          "grams": 53,
+          "percentage": 44
         },
         "protein": {
-          "grams": 30,
-          "percentage": 27
+          "grams": 36,
+          "percentage": 30
         },
         "fat": {
-          "grams": 13,
-          "percentage": 28
+          "grams": 14,
+          "percentage": 26
         }
       },
-      "kcal": 440,
+      "kcal": 470,
       "weight": 455,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -8893,10 +8893,10 @@
             "max": 600,
             "palanca": "hc",
             "porCien": {
-              "kcal": 67,
-              "p": 0,
-              "hc": 16.7,
-              "g": 0
+              "kcal": 77,
+              "p": 2,
+              "hc": 17.5,
+              "g": 0.1
             }
           },
           {
@@ -8928,7 +8928,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -9022,19 +9022,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 73,
-          "percentage": 55
+          "grams": 75,
+          "percentage": 53
         },
         "protein": {
-          "grams": 26,
-          "percentage": 19
+          "grams": 30,
+          "percentage": 21
         },
         "fat": {
           "grams": 16,
           "percentage": 26
         }
       },
-      "kcal": 543,
+      "kcal": 563,
       "weight": 410,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -9076,10 +9076,10 @@
             "max": 400,
             "palanca": "hc",
             "porCien": {
-              "kcal": 67,
-              "p": 0,
-              "hc": 16.7,
-              "g": 0
+              "kcal": 77,
+              "p": 2,
+              "hc": 17.5,
+              "g": 0.1
             }
           },
           {
@@ -9111,7 +9111,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -9186,19 +9186,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 51,
-          "percentage": 40
+          "grams": 57,
+          "percentage": 44
         },
         "protein": {
-          "grams": 38,
-          "percentage": 29
+          "grams": 39,
+          "percentage": 30
         },
         "fat": {
-          "grams": 18,
-          "percentage": 31
+          "grams": 15,
+          "percentage": 26
         }
       },
-      "kcal": 508,
+      "kcal": 510,
       "weight": 430,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -9226,10 +9226,10 @@
             "max": 120,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           },
           {
@@ -9247,7 +9247,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -9325,19 +9325,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 34,
-          "percentage": 35
+          "grams": 39,
+          "percentage": 41
         },
         "protein": {
-          "grams": 45,
-          "percentage": 46
+          "grams": 46,
+          "percentage": 47
         },
         "fat": {
-          "grams": 8,
-          "percentage": 19
+          "grams": 5,
+          "percentage": 12
         }
       },
-      "kcal": 432,
+      "kcal": 434,
       "weight": 380,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -9379,14 +9379,14 @@
             "max": 120,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -10257,19 +10257,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 55,
-          "percentage": 37
+          "grams": 58,
+          "percentage": 39
         },
         "protein": {
-          "grams": 35,
+          "grams": 36,
           "percentage": 24
         },
         "fat": {
-          "grams": 26,
-          "percentage": 39
+          "grams": 24,
+          "percentage": 37
         }
       },
-      "kcal": 607,
+      "kcal": 608,
       "weight": 320,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -10325,14 +10325,14 @@
             "max": 80,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 77,
-              "p": 0,
-              "hc": 0,
-              "g": 8.5
+              "kcal": 80,
+              "p": 1.5,
+              "hc": 9,
+              "g": 4
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -11142,19 +11142,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 54,
-          "percentage": 61
+          "grams": 64,
+          "percentage": 68
         },
         "protein": {
-          "grams": 34,
-          "percentage": 38
+          "grams": 28,
+          "percentage": 29
         },
         "fat": {
-          "grams": 0,
-          "percentage": 1
+          "grams": 1,
+          "percentage": 3
         }
       },
-      "kcal": 346,
+      "kcal": 365,
       "weight": 430,
       "categoria": "Desayuno y dulces",
       "basica": true,
@@ -11168,10 +11168,10 @@
             "max": 240,
             "fijo": true,
             "porCien": {
-              "kcal": 56,
-              "p": 13.9,
-              "hc": 0,
-              "g": 0
+              "kcal": 60,
+              "p": 10,
+              "hc": 4,
+              "g": 0.2
             }
           },
           {
@@ -11182,10 +11182,10 @@
             "max": 80,
             "palanca": "hc",
             "porCien": {
-              "kcal": 333,
-              "p": 0,
-              "hc": 83.3,
-              "g": 0
+              "kcal": 357,
+              "p": 7.5,
+              "hc": 84,
+              "g": 0.4
             }
           },
           {
@@ -11203,7 +11203,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -11280,19 +11280,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 69,
+          "grams": 70,
           "percentage": 56
         },
         "protein": {
-          "grams": 37,
-          "percentage": 30
+          "grams": 36,
+          "percentage": 28
         },
         "fat": {
-          "grams": 8,
-          "percentage": 14
+          "grams": 9,
+          "percentage": 16
         }
       },
-      "kcal": 480,
+      "kcal": 491,
       "weight": 485,
       "categoria": "Desayuno y dulces",
       "basica": true,
@@ -11320,10 +11320,10 @@
             "max": 50,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 333,
-              "p": 83.3,
-              "hc": 0,
-              "g": 0
+              "kcal": 380,
+              "p": 78,
+              "hc": 6,
+              "g": 5
             }
           },
           {
@@ -11355,7 +11355,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -11441,19 +11441,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 30,
-          "percentage": 33
+          "grams": 33,
+          "percentage": 35
         },
         "protein": {
-          "grams": 36,
-          "percentage": 39
+          "grams": 35,
+          "percentage": 38
         },
         "fat": {
           "grams": 11,
-          "percentage": 28
+          "percentage": 27
         }
       },
-      "kcal": 365,
+      "kcal": 378,
       "weight": 190,
       "categoria": "Desayuno y dulces",
       "basica": true,
@@ -11481,10 +11481,10 @@
             "max": 50,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 333,
-              "p": 83.3,
-              "hc": 0,
-              "g": 0
+              "kcal": 380,
+              "p": 78,
+              "hc": 6,
+              "g": 5
             }
           },
           {
@@ -11523,14 +11523,14 @@
             "max": 10,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 330,
-              "p": 0,
-              "hc": 0,
-              "g": 36.7
+              "kcal": 362,
+              "p": 22,
+              "hc": 19,
+              "g": 11
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -11619,19 +11619,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 75,
+          "grams": 77,
           "percentage": 50
         },
         "protein": {
-          "grams": 41,
-          "percentage": 27
+          "grams": 40,
+          "percentage": 26
         },
         "fat": {
-          "grams": 15,
-          "percentage": 23
+          "grams": 16,
+          "percentage": 24
         }
       },
-      "kcal": 588,
+      "kcal": 600,
       "weight": 470,
       "categoria": "Desayuno y dulces",
       "basica": true,
@@ -11701,14 +11701,14 @@
             "max": 50,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 333,
-              "p": 83.3,
-              "hc": 0,
-              "g": 0
+              "kcal": 380,
+              "p": 78,
+              "hc": 6,
+              "g": 5
             }
           }
         ],
-        "calculadoEn": "2026-10-26T21:12:09.212Z",
+        "calculadoEn": "2026-10-27T08:33:53.706Z",
         "antes": {
           "macros": {
             "carbohydrate": {
