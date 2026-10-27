@@ -502,7 +502,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
         {/* Batch cooking — supersedes variety when on */}
         <button
           onClick={() => setBatch(b => !b)}
-          className={`w-full flex items-center gap-3 p-4 rounded-control border text-left transition-all ${batch ? 'bg-accent/10 border-accent/40' : 'bg-surface border-hairline hover:border-strong'}`}
+          className={`w-full flex items-center gap-3 p-4 rounded-control border text-left transition-all ${batch ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press' : 'bg-surface border-hairline hover:border-strong'}`}
         >
           <span className={`w-5 h-5 rounded-control flex-shrink-0 border-2 flex items-center justify-center transition-colors ${batch ? 'bg-accent border-accent' : 'border-hairline'}`}>
             {batch && <Icon name="check" size="s" className="text-on-accent" />}

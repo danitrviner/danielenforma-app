@@ -237,7 +237,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             onClick={() => irATab(t.id)}
             className={`flex shrink-0 items-center gap-1 px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
               tab === t.id
-                ? 'bg-accent/15 text-accent-ink border border-accent/30'
+                ? 'bg-accent text-on-accent border border-accent-press'
                 : 'bg-field text-ink-2 border border-hairline hover:border-strong'
             }`}
           >

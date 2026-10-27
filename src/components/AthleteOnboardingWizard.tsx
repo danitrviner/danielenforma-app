@@ -184,7 +184,7 @@ function Chip({ selected, onClick, children, big = false, toggle = false }: Chip
       aria-pressed={toggle ? selected : undefined}
       className={`${big ? 'p-4 rounded-control text-left w-full' : 'px-4 py-3 rounded-control'} border font-sans text-body-s transition-all active:scale-95 ${
         selected
-          ? 'bg-accent/15 border-accent text-ink'
+          ? 'bg-accent border-accent-press text-on-accent'
           : 'bg-surface border-hairline text-ink-2 hover:border-strong'
       }`}
     >
@@ -1296,7 +1296,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                     onClick={() => setMeals(prev => prev.map((m, idx) => idx === i ? { ...m, needsTupper: !m.needsTupper } : m))}
                     className={`flex items-center gap-2 px-3 py-2 rounded-control font-mono text-caption font-bold border transition-all active:scale-95 ${
                       meal.needsTupper
-                        ? 'bg-accent/15 border-accent/40 text-accent-ink'
+                        ? 'bg-accent border-accent-press text-on-accent'
                         : 'bg-raised border-hairline text-ink-3 hover:text-ink-2'
                     }`}
                   >

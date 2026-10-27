@@ -162,7 +162,7 @@ function ChipSeccion({ etiqueta, valor, activa, abierta, onClick, discreto }: {
   key?: React.Key;
 }) {
   const tono = abierta
-    ? 'bg-accent/16 border-accent text-accent-ink'
+    ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press text-ink'
     : activa
       ? 'bg-transparent border-accent-line text-accent-ink'
       : discreto
@@ -532,7 +532,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
             onClick={toggleRecordVideo}
             aria-pressed={!!we.recordVideoSet}
             className={`w-9 h-9 rounded-control flex items-center justify-center flex-shrink-0 transition-colors border ${
-              we.recordVideoSet ? 'bg-accent/14 border-accent text-accent-ink' : 'bg-surface border-hairline text-ink-2 hover:text-ink hover:border-strong'
+              we.recordVideoSet ? 'bg-accent border-accent-press text-on-accent' : 'bg-surface border-hairline text-ink-2 hover:text-ink hover:border-strong'
             }`}
           >
             <Icon name="videocam" size="s" />

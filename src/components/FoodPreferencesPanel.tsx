@@ -167,7 +167,7 @@ export default function FoodPreferencesPanel({
                 onClick={() => irAGrupo(i)}
                 className={`flex flex-col items-center gap-2 p-3 rounded-control border transition-all active:scale-95 ${
                   hasAny
-                    ? 'bg-accent-bg border-accent/30 hover:border-accent/60'
+                    ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press'
                     : 'bg-surface border-hairline hover:border-hairline'
                 }`}
               >

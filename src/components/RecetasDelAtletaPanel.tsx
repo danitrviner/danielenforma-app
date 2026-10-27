@@ -125,7 +125,7 @@ const Fila: React.FC<{
         aria-label={`${recomendada ? 'Dejar de recomendar' : 'Recomendar'}: ${receta.name}`}
         title={recomendada ? 'Recomendada: sale arriba de su recetario' : 'Recomendársela: saldrá arriba de su recetario'}
         className={`flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-control border transition-colors ${
-          recomendada ? 'border-accent text-accent-ink bg-accent-bg' : 'border-hairline text-ink-3 hover:text-ink hover:border-strong'
+          recomendada ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-3 hover:text-ink hover:border-strong'
         }`}
       >
         <Icon name="star" size="m" filled={recomendada} />
@@ -151,7 +151,7 @@ const Opcion: React.FC<{ on: boolean; onClick: () => void; titulo?: string; chil
     aria-pressed={on}
     title={titulo}
     className={`min-h-[32px] px-2.5 rounded-chip border font-sans text-caption transition-colors ${
-      on ? 'border-accent bg-accent/15 text-ink' : 'border-hairline text-ink-2 hover:text-ink'
+      on ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-2 hover:text-ink'
     }`}
   >{children}</button>
 );
@@ -899,7 +899,7 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
             {plan.has(viendo.id) && (
               <button type="button" onClick={() => recomendar(viendo.id)} aria-pressed={recsSet.has(viendo.id)}
                 className={`inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-control border font-sans text-caption font-bold ${
-                  recsSet.has(viendo.id) ? 'border-accent text-accent-ink bg-accent-bg' : 'border-hairline text-ink-2 hover:text-ink'
+                  recsSet.has(viendo.id) ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-2 hover:text-ink'
                 }`}>
                 <Icon name="star" size="s" filled={recsSet.has(viendo.id)} />
                 {recsSet.has(viendo.id) ? 'Recomendada' : 'Recomendar'}

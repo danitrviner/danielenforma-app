@@ -81,7 +81,7 @@ export default function OrdenDelCiclo({
               aria-pressed={tipo === sesiones[0].tipo}
               className={`px-2.5 py-1 rounded-full border font-sans text-caption transition-colors ${
                 tipo === sesiones[0].tipo
-                  ? 'bg-accent/10 border-accent text-accent-ink'
+                  ? 'bg-accent border-accent-press text-on-accent'
                   : 'bg-raised border-hairline text-ink-2 hover:border-accent/40 hover:text-ink'
               }`}
             >

@@ -897,7 +897,7 @@ export default function OnboardingForm({
             <button key={o.value} type="button" onClick={() => set('activityLevel', o.value)}
               className={`w-full flex items-center gap-3 p-3 rounded-control border text-left transition-all ${
                 form.activityLevel === o.value
-                  ? 'bg-accent-bg border-accent/40'
+                  ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press'
                   : 'bg-bg border-hairline hover:border-hairline'
               }`}>
               <div className="flex-1 min-w-0">
@@ -1115,7 +1115,7 @@ export default function OnboardingForm({
                     ? form.healthConditions.filter(x => x !== c.code)
                     : [...form.healthConditions, c.code])}
                   className={`px-3 py-2 rounded-control border font-sans text-body-s transition-all active:scale-95 ${
-                    on ? 'bg-accent/15 border-accent text-ink' : 'bg-surface border-hairline text-ink-2 hover:border-strong'
+                    on ? 'bg-accent border-accent-press text-on-accent' : 'bg-surface border-hairline text-ink-2 hover:border-strong'
                   }`}>
                   {c.label}
                 </button>

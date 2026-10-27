@@ -81,7 +81,7 @@ function TarjetaOpcion({ opcion, mejor, inicioSemana, onUsar }: {
   const actual = !onUsar;
   return (
     <div className={`rounded-surface border p-3 space-y-3 ${
-      actual ? 'border-dashed border-strong bg-inset' : mejor ? 'border-accent bg-accent/5' : 'border-hairline bg-surface'
+      actual ? 'border-dashed border-strong bg-inset' : mejor ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press' : 'border-hairline bg-surface'
     }`}>
       <div className="flex items-start justify-between gap-2">
         <div>

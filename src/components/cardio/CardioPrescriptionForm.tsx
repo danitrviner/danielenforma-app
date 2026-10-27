@@ -182,7 +182,7 @@ function ProgramaProgresivoEditor({
           <p className="text-caption font-sans uppercase text-ink-2">Protocolo</p>
           {PROTOCOLOS_VO2MAX.map(p => (
             <button key={p.id} type="button" onClick={() => onProtocolId(p.id)}
-              className={`w-full text-left p-3 rounded-control border transition-colors ${protocolId === p.id ? 'border-accent bg-accent/10' : 'border-hairline bg-surface hover:border-accent/40'}`}>
+              className={`w-full text-left p-3 rounded-control border transition-colors ${protocolId === p.id ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press' : 'border-hairline bg-surface hover:border-accent/40'}`}>
               <span className="block font-sans font-bold text-body-s text-ink">{p.label}</span>
               <span className="block text-caption font-sans text-ink-2 mt-0.5">{p.descripcion}</span>
             </button>

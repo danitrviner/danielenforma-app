@@ -2982,7 +2982,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     onClick={() => setSwapDishFilter(null)}
                     className={`flex-shrink-0 px-3 py-1.5 rounded-full font-sans text-caption font-bold border transition-colors ${
                       swapDishFilter === null
-                        ? 'bg-accent/15 border-accent/40 text-accent-ink'
+                        ? 'bg-accent border-accent-press text-on-accent'
                         : 'bg-surface border-hairline text-ink-2 hover:text-ink'}`}
                   >
                     Todo ({swapCandidates.length})
@@ -2993,7 +2993,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       onClick={() => setSwapDishFilter(t => t === type ? null : type)}
                       className={`flex-shrink-0 px-3 py-1.5 rounded-full font-sans text-caption font-bold border transition-colors ${
                         swapDishFilter === type
-                          ? 'bg-accent/15 border-accent/40 text-accent-ink'
+                          ? 'bg-accent border-accent-press text-on-accent'
                           : 'bg-surface border-hairline text-ink-2 hover:text-ink'}`}
                     >
                       {dishTypeLabel(type)} ({count})

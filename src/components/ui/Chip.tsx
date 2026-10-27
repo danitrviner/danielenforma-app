@@ -47,7 +47,7 @@ export default function Chip({
   onClick,
   className = '',
 }: Props) {
-  const tonoBorde = selected ? 'border-accent-line bg-accent/16 text-accent-ink' : 'border-strong bg-raised text-ink-2';
+  const tonoBorde = selected ? 'bg-accent border-accent-press text-on-accent' : 'border-strong bg-raised text-ink-2';
   const contenido = (
     <>
       {icon && <Icon name={icon} size="s" filled={selected} />}

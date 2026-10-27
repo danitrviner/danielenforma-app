@@ -309,7 +309,7 @@ export default function PhotosScreen({ profile }: Props) {
                 return (
                   <div
                     key={p.id}
-                    className={`flex items-center gap-3 rounded-field border p-2 transition-colors ${selected ? 'border-accent bg-accent/8' : 'border-hairline'}`}
+                    className={`flex items-center gap-3 rounded-field border p-2 transition-colors ${selected ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press' : 'border-hairline'}`}
                   >
                     <button
                       type="button"

@@ -305,7 +305,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           onClick={openFilterSheet}
           aria-label="Filtros"
           className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-control border transition-colors ${
-            filterType || filterEndurance || filterEquipment.length > 0 || filterLateralidad || filterGoma || filterGuiado ? 'bg-accent/14 border-accent-line text-accent-ink' : 'bg-raised border-hairline text-ink-2'
+            filterType || filterEndurance || filterEquipment.length > 0 || filterLateralidad || filterGoma || filterGuiado ? 'bg-accent border-accent-press text-on-accent' : 'bg-raised border-hairline text-ink-2'
           }`}
         >
           <Icon name="tune" size="m" />

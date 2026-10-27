@@ -489,7 +489,7 @@ function SelectorDeEjercicios({ dias, seleccion, onSeleccion, nombreDe, grupoDe,
   const clavesVisibles = [...new Set(dias.flatMap(d => d.exercises.filter(we => !filtro || grupoDe(we) === filtro).map(we => claveEjercicioClave(d, we.exerciseId))))];
   const todosMarcados = clavesVisibles.length > 0 && clavesVisibles.every(k => seleccion.has(k));
   const chip = (activo: boolean) => `rounded-chip border px-2.5 py-1 font-sans text-caption font-bold transition-colors ${
-    activo ? 'border-accent text-accent-ink bg-accent/12' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`;
+    activo ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`;
 
   return (
     <div className="space-y-3">

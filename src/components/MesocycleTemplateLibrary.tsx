@@ -269,7 +269,7 @@ function TemplateEditor({
                     type="button"
                     aria-pressed={on}
                     onClick={() => setForm(f => ({ ...f, etiquetas: on ? f.etiquetas.filter(x => x !== t) : [...f.etiquetas, t] }))}
-                    className={`px-2.5 py-1 rounded-full border font-sans text-caption transition-colors ${on ? 'bg-accent/10 border-accent text-accent-ink' : 'bg-raised border-hairline text-ink-2 hover:text-ink'}`}
+                    className={`px-2.5 py-1 rounded-full border font-sans text-caption transition-colors ${on ? 'bg-accent border-accent-press text-on-accent' : 'bg-raised border-hairline text-ink-2 hover:text-ink'}`}
                   >{t}</button>
                 );
               })}
@@ -539,7 +539,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
               type="button"
               aria-pressed={filtro === t}
               onClick={() => setFiltro(f => (f === t ? null : t))}
-              className={`px-2.5 py-1 rounded-full border font-sans text-caption transition-colors ${filtro === t ? 'bg-accent/10 border-accent text-accent-ink' : 'bg-raised border-hairline text-ink-2 hover:text-ink'}`}
+              className={`px-2.5 py-1 rounded-full border font-sans text-caption transition-colors ${filtro === t ? 'bg-accent border-accent-press text-on-accent' : 'bg-raised border-hairline text-ink-2 hover:text-ink'}`}
             >{t}</button>
           ))}
         </div>

@@ -208,17 +208,17 @@ export default function FichaAlimentoCalorias({
                     role="radio"
                     aria-checked={elegida}
                     onClick={() => setRacionIdx(i)}
-                    className={`flex min-h-11 flex-col items-start justify-center gap-0.5 rounded-surface border px-3.5 py-2 text-left font-sans transition-colors duration-(--duration-state) ${elegida ? 'border-accent bg-accent-bg' : 'border-hairline bg-field hover:border-accent/40'}`}
+                    className={`flex min-h-11 flex-col items-start justify-center gap-0.5 rounded-surface border px-3.5 py-2 text-left font-sans transition-colors duration-(--duration-state) ${elegida ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline bg-field hover:border-accent/40'}`}
                   >
                     {r.recomendada ? (
-                      <span className="flex items-center gap-1 font-mono text-caption font-bold uppercase tracking-wider text-accent-ink">
+                      <span className={`flex items-center gap-1 font-mono text-caption font-bold uppercase tracking-wider ${elegida ? 'text-on-accent' : 'text-accent-ink'}`}>
                         <Icon name="star" size="s" filled />
                         Recomendada
                       </span>
                     ) : r.nota ? (
-                      <span className="font-mono text-caption font-semibold uppercase tracking-wider text-ink-3">{r.nota}</span>
+                      <span className={`font-mono text-caption font-semibold uppercase tracking-wider ${elegida ? 'text-on-accent' : 'text-ink-3'}`}>{r.nota}</span>
                     ) : null}
-                    <span className={`text-body text-ink ${elegida ? 'font-bold' : ''}`}>{r.etiqueta}</span>
+                    <span className={`text-body ${elegida ? 'font-bold text-on-accent' : 'text-ink'}`}>{r.etiqueta}</span>
                   </button>
                 );
               })}
@@ -227,7 +227,7 @@ export default function FichaAlimentoCalorias({
                 role="radio"
                 aria-checked={otra}
                 onClick={() => setRacionIdx(-1)}
-                className={`flex min-h-11 items-center rounded-surface border px-3.5 py-2 font-sans text-body transition-colors duration-(--duration-state) ${otra ? 'border-accent bg-accent-bg font-bold text-ink' : 'border-dashed border-hairline text-ink-2 hover:border-accent/40'}`}
+                className={`flex min-h-11 items-center rounded-surface border px-3.5 py-2 font-sans text-body transition-colors duration-(--duration-state) ${otra ? 'bg-accent border-accent-press text-on-accent font-bold' : 'border-dashed border-hairline text-ink-2 hover:border-accent/40'}`}
               >
                 Otra cantidad
               </button>

@@ -156,7 +156,7 @@ export default function LessonPlayer({ lesson, course, courseLessons, done, comp
               key={l.id}
               onClick={() => onOpenLesson(l.id)}
               className={`w-full flex items-center gap-3 rounded-control border p-3 text-left transition-colors ${
-                isCurrent ? 'bg-accent/10 border-accent-line' : 'bg-surface border-hairline hover:border-strong'
+                isCurrent ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press' : 'bg-surface border-hairline hover:border-strong'
               }`}
             >
               <Icon

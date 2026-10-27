@@ -142,18 +142,18 @@ export default function CardioToday({
               <div className="flex gap-2">
                 {zona2Assignment && (
                   <button onClick={() => onChangeSessionType('zona2')}
-                    className={`flex-1 rounded-control border py-2 text-body-s font-sans font-bold transition-colors ${sessionType === 'zona2' ? 'border-accent-line bg-accent/16 text-accent-ink' : 'border-hairline text-ink-2'}`}>
+                    className={`flex-1 rounded-control border py-2 text-body-s font-sans font-bold transition-colors ${sessionType === 'zona2' ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-2'}`}>
                     Zona 2
                   </button>
                 )}
                 {intervalAssignment && (
                   <button onClick={() => onChangeSessionType('intervalos')}
-                    className={`flex-1 rounded-control border py-2 text-body-s font-sans font-bold transition-colors ${sessionType === 'intervalos' ? 'border-accent-line bg-accent/16 text-accent-ink' : 'border-hairline text-ink-2'}`}>
+                    className={`flex-1 rounded-control border py-2 text-body-s font-sans font-bold transition-colors ${sessionType === 'intervalos' ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-2'}`}>
                     Intervalos
                   </button>
                 )}
                 <button onClick={() => onChangeSessionType('libre')}
-                  className={`flex-1 rounded-control border py-2 text-body-s font-sans font-bold transition-colors ${sessionType === 'libre' ? 'border-accent-line bg-accent/16 text-accent-ink' : 'border-hairline text-ink-2'}`}>
+                  className={`flex-1 rounded-control border py-2 text-body-s font-sans font-bold transition-colors ${sessionType === 'libre' ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-2'}`}>
                   Libre
                 </button>
               </div>

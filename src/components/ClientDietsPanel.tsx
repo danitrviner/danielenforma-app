@@ -250,7 +250,7 @@ export default function ClientDietsPanel({
               return (
                 <div
                   key={dt.id}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-surface border transition-all ${active ? 'bg-accent-bg border-accent/40' : 'bg-surface border-hairline'}`}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-surface border transition-all ${active ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press' : 'bg-surface border-hairline'}`}
                 >
                   {/* Toggle checkbox */}
                   <button
@@ -594,7 +594,7 @@ export default function ClientDietsPanel({
                 <button
                   key={mode}
                   onClick={() => onToggleDietMode(mode)}
-                  className={`flex items-center gap-2 px-4 py-3 rounded-control font-mono text-label font-bold uppercase tracking-wider border transition-all ${active ? 'bg-accent/10 border-accent/40 text-accent-ink' : 'bg-raised border-hairline text-ink-2 hover:border-strong hover:text-ink'}`}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-control font-mono text-label font-bold uppercase tracking-wider border transition-all ${active ? 'bg-accent border-accent-press text-on-accent' : 'bg-raised border-hairline text-ink-2 hover:border-strong hover:text-ink'}`}
                 >
                   <span className={`w-3.5 h-3.5 rounded-control flex-shrink-0 border-2 flex items-center justify-center transition-colors ${active ? 'bg-accent border-accent' : 'border-hairline'}`}>
                     {active && <span className="material-symbols-outlined text-on-accent" style={{ fontSize: '10px' }}>check</span>}

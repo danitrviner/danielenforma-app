@@ -645,7 +645,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             <ListRow
               key={c.id}
               onClick={() => openChat(c)}
-              className={`rounded-surface border ${c.id === chat.id ? 'border-accent/40 bg-accent/5' : 'border-hairline bg-surface'}`}
+              className={`rounded-surface border ${c.id === chat.id ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press' : 'border-hairline bg-surface'}`}
               title={c.title || 'Chat sin título'}
               subtitle={`${c.updatedAt.slice(0, 10)}${c.athleteId ? ` · ${c.athleteId}` : ''}`}
               trailing={

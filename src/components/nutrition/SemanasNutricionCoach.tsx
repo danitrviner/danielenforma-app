@@ -168,7 +168,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
             aria-pressed={varias}
             onClick={() => { setVarias(v => !v); setSel(new Set(varias ? [] : [semana])); }}
             className={`inline-flex items-center gap-1.5 rounded-chip border px-2.5 py-1.5 font-mono text-caption font-bold uppercase tracking-wider transition-colors ${
-              varias ? 'border-accent text-accent-ink bg-accent/12' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`}
+              varias ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`}
           >
             <Icon name="done_all" size="s" />Varias semanas
           </button>

@@ -366,7 +366,7 @@ export default function RecetarioDescubrir({
           {chips.map(c => (
             <button key={c.id || 'todas'} type="button" onClick={() => setFiltro(c.id)} aria-pressed={filtro === c.id}
               className={`flex-shrink-0 min-h-[36px] px-3.5 rounded-chip border font-sans text-label font-bold flex items-center gap-1.5 transition-colors ${
-                filtro === c.id ? 'bg-accent-bg border-accent text-accent-ink' : 'bg-surface border-strong text-ink-2 hover:text-ink'
+                filtro === c.id ? 'bg-accent border-accent-press text-on-accent' : 'bg-surface border-strong text-ink-2 hover:text-ink'
               }`}>
               {c.icono && <Icon name={c.icono} size="s" />}{c.texto}
             </button>
@@ -460,7 +460,7 @@ export default function RecetarioDescubrir({
                   <button key={i.id} type="button" aria-pressed={on}
                     onClick={() => setNevera(n => on ? n.filter(x => x !== i.id) : [...n, i.id])}
                     className={`flex-shrink-0 min-h-[40px] pl-2.5 pr-3.5 rounded-full border font-sans text-label font-bold flex items-center gap-1.5 transition-colors ${
-                      on ? 'bg-accent-bg border-accent text-accent-ink' : 'bg-surface border-strong text-ink-2 hover:text-ink'
+                      on ? 'bg-accent border-accent-press text-on-accent' : 'bg-surface border-strong text-ink-2 hover:text-ink'
                     }`}>
                     <Emoji className="text-[18px]">{i.emoji}</Emoji>{i.etiqueta}
                   </button>

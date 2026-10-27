@@ -137,7 +137,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 aria-pressed={periodo === id}
                 className={`shrink-0 px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
                   periodo === id
-                    ? 'bg-accent/15 text-accent-ink border border-accent/30'
+                    ? 'bg-accent text-on-accent border border-accent-press'
                     : 'bg-field text-ink-2 border border-hairline hover:border-strong'
                 }`}
               >
@@ -238,7 +238,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 aria-pressed={filtro === id}
                 className={`shrink-0 px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
                   filtro === id
-                    ? 'bg-accent/15 text-accent-ink border border-accent/30'
+                    ? 'bg-accent text-on-accent border border-accent-press'
                     : 'bg-field text-ink-2 border border-hairline hover:border-strong'
                 }`}
               >

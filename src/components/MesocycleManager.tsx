@@ -3108,7 +3108,7 @@ export default function MesocycleManager({
                 onClick={() => { setEditing(m); setEditorTab('progression'); setConfirmDelete(false); setGenPhase('idle'); setVolcado({ estado: 'idle', mensaje: '' }); setCalAtleta({ estado: 'idle', mensaje: '' }); }}
                 className={`w-full text-left p-3 rounded-control border transition-all ${
                   editing?.id === m.id
-                    ? 'border-accent/60 bg-accent/5'
+                    ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press'
                     : 'border-hairline bg-surface hover:border-hairline'
                 }`}
               >
@@ -3563,7 +3563,7 @@ export default function MesocycleManager({
                                     }}
                                     className={`px-3 py-2 rounded-control border font-sans text-label text-left transition-all flex items-center gap-2 ${
                                       editing.splitId === split.id && !editing.reparto
-                                        ? 'bg-accent/10 border-accent text-accent-ink'
+                                        ? 'bg-accent border-accent-press text-on-accent'
                                         : 'bg-raised border-hairline text-ink-2 hover:border-accent/40 hover:text-ink'
                                     }`}
                                   >

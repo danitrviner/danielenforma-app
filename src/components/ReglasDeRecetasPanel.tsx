@@ -133,7 +133,7 @@ const Fila: React.FC<{
           aria-pressed={recomendada}
           aria-label={`${recomendada ? 'Dejar de recomendar' : 'Recomendar'}: ${receta.name}`}
           className={`flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-control border transition-colors disabled:opacity-50 ${
-            recomendada ? 'border-accent text-accent-ink bg-accent-bg' : 'border-hairline text-ink-3 hover:text-ink hover:border-strong'
+            recomendada ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-3 hover:text-ink hover:border-strong'
           }`}
           title={recomendada ? 'Recomendada: sale arriba de su recetario' : 'Recomendársela: saldrá arriba de su recetario'}
         >
@@ -458,7 +458,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
                     aria-pressed={on}
                     title={suya ? 'Ya la tiene: su pool ya cumple esta condición' : c.help}
                     className={`min-h-[32px] px-2.5 rounded-chip border font-sans text-caption transition-colors ${
-                      on ? 'border-accent bg-accent/15 text-ink' : 'border-hairline text-ink-2 hover:text-ink'
+                      on ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-2 hover:text-ink'
                     }`}
                   >
                     {c.label}{suya ? ' · suya' : ''}
@@ -481,7 +481,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
                     aria-pressed={on}
                     title={a.ayuda}
                     className={`min-h-[32px] px-2.5 rounded-chip border font-sans text-caption transition-colors ${
-                      on ? 'border-accent bg-accent/15 text-ink' : 'border-hairline text-ink-2 hover:text-ink'
+                      on ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-2 hover:text-ink'
                     }`}
                   >{a.etiqueta}</button>
                 );
