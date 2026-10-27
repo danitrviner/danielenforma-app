@@ -7,7 +7,8 @@ import {
   MealItem, WeeklyMenu, MenuDay, WeekDay, FoodCategory, DietMode,
   Macros, MenuMeal,
 } from '../types';
-import { queryRecetasForGenerator, getRecipes, getRecipeById, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites, getNutritionProgram } from '../dbService';
+import { queryRecetasForGenerator, getRecipes, getRecipeById, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites, getNutritionProgram, getWeeklyMenusForAthlete } from '../dbService';
+import { senalesDeCambios } from '../utils/gustosDelAtleta';
 import { semanaDelPrograma, totalSemanas, ajustesDeLaSemana, aplicarAjustes, kcalDeDieta, gramosDeMantenimiento } from '../utils/semanasNutricion';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 import {
@@ -134,6 +135,13 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       : { athleteId: athleteEmail, recipeIds: [], dislikedIds: [] },
     [favoritesData, athleteEmail],
   );
+  // Lo que el atleta ha hecho con sus menús anteriores (recetas que quita,
+  // alimentos que sustituye siempre). Sin lectura, se genera sin esa señal.
+  const { data: menusAnteriores } = useQuery({
+    queryKey: ['weeklyMenus', athleteEmail],
+    queryFn: () => getWeeklyMenusForAthlete(athleteEmail),
+  });
+  const cambios = useMemo(() => (menusAnteriores ? senalesDeCambios(menusAnteriores) : undefined), [menusAnteriores]);
   const [preferredDish, setPreferredDish] = useState<string[]>(nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []);
   const [excludedDish, setExcludedDish] = useState<string[]>(nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []);
 
@@ -188,7 +196,8 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     listaMenu,
     seleccion,
     paquetes,
-  }), [onboarding, nutritionConfig, variety, favorites, preferredDish, excludedDish, recetasOcultas, listaMenu, seleccion, paquetes]);
+    cambios,
+  }), [onboarding, nutritionConfig, variety, favorites, preferredDish, excludedDish, recetasOcultas, listaMenu, seleccion, paquetes, cambios]);
 
   function cycleDishType(id: string) {
     if (preferredDish.includes(id)) { setPreferredDish(p => p.filter(x => x !== id)); setExcludedDish(e => [...e, id]); }

@@ -784,3 +784,97 @@ describe('variedad con recetas que clavan el objetivo', () => {
     expect(ranked[0].recipe.id).toBe('buena');
   });
 });
+
+describe('fidelidad de la receta, extras y gustos (Dani, 27-10-2026)', () => {
+  const AVENA = { kcal: 370, p: 13, hc: 60, g: 7 };
+  const CLARA = { kcal: 48, p: 11, hc: 0.7, g: 0.2 };
+  const POLLO = { kcal: 110, p: 23, hc: 0, g: 1.5 };
+  const ARROZ = { kcal: 354, p: 7, hc: 78, g: 0.9 };
+  const tortitas = recipe({
+    id: 'tortitas', name: 'Tortitas de avena con claras', kcal: 418, macros: { prot: 24, carb: 60.7, fat: 7.2 },
+    ingredientsText: [{ name: 'Copos de avena', quantity: 100 }, { name: 'Claras de huevo', quantity: 100 }] as Recipe['ingredientsText'],
+    vinculo: { ingredientes: [
+      { n: 0, alimentoId: 'avena', gramos: 100, min: 50, max: 200, palanca: 'hc', porCien: AVENA },
+      { n: 1, alimentoId: 'clara', gramos: 100, min: 50, max: 200, palanca: 'proteina', porCien: CLARA },
+    ], calculadoEn: '2026-10-27' },
+  });
+  const arrozPollo = recipe({
+    id: 'arroz-pollo', name: 'Arroz con pollo', kcal: 519, macros: { prot: 41.5, carb: 78, fat: 3.2 },
+    ingredientsText: [{ name: 'Arroz', quantity: 100 }, { name: 'Pechuga de pollo', quantity: 150 }] as Recipe['ingredientsText'],
+    vinculo: { ingredientes: [
+      { n: 0, alimentoId: 'arroz', gramos: 100, min: 50, max: 200, palanca: 'hc', porCien: ARROZ },
+      { n: 1, alimentoId: 'pollo', gramos: 150, min: 75, max: 300, palanca: 'proteina', porCien: POLLO },
+    ], calculadoEn: '2026-10-27' },
+  });
+
+  it('una receta de masa (tortitas) no se ajusta ingrediente a ingrediente: solo se multiplica entera', () => {
+    // Pide el doble de proteína con los mismos hidratos: con palancas subirían
+    // las claras y saldría una papilla. Se sirve a la escala entera que mejor cuadre.
+    const fit = bestScaleFit(tortitas, { kcal: 514, p: 48, hc: 60.7, g: 7.2 });
+    expect(fit).not.toBeNull();
+    expect(fit!.ajuste).toBeUndefined();
+    // Y el arroz con pollo, que sí admite tocarse, se ajusta.
+    const fit2 = bestScaleFit(arrozPollo, { kcal: 611, p: 64.5, hc: 78, g: 4.7 });
+    expect(fit2?.ajuste).toBeDefined();
+  });
+
+  it('entre una receta que encaja tal cual y otra que hay que servir ×2,5, gana la fiel aunque cuadre algo peor', () => {
+    const pequena = recipe({ id: 'pequena', exchanges: { HC: 2, PROT: 2, GRASA: 0 } });     // 400 kcal → ×2,5 = 1.000 clavado
+    const entera  = recipe({ id: 'entera',  exchanges: { HC: 5, PROT: 4.5, GRASA: 0 } });   // 950 kcal → ×1, a 50 kcal
+    const target: BudgetVec = { HC: 5, PROT: 5, GRASA: 0 };                                  // 1.000 kcal
+    const ranked = rankCandidates([pequena, entera], mx(target), basePrefs, new Set());
+    expect(ranked[0].recipe.id).toBe('entera');
+    expect(ranked[0].scale).toBe(1);
+  });
+
+  it('la proteína que le falta al día va al plato que admite más pollo, no a las tortitas', () => {
+    const foods = [
+      { id: 'pollo', mode: 'OMNIVORO' as const, category: 'PROT' as const, label: '100g carne blanca sin piel (pollo, pavo...)' },
+      { id: 'avena', mode: 'OMNIVORO' as const, category: 'HC' as const, label: '30g cereales (corn flakes, muesli, copos...)' },
+      { id: 'yogur', mode: 'OMNIVORO' as const, category: 'PROT' as const, label: '1 yogur proteico' },
+    ];
+    const slots = [{ slot: 1, name: 'Desayuno', pct: 45 }, { slot: 3, name: 'Comida', pct: 55 }];
+    // Día de 937 kcal: 418 + 519 de los platos a ×1 y le faltan ~50 g de proteína.
+    const dieta = diet({ budget: { HC: 5.5, PROT: 4.6, GRASA: 1, MIX_HC: 0, MIX_GRASA: 0 }, objetivo: { kcal: 1137, p: 115, hc: 139, g: 10 } } as Partial<Diet>);
+    const day = generateDay({
+      day: 'mon', diet: dieta, slots, pools: { 1: [tortitas], 3: [arrozPollo] }, foods, prefs: basePrefs, usedIds: new Set(),
+    });
+    const desayuno = day.meals[0];
+    const comida = day.meals[1];
+    expect(desayuno.recipeId).toBe('tortitas');
+    // Las tortitas no llevan «más avena» ni «más claras»: se quedan como están.
+    expect(desayuno.racionesExtra ?? []).toEqual([]);
+    // El pollo sube en la comida aunque esa comida fuera bien de por sí.
+    expect((comida.racionesExtra ?? []).some(r => r.nombre === 'pollo')).toBe(true);
+  });
+
+  it('una receta que el atleta quitó dos veces con «Intercambiar» baja; la que eligió él sube', () => {
+    const a = recipe({ id: 'a', name: 'Plato A', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+    const b = recipe({ id: 'b', name: 'Plato B', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+    const c = recipe({ id: 'c', name: 'Plato C', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+    const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
+    const cambios = { evitadas: { a: 2 }, elegidas: { c: 1 }, sustituciones: {} };
+    const ranked = rankCandidates([a, b, c], mx(target), { ...basePrefs, cambios }, new Set());
+    expect(ranked.map(r => r.recipe.id)).toEqual(['c', 'b', 'a']);
+  });
+
+  it('si le encanta un batido, los demás batidos salen más que una tostada igual de buena', () => {
+    const fav = recipe({ id: 'fav', name: 'Batido de plátano', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+    const otroBatido = recipe({ id: 'otro', name: 'Batido de fresa', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+    const tostada = recipe({ id: 'tostada', name: 'Tostada de pavo', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+    const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
+    const ranked = rankCandidates([otroBatido, tostada, fav], mx(target), { ...basePrefs, favoriteRecipeIds: ['fav'] }, new Set(['fav']));
+    expect(ranked[0].recipe.id).toBe('otro');
+  });
+
+  it('el alimento que siempre cambia va ya cambiado en el menú nuevo', () => {
+    const conLeche = recipe({ id: 'leche', name: 'Avena con leche', exchanges: { HC: 2, PROT: 2, GRASA: 1 }, ingredientsText: [{ name: 'Leche', quantity: 200 }] as Recipe['ingredientsText'] });
+    const slots = [{ slot: 1, name: 'Desayuno', pct: 100 }];
+    const day = generateDay({
+      day: 'mon', diet: diet({ budget: { HC: 2, PROT: 2, GRASA: 1, MIX_HC: 0, MIX_GRASA: 0 } }), slots,
+      pools: { 1: [conLeche] }, foods: [], usedIds: new Set(),
+      prefs: { ...basePrefs, cambios: { evitadas: {}, elegidas: {}, sustituciones: { leche: 'Bebida de avena' } } },
+    });
+    expect(day.meals[0].ingredientSwaps).toEqual([{ from: 'Leche', to: 'Bebida de avena' }]);
+  });
+});

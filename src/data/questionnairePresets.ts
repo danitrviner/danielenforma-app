@@ -180,27 +180,15 @@ const DOMS_ZONES: { zona: string; group: MuscleGroup }[] = [
   { zona: 'HOMBRO',         group: 'deltoide_lat' },
 ];
 
+// Una vez a la semana (Dani, 27-10): es la única lectura de agujetas, también
+// para el freno/acelerador del CDG, que la convierte a 1-5. Las dos preguntas
+// de contexto del protocolo (cansancio al salir y motivación) van aquí.
 const DOMS: QuestionnairePresetDef = {
   title: "DOM's o \"agujetas\"",
-  description: 'Escala de 0 (nada) a 10 (muchísimo) por grupo muscular.',
-  suggestedSchedule: { type: 'interval', intervalDays: 14 },
-  questions: DOMS_ZONES.map(({ zona, group }) => scaleSignal(zona, `doms.${group}` as VolumeSignalKey, { required: true, min: 0, max: 10, minLabel: 'Nada', maxLabel: 'Muchísimo' })),
-};
-
-// ── 3b. Agujetas a las 48 h (escala del curso CDG) ───────────────────────────
-// 1 a 5, a las 48 h de entrenar cada zona. Las zonas son las del IEM
-// (utils/cdg/zonas.ts), así el seguimiento cruza cada respuesta con el IEM de
-// esa misma zona y propone frenar o acelerar. No sustituye al DOM's 0-10: ese
-// lo siguen leyendo el IRP y el sugeridor de volumen.
-export const TITULO_AGUJETAS_48H = 'Agujetas a las 48 h';
-const AGUJETAS_48H: QuestionnairePresetDef = {
-  title: TITULO_AGUJETAS_48H,
-  description: 'Puntúa cada zona 48 h después de entrenarla. 1 = apenas he notado trabajo · 3 = las noto al moverme · 5 = me duele incluso en reposo. Deja en blanco las zonas que no has entrenado.',
+  description: 'Una vez a la semana. Escala de 0 (nada) a 10 (muchísimo) por grupo muscular, pensando en cómo quedaste a los dos días de entrenarlo.',
   suggestedSchedule: { type: 'interval', intervalDays: 7 },
   questions: [
-    ...ZONAS_IEM.map(z => scaleSignal(z.nombre, `agujetas.${z.clave}` as AgujetasSignalKey, { required: false, min: 1, max: 5, minLabel: 'Apenas noté trabajo', maxLabel: 'Duele en reposo' })),
-    // Las otras dos lecturas del protocolo semanal de la guía del IH: cómo sale
-    // de las sesiones (8-9 = no subir) y la motivación (parte del contexto).
+    ...DOMS_ZONES.map(({ zona, group }) => scaleSignal(zona, `doms.${group}` as VolumeSignalKey, { required: true, min: 0, max: 10, minLabel: 'Nada', maxLabel: 'Muchísimo' })),
     scaleSignal('¿Cómo de cansado sales de las sesiones esta semana?', 'wellness.fatigue_post_weekly', { required: false, minLabel: 'Fresco', maxLabel: 'Destrozado' }),
     scaleSignal('¿Cuántas ganas tienes de entrenar esta semana?', 'wellness.motivation_weekly', { required: false, minLabel: 'Ninguna', maxLabel: 'Muchísimas' }),
   ],
@@ -587,7 +575,6 @@ export const QUESTIONNAIRE_PRESETS: QuestionnairePresetDef[] = [
   ENTRENAMIENTO,
   EVALUACION_DOLOR,
   DOMS,
-  AGUJETAS_48H,
   MEDICIONES,
   REVISION_SEMANA_3,
   REVISION_SEMANAL,

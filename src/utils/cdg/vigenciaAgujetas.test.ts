@@ -10,8 +10,8 @@ describe('E-09 · agujetas vigentes y umbrales', () => {
     expect(agujetasVigentes('2026-10-20T18:00:00.000Z', '2026-10-23')).toBe(true)
   })
 
-  it('los umbrales siguen marcados como pendientes de validar y mandan en el contexto', () => {
-    expect(UMBRALES_PROTOCOLO.validados).toBe(false)
+  it('los umbrales están validados por Dani (27-10) y mandan en el contexto', () => {
+    expect(UMBRALES_PROTOCOLO.validados).toBe(true)
     expect(contextoDeLaSemana({ estres: UMBRALES_PROTOCOLO.estresMalo }).contexto).toBe('desfavorable')
     expect(contextoDeLaSemana({ estres: UMBRALES_PROTOCOLO.estresMalo - 1 }).contexto).toBe('neutro')
   })

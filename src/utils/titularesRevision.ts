@@ -19,7 +19,7 @@ import { PesoVsSemanaPasada } from './revisionCoach';
       (`tono`), porque el orden en que se cuentan importa más que el texto.
     · El borrador para el cliente NUNCA se manda solo: es texto para copiar,
       editar y pegar. Por eso está escrito en segunda persona y sin cifras que
-      el atleta no pueda interpretar (tonelaje, IEA, zonas de volumen).
+      el atleta no pueda interpretar (tonelaje, IEM, zonas de volumen).
 
    Puro y determinista, como el resto de motores: mismos datos, mismo texto.
    ═══════════════════════════════════════════════════════════════════════════ */

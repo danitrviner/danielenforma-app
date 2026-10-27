@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest'
 import catalogoPrueba from './__fixtures__/catalogoPrueba.json'
 import { crearMotor, expandirCatalogo, type CdgCatalogoCompacto } from './index'
 import {
-  semanasRealizadasDelMeso, cargaAgudaCronicaDelMeso, sesionesProgramadasDeLaSemana, rendimientoDelCiclo, type SemanaSeguimiento
-} from './integracion'
+  semanasRealizadasDelMeso, cargaAgudaCronicaDelMeso, sesionesProgramadasDeLaSemana, rendimientoDelCiclo, type SemanaSeguimiento, semanaPorDefecto } from './integracion'
 import type { WorkoutExercise, WorkoutLog } from '../../types'
 
 const motor = crearMotor(expandirCatalogo(catalogoPrueba as CdgCatalogoCompacto))
@@ -73,6 +72,16 @@ describe('cargaAgudaCronicaDelMeso', () => {
     }
   })
 
+  it('la semana en curso no entra en la crónica aunque tenga sesiones', () => {
+    const semanas = [1, 2, 3, 4, 5, 6, 7].map(semana)
+    const r = cargaAgudaCronicaDelMeso({ motor, semanas, grupos, meso, vueltas: 8, nombreCdgDe, semanaEnCurso: 7 })
+    expect(r.disponible).toBe(true)
+    if (r.disponible) {
+      expect(r.semanaReferencia).toBe(8)
+      expect(r.semanasUsadas).toEqual([6, 5, 4, 3, 2, 1])
+    }
+  })
+
   it('con semana de referencia elegida, la crónica son las realizadas antes de esa semana', () => {
     const semanas = [1, 2, 3, 4, 5, 6].map(semana)
     const r = cargaAgudaCronicaDelMeso({ motor, semanas, grupos, meso, vueltas: 8, nombreCdgDe, semanaReferencia: 4 })
@@ -110,5 +119,18 @@ describe('sesiones programadas y rendimiento del ciclo', () => {
     const r = rendimientoDelCiclo(conCategoria, semanas)
     expect(r.incrementos[0].incremento).toBeGreaterThan(0)
     expect(r.categorias.map(c => c.categoria)).toEqual(['Pierna'])
+  })
+})
+
+describe('semanaPorDefecto', () => {
+  const sem = (semana: number, logs: number) => ({ semana, logs })
+  it('elige la última semana con todas las sesiones del ciclo', () => {
+    expect(semanaPorDefecto([sem(1, 4), sem(2, 4), sem(3, 1)], 4)?.semana).toBe(2)
+  })
+  it('si ninguna está completa, la última', () => {
+    expect(semanaPorDefecto([sem(1, 2), sem(2, 1)], 4)?.semana).toBe(2)
+  })
+  it('sin semanas no hay semana', () => {
+    expect(semanaPorDefecto([], 4)).toBeUndefined()
   })
 })

@@ -22,7 +22,7 @@ import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import { complementosDisponibles } from '../utils/menuComplements';
 import { foodNameWithoutGrams, foodNameShort, itemWeightLabel } from '../utils/exchangeHelpers';
-import { macrosDeLaComida, macrosDelPlato } from '../utils/menuMacros';
+import { macrosDeLaComida, macrosDelPlato, macrosDeRaciones } from '../utils/menuMacros';
 import { intercambiosDeMacros } from '../utils/macrosLegado';
 import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
 import { DishType } from '../utils/dishTypes';
@@ -30,7 +30,8 @@ import { substitutesFor } from '../utils/ingredientSubstitutions';
 import { Icon, EmptyState, ListRow, Badge, Sheet, Dialog, ScreenSkeleton } from './ui';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import { escalarRecetaEntera } from '../utils/escalarRecetaEntera';
-import { recetaAjustada, fraseDeCambio } from '../utils/ajusteDeReceta';
+import { recetaAjustada } from '../utils/ajusteDeReceta';
+import { senalesDeCambios } from '../utils/gustosDelAtleta';
 import { useToast } from '../hooks/useToast';
 import { useDiaActual } from '../hooks/useDiaActual';
 import { registrarComidaDelMenu, quitarComidaDelMenu, type DiaDelPlan } from '../utils/registroDesdeElMenu';
@@ -178,6 +179,8 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     listaMenu,
     seleccion,
     paquetes,
+    // Lo que ya ha cambiado en este menú pesa al proponerle alternativas.
+    cambios: menu ? senalesDeCambios([menu]) : undefined,
   }), [onboarding, nutritionConfig, favorites, recetasOcultas, listaMenu, seleccion, paquetes]);
 
   const swapFiltradas = useMemo(() => {
@@ -622,7 +625,8 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
           {day.meals.map(meal => {
             const done = doneKeys.has(`${selectedDay}_${meal.id}`);
             return (
-              <div key={meal.id} className={`bg-surface border rounded-surface overflow-hidden transition-[color,background-color,border-color,opacity,transform,box-shadow] ${done ? 'border-success/30' : 'border-hairline'}`}>
+            <React.Fragment key={meal.id}>
+              <div className={`bg-surface border rounded-surface overflow-hidden transition-[color,background-color,border-color,opacity,transform,box-shadow] ${done ? 'border-success/30' : 'border-hairline'}`}>
                 {/* Foto a sangre, mismo patrón que RecetaCard en la Biblioteca de
                     recetas — antes era una miniatura de 64px, demasiado pequeña
                     para verse bien (queja real de Dani). */}
@@ -682,27 +686,9 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                       </div>
                     )}
 
-                    {/* Los acompañamientos son EDITABLES. Los pone el generador
-                        para cerrar lo que ni el plato ni su ración extra llegan a
-                        cubrir, pero quien decide si eso es pan, fruta o un yogur
-                        es el atleta: son sus intercambios y su nevera. */}
+                    {/* Los acompañamientos van como filas aparte, debajo de la
+                        tarjeta (ver más abajo). Aquí solo se añade uno nuevo. */}
                     <div className="flex flex-wrap items-center gap-1 mt-2">
-                      {meal.complements.map((c, ci) => (
-                        <button
-                          key={ci}
-                          onClick={() => abrirExtras(meal, ci)}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-raised border border-hairline hover:border-accent/40 transition-colors"
-                        >
-                          {/* El peso primero: es lo accionable ("30g de pan"),
-                              no el número de intercambios. Nombre corto, sin la
-                              coletilla entre paréntesis del banco, que en un
-                              móvil de 375px se comía la fila entera. */}
-                          <span className="font-mono text-caption text-ink-2 truncate max-w-[13rem]">
-                            {itemWeightLabel(c.foodLabel, c.quantity)} {foodNameShort(c.foodLabel)}
-                          </span>
-                          <Icon name="edit" size="s" className="text-ink-3" />
-                        </button>
-                      ))}
                       <button
                         onClick={() => abrirExtras(meal, null)}
                         className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-hairline text-caption font-mono text-ink-3 hover:text-ink hover:border-accent/40 transition-colors"
@@ -766,6 +752,34 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                   </div>
                 </div>
               </div>
+              {/* Los extras (fruta, pan, yogur) van como si fueran comidas más,
+                  cada uno en su fila y con otro color, para que el atleta no se
+                  los salte (Dani, 27-10-2026: «plátano y frutas deshidratadas y
+                  luego la cena»). Los pone el generador para cerrar lo que el
+                  plato no llega a cubrir, pero son EDITABLES: quien decide si
+                  es pan, fruta o un yogur es el atleta. */}
+              {meal.complements.map((c, ci) => (
+                <button
+                  key={`${meal.id}_extra_${ci}`}
+                  onClick={() => abrirExtras(meal, ci)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-surface border border-accent/30 bg-accent/10 text-left hover:border-accent/60 transition-colors"
+                >
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center">
+                    <Icon name="nutrition" size="m" className="text-accent-ink" />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block font-sans text-caption text-accent-ink uppercase tracking-wider">Extra · {meal.name}</span>
+                    <span className="block font-sans font-bold text-body-s text-ink truncate">
+                      {itemWeightLabel(c.foodLabel, c.quantity)} {foodNameShort(c.foodLabel)}
+                    </span>
+                  </span>
+                  <span className="font-mono text-caption text-ink-2 flex-shrink-0">
+                    {Math.round(macrosDeRaciones(c.category, c.quantity).kcal)} kcal
+                  </span>
+                  <Icon name="edit" size="s" className="text-ink-3 flex-shrink-0" />
+                </button>
+              ))}
+            </React.Fragment>
             );
           })}
         </div>
@@ -1022,14 +1036,10 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                     Cantidades para ×{detailMeal!.scale} de la receta
                   </p>
                 )}
-                {detailMeal?.ajuste && detailMeal.ajuste.cambios.length > 0 && (
-                  <div className="rounded-control bg-raised p-3">
-                    <p className="font-sans text-label font-semibold text-ink">Ajustada a tu comida</p>
-                    <ul className="pt-1 font-sans text-body-s text-ink-2">
-                      {detailMeal.ajuste.cambios.map(c => <li key={c.n}>{fraseDeCambio(c)}</li>)}
-                    </ul>
-                  </div>
-                )}
+                {/* El ajuste por ingredientes (`detailMeal.ajuste`) ya va metido
+                    en las cantidades de abajo. No se le cuenta al atleta qué se
+                    ha tocado ni por qué (Dani, 27-10-2026: «quítalos, no hace
+                    falta que se lo digas»): para él es la receta, sin más. */}
                 {detailRecipeVista?.kcal != null && (
                   <p className="font-mono text-caption text-ink-2">{detailRecipeVista.kcal} kcal{detailRecipe.cookingTime != null ? ` · ~${minutosDeReceta(detailRecipe)} min` : ''}</p>
                 )}

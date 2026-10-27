@@ -33,9 +33,10 @@ export interface MotorCdgEstado {
  * Motor de cálculo CDG listo para usar (`motor.calcularFila(...)`).
  *
  * Solo para la vista del coach: el atleta no descarga el catálogo (la regla de
- * Firestore se lo niega y aquí ni se intenta). Se guarda el string compacto,
- * que es lo que React Query persiste en el dispositivo; el motor se reconstruye
- * en memoria con `useMemo`.
+ * Firestore se lo niega y aquí ni se intenta). Se guarda el string compacto en
+ * la caché de React Query (en memoria: `main.tsx` lo excluye del persister de
+ * localStorage, decisión de Dani 27-10: una lectura por sesión); el motor se
+ * reconstruye con `useMemo`.
  *
  * `json` permite inyectar un catálogo ya cargado (tests, o el cargador de
  * archivo de la pantalla de emparejado mientras el catálogo no está en Firestore).

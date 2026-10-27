@@ -355,6 +355,20 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "questionnaireResponses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "athleteId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "submittedAt",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []
