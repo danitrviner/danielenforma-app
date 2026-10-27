@@ -5,7 +5,7 @@ import SelloHecho from './ui/SelloHecho';
 import { useDireccionDeFecha } from './ui/internal/useDireccionDeFecha';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RecetaPendiente, MenuCompletionLog, DietCompletionLog, Macros } from '../types';
 import { macrosDeIntercambios, objetivoDelRegistro, intercambiosDeMacros, macrosDeLineas, objetivoDeDieta } from '../utils/macrosLegado';
 import { sonMacrosVacios, sinNegativos, restarMacros, escalarMacros, redondearMacros } from '../utils/macros';
@@ -53,8 +53,9 @@ import ProductoOffSheet from './nutrition/ProductoOffSheet';
 import ScannerSheet from './nutrition/ScannerSheet';
 import { encontrarPorCodigo } from '../utils/codigoBarras';
 import ProductoEscaneadoSheet from './nutrition/ProductoEscaneadoSheet';
-import { cargarIndiceOff, ATRIBUCION_OFF } from '../services/openFoodFacts';
-import { buscarEnIndiceOff, extrasDeRacion, type EntradaIndiceOff, type OffProducto } from '../utils/productoOff';
+import { cargarIndiceOff, cargarPrefijosOff, cargarTrozoDeNombresOff, ATRIBUCION_OFF } from '../services/openFoodFacts';
+import { prefijoParaBuscar } from '../utils/offPalabras';
+import { buscarEnIndiceOff, mezclarResultadosOff, extrasDeRacion, type EntradaIndiceOff, type OffProducto } from '../utils/productoOff';
 import { buscarEnCatalogo, comoProducto, nombreDeAlimento, type AlimentoCatalogo } from '../utils/catalogoAlimentos';
 import { NotaDeFuente } from './FuentesCientificasSheet';
 
@@ -707,9 +708,31 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     () => (usarListaRapida && isSearchingFoods ? buscarEnCatalogo(catalogoAlimentos, searchTerm, 12) : []),
     [usarListaRapida, isSearchingFoods, catalogoAlimentos, searchTerm],
   );
+  // El resto de la copia (no solo los 30.000 más escaneados): el trozo de la
+  // palabra más larga de lo escrito. Va por prefijo, no por término: al seguir
+  // escribiendo se filtra el mismo trozo sin volver a pedir nada.
+  const { data: prefijosOff } = useQuery({
+    queryKey: ['offPrefijos'],
+    queryFn: cargarPrefijosOff,
+    staleTime: Infinity,
+    retry: 1,
+    enabled: usarListaRapida,
+  });
+  const prefijoOff = usarListaRapida && isSearchingFoods && prefijosOff ? prefijoParaBuscar(searchTerm, prefijosOff) : null;
+  const { data: trozoNombresOff = [] } = useQuery({
+    queryKey: ['offNombres', prefijoOff],
+    queryFn: () => cargarTrozoDeNombresOff(prefijoOff as string),
+    staleTime: Infinity,
+    retry: 1,
+    enabled: !!prefijoOff,
+    // Mientras llega el trozo nuevo se sigue filtrando el anterior: la lista no parpadea.
+    placeholderData: keepPreviousData,
+  });
   const productosOff = useMemo(
-    () => (pickerItem?.itemIdx === null && isSearchingFoods ? buscarEnIndiceOff(indiceOff, searchTerm, 12) : []),
-    [pickerItem, isSearchingFoods, indiceOff, searchTerm],
+    () => (pickerItem?.itemIdx === null && isSearchingFoods
+      ? mezclarResultadosOff([buscarEnIndiceOff(indiceOff, searchTerm, 12), buscarEnIndiceOff(trozoNombresOff, searchTerm, 12)], 12)
+      : []),
+    [pickerItem, isSearchingFoods, indiceOff, trozoNombresOff, searchTerm],
   );
   const availableRecipeCats = useMemo(() => {
     const s = new Set<string>();

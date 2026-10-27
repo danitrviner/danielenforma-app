@@ -443,6 +443,22 @@ service cloud.firestore {
       allow write: if isCoach();
     }
 
+    // ── productosCorregidos/{código} ─────────────────────────────────────────
+    // Productos de supermercado (Open Food Facts) con los datos corregidos por
+    // el coach: mandan sobre la copia local y la consulta en directo. Los lee
+    // cualquier usuario de la app al escanear y solo los escribe el coach.
+    match /productosCorregidos/{codigo} {
+      allow read: if esUsuarioDeLaApp();
+      allow write: if isCoach();
+    }
+
+    // ── lecturasEtiqueta/{uid}_{fecha} ───────────────────────────────────────
+    // Contador diario de fotos de etiqueta leídas (api/leer-etiqueta.ts). Solo
+    // lo toca el servidor con la cuenta de servicio.
+    match /lecturasEtiqueta/{docId} {
+      allow read, write: if false;
+    }
+
     // ── recipeAccess/global ──────────────────────────────────────────────────
     // Lista global de recetas con las que trabaja el generador de menús
     // (utils/accesoARecetas.ts). La lee cualquier sesión (el generador corre

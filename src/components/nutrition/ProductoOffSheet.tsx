@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Sheet, Button, Input, Banner } from '../ui';
-import { getProductoOff, ATRIBUCION_OFF } from '../../services/openFoodFacts';
+import { resolverProducto, ATRIBUCION_OFF } from '../../services/openFoodFacts';
 import { extrasDeRacion, esIncompleto, motivoDeIncompleto, type EntradaIndiceOff, type OffProducto } from '../../utils/productoOff';
 import { nutrientesDeRacion } from '../../utils/productoAIntercambios';
 import { MICRO_META, MICRO_KEYS } from '../../data/micronutrients';
@@ -30,7 +30,7 @@ type Props = {
 export default function ProductoOffSheet({ entrada, producto: conocido, nota, gramosIniciales, onConfirm, onClose }: Props) {
   const consulta = useQuery({
     queryKey: ['offProducto', entrada.c],
-    queryFn: () => getProductoOff(entrada.c),
+    queryFn: () => resolverProducto(entrada.c),
     staleTime: Infinity,
     enabled: !conocido,
   });

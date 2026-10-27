@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
+import { leerEtiqueta } from '../../services/leerEtiqueta';
 import type { DietMode, MealItem } from '../../types';
 import { Sheet, Button, Input, Banner, Icon, SegmentedControl } from '../ui';
 import GuiaDeEtiquetas from './GuiaDeEtiquetas';
@@ -82,6 +83,37 @@ export default function CrearAlimentoSheet({ mode, onClose, onGuardar, destino, 
   const [guardando, setGuardando] = useState(false);
   const [guiaAbierta, setGuiaAbierta] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Foto de la etiqueta: rellena el formulario; nada se guarda sin pulsar «Guardar».
+  const [leyendo, setLeyendo] = useState(false);
+  const [lectura, setLectura] = useState<{ tono: 'info' | 'danger'; texto: string } | null>(null);
+  const inputFoto = useRef<HTMLInputElement>(null);
+
+  const alElegirFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const archivo = e.target.files?.[0];
+    e.target.value = ''; // permite volver a elegir la misma foto
+    if (!archivo) return;
+    setLeyendo(true);
+    setLectura(null);
+    try {
+      const l = await leerEtiqueta(archivo);
+      if (!l.legible) { setLectura({ tono: 'danger', texto: 'No se ve una tabla nutricional en la foto. Prueba con la tabla de cerca y bien enfocada.' }); return; }
+      if (l.soloPorRacion) { setLectura({ tono: 'info', texto: 'Esta etiqueta solo da valores por ración. Cópialos a mano pasándolos a 100 g.' }); return; }
+      const txt = (n: number | null) => (n == null ? '' : String(Math.round(n * 10) / 10));
+      setForm(f => ({
+        nombre: f.nombre.trim() ? f.nombre : (l.nombre ?? ''),
+        kcal: txt(l.kcal) || f.kcal,
+        hc: txt(l.hidratos) || f.hc,
+        prot: txt(l.proteinas) || f.prot,
+        grasa: txt(l.grasas) || f.grasa,
+      }));
+      setUnidad(l.unidad === 'ml' ? 'ml' : 'g');
+      setLectura({ tono: 'info', texto: l.aviso ? `Revisa los datos: ${l.aviso}` : 'Datos copiados de la foto. Revísalos con la etiqueta antes de guardar.' });
+    } catch (err) {
+      setLectura({ tono: 'danger', texto: err instanceof Error ? err.message : 'No se ha podido leer la etiqueta.' });
+    } finally {
+      setLeyendo(false);
+    }
+  };
 
   const macros: MacrosPorCien = useMemo(() => ({
     kcal: aNumero(form.kcal),
@@ -142,6 +174,15 @@ export default function CrearAlimentoSheet({ mode, onClose, onGuardar, destino, 
             ? `Corrige lo que haga falta. Las kcal se vuelven a calcular solas.`
             : `Copia lo que pone la etiqueta por 100 ${unidad}. Las kcal se comprueban solas.`}
         </p>
+
+        <input ref={inputFoto} type="file" accept="image/*" capture="environment" className="hidden" onChange={alElegirFoto} />
+        <Button variant="secondary" fullWidth disabled={leyendo} onClick={() => inputFoto.current?.click()}>
+          <span className="flex items-center justify-center gap-2">
+            <Icon name="photo_camera" size="s" />
+            {leyendo ? 'Leyendo la etiqueta…' : 'Rellenar con una foto de la etiqueta'}
+          </span>
+        </Button>
+        {lectura && <Banner tone={lectura.tono}>{lectura.texto}</Banner>}
 
         <Input
           label="Nombre del alimento"
