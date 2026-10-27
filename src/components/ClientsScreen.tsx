@@ -451,7 +451,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             <button
               type="button"
               onClick={() => setInviteOpen(true)}
-              className="flex items-center gap-1.5 font-mono text-caption font-bold uppercase text-accent-ink border border-accent/35 rounded-control px-2.5 py-1.5 whitespace-nowrap"
+              className="flex items-center gap-1.5 font-mono text-caption font-bold uppercase text-accent-ink border border-accent-line rounded-control px-2.5 py-1.5 whitespace-nowrap"
             >
               <span className="material-symbols-outlined text-body-s">person_add</span>
               Invitar atleta

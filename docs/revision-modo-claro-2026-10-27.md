@@ -37,10 +37,8 @@ Los cuatro síntomas que describe Dani tienen tres causas, y ninguna es «un col
    más grande con poco contraste» (que es exactamente lo contrario: hay 15:1 de contraste y
    demasiado peso).
 
-Y un fallo de contrato que no se ve pero está: `src/utils/tema.ts` pone la barra de estado del
-móvil en `#F4F2ED` en claro mientras `index.html` y la paleta ponen `#F8F6F2`. Dos fuentes de la
-misma verdad, desincronizadas (el propio comentario de `tema.ts` dice «si cambia aquí, cambia
-allí»).
+(Corrección: en una primera lectura anoté que `tema.ts` e `index.html` tenían fondos distintos;
+era una rama vieja. En `main` coinciden. Se quedan sincronizados al cambiar el fondo.)
 
 ---
 
@@ -290,7 +288,6 @@ Muy pocos: el re-skin del 16-09 limpió casi todo.
 | `RoadmapTimeline.tsx:56` | `#C68F14` literal | `var(--color-accent)` |
 | `BodyMeasurementsPanel.tsx:24` | `#1e1e1e #c6c9ab #fbcb1a` (colores de gráfica) | `--color-chart-*` |
 | `academy/PortadaCurso.tsx:39-44` | 12 hex de portadas de curso | decisión: son ilustración (portadas), se quedan; documentarlo |
-| `utils/tema.ts` `FONDO_POR_TEMA.claro` | `#F4F2ED` ≠ `#F8F6F2` de `index.html` | una sola fuente: leer `--p-bg` del `:root` calculado, o constante compartida |
 | Deshabilitados (`Button`, chevrones de Orden del ciclo) | `opacity-30/40` sobre el control entero | Está bien (exento), pero en claro un botón primario deshabilitado queda beige-gris casi igual que `inset`; → `bg-inset text-ink-5` sin opacidad, que es lo que hace el patrón de «Guardando» |
 
 ---

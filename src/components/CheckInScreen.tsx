@@ -94,7 +94,7 @@ function IndiceDeLaRevision({ pendientes }: { pendientes: number }) {
           <Icon name={s.icono} size="s" />
           {s.label}
           {s.id === 'revision-cuestionarios' && pendientes > 0 && (
-            <span className="rounded-full bg-warning/20 px-1.5 font-bold text-warning">{pendientes}</span>
+            <span className="rounded-full bg-warning/12 px-1.5 font-bold text-warning">{pendientes}</span>
           )}
         </button>
       ))}

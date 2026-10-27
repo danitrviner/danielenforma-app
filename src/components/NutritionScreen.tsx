@@ -2120,7 +2120,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           </div>
           <button
             onClick={() => setPhaseBanner(null)}
-            className="text-accent-ink/60 hover:text-accent-ink transition-colors flex-shrink-0"
+            className="text-accent-ink hover:text-accent-press transition-colors flex-shrink-0"
           >
             <Icon name="close" size="s" />
           </button>

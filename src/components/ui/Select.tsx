@@ -80,7 +80,7 @@ export default function Select({
             + 'text-ink pl-4 pr-10 transition-colors duration-(--duration-state) '
             + 'focus:outline-none focus:ring-1 focus:ring-inset '
             + 'disabled:opacity-40 disabled:cursor-not-allowed '
-            + `${error ? 'border-danger/55 focus:border-danger focus:ring-danger' : 'border-hairline focus:border-accent focus:ring-accent'}`
+            + `${error ? 'border-danger/55 focus:border-danger focus:ring-danger' : 'border-control-line focus:border-accent focus:ring-accent'}`
           }
         >
           {placeholder && <option value="">{placeholder}</option>}

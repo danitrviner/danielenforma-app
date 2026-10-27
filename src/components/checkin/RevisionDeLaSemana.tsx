@@ -65,7 +65,7 @@ export default function RevisionDeLaSemana({ revision, enviada, onAbrirPaso, onE
               >
                 <span
                   className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full font-mono text-caption font-bold ${
-                    p.hecho ? 'bg-success text-on-accent' : esSiguiente ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2'
+                    p.hecho ? 'bg-success text-on-fill' : esSiguiente ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2'
                   }`}
                 >
                   {p.hecho ? <Icon name="check" size="s" /> : i + 1}

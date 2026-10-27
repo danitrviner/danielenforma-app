@@ -152,7 +152,7 @@ export default function Input({
             // escala de espaciado del DS; 40 (pl-10) es el paso más cercano
             // y deja 4 px de aire tras un icono de 20 px que arranca en 16.
             + `${icon ? 'pl-10 pr-4' : 'px-4'} `
-            + `${error ? 'border-danger/55 focus:border-danger focus:ring-danger' : 'border-hairline focus:border-accent focus:ring-accent'}`
+            + `${error ? 'border-danger/55 focus:border-danger focus:ring-danger' : 'border-control-line focus:border-accent focus:ring-accent'}`
           }
         />
       </div>

@@ -215,7 +215,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
               {!readOnly && (
                 <button
                   onClick={() => setAddOpen(v => !v)}
-                  className="ml-auto flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-inset border border-hairline font-sans text-label font-bold text-accent-ink"
+                  className="ml-auto flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-raised border border-strong font-sans text-label font-bold text-accent-ink"
                 >
                   <Icon name="add" size="s" />
                   Añadir

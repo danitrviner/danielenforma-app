@@ -110,7 +110,7 @@ export default function AnadirAlimentoCalorias({
           <section key={s.titulo} className="space-y-2">
             <h3 className="px-1 font-sans text-title-s font-bold text-ink">{s.titulo}</h3>
             {s.filas.map(f => (
-              <div key={f.clave} className={`flex items-center gap-2 rounded-surface border ${f.anadido ? 'border-success/40 bg-success/10' : 'border-transparent bg-surface'}`}>
+              <div key={f.clave} className={`flex items-center gap-2 rounded-surface border ${f.anadido ? 'border-success/40 bg-success/10' : 'border-hairline bg-surface'}`}>
                 <button type="button" onClick={f.onAbrir} className="min-w-0 flex-1 py-3.5 pl-4 text-left">
                   <span className="block font-sans text-body font-bold leading-snug text-ink">
                     {f.nombre}

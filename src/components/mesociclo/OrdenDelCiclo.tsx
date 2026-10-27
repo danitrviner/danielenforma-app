@@ -103,7 +103,7 @@ export default function OrdenDelCiclo({
             <li
               key={i}
               className={`flex items-center gap-2 rounded-control border pl-3 pr-1 min-h-[44px] ${
-                descanso ? 'border-hairline bg-inset' : 'border-accent-line bg-accent/5'
+                descanso ? 'border-hairline bg-raised' : 'border-hairline bg-surface'
               }`}
             >
               <span className="font-mono text-caption text-ink-3 w-10 flex-shrink-0 tabular-nums">

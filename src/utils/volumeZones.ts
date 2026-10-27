@@ -76,5 +76,5 @@ export const VOLUME_ZONE_LEGEND = [
   { label: 'MEV',         bg: 'rgb(59 130 246 / 35%)',     text: 'color-mix(in oklab, var(--color-info) 55%, var(--color-ink))'      },
   { label: 'Productivo',  bg: 'rgb(34 197 94 / 45%)',      text: 'color-mix(in oklab, var(--color-success) 55%, var(--color-ink))'   },
   { label: 'MAV',         bg: 'rgb(249 115 22 / 55%)',     text: 'color-mix(in oklab, var(--color-warning) 55%, var(--color-ink))'   },
-  { label: 'MRV',         bg: 'rgb(239 68 68 / 65%)',      text: 'color-mix(in oklab, var(--color-danger) 55%, var(--color-ink))'    },
+  { label: 'MRV',         bg: 'rgb(239 68 68 / 55%)',      text: 'color-mix(in oklab, var(--color-danger) 55%, var(--color-ink))'    },
 ];

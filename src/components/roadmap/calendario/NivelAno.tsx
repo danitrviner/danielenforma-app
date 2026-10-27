@@ -86,7 +86,7 @@ export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth
                 {wide && (
                   <span className="flex flex-col gap-0.5 min-w-0 items-start overflow-hidden">
                     <span className="font-sans font-bold text-body-s whitespace-nowrap" style={{ letterSpacing: '-0.01em' }}>{b.nombre}</span>
-                    <span className="font-mono text-caption opacity-60 whitespace-nowrap">
+                    <span className="font-mono text-caption text-ink-3 whitespace-nowrap">
                       {MESES_CORTO[new Date(b.inicio + 'T00:00:00').getMonth()]} — {MESES_CORTO[new Date(b.fin + 'T00:00:00').getMonth()]}
                     </span>
                   </span>
@@ -134,7 +134,7 @@ export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth
               data-mes={mi}
               onClick={() => onOpenMonth(mi)}
               className="text-left bg-surface border rounded-surface px-[18px] pt-4 pb-3.5 transition-colors hover:border-accent-line"
-              style={{ borderColor: esAhora ? 'color-mix(in oklab, var(--color-accent) 35%, transparent)' : 'var(--color-hairline)', transitionDuration: '160ms' }}
+              style={{ borderColor: esAhora ? 'color-mix(in oklab, var(--color-accent) 60%, transparent)' : 'var(--color-hairline)', transitionDuration: '160ms' }}
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
