@@ -2,10 +2,11 @@
  * Agujetas por zona y la regla de freno / acelerador del curso.
  *
  * Escala del curso: 1 a 5 («apenas he notado trabajo» … «duele incluso en
- * reposo»). En la app se preguntan UNA VEZ A LA SEMANA en el DOM's 0-10 por
- * grupo (`doms.<grupo>`, decisión de Dani 27-10: nada de cuestionarios cada dos
- * días) y aquí se convierten a 1-5 con max(1, round(v / 2)). Si hubiera
- * respuestas antiguas en `agujetas.<zona>` (1-5), se usan tal cual.
+ * reposo»). Se preguntan UNA VEZ A LA SEMANA en el módulo de agujetas de «Tu
+ * semana» (paquete oficial): 1-5 por zona (`agujetas.<zona>`), con mapa corporal
+ * y solo las zonas entrenadas (decisión de Dani 27-10, PR #20). Esas se usan tal
+ * cual. Quien siga con el DOM's 0-10 por grupo (`doms.<grupo>`) también vale:
+ * se convierte a 1-5 con max(1, round(v / 2)).
  *
  * Reglas (clase de seguimiento semanal del curso; el detalle, en `propuestaZona`):
  *   5 → freno: nunca subir; reducir o pausar la carga de esa zona (sin % fijo,

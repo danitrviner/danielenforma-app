@@ -8,7 +8,7 @@ import { ewmaDeSeñal } from '../utils/wellnessTrend';
 import { agujetasPorZona } from '../utils/cdg';
 
 /**
- * Agujetas de la semana por zona de IEM (del DOM's 0-10, convertidas a 1-5) (y el sueño, que el curso pone al lado al
+ * Agujetas de la semana por zona de IEM (1-5 de «Tu semana», o del DOM's 0-10 convertidas) (y el sueño, que el curso pone al lado al
  * decidir si se sube) de un atleta. Solo coach. Mismas claves de caché que el
  * resto de la app (`responsesForAthlete`, `questionnairesByCoach`): si la ficha
  * del cliente ya las cargó, no cuesta ni una lectura más.

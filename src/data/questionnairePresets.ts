@@ -180,9 +180,9 @@ const DOMS_ZONES: { zona: string; group: MuscleGroup }[] = [
   { zona: 'HOMBRO',         group: 'deltoide_lat' },
 ];
 
-// Una vez a la semana (Dani, 27-10): es la única lectura de agujetas, también
-// para el freno/acelerador del CDG, que la convierte a 1-5. Las dos preguntas
-// de contexto del protocolo (cansancio al salir y motivación) van aquí.
+// DOM's 0-10 por grupo, una vez a la semana. El paquete oficial ya no lo usa:
+// las agujetas van en 1-5 por zona dentro de «Tu semana» (Dani, 27-10, PR #20).
+// Se conserva para quien lo tenga asignado; el CDG lo convierte a 1-5.
 const DOMS: QuestionnairePresetDef = {
   title: "DOM's o \"agujetas\"",
   description: 'Una vez a la semana. Escala de 0 (nada) a 10 (muchísimo) por grupo muscular, pensando en cómo quedaste a los dos días de entrenarlo.',
