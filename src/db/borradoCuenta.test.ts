@@ -34,6 +34,7 @@ const SIN_DATOS_DEL_ATLETA: Record<string, string> = {
   recipes: 'recetario global',
   exerciseChanges: 'historial de correcciones de clasificación de ejercicios del catálogo (E-04), solo el coach: ningún dato de atletas',
   catalogoAlimentos: 'catálogo de alimentos por 100 g (N-04), igual para todos: ningún dato de atletas',
+  productosCorregidos: 'productos de supermercado corregidos por el coach, iguales para todos: ningún dato de atletas',
   recipeAccess: 'lista global de recetas para el generador de menús (N-03), sin ningún atleta',
   maquinas: 'catálogo global de máquinas de gimnasio',
   cdgCatalogo: 'catálogo CDG (Índice de hipertrofia), solo lectura del coach: ningún dato de atletas',

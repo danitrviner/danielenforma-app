@@ -1,5 +1,6 @@
 import type { DietItem } from '../types';
 import { normalizarTexto } from './busqueda';
+import { palabrasDeConsulta } from './offPalabras';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Productos de Open Food Facts en local (D-04)
@@ -66,7 +67,7 @@ export function prepararIndiceOff(items: Array<[string, string, string]>): Entra
 export function buscarEnIndiceOff(indice: EntradaIndiceOff[], termino: string, limite = 15): EntradaIndiceOff[] {
   const t = normalizarTexto(termino);
   if (t.length < MIN_LETRAS_BUSQUEDA_OFF) return [];
-  const palabras = t.split(' ');
+  const palabras = palabrasDeConsulta(t);
   const empiezan: EntradaIndiceOff[] = [];
   const contienen: EntradaIndiceOff[] = [];
   for (const e of indice) {
@@ -75,6 +76,98 @@ export function buscarEnIndiceOff(indice: EntradaIndiceOff[], termino: string, l
     if (empiezan.length >= limite) break;
   }
   return [...empiezan, ...contienen].slice(0, limite);
+}
+
+/**
+ * Junta los resultados del índice de los más escaneados (van delante) con los
+ * del trozo de toda la copia, sin repetir código ni el mismo nombre y marca:
+ * Open Food Facts tiene el mismo producto con varios códigos.
+ */
+export function mezclarResultadosOff(listas: EntradaIndiceOff[][], limite = 15): EntradaIndiceOff[] {
+  const codigos = new Set<string>();
+  const nombres = new Set<string>();
+  const out: EntradaIndiceOff[] = [];
+  for (const e of listas.flat()) {
+    const clave = normalizarTexto(`${e.n}|${e.b}`);
+    if (codigos.has(e.c) || nombres.has(clave)) continue;
+    codigos.add(e.c);
+    nombres.add(clave);
+    out.push(e);
+    if (out.length >= limite) break;
+  }
+  return out;
+}
+
+/* ── Consulta en directo (productos que no están en la copia) ──────────────── */
+
+/** Los valores de `nutriments` que se leen de la API: lo mismo que guarda el generador. */
+const MICROS_API: Array<[string, string, number]> = [
+  ['sodio', 'sodium_100g', 1000], ['potasio', 'potassium_100g', 1000], ['calcio', 'calcium_100g', 1000],
+  ['hierro', 'iron_100g', 1000], ['magnesio', 'magnesium_100g', 1000], ['zinc', 'zinc_100g', 1000],
+  ['vitA', 'vitamin-a_100g', 1e6], ['vitC', 'vitamin-c_100g', 1000], ['vitD', 'vitamin-d_100g', 1e6],
+  ['vitB12', 'vitamin-b12_100g', 1e6], ['folato', 'folates_100g', 1e6], ['omega3', 'omega-3-fat_100g', 1],
+];
+const EXTRAS_API: Array<['f' | 'az' | 'sat' | 'sal', string]> = [['f', 'fiber_100g'], ['az', 'sugars_100g'], ['sat', 'saturated-fat_100g'], ['sal', 'salt_100g']];
+
+/** Producto tal y como lo devuelve `GET /api/v3/product/{código}` (solo los campos pedidos). */
+export interface ProductoApiOff {
+  code?: string;
+  product_name?: string;
+  product_name_es?: string;
+  brands?: string;
+  quantity?: string;
+  serving_quantity?: number | string;
+  nutriscore_grade?: string;
+  nutriments?: Record<string, unknown>;
+}
+
+const numero = (v: unknown): number | null => {
+  if (v === undefined || v === null || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+/**
+ * Un producto de la API, con las MISMAS reglas que el generador de la copia
+ * (`scripts/generarOpenFoodFacts.mjs`): con kcal y los tres macros coherentes
+ * es completo; con nombre pero sin datos utilizables, incompleto; sin nombre,
+ * nada.
+ */
+export function productoDesdeApiOff(p: ProductoApiOff, codigo: string): OffRegistro | null {
+  const nombre = (p.product_name_es || p.product_name || '').trim();
+  if (!nombre) return null;
+  const c = (p.code || codigo).trim();
+  const b = (p.brands ?? '').split(',')[0].trim().slice(0, 60);
+  const q = (p.quantity ?? '').trim().slice(0, 30);
+  const nu = p.nutriments ?? {};
+  // Si la etiqueta solo da kJ, las kcal salen de ahí (1 kcal = 4,184 kJ).
+  const kj = numero(nu['energy-kj_100g']);
+  const k = numero(nu['energy-kcal_100g']) ?? (kj !== null ? kj / 4.184 : null);
+  const pr = numero(nu.proteins_100g); const h = numero(nu.carbohydrates_100g); const g = numero(nu.fat_100g);
+  const base = { c, n: nombre.slice(0, 120), b, ...(q ? { q } : {}) };
+  const fal = (([['k', k], ['p', pr], ['h', h], ['g', g]] as const)
+    .filter(([, v]) => v === null || v < 0).map(([x]) => x)) as Array<'k' | 'p' | 'h' | 'g'>;
+  if (fal.length > 0) return { ...base, i: 1, fal };
+  const kcal = k as number; const prot = pr as number; const hc = h as number; const gr = g as number;
+  const estimadas = 4 * prot + 4 * hc + 9 * gr;
+  if (kcal > 950 || prot + hc + gr > 105 || (Math.abs(kcal - estimadas) > 50 && Math.abs(kcal - estimadas) > 0.35 * Math.max(kcal, estimadas))) {
+    return { ...base, i: 2 };
+  }
+  const r: OffProducto = { ...base, k: Math.round(kcal), p: cifra(prot), h: cifra(hc), g: cifra(gr) };
+  const s = numero(p.serving_quantity); if (s && s > 0 && s < 2000) r.s = s;
+  for (const [clave, campo] of EXTRAS_API) {
+    const v = numero(nu[campo]);
+    if (v !== null && v >= 0 && v <= 100) r[clave] = cifra(v);
+  }
+  const m: Record<string, number> = {};
+  for (const [clave, campo, factor] of MICROS_API) {
+    const v = numero(nu[campo]);
+    if (v !== null && v > 0 && v <= 100) m[clave] = cifra(v * factor);
+  }
+  if (Object.keys(m).length) r.m = m;
+  const ns = (p.nutriscore_grade ?? '').trim();
+  if (/^[a-e]$/.test(ns)) r.ns = ns;
+  return r;
 }
 
 const r1 = (n: number) => Math.round(n * 10) / 10;

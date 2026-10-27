@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Sheet, Icon, Banner, Select } from '../../ui';
-import { getProductoOff } from '../../../services/openFoodFacts';
+import { resolverProducto } from '../../../services/openFoodFacts';
 import { esIncompleto, motivoDeIncompleto } from '../../../utils/productoOff';
 import { nutrientesDeRacion } from '../../../utils/productoAIntercambios';
 
@@ -305,7 +305,7 @@ export function racionesDe(opc: { ultimos?: number; racion?: number; unidad?: { 
 export function FichaProductoOff({ codigo, nombre, marca, ultimos, onIncompleto, ...resto }: Omit<FichaProps, 'porCien' | 'raciones' | 'nombre'> & {
   codigo: string; nombre: string; ultimos?: number; onIncompleto?: (p: { n: string; c: string }) => void;
 }) {
-  const { data, isPending, isError } = useQuery({ queryKey: ['offProducto', codigo], queryFn: () => getProductoOff(codigo), staleTime: Infinity });
+  const { data, isPending, isError } = useQuery({ queryKey: ['offProducto', codigo], queryFn: () => resolverProducto(codigo), staleTime: Infinity });
   if (data && !esIncompleto(data)) {
     return (
       <FichaAlimentoCalorias

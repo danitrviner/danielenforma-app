@@ -10,6 +10,7 @@
  * y escribe:
  *   <salida>/indice.json      los N más escaneados (solo completos): [código, nombre, marca]
  *   <salida>/p/NNN.json       todos los registros, repartidos en 1000 trozos
+ *   <salida>/n/xxx.json       los completos por las primeras letras de cada palabra (_lib/offPalabras.mjs)
  *   <salida>/resumen.json     cifras de la pasada
  *
  * Uso:
@@ -21,6 +22,7 @@ import { StringDecoder } from 'node:string_decoder';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { trozoDeCodigo, NUM_TROZOS } from './_lib/offBucket.mjs';
+import { escribirIndicePalabras } from './_lib/offPalabras.mjs';
 
 const salida = process.argv[2];
 const nIndice = Number(process.argv[3] ?? 30000);
@@ -115,4 +117,5 @@ const conMicros = productos.filter(p => p.micros).length;
 const resumen = { fecha: new Date().toISOString(), total, espana, validos, noCuadra, faltanDatos, enIndice: indice.length, conMicros,
   conFibra: productos.filter(p => p.fibra).length, conSal: productos.filter(p => p.sal).length };
 writeFileSync(join(salida, 'resumen.json'), JSON.stringify(resumen, null, 2));
+console.log('Índice por palabras:', escribirIndicePalabras(salida));
 console.log('FIN', resumen);

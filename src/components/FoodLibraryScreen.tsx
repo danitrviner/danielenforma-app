@@ -10,6 +10,7 @@ import { EmptyState, Dialog, Button, Select } from './ui';
 import { coincideBusqueda } from '../utils/busqueda';
 import { coincidePorEquivalencia } from '../utils/equivalenciasDeAlimentos';
 import CrearAlimentoSheet from './nutrition/CrearAlimentoSheet';
+import CorregirProductoSheet from './nutrition/CorregirProductoSheet';
 
 const SYSTEM_LABELS = new Set(SYSTEM_FOODS.map(f => f.label));
 
@@ -63,6 +64,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [calculadoraAbierta, setCalculadoraAbierta] = useState(false);
   const [alimentoAEditar, setAlimentoAEditar] = useState<MealItem | null>(null);
+  const [corregirProducto, setCorregirProducto] = useState(false);
 
   const isSystem = (item: MealItem) => SYSTEM_LABELS.has(item.label);
 
@@ -116,6 +118,21 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
 
   return (
     <div className="pantalla space-y-6">
+      {/* Productos de supermercado (Open Food Facts): no viven en este banco,
+          pero si uno sale mal al escanearlo, se corrige desde aquí. */}
+      <button
+        type="button"
+        onClick={() => setCorregirProducto(true)}
+        className="flex w-full items-center gap-3 rounded-surface border border-hairline bg-surface p-4 text-left transition-colors hover:border-accent/40"
+      >
+        <span className="material-symbols-outlined text-ink-2">qr_code_scanner</span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-sans text-body-s font-semibold text-ink">Corregir un producto del supermercado</span>
+          <span className="block font-sans text-caption text-ink-2">Si un producto escaneado sale con datos mal, arréglalo para todos tus atletas.</span>
+        </span>
+        <span className="material-symbols-outlined text-ink-3">chevron_right</span>
+      </button>
+
       {/* Mode selector */}
       <div className="flex gap-2 flex-wrap">
         {MODES.map(m => (
@@ -345,6 +362,12 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
         />
       )}
 
+      {corregirProducto && (
+        <CorregirProductoSheet
+          onClose={() => setCorregirProducto(false)}
+          onGuardado={m => showToast(m, 'success')}
+        />
+      )}
     </div>
   );
 }
