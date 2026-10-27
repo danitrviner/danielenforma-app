@@ -270,16 +270,18 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   };
 
   return (
-    <div className="pantalla space-y-6">
+    <div className="pantalla pantalla-b space-y-6">
       {/* Tu revisión de esta semana: el recorrido único (K-03). Se oculta sola
           fuera de la ventana de revisión (viernes a lunes). */}
       {!loadingQ && !loadingPhotoAssignments && (
+        <div className="protagonista">
         <RevisionDeLaSemana
           revision={revision}
           enviada={!!progreso?.enviadaEn}
           onAbrirPaso={abrirPaso}
           onEnviar={enviarRevision}
         />
+        </div>
       )}
 
       {/* Peso corporal (handoff §1) — primera sección, antes del check-in

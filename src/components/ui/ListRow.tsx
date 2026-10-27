@@ -75,7 +75,7 @@ export default function ListRow({
   );
 
   const claseInteractiva =
-    'flex w-full min-h-[52px] items-center gap-3 rounded-control px-3 py-3 text-left transition-[background-color,transform] duration-(--duration-base) ease-brand active:scale-[.985] '
+    'flex w-full min-h-[52px] items-center gap-3 rounded-control px-3 py-3 text-left fila-pulsable '
     + 'hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line '
     + 'disabled:opacity-40 disabled:pointer-events-none';
 

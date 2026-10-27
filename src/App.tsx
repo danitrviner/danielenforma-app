@@ -1321,7 +1321,10 @@ function AppContent() {
                   + (activa ? '-translate-y-px text-accent-ink' : 'text-ink-2')
                 }
               >
-                <Icon name={tab.icon} size="l" filled={activa} />
+                {/* `key` cambia con el estado: el icono elegido se remonta y hace su pop. */}
+                <span key={activa ? 'on' : 'off'} className={activa ? 'inline-flex animate-pop' : 'inline-flex'}>
+                  <Icon name={tab.icon} size="l" filled={activa} />
+                </span>
                 {tab.id === 'home' && !isCoach && gimnasioPendiente && (
                   <span
                     aria-label="Tienes el catálogo de máquinas a medias"

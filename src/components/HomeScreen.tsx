@@ -247,7 +247,7 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
   const cardioRowRef = useTourTarget('home-cardio-row');
 
   return (
-    <div className="pantalla space-y-6">
+    <div className="pantalla pantalla-b space-y-6">
       {pedirConsentimiento && onboarding && (
         <SolicitudConsentimientoIA onboarding={onboarding} onAhoraNo={aplazar} />
       )}
@@ -332,7 +332,7 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         <>
           {/* ── Tarjeta primaria: entreno de fuerza, salvo día de descanso con cardio prescrito ── */}
           {!cardioIsPrimary && todayAssignment && (
-            <section ref={primaryCardRef} className={`rounded-canvas p-5 border ${todayAssignment.status === 'completed' ? 'bg-success/8 border-success/25' : 'bg-surface border-hairline'}`}>
+            <section ref={primaryCardRef} className={`protagonista rounded-canvas p-5 border ${todayAssignment.status === 'completed' ? 'bg-success/8 border-success/25' : 'bg-surface border-hairline'}`}>
               <p className="text-caption font-mono uppercase tracking-wider text-ink-2">
                 Entreno de hoy{todayWorkout && ` · ${todayWorkout.exercises.length} ejercicio${todayWorkout.exercises.length === 1 ? '' : 's'}`}
               </p>
@@ -349,7 +349,7 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
           )}
 
           {cardioIsPrimary && cardioRx && (
-            <section ref={primaryCardRef} className="rounded-canvas p-5 border bg-surface border-hairline">
+            <section ref={primaryCardRef} className="protagonista rounded-canvas p-5 border bg-surface border-hairline">
               <p className="text-caption font-mono uppercase tracking-wider text-ink-2">Día de descanso · Cardio</p>
               <p className="font-display text-feature font-black uppercase text-ink mt-1">
                 {cardioRx.type === 'zona2' ? 'Zona 2' : 'Intervalos'}

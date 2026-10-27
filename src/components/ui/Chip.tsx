@@ -91,7 +91,7 @@ export default function Chip({
           disabled={disabled}
           aria-label="Quitar"
           className={
-            'flex h-5 w-5 items-center justify-center rounded-full '
+            'relative zona-tactil flex h-5 w-5 items-center justify-center rounded-full '
             + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line '
             + (disabled ? 'pointer-events-none' : 'hover:bg-strong')
           }

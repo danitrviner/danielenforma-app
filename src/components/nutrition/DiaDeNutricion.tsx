@@ -178,7 +178,7 @@ export function TarjetaDelDia(p: {
               <span className="block font-sans text-body-s font-bold text-ink">{m.etiqueta}</span>
               <span className={`block font-mono text-caption ${pasado ? 'text-danger' : 'text-ink-2'}`}>{p.fmtMacro(m.comido, m.objetivo)}</span>
               <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-hairline">
-                <span className="block h-full rounded-full transition-[width] duration-(--duration-bar) ease-brand" style={{ width: `${m.objetivo > 0 ? Math.min(100, (m.comido / m.objetivo) * 100) : 0}%`, background: pasado ? 'var(--color-danger)' : m.color }} />
+                <span className="block h-full origin-left animate-scale-x-in rounded-full transition-[width] duration-(--duration-bar) ease-brand" style={{ width: `${m.objetivo > 0 ? Math.min(100, (m.comido / m.objetivo) * 100) : 0}%`, background: pasado ? 'var(--color-danger)' : m.color }} />
               </span>
             </div>
           );

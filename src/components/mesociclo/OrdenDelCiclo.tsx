@@ -39,7 +39,7 @@ const BotonFlecha: React.FC<{ dir: -1 | 1; disabled: boolean; onClick: () => voi
     disabled={disabled}
     onClick={onClick}
     aria-label={`Mover ${nombre} ${dir < 0 ? 'antes' : 'después'}`}
-    className="w-8 h-8 flex items-center justify-center rounded-control text-ink-3 hover:text-ink hover:bg-raised disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+    className="relative zona-tactil w-8 h-8 flex items-center justify-center rounded-control text-ink-3 hover:text-ink hover:bg-raised disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
   >
     <Icon name={dir < 0 ? 'chevron_left' : 'chevron_right'} size="s" />
   </button>

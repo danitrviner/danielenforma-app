@@ -63,7 +63,7 @@ const AthleteRow = React.memo(function AthleteRow({ athlete, onOpen }: {
   return (
     <button
       onClick={() => onOpen(athlete)}
-      className="flex items-center gap-3 bg-raised border border-hairline rounded-control px-3 py-2.5 text-left hover:border-accent/40 transition-colors"
+      className="fila-pulsable flex items-center gap-3 bg-raised border border-hairline rounded-control px-3 py-2.5 text-left hover:border-accent/40"
     >
       {/* El nombre es lo que el coach viene a buscar, así que manda en la fila:
           sube de 12 px a 15 px (`text-body`) y el avatar crece con él. Antes el
