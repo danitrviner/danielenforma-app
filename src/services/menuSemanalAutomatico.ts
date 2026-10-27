@@ -9,6 +9,7 @@ import { listaDeMenuVigente } from '../utils/accesoARecetas';
 import { quiereAlgunaDieta } from '../utils/seleccionDeRecetas';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
+import { senalesDeCambios } from '../utils/gustosDelAtleta';
 import type { DishType } from '../utils/dishTypes';
 import { semanaQueNecesitaMenu, ajustesDeLaSemana, aplicarAjustes, gramosDeMantenimiento } from '../utils/semanasNutricion';
 import { calendarioDeMenu } from '../utils/objetivoDelDia';
@@ -29,7 +30,8 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
   const hoy = hoyIsoLocal();
   const [program, publicado] = await Promise.all([getNutritionProgram(athleteEmail), getPublishedMenu(athleteEmail)]);
   if (!program || !publicado) return null;
-  const borradores = (await getWeeklyMenusForAthlete(athleteEmail)).filter(m => m.status === 'draft');
+  const todosLosMenus = await getWeeklyMenusForAthlete(athleteEmail);
+  const borradores = todosLosMenus.filter(m => m.status === 'draft');
   const semana = semanaQueNecesitaMenu(program, publicado, borradores, hoy);
   if (semana == null) return null;
 
@@ -69,6 +71,8 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
     listaMenu: listaDeMenuVigente(reglas.listaMenu, acceso.listaMenu),
     seleccion: reglas.seleccion,
     paquetes: acceso.paquetes ?? [],
+    // Lo que ha cambiado en sus menús anteriores: recetas que quita, alimentos que sustituye.
+    cambios: senalesDeCambios(todosLosMenus),
   };
   const tambien = quiereAlgunaDieta(prefs.seleccion, prefs.paquetes);
   const pools: Record<number, Recipe[]> = {};
