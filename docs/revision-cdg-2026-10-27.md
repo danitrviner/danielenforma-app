@@ -1,6 +1,6 @@
 # Revisión CDG de punta a punta · 27-10-2026
 
-Rama `revision-cdg` (desde `origin/main` `ba07fef`), worktree `~/en-forma-revision-cdg`. **Sin commits, sin push, sin escrituras en Firestore**: solo lecturas con la clave y simulacros. No se ha tocado ninguna fórmula de `motor.ts` ni `seguimiento.ts`.
+Rama `revision-cdg` (desde `origin/main` `ba07fef`), worktree `~/en-forma-revision-cdg`. Estado final: commit `c6b84dd`, subida y en la PR #19 contra `main` (mergeable). Escrituras en Firestore solo las aprobadas por Dani (arreglo de `exercises` e índice de `questionnaireResponses`). No se ha tocado ninguna fórmula de `motor.ts` ni `seguimiento.ts`.
 
 La guía `~/Desktop/Clases de Hacker Gym/Guia-Indice-de-Hipertrofia.md` **ya no está en esa ruta** (la carpeta solo tiene `Transcripciones/` y `output.mp4`); las reglas se han contrastado contra las 28 transcripciones. Donde cito «clase», es el archivo de `Transcripciones/`.
 
