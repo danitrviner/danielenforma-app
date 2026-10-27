@@ -54,9 +54,9 @@ export function DonutMacros({ kcal, p, hc, g, size = 96 }: { kcal: number; p: nu
   const c = 2 * Math.PI * r;
   const tramos = total > 0
     ? [
-      { v: (hc * 4) / total, color: 'var(--color-macro-hc)' },
-      { v: (g * 9) / total, color: 'var(--color-macro-grasa)' },
-      { v: (p * 4) / total, color: 'var(--color-macro-prot)' },
+      { v: (hc * 4) / total, color: 'var(--color-macro-hc-fill)' },
+      { v: (g * 9) / total, color: 'var(--color-macro-grasa-fill)' },
+      { v: (p * 4) / total, color: 'var(--color-macro-prot-fill)' },
     ]
     : [];
   let acumulado = 0;

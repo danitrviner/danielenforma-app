@@ -251,6 +251,13 @@
   --color-hairline: var(--p-hairline);
   --color-strong: var(--p-strong);
   --color-accent-line: var(--p-accent-line);
+  /* 27-10: borde de un CONTROL de formulario (input, select, textarea,
+     buscador). Es un token aparte porque `hairline` es un separador: sobre
+     papel medía 1,27:1 y el campo, blanco sobre blanco, no existía. Aquí es
+     la línea que WCAG pide para el contorno de un control (3:1): tinta al
+     46 % en claro; en oscuro vale lo mismo que `strong`, porque allí el
+     relleno `field` ya distingue el campo y la línea solo acompaña. */
+  --color-control-line: var(--p-control-line);
 
   /* ── Marca · 2 ──────────────────────────────────────────────────────────────
      El oro significa exactamente una cosa: lo siguiente que tienes que hacer.
@@ -380,6 +387,15 @@
   --color-macro-grasa:     var(--p-macro-grasa);
   --color-macro-mix-hc:    var(--p-macro-mix-hc);
   --color-macro-mix-grasa: var(--p-macro-mix-grasa);
+  /* 27-10: el macro cuando hace de RELLENO (anillo de kcal, barra de macros,
+     segmento del donut), no de texto. Mismo desdoble que el oro: para que el
+     amarillo de hidratos se lea como texto sobre papel hay que bajarlo hasta
+     un ocre que Dani vetó («esa tonalidad no existe en la app»); como relleno
+     de un trazo grueso sobre una pista gris puede ser el ámbar de verdad. En
+     oscuro valen lo mismo que el texto. Solo los tres macros con anillo. */
+  --color-macro-hc-fill:    var(--p-macro-hc-fill);
+  --color-macro-prot-fill:  var(--p-macro-prot-fill);
+  --color-macro-grasa-fill: var(--p-macro-grasa-fill);
 
   /* ── Zonas de FC · 5 + fuera ────────────────────────────────────────────────
      Las zonas tienen el mismo desdoble que el oro, y por el mismo motivo. El
@@ -561,7 +577,7 @@
 /* ── Claro ─────────────────────────────────────────────────────────────────
    No es «el oscuro invertido». En oscuro la elevación sube de negro hacia
    gris; en claro el papel NO puede subir por encima del blanco, así que la
-   escalera se reordena: la página es un hueso cálido, la tarjeta es blanca, y
+   escalera se reordena: la página es un gris tibio, la tarjeta es blanca, y
    lo hundido baja. `raised` y `surface` comparten valor a propósito —una
    tarjeta sobre otra tarjeta se separa con el borde `hairline`, igual que en
    oscuro— y lo que en oscuro era «más claro que su padre» aquí es «más
@@ -573,16 +589,26 @@
   color-scheme: light;
 
   /* Superficies */
-  --p-bg:      #F8F6F2;
+  /* 27-10 (revisión del modo claro, decisión de Dani): la página pasa del
+     crema #F8F6F2 a un gris tibio, el gris con un 2 % de cálido que usan
+     iOS y macOS en sus fondos agrupados. Lee como gris pero no ensucia el
+     oro. Y la escalera gana escalones de verdad:
+       · la página es gris tibio;
+       · lo que contiene (tarjeta, hoja, barra) es blanco: 1,12:1, se lee;
+       · lo que SE TOCA dentro de blanco (chip, campo, botón de icono, pista
+         del segmentado, toast) vuelve a ser el gris de la página —`raised` y
+         `field` valen lo mismo que `bg` a propósito: un control dentro de
+         una tarjeta es «un escalón abajo», no «casi blanco». El #FAF9F6 de
+         antes medía 1,05:1 contra la tarjeta: no existía;
+       · lo hundido (`inset`) baja otro escalón (1,125:1 contra la página);
+       · `track` es solo pista de barra.
+     Nada es «casi blanco». */
+  --p-bg:      #F3F2F0;
   --p-surface: #FFFFFF;
-  /* `raised` vive DENTRO de tarjetas blancas (chips, filas, hover del botón
-     fantasma, Badge neutral): con #FFF idéntico a `surface` desaparecía.
-     Blanco roto, entre `surface` (#FFF) y `bg` (#F8F6F2): 1,04:1 contra la
-     tarjeta, lo justo para leerse como «un escalón» sin ensuciarla. */
-  --p-raised:  #FAF9F6;
-  --p-field:   #FFFFFF;
-  --p-inset:   #EBE8E1;
-  --p-track:   #DFDBD2;
+  --p-raised:  #F3F2F0;
+  --p-field:   #F3F2F0;
+  --p-inset:   #E6E5E2;
+  --p-track:   #DAD9D5;
 
   /* Texto — mismas cinco alfas que en oscuro, sobre tinta cálida en vez de
      sobre hueso. 15,9:1 el principal sobre la página: de sobra. */
@@ -604,9 +630,20 @@
   /* Líneas — negro con alfa, no blanco. Un poco más marcadas que en oscuro:
      sobre papel una línea al 7 % desaparece, y aquí el borde es lo único que
      define una tarjeta blanca sobre una página casi blanca. */
-  --p-hairline:    rgba(27, 25, 22, 0.12);
-  --p-strong:      rgba(27, 25, 22, 0.18);
-  --p-accent-line: rgba(154, 110, 12, 0.55);
+  /* 27-10: hairline sube al 14 % (separador y borde de tarjeta blanca sobre
+     el gris); `strong` al 30 % es el borde de un control en reposo (chip,
+     botón secundario neutro) y su hover; `control-line` al 46 % (#969594,
+     2,98:1 sobre blanco) es el contorno de un campo. Medido: al 12 % y al
+     18 % ningún borde de la app pasaba de 1,5:1. */
+  --p-hairline:     rgba(27, 25, 22, 0.14);
+  --p-strong:       rgba(27, 25, 22, 0.30);
+  --p-control-line: rgba(27, 25, 22, 0.46);
+  /* Oro al 55 % medía 2,06:1 sobre el papel: el borde del botón secundario,
+     el anillo de foco y el contorno del chip seleccionado no llegaban al 3:1.
+     Pasa a ser el oro pulsado SÓLIDO (4,0:1 sobre blanco, 3,8 sobre la
+     página). Ya no es «oro con alfa», pero el nombre se queda: sigue siendo
+     la línea de oro, y 120 consumidores no tienen por qué enterarse. */
+  --p-accent-line: #A87510;
 
   /* Marca. `accent` se oscurece lo justo para que el relleno siga leyéndose
      como ORO (6,2:1 con la tinta encima) y `accent-ink` baja hasta el ámbar
@@ -664,16 +701,24 @@
      proteína azul, grasa naranja, mezclas violeta y rosa) y baja hasta pasar
      4,5:1 sobre su propio tinte al 10 %, que es como se pintan las pastillas
      de categoría. Medido: 5,8 / 5,7 / 6,0 / 5,9 / 5,2. */
-  --p-macro-hc:        #7D5300;
+  /* 27-10: hidratos como TEXTO deja de ser el ocre #7D5300 (Dani: «esa
+     tonalidad no existe en la app») y pasa a ser `accent-ink`, el único oro
+     de texto que la app ya usa en enlaces y cifras. 5,16:1 sobre su tinte.
+     Como RELLENO (anillo, barra, donut) cada macro tiene su `-fill`: ámbar,
+     azul y naranja de verdad, sobre la pista gris. */
+  --p-macro-hc:        #875C05;
   --p-macro-prot:      #1D4FD8;
   --p-macro-grasa:     #8F4208;
   --p-macro-mix-hc:    #6A3BC4;
   --p-macro-mix-grasa: #B32573;
+  --p-macro-hc-fill:    #D9A21B;
+  --p-macro-prot-fill:  #2F6BD4;
+  --p-macro-grasa-fill: #E8732A;
 
   /* Zonas como texto. Medido sobre su tinte/10: 5,6 / 5,9 / 5,8 / 5,2 / 5,8. */
   --p-zone-1-ink:   #1F5FA8;
   --p-zone-2-ink:   #0A6375;
-  --p-zone-3-ink:   #7D5300;
+  --p-zone-3-ink:   #875C05;   /* el mismo oro de texto que accent-ink, no el ocre */
   --p-zone-4-ink:   #A8420A;
   --p-zone-5-ink:   #B02219;
   --p-zone-out-ink: #4B5563;
@@ -706,9 +751,13 @@
   --p-ink-5:     rgba(245, 245, 244, 0.32);
   --p-on-accent: #121212;
 
-  --p-hairline:    rgba(255, 255, 255, 0.07);
-  --p-strong:      rgba(255, 255, 255, 0.12);
-  --p-accent-line: rgba(227, 179, 65, 0.45);
+  --p-hairline:     rgba(255, 255, 255, 0.07);
+  --p-strong:       rgba(255, 255, 255, 0.12);
+  --p-control-line: rgba(255, 255, 255, 0.12);   /* = strong: el relleno `field` ya distingue el campo */
+  /* 27-10: del 45 % (2,83:1) al 60 % (4,0:1) para que el borde del botón
+     secundario pase el 3:1 también aquí. Es el único valor de oscuro que
+     cambia en la revisión del modo claro. */
+  --p-accent-line: rgba(227, 179, 65, 0.60);
 
   --p-accent:       #E3B341;
   --p-accent-press: #C79B32;
@@ -750,6 +799,10 @@
   --p-macro-grasa:     #fdba74;
   --p-macro-mix-hc:    #c4b5fd;
   --p-macro-mix-grasa: #f9a8d4;
+  /* En oscuro el texto ya es brillante: el relleno vale lo mismo. */
+  --p-macro-hc-fill:    #fcd34d;
+  --p-macro-prot-fill:  #93c5fd;
+  --p-macro-grasa-fill: #fdba74;
 
   /* En oscuro, idénticos al relleno: el color de señal ya se lee sobre negro. */
   --p-zone-1-ink:   #4a90d9;

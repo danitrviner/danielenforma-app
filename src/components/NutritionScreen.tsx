@@ -2175,9 +2175,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   etiquetaComido="comido"
                   pie="kcal"
                   macros={[
-                    { etiqueta: 'Hidratos', comido: resumenMacros.hc, objetivo: objetivoDia.hc, color: 'var(--color-macro-hc)' },
-                    { etiqueta: 'Grasa', comido: resumenMacros.g, objetivo: objetivoDia.g, color: 'var(--color-macro-grasa)' },
-                    { etiqueta: 'Proteína', comido: resumenMacros.p, objetivo: objetivoDia.p, color: 'var(--color-macro-prot)' },
+                    { etiqueta: 'Hidratos', comido: resumenMacros.hc, objetivo: objetivoDia.hc, color: 'var(--color-macro-hc-fill)' },
+                    { etiqueta: 'Grasa', comido: resumenMacros.g, objetivo: objetivoDia.g, color: 'var(--color-macro-grasa-fill)' },
+                    { etiqueta: 'Proteína', comido: resumenMacros.p, objetivo: objetivoDia.p, color: 'var(--color-macro-prot-fill)' },
                   ]}
                   fmtMacro={(c, o) => `${numEs(c)}/${numEs(o)} g`}
                   cerrado={dayClosed}
@@ -2245,9 +2245,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       {(() => {
                         const r = resumenDelDia([meal], hechosDelDia);
                         const macrosComida = ([
-                          ['HC', 'var(--color-macro-hc)', r.hc],
-                          ['P', 'var(--color-macro-prot)', r.p],
-                          ['G', 'var(--color-macro-grasa)', r.g],
+                          ['HC', 'var(--color-macro-hc-fill)', r.hc],
+                          ['P', 'var(--color-macro-prot-fill)', r.p],
+                          ['G', 'var(--color-macro-grasa-fill)', r.g],
                         ] as const).map(([etiqueta, color, comido]) => ({ etiqueta, color, comido, objetivo: 0 }))
                           .filter(m => m.comido > 0);
                         return (

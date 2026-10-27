@@ -31,7 +31,7 @@ export type PreferenciaDeTema = 'sistema' | 'claro' | 'oscuro';
 export const CLAVE_TEMA = 'enforma_tema_v1';
 
 /** Color de la barra de estado del móvil por tema. Son los dos `--p-bg`. */
-const FONDO_POR_TEMA = { claro: '#F8F6F2', oscuro: '#121212' } as const;
+const FONDO_POR_TEMA = { claro: '#F3F2F0', oscuro: '#121212' } as const;
 
 function esPreferencia(v: unknown): v is PreferenciaDeTema {
   return v === 'sistema' || v === 'claro' || v === 'oscuro';
