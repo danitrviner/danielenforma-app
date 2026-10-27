@@ -11,6 +11,7 @@ import { getOrCreateUserProfile, getCheckIns, getOnboarding, getWorkoutAssignmen
 import { useGimnasioPendiente } from './features/gimnasio/RecordatorioGimnasioCard';
 import { useRevisionesSinLeer } from './hooks/useRevisionesSinLeer';
 import { useRevisionDeLaSemana } from './hooks/useRevisionDeLaSemana';
+import { ajustesRevisionDe } from './utils/cicloRevision';
 import NotificationBell from './components/NotificationBell';
 import HojaHerramientas from './components/HojaHerramientas';
 import TutorialEngine from './features/tutorial/TutorialEngine';
@@ -557,7 +558,7 @@ function AppContent() {
   /* Insignia del «+» del atleta: pasos que le faltan de la revisión semanal.
      Igual que la del coach, solo LEE de la caché (`false`): se rellena cuando
      abre Check-ins o la hoja del «+», que son las que cargan esos datos. */
-  const { faltan: pasosDeRevision } = useRevisionDeLaSemana(!isCoach && profile ? profile.email : '', false);
+  const { faltan: pasosDeRevision } = useRevisionDeLaSemana(!isCoach && profile ? profile.email : '', false, ajustesRevisionDe(profile));
 
   /* Cuántas propuestas del asistente están sin decidir. Solo para el
      contador de la cabecera de móvil; comparte clave (y caché) con la bandeja
@@ -1358,6 +1359,7 @@ function AppContent() {
           open={herramientasAbiertas}
           onClose={() => setHerramientasAbiertas(false)}
           athleteEmail={profile.email}
+          ajustesRevision={ajustesRevisionDe(profile)}
           onGo={goToNav}
         />
       )}

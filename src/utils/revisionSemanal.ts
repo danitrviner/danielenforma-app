@@ -76,7 +76,7 @@ const comoAsignacion = (p: PhotoAssignment): QuestionnaireAssignment =>
   ({ id: p.id, questionnaireId: '', athleteId: p.athleteId, schedule: p.schedule, startDate: p.startDate, active: p.active, createdAt: p.createdAt });
 
 export function revisionDeLaSemana(e: EntradaRevision): RevisionSemanal {
-  const ciclo = viernesDelCiclo(e.hoy);
+  const ciclo = viernesDelCiclo(e.hoy, e.scheduleCtx?.diaRevision);
   const caduca = martesDeCaducidad(ciclo);
   const progreso = e.progreso?.ciclo === ciclo ? e.progreso : null;
   // Desde cuándo vale un peso o una foto como «de esta revisión». Entre martes y

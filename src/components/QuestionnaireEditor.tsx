@@ -53,6 +53,7 @@ export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   boolean: 'Sí / No',
   metric:  'Medida corporal',
   media:   'Foto / Vídeo',
+  keep_change: 'Mantener / cambiar',
 };
 
 const BODY_METRIC_KEYS = Object.keys(BODY_METRIC_LABELS) as BodyMetricKey[];

@@ -9,6 +9,7 @@ import { todayStr, type ScheduleContext } from '../utils/questionnaireSchedule';
 import { revisionDeLaSemana, pasosQueFaltan } from '../utils/revisionSemanal';
 import { pesoUltimoKey } from './useAthleteWeight';
 import { useProgresoRevision } from './useProgresoRevision';
+import type { AjustesRevision } from '../utils/cicloRevision';
 
 /**
  * La revisión de ESTA semana y todo lo que hace falta para calcularla: un solo
@@ -20,7 +21,7 @@ import { useProgresoRevision } from './useProgresoRevision';
  * Mientras falte algún dato, `listo` es false y `faltan` es null (no se inventa
  * un número a medias).
  */
-export function useRevisionDeLaSemana(email: string, cargar = true) {
+export function useRevisionDeLaSemana(email: string, cargar = true, ajustes: AjustesRevision = {}) {
   const habilitado = cargar && !!email;
 
   const { data: ultimoPesoQ } = useQuery({
@@ -71,7 +72,11 @@ export function useRevisionDeLaSemana(email: string, cargar = true) {
     queryFn: () => getMesocycles(email),
     enabled: habilitado,
   });
-  const scheduleCtx: ScheduleContext = useMemo(() => ({ mesocycles: mesocyclesQ ?? [] }), [mesocyclesQ]);
+  const { diaRevision, pausa } = ajustes;
+  const scheduleCtx: ScheduleContext = useMemo(
+    () => ({ mesocycles: mesocyclesQ ?? [], diaRevision, pausa }),
+    [mesocyclesQ, diaRevision, pausa],
+  );
 
   const loadingQ = loadingAssignments || loadingResponses
     || (activeQuestionnaireIds.length > 0 && questionnaireQueries.some(q => q.isPending));
@@ -91,7 +96,7 @@ export function useRevisionDeLaSemana(email: string, cargar = true) {
   const photoAssignments = useMemo(() => rawPhotoAssignments.filter(a => a.active), [rawPhotoAssignments]);
   const loadingPhotoAssignments = loadingPhotoAssignmentsQ || loadingProgressPhotos;
 
-  const { progreso, cargado: progresoCargado, guardarBorrador, marcarEnviada } = useProgresoRevision(email, cargar);
+  const { progreso, cargado: progresoCargado, guardarBorrador, marcarEnviada } = useProgresoRevision(email, cargar, diaRevision);
 
   const revision = useMemo(() => revisionDeLaSemana({
     hoy: todayStr(),

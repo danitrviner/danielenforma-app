@@ -83,7 +83,11 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
     queryKey: ['mesocycles', profile.email],
     queryFn: () => getMesocycles(profile.email),
   });
-  const scheduleCtx: ScheduleContext = useMemo(() => ({ mesocycles }), [mesocycles]);
+  const { diaRevision, pausaRevisiones } = profile;
+  const scheduleCtx: ScheduleContext = useMemo(
+    () => ({ mesocycles, diaRevision, pausa: pausaRevisiones }),
+    [mesocycles, diaRevision, pausaRevisiones],
+  );
 
   const manualTasks = tasks.filter(t => t.status === 'pending');
 

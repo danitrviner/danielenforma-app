@@ -12,6 +12,7 @@ import RevisionDeLaSemana from './checkin/RevisionDeLaSemana';
 import HistorialDeRevisiones from './checkin/HistorialDeRevisiones';
 import { historialDeRevisiones, type PasoRevision } from '../utils/revisionSemanal';
 import { useRevisionDeLaSemana } from '../hooks/useRevisionDeLaSemana';
+import { ajustesRevisionDe } from '../utils/cicloRevision';
 import { useToast } from '../hooks/useToast';
 import { Badge, Button, EmptyState, Icon, Skeleton } from './ui';
 
@@ -138,7 +139,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
     revision, ultimoPeso, rawAssignments, assignments, responses, templates, scheduleCtx, loadingQ,
     photoAssignments, loadingPhotoAssignments,
     progreso, guardarBorrador, marcarEnviada,
-  } = useRevisionDeLaSemana(profile.email);
+  } = useRevisionDeLaSemana(profile.email, true, ajustesRevisionDe(profile));
   const latestWeight = ultimoPeso?.weight;
   const responsesKey = ['responsesForAthlete', profile.email] as const;
 

@@ -38,6 +38,9 @@ const TYPE_ICON: Record<AppNotification['type'], string> = {
   coach_day_note:          'sticky_note_2',
   coach_task_due:          'alarm',
   menu_draft_ready:        'restaurant',
+  revision_recordatorio:   'alarm',
+  revision_alerta:         'warning',
+  revision_respondida:     'sticky_note_2',
 };
 
 export default function NotificationBell({ recipientEmail, onNavigate, mutedTypes }: Props) {
