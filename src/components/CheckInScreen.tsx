@@ -13,6 +13,9 @@ import HistorialDeRevisiones from './checkin/HistorialDeRevisiones';
 import { historialDeRevisiones, type PasoRevision } from '../utils/revisionSemanal';
 import { useRevisionDeLaSemana } from '../hooks/useRevisionDeLaSemana';
 import { ajustesRevisionDe } from '../utils/cicloRevision';
+import { useDatosSemanaCuestionario } from '../hooks/useDatosSemanaCuestionario';
+import { alertasDeRespuesta } from '../utils/alertasRevision';
+import { resolveQuestions } from '../utils/questionnaireResolve';
 import { useToast } from '../hooks/useToast';
 import { Badge, Button, EmptyState, Icon, Skeleton } from './ui';
 
@@ -144,6 +147,9 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   const responsesKey = ['responsesForAthlete', profile.email] as const;
 
   const [activeAssignment, setActiveAssignment] = useState<QuestionnaireAssignment | null>(null);
+  // Lo que la app ya sabe de la semana (pasos, peso, sesiones, zonas
+  // entrenadas): solo se lee con un cuestionario abierto.
+  const datosSemana = useDatosSemanaCuestionario(profile, !!activeAssignment);
 
   // "Vencido y sin responder" (isOverdue) en vez de isDueToday: para
   // interval/plan_week/mesocycle_end, isOverdue se queda true desde la fecha
@@ -268,6 +274,22 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       createdAt: new Date().toISOString(),
       read: false,
     }).catch(console.error);
+    // Lo que no puede esperar al día de revisión: molestias o un 5 de agujetas
+    // avisan al coach ya. La retención baja va a su bandeja y al CRM.
+    const plantilla = templates.get(r.questionnaireId);
+    const asignacion = assignments.find(a => a.id === r.assignmentId);
+    const alertas = plantilla ? alertasDeRespuesta(asignacion ? resolveQuestions(plantilla, asignacion) : plantilla.questions, r.answers) : [];
+    if (alertas.length > 0) {
+      createNotificationDeduped(`notif_alerta_${r.id}`, {
+        recipientEmail: COACH_EMAIL,
+        type: 'revision_alerta',
+        title: `${profile.displayName}: revisar ya`,
+        body: alertas.map(a => a.texto).join(' · '),
+        link: 'clients',
+        createdAt: new Date().toISOString(),
+        read: false,
+      }).catch(console.error);
+    }
   };
 
   return (
@@ -323,6 +345,8 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
             currentWeight={latestWeight}
             borrador={progreso?.respuestas[activeAssignment.id] ?? null}
             onBorrador={b => guardarBorrador(activeAssignment.id, b)}
+            autoRellenos={datosSemana.autoRellenos}
+            zonasEntrenadas={datosSemana.zonasEntrenadas}
             onSubmitted={handleQuestionnaireSubmitted}
             onCancel={() => setActiveAssignment(null)}
           />

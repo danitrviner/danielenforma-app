@@ -59,6 +59,7 @@ const COACH_NOTIF_TYPES: { type: NotificationType; label: string; sub: string }[
   { type: 'checkin_late', label: 'Check-in atrasado', sub: 'Un atleta lleva más de una semana sin enviarlo' },
   { type: 'plan_expiring', label: 'Plan por vencer', sub: 'El plan de un atleta caduca pronto, o ya venció' },
   { type: 'questionnaire_submitted', label: 'Cuestionario enviado', sub: 'Un atleta envía una revisión' },
+  { type: 'revision_alerta', label: 'Revisión con alerta', sub: 'Molestia, agujetas de 5 o ganas de seguir bajas' },
   { type: 'hrtest_pending', label: 'Test de FC pendiente', sub: 'Un atleta espera tu aprobación de zonas' },
 ];
 
