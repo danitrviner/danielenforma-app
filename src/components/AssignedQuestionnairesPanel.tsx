@@ -7,8 +7,10 @@ import {
 import {
   assignQuestionnaire, assignQuestionnairesBatch, deactivateAssignment, createQuestionnaire,
   getQuestionnairePacksByCoach, createQuestionnairePack, updateQuestionnairePack, deleteQuestionnairePack,
+  getMesocycles,
 } from '../dbService';
-import { fijarAlViernesAlCrear } from '../utils/questionnaireSchedule';
+import { fijarAlViernes, fijarAlViernesAlCrear, type ScheduleContext } from '../utils/questionnaireSchedule';
+import DiaRevisionAtleta from './revision/DiaRevisionAtleta';
 import {
   cadenciaEnCristiano, cadenciaParaTabla, proximaOcurrencia, etiquetaFechaCorta, hoyLocalStr,
 } from '../utils/scheduleEngine';
@@ -59,6 +61,18 @@ export default function AssignedQuestionnairesPanel({
     () => athleteQAssignments.filter(a => a.active),
     [athleteQAssignments],
   );
+
+  // Día de revisión del atleta (editable aquí mismo) y sus bloques: con ellos
+  // la columna «Próxima» dice la fecha real, no la de un viernes genérico.
+  const [diaRevision, setDiaRevision] = useState(athlete.diaRevision);
+  const { data: mesocycles = [] } = useQuery({
+    queryKey: ['mesocycles', athlete.email],
+    queryFn: () => getMesocycles(athlete.email),
+    enabled: !!athlete.email,
+  });
+  const ctxAtleta: ScheduleContext = useMemo(() => ({ mesocycles, diaRevision }), [mesocycles, diaRevision]);
+  const proximaDe = (a: Parameters<typeof proximaOcurrencia>[0]) =>
+    etiquetaFechaCorta(proximaOcurrencia(fijarAlViernes(a, diaRevision), ctxAtleta));
 
   // ── Paquetes ───────────────────────────────────────────────────────────────
   const packsKey = ['questionnairePacks', coachId] as const;
@@ -408,6 +422,7 @@ export default function AssignedQuestionnairesPanel({
         }
         padding="none"
       >
+        <DiaRevisionAtleta athlete={athlete} onCambio={c => { if ('diaRevision' in c) setDiaRevision(c.diaRevision); }} />
         {activas.length === 0 ? (
           <div className="p-5">
             <EmptyState
@@ -445,7 +460,7 @@ export default function AssignedQuestionnairesPanel({
                 const ultima = athleteQResponses
                   .filter(r => r.assignmentId === a.id || r.questionnaireId === a.questionnaireId)
                   .sort((x, y) => y.submittedAt.localeCompare(x.submittedAt))[0];
-                const proxima = etiquetaFechaCorta(proximaOcurrencia(a));
+                const proxima = proximaDe(a);
 
                 return (
                   <li key={a.id} className="px-5 py-3">
@@ -852,7 +867,7 @@ export default function AssignedQuestionnairesPanel({
                     {(() => {
                       // Lo que de verdad se guardará: semanal o quincenal, siempre en viernes.
                       const real = fijarAlViernesAlCrear({ schedule: cedulaDeCadencia(), startDate: assignStartDate });
-                      const p = etiquetaFechaCorta(proximaOcurrencia(real));
+                      const p = proximaDe(real);
                       return <>
                         Se le pedirá <strong className="text-ink">{cadenciaEnCristiano(real.schedule).toLowerCase()}</strong>
                         {p ? <> · primera vez: <strong className="text-ink">{p}</strong></> : null}
