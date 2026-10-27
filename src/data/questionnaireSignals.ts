@@ -29,8 +29,16 @@ export type WellnessSignalKey = 'wellness.sleep_hours_weekly' | 'wellness.stress
 /** Agujetas a las 48 h, escala 1-5 del curso, por zona de IEM (utils/cdg/zonas.ts). */
 export type AgujetasSignalKey = `agujetas.${ZonaIem}`;
 
+/** Alertas (27-10): una respuesta que avisa al coach en el momento de enviarse. */
+export type AlertaSignalKey = 'alerta.molestia';
+/** Retención (27-10): satisfacción y probabilidad de seguir, 1-10, en los hitos. */
+export type RetencionSignalKey = 'retencion.satisfaccion' | 'retencion.continuar';
+/** Adherencia semanal 1-5 («Tu semana»). */
+export type AdherenciaSignalKey = 'adherencia.entrenos' | 'adherencia.nutricion';
+
 /** Unión de TODAS las señales que puede llevar una pregunta, para tipar los helpers de preset. */
-export type SignalKey = VolumeSignalKey | PerfilSignalKey | WellnessSignalKey | AgujetasSignalKey;
+export type SignalKey = VolumeSignalKey | PerfilSignalKey | WellnessSignalKey | AgujetasSignalKey
+  | AlertaSignalKey | RetencionSignalKey | AdherenciaSignalKey;
 
 /** Señales sueltas (no las 17 de DOM's) que el selector del editor ofrece. */
 export const SEÑALES_FIN_MESOCICLO: { key: VolumeSignalKey; label: string; tipos: string[] }[] = [
@@ -60,7 +68,15 @@ export const SEÑALES_WELLNESS: { key: WellnessSignalKey; label: string; tipos: 
 export const SEÑALES_AGUJETAS_48H: { key: AgujetasSignalKey; label: string; tipos: string[] }[] =
   ZONAS_IEM.map(z => ({ key: `agujetas.${z.clave}` as AgujetasSignalKey, label: `Agujetas 48 h (1-5) · ${z.nombre}`, tipos: ['scale', 'numeric'] }));
 
-export const SEÑALES_DISPONIBLES = [...SEÑALES_FIN_MESOCICLO, ...SEÑALES_DOMS, ...SEÑALES_AGUJETAS_48H, ...SEÑALES_PERFIL, ...SEÑALES_WELLNESS];
+export const SEÑALES_SEGUIMIENTO: { key: AlertaSignalKey | RetencionSignalKey | AdherenciaSignalKey; label: string; tipos: string[] }[] = [
+  { key: 'alerta.molestia',        label: 'Molestia o lesión (avisa al coach)', tipos: ['boolean'] },
+  { key: 'retencion.satisfaccion', label: 'Satisfacción con el programa (1-10)', tipos: ['scale', 'numeric'] },
+  { key: 'retencion.continuar',    label: 'Probabilidad de seguir (1-10)', tipos: ['scale', 'numeric'] },
+  { key: 'adherencia.entrenos',    label: 'Cumplimiento de entrenos (1-5)', tipos: ['scale', 'numeric'] },
+  { key: 'adherencia.nutricion',   label: 'Cumplimiento de nutrición (1-5)', tipos: ['scale', 'numeric'] },
+];
+
+export const SEÑALES_DISPONIBLES = [...SEÑALES_FIN_MESOCICLO, ...SEÑALES_DOMS, ...SEÑALES_AGUJETAS_48H, ...SEÑALES_PERFIL, ...SEÑALES_WELLNESS, ...SEÑALES_SEGUIMIENTO];
 
 export function esSeñalDoms(key: string): MuscleGroup | null {
   if (!key.startsWith('doms.')) return null;
