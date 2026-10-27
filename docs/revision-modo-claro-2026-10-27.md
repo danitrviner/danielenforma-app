@@ -439,3 +439,46 @@ mío.
 2. **Superficies**: ¿vale la regla de §3.1 con el nuevo `bg` #F3F0EA y `field`/`raised` en crema?
    (ver `sup-*.png`). Y `control-line` al 46 % (3:1) o al 40 % (más suave).
 3. ¿Se queda `/dev/clientes` (banco de pruebas) o lo borro antes del PR?
+
+---
+
+# Fase 2 · ejecutada el 27-10-2026
+
+## Decisiones de Dani (tras ver las maquetas)
+
+- **Fondo de página: gris tibio `#F3F2F0`**, no el crema propuesto ni gris neutro. Se maquetaron los
+  tres (`hojas gris-*`); el tibio mantiene el oro integrado y lee como gris.
+- **Seleccionado: B, oro sólido**, en todo (chips, filtros, raciones, toggles, segmentado, días).
+  El segmentado lleva además la pista hundida (`inset`) que se vio en la maqueta C.
+- **Regla de superficies aprobada** tal cual §3.1, con `control-line` al 48 % (3,16:1).
+- **Fuera el ocre `#7D5300`** del anillo de calorías: «esa tonalidad no existe en la app».
+- Ficha del alimento y Revisión del atleta: con la regla de superficies.
+
+## Qué se hizo, por tanda (un commit cada una, rama `modo-claro-3`)
+
+| Tanda | Commit | Qué cambia |
+|---|---|---|
+| 1 · Tokens | `a5e76f7` | `bg` #F3F2F0; `raised` y `field` = `bg`; `inset` #E6E5E2; `track` #DAD9D5; `hairline` 14 %; `strong` 30 %; nuevo `control-line` (48 % claro, = `strong` oscuro); `accent-line` sólido #A87510 en claro y oro al 60 % en oscuro; `macro-hc` texto = `accent-ink`; nuevos `macro-*-fill` para anillo, barras y donut (ámbar/azul/naranja de verdad); `zone-3-ink` = `accent-ink`; `tema.ts` e `index.html` con el fondo nuevo |
+| 2 · Superficies | `9e8a449` | `Input`/`Select`/`SearchField` con `control-line`; `Chip` sin seleccionar con `strong`; pista del `SegmentedControl` en `inset`; toast blanco con sombra e2 y borde; cabecera y barra inferior con `shadow-e1`; mini-reproductor con e1; filas de la hoja de añadir con borde; Orden del ciclo sin oro de tipo (sesión blanca, descanso `raised`); «+ Añadir» del peso con `strong`; «Invitar atleta» con `accent-line`; y los 6 fallos de contraste medidos (check sobre verde → `on-fill`, etiquetas del calendario sin opacidad, banner sin opacidad, gráfica de cardio sin `dark:opacity`, contador `warning/12`, leyenda MRV al 55 %) |
+| 3 · Seleccionado | `d1c8822` | Una receta: `bg-accent border-accent-press text-on-accent` en `Chip` y en 44 sitios que tenían la suya (chips de filtro, raciones, toggles, CRM); tarjeta elegida (opción con descripción) con marco `accent-press` + `ring` en blanco; los tintes `accent-bg`/`bg-accent/N` que quedan son informativos (banner, badge, columna «semana actual», fila «hecho») |
+| 4 · Tipografía | `fb2542c` | Ficha del alimento: tabla y etiquetas a `body-s`, raciones a `body-s` 600 sin cambiar de peso al elegir; hoja de añadir: nombre `title-s` 600, dato mono; diario: nombre 16/500, gramos mono en tinta, kcal `body-s`; 63 `text-[Npx]` y 21 `text-base/xs/3xl` a la escala; pestaña activa 700 (era 800); cifras de dato 700 |
+| 5 · Animaciones | `6a0423a` | Salida animada de `Dialog` (nuevo `dialog-out`, 140 ms) y del toast (`toast-out`); `Collapsible` con `grid-template-rows` + `inert`; `active:scale` en `ListRow`, `ActionRow`, `Card` pulsable y `Chip`; `EmptyState` con `fade-up`; anillo del día, anillos de la semana, barras de macros y donut de la ficha transicionan con `--duration-ring`/`--duration-bar`; Calendario y tutorial sobre `--duration-*` y `--ease-brand`; listas escalonadas (Clientes, hoja de añadir, pasos de Revisión; tope `--i` 8); bienvenida con `fade-up`; 181 `transition-all` → `transition-[color,background-color,border-color,opacity,transform,box-shadow]` |
+| Ajuste | `424bc30` | `control-line` 46 → 48 % (el 46 daba 2,98); chips «encajan» y «añadir comida» con `strong` |
+
+## Lo que NO se ha hecho, y por qué
+
+- `Tabs` no desliza el subrayado: el código lo decide a propósito (entra/sale por opacidad para no
+  «recorrer» la barra entre pestañas lejanas). Se respeta.
+- Recharts (peso corporal, gráficas del coach) sigue con su animación propia; falta
+  `isAnimationActive={!reducedMotion}` y `animationDuration` del sistema. Es por gráfica.
+- `TourOverlay` sigue animando `top/left/width/height` (solo pasó a tokens); el FLIP con
+  `transform` es trabajo aparte.
+- Reordenar en Orden del ciclo no tiene FLIP.
+- El borde de un chip neutro (`strong`, 1,9:1) no llega al 3:1 estricto; la regla lo compensa con
+  el relleno un escalón distinto del padre. El 3:1 estricto se reserva a los campos (`control-line`).
+- Las pantallas sin banco de pruebas (§10) no se han visto; heredan los tokens y las primitivas.
+
+## Comprobación
+
+Mismo script de contraste, 20 rutas + 12 estados, claro y oscuro, 375 y 1280 px, tras la tanda 5.
+Resultado en la sección siguiente.
