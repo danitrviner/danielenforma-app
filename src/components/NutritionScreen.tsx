@@ -30,7 +30,6 @@ import { objetivoDelDia } from '../utils/objetivoDelDia';
 import { resumenDelDia } from '../utils/resumenDelDia';
 import { useToast } from '../hooks/useToast';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import Coachmark from './Coachmark';
 import { haptics } from '../services/haptics';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
@@ -2315,13 +2314,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               {/* El desglose numérico por comida (Paco/Comida 2/Comida 3 + total del
                   día) se ha quitado — duplicaba, con otro estilo, lo que ya muestra
                   el tracker de arriba (panel 01) y la lista de "Ingestas". */}
-
-              <Coachmark
-                id="nutrition_swap_hint"
-                profile={profile}
-                icon="swap_horiz"
-                text="¿No te apetece algo? Toca Cambiar junto a cualquier alimento para sustituirlo por un equivalente."
-              />
 
 
               {/* El cupo del día se CONGELA al sembrarlo: si el coach cambia la
