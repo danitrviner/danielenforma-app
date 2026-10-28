@@ -92,6 +92,8 @@ export function buildShoppingList(days: MenuDay[], recipesById: Map<string, Reci
       }
       // Complements are eaten fresh but still need buying.
       for (const comp of meal.complements) {
+        // Los extras del catálogo (10-2026) ya vienen en gramos reales.
+        if (comp.gramos && comp.alimentoId) { addGrams(comp.foodLabel, comp.gramos); continue; }
         const base = parseBaseGrams(comp.foodLabel);
         const name = labelToName(comp.foodLabel);
         if (base != null) addGrams(name, base * comp.quantity);

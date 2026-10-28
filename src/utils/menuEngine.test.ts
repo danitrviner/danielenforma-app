@@ -6,7 +6,9 @@ import {
   bestScaleFit, rankCandidates, generateDay, generateWeek,
   isDayWithinTolerance, findSwapAlternatives, GeneratorPrefs,
   buildBatchPlan, isMenuStale, fillComplements, reajustarDia, MealSlotSpec, escalasPermitidas, filtroDuro,
+  acotarExtrasDeComida,
 } from './menuEngine';
+import { macrosDelPlato } from './menuMacros';
 import { buildShoppingList } from './menuShoppingList';
 import { computeMenuAdherenceRate } from './nutritionAnalysis';
 
@@ -876,5 +878,69 @@ describe('fidelidad de la receta, extras y gustos (Dani, 27-10-2026)', () => {
       prefs: { ...basePrefs, cambios: { evitadas: {}, elegidas: {}, sustituciones: { leche: 'Bebida de avena' } } },
     });
     expect(day.meals[0].ingredientSwaps).toEqual([{ from: 'Leche', to: 'Bebida de avena' }]);
+  });
+});
+
+describe('extras del catálogo en piezas exactas (Dani, 28-10-2026)', () => {
+  const PLATANO = { id: 'platano-listo', nombre: 'Plátano', estado: 'listo' as const, porCien: { kcal: 89, p: 1.1, hc: 22.8, g: 0.3 }, unidad: { nombre: 'unidad', gramos: 100 } };
+  const YOGUR = { id: 'yogur-prot', nombre: 'Yogur alto en proteínas', estado: 'listo' as const, porCien: { kcal: 57, p: 10, hc: 4, g: 0.2 }, unidad: { nombre: 'yogur', gramos: 120 } };
+  const NUECES = { id: 'nueces-listo', nombre: 'Nueces', estado: 'listo' as const, porCien: { kcal: 654, p: 15.2, hc: 13.7, g: 65.2 }, unidad: { nombre: 'puñado', gramos: 30 } };
+  const catalogo = [PLATANO, YOGUR, NUECES];
+  const slots = [{ slot: 1, name: 'Desayuno', pct: 50 }, { slot: 3, name: 'Comida', pct: 50 }];
+  // Dos platos de 2+2+0 intercambios (400 kcal) para un día de 1.000 kcal:
+  // faltan 200 kcal, sobre todo hidratos.
+  const plato = (id: string) => recipe({ id, name: id, exchanges: { HC: 2, PROT: 2, GRASA: 0 } });
+
+  it('con catálogo, los extras son piezas con sus macros exactos; sin catálogo, raciones del banco', () => {
+    const dieta = diet({ budget: { HC: 6, PROT: 4, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 } });
+    const conCatalogo = generateDay({ day: 'mon', diet: dieta, slots, pools: { 1: [plato('a')], 3: [plato('b')] }, foods: [], prefs: basePrefs, usedIds: new Set(), catalogo });
+    const extras = conCatalogo.meals.flatMap(m => m.complements);
+    expect(extras.length).toBeGreaterThan(0);
+    for (const c of extras) {
+      expect(c.alimentoId).toBeDefined();
+      expect(c.piezas! % 0.5).toBe(0);
+      expect(c.macros!.kcal).toBe(Math.round(PLATANO.porCien.kcal * c.gramos! / 100));
+    }
+    const frutas = [{ id: 'f1', mode: 'OMNIVORO' as const, category: 'HC' as const, label: '1 intercambio = 1 manzana' }];
+    const sinCatalogo = generateDay({ day: 'mon', diet: dieta, slots, pools: { 1: [plato('a')], 3: [plato('b')] }, foods: frutas, prefs: basePrefs, usedIds: new Set() });
+    expect(sinCatalogo.meals.flatMap(m => m.complements).every(c => !c.alimentoId && c.quantity > 0)).toBe(true);
+  });
+
+  it('lo que una pieza no cubre se arrastra a la comida siguiente en vez de perderse', () => {
+    // Faltan 50 g de HC al día, 25 por comida: un plátano son 22,8. El desayuno
+    // pone 1 plátano y los 2,2 g que faltan pasan a la comida, que ya no
+    // llega a 1½ (34 g) pero sí a 1 plátano… así que el día cierra a 4,4 g.
+    const dieta = diet({ budget: { HC: 6, PROT: 4, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 } });
+    const day = generateDay({ day: 'mon', diet: dieta, slots, pools: { 1: [plato('a')], 3: [plato('b')] }, foods: [], prefs: basePrefs, usedIds: new Set(), catalogo });
+    const hcExtras = day.meals.flatMap(m => m.complements).reduce((s, c) => s + c.macros!.hc, 0);
+    expect(hcExtras).toBeGreaterThanOrEqual(45);
+    expect(hcExtras).toBeLessThanOrEqual(53);
+    // El tope de cada comida incluye lo arrastrado: nada de lo puesto se recortaría al guardar.
+    for (const m of day.meals) expect(acotarExtrasDeComida(m).recortado).toBe(false);
+  });
+
+  it('lo que sobra tras la última comida vuelve al plato que admite más ración', () => {
+    const foods = [{ id: 'arroz', mode: 'OMNIVORO' as const, category: 'HC' as const, label: '30g arroz, pasta, couscous o quinoa' }];
+    const conArroz = recipe({ id: 'arroz-pollo', name: 'Arroz con pollo', exchanges: { HC: 2, PROT: 2, GRASA: 0 }, ingredientsText: [{ name: 'Arroz', quantity: 80 }] as Recipe['ingredientsText'] });
+    // Faltan 40 g de HC: 20 por comida. Media pieza (11,4 g) deja 8,6 en cada
+    // una; al final sobran ~17 g, que caben como media ración de arroz (12,5 g).
+    const dieta = diet({ budget: { HC: 5.6, PROT: 4, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 } });
+    const day = generateDay({ day: 'mon', diet: dieta, slots, pools: { 1: [plato('a')], 3: [conArroz] }, foods, prefs: basePrefs, usedIds: new Set(), catalogo: [PLATANO] });
+    const comida = day.meals[1];
+    const hcRaciones = (comida.racionesExtra ?? []).reduce((s, r) => s + macrosDeIntercambios({ [r.category]: r.quantity }).hc, 0);
+    const hcExtras = day.meals.flatMap(m => m.complements).reduce((s, c) => s + c.macros!.hc, 0);
+    expect(hcRaciones + hcExtras).toBeGreaterThanOrEqual(30);
+  });
+
+  it('al guardar, un extra del catálogo que no cabe se baja a la pieza que cabe', () => {
+    const base = recipe({ id: 'a', exchanges: { HC: 2, PROT: 2, GRASA: 0 } });
+    const dieta = diet({ budget: { HC: 6, PROT: 4, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 } });
+    const day = generateDay({ day: 'mon', diet: dieta, slots, pools: { 1: [base], 3: [base] }, foods: [], prefs: basePrefs, usedIds: new Set(), catalogo });
+    const meal = day.meals[0];
+    const dosPlatanos = { ...meal.complements[0], gramos: 300, piezas: 3, macros: { kcal: 267, p: 3.3, hc: 68.4, g: 0.9 } };
+    const { meal: acotada, recortado } = acotarExtrasDeComida({ ...meal, complements: [dosPlatanos] });
+    expect(recortado).toBe(true);
+    expect(acotada.complements[0].piezas!).toBeLessThan(3);
+    expect(acotada.complements[0].macros!.hc).toBeLessThanOrEqual((meal.objetivoMacros!.hc - macrosDelPlato(meal).hc) + 3);
   });
 });

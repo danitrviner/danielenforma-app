@@ -19,13 +19,15 @@ import { fotoDeReceta } from './fotoDeReceta';
 import { kcalDeGramos, MACROS_CERO, redondearMacros, restarMacros, sinNegativos, sumarMacros, escalarMacros } from './macros';
 import { intercambiosDeMacros, macrosDeIntercambios, objetivoDeDieta } from './macrosLegado';
 import {
-  macrosDeLaComida, macrosDelPlato, macrosDeRaciones, macrosDeRacionesExtra, macrosDeAcompanamientos,
+  macrosDeLaComida, macrosDelPlato, macrosDeRaciones, macrosDeRacionesExtra, macrosDeAcompanamientos, macrosDeAcompanamiento,
   objetivoDeLaComida, objetivoDelDiaDeMenu, macrosDelDiaDeMenu,
 } from './menuMacros';
 import { ajustesDeLaSemana, aplicarAjustes, semanaDelPrograma, gramosDeMantenimiento } from './semanasNutricion';
 import { hoyIsoLocal } from './trainingWeek';
 import { gustoPorTipo, sustitucionesPara, type SenalesDeCambios } from './gustosDelAtleta';
 import type { IngredienteEscalable } from './escalarIngrediente';
+import { alimentosParaExtras, elegirExtras, esExtraDelCatalogo, recortarExtra, type CandidatoAExtra } from './extrasDelCatalogo';
+import type { AlimentoCatalogo } from './catalogoAlimentos';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Generador de menús semanales por recetas, en kcal y gramos (10-2026)
@@ -770,11 +772,57 @@ function acotarAcompanamientos(propuestos: MenuComplement[], topeKcal = MAX_KCAL
   const tope = Math.min(MAX_KCAL_ACOMPANAMIENTOS, topeKcal);
   for (const c of propuestos) {
     if (out.length >= MAX_ACOMPANAMIENTOS_POR_COMIDA) break;
+    if (esExtraDelCatalogo(c)) {
+      // Un extra del catálogo va en piezas: entra entero o no entra.
+      if (kcal + c.macros!.kcal > tope) break;
+      out.push(c);
+      kcal += c.macros!.kcal;
+      continue;
+    }
     const porRacion = macrosDeRaciones(c.category, 1).kcal;
     const cabe = Math.floor(Math.min(c.quantity, (tope - kcal) / porRacion) / PASO_RACION + 1e-9) * PASO_RACION;
     if (cabe < PASO_RACION) break;
     out.push(cabe === c.quantity ? c : { ...c, quantity: round2(cabe) });
     kcal += porRacion * cabe;
+  }
+  return out;
+}
+
+/* ─── Extras del catálogo (28-10-2026) ─────────────────────────────────────
+   Con el catálogo de alimentos a mano, los acompañamientos salen de ahí en
+   gramos reales y piezas (utils/extrasDelCatalogo.ts). Sin catálogo (tests,
+   sin red) se sigue con el banco de intercambios. */
+export interface ExtrasDelCatalogo { candidatos: CandidatoAExtra[] }
+
+/** Lo que hace falta de las preferencias para elegir extras (una interfaz, no
+ *  un `Pick`: el comprobador de iconos lee los literales de tipo). */
+export interface PrefsDeExtras {
+  liked: readonly string[];
+  disliked: readonly string[];
+  allergies: readonly string[];
+  conditions?: readonly number[];
+  dietType?: DietType;
+}
+
+/** Los alimentos del catálogo que pueden ser extra de este atleta. Null si no hay catálogo o no sale ninguno. */
+export function prepararExtras(
+  catalogo: readonly AlimentoCatalogo[] | undefined,
+  prefs: PrefsDeExtras,
+): ExtrasDelCatalogo | null {
+  if (!catalogo || catalogo.length === 0) return null;
+  const candidatos = alimentosParaExtras(catalogo, {
+    liked: prefs.liked, disliked: prefs.disliked, allergies: prefs.allergies, conditions: prefs.conditions, dietType: prefs.dietType,
+  });
+  return candidatos.length > 0 ? { candidatos } : null;
+}
+
+/** Más ración del mismo ingrediente se suma a la que ya había, no se duplica la línea. */
+function fusionarRaciones(existentes: MenuRacionExtra[] | undefined, nuevas: MenuRacionExtra[]): MenuRacionExtra[] {
+  const out = [...(existentes ?? [])];
+  for (const n of nuevas) {
+    const i = out.findIndex(r => r.ingrediente === n.ingrediente);
+    if (i === -1) out.push(n);
+    else out[i] = { ...out[i], quantity: round2(out[i].quantity + n.quantity), gramos: out[i].gramos + n.gramos };
   }
   return out;
 }
@@ -837,13 +885,18 @@ function diaVacio(day: WeekDay): MenuDay {
 //      carne». Las tortitas se quedan como están.
 //   2. Lo que nadie absorbe se cierra con acompañamientos (fruta, pan, yogur)
 //      en las comidas que se han quedado cortas, en proporción a lo cortas que
-//      estén. Son los extras que el atleta ve como líneas aparte.
+//      estén. Son los extras que el atleta ve como líneas aparte. Con catálogo
+//      van en piezas exactas (28-10-2026): lo que una pieza no cubre se
+//      ARRASTRA a la comida siguiente («los 30 g de plátano que no entran pasan
+//      a la comida o a la cena»), y lo que sobra tras la última vuelve al plato
+//      que admite más ración.
 function finalizeDay(
   day: WeekDay, diet: Diet, target: Macros, targets: Macros[],
   meals: MenuMeal[], foods: MealItem[], mode: DietMode,
   recetasPorId?: Map<string, Recipe>,
   conditions?: readonly number[],
   balanceSemanaKcal = 0,
+  extras: ExtrasDelCatalogo | null = null,
 ): MenuDay {
   const puesto = sumarMacros(...meals.map(macrosDeLaComida));
   const restanteDelDia = sinNegativos(restarMacros(target, puesto));
@@ -878,19 +931,42 @@ function finalizeDay(
   }
 
   let kcalAcompDia = 0;
+  const conExtras = !sinExtrasPorLaSemana(balanceSemanaKcal);
+  // Lo que una comida no llega a cubrir con sus piezas pasa a la siguiente.
+  let arrastre: Macros = { ...VACIO };
   meals.forEach((meal, i) => {
+    const quiere = conKcal({ p: paraExtras[i].p + arrastre.p, hc: paraExtras[i].hc + arrastre.hc, g: paraExtras[i].g + arrastre.g });
     // Lo que esta comida debería sumar: su plato, su ración extra y lo que el
-    // día le asigna en extras. Se guarda porque es el tope de los extras que
-    // edita el atleta (`topeDeExtra`).
-    const objetivoComida = redondearMacros(sumarMacros(macrosDeLaComida(meal), conKcal(paraExtras[i])));
+    // día le asigna en extras (con lo arrastrado de la anterior, que es donde
+    // se ha colocado). Se guarda porque es el tope de los extras que edita el
+    // atleta (`topeDeExtra`, `acotarExtrasDeComida`).
+    const objetivoComida = redondearMacros(sumarMacros(macrosDeLaComida(meal), quiere));
     meal.objetivoMacros = objetivoComida;
     meal.objetivo = intercambiosDe(objetivoComida);
-    if (!sinExtrasPorLaSemana(balanceSemanaKcal)) {
-      const nuevos = acotarAcompanamientos(fillComplements(conKcal(paraExtras[i]), foods, mode, conditions), MAX_KCAL_ACOMPANAMIENTOS_DIA - kcalAcompDia);
+    let puesto: Macros = { ...VACIO };
+    if (conExtras) {
+      const propuestos = extras
+        ? elegirExtras(quiere, extras.candidatos, MAX_ACOMPANAMIENTOS_POR_COMIDA)
+        : fillComplements(quiere, foods, mode, conditions);
+      const nuevos = acotarAcompanamientos(propuestos, MAX_KCAL_ACOMPANAMIENTOS_DIA - kcalAcompDia);
       meal.complements.push(...nuevos);
-      kcalAcompDia += nuevos.reduce((s, c) => s + macrosDeRaciones(c.category, c.quantity).kcal, 0);
+      puesto = macrosDeAcompanamientos(nuevos);
+      kcalAcompDia += puesto.kcal;
     }
+    arrastre = extras ? sinNegativos(restarMacros(quiere, puesto)) : { ...VACIO };
   });
+  // Lo que sobra tras la última comida vuelve al plato que admite más ración,
+  // empezando por la cena. Lo que ni así entra se deja: son los picos que no
+  // llegan a media ración.
+  if (extras && arrastre.kcal > 0) {
+    for (let i = meals.length - 1; i >= 0 && arrastre.kcal > 0; i--) {
+      if (escalables[i].length === 0) continue;
+      const { raciones, restante } = subirRaciones(escalables[i], arrastre);
+      if (raciones.length === 0) continue;
+      meals[i].racionesExtra = fusionarRaciones(meals[i].racionesExtra, raciones);
+      arrastre = restante;
+    }
+  }
   for (const meal of meals) meal.kcal = kcalDeLaComida(meal);
   return { day, dietId: diet.id, dietName: diet.name, target: intercambiosDe(target), objetivo: redondearMacros(target), meals };
 }
@@ -903,6 +979,10 @@ export interface ReajustarDiaArgs {
   mode?: DietMode;
   recetasPorId?: Map<string, Recipe>;
   conditions?: readonly number[];
+  /** Catálogo por 100 g: con él los extras salen en piezas exactas. */
+  catalogo?: readonly AlimentoCatalogo[];
+  /** Gustos y filtros del atleta para elegir esos extras. */
+  prefs?: PrefsDeExtras;
 }
 
 /**
@@ -922,7 +1002,8 @@ export function reajustarDia(args: ReajustarDiaArgs): MenuDay {
     racionesExtra: undefined,
     complements: [],
   }));
-  return finalizeDay(dia.day, diet, target, targets, meals, foods, mode, recetasPorId, conditions);
+  const extras = prepararExtras(args.catalogo, args.prefs ?? { liked: [], disliked: [], allergies: [], conditions });
+  return finalizeDay(dia.day, diet, target, targets, meals, foods, mode, recetasPorId, conditions, 0, extras);
 }
 
 export interface GenerateDayArgs {
@@ -937,6 +1018,8 @@ export interface GenerateDayArgs {
   mode?: DietMode;
   /** kcal de más (+) o de menos (−) de los días ya generados de la semana. */
   balanceSemana?: number;
+  /** Catálogo por 100 g: con él los extras salen en piezas exactas (28-10-2026). */
+  catalogo?: readonly AlimentoCatalogo[];
 }
 
 function bumpDishType(map: Map<DishType, number>, dt: DishType): void {
@@ -971,7 +1054,7 @@ export function generateDay(args: GenerateDayArgs): MenuDay {
     return buildMeal(id, slot, pick.recipe, pick.scale, pick.macros, pick.ajuste, prefs.cambios?.sustituciones);
   });
 
-  return finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools), prefs.conditions, args.balanceSemana ?? 0);
+  return finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools), prefs.conditions, args.balanceSemana ?? 0, prepararExtras(args.catalogo, prefs));
 }
 
 // ─── Semana ──────────────────────────────────────────────────────────────────
@@ -985,6 +1068,8 @@ export interface GenerateWeekArgs {
   prefs: GeneratorPrefs;
   mode?: DietMode;
   batch?: boolean; // batch cooking: una receta por franja para toda la semana
+  /** Catálogo por 100 g: con él los extras salen en piezas exactas (28-10-2026). */
+  catalogo?: readonly AlimentoCatalogo[];
 }
 
 function media(vs: Macros[]): Macros {
@@ -1033,7 +1118,7 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
       const pick = ranked[0];
       return pick ? buildMeal(id, slot, pick.recipe, pick.scale, pick.macros, pick.ajuste, prefs.cambios?.sustituciones) : emptyMeal(id, slot);
     });
-    const generado = finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools), prefs.conditions, balanceSemana);
+    const generado = finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools), prefs.conditions, balanceSemana, prepararExtras(args.catalogo, prefs));
     balanceSemana += desviacionDelDia(generado);
     return generado;
   });
@@ -1068,7 +1153,7 @@ export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
       if (template) {
         return conBalance({ ...template, day, meals: template.meals.map((m, i) => ({ ...m, id: `${day}_m${i + 1}` })) });
       }
-      const generated = conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds: new Set(), mode, balanceSemana }));
+      const generated = conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds: new Set(), mode, balanceSemana, catalogo: args.catalogo }));
       perDietTemplate.set(diet.id, generated);
       return generated;
     }
@@ -1077,9 +1162,9 @@ export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
       perDietUsed.set(diet.id, usedIds);
       const usedDishTypes = perDietDishTypes.get(diet.id) ?? new Map<DishType, number>();
       perDietDishTypes.set(diet.id, usedDishTypes);
-      return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds, usedDishTypes, mode, balanceSemana }));
+      return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds, usedDishTypes, mode, balanceSemana, catalogo: args.catalogo }));
     }
-    return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds: globalUsed, usedDishTypes: globalDishTypes, mode, balanceSemana }));
+    return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds: globalUsed, usedDishTypes: globalDishTypes, mode, balanceSemana, catalogo: args.catalogo }));
   });
 }
 
@@ -1300,6 +1385,18 @@ export function topeDeExtra(
   return cabenRaciones(category, huecoDeComida(sinEse, objetivo));
 }
 
+/** Lo que le queda a la comida para su objetivo sin contar el extra `excluirComplemento`
+ *  (el que se está cambiando). Null en menús muy viejos sin objetivo: entonces cabe todo. */
+export function huecoParaExtra(meal: MenuMeal, excluirComplemento?: number): Macros | null {
+  const objetivo = objetivoDeLaComida(meal);
+  if (!objetivo) return null;
+  const sinEse: MenuMeal = excluirComplemento == null ? meal : {
+    ...meal,
+    complements: meal.complements.filter((_, i) => i !== excluirComplemento),
+  };
+  return huecoDeComida(sinEse, objetivo);
+}
+
 /**
  * Recorta los extras de una comida a lo que de verdad cabe. Pura e idempotente:
  * una comida que ya cabe se devuelve TAL CUAL (misma referencia). Se aplica al
@@ -1324,6 +1421,15 @@ export function acotarExtrasDeComida(meal: MenuMeal): { meal: MenuMeal; recortad
   }
   const complementos: MenuComplement[] = [];
   for (const c of meal.complements) {
+    if (esExtraDelCatalogo(c)) {
+      // En piezas: se baja de media en media hasta que cabe; si ni la mínima cabe, fuera.
+      const ajustado = recortarExtra(huecoDeComida(acumulado, objetivo), c);
+      if (!ajustado) { recortado = true; continue; }
+      if (ajustado !== c) recortado = true;
+      complementos.push(ajustado);
+      acumulado = { ...acumulado, complements: complementos };
+      continue;
+    }
     const cabe = Math.min(c.quantity, cabenRaciones(c.category, huecoDeComida(acumulado, objetivo)));
     if (cabe < PASO_RACION) { recortado = true; continue; }
     const ajustado = cabe === c.quantity ? c : { ...c, quantity: round2(cabe) };

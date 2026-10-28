@@ -1920,8 +1920,20 @@ export interface MenuComplement {
   foodLabel: string;
   category: FoodCategory;
   /** Raciones del banco (la ración de referencia de ese alimento), múltiplos
-   *  de 0,25. Es el mismo número que antes eran «intercambios». */
+   *  de 0,25. Es el mismo número que antes eran «intercambios». En los extras
+   *  del catálogo (abajo) es 0: lo que cuenta son `gramos` y `macros`. */
   quantity: number;
+  /** Extra del catálogo por 100 g (28-10-2026, Dani: «que la fruta sea exacta»):
+   *  un alimento del catálogo en gramos reales, en piezas cuando tiene medida
+   *  casera («1½ plátano»). `macros` son los de ESOS gramos, congelados al
+   *  generar. Ausentes en los extras del banco de intercambios. */
+  alimentoId?: string;
+  gramos?: number;
+  /** Piezas servidas (múltiplos de ½) cuando el alimento tiene medida casera. */
+  piezas?: number;
+  /** Nombre de la medida casera («unidad», «yogur», «rebanada»). */
+  unidad?: string;
+  macros?: Macros;
 }
 
 /** Más ración de algo que la receta YA lleva: "+60g de arroz" en el arroz con

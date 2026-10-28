@@ -20,6 +20,8 @@ import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import { intercambiosDeMacros } from '../utils/macrosLegado';
 import { macrosDelPlato, objetivoDelDiaDeMenu } from '../utils/menuMacros';
+import { esExtraDelCatalogo, textoDeExtra } from '../utils/extrasDelCatalogo';
+import { getCatalogoAlimentos } from '../dbService';
 import { buildShoppingList } from '../utils/menuShoppingList';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
 import { Icon, Button, Input, ProgressBar, Select } from './ui';
@@ -253,6 +255,10 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     return list;
   }
 
+  // Catálogo por 100 g: los extras salen de aquí en piezas exactas (28-10-2026).
+  // Misma clave que el Diario, así que suele estar ya en caché.
+  const { data: catalogo = [] } = useQuery({ queryKey: ['catalogoAlimentos'], queryFn: getCatalogoAlimentos, staleTime: 60 * 60_000 });
+
   async function ensurePool(slot: number): Promise<Recipe[]> {
     const cached = pools[slot];
     if (cached) return cached;
@@ -273,7 +279,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     }
     const foodList = await ensureFoods();
     setGenPhase('Generando el menú de la semana…');
-    const days = generateWeek({ schedule, diets: dietasDeLaSemana, slots, pools: nextPools, foods: foodList, prefs, batch, mode: dietMode });
+    const days = generateWeek({ schedule, diets: dietasDeLaSemana, slots, pools: nextPools, foods: foodList, prefs, batch, mode: dietMode, catalogo });
     const draft: Omit<WeeklyMenu, 'id'> = {
       athleteId: athleteEmail,
       status: 'draft',
@@ -303,7 +309,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     const usedSlots = Array.from(new Set<number>(slots.map(s => s.slot)));
     for (const s of usedSlots) await ensurePool(s);
     const foodList = await ensureFoods();
-    const nextDay = generateDay({ day, diet, slots, pools, foods: foodList, prefs, usedIds: new Set(), mode: dietMode });
+    const nextDay = generateDay({ day, diet, slots, pools, foods: foodList, prefs, usedIds: new Set(), mode: dietMode, catalogo });
     updateDay(day, nextDay);
   };
 
@@ -362,6 +368,8 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       mode: dietMode,
       recetasPorId: recetas,
       conditions: prefs.conditions,
+      catalogo,
+      prefs,
     }));
   };
 
@@ -735,7 +743,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
                                 <div className="flex flex-wrap gap-1 mt-2">
                                   {meal.complements.map((c, ci) => (
                                     <span key={ci} className="text-caption font-mono text-ink-2 bg-raised border border-hairline px-2 rounded-control">
-                                      +{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}
+                                      {esExtraDelCatalogo(c) ? `+ ${textoDeExtra(c)} · ${c.macros!.kcal} kcal` : `+${c.quantity} ${CAT_LABEL[c.category]} · ${c.foodLabel}`}
                                     </span>
                                   ))}
                                 </div>
