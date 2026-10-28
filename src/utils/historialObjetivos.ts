@@ -18,6 +18,29 @@ import { ObjetivoCorporalTipo, OBJETIVO_LABEL, verificarObjetivo, RANGO_PCT_SEMA
 export const SEMANAS_HISTORIAL = 26;
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * El plan FIJO de una fase en una fecha: sale del peso con el que empezó
+ * (`ref`) y llega al peso objetivo del coach al acabar la fase; sin peso
+ * objetivo, sigue el centro del ritmo pautado. Mantenimiento y recomposición:
+ * plano, con su franja de ±1 kg. El margen se abre con las semanas, como el
+ * propio rango de ritmo. Lo comparten la gráfica de objetivo y el seguimiento
+ * del plan, para que las dos digan lo mismo.
+ */
+export function planDeFase(p: {
+  ref: number; objetivo: ObjetivoCorporalTipo; pesoObjetivo?: number; semanas: number; desde: string; fecha: string;
+}): { plan: number; franja: [number, number] } {
+  const rango = RANGO_PCT_SEMANA[p.objetivo];
+  const dias = Math.max(0, diasEntre(p.desde, p.fecha));
+  const k = dias / 7;
+  if (!rango) return { plan: r2(p.ref), franja: [r2(p.ref - FRANJA_MANTENIMIENTO_KG), r2(p.ref + FRANJA_MANTENIMIENTO_KG)] };
+  const plan = p.pesoObjetivo
+    // El último día de la fase es el día 7·semanas − 1: ahí llega justo al objetivo.
+    ? p.ref + (p.pesoObjetivo - p.ref) * Math.min(1, dias / Math.max(1, p.semanas * 7 - 1))
+    : p.ref * (1 + ((rango.min + rango.max) / 2 / 100) * Math.min(k, p.semanas));
+  const margen = Math.max(0.5, p.ref * ((rango.max - rango.min) / 2 / 100) * Math.min(k, p.semanas));
+  return { plan: r2(plan), franja: [r2(plan - margen), r2(plan + margen)] };
+}
 function diasEntre(desde: string, hasta: string): number {
   return Math.round((Date.parse(hasta + 'T12:00:00Z') - Date.parse(desde + 'T12:00:00Z')) / 86_400_000);
 }
@@ -81,19 +104,9 @@ export function historialDeObjetivos(params: {
     // que puso el coach; sin objetivo, sigue el centro del ritmo pautado. El
     // margen se abre con las semanas, como el propio rango de ritmo.
     const ref = v.pesoReferencia;
-    const rango = objetivo ? RANGO_PCT_SEMANA[objetivo] : undefined;
     const semanasFase = fase.weeks;
-    const planEn = (fecha: string): { plan: number; franja: [number, number] } | null => {
-      if (ref == null || !objetivo) return null;
-      const k = Math.max(0, diasEntre(desde, fecha) / 7);
-      if (!rango) return { plan: r2(ref), franja: [r2(ref - FRANJA_MANTENIMIENTO_KG), r2(ref + FRANJA_MANTENIMIENTO_KG)] };
-      const plan = fase.targetWeight
-        // El último día de la fase es el día 7·semanas − 1: ahí llega justo al objetivo.
-        ? ref + (fase.targetWeight - ref) * Math.min(1, diasEntre(desde, fecha) / Math.max(1, semanasFase * 7 - 1))
-        : ref * (1 + ((rango.min + rango.max) / 2 / 100) * k);
-      const margen = Math.max(0.5, ref * ((rango.max - rango.min) / 2 / 100) * Math.min(k, semanasFase));
-      return { plan: r2(plan), franja: [r2(plan - margen), r2(plan + margen)] };
-    };
+    const planEn = (fecha: string) => (ref == null || !objetivo ? null
+      : planDeFase({ ref, objetivo, pesoObjetivo: fase.targetWeight, semanas: semanasFase, desde, fecha }));
 
     // La franja de «la semana que viene» solo tiene sentido en la fase en curso.
     const propios = enCurso ? v.puntos : v.puntos.filter(p => p.fecha <= finFase);
