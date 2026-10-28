@@ -18,7 +18,7 @@ import { MealItem, DietMode, FoodCategory } from '../types';
 // generador pone solo debería ser algo que se resuelve abriendo la nevera; si el
 // atleta prefiere ponerse arroz, lo cambia él.
 
-const FRUIT_KEYWORDS = [
+export const FRUIT_KEYWORDS = [
   'manzana', 'pera', 'platano', 'plátano', 'mandarina', 'kiwi', 'naranja',
   'fresa', 'frutos rojos', 'melon', 'melón', 'sandia', 'sandía', 'piña',
   'pina', 'ciruela', 'uva', 'melocoton', 'melocotón', 'paraguayo', 'higo',
@@ -26,13 +26,13 @@ const FRUIT_KEYWORDS = [
   'caqui', 'castañas', 'castanas',
 ];
 
-const DAIRY_KEYWORDS = ['yogur', 'yogurt', 'skyr', 'queso fresco', 'requeson', 'requesón', 'cottage'];
+export const DAIRY_KEYWORDS = ['yogur', 'yogurt', 'skyr', 'queso fresco', 'requeson', 'requesón', 'cottage'];
 
-const NUT_KEYWORDS = ['frutos secos', 'puñado', 'punado', 'pipas', 'semillas', 'aceitunas', 'aguacate'];
+export const NUT_KEYWORDS = ['frutos secos', 'puñado', 'punado', 'pipas', 'semillas', 'aceitunas', 'aguacate'];
 
 /** Listo para comer sin cocinar: pan, tortitas, cereales… además de la fruta,
  *  el lácteo y el fruto seco de siempre. Es lo que se propone por defecto. */
-const READY_HC_KEYWORDS = [
+export const READY_HC_KEYWORDS = [
   'pan', 'tortitas de arroz', 'tortitas de maiz', 'cereales', 'corn flakes',
   'muesli', 'copos', 'frutas deshidratadas',
 ];
@@ -41,13 +41,13 @@ const READY_HC_KEYWORDS = [
  *  si quiere, pero el generador no los propone por su cuenta. "Añade 1,5
  *  raciones de mermelada" no es un consejo que deba dar una app de coaching
  *  sin que nadie se lo haya pedido. */
-const NUNCA_AUTOMATICO = ['mermelada', 'miel', 'azucar', 'azúcar', 'dextrosa', 'chocolate', 'cacao'];
+export const NUNCA_AUTOMATICO = ['mermelada', 'miel', 'azucar', 'azúcar', 'dextrosa', 'chocolate', 'cacao'];
 
 function normalize(s: string): string {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
-function labelIncludesAny(label: string, keywords: string[]): boolean {
+export function labelIncludesAny(label: string, keywords: string[]): boolean {
   const n = normalize(label);
   return keywords.some(k => n.includes(normalize(k)));
 }
@@ -96,13 +96,19 @@ const ALIMENTOS_VETADOS: Partial<Record<number, string[]>> = {
   // comida sin motivo.
 };
 
-/** ¿Alguna condición del atleta deja este alimento del banco fuera? */
-export function vetadoPorCondicion(item: MealItem, conditions?: readonly number[]): boolean {
+/** ¿Alguna condición del atleta deja fuera un alimento con este nombre? Vale
+ *  para el banco y para el catálogo por 100 g: en los dos solo hay nombre. */
+export function nombreVetadoPorCondicion(nombre: string, conditions?: readonly number[]): boolean {
   if (!conditions || conditions.length === 0) return false;
   return conditions.some(c => {
     const palabras = ALIMENTOS_VETADOS[c];
-    return !!palabras && labelIncludesAny(item.label, palabras);
+    return !!palabras && labelIncludesAny(nombre, palabras);
   });
+}
+
+/** ¿Alguna condición del atleta deja este alimento del banco fuera? */
+export function vetadoPorCondicion(item: MealItem, conditions?: readonly number[]): boolean {
+  return nombreVetadoPorCondicion(item.label, conditions);
 }
 
 /** Todo lo que el atleta puede elegir como extra: el banco entero de su modo de

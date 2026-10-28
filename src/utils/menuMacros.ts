@@ -26,8 +26,14 @@ export function macrosDelPlato(meal: Pick<MenuMeal, 'macros' | 'exch'>): Macros 
   return meal.macros ? { ...meal.macros } : macrosDeIntercambios(meal.exch);
 }
 
+/** Un extra del catálogo (10-2026) trae sus macros exactos; los del banco se
+ *  siguen midiendo en raciones de su grupo. */
+export function macrosDeAcompanamiento(c: MenuComplement): Macros {
+  return c.macros ? { ...c.macros } : macrosDeRaciones(c.category, c.quantity);
+}
+
 export function macrosDeAcompanamientos(complements: MenuComplement[] | undefined): Macros {
-  return sumarMacros(...(complements ?? []).map(c => macrosDeRaciones(c.category, c.quantity)));
+  return sumarMacros(...(complements ?? []).map(macrosDeAcompanamiento));
 }
 
 export function macrosDeRacionesExtra(raciones: MenuRacionExtra[] | undefined): Macros {

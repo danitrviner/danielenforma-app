@@ -13,16 +13,17 @@ import {
   getPublishedMenu, getOnboarding, getAthleteNutritionConfig,
   updateWeeklyMenu, getMenuCompletionLog, saveMenuCompletionLog,
   queryRecetasForGenerator, getRecipes, getRecipeById,
-  getRecipeFavorites, saveRecipeFavorites, getFoodItems, seedFoodItemsIfEmpty,
+  getRecipeFavorites, saveRecipeFavorites, getFoodItems, seedFoodItemsIfEmpty, getCatalogoAlimentos,
   getDietCompletionLog, saveDietCompletionLog,
 } from '../dbService';
-import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, totalConExtras, topeDeExtra, GeneratorPrefs, SwapCandidate } from '../utils/menuEngine';
+import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, totalConExtras, topeDeExtra, huecoParaExtra, GeneratorPrefs, SwapCandidate } from '../utils/menuEngine';
 import { normalizeStr } from '../utils/foodPrefs';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
-import { complementosDisponibles } from '../utils/menuComplements';
 import { foodNameWithoutGrams, foodNameShort, itemWeightLabel } from '../utils/exchangeHelpers';
-import { macrosDeLaComida, macrosDelPlato, macrosDeRaciones } from '../utils/menuMacros';
+import { macrosDeLaComida, macrosDelPlato, macrosDeAcompanamiento } from '../utils/menuMacros';
+import { alimentosParaExtras, alimentoDelExtra, cabeExtra, esExtraDelCatalogo, extraDeCatalogo, gramosPosibles, gramosVecinos, textoDeExtra } from '../utils/extrasDelCatalogo';
+import { buscarEnCatalogo, nombreDeAlimento, type AlimentoCatalogo } from '../utils/catalogoAlimentos';
 import { intercambiosDeMacros } from '../utils/macrosLegado';
 import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
 import { DishType } from '../utils/dishTypes';
@@ -43,7 +44,6 @@ const WEEK_DAY_SHORT: Record<WeekDay, string> = { mon: 'L', tue: 'M', wed: 'X', 
 const WEEK_DAY_FULL: Record<WeekDay, string> = {
   mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves', fri: 'Viernes', sat: 'Sábado', sun: 'Domingo',
 };
-const CAT_LABEL: Record<FoodCategory, string> = { HC: 'HC', PROT: 'PROT', GRASA: 'GRASA', MIX_HC: 'MIX·HC', MIX_GRASA: 'MIX·GRASA' };
 
 /* La fecha y el día de la semana salen de `useDiaActual`, no de constantes de
    módulo. Aquí estaban los dos fallos que ese hook ya arregló en «Mi plan»:
@@ -127,6 +127,8 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
   );
 
   // Banco de intercambios: es el catálogo de extras que puede elegir el atleta.
+  // Catálogo por 100 g: de aquí salen los extras en piezas exactas (28-10-2026).
+  const { data: catalogoAlimentos = [] } = useQuery({ queryKey: ['catalogoAlimentos'], queryFn: getCatalogoAlimentos, staleTime: 60 * 60_000 });
   const { data: foodList = [] } = useQuery({
     queryKey: ['foodItems'],
     queryFn: () => seedFoodItemsIfEmpty().catch(() => {}).then(getFoodItems),
@@ -770,11 +772,11 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                   <span className="flex-1 min-w-0">
                     <span className="block font-sans text-caption text-accent-ink uppercase tracking-wider">Extra · {meal.name}</span>
                     <span className="block font-sans font-bold text-body-s text-ink truncate">
-                      {itemWeightLabel(c.foodLabel, c.quantity)} {foodNameShort(c.foodLabel)}
+                      {esExtraDelCatalogo(c) ? textoDeExtra(c) : `${itemWeightLabel(c.foodLabel, c.quantity)} ${foodNameShort(c.foodLabel)}`}
                     </span>
                   </span>
                   <span className="font-mono text-caption text-ink-2 flex-shrink-0">
-                    {Math.round(macrosDeRaciones(c.category, c.quantity).kcal)} kcal
+                    {Math.round(macrosDeAcompanamiento(c).kcal)} kcal
                   </span>
                   <Icon name="edit" size="s" className="text-ink-3 flex-shrink-0" />
                 </button>
@@ -880,33 +882,55 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
         </Sheet>
       )}
 
-      {/* Elegir extras — catálogo = banco de intercambios entero */}
+      {/* Elegir extras — del catálogo por 100 g (28-10-2026): fruta, lácteo,
+          pan y frutos secos en piezas o gramos exactos; lo que le gusta, primero.
+          Un extra viejo del banco se sigue pudiendo subir, bajar o quitar. */}
       {extrasFor && (() => {
         const extras = extrasDe(extrasFor.mealId);
         const actual = extrasFor.idx != null ? extras[extrasFor.idx] : null;
-        const q = normalizeStr(extraQuery.trim());
-        // `prefs.conditions` también aquí: el buscador de extras le abre al
-        // atleta el banco entero, y ahí dentro hay pan, pasta y hasta seitán.
+        const q = extraQuery.trim();
+        const comidaDelExtra = day?.meals.find(m => m.id === extrasFor?.mealId);
         /* Cuánto cabe todavía en esta comida. El recorte de verdad lo hace la
          * capa de escritura (`updateWeeklyMenu`), que es la que no se puede
          * saltar; esto es para que el atleta VEA el tope en vez de escribir un
          * número que luego le desaparece sin explicación. */
-        const comidaDelExtra = day?.meals.find(m => m.id === extrasFor?.mealId);
-        const topeActual = comidaDelExtra && actual
+        const hueco = comidaDelExtra ? huecoParaExtra(comidaDelExtra, extrasFor?.idx ?? undefined) : null;
+        const cabe = (c: MenuComplement) => !hueco || cabeExtra(hueco, c);
+
+        const esDelCatalogo = !!actual && esExtraDelCatalogo(actual);
+        const alimentoActual = actual ? alimentoDelExtra(actual) : null;
+        const siguienteCantidad = (delta: 1 | -1): MenuComplement | null => {
+          if (!actual || !alimentoActual || !actual.gramos) return null;
+          const g = gramosVecinos(alimentoActual, actual.gramos, delta);
+          return g == null ? null : extraDeCatalogo(alimentoActual, g);
+        };
+        const masCatalogo = siguienteCantidad(1);
+        const menosCatalogo = siguienteCantidad(-1);
+        const topeBanco = comidaDelExtra && actual && !esDelCatalogo
           ? topeDeExtra(comidaDelExtra, actual.category, extrasFor?.idx ?? undefined)
           : Infinity;
-        const cabeMas = actual ? actual.quantity + 0.25 <= topeActual : true;
+        const cabeMas = esDelCatalogo ? !!masCatalogo && cabe(masCatalogo) : actual ? actual.quantity + 0.25 <= topeBanco : true;
 
-        /* Un alimento cuya categoría ya está cubierta no se ofrece: entrar con
-         * cantidad 1 y que la capa de escritura lo borre en el acto parecería
-         * que la app se lo ha comido. */
-        const catalogo = complementosDisponibles(foodList, dietMode, actual?.category, prefs.conditions)
-          .filter(a => !comidaDelExtra || topeDeExtra(comidaDelExtra, a.category, extrasFor?.idx ?? undefined) >= 0.25)
-          .filter(f => !q || normalizeStr(f.label).includes(q));
+        /* Sin buscar: lo que puede ser extra (fruta, lácteo, pan, frutos secos),
+         * con lo que le gusta delante. Buscando: el catálogo entero. Un
+         * alimento que no cabe ni en su cantidad mínima no se ofrece. */
+        const candidatos = q
+          ? buscarEnCatalogo(catalogoAlimentos, q, 40)
+          : alimentosParaExtras(catalogoAlimentos, { liked: prefs.liked, disliked: prefs.disliked, allergies: prefs.allergies, conditions: prefs.conditions, dietType: prefs.dietType }).map(c => c.a);
+        const lista = candidatos.filter(a => cabe(extraDeCatalogo(a, gramosPosibles(a)[0])));
 
-        function cambiarCantidad(delta: number) {
+        function cambiarCantidad(delta: 1 | -1) {
           if (extrasFor?.idx == null || !actual) return;
-          const cantidad = Math.round((actual.quantity + delta) * 4) / 4;
+          if (esDelCatalogo) {
+            const nuevo = delta > 0 ? masCatalogo : menosCatalogo;
+            const siguiente = nuevo
+              ? extras.map((c, i) => i === extrasFor.idx ? nuevo : c)
+              : extras.filter((_, i) => i !== extrasFor.idx);
+            guardarExtras(extrasFor.mealId, siguiente);
+            if (!nuevo) setExtrasFor(null);
+            return;
+          }
+          const cantidad = Math.round((actual.quantity + delta * 0.25) * 4) / 4;
           const siguiente = cantidad < 0.25
             ? extras.filter((_, i) => i !== extrasFor.idx)
             : extras.map((c, i) => i === extrasFor.idx ? { ...c, quantity: cantidad } : c);
@@ -914,14 +938,21 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
           if (cantidad < 0.25) setExtrasFor(null);
         }
 
-        function elegirAlimento(item: MealItem) {
+        function elegirAlimento(a: AlimentoCatalogo) {
           if (!extrasFor) return;
+          // La mayor cantidad que cabe, empezando por una pieza; si ni media cabe, la mínima.
+          const posibles = gramosPosibles(a);
+          const preferida = a.unidad ? a.unidad.gramos : posibles[0];
+          const quepan = posibles.filter(g => g <= preferida && cabe(extraDeCatalogo(a, g)));
+          const nuevo = extraDeCatalogo(a, quepan.length > 0 ? quepan[quepan.length - 1] : posibles[0]);
           const siguiente = extrasFor.idx != null
-            ? extras.map((c, i) => i === extrasFor.idx ? { ...c, foodLabel: item.label, category: item.category } : c)
-            : [...extras, { foodLabel: item.label, category: item.category, quantity: 1 }];
+            ? extras.map((c, i) => i === extrasFor.idx ? nuevo : c)
+            : [...extras, nuevo];
           guardarExtras(extrasFor.mealId, siguiente);
           setExtrasFor(null);
         }
+
+        const textoActual = actual ? (esDelCatalogo ? textoDeExtra(actual) : `${itemWeightLabel(actual.foodLabel, actual.quantity)} ${foodNameWithoutGrams(actual.foodLabel)}`) : '';
 
         return (
           <Sheet
@@ -934,8 +965,8 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
               {actual && (
                 <div className="flex items-center justify-between gap-3 p-3 bg-raised border border-hairline rounded-control">
                   <div className="min-w-0">
-                    <p className="font-sans text-body-s text-ink truncate">{foodNameWithoutGrams(actual.foodLabel)}</p>
-                    <p className="font-mono text-caption text-ink-2">{itemWeightLabel(actual.foodLabel, actual.quantity)}</p>
+                    <p className="font-sans text-body-s text-ink truncate">{textoActual}</p>
+                    <p className="font-mono text-caption text-ink-2">{Math.round(macrosDeAcompanamiento(actual).kcal)} kcal</p>
                   </div>
                   {/* Mismo patrón que el `Stepper` de MesocycleManager: el
                       carácter, no un <Icon>. Con el icono sobre `bg-bg` y sin
@@ -943,16 +974,18 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                       (comprobado en navegador a 375px). */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button
-                      onClick={() => cambiarCantidad(-0.25)}
+                      onClick={() => cambiarCantidad(-1)}
                       className="w-11 h-11 rounded-control bg-raised text-ink-2 hover:text-ink text-body-s font-bold flex items-center justify-center"
-                      title="Menos cantidad"
+                      title={esDelCatalogo ? (actual.piezas ? 'Media pieza menos' : '25 g menos') : 'Menos cantidad'}
                     >−</button>
-                    <span className="font-mono text-body-s text-ink w-10 text-center">{actual.quantity}</span>
+                    <span className="font-mono text-body-s text-ink min-w-10 text-center">
+                      {esDelCatalogo ? (actual.piezas ? `${actual.piezas}` : `${actual.gramos} g`) : actual.quantity}
+                    </span>
                     <button
-                      onClick={() => cambiarCantidad(0.25)}
+                      onClick={() => cambiarCantidad(1)}
                       disabled={!cabeMas}
                       className="w-11 h-11 rounded-control bg-raised text-ink-2 hover:text-ink text-body-s font-bold flex items-center justify-center disabled:opacity-40 disabled:hover:text-ink-2"
-                      title={cabeMas ? 'Más cantidad' : 'Esta comida ya llega a su objetivo'}
+                      title={cabeMas ? (esDelCatalogo ? (actual.piezas ? 'Media pieza más' : '25 g más') : 'Más cantidad') : 'Esta comida ya llega a su objetivo'}
                     >+</button>
                   </div>
                 </div>
@@ -979,32 +1012,38 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
 
               <div>
                 <p className="font-mono text-caption text-ink-3 mb-2">
-                  {actual
-                    ? `Cámbialo por otro de ${CAT_LABEL[actual.category]} — mismas kcal`
-                    : 'Elige de tus alimentos generales'}
+                  {actual ? 'Cámbialo por otro alimento' : 'Fruta, lácteos, pan y frutos secos; lo que te gusta, primero'}
                 </p>
                 <input
                   type="search"
                   value={extraQuery}
                   onChange={e => setExtraQuery(e.target.value)}
-                  placeholder="Buscar (pan, fruta, arroz…)"
+                  placeholder="Buscar en el catálogo (plátano, yogur, pan…)"
                   className="w-full px-3 py-2 bg-bg border border-control-line rounded-control font-sans text-body text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                {catalogo.length === 0 ? (
-                  <p className="font-sans text-label text-ink-3 text-center py-6">Nada con ese nombre en tu banco.</p>
-                ) : catalogo.slice(0, 60).map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => elegirAlimento(item)}
-                    className="w-full flex items-center justify-between gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
-                  >
-                    <span className="font-sans text-body-s text-ink truncate">{item.label}</span>
-                    <Badge tone="neutral">{CAT_LABEL[item.category]}</Badge>
-                  </button>
-                ))}
+                {catalogoAlimentos.length === 0 ? (
+                  <p className="font-sans text-label text-ink-3 text-center py-6">El catálogo no ha cargado. Inténtalo otra vez con conexión.</p>
+                ) : lista.length === 0 ? (
+                  <p className="font-sans text-label text-ink-3 text-center py-6">{q ? 'Nada con ese nombre en el catálogo.' : 'Ningún extra cabe ya en esta comida.'}</p>
+                ) : lista.slice(0, 60).map(a => {
+                  const muestra = extraDeCatalogo(a, a.unidad ? a.unidad.gramos : gramosPosibles(a)[0]);
+                  return (
+                    <button
+                      key={a.id}
+                      onClick={() => elegirAlimento(a)}
+                      className="w-full flex items-center justify-between gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
+                    >
+                      <span className="min-w-0">
+                        <span className="block font-sans text-body-s text-ink truncate">{nombreDeAlimento(a)}</span>
+                        <span className="block font-mono text-caption text-ink-3">{textoDeExtra(muestra)} · {muestra.macros!.kcal} kcal</span>
+                      </span>
+                      {prefs.liked.some(l => normalizeStr(a.nombre).includes(normalizeStr(l))) && <Badge tone="accent">Te gusta</Badge>}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </Sheet>

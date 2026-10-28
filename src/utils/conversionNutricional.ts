@@ -1,6 +1,8 @@
 import { macrosDelPlato } from './menuMacros';
 import { intercambiosDeMacros } from './macrosLegado';
 import type { DietItem, MenuMeal, Recipe } from '../types';
+import { itemsDeProducto } from './productoAIntercambios';
+import { alimentoDelExtra } from './extrasDelCatalogo';
 import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -193,7 +195,17 @@ export function itemsDeComidaDelMenu(recipe: Recipe, meal: MenuMeal): DietItem[]
     }
   }
 
-  // Los acompañamientos SÍ son alimentos del banco: llevan su gramaje.
+  // Los acompañamientos SÍ son alimentos del banco: llevan su gramaje. Los del
+  // catálogo (10-2026) entran como un alimento del catálogo en gramos reales,
+  // igual que si el atleta lo hubiera buscado en el Diario.
+  (meal.complements ?? []).forEach((c, i) => {
+    const a = alimentoDelExtra(c);
+    if (!a || !c.gramos) return;
+    items.push(...itemsDeProducto({
+      nombre: c.foodLabel, gramos: c.gramos, lineaId: `${lineaId}_x${i}`,
+      origen: { tipo: 'catalogo', id: a.id }, porCien: a.porCien,
+    }).items);
+  });
   for (const c of meal.complements ?? []) {
     if (c.quantity <= 0) continue;
     items.push({

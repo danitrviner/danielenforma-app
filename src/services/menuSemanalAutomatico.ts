@@ -2,7 +2,7 @@ import type { Recipe, WeeklyMenu, UserProfile } from '../types';
 import {
   getNutritionProgram, getPublishedMenu, getWeeklyMenusForAthlete, createWeeklyMenu, getDietsForAthlete,
   getAthleteDietConfig, getAthleteNutritionConfig, getOnboarding, getRecipeFavorites, getReglasDeReceta, getAccesoGlobalARecetas, getRecipes,
-  queryRecetasForGenerator, getFoodItems, createNotificationDeduped,
+  queryRecetasForGenerator, getFoodItems, createNotificationDeduped, getCatalogoAlimentos,
 } from '../dbService';
 import { generateWeek, slotsFromOnboarding, recipeMatchesSlot, filtroDuro, type GeneratorPrefs } from '../utils/menuEngine';
 import { listaDeMenuVigente } from '../utils/accesoARecetas';
@@ -35,9 +35,10 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
   const semana = semanaQueNecesitaMenu(program, publicado, borradores, hoy);
   if (semana == null) return null;
 
-  const [diets, dietConfig, nutritionConfig, onboarding, favoritos, delCoach, alimentos] = await Promise.all([
+  const [diets, dietConfig, nutritionConfig, onboarding, favoritos, delCoach, alimentos, catalogo] = await Promise.all([
     getDietsForAthlete(athleteEmail), getAthleteDietConfig(athleteEmail), getAthleteNutritionConfig(athleteEmail),
     getOnboarding(athleteEmail), getRecipeFavorites(athleteEmail), getRecipes({ ownerId: coachId }), getFoodItems(),
+    getCatalogoAlimentos(),
   ]);
   // Lo que el coach ha escondido a este atleta. Sin lectura posible (red, permisos)
   // se genera sin reglas: un menú sin ellas es mejor que ninguno.
@@ -81,7 +82,7 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
     pools[slot] = [...recetas, ...delCoach.filter(r => recipeMatchesSlot(r, slot))];
   }
   const days = generateWeek({
-    schedule, diets: dietas, slots, pools, foods: alimentos, prefs,
+    schedule, diets: dietas, slots, pools, foods: alimentos, prefs, catalogo,
     batch: !!publicado.batchCooking, mode: nutritionConfig?.enabledModes?.[0] ?? 'OMNIVORO',
   });
 
