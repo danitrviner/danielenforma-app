@@ -9,7 +9,7 @@ import {
   getCardioSessionsForAthlete, getProgressPhotos, getAssignmentsForAthlete, getQuestionnairesByCoach,
   getCoachDayNotesForAthlete, saveCoachDayNote,
   getMesocycleTemplates, createMesocycle, getAthleteDietConfig, saveAthleteDietConfig,
-  assignQuestionnaire, createNotificationDeduped,
+  assignQuestionnaire, createNotificationDeduped, getOnboarding,
 } from '../dbService';
 import { planificarPlantillaMeso, insertarFaseNutricion, alternarRefeeds, FaseNueva } from '../utils/accionesCalendario';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
@@ -108,6 +108,12 @@ export default function CoachRoadmapView({ athleteEmail, coachId, onGoToClientTa
   const { data: cardioSessions = [], isPending: loadingCardio } = useQuery({
     queryKey: ['cardioSessions', athleteEmail],
     queryFn: () => getCardioSessionsForAthlete(athleteEmail),
+  });
+  // Solo para el nivel de retos (la experiencia que declaró en el alta). No
+  // bloquea la pantalla: sin él el nivel se calcula con la antigüedad.
+  const { data: onboarding = null } = useQuery({
+    queryKey: ['onboarding', athleteEmail],
+    queryFn: () => getOnboarding(athleteEmail).catch(() => null),
   });
   const { data: progressPhotos = [], isPending: loadingPhotos } = useQuery({
     queryKey: ['progressPhotos', athleteEmail],
@@ -360,6 +366,7 @@ export default function CoachRoadmapView({ athleteEmail, coachId, onGoToClientTa
     stepLogs, bodyweightLogs, workoutLogs, exercises,
     completionLogs: dietCompletionLogs, coachDiets: diets.filter(d => !d.selfManaged),
     assignments, projection: null, liftExerciseIds: rm.challengeConfig?.liftExerciseIds,
+    workouts, mesocycles, experienceLevel: onboarding?.experienceLevel, nivelForzado: rm.challengeConfig?.nivel,
   };
 
   return (

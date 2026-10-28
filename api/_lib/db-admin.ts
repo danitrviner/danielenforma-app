@@ -18,7 +18,7 @@ import type {
   AppNotification, AthleteDietConfig, BodyweightLog, CardioSession, Diet,
   DietCompletionLog, Exercise, LevelLadder, NutritionProgram, Roadmap, StepLog,
   UserProfile, WeeklyChallenge, WorkoutAssignment, WorkoutLog,
-  Mesocycle, QuestionnaireAssignment, QuestionnaireResponse,
+  Mesocycle, QuestionnaireAssignment, QuestionnaireResponse, Workout, ExperienceLevel,
 } from '../../src/types.js';
 import { atletasActivos } from '../../src/utils/atletas.js';
 import { getAdminDb } from './auth.js';
@@ -122,6 +122,19 @@ export async function leerRespuestasDeCuestionarios(db: Firestore, email: string
 export async function leerMesociclos(db: Firestore, email: string): Promise<Mesocycle[]> {
   const snap = await db.collection('mesocycles').where('athleteId', '==', email).get();
   return snap.docs.map(d => conId<Mesocycle>(d));
+}
+
+/** Rutinas por id (una lectura por rutina, en un solo viaje). */
+export async function leerRutinas(db: Firestore, ids: string[]): Promise<Workout[]> {
+  if (ids.length === 0) return [];
+  const snaps = await db.getAll(...ids.map(id => db.collection('workouts').doc(id)));
+  return snaps.filter(s => s.exists).map(s => conId<Workout>(s));
+}
+
+/** La experiencia que declaró el atleta en el alta (para el nivel de retos). */
+export async function leerExperiencia(db: Firestore, email: string): Promise<ExperienceLevel | undefined> {
+  const snap = await db.collection('onboarding').doc(email).get();
+  return snap.exists ? (snap.data() as { experienceLevel?: ExperienceLevel }).experienceLevel : undefined;
 }
 
 export async function leerDietas(db: Firestore, email: string): Promise<Diet[]> {

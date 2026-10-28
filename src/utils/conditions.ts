@@ -1,4 +1,4 @@
-import { ConditionMetric, ConditionOperator, RuleCondition, WorkoutAssignment, WorkoutLog, BodyweightLog } from '../types';
+import { ConditionMetric, ConditionOperator, RuleCondition, WorkoutAssignment, WorkoutLog, BodyweightLog } from '../types.js';
 
 // ─── Bloque H2.2 — periodización auto-regulada ─────────────────────────────
 // Motor de evaluación de las condiciones que el coach construye en

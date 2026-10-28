@@ -1,6 +1,6 @@
-import { WorkoutExercise, WeeklyProgressionRule, CambiosDeSemana } from '../types';
-import { syncAggregateFromGroups } from './setGroups';
-import { evaluateCondition, ConditionContext } from './conditions';
+import { WorkoutExercise, WeeklyProgressionRule, CambiosDeSemana } from '../types.js';
+import { syncAggregateFromGroups } from './setGroups.js';
+import { evaluateCondition, ConditionContext } from './conditions.js';
 
 /**
  * Días que dura una vuelta completa del mesociclo.

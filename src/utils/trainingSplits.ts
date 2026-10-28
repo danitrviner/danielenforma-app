@@ -1,5 +1,5 @@
-import { MuscleGroup, MuscleGroupConfig, Mesocycle, RepartoPropio } from '../types';
-import { frecuenciaPorSemana, offsetsDeSesiones } from './progression';
+import { MuscleGroup, MuscleGroupConfig, Mesocycle, RepartoPropio } from '../types.js';
+import { frecuenciaPorSemana, offsetsDeSesiones } from './progression.js';
 
 // Catálogo de repartos de entrenamiento estándar (torso/pierna, push/pull,
 // full body...) — Dani los definió como la forma "correcta" de repartir los

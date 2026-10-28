@@ -119,9 +119,9 @@ export default function ChallengeOptionsPanel({
         <p className="text-label text-ink-3 font-sans">Sin datos suficientes todavía para proponer opciones.</p>
       ) : (
         <div className="space-y-2">
-          {options.map(opt => (
+          {options.map((opt, i) => (
             <div
-              key={opt.kind}
+              key={`${opt.kind}-${i}`}
               className="bg-surface border rounded-surface p-3 space-y-2"
               style={{ borderColor: opt.isMilestone ? 'color-mix(in oklab, var(--color-accent) 33%, transparent)' : 'var(--color-hairline)' }}
             >

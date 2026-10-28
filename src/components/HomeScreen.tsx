@@ -157,7 +157,7 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
      Comparte todas las claves de consulta con el Road map, así que un atleta
      que pase por las dos pantallas paga las lecturas UNA vez. */
   const { resultado: reto, racha, cargando: cargandoReto } =
-    useRetoDeLaSemana(profile.email, assignments);
+    useRetoDeLaSemana(profile.email, assignments, loadingAssignments);
 
   /* Los pesajes de la curva, con VENTANA y clave propia. El historial entero
      son cientos de documentos y aquí solo hacen falta los últimos doce puntos;

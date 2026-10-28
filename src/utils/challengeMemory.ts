@@ -84,6 +84,10 @@ export function buildChallengeMemory(
 
   for (const ch of past) {
     if (ch.status === 'activo') continue;  // semana en curso o sin resolver: no opina
+    // Un reto de ejercicio que acabó en 0 no se intentó: el ejercicio no se
+    // hizo esa semana. No dice nada de si el listón era alto, así que ni
+    // baja la dificultad ni quema el tipo ni el hito (Dani acumuló seis así).
+    if (sinIntento(ch)) continue;
     resolvedCount++;
     const won = ch.status === 'conseguido';
     if (won) wonCount++;
@@ -122,6 +126,14 @@ export function buildChallengeMemory(
     winRate: resolvedCount > 0 ? wonCount / resolvedCount : 0,
     winStreak,
   };
+}
+
+// Tipos en los que un progreso de 0 solo puede significar «no se hizo el
+// ejercicio» (cualquier serie registrada ya da un valor > 0).
+const KINDS_DE_EJERCICIO = new Set<ChallengeKind>(['carga_ejercicio', 'reps_ejercicio', 'amrap_serie', 'doble_progresion']);
+
+export function sinIntento(ch: WeeklyChallenge): boolean {
+  return ch.status === 'fallido' && KINDS_DE_EJERCICIO.has(ch.kind) && !(ch.progressValue ?? 0);
 }
 
 // ── Dificultad ────────────────────────────────────────────────────────────────

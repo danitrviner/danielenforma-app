@@ -17,6 +17,7 @@ import { useEstable } from '../../hooks/useEstable';
 import { SetInput } from './setInput';
 import ExerciseCard from './ExerciseCard';
 import ExerciseCloseCard from './ExerciseCloseCard';
+import AvisoDeRetoEnSesion from './AvisoDeRetoEnSesion';
 import { ListaDeNovedades } from './NovedadesDeSemana';
 import type { NovedadesDeLaSesion } from '../../utils/planificadorProgresion';
 
@@ -389,8 +390,9 @@ export default function WorkoutSessionPlayer({
     }
 
     return (
+      <div key={`${we.exerciseId}-${exIdx}`} className="space-y-3">
+      <AvisoDeRetoEnSesion athleteEmail={profile.email} exerciseId={we.exerciseId} workoutId={activeWorkout.id} />
       <ExerciseCard
-        key={`${we.exerciseId}-${exIdx}`}
         we={we}
         exIdx={exIdx}
         ex={ex}
@@ -415,6 +417,7 @@ export default function WorkoutSessionPlayer({
         firstSetRowTargetRef={exIdx === 0 ? firstSetRowTargetRef : undefined}
         cambios={avisoSesion?.datos.porEjercicio[exIdx]}
       />
+      </div>
     );
   });
 

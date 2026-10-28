@@ -23,6 +23,7 @@ import {
   WeeklyChallenge, ChallengeKind, ChallengeDifficulty, ChallengeStreakSource,
   StepLog, BodyweightLog, WorkoutLog, Exercise, DietCompletionLog, Diet,
   WorkoutAssignment, CardioSession, MuscleGroup, MUSCLE_LABELS,
+  Workout, Mesocycle, ExperienceLevel, NivelDeRetos, ContextoDeReto,
 } from '../types.js';
 import { ProjectionResult } from './nutritionPeriodization.js';
 import { getWeekStart, addDays } from './trainingWeek.js';
@@ -36,6 +37,8 @@ import {
   rotationPenalty, frustrationPenalty, failedMilestoneAttempts,
   weekSeed, pickVariant,
 } from './challengeMemory.js';
+import { planDeLaSemana, nivelDeRetos, sesionesPendientes } from './planDeLaSemana.js';
+import { opcionesDeRendimiento } from './retosDeRendimiento.js';
 
 // Básicos por defecto para retos de carga (si el coach no configura elegibles).
 export const BASIC_LIFT_KEYWORDS = ['sentadilla', 'press banca', 'peso muerto', 'dominada', 'press militar', 'remo'];
@@ -89,6 +92,13 @@ export interface ChallengeData {
   // solo evalúan progreso, pero sin él el motor pierde rotación larga y
   // dificultad adaptativa (se comporta como si fuese su primera semana).
   history?: WeeklyChallenge[];
+  // Plan de entrenamiento (28-10-2026). Sin `workouts` el motor no sabe qué
+  // tiene programado el atleta y no propone retos de rendimiento; los de
+  // carga siguen saliendo como antes, por palabra clave.
+  workouts?: Workout[];                  // rutinas de las asignaciones (al menos las de esta semana)
+  mesocycles?: Mesocycle[];
+  experienceLevel?: ExperienceLevel;     // del alta
+  nivelForzado?: NivelDeRetos;           // roadmap.challengeConfig.nivel
 }
 
 export interface AutoChallengeInput extends ChallengeData {
@@ -110,6 +120,7 @@ export interface ChallengeOption {
   metric: WeeklyChallenge['metric'];
   isMilestone?: boolean;               // hito redondo de carga
   difficulty: ChallengeDifficulty;     // cómo de exigente es respecto a su baseline
+  contexto?: ContextoDeReto;           // bloque y semana (si hay mesociclo activo)
 }
 
 // ── Hitos redondos ────────────────────────────────────────────────────────────
@@ -180,8 +191,26 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
         ? { ...EMPTY_MEMORY, recentKinds: [input.previousKind] }
         : EMPTY_MEMORY);
 
+  // Nivel del atleta y su plan de la semana (28-10-2026). Con el plan
+  // conocido, un ejercicio que no le toca esta semana nunca es reto: antes se
+  // elegía por palabra clave y el atleta recibía «Mejora tu remo» semanas en
+  // las que no tenía remo — fallo con 0, dificultad a la baja y vuelta a los
+  // retos de hábito.
+  const nivel = nivelDeRetos({
+    workoutLogs: input.workoutLogs, today: input.today,
+    experienceLevel: input.experienceLevel, nivelForzado: input.nivelForzado,
+  });
+  const plan = planDeLaSemana({
+    assignments: input.assignments, workouts: input.workouts, mesocycles: input.mesocycles,
+    exercises: input.exercises, today: input.today,
+  });
+  const delPlan = plan
+    ? new Set(sesionesPendientes(plan, input.today).flatMap(s => s.ejercicios.map(e => e.exerciseId)))
+    : null;
+
   // ── Carga: hito redondo, progresión, o PR de repeticiones ──
-  const eligible = eligibleLiftIds(input.exercises, input.liftExerciseIds);
+  const elegiblesPorNombre = eligibleLiftIds(input.exercises, input.liftExerciseIds);
+  const eligible = delPlan ? new Set([...elegiblesPorNombre].filter(id => delPlan.has(id))) : elegiblesPorNombre;
   const liftFrom = addDays(weekStart, -21);
   const nameById = new Map(input.exercises.map(e => [e.id, e.name]));
   const bestByExercise: { exerciseId: string; best: BestSet; freq: number }[] = [];
@@ -406,7 +435,12 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
 
   // ── Entrenos completados ──
   {
-    const weekAssignments = input.assignments.filter(a => a.date >= weekStart && a.date <= weekEnd);
+    // Con bloque activo solo cuentan SUS sesiones: las que sobran de un
+    // mesociclo anterior no son lo que el atleta está haciendo.
+    const weekAssignments = plan?.meso
+      ? input.assignments.filter(a => plan.sesiones.some(s => s.assignmentId === a.id))
+      : input.assignments.filter(a => a.date >= weekStart && a.date <= weekEnd);
+    const ctx = plan?.contexto;
     if (weekAssignments.length > 0) {
       const tuning = difficultyFor('entrenos_completados', memory);
       // No se puede "escalar" un entreno: o vas o no vas. Lo que sí se puede es
@@ -419,14 +453,16 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
         kind: 'entrenos_completados',
         score: 50,
         difficulty: tuning.label,
-        title: pleno ? 'Semana completa de entrenos' : `Completa ${target} de ${total} entrenos`,
+        title: pleno
+          ? (ctx ? `Semana ${ctx.semana} de ${ctx.semanas}: ${total} de ${total}` : 'Semana completa de entrenos')
+          : `Completa ${target} de ${total} entrenos`,
         description: pleno
           ? `Tienes ${total} entrenamiento${total === 1 ? '' : 's'} esta semana. Complétalo${total === 1 ? '' : 's todos'}.`
           : `Tienes ${total} entrenamientos esta semana. Completa al menos ${target}: mejor ${target} buenos que ninguno perfecto.`,
         reason: pleno
           ? 'Cerrar la semana de entrenos al 100%'
           : `Objetivo rebajado a ${target}/${total} tras dos semanas fallando el pleno`,
-        metric: { unit: 'sesiones', target },
+        metric: { unit: 'sesiones', target, ...(plan?.meso ? { mesocycleId: plan.meso.id } : {}) },
       });
     }
   }
@@ -543,7 +579,9 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
       title: `Registra ${peor.que} ${target} días`,
       description: enBlanco
         ? `Empezamos por lo básico: apunta ${peor.que} ${target} días de los 7 — ${peor.comoSeHace}. Sin ese dato no puedo ajustarte nada, y con él empiezan los retos de verdad.`
-        : `Vas registrando ${peor.que} unos ${Math.round(porSemana)} días por semana. Esta semana: ${target} de 7 — ${peor.comoSeHace}. ${cierre}`,
+        : Math.round(porSemana) === 0
+          ? `Casi no estás registrando ${peor.que}. Esta semana: ${target} de 7 — ${peor.comoSeHace}. ${cierre}`
+          : `Vas registrando ${peor.que} unos ${Math.round(porSemana)} días por semana. Esta semana: ${target} de 7 — ${peor.comoSeHace}. ${cierre}`,
       reason: enBlanco
         ? 'Sin datos todavía: el reto de arranque es generar el primer registro, no un objetivo inventado'
         : bloqueando
@@ -551,6 +589,29 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
           : `Reforzar el hábito de registro peor cubierto (${peor.source})`,
       metric: { unit: 'días', target, baseline: Math.round(porSemana), streakSource: peor.source },
     });
+  }
+
+  // ── Retos de rendimiento y peso de cada tipo según el nivel ──────────────
+  if (plan && nivel !== 'arranque') {
+    const rendimiento = opcionesDeRendimiento({
+      plan, workoutLogs: input.workoutLogs, exercises: input.exercises, memory,
+      today: input.today, seed, cierre,
+    });
+    // En constancia también salen, pero por detrás de la adherencia.
+    for (const o of rendimiento) options.push(nivel === 'constancia' ? { ...o, score: o.score - 15 } : o);
+  }
+  for (const opt of options) {
+    // Los retos de registro son de arranque. A quien ya entrena con datos no
+    // se le manda «registra tus pasos» salvo que no haya nada mejor que darle.
+    if (nivel !== 'arranque' && opt.kind === 'racha_registro') opt.score = 5;
+    if (nivel === 'rendimiento') {
+      if (HABITOS.has(opt.kind)) opt.score -= 25;
+      // Los de carga «a la antigua» quedan por detrás de los del plan, que
+      // los cubren mejor (doble progresión, récords); el hito, por detrás de
+      // las semanas especiales.
+      if (opt.kind === 'carga_ejercicio' || opt.kind === 'reps_ejercicio' || opt.kind === 'series_grupo') opt.score -= 10;
+    }
+    if (!opt.contexto && plan?.contexto) opt.contexto = plan.contexto;
   }
 
   // ── Rotación, fatiga y orden final ────────────────────────────────────────
@@ -566,6 +627,10 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
 
   return options.sort((a, b) => b.score - a.score);
 }
+
+// Tipos de salud general: en rendimiento siguen existiendo, pero el reto de la
+// semana de quien entrena en serio sale de su entrenamiento.
+const HABITOS = new Set<ChallengeKind>(['pasos_media', 'pasos_total', 'adherencia_dieta', 'peso_objetivo', 'cardio_zona2']);
 
 // Fallback final cuando no hay dato ninguno NI opción de hábito disponible.
 // En la práctica ya no se alcanza (generateChallengeOptions siempre devuelve al
@@ -607,5 +672,6 @@ export function buildChallengeFromOption(
     // intentos de hito y con qué listón se envió cada reto.
     ...(opt.isMilestone ? { isMilestone: true } : {}),
     difficulty: opt.difficulty,
+    ...(opt.contexto ? { contexto: opt.contexto } : {}),
   };
 }

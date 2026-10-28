@@ -6,6 +6,7 @@ import {
   getWorkoutLogs, getExercises, getDietCompletionLogsForAthlete, getDietsForAthlete,
   getOnboarding, getAthleteNutritionConfig,
   getWeeklyChallengesForAthlete, getCardioSessionsSince, getWeeklyChallenge,
+  getWorkoutsByIds, getMesocycles,
 } from '../dbService';
 import { bodyweightForAthleteKey } from './useAthleteWeight';
 import { ensureWeeklyChallenge, EnsureChallengeResult } from '../utils/ensureWeeklyChallenge';
@@ -43,7 +44,14 @@ const DEFAULT_STEP_GOAL = 8000;
  * Se dispara UNA vez por atleta cuando todo ha cargado, no en cada refetch de
  * fondo — mismo patrón de guard con ref que ya usaba el Road map.
  */
-export function useRetoDeLaSemana(athleteEmail: string, assignments: WorkoutAssignment[]) {
+export function useRetoDeLaSemana(
+  athleteEmail: string,
+  assignments: WorkoutAssignment[],
+  /* Mientras las asignaciones cargan, quien llama pasa `[]`. Sin esto el motor
+     (que arranca UNA vez) podía generar el reto con la semana vacía: sin plan
+     no hay retos de rendimiento y se caía a los de hábito. */
+  cargandoAsignaciones = false,
+) {
   const qc = useQueryClient();
   const [resultado, setResultado] = useState<EnsureChallengeResult | null>(null);
   const hoy = useMemo(() => hoyIsoLocal(), []);
@@ -138,9 +146,27 @@ export function useRetoDeLaSemana(athleteEmail: string, assignments: WorkoutAssi
     enabled: hazFalta,
   });
 
+  // El plan de la semana, para los retos de rendimiento (28-10-2026): qué
+  // sesiones le quedan y con qué prescripción. Mismas claves que Inicio y
+  // Entrenamiento (los ids se sacan igual, en el mismo orden), así que en
+  // Inicio no cuestan ninguna lectura más.
+  const workoutIds = useMemo(() => Array.from(new Set(assignments.map(a => a.workoutId))), [assignments]);
+  const { data: workouts = [], isPending: cargandoRutinasQuery } = useQuery({
+    queryKey: ['workoutsByIds', workoutIds],
+    queryFn: () => getWorkoutsByIds(workoutIds),
+    enabled: hazFalta && workoutIds.length > 0,
+  });
+  const cargandoRutinas = workoutIds.length > 0 && cargandoRutinasQuery;
+  const { data: mesocycles = [], isPending: cargandoMesos } = useQuery({
+    queryKey: ['mesocycles', athleteEmail],
+    queryFn: () => getMesocycles(athleteEmail),
+    enabled: hazFalta,
+  });
+
   const cargando = cargandoPrograma || cargandoRoadmap || cargandoPeso || cargandoPasos
     || cargandoLogs || cargandoEjercicios || cargandoDieta || cargandoDietas || cargandoAlta
-    || cargandoConfig || cargandoHistorial || cargandoCardio;
+    || cargandoConfig || cargandoHistorial || cargandoCardio || cargandoRutinas || cargandoMesos
+    || cargandoAsignaciones;
 
   const stepGoal = nutConfig?.stepGoal ?? DEFAULT_STEP_GOAL;
   const kcalPerStep = nutConfig?.kcalPerStep ?? DEFAULT_KCAL_PER_STEP;
@@ -175,6 +201,9 @@ export function useRetoDeLaSemana(athleteEmail: string, assignments: WorkoutAssi
       // Ya está cargado para los logros del Road map, así que la memoria del
       // motor (rotación de 4 semanas + dificultad adaptativa) sale gratis.
       history: historial,
+      workouts, mesocycles,
+      experienceLevel: onboarding?.experienceLevel,
+      nivelForzado: roadmap?.challengeConfig?.nivel,
     };
     ensureWeeklyChallenge(athleteEmail, datos, today)
       .then(res => {
