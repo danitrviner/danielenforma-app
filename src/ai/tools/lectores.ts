@@ -40,6 +40,7 @@ import { buildPhaseEnergyPlans } from '../../utils/nutritionPeriodization';
 import { computeActivePhase } from '../../utils/fasesNutricion';
 import { dietaDeReferencia } from '../../utils/objetivoDelDia';
 import { addDays, hoyIsoLocal } from '../../utils/trainingWeek';
+import { mesoQueVeElAtleta } from '../../utils/bloqueDelAtleta';
 import { weekKey } from '../../utils/seriesCorrelation';
 import { resolveQuestions } from '../../utils/questionnaireResolve';
 import { SYSTEM_FOODS } from '../../nutricion_seed_en_forma';
@@ -109,7 +110,10 @@ export async function getClientOverview(email: string): Promise<string> {
   const latestWeight = weightTrend.latestWeight ?? checks[0]?.weight ?? onboarding?.weightKg;
   const maintenanceKcal = onboarding ? estimateMaintenanceKcal(onboarding, latestWeight ?? undefined) : null;
   const adherence = computeAdherenceScore(assignments, checks);
-  const activeMeso = [...mesos].sort((a, b) => b.startDate.localeCompare(a.startDate))[0] ?? null;
+  // El que el atleta tiene en pantalla, con la misma cuenta que su app — antes
+  // era «el de fecha de inicio más reciente», que con un bloque ya programado
+  // para el mes que viene le contaba al asistente el que todavía no ha empezado.
+  const activeMeso = mesoQueVeElAtleta(assignments, mesos, hoyIsoLocal());
 
   return toResult({
     profile: {

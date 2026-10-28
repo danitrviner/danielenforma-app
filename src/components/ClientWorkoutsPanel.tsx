@@ -6,8 +6,9 @@ import {
 } from '../types';
 import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile, reprogramarAsignacionesDelMeso } from '../dbService';
 import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMesociclo';
-import { addDays, hoyIsoLocal, esFechaIso } from '../utils/trainingWeek';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 import { nombreDeMeso } from '../utils/nombresMeso';
+import { mesoQueVeElAtleta } from '../utils/bloqueDelAtleta';
 import { adherenciaDeMesociclo } from '../utils/adherence';
 import { formatearDuracion } from '../utils/duracionSesion';
 import { useToast } from '../hooks/useToast';
@@ -435,25 +436,16 @@ export default function ClientWorkoutsPanel({
           </button>
         </div>
 
-        {/* Adherencia del mesociclo activo (mockup Fase 3, pantalla 05) — se deriva
-            de las asignaciones del mesociclo en curso (fecha de hoy dentro de su
-            rango de semanas, o el último por número si ninguno está en curso).
-            No existía como % en esta pantalla: MesocycleDashboard ya calculaba la
-            misma cuenta completed/total por mesociclo, para su gráfica de barras —
-            aquí se reutiliza el mismo criterio (completed/total), sin duplicar una
-            fórmula nueva, solo resumida en un único número para el meso vigente. */}
+        {/* Adherencia del mesociclo activo (mockup Fase 3, pantalla 05). «Activo»
+            es el que el atleta tiene en pantalla, con la misma cuenta que su app
+            (`utils/bloqueDelAtleta`) — antes se decidía aquí por las fechas del
+            bloque, y con dos bloques cruzados este panel y la app del atleta
+            hablaban de bloques distintos. La cuenta es la de MesocycleDashboard
+            (completed/total), resumida en un único número para el meso vigente. */}
         {(() => {
           if (mesocycles.length === 0 || assignments.length === 0) return null;
-          const today = hoyIsoLocal();
-          const sorted = [...mesocycles].sort((a, b) => a.number - b.number);
-          // Aritmética en cadena (`addDays`), no `new Date(...).toISOString()`:
-          // un mesociclo con `startDate` corrupto (vacío, año de 5 cifras) hacía
-          // que `.toISOString()` lanzara «Invalid time value» y tumbara la
-          // pantalla entera al abrir la ficha del atleta.
-          const current = sorted.find(m => {
-            if (!esFechaIso(m.startDate)) return false;
-            return today >= m.startDate && today < addDays(m.startDate, m.weeks * 7);
-          }) ?? sorted[sorted.length - 1];
+          const current = mesoQueVeElAtleta(assignments, mesocycles, hoyIsoLocal());
+          if (!current) return null;
           const mesoAssignments = assignments.filter(a => a.mesocycleId === current.id);
           if (mesoAssignments.length === 0) return null;
           const completed = mesoAssignments.filter(a => a.status === 'completed').length;
@@ -464,7 +456,7 @@ export default function ClientWorkoutsPanel({
               <div className="flex items-baseline gap-2">
                 <span className="font-mono font-semibold text-title-l text-ink tabular-nums">{adherence}%</span>
                 <span className="font-sans text-caption text-ink-2">
-                  adherencia · meso #{current.number} · {completed}/{mesoAssignments.length}
+                  adherencia · {nombreDeMeso(current)} · {completed}/{mesoAssignments.length}
                 </span>
               </div>
               <div className="flex gap-0.5 h-1">
