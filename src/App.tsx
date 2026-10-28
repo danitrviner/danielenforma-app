@@ -135,6 +135,10 @@ const RecetarioHarness = import.meta.env.DEV
 const ProgresionHarness = import.meta.env.DEV
   ? pantallaDiferida('ProgresionDevHarness', () => import('./components/mesociclo/ProgresionDevHarness'))
   : null;
+// Banco de pruebas del reto de la semana y su aviso en el entreno (ruta /dev/retos).
+const RetosHarness = import.meta.env.DEV
+  ? pantallaDiferida('RetosDevHarness', () => import('./components/roadmap/RetosDevHarness'))
+  : null;
 
 // Banco de pruebas del editor de mesociclos en modo plantilla (ruta /dev/plantilla).
 const PlantillaHarness = import.meta.env.DEV
@@ -815,6 +819,13 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <OrdenCicloHarness />
+      </Suspense>
+    );
+  }
+  if (RetosHarness && location.pathname === '/dev/retos') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <RetosHarness />
       </Suspense>
     );
   }

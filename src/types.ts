@@ -1616,6 +1616,9 @@ export interface ChallengeConfig {
   // Ejercicios en los que se pueden proponer retos de carga; undefined/vacío →
   // fallback a los básicos por keyword (BASIC_LIFT_KEYWORDS).
   liftExerciseIds?: string[];
+  /** Nivel de retos fijado a mano por el coach. Sin él se calcula de la
+   *  antigüedad y la experiencia del alta (`nivelDeRetos`). */
+  nivel?: NivelDeRetos;
 }
 
 // ─── PLAN PHASES ──────────────────────────────────────────────────────────────
@@ -1711,7 +1714,37 @@ export type ChallengeKind =
   | 'series_grupo'         // series fraccionales de un grupo muscular ≥ target
   | 'cardio_zona2'         // minutos acumulados en Zona 2 ≥ target
   | 'racha_registro'       // días con registro (peso/pasos/dieta) ≥ target — reto de hábito
+  // Retos de rendimiento (28-10-2026): siempre sobre lo programado esa semana
+  // en el mesociclo activo. Ver utils/retosDeRendimiento.ts.
+  | 'amrap_serie'          // última serie de un ejercicio al máximo: reps ≥ target con atWeight
+  | 'doble_progresion'     // llegar al tope del rango (o subir peso y volver al suelo)
+  | 'record_reps'          // batir N récords de repeticiones a un peso
+  | 'mas_reserva'          // mismo peso y reps que la última vez, con más RIR
+  | 'supera_sesion'        // mejorar a la última vez en N ejercicios de una sesión
+  | 'grupo_estancado'      // mejorar en N ejercicios de un grupo que no sube
+  | 'rir_minimo'           // descarga / vuelta de parón: ninguna serie por debajo de minRir
   | 'custom';              // creado por el coach sin métrica automática
+
+/** Nivel del atleta para elegir qué tipo de reto le toca (28-10-2026). Ver
+ *  `nivelDeRetos` en utils/planDeLaSemana.ts. */
+export type NivelDeRetos = 'arranque' | 'constancia' | 'rendimiento';
+
+/** Marca de referencia de un ejercicio («la última vez») guardada en el reto,
+ *  para que la evaluación no dependa de volver a leer el plan. */
+export interface ReferenciaDeEjercicio {
+  exerciseId: string;
+  exerciseName: string;
+  weight: number;
+  reps: number;
+}
+
+/** De qué bloque y semana sale un reto de rendimiento. Lo pinta la tarjeta. */
+export interface ContextoDeReto {
+  bloque: string;              // «Hipertrofia 1»
+  semana: number;              // vuelta del ciclo, 1-indexada
+  semanas: number;             // vueltas totales del bloque
+  tipoSemana?: 'test' | 'descarga' | 'paron' | 'evento';
+}
 
 // De qué registro habla un reto de racha (kind 'racha_registro').
 export type ChallengeStreakSource = 'peso' | 'pasos' | 'dieta';
@@ -1739,9 +1772,21 @@ export interface WeeklyChallenge {
     exerciseId?: string;    // carga_ejercicio | reps_ejercicio
     exerciseName?: string;  // snapshot para pintar sin lookup
     atWeight?: number;      // reps_ejercicio: peso al que hay que sacar las reps
+    /** doble_progresion «toca subir»: vale cualquier peso POR ENCIMA de este. */
+    subirDe?: number;
     muscleGroup?: MuscleGroup;    // series_grupo
     muscleLabel?: string;         // snapshot para pintar sin lookup
     streakSource?: ChallengeStreakSource; // racha_registro
+    minRir?: number;              // mas_reserva | rir_minimo
+    /** Sesión concreta del reto (supera_sesion, y donde el player enseña el
+     *  aviso). Sin ella, vale cualquier sesión de la semana. */
+    workoutId?: string;
+    workoutName?: string;
+    assignmentId?: string;
+    sessionDate?: string;         // día programado de esa sesión
+    mesocycleId?: string;         // entrenos_completados: solo cuenta este bloque
+    sesiones?: number;            // rir_minimo: sesiones del bloque esa semana
+    referencias?: ReferenciaDeEjercicio[]; // supera_sesion | grupo_estancado
   };
   status: 'activo' | 'conseguido' | 'fallido';
   progressValue?: number;   // snapshot de la última evaluación
@@ -1762,6 +1807,8 @@ export interface WeeklyChallenge {
    * nada. Los documentos anteriores a 09-2026 no lo llevan y se reevalúan.
    */
   evaluadoEn?: string;
+  /** Bloque y semana de los retos de rendimiento. Docs viejos no lo llevan. */
+  contexto?: ContextoDeReto;
 }
 
 // Plantilla de la biblioteca de retos del coach (colección challengeTemplates).

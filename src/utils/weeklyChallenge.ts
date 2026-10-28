@@ -14,6 +14,9 @@ import {
   fractionalSetsByGroup, bestRepsAtWeight, zone2Minutes, loggedDays,
 } from './athleteMetrics.js';
 import { ChallengeData, AutoChallengeInput, generateChallengeOptions, genericStepsOption, buildChallengeFromOption } from './challengeOptions.js';
+import { ejerciciosMejorados, recordsBatidos } from './planDeLaSemana.js';
+import { seriesPrincipales } from './seriesPrincipales.js';
+import { rirEfectivo } from './oneRepMax.js';
 
 export type { ChallengeData, AutoChallengeInput, ChallengeOption } from './challengeOptions.js';
 export {
@@ -91,8 +94,11 @@ export function evaluateChallengeProgress(
       return { progressValue: Math.round(avg), pct: clamp((avg / ch.metric.target) * 100), achieved };
     }
     case 'entrenos_completados': {
+      // Con bloque guardado solo cuentan sus sesiones (ver planDeLaSemana).
+      const mesoId = ch.metric.mesocycleId;
       const done = data.assignments.filter(
-        a => a.date >= ch.weekStart && a.date <= ch.weekEnd && a.status === 'completed',
+        a => a.date >= ch.weekStart && a.date <= ch.weekEnd && a.status === 'completed'
+          && (!mesoId || a.mesocycleId === mesoId),
       ).length;
       return { progressValue: done, pct: clamp((done / ch.metric.target) * 100), achieved: done >= ch.metric.target };
     }
@@ -122,6 +128,63 @@ export function evaluateChallengeProgress(
         : data.stepLogs;
       const days = loggedDays(entries, ch.weekStart, to);
       return { progressValue: days, pct: clamp((days / ch.metric.target) * 100), achieved: days >= ch.metric.target };
+    }
+    case 'amrap_serie': {
+      const { exerciseId, atWeight } = ch.metric;
+      if (!exerciseId || atWeight == null) return { progressValue: 0, pct: 0, achieved: false };
+      const reps = bestRepsAtWeight(data.workoutLogs, exerciseId, atWeight, ch.weekStart, to);
+      return { progressValue: reps, pct: clamp((reps / ch.metric.target) * 100), achieved: reps >= ch.metric.target };
+    }
+    case 'doble_progresion': {
+      const { exerciseId, atWeight, subirDe } = ch.metric;
+      if (!exerciseId) return { progressValue: 0, pct: 0, achieved: false };
+      // «Toca subir»: vale cualquier peso por encima del de la última vez —
+      // cada gimnasio tiene sus escalones y el motor no los conoce.
+      const reps = subirDe != null
+        ? bestRepsAtWeight(data.workoutLogs, exerciseId, subirDe + 0.5, ch.weekStart, to)
+        : atWeight != null ? bestRepsAtWeight(data.workoutLogs, exerciseId, atWeight, ch.weekStart, to) : 0;
+      return { progressValue: reps, pct: clamp((reps / ch.metric.target) * 100), achieved: reps >= ch.metric.target };
+    }
+    case 'record_reps': {
+      const n = recordsBatidos(data.workoutLogs, ch.weekStart, to, ch.metric.exerciseId);
+      return { progressValue: n, pct: clamp((n / ch.metric.target) * 100), achieved: n >= ch.metric.target };
+    }
+    case 'mas_reserva': {
+      const { exerciseId, atWeight, baseline, minRir = 1 } = ch.metric;
+      if (!exerciseId || atWeight == null || baseline == null) return { progressValue: 0, pct: 0, achieved: false };
+      const hecho = data.workoutLogs.some(log => log.date >= ch.weekStart && log.date <= to
+        && log.entries.some(e => e.exerciseId === exerciseId && seriesPrincipales(e.sets).some(s =>
+          s.weight + 0.01 >= atWeight && s.repsDone >= baseline && !s.alFallo && rirEfectivo(s.rir, s.alFallo) >= minRir)));
+      return { progressValue: hecho ? 1 : 0, pct: hecho ? 100 : 0, achieved: hecho };
+    }
+    case 'supera_sesion':
+    case 'grupo_estancado': {
+      const refs = ch.metric.referencias ?? [];
+      const n = ejerciciosMejorados(refs, data.workoutLogs, ch.weekStart, to,
+        ch.kind === 'supera_sesion' ? ch.metric.workoutId : undefined);
+      return { progressValue: n, pct: clamp((n / ch.metric.target) * 100), achieved: n >= ch.metric.target };
+    }
+    case 'rir_minimo': {
+      // % de series principales de la semana con el RIR mínimo. Se da por
+      // conseguido con todas las sesiones del bloque hechas (o la semana
+      // cerrada) y ni una serie por debajo: hasta entonces es progreso.
+      const minRir = ch.metric.minRir ?? 3;
+      let total = 0;
+      let bien = 0;
+      for (const log of data.workoutLogs) {
+        if (log.date < ch.weekStart || log.date > to) continue;
+        for (const e of log.entries) for (const s of seriesPrincipales(e.sets)) {
+          if (!(s.repsDone > 0)) continue;
+          total++;
+          if (!s.alFallo && rirEfectivo(s.rir, s.alFallo) >= minRir) bien++;
+        }
+      }
+      const pctOk = total > 0 ? Math.round((bien / total) * 100) : 0;
+      const mesoId = ch.metric.mesocycleId;
+      const hechas = data.assignments.filter(a => a.date >= ch.weekStart && a.date <= ch.weekEnd
+        && a.status === 'completed' && (!mesoId || a.mesocycleId === mesoId)).length;
+      const terminada = weekOver || (ch.metric.sesiones != null && hechas >= ch.metric.sesiones);
+      return { progressValue: pctOk, pct: clamp(pctOk), achieved: total > 0 && bien === total && terminada };
     }
     case 'custom':
       // Sin métrica automática: lo resuelve el coach cambiando el status a mano.

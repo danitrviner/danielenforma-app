@@ -1,7 +1,7 @@
-import type { Mesocycle, Workout } from '../types';
-import { diasDeCiclo, vueltasDelCiclo, offsetsDeSesiones } from './progression';
-import { repartoDelMesociclo, offsetsDeSplit, cicloDeSplit } from './trainingSplits';
-import { addDays } from './trainingWeek';
+import type { Mesocycle, Workout } from '../types.js';
+import { diasDeCiclo, vueltasDelCiclo, offsetsDeSesiones } from './progression.js';
+import { repartoDelMesociclo, offsetsDeSplit, cicloDeSplit } from './trainingSplits.js';
+import { addDays } from './trainingWeek.js';
 
 /**
  * Días que dura una vuelta del microciclo, con el REPARTO elegido como fuente

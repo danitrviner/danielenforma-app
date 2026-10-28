@@ -1,4 +1,4 @@
-import { WorkoutExercise, WorkoutSetGroup } from '../types';
+import { WorkoutExercise, WorkoutSetGroup } from '../types.js';
 
 export interface ExpandedSet {
   reps: string;

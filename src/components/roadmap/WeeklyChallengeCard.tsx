@@ -21,6 +21,7 @@ interface Props {
 }
 
 function fmtMetric(value: number, unit: string): string {
+  if (unit === 'serie') return value >= 1 ? 'Hecha' : 'Pendiente';
   if (unit === 'pasos') return `${Math.round(value).toLocaleString('es-ES')} pasos`;
   if (unit.includes('kg')) return `${value.toFixed(1)} ${unit}`;
   if (unit === '%') return `${Math.round(value)}%`;
@@ -40,6 +41,19 @@ function esCeroSinDato(value: number, unit: string): boolean {
   return value === 0 && unit.includes('kg');
 }
 
+const TIPO_SEMANA: Record<NonNullable<NonNullable<WeeklyChallenge['contexto']>['tipoSemana']>, string> = {
+  test: 'test', descarga: 'descarga', paron: 'vuelta de parón', evento: 'semana fuera',
+};
+
+/** «Hipertrofia 1 · semana 2 de 9», para que el reto se lea como parte del bloque. */
+function lineaDeContexto(ch: WeeklyChallenge): string | null {
+  const c = ch.contexto;
+  if (!c) return null;
+  const partes = [c.bloque, `semana ${c.semana} de ${c.semanas}`];
+  if (c.tipoSemana) partes.push(TIPO_SEMANA[c.tipoSemana]);
+  return partes.join(' · ');
+}
+
 function daysLeft(weekEnd: string): number {
   const today = hoyIsoLocal();
   const diff = Math.ceil((new Date(weekEnd + 'T00:00:00').getTime() - new Date(today + 'T00:00:00').getTime()) / 86400000);
@@ -54,6 +68,7 @@ export default function WeeklyChallengeCard({ challenge, progress, streak = 0, d
   const remaining = daysLeft(challenge.weekEnd);
   const accent = achieved ? 'var(--color-success)' : 'var(--color-accent)';
   const liveStreak = achieved ? streak + 1 : streak;
+  const contexto = lineaDeContexto(challenge);
 
   return (
     <div
@@ -86,6 +101,9 @@ export default function WeeklyChallengeCard({ challenge, progress, streak = 0, d
         </div>
       </div>
 
+      {contexto && (
+        <p className="font-mono text-caption text-ink-3 -mb-1">{contexto}</p>
+      )}
       {destacado ? (
         <h3 className="font-display font-black text-feature uppercase text-ink leading-tight text-balance">{challenge.title}</h3>
       ) : (

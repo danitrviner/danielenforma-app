@@ -34,12 +34,13 @@ import {
   marcarSesionPerdida, guardarConfigDeDieta, marcarFaseVista, guardarNivelesConseguidos,
   actualizarPeldanos, guardarReto, leerReto, crearAvisoUnaVez,
   leerCuestionariosAsignados, leerRespuestasDeCuestionarios, leerMesociclos,
+  leerRutinas, leerRetos, leerExperiencia,
 } from './_lib/db-admin.js';
 import { recordatoriosDeRevision } from '../src/utils/recordatoriosRevision.js';
 import { planificarLatido } from '../src/utils/latidoDiario.js';
 import { ejecutarRetoSemanal, type AlmacenDeRetos } from '../src/utils/motorRetoSemanal.js';
 import { DEFAULT_LEVEL_LADDER } from '../src/data/defaultLevelLadder.js';
-import { addDays } from '../src/utils/trainingWeek.js';
+import { addDays, getWeekStart } from '../src/utils/trainingWeek.js';
 
 export const config = { maxDuration: 300 };
 
@@ -220,7 +221,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         almacen,
         // En el servidor SÍ se espera al cierre de la semana anterior: si no,
         // la función puede terminar antes que la escritura.
-        { coachEmail: COACH_EMAIL, esperarAlCierreAnterior: true },
+        {
+          coachEmail: COACH_EMAIL,
+          esperarAlCierreAnterior: true,
+          // Solo si toca generar: el plan de esta semana (rutinas y bloque),
+          // el historial para la rotación y el nivel del alta. Sin esto, el
+          // reto que se generaba aquí era el de un atleta sin plan ni memoria.
+          datosParaGenerar: async () => {
+            const lunes = getWeekStart(hoy);
+            const domingo = addDays(lunes, 6);
+            const ids = [...new Set(assignments.filter(a => a.date >= lunes && a.date <= domingo).map(a => a.workoutId))];
+            const [workouts, mesocycles, history, experienceLevel] = await Promise.all([
+              leerRutinas(db, ids), leerMesociclos(db, email), leerRetos(db, email), leerExperiencia(db, email),
+            ]);
+            return { workouts, mesocycles, history, experienceLevel, nivelForzado: roadmap?.challengeConfig?.nivel };
+          },
+        },
       );
       if (reto.pending) hecho.push('reto: pendiente del coach (lunes)');
       else if (reto.challenge) hecho.push(`reto: ${reto.challenge.status}`);

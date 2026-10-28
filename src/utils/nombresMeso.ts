@@ -1,4 +1,4 @@
-import type { Mesocycle } from '../types';
+import type { Mesocycle } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Cómo se llaman los mesociclos y sus sesiones

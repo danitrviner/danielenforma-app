@@ -95,6 +95,13 @@ export interface OpcionesMotorReto {
    * esta noche lo arregla.
    */
   esperarAlCierreAnterior?: boolean;
+  /**
+   * Datos que solo hacen falta para GENERAR el reto (plan de la semana,
+   * historial, experiencia del alta). El servidor los pasa así para no
+   * leerlos cada noche de cada atleta: la mayoría de noches el reto ya existe
+   * y solo se evalúa. Se fusionan sobre `data`.
+   */
+  datosParaGenerar?: () => Promise<Partial<ChallengeData>>;
 }
 
 export async function ejecutarRetoSemanal(
@@ -134,8 +141,10 @@ export async function ejecutarRetoSemanal(
       await cerrarAnterior();
       return { challenge: null, progress: null, pending: true, previousKind: previous?.kind };
     }
+    const extra = opciones.datosParaGenerar ? await opciones.datosParaGenerar() : {};
     challenge = generateAutoChallenge({
       ...data,
+      ...extra,
       athleteId: athleteEmail,
       today,
       previousKind: previous?.kind,

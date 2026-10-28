@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Roadmap, WeeklyChallenge, ChallengeTemplate, ChallengeKind, CardioSession } from '../../types';
+import { Roadmap, WeeklyChallenge, ChallengeTemplate, ChallengeKind, CardioSession, NivelDeRetos } from '../../types';
 import {
   getWeeklyChallenge, saveWeeklyChallenge, getWeeklyChallengesForAthlete,
   getChallengeTemplates, saveChallengeTemplate, deleteChallengeTemplate,
@@ -7,6 +7,7 @@ import {
 } from '../../dbService';
 import { isoWeekKey, isoWeekBounds, evaluateChallengeProgress, ChallengeData } from '../../utils/weeklyChallenge';
 import { buildChallengeMemory } from '../../utils/challengeMemory';
+import { nivelDeRetos } from '../../utils/planDeLaSemana';
 import { addDays, getWeekStart, hoyIsoLocal} from '../../utils/trainingWeek';
 import ChallengeOptionsPanel from './ChallengeOptionsPanel';
 import { Icon } from '../ui';
@@ -17,7 +18,20 @@ const KIND_LABEL: Record<ChallengeKind, string> = {
   peso_objetivo: 'Peso objetivo', entrenos_completados: 'Entrenos completados',
   series_grupo: 'Series de un grupo muscular', cardio_zona2: 'Minutos en Zona 2',
   racha_registro: 'Racha de registro (hábito)',
+  amrap_serie: 'AMRAP en la última serie', doble_progresion: 'Doble progresión',
+  record_reps: 'Récord de repeticiones', mas_reserva: 'Mismo peso con más reserva',
+  supera_sesion: 'Supera tu sesión', grupo_estancado: 'Grupo estancado',
+  rir_minimo: 'RIR mínimo (descarga)',
   custom: 'Custom (sin métrica automática)',
+};
+
+// Los de rendimiento necesitan datos del plan (ejercicio, sesión, marcas de
+// referencia) que solo pone el motor: a mano saldrían sin forma de medirse.
+const SOLO_MOTOR = new Set<ChallengeKind>(['amrap_serie', 'doble_progresion', 'record_reps', 'mas_reserva', 'supera_sesion', 'grupo_estancado', 'rir_minimo']);
+const KINDS_A_MANO = (Object.keys(KIND_LABEL) as ChallengeKind[]).filter(k => !SOLO_MOTOR.has(k));
+
+const NIVEL_LABEL: Record<NivelDeRetos, string> = {
+  arranque: 'Arranque', constancia: 'Constancia', rendimiento: 'Rendimiento',
 };
 
 interface Props {
@@ -163,6 +177,17 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
   // este número es fe ciega: si gana el 100% los retos son de adorno y si gana
   // el 20% ha dejado de leerlos.
   const memory = useMemo(() => buildChallengeMemory(history, currentKey), [history, currentKey]);
+  const nivelAuto = useMemo(
+    () => nivelDeRetos({ workoutLogs: challengeData.workoutLogs, today, experienceLevel: challengeData.experienceLevel }),
+    [challengeData.workoutLogs, challengeData.experienceLevel, today],
+  );
+  const nivelFijado = roadmap.challengeConfig?.nivel;
+
+  async function cambiarNivel(valor: string) {
+    const nivel = valor === 'auto' ? undefined : valor as NivelDeRetos;
+    const { nivel: _quitar, ...resto } = roadmap.challengeConfig ?? {};
+    await onSaveRoadmap({ ...roadmap, challengeConfig: nivel ? { ...resto, nivel } : resto });
+  }
 
   if (loading) {
     return <p className="text-label text-ink-2 font-sans animate-pulse py-4">Cargando retos...</p>;
@@ -203,6 +228,23 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
           </p>
         </div>
       )}
+
+      {/* Nivel de retos */}
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Nivel de retos</p>
+        <select
+          value={nivelFijado ?? 'auto'}
+          onChange={e => { void cambiarNivel(e.target.value); }}
+          className="bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
+          aria-label="Nivel de retos"
+        >
+          <option value="auto">Automático ({NIVEL_LABEL[nivelAuto]})</option>
+          {(Object.keys(NIVEL_LABEL) as NivelDeRetos[]).map(n => <option key={n} value={n}>{NIVEL_LABEL[n]}</option>)}
+        </select>
+        <p className="text-caption text-ink-3 font-sans flex-1 min-w-[12rem]">
+          Arranque: hábitos de registro. Constancia: adherencia. Rendimiento: retos sobre su mesociclo.
+        </p>
+      </div>
 
       {/* Reto actual */}
       <div className="bg-surface border border-hairline rounded-surface p-4">
@@ -306,7 +348,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
                 onChange={e => setForm(f => ({ ...f, kind: e.target.value as ChallengeKind }))}
                 className="bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
               >
-                {(Object.keys(KIND_LABEL) as ChallengeKind[]).map(k => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
+                {KINDS_A_MANO.map(k => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
               </select>
               <input
                 value={form.unit}
@@ -367,7 +409,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
                 onChange={e => setTplForm(f => ({ ...f, kind: e.target.value as ChallengeKind }))}
                 className="bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
               >
-                {(Object.keys(KIND_LABEL) as ChallengeKind[]).map(k => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
+                {KINDS_A_MANO.map(k => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
               </select>
               <input
                 value={tplForm.unit}
