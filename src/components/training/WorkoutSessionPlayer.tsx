@@ -15,6 +15,8 @@ import { haptics } from '../../services/haptics';
 import { formatDate } from '../../utils/trainingWeek';
 import { useEstable } from '../../hooks/useEstable';
 import { SetInput } from './setInput';
+import { estadoDelEjercicio } from '../../utils/seriesPrincipales';
+import { logrosDelEjercicio, tonelajeMaximoAntesDe, type Logro } from '../../utils/logrosDelEjercicio';
 import ExerciseCard from './ExerciseCard';
 import ExerciseCloseCard from './ExerciseCloseCard';
 import AvisoDeRetoEnSesion from './AvisoDeRetoEnSesion';
@@ -108,6 +110,16 @@ export default function WorkoutSessionPlayer({
       return next;
     });
   });
+  // Ejercicios con la técnica a medias que el atleta da por terminados con
+  // «Cerrar ejercicio» (ver `estadoDelEjercicio`). Solo UI, como el de arriba.
+  const [cerradosAMano, setCerradosAMano] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    setCerradosAMano(new Set());
+  }, [activeAssignment.id]);
+  const estaCerrado = (exIdx: number) => {
+    const estado = estadoDelEjercicio(playerSets[exIdx] || []);
+    return estado === 'cerrado' || (estado === 'tecnica-pendiente' && cerradosAMano.has(exIdx));
+  };
   const isLastPage = pageIdx === orderedExercises.length - 1;
   const isEditingCompleted = activeAssignment.status === 'completed';
 
@@ -341,6 +353,19 @@ export default function WorkoutSessionPlayer({
   });
   const addRestSecondsStable = useEstable(addRestSeconds);
 
+  const cerrarConTecnicaPendiente = useEstable((exIdx: number) => {
+    // Lo que tenga reps escritas se da por hecho; lo vacío no se guarda.
+    (playerSets[exIdx] || []).forEach((x, sIdx) => {
+      if (x.segmento && !x.done && x.repsDone) updateSet(exIdx, sIdx, 'done', true);
+    });
+    setCerradosAMano(prev => new Set(prev).add(exIdx));
+    setReopenedExercises(prev => {
+      const next = new Set(prev);
+      next.delete(exIdx);
+      return next;
+    });
+  });
+
   // Tabla de callbacks por índice — identidad estable por ejercicio. Depende
   // de `activeWorkout.exercises` (la fuente, estable mientras no cambie el
   // entreno), no de `orderedExercises` (un array nuevo cada render por el
@@ -354,15 +379,66 @@ export default function WorkoutSessionPlayer({
       onMarkDone: (sIdx: number, markingDone: boolean) => handleMarkDoneStable(exIdx, sIdx, markingDone),
       onAddRow: (segmentoDe: number) => addSetRowStable(exIdx, segmentoDe),
       onNoteChange: (v: string) => updateExerciseNoteStable(exIdx, v),
+      onCerrarEjercicio: () => cerrarConTecnicaPendiente(exIdx),
     }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ), [activeWorkout.exercises]);
+
+  /* Celebración al cerrar un ejercicio (Dani, 28-10-2026): solo en el paso de
+     abierto a cerrado DURANTE la sesión. Lo que ya venía cerrado al abrir el
+     player (un borrador recuperado, o una sesión completada que se edita) no
+     se celebra otra vez. */
+  const tonelajeMaxAntes = useMemo(
+    () => tonelajeMaximoAntesDe(logs, activeAssignment.date),
+    [logs, activeAssignment.date],
+  );
+  const cerradosAlAbrir = React.useRef<Set<number> | null>(null);
+  if (cerradosAlAbrir.current === null) {
+    cerradosAlAbrir.current = new Set(orderedExercises.map((_, i) => i).filter(estaCerrado));
+  }
+  // Los logros se calculan al pintar (no en un efecto: así la tarjeta de
+  // cierre sale ya con ellos, sin un fotograma con el bloque de récord viejo)
+  // y siguen lo apuntado si se reabre y se corrige. La animación solo suena
+  // una vez, al cerrarlo.
+  const logrosDe = (exIdx: number): Logro[] | undefined => {
+    if (isEditingCompleted || cerradosAlAbrir.current?.has(exIdx)) return undefined;
+    const we = orderedExercises[exIdx];
+    return logrosDelEjercicio({
+      nombre: getExercise(we.exerciseId)?.name || 'este ejercicio',
+      hechas: (playerSets[exIdx] || []).filter(x => x.done),
+      mejorRmAntes: priorBestByExercise.get(we.exerciseId),
+      tonelajeMaxAntes: tonelajeMaxAntes.get(we.exerciseId),
+      ultimaVez: prevEntries.find(e => e.exerciseId === we.exerciseId)?.sets,
+    });
+  };
+  const [festejando, setFestejando] = useState<number | null>(null);
+  useEffect(() => {
+    if (festejando == null) return;
+    const id = window.setTimeout(() => setFestejando(null), 2400);
+    return () => window.clearTimeout(id);
+  }, [festejando]);
+  const yaCelebrados = React.useRef<Set<number>>(new Set());
+  const cerradosAhora = orderedExercises.map((_, i) => estaCerrado(i));
+  const firmaCerrados = cerradosAhora.join(',');
+  useEffect(() => {
+    if (isEditingCompleted) return;
+    cerradosAhora.forEach((cerrado, exIdx) => {
+      if (!cerrado || cerradosAlAbrir.current?.has(exIdx) || yaCelebrados.current.has(exIdx)) return;
+      yaCelebrados.current.add(exIdx);
+      if ((logrosDe(exIdx) ?? []).length > 0) {
+        setFestejando(exIdx);
+        void haptics.success();
+      }
+    });
+    // Solo cuando cambia qué ejercicios están cerrados.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firmaCerrados, isEditingCompleted]);
 
   const pages = orderedExercises.map((we, exIdx) => {
     const ex = getExercise(we.exerciseId);
     const exSets = playerSets[exIdx] || [];
     const prevEntry = prevEntries.find(e => e.exerciseId === we.exerciseId);
-    const cerrado = exSets.length > 0 && exSets.every(s => s.done);
+    const cerrado = estaCerrado(exIdx);
     const isLast = exIdx === orderedExercises.length - 1;
     const cb = exerciseCallbacksByIdx[exIdx];
 
@@ -385,6 +461,8 @@ export default function WorkoutSessionPlayer({
           onNext={() => setPageIdx(i => Math.min(i + 1, orderedExercises.length - 1))}
           onReopen={() => onReopenExercise(exIdx)}
           sameDayCardio={sameDayCardio}
+          logros={logrosDe(exIdx)}
+          festejar={festejando === exIdx}
         />
       );
     }
@@ -416,6 +494,7 @@ export default function WorkoutSessionPlayer({
         setEditorTargetRef={exIdx === 0 ? setEditorTargetRef : undefined}
         firstSetRowTargetRef={exIdx === 0 ? firstSetRowTargetRef : undefined}
         cambios={avisoSesion?.datos.porEjercicio[exIdx]}
+        onCerrarEjercicio={estadoDelEjercicio(exSets) === 'tecnica-pendiente' ? cb.onCerrarEjercicio : undefined}
       />
       </div>
     );
@@ -460,8 +539,7 @@ export default function WorkoutSessionPlayer({
             al contador de texto como referencia visual rápida de dónde vas. */}
         <div className="flex gap-1.5" role="group" aria-label={`Ejercicio ${pageIdx + 1} de ${orderedExercises.length}`}>
           {orderedExercises.map((_, i) => {
-            const exSets = playerSets[i] || [];
-            const cerrado = exSets.length > 0 && exSets.every(s => s.done);
+            const cerrado = estaCerrado(i);
             return (
               <span
                 key={i}

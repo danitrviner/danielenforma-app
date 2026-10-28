@@ -3,6 +3,8 @@ import { CardioAssignment, Exercise, WorkoutExercise } from '../../types';
 import { Icon, Button, Chip } from '../ui';
 import { rmDeSerie } from '../../utils/oneRepMax';
 import { SetInput } from './setInput';
+import Confeti from './Confeti';
+import type { Logro, TipoDeLogro } from '../../utils/logrosDelEjercicio';
 
 interface Props {
   we: WorkoutExercise;
@@ -26,9 +28,19 @@ interface Props {
    * exacto, así que se dejan fuera (ver el plan). Es un aviso, no lleva a
    * ningún sitio: la sesión de fuerza termina aquí igualmente. */
   sameDayCardio: CardioAssignment | null;
+  /** Lo conseguido al cerrarlo en esta sesión (ver utils/logrosDelEjercicio). */
+  logros?: Logro[];
+  /** Recién cerrado: suena la animación una vez. */
+  festejar?: boolean;
   /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip.tsx). */
   key?: React.Key;
 }
+
+const ICONO_DE_LOGRO: Record<TipoDeLogro, string> = {
+  record: 'military_tech',
+  tonelaje: 'fitness_center',
+  progreso: 'trending_up',
+};
 
 const CHIPS_RAPIDOS = ['Me sobró una rep', 'Molestia leve', 'Buena técnica', 'Mucho peso'];
 
@@ -48,7 +60,7 @@ function rpeDeSerie(s: SetInput): number | null {
  */
 export default function ExerciseCloseCard({
   we, ex, exSets, priorBestOrm, noteValue, onNoteChange, isLast, nextExerciseName,
-  onNext, onReopen, sameDayCardio,
+  onNext, onReopen, sameDayCardio, logros, festejar,
 }: Props) {
   const idNota = React.useId();
   const doneSets = exSets.filter(s => s.done);
@@ -70,7 +82,8 @@ export default function ExerciseCloseCard({
   };
 
   return (
-    <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
+    <div className="relative bg-surface border border-hairline rounded-surface overflow-hidden">
+      {festejar && <Confeti />}
       <div className="flex items-center gap-3 p-4 border-b border-hairline">
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-success/14 text-success flex-shrink-0">
           <Icon name="check" size="s" filled />
@@ -89,7 +102,21 @@ export default function ExerciseCloseCard({
         </button>
       </div>
 
-      {esRecord && bestSet && (
+      {logros && logros.length > 0 ? (
+        <div className="mx-4 mt-4 rounded-surface border border-accent/40 bg-accent-bg p-4 space-y-3 animate-seal-pop">
+          {logros.map((l, i) => (
+            <div key={l.tipo} className="flex items-start gap-3">
+              <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${i === 0 ? 'bg-accent text-on-accent' : 'bg-hairline text-accent-ink'}`}>
+                <Icon name={ICONO_DE_LOGRO[l.tipo]} size="s" filled />
+              </span>
+              <div className="min-w-0">
+                <p className={`font-sans font-bold text-ink ${i === 0 ? 'text-title-s' : 'text-body-s'}`}>{l.titulo}</p>
+                <p className="font-sans text-label text-ink-2">{l.detalle}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : esRecord && bestSet && (
         <div className="mx-4 mt-4 rounded-surface border border-accent/40 bg-accent-bg p-4 space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="font-mono text-caption font-bold uppercase tracking-wide text-accent-ink">Récord personal</span>

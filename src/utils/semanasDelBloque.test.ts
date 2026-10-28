@@ -209,6 +209,6 @@ describe('tecnicaEnSemanas (E-06)', () => {
     const w = { ...base, weeklyProgression: tecnicaEnSemanas(base, 2, null, 'myoreps') };
     expect(resolveExerciseForWeek(w, 9).technique).toBe('myoreps');
     expect(diferencias(resolveExerciseForWeek(w, 1), resolveExerciseForWeek(w, 2), id => id)[0])
-      .toBe('técnica · Última serie: myo-reps, activación de 12-15 reps y 3-5 miniseries de 3-5, descansando 15 s');
+      .toBe('técnica · Última serie: myo-reps, activación de 12-15 reps y 3-5 miniseries de 3-5, descansando 20 s');
   });
 });

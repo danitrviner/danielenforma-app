@@ -25,7 +25,7 @@ describe('tecnicaDeSerie', () => {
     expect(describirTecnica(we({ technique: 'dropset', tecnicaAjustes: { series: [2, 3], dropset: { bajadas: 1, pctBajada: 30, hastaFallo: false } } }), 3))
       .toBe('Series 2 y 3: drop-set, 1 bajada de −30\u00a0%');
     expect(describirTecnica(we({ technique: 'myoreps', tecnicaAjustes: { series: 'todas' } }), 2))
-      .toBe('Todas las series: myo-reps, activación de 12-15 reps y 3-5 miniseries de 3-5, descansando 15 s');
+      .toBe('Todas las series: myo-reps, activación de 12-15 reps y 3-5 miniseries de 3-5, descansando 20 s');
     expect(describirTecnica(we({ technique: 'fallo', sets: 1 }), 1)).toBe('En la serie: al fallo, hasta que la técnica se rompa');
   });
 
@@ -66,7 +66,7 @@ describe('tecnicaDeSerie', () => {
     expect(pautaDelBloque(we({ technique: 'dropset' }))).toBe('Sin descanso · −20\u00a0% cada bajada · hasta el fallo');
     expect(pautaDelBloque(we({ technique: 'dropset', tecnicaAjustes: { dropset: { bajadas: 3, pctBajada: 15, hastaFallo: false } } })))
       .toBe('Sin descanso · −15\u00a0% cada bajada · sin llegar al fallo');
-    expect(pautaDelBloque(we({ technique: 'myoreps' }))).toBe('15\u00a0s entre miniseries · 3-5 reps cada una');
+    expect(pautaDelBloque(we({ technique: 'myoreps' }))).toBe('20\u00a0s entre miniseries · 3-5 reps cada una');
     expect(pautaDelBloque(we({ technique: 'restpause' }))).toBe('');
   });
 
@@ -82,7 +82,7 @@ describe('tecnicaDeSerie', () => {
 
   it('14-a: pauta por serie según la técnica', () => {
     expect(pautaDeSerie(we({ technique: 'dropset' }))).toBe('Después de la serie: 2 bajadas · −20\u00a0% cada una · hasta el fallo · sin descanso');
-    expect(pautaDeSerie(we({ technique: 'myoreps' }))).toBe('Después de la serie: 3-5 miniseries de 3-5 reps · 15\u00a0s entre ellas');
+    expect(pautaDeSerie(we({ technique: 'myoreps' }))).toBe('Después de la serie: 3-5 miniseries de 3-5 reps · 20\u00a0s entre ellas');
     expect(pautaDeSerie(we({ technique: 'fallo' }))).toBe('Esta serie: hasta el fallo');
     expect(pautaDeSerie(we())).toBe('');
   });

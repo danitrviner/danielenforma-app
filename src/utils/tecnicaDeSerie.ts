@@ -21,7 +21,7 @@ export const TECNICAS_ELEGIBLES: WorkoutTechnique[] = ['dropset', 'myoreps', 'am
 export const AJUSTES_POR_DEFECTO: Required<AjustesDeTecnica> = {
   series: 'ultima',
   dropset: { bajadas: 2, pctBajada: 20, hastaFallo: true },
-  myoreps: { repsActivacion: '12-15', miniSeries: '3-5', repsMini: '3-5', descansoSeg: 15 },
+  myoreps: { repsActivacion: '12-15', miniSeries: '3-5', repsMini: '3-5', descansoSeg: 20 },
 };
 
 export function llevaSegmentos(t: WorkoutTechnique | undefined): boolean {

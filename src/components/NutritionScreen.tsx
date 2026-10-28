@@ -4,13 +4,15 @@ import { recetaPermitida, type AmbitoDeRegla } from '../utils/reglasDeReceta';
 import SelloHecho from './ui/SelloHecho';
 import { useDireccionDeFecha } from './ui/internal/useDireccionDeFecha';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { diaCerrado } from '../utils/nutricionDeHoy';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RecetaPendiente, MenuCompletionLog, DietCompletionLog, Macros } from '../types';
 import { macrosDeIntercambios, objetivoDelRegistro, intercambiosDeMacros, macrosDeLineas, objetivoDeDieta } from '../utils/macrosLegado';
 import { sonMacrosVacios, sinNegativos, restarMacros, escalarMacros, redondearMacros } from '../utils/macros';
 import { macrosDeReceta, ordenarPorLoQueQueda } from '../utils/macrosDeReceta';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, getCatalogoAlimentos, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal, getDietCompletionLogsForAthlete } from '../dbService';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, getCatalogoAlimentos, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal, getDietCompletionLogsForAthlete, guardarRacionPropia } from '../dbService';
 import { esPlatoDelRecetario } from '../db/recetasHidratacion';
 import RecetarioDescubrir from './RecetarioDescubrir';
 import { BUDGET_CATS, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems } from '../utils/exchangeHelpers';
@@ -688,10 +690,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const kcalObjetivo = Math.round(objetivoDia.kcal);
   // El sello "Día cerrado" sale cuando de verdad has llegado a tu objetivo:
   // las kcal dentro de un ±5 % y la proteína casi completa (≥ 90 %).
-  const dayClosed = kcalObjetivo > 0
-    && doneItems > 0
-    && Math.abs(resumenMacros.kcal - kcalObjetivo) <= kcalObjetivo * 0.05
-    && (objetivoDia.p <= 0 || resumenMacros.p >= objetivoDia.p * 0.9);
+  const dayClosed = diaCerrado(resumenMacros, objetivoDia, doneItems > 0);
 
   // Haptic success solo en la TRANSICIÓN a día cerrado (handoff, panel 06) —
   // no en cada render mientras ya está cerrado, ni al reabrirlo desmarcando algo.
@@ -1101,6 +1100,28 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     setSearchTerm('');
     setPickerAddedCounts({});
   };
+
+  /* Desde Inicio («Nutrición de hoy») se llega con
+     `?anadir=buscar|escanear&comida=N`: se abre lo mismo que abriría
+     el atleta desde esa comida, ya sobre ella. La comida va por POSICIÓN y no
+     por id porque un día sin guardar estrena ids al sembrarse. Solo hoy, y
+     una vez: los parámetros se borran al usarlos para que atrás no lo repita. */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const anadirPedido = searchParams.get('anadir');
+  const comidaPedida = Number(searchParams.get('comida'));
+  const pedidoAtendido = useRef<string | null>(null);
+  useEffect(() => {
+    if (!anadirPedido || selectedDiet?.id !== `dia_${hoyFecha}` || !viendoHoy) return;
+    const clave = searchParams.toString();
+    if (pedidoAtendido.current === clave) return;
+    pedidoAtendido.current = clave;
+    setSearchParams({}, { replace: true });
+    const meal = selectedDiet.meals[comidaPedida] ?? selectedDiet.meals[0];
+    if (!meal) return;
+    handleOpenAddPicker(meal.id);
+    if (anadirPedido === 'escanear') setEscanerAbierto(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anadirPedido, comidaPedida, selectedDiet, viendoHoy, hoyFecha]);
 
   /** Mete una o varias líneas (un producto repartido en categorías) en la comida
    *  abierta, ya marcadas como comidas, con tick, toast y «Deshacer». */
@@ -1752,6 +1773,20 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     | { tipo: 'off'; codigo: string; nombre: string; marca?: string; ultimos?: number; mealId: string };
   const [ficha, setFicha] = useState<FichaAbierta | null>(null);
 
+  /* Ración propia por alimento (28-10-2026): «mi rebanada son 37,6 g». Se lee
+     de la config de nutrición y se guarda solo esa entrada. */
+  const racionPropia = (clave: string) => nutConfig?.racionesPropias?.[clave];
+  const guardarRacionDe = (clave: string) => (gramos: number | null) => {
+    queryClient.setQueryData<typeof nutConfig>(['athleteNutritionConfig', profile.email], prev => {
+      if (!prev) return prev;
+      const propias = { ...(prev.racionesPropias ?? {}) };
+      if (gramos == null) delete propias[clave]; else propias[clave] = gramos;
+      return { ...prev, racionesPropias: propias };
+    });
+    guardarRacionPropia(profile.email, clave, gramos)
+      .catch(() => showToast('No se pudo guardar tu ración. Inténtalo otra vez.', 'error'));
+  };
+
   function abrirFichaBanco(food: MealItem, mealId: string) {
     const ultimos = ultimosGramos(food.id) ?? ultimosGramos(food.label);
     const exacto = food.personal && food.porCien;
@@ -1764,9 +1799,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       tipo: 'valores',
       nombre: conMayuscula(foodNameWithoutGrams(food.label)),
       porCien,
-      raciones: racionesDe({ ultimos, racion: exacto ? undefined : racion }),
+      raciones: racionesDe({ ultimos, racion: exacto ? undefined : racion, propia: racionPropia(food.id) }),
       aproximado: !exacto,
       mealId,
+      onGuardarRacion: guardarRacionDe(food.id),
       alConfirmar: (g, m) => {
         const items = itemsDeAlimentoPorGramos(food, g, nuevoLineaId());
         agregarItems(items, food.label, food.id, m);
@@ -1781,9 +1817,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       nombre: nombreDeAlimento(a),
       porCien: { kcal: prod.k, p: prod.p, hc: prod.h, g: prod.g },
       extrasPorCien: { f: prod.f, az: prod.az, sat: prod.sat, sal: prod.sal },
-      raciones: racionesDe({ ultimos: ultimosGramos(claveDeCatalogo(a.id)), unidad: a.unidad }),
+      raciones: racionesDe({ ultimos: ultimosGramos(claveDeCatalogo(a.id)), unidad: a.unidad, propia: racionPropia(claveDeCatalogo(a.id)) }),
       nota: a.fuente ? `Valores por 100 g · ${a.fuente}` : undefined,
       mealId,
+      onGuardarRacion: guardarRacionDe(claveDeCatalogo(a.id)),
       alConfirmar: (g, m) => {
         const extras = extrasDeRacion(prod, g);
         const r = itemsDeProducto({
@@ -1834,7 +1871,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       marca: linea.marca,
       porCien,
       extrasPorCien,
-      raciones: [{ etiqueta: `${linea.gramos} g`, gramos: linea.gramos, nota: 'Apuntado' }, ...(linea.gramos === 100 ? [] : [{ etiqueta: '100 g', gramos: 100 }])],
+      raciones: [{ etiqueta: `${linea.gramos} g`, gramos: linea.gramos, nota: 'Apuntado' }],
       aproximado: linea.aproximado,
       mealId,
       textoBoton: 'Guardar',
@@ -3158,6 +3195,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           nombre={ficha.nombre}
           marca={ficha.marca}
           ultimos={ficha.ultimos}
+          racionPropia={racionPropia(claveDeProducto(ficha.codigo))}
+          onGuardarRacion={guardarRacionDe(claveDeProducto(ficha.codigo))}
           mealId={ficha.mealId}
           comidas={comidasDelDia}
           onIncompleto={p => { setFicha(null); setCrearInicial({ nombre: p.n, codigo: p.c }); setCrearAlimentoAbierto(true); }}
@@ -3198,7 +3237,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 marca={prod.b || undefined}
                 porCien={{ kcal: prod.k, p: prod.p, hc: prod.h, g: prod.g }}
                 extrasPorCien={{ f: prod.f, az: prod.az, sat: prod.sat, sal: prod.sal }}
-                raciones={racionesDe({ ultimos: ultimosGramos(claveDeProducto(prod.c)), racion: prod.s })}
+                raciones={racionesDe({ ultimos: ultimosGramos(claveDeProducto(prod.c)), racion: prod.s, propia: racionPropia(claveDeProducto(prod.c)) })}
+                onGuardarRacion={guardarRacionDe(claveDeProducto(prod.c))}
                 comidas={comidasDelDia}
                 mealId={pickerItem.mealId}
                 onConfirm={(g, m) => {

@@ -9,7 +9,7 @@ import { DISH_TYPES } from '../utils/dishTypes';
 import { HEALTH_CONDITIONS, type DietaryRestrictionCode } from '../utils/dietaryRestrictions';
 import { computeAuto } from '../utils/energyCalc';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
-import { saveOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../dbService';
+import { saveOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig, updateUserProfile } from '../dbService';
 import { consentimientoIADesdeLegal } from '../legal/aceptacion';
 import { guardarBorradorAlta, cargarBorradorAlta, borrarBorradorAlta } from '../utils/borradorAlta';
 import { Icon, Button, Input, AtlasLogo, Wordmark } from './ui';
@@ -24,6 +24,15 @@ import VegetableSelector from './VegetableSelector';
 interface Props {
   profile: UserProfile;
   onComplete: () => void;
+  /** El nombre que elige en el primer paso, para que la app lo use ya. */
+  onNombre?: (nombre: string) => void;
+}
+
+/** El nombre de una cuenta nueva sale del correo («danielbriz8»): no es un
+ *  nombre que haya elegido nadie, así que no se le da por bueno. */
+export function nombrePorDefecto(profile: Pick<UserProfile, 'displayName' | 'email'>): boolean {
+  const nombre = (profile.displayName || '').trim();
+  return !nombre || nombre === profile.email.split('@')[0];
 }
 
 /* Las descripciones no son adorno. Este cuestionario lo rellena alguien solo,
@@ -215,6 +224,7 @@ const inputCls = 'w-full bg-surface border border-hairline focus:border-accent/6
  *  de autoguardado, y nada más. */
 interface BorradorCampos {
   step: number;
+  nombre?: string;
   sex: 'male' | 'female' | '';
   birthDate: string;
   weightKg: string;
@@ -280,7 +290,7 @@ interface BorradorCampos {
   activityLevel: ActivityLevel | '';
 }
 
-export default function AthleteOnboardingWizard({ profile, onComplete }: Props) {
+export default function AthleteOnboardingWizard({ profile, onComplete, onNombre }: Props) {
   // 05-4. El alta ya no empieza en blanco si quedó a medias. Se lee UNA vez, en
   // el inicializador perezoso de un `useState`, y no en un efecto: leerlo
   // después obligaría a pisar 18 campos en un segundo render, con el riesgo de
@@ -288,6 +298,9 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const [borrador] = useState(() => cargarBorradorAlta<BorradorCampos>(profile.email));
 
   const [step, setStep] = useState(borrador?.step ?? 0);
+  /* Lo primero del alta (Dani, 28-10-2026): cómo quiere que le llamen. Sin
+     esto la app le saludaba con el principio de su correo. */
+  const [nombre, setNombre] = useState(() => borrador?.nombre ?? (nombrePorDefecto(profile) ? '' : profile.displayName));
 
   /* 14-bis. Preferencias de alimentos: el atleta marcaba solo «Carnes» y se
      iba, porque dentro de un grupo la única salida visible era el «Siguiente»
@@ -406,7 +419,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   useEffect(() => {
     if (saving || enviado) return;
     guardarBorradorAlta<BorradorCampos>(profile.email, {
-      step, sex, birthDate, weightKg, heightCm, occupation, referralSource,
+      step, nombre, sex, birthDate, weightKg, heightCm, occupation, referralSource,
       goalFreeText, goalTimelineMotivation, coachExpectations,
       experienceLevel, equipment, injuries, noInjuries,
       hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail,
@@ -424,7 +437,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       vegTypes, sinVerduras,
       activityLevel,
     });
-  }, [saving, enviado, profile.email, step, sex, birthDate, weightKg, heightCm, occupation, referralSource,
+  }, [saving, enviado, profile.email, step, nombre, sex, birthDate, weightKg, heightCm, occupation, referralSource,
       goalFreeText, goalTimelineMotivation, coachExpectations, experienceLevel, equipment, injuries, noInjuries,
       hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail, recentSurgery, recentSurgeryDetail,
       dietType, mealCount, menuVariety, batchCookingPreferred, allergies, healthConditions,
@@ -439,7 +452,22 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       neckCm, waistCm, hipCm, sinCinta,
       vegTypes, sinVerduras, activityLevel]);
 
-  const firstName = (profile.displayName || 'atleta').split(' ')[0];
+  const firstName = (nombre.trim() || 'atleta').split(' ')[0];
+
+  /** «Empezar»: el nombre se guarda ya, no al final de los veinte pasos —
+   *  si deja el alta a medias, la app ya le llama por su nombre. */
+  const empezar = async () => {
+    const elegido = nombre.trim().replace(/\s+/g, ' ');
+    if (elegido && elegido !== profile.displayName) {
+      try {
+        await updateUserProfile(profile.userId, { displayName: elegido });
+        onNombre?.(elegido);
+      } catch (err) {
+        console.warn('No se pudo guardar el nombre:', err);
+      }
+    }
+    setStep(1);
+  };
 
   /* Validación por paso. Hasta ahora solo cuatro pasos exigían respuesta y el
      resto era opcional «a propósito» — pero un paso que se puede pasar de
@@ -454,6 +482,8 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
 
   const stepValid = (): boolean => {
     switch (step) {
+      // 0 Bienvenida: cómo quiere que le llamen
+      case 0: return nombre.trim().length >= 2;
       // 1 Sobre ti
       case 1: return !!sex && !!birthDate && Number(weightKg) >= 30 && Number(heightCm) >= 100;
       // 2 Medidas — con salida para quien no tenga cinta métrica
@@ -744,7 +774,16 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
             arriba del todo, como debe; en los pasos cortos sigue centrado. */}
         <div className="min-h-full w-full max-w-lg mx-auto px-6 py-8 flex flex-col justify-center">
         {step === 0 && (
-          <StepShell title={`¡Hola, ${firstName}! 👋`} subtitle="Antes de empezar necesitamos conocerte. Son unos minutos y se guarda solo: si lo dejas a medias, vuelves y sigues donde estabas.">
+          <StepShell title={nombre.trim() ? `¡Hola, ${firstName}! 👋` : '¡Hola! 👋'} subtitle="Antes de empezar necesitamos conocerte. Son unos minutos y se guarda solo: si lo dejas a medias, vuelves y sigues donde estabas.">
+            <Input
+              label="¿Cómo quieres que te llamemos?"
+              value={nombre}
+              onChange={setNombre}
+              placeholder="Tu nombre"
+              autoComplete="given-name"
+              hint="Es el nombre que verás en la app y el que verá tu coach. Puedes cambiarlo luego en Perfil."
+              required
+            />
             {/* VIDEO_SLOT: aquí irá el vídeo corto de bienvenida de Dani. */}
             <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
               {[
@@ -1604,7 +1643,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           // recorrido por grupos: mientras estaba visible, era la salida que el
           // atleta tomaba después de marcar solo las carnes.
           (step !== 14 || alimRecorrido) && (
-            <Button variant="primary" size="l" onClick={() => setStep(s => s + 1)} disabled={!stepValid()} className="flex-1">
+            <Button variant="primary" size="l" onClick={() => (step === 0 ? void empezar() : setStep(s => s + 1))} disabled={!stepValid()} className="flex-1">
               {step === 0 ? 'Empezar' : 'Siguiente'}
             </Button>
           )
