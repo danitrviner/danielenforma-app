@@ -1,4 +1,4 @@
-import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, limit, documentId } from '../firebase';
+import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, limit, documentId, deleteField } from '../firebase';
 import { MealItem, BancoPersonal, AthleteNutritionConfig, Diet, AthleteDietConfig, DietCompletionLog, WeeklyMenu, MenuCompletionLog, NutritionProgram } from '../types';
 import { registroQueGana } from './registroDelDia';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, withAuthRetry, esFalloDePermisos, escribirEnLotes } from './core';
@@ -395,6 +395,28 @@ export async function saveAthleteNutritionConfig(config: AthleteNutritionConfig)
     if (esFalloDePermisos(err)) throw err;
     escribirLocal(localKey, JSON.stringify(data));
   }
+}
+
+/**
+ * Guarda (o borra, con `null`) la ración propia de un alimento. Escribe SOLO
+ * esa entrada con `merge`: no reescribe la config entera, que también la toca
+ * el coach (pasos, modos de dieta…) y podría pisarse con una copia vieja.
+ */
+export async function guardarRacionPropia(athleteEmail: string, clave: string, gramos: number | null): Promise<void> {
+  const localKey = `enforma_nutri_config_${athleteEmail}`;
+  try {
+    const raw = localStorage.getItem(localKey);
+    const local: AthleteNutritionConfig = raw ? JSON.parse(raw) as AthleteNutritionConfig : { athleteId: athleteEmail, enabledModes: ['OMNIVORO'] };
+    const propias = { ...(local.racionesPropias ?? {}) };
+    if (gramos == null) delete propias[clave]; else propias[clave] = gramos;
+    escribirLocal(localKey, JSON.stringify({ ...local, racionesPropias: propias }));
+  } catch { /* sin copia local */ }
+  if (forceLocalOnly) return;
+  await setDoc(
+    doc(db, 'athleteNutritionConfigs', athleteEmail),
+    { racionesPropias: { [clave]: gramos == null ? deleteField() : gramos } },
+    { merge: true },
+  );
 }
 
 // ─── DIETS ────────────────────────────────────────────────────────────────────

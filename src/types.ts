@@ -334,6 +334,11 @@ export interface AthleteNutritionConfig {
   kcalPerStep?: number;   // configurable conversion rate; falls back to DEFAULT_KCAL_PER_STEP when unset
   vegServingsPerDay?: number; // assumed daily vegetable servings for the micronutrient estimate (veg are "libre" in the exchange system, so uncounted)
   vegTypes?: string[];    // ids from data/micronutrients VEGETABLES — the athlete's usual vegetables; empty/unset = generic mixed-veg profile
+  /** Ración propia por alimento (28-10-2026): «mi rebanada de pan son 37,6 g».
+   *  Clave = la misma que usa el historial de lo comido (id del banco, `cat:…`
+   *  del catálogo, `off:…` de un producto); valor en gramos. Manda sobre la
+   *  ración del producto y sobre lo de la última vez. */
+  racionesPropias?: Record<string, number>;
   // AI dashboard "share with athlete" — private by default, only set when the coach shares a snapshot
   sharedReportSnapshot?: { generatedAt: string; summary: string; flags: string[] };
   menuVariety?: number; // 1 (repetitive/monotone) - 5 (max variety); athlete-adjustable override of OnboardingData.menuVariety

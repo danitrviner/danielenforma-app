@@ -19,6 +19,10 @@
 
 export const COACH_EMAIL = 'danitrviner@gmail.com';
 
+/** Cómo firma el coach los consejos que el atleta ve en la app (28-10-2026:
+ *  «que no sea tan impersonal, que sea Dani quien te lo dice»). */
+export const COACH_NOMBRE = 'Dani';
+
 /** El dueño de la app, por correo. Compara en minúsculas: Firebase conserva
  *  las mayúsculas con las que se escribió el correo al registrarse. */
 export function esElCoachPermanente(email: string | null | undefined): boolean {

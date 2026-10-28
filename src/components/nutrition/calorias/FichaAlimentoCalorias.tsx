@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Sheet, Icon, Banner, Select } from '../../ui';
+import { Sheet, Icon, Banner } from '../../ui';
 import { resolverProducto } from '../../../services/openFoodFacts';
 import { esIncompleto, motivoDeIncompleto } from '../../../utils/productoOff';
 import { nutrientesDeRacion } from '../../../utils/productoAIntercambios';
@@ -24,6 +24,9 @@ export interface Racion {
   recomendada?: boolean;
   /** Rótulo pequeño encima de la cantidad («Última vez», «Apuntado»). */
   nota?: string;
+  /** De dónde sale la ración recomendada: la que fijó el atleta, la del
+   *  producto (unidad o etiqueta) o, sin ninguna, lo de la última vez. */
+  origen?: 'propia' | 'producto' | 'ultima';
 }
 
 export interface FichaProps {
@@ -36,16 +39,22 @@ export interface FichaProps {
   /** Los valores salen de intercambios del banco, no de una etiqueta. */
   aproximado?: boolean;
   nota?: string;
-  comidas: { id: string; nombre: string }[];
+  /** Ya no se pinta (28-10-2026: no hay selector de comida en la ficha); se
+   *  acepta para no tocar a quien la abre. */
+  comidas?: { id: string; nombre: string }[];
   mealId: string;
   textoBoton?: string;
   /** Solo al abrirla desde una fila del día: cambiar ese alimento por otro. */
   onCambiar?: () => void;
+  /** Guardar «1 ración = X g» para este alimento (null = volver a la del producto). */
+  onGuardarRacion?: (gramos: number | null) => void;
   onConfirm: (gramos: number, mealId: string) => void;
   onClose: () => void;
 }
 
 const fmt = (n: number) => (Math.round(n * 10) / 10).toLocaleString('es-ES');
+/** Para los campos: hasta dos decimales, con coma y sin ceros de más («1,5»). */
+const numTexto = (n: number) => String(Math.round(n * 100) / 100).replace('.', ',');
 
 /** Donut de kcal partido por energía de cada macro (4/4/9). */
 export function DonutMacros({ kcal, p, hc, g, size = 96 }: { kcal: number; p: number; hc: number; g: number; size?: number }) {
@@ -85,22 +94,56 @@ export function DonutMacros({ kcal, p, hc, g, size = 96 }: { kcal: number; p: nu
 }
 
 export default function FichaAlimentoCalorias({
-  nombre, marca, porCien, extrasPorCien, raciones, aproximado, nota, comidas, mealId: mealInicial, textoBoton = 'Añadir', onCambiar, onConfirm, onClose,
+  nombre, marca, porCien, extrasPorCien, raciones, aproximado, nota, mealId: mealInicial, textoBoton = 'Añadir', onCambiar, onGuardarRacion, onConfirm, onClose,
 }: FichaProps) {
-  const [racionIdx, setRacionIdx] = useState(0);
-  const [numTexto, setNumTexto] = useState('1');
-  const [mealId, setMealId] = useState(mealInicial);
+  /* Cantidad (Dani, 28-10-2026): los gramos de manera libre; si el producto
+     tiene ración, cuánto es una ración y el número de raciones para
+     escribirlo; y lo que comiste la última vez. Nada más: sin 100 g, sin
+     «Otra cantidad» y sin selector de comida. */
+  const racionInicial = raciones.find(r => r.recomendada);
+  /** La ración vigente: la de las props o la que el atleta acaba de fijar aquí. */
+  const [racionFijada, setRacionFijada] = useState<number | null>(null);
+  const racionRef = racionFijada != null ? { ...racionInicial, gramos: racionFijada, origen: 'propia' as const } : racionInicial;
+  const [editandoRacion, setEditandoRacion] = useState(false);
+  const [racionTexto, setRacionTexto] = useState('');
+  const [gramosTexto, setGramosTexto] = useState(() => (raciones[0] ? numTexto(raciones[0].gramos) : ''));
+  const [racionesTexto, setRacionesTexto] = useState(() =>
+    (racionRef && raciones[0] ? numTexto(raciones[0].gramos / racionRef.gramos) : ''));
+  // Sin selector de comida (Dani, 28-10-2026): va a la comida desde la que se abrió.
+  const [mealId] = useState(mealInicial);
   // Siempre cerrada al abrir la ficha (Dani, 26-10-2026).
   const [verTabla, setVerTabla] = useState(false);
-  /** «Otra cantidad»: gramos escritos a mano (racionIdx = -1). */
-  const [otraTexto, setOtraTexto] = useState('');
 
-  const otra = racionIdx === -1;
-  const gramosOtra = parseFloat(otraTexto.replace(',', '.'));
-  const base = otra ? (Number.isFinite(gramosOtra) ? gramosOtra : 0) : (raciones[racionIdx] ?? raciones[0])?.gramos ?? 0;
-  const num = parseFloat(numTexto.replace(',', '.'));
-  const gramos = base > 0 && Number.isFinite(num) && num > 0 ? Math.round(base * num * 10) / 10 : 0;
+  const leido = parseFloat(gramosTexto.replace(',', '.'));
+  const gramos = Number.isFinite(leido) && leido > 0 ? Math.round(leido * 10) / 10 : 0;
   const valido = gramos > 0 && gramos <= 5000;
+
+  // Gramos y raciones van enlazados: 2 raciones de 40 g son 80 g, y 60 g son 1,5.
+  const cambiarGramos = (texto: string) => {
+    setGramosTexto(texto);
+    if (!racionRef) return;
+    const g = parseFloat(texto.replace(',', '.'));
+    setRacionesTexto(Number.isFinite(g) && g > 0 ? numTexto(g / racionRef.gramos) : '');
+  };
+  const cambiarRaciones = (texto: string) => {
+    setRacionesTexto(texto);
+    const n = parseFloat(texto.replace(',', '.'));
+    if (racionRef && Number.isFinite(n) && n > 0) setGramosTexto(numTexto(n * racionRef.gramos));
+  };
+  // La ración ya se ve en su campo; de atajo queda lo de la última vez.
+  const atajos = raciones.filter(r => !r.recomendada && r.gramos !== racionRef?.gramos);
+
+  const guardarRacion = () => {
+    const g = Math.round(parseFloat(racionTexto.replace(',', '.')) * 10) / 10;
+    setEditandoRacion(false);
+    if (!Number.isFinite(g) || g <= 0 || g > 5000) return;
+    setRacionFijada(g);
+    onGuardarRacion?.(g);
+    // Las raciones escritas se mantienen; cambian los gramos que suponen.
+    const n = parseFloat(racionesTexto.replace(',', '.'));
+    setGramosTexto(numTexto((Number.isFinite(n) && n > 0 ? n : 1) * g));
+    if (!(Number.isFinite(n) && n > 0)) setRacionesTexto('1');
+  };
 
   const n = useMemo(() => (valido ? nutrientesDeRacion(porCien, gramos) : null), [porCien, gramos, valido]);
   const f = gramos / 100;
@@ -190,84 +233,94 @@ export default function FichaAlimentoCalorias({
             </div>
           </>
         ) : (
-          <p className="font-sans text-body-s text-ink-3">Escribe cuántas raciones para ver lo que aporta.</p>
+          <p className="font-sans text-body-s text-ink-3">Escribe los gramos para ver lo que aporta.</p>
         )}
 
         {/* Lo que se apunta, debajo de la información (Dani, 26-10-2026). */}
         <div className="space-y-3 border-t border-hairline pt-5">
-          {/* Las raciones como chips (Dani, 26-10-2026, propuesta A): la
-              recomendada lleva su estrella y se elige de un toque. */}
-          <div className="space-y-3">
-            <span className="block font-sans text-body-s font-semibold text-ink">Ración</span>
-            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Ración">
-              {raciones.map((r, i) => {
-                const elegida = racionIdx === i;
+          <span className="block font-sans text-body-s font-semibold text-ink">Cantidad</span>
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <label htmlFor="ficha-gramos" className="mb-1.5 block font-sans text-caption text-ink-2">Gramos</label>
+              <div className="relative">
+                <input
+                  id="ficha-gramos"
+                  inputMode="decimal"
+                  value={gramosTexto}
+                  onChange={e => cambiarGramos(e.target.value)}
+                  onFocus={e => e.target.select()}
+                  autoFocus={!raciones.length}
+                  placeholder="0"
+                  className="h-[54px] w-full rounded-field border border-control-line bg-field pl-4 pr-10 font-mono text-title-s text-ink focus:border-accent focus:outline-none"
+                />
+                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 font-mono text-body-s text-ink-3">g</span>
+              </div>
+            </div>
+            {racionRef && (
+              <div className="w-[52%] flex-none">
+                {editandoRacion ? (
+                  <div className="mb-1.5 flex items-center gap-1.5">
+                    <label htmlFor="ficha-racion-g" className="font-sans text-caption text-ink-2">1 ración =</label>
+                    <input
+                      id="ficha-racion-g"
+                      inputMode="decimal"
+                      autoFocus
+                      value={racionTexto}
+                      onChange={e => setRacionTexto(e.target.value)}
+                      // Sale seleccionado: se escribe encima, no detrás («40» + «37,6»).
+                      onFocus={e => e.target.select()}
+                      onKeyDown={e => { if (e.key === 'Enter') guardarRacion(); if (e.key === 'Escape') setEditandoRacion(false); }}
+                      onBlur={guardarRacion}
+                      className="h-7 w-16 rounded-control border border-accent bg-field px-2 text-right font-mono text-caption text-ink focus:outline-none"
+                    />
+                    <span className="font-sans text-caption text-ink-2">g</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { setRacionTexto(numTexto(racionRef.gramos)); setEditandoRacion(true); }}
+                    className="mb-1.5 flex items-center gap-1 whitespace-nowrap font-sans text-caption text-ink-2 hover:text-accent-ink"
+                    aria-label={`Cambiar cuánto es una ración, ahora ${fmt(racionRef.gramos)} gramos`}
+                  >
+                    1 ración = {fmt(racionRef.gramos)} g
+                    <Icon name="edit" size="s" className="text-accent-ink" />
+                  </button>
+                )}
+                <input
+                  id="ficha-raciones"
+                  aria-label="Número de raciones"
+                  inputMode="decimal"
+                  value={racionesTexto}
+                  onChange={e => cambiarRaciones(e.target.value)}
+                  onFocus={e => e.target.select()}
+                  className="h-[54px] w-full rounded-field border border-control-line bg-field px-4 text-right font-mono text-title-s text-ink focus:border-accent focus:outline-none"
+                />
+                {racionRef.origen === 'ultima' && (
+                  <p className="mt-1 font-sans text-caption text-ink-3">Lo de la última vez</p>
+                )}
+              </div>
+            )}
+          </div>
+          {/* Atajo: lo de la última vez. */}
+          {atajos.length > 0 && (
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Atajos de cantidad">
+              {atajos.map((r, i) => {
+                const elegida = gramos === r.gramos;
                 return (
                   <button
                     key={`${r.etiqueta}_${i}`}
                     type="button"
-                    role="radio"
-                    aria-checked={elegida}
-                    onClick={() => setRacionIdx(i)}
+                    aria-pressed={elegida}
+                    onClick={() => cambiarGramos(numTexto(r.gramos))}
                     className={`flex min-h-11 flex-col items-start justify-center gap-0.5 rounded-surface border px-3.5 py-2 text-left font-sans transition-colors duration-(--duration-state) ${elegida ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline bg-field hover:border-accent/40'}`}
                   >
-                    {r.recomendada ? (
-                      <span className={`flex items-center gap-1 font-mono text-caption font-bold uppercase tracking-wider ${elegida ? 'text-on-accent' : 'text-accent-ink'}`}>
-                        <Icon name="star" size="s" filled />
-                        Recomendada
-                      </span>
-                    ) : r.nota ? (
+                    {r.nota ? (
                       <span className={`font-mono text-caption font-semibold uppercase tracking-wider ${elegida ? 'text-on-accent' : 'text-ink-3'}`}>{r.nota}</span>
                     ) : null}
                     <span className={`text-body-s font-semibold ${elegida ? 'text-on-accent' : 'text-ink'}`}>{r.etiqueta}</span>
                   </button>
                 );
               })}
-              <button
-                type="button"
-                role="radio"
-                aria-checked={otra}
-                onClick={() => setRacionIdx(-1)}
-                className={`flex min-h-11 items-center rounded-surface border px-3.5 py-2 font-sans text-body-s font-semibold transition-colors duration-(--duration-state) ${otra ? 'bg-accent border-accent-press text-on-accent' : 'border-dashed border-hairline text-ink-2 hover:border-accent/40'}`}
-              >
-                Otra cantidad
-              </button>
-            </div>
-            {otra && (
-              <div className="flex items-center justify-between gap-3 animate-fade-up">
-                <label htmlFor="ficha-otra" className="font-sans text-body-s font-medium text-ink">Gramos</label>
-                <input
-                  id="ficha-otra"
-                  inputMode="decimal"
-                  autoFocus
-                  value={otraTexto}
-                  onChange={e => setOtraTexto(e.target.value)}
-                  placeholder="g"
-                  className="h-[54px] w-28 rounded-field border border-control-line bg-field px-4 text-right font-mono text-title-s text-ink focus:border-accent focus:outline-none"
-                />
-              </div>
-            )}
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <label htmlFor="ficha-num" className="font-sans text-body-s font-medium text-ink">Nº de raciones</label>
-            <input
-              id="ficha-num"
-              inputMode="decimal"
-              value={numTexto}
-              onChange={e => setNumTexto(e.target.value)}
-              onFocus={e => e.target.select()}
-              className="h-[54px] w-24 rounded-field border border-control-line bg-field px-4 text-right font-mono text-title-s text-ink focus:border-accent focus:outline-none"
-            />
-          </div>
-          {comidas.length > 1 && (
-            <div className="flex items-center justify-between gap-3">
-              <span className="font-sans text-body-s font-medium text-ink">Comida</span>
-              <Select
-                className="w-52"
-                value={mealId}
-                onChange={setMealId}
-                options={comidas.map(c => ({ value: c.id, label: c.nombre }))}
-              />
             </div>
           )}
         </div>
@@ -289,21 +342,26 @@ export default function FichaAlimentoCalorias({
   );
 }
 
-/** Raciones de un producto: la recomendada (su unidad o su ración declarada),
- *  lo de la última vez y 100 g. La primera sale elegida. */
-export function racionesDe(opc: { ultimos?: number; racion?: number; unidad?: { nombre: string; gramos: number } }): Racion[] {
+/** Atajos de un producto. La ración, por este orden: la que fijó el atleta,
+ *  la del producto (su unidad o la ración de la etiqueta) y, si no tiene,
+ *  lo de la última vez (Dani, 28-10-2026: «si no tiene ración, que la ración
+ *  sea lo último consumido»). Lo de la última vez sale además como atajo si
+ *  es otra cantidad. Sin «100 g»: los gramos se escriben a mano. El primero
+ *  es el que sale puesto. */
+export function racionesDe(opc: { ultimos?: number; racion?: number; unidad?: { nombre: string; gramos: number }; propia?: number }): Racion[] {
   const out: Racion[] = [];
-  if (opc.unidad && opc.unidad.gramos > 0) out.push({ etiqueta: `1 ${opc.unidad.nombre} · ${opc.unidad.gramos} g`, gramos: opc.unidad.gramos, recomendada: true });
-  else if (opc.racion && opc.racion > 0) out.push({ etiqueta: `1 ración · ${opc.racion} g`, gramos: opc.racion, recomendada: true });
-  // La última vez, solo si no es ya la recomendada: dos chips iguales confunden.
-  if (opc.ultimos && opc.ultimos > 0 && !out.some(r => r.gramos === opc.ultimos)) out.push({ etiqueta: `${opc.ultimos} g`, gramos: opc.ultimos, nota: 'Última vez' });
-  if (!out.some(r => r.gramos === 100)) out.push({ etiqueta: '100 g', gramos: 100 });
+  if (opc.propia && opc.propia > 0) out.push({ etiqueta: `1 ración · ${fmt(opc.propia)} g`, gramos: opc.propia, recomendada: true, origen: 'propia' });
+  else if (opc.unidad && opc.unidad.gramos > 0) out.push({ etiqueta: `1 ${opc.unidad.nombre} · ${opc.unidad.gramos} g`, gramos: opc.unidad.gramos, recomendada: true, origen: 'producto' });
+  else if (opc.racion && opc.racion > 0) out.push({ etiqueta: `1 ración · ${opc.racion} g`, gramos: opc.racion, recomendada: true, origen: 'producto' });
+  else if (opc.ultimos && opc.ultimos > 0) out.push({ etiqueta: `1 ración · ${fmt(opc.ultimos)} g`, gramos: opc.ultimos, recomendada: true, origen: 'ultima' });
+  // La última vez, solo si no es ya la ración: dos iguales confunden.
+  if (opc.ultimos && opc.ultimos > 0 && !out.some(r => r.gramos === opc.ultimos)) out.push({ etiqueta: `${fmt(opc.ultimos)} g`, gramos: opc.ultimos, nota: 'Última vez' });
   return out;
 }
 
 /** La ficha de un producto de supermercado: se descarga y, si está completo, se enseña. */
-export function FichaProductoOff({ codigo, nombre, marca, ultimos, onIncompleto, ...resto }: Omit<FichaProps, 'porCien' | 'raciones' | 'nombre'> & {
-  codigo: string; nombre: string; ultimos?: number; onIncompleto?: (p: { n: string; c: string }) => void;
+export function FichaProductoOff({ codigo, nombre, marca, ultimos, racionPropia, onIncompleto, ...resto }: Omit<FichaProps, 'porCien' | 'raciones' | 'nombre'> & {
+  codigo: string; nombre: string; ultimos?: number; racionPropia?: number; onIncompleto?: (p: { n: string; c: string }) => void;
 }) {
   const { data, isPending, isError } = useQuery({ queryKey: ['offProducto', codigo], queryFn: () => resolverProducto(codigo), staleTime: Infinity });
   if (data && !esIncompleto(data)) {
@@ -314,7 +372,7 @@ export function FichaProductoOff({ codigo, nombre, marca, ultimos, onIncompleto,
         marca={data.b || marca}
         porCien={{ kcal: data.k, p: data.p, hc: data.h, g: data.g }}
         extrasPorCien={{ f: data.f, az: data.az, sat: data.sat, sal: data.sal }}
-        raciones={racionesDe({ ultimos, racion: data.s })}
+        raciones={racionesDe({ ultimos, racion: data.s, propia: racionPropia })}
       />
     );
   }

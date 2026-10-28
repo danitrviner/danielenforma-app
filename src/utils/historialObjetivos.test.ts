@@ -40,3 +40,22 @@ describe('historialDeObjetivos', () => {
     expect(corto.tramos.map(t => t.nombre)).toEqual(['Mantener', 'Bloque 3']);
   });
 });
+
+describe('plan fijo de la fase (maqueta D)', () => {
+  it('va del peso de inicio al objetivo del coach, no persigue al peso', () => {
+    const program: NutritionProgram = {
+      athleteId: 'a', startDate: '2026-09-01',
+      phases: [{ id: 'a', name: 'Definición', weeks: 12, dietId: '', objetivo: 'deficit', targetWeight: 76.5 }],
+    };
+    // Sube de peso en plena definición: antes la franja subía con él.
+    const r = historialDeObjetivos({ program, hoy: '2026-10-13', pesos: pesosDiarios('2026-09-01', 43, i => 81 + i * 0.07) });
+    const planes = r.puntos.map(p => p.plan).filter((n): n is number => n != null);
+    expect(planes[0]).toBeGreaterThan(80.5);
+    expect(planes.every((v, i) => i === 0 || v <= planes[i - 1])).toBe(true);
+    expect(r.puntos.at(-1)!.fecha).toBe('2026-11-23');
+    expect(r.puntos.at(-1)!.plan).toBe(76.5);
+    expect(r.tramos[0].pesoObjetivo).toBe(76.5);
+    const ultimaLectura = [...r.puntos].reverse().find(p => p.tendencia != null)!;
+    expect(ultimaLectura.tendencia!).toBeGreaterThan(ultimaLectura.franjaPlan![1]);
+  });
+});

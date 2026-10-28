@@ -1,14 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { LineChart, Line, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine, Tooltip, ResponsiveContainer } from 'recharts';
 import { BodyweightLog } from '../types';
 import { getBodyweightForAthlete, guardarPesoDelDia, updateBodyweight, deleteBodyweight } from '../dbService';
 import { bodyweightForAthleteKey, invalidarExtremosDePeso } from '../hooks/useAthleteWeight';
-import { Skeleton, SegmentedControl } from './ui';
+import { Skeleton, SegmentedControl, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA, ANCHO_EJE_Y } from './ui';
 import { Icon, EmptyState } from './ui';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 import { addDays } from '../utils/trainingWeek';
 import { RangoTemporal, RANGO_TEMPORAL_OPTIONS, recortarPorRango } from '../utils/rangoTemporal';
+import { resumenPeso, cambiosPorTramo } from '../utils/resumenPeso';
 
 interface Props {
   athleteEmail: string;
@@ -32,6 +33,10 @@ function fmtDate(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00');
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
+
+const kg1 = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const conSigno = (n: number, dec = 1) =>
+  `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toLocaleString('es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec })}`;
 
 function todayStr(): string {
   return hoyIsoLocal();
@@ -107,12 +112,21 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
   // franja de 79-82 kg se aplasta contra el borde superior del gráfico.
   const yDomain = useMemo<[number, number] | ['auto', 'auto']>(() => {
     if (chartData.length === 0) return ['auto', 'auto'];
-    const vals = chartData.map(d => d.value);
+    const vals = chartData.flatMap(d => (d.avg != null ? [d.value, d.avg] : [d.value]));
     const min = Math.min(...vals);
     const max = Math.max(...vals);
     const pad = Math.max((max - min) * 0.15, 0.5);
     return [Math.floor((min - pad) * 10) / 10, Math.ceil((max + pad) * 10) / 10];
   }, [chartData]);
+
+  // Lo que antes había que adivinar mirando la línea (Dani, 28-10-2026).
+  const resumen = useMemo(() => resumenPeso(chartData), [chartData]);
+  const porMes = rango === '6m' || rango === 'todo';
+  const tramos = useMemo(() => cambiosPorTramo(chartData, porMes ? 'mes' : 'semana'), [chartData, porMes]);
+  const maxTramo = Math.max(0.1, ...tramos.map(t => Math.abs(t.cambio)));
+  const inicio = asc[0];
+  const inicioVisible = !!inicio && typeof yDomain[0] === 'number'
+    && inicio.weight >= (yDomain[0] as number) && inicio.weight <= (yDomain[1] as number);
 
   const HISTORY_COLLAPSED_COUNT = 4;
   const listEntries = showAll ? desc : desc.slice(0, HISTORY_COLLAPSED_COUNT);
@@ -200,18 +214,6 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
           <div className="bg-surface border border-hairline rounded-field p-4">
             {/* Leyenda + chip "Añadir" en la misma fila, dentro de la tarjeta */}
             <div className="flex items-center gap-4 mb-3">
-              {logs.length >= 2 && (
-                <>
-                  <span className="flex items-center gap-1.5 font-mono text-label text-ink-2">
-                    <span className="inline-block w-3.5 h-0.5 bg-accent rounded-full" />
-                    Diario
-                  </span>
-                  <span className="flex items-center gap-1.5 font-mono text-label text-ink-2">
-                    <span className="inline-block w-3.5 border-t border-dashed border-data" />
-                    Media 7d
-                  </span>
-                </>
-              )}
               {!readOnly && (
                 <button
                   onClick={() => setAddOpen(v => !v)}
@@ -234,6 +236,36 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
               </div>
             )}
 
+            {resumen && (
+              <div className="mb-3 space-y-2.5">
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <p className="font-mono text-title-l font-bold text-ink tabular-nums leading-none">{conSigno(resumen.cambio)} kg</p>
+                    <p className="font-mono text-caption text-ink-3 uppercase mt-1.5">
+                      en {resumen.dias} {resumen.dias === 1 ? 'día' : 'días'}
+                      {resumen.ritmoSemana != null && ` · ${conSigno(resumen.ritmoSemana, 2)} kg/sem`}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <div className="bg-inset rounded-control px-2.5 py-2">
+                    <p className="font-mono text-body-s font-bold text-ink tabular-nums">{kg1(resumen.media)} kg</p>
+                    <p className="font-mono text-caption text-ink-3 uppercase">Media</p>
+                  </div>
+                  <div className="bg-inset rounded-control px-2.5 py-2">
+                    <p className="font-mono text-body-s font-bold text-ink tabular-nums">{kg1(resumen.min)}–{kg1(resumen.max)}</p>
+                    <p className="font-mono text-caption text-ink-3 uppercase">Mín – máx</p>
+                  </div>
+                  {inicio && (
+                    <div className="bg-inset rounded-control px-2.5 py-2">
+                      <p className="font-mono text-body-s font-bold text-ink tabular-nums">{kg1(inicio.weight)} kg</p>
+                      <p className="font-mono text-caption text-ink-3 uppercase truncate">{readOnly ? 'Empezó' : 'Empezaste'} · {fmtDate(inicio.date)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Con 1 solo registro, un LineChart dibuja un punto suelto sin línea
                 — no es falso, pero tampoco dice nada útil (F3.13f, "nunca una
                 gráfica que finja saber una tendencia que no tiene"). Se pide
@@ -250,41 +282,76 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                 <p className="font-sans text-caption text-ink-2">Sin registros en este rango.</p>
               </div>
             )}
-            {/* Gráfica minimal — sin ejes ni rejilla (handoff §1: "SVG 300×100"),
-                el tooltip al pasar el dedo/ratón se conserva por accesibilidad. */}
+            {/* Antes era una línea sin ejes ni rejilla (handoff §1) y no se sabía
+                cuánto había bajado. Ahora: rejilla con los kg al borde, la media
+                de 7 días como línea, cada pesaje como punto y el peso con el que
+                empezó como referencia si cae dentro de la escala. */}
             {logs.length > 1 && chartData.length >= 2 && (
-              <ResponsiveContainer width="100%" height={110}>
-                <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-                  <YAxis domain={yDomain} hide />
-                  <Tooltip content={(props) => <BwTooltip {...props} />} />
-                  <Line
-                    type="monotone"
-                    dataKey="avg"
-                    stroke="var(--color-data)"
-                    strokeWidth={1.5}
-                    strokeDasharray="5 4"
-                    dot={false}
-                    activeDot={false}
-                    isAnimationActive={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="var(--color-accent-ink)"
-                    strokeWidth={2.5}
-                    dot={(props) => {
-                      const { cx, cy, index, key } = props;
-                      const isLast = index === chartData.length - 1;
-                      return (
-                        <circle key={key} cx={cx} cy={cy} r={isLast ? 4 : 2.2}
-                          fill={isLast ? 'var(--color-accent-ink)' : 'color-mix(in srgb, var(--color-accent-ink) 75%, transparent)'} />
-                      );
-                    }}
-                    activeDot={{ fill: 'var(--color-accent-ink)', stroke: 'var(--color-bg)', strokeWidth: 2, r: 5 }}
-                    isAnimationActive={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <>
+                <ResponsiveContainer width="100%" height={170}>
+                  <LineChart data={chartData} margin={{ top: 6, right: 0, bottom: 0, left: 4 }}>
+                    <CartesianGrid {...REJILLA_GRAFICA} vertical={false} />
+                    <XAxis dataKey="date" tickFormatter={fmtDate} tick={TICK_GRAFICA} {...EJE_GRAFICA} minTickGap={36} />
+                    <YAxis domain={yDomain} orientation="right" width={ANCHO_EJE_Y} tick={TICK_GRAFICA} {...EJE_GRAFICA} tickCount={4}
+                      tickFormatter={(v: number) => kg1(v)} />
+                    <Tooltip content={(props) => <BwTooltip {...props} />} />
+                    {inicioVisible && (
+                      <ReferenceLine y={inicio!.weight} stroke="var(--color-ink-3)" strokeDasharray="3 4"
+                        label={{ value: 'inicio', position: 'insideTopLeft', fill: 'var(--color-ink-3)', fontSize: 10 }} />
+                    )}
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="none"
+                      dot={{ r: 2.2, fill: 'var(--color-ink-3)', stroke: 'none' }}
+                      activeDot={{ fill: 'var(--color-ink)', stroke: 'var(--color-bg)', strokeWidth: 2, r: 4 }}
+                      isAnimationActive={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="avg"
+                      stroke="var(--color-accent-ink)"
+                      strokeWidth={2.5}
+                      dot={false}
+                      activeDot={false}
+                      isAnimationActive={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="flex gap-4 mt-1 font-mono text-caption text-ink-2">
+                  <span className="flex items-center gap-1.5"><span className="inline-block w-3.5 h-0.5 bg-accent rounded-full" />Media 7 días</span>
+                  <span className="flex items-center gap-1.5"><span className="inline-block w-1.5 h-1.5 rounded-full bg-ink-3" />Peso del día</span>
+                </div>
+
+                {/* Cambio de cada semana (o mes en 6M/Todo): si el ritmo se frena,
+                    se ve aquí antes que en la línea. Sin verde/rojo: bajar es bueno
+                    en una definición y malo en un volumen. */}
+                {tramos.length >= 2 && (
+                  <div className="mt-4">
+                    <p className="font-mono text-caption text-ink-3 uppercase mb-2">Cambio por {porMes ? 'mes' : 'semana'}</p>
+                    <div className="flex items-stretch gap-1.5" role="img"
+                      aria-label={tramos.map(t => `${t.etiqueta}: ${conSigno(t.cambio)} kg`).join(', ')}>
+                      {tramos.map(t => {
+                        const alto = Math.max(3, (Math.abs(t.cambio) / maxTramo) * 34);
+                        const sube = t.cambio > 0;
+                        return (
+                          <div key={t.etiqueta} className="flex-1 min-w-0 flex flex-col items-center">
+                            <span className={`font-mono text-caption tabular-nums ${sube ? 'text-accent-ink' : 'text-data'}`}>{conSigno(t.cambio)}</span>
+                            <div className="relative w-full h-[72px]">
+                              <span className="absolute inset-x-0 top-1/2 h-px bg-hairline" />
+                              <span
+                                className={`absolute left-1/2 -translate-x-1/2 w-[70%] max-w-9 rounded-sm ${sube ? 'bg-accent' : 'bg-data'}`}
+                                style={sube ? { bottom: '50%', height: alto } : { top: '50%', height: alto }}
+                              />
+                            </div>
+                            <span className="font-mono text-caption text-ink-3 truncate max-w-full">{t.etiqueta}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Alta rápida — colapsada detrás del chip "Añadir" */}

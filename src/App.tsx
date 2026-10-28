@@ -135,6 +135,12 @@ const RecetarioHarness = import.meta.env.DEV
 const ProgresionHarness = import.meta.env.DEV
   ? pantallaDiferida('ProgresionDevHarness', () => import('./components/mesociclo/ProgresionDevHarness'))
   : null;
+const FichaHarness = import.meta.env.DEV
+  ? pantallaDiferida('FichaDevHarness', () => import('./components/nutrition/calorias/FichaDevHarness'))
+  : null;
+const EntrenoHarness = import.meta.env.DEV
+  ? pantallaDiferida('EntrenoDevHarness', () => import('./components/training/EntrenoDevHarness'))
+  : null;
 // Banco de pruebas del reto de la semana y su aviso en el entreno (ruta /dev/retos).
 const RetosHarness = import.meta.env.DEV
   ? pantallaDiferida('RetosDevHarness', () => import('./components/roadmap/RetosDevHarness'))
@@ -829,6 +835,20 @@ function AppContent() {
       </Suspense>
     );
   }
+  if (FichaHarness && location.pathname === '/dev/ficha') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <FichaHarness />
+      </Suspense>
+    );
+  }
+  if (EntrenoHarness && location.pathname === '/dev/entreno') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <EntrenoHarness />
+      </Suspense>
+    );
+  }
   if (ProgresionHarness && location.pathname === '/dev/progresion') {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
@@ -935,6 +955,7 @@ function AppContent() {
           <AthleteOnboardingWizard
             profile={profile}
             onComplete={() => setOnboardingGate('done')}
+            onNombre={displayName => setProfile(p => (p ? { ...p, displayName } : p))}
           />
         </Suspense>
       );

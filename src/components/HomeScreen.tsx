@@ -1,12 +1,19 @@
 import { useCuentaAlMontar } from '../hooks/useCuentaAlMontar';
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn } from '../types';
-import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles, getBodyweightForAthlete, updateUserProfile, getNutritionProgram } from '../dbService';
+import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles, getBodyweightForAthlete, updateUserProfile, getNutritionProgram, getCardioSessionsSince } from '../dbService';
 import { formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
-import { countMealsDone } from '../utils/nutritionSummary';
+import { macrosDeIntercambios, objetivoDelRegistro } from '../utils/macrosLegado';
+import { sonMacrosVacios } from '../utils/macros';
+import { sembrarDiaDelPlan, plantillaDeComidas } from './nutrition/dietHelpers';
+import TarjetaNutricionHoy, { type AccionAnadir } from './home/TarjetaNutricionHoy';
+import TarjetaCardio from './home/TarjetaCardio';
+import { ventanaCardio } from '../utils/ventanaHistorial';
+import { lunesDe } from '../utils/cardioProgression';
 import { objetivoDelDia } from '../utils/objetivoDelDia';
 import PendingTasksPanel from './PendingTasksPanel';
 import SolicitudConsentimientoIA from './SolicitudConsentimientoIA';
@@ -19,7 +26,6 @@ import TarjetaPeso from './home/TarjetaPeso';
 import RegistrarPesoSheet from './home/RegistrarPesoSheet';
 import WeeklyChallengeCard, { ChallengePendingCard } from './roadmap/WeeklyChallengeCard';
 import { useRetoDeLaSemana } from '../hooks/useRetoDeLaSemana';
-import ResourcesPanel from './ResourcesPanel';
 import AthleteReportsPanel from './AthleteReportsPanel';
 import PlanInPreparationCard from './PlanInPreparationCard';
 import RecordatorioGimnasioCard from '../features/gimnasio/RecordatorioGimnasioCard';
@@ -188,6 +194,18 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
   const zona2Assignment = pickActiveZona2Assignment(cardioAssignments, TODAY_DATE);
   const intervalAssignment = pickActiveIntervalAssignment(cardioAssignments, TODAY_DATE);
   const cardioRx = zona2Assignment ?? intervalAssignment;
+  // Misma clave y ventana que CardioScreen y el reto de la semana: no añade lectura.
+  const cardioSince = ventanaCardio();
+  const { data: cardioSessions = [] } = useQuery({
+    queryKey: ['cardioSessions', profile.email, cardioSince],
+    queryFn: () => getCardioSessionsSince(profile.email, cardioSince),
+    enabled: !!cardioRx,
+  });
+  const cardioSemana = useMemo(() => {
+    const lunes = lunesDe(TODAY_DATE);
+    const semana = cardioSessions.filter(c => c.date >= lunes && c.date <= TODAY_DATE);
+    return { hechas: semana.length, hoy: semana.some(c => c.date === TODAY_DATE) };
+  }, [cardioSessions, TODAY_DATE]);
 
   /* Las ingestas de HOY salen del registro del día, no de la dieta "programada
      para el martes": el plan del día vive en su propio documento desde 09-2026
@@ -196,9 +214,24 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
   const entrenaHoy = nutritionProgram?.ciclado
     ? assignments.some(a => a.date === TODAY_DATE && a.status !== 'skipped')
     : undefined;
-  const todaysDiet = dietaDelDia(completionLog ?? null, diets)
-    ?? objetivoDelDia({ diets, config: dietConfig, program: nutritionProgram, fecha: TODAY_DATE, entrena: entrenaHoy }).dieta;
-  const mealsDone = todaysDiet ? countMealsDone(todaysDiet, completionLog?.doneItemIds ?? []) : null;
+  const dietaPautada = objetivoDelDia({ diets, config: dietConfig, program: nutritionProgram, fecha: TODAY_DATE, entrena: entrenaHoy }).dieta;
+  const todaysDiet = dietaDelDia(completionLog ?? null, diets) ?? dietaPautada;
+  /* Las comidas y el objetivo, sembrados igual que en Nutrición
+     (NutritionScreen, efecto de `cargadoPara`): un día sin registro arranca
+     con las cinco comidas vacías y el objetivo de la dieta del coach. Así la
+     posición de cada comida casa con la de allí al abrirla desde aquí. */
+  const diaNutricion = useMemo(() => {
+    if (completionLog === undefined) return null;
+    const { meals, budget } = sembrarDiaDelPlan(completionLog, diets, plantillaDeComidas(), dietaPautada?.budget ?? null, null);
+    const delRegistro = objetivoDelRegistro(completionLog);
+    const objetivo = (!sonMacrosVacios(delRegistro) ? delRegistro : null) ?? dietaPautada?.objetivo ?? macrosDeIntercambios(budget);
+    return { meals, objetivo };
+  }, [completionLog, diets, dietaPautada]);
+  const navigate = useNavigate();
+  const abrirNutricion = (accion?: AccionAnadir, comida?: number) => {
+    if (!accion || comida === undefined) { onNavigate('nutrition'); return; }
+    navigate(`/nutrition?anadir=${accion}&comida=${comida}`);
+  };
 
   /* A-2. Se le pregunta aquí, en la primera pantalla que abre, porque los
      atletas que ya están dentro terminaron su alta hace meses y no van a volver
@@ -309,6 +342,18 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         hoy={TODAY_DATE}
       />
 
+      {/* ── Nutrición: acceso rápido a la comida que toca. Justo debajo de peso
+          y pasos (Dani, 28-10): es lo que más veces al día se abre desde aquí,
+          y fuera del bloque del entreno para que salga aunque no haya rutina. */}
+      {todaysDiet && diaNutricion && diaNutricion.meals.length > 0 && (
+        <TarjetaNutricionHoy
+          meals={diaNutricion.meals}
+          doneItemIds={completionLog?.doneItemIds ?? []}
+          objetivo={diaNutricion.objetivo}
+          onAbrir={abrirNutricion}
+        />
+      )}
+
       {/* Nota del coach para hoy (Roadmap → Calendario) — encima del entreno
           del día, solo si hay una escrita para la fecha de hoy. */}
       {coachDayNote && (
@@ -381,34 +426,15 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
           {/* ── Cardio como fila secundaria cuando hoy toca fuerza ── */}
           {!cardioIsPrimary && cardioRx && (
             <div ref={cardioRowRef}>
-            <ListRow
-              onClick={() => onNavigate('cardio')}
-              className="rounded-control border bg-surface border-hairline"
-              leading={<Icon name="favorite" size="m" className="text-accent-ink" />}
-              title="Cardio"
-              subtitle={cardioRx.type === 'zona2' ? 'Zona 2' : 'Intervalos'}
-              chevron
-            />
+              <TarjetaCardio
+                cardio={cardioRx}
+                hechasSemana={cardioSemana.hechas}
+                hechoHoy={cardioSemana.hoy}
+                onAbrir={() => onNavigate('cardio')}
+              />
             </div>
           )}
 
-          {/* ── Nutrición: fila de progreso, nunca el detalle ──
-              Un segmento por ingesta (no una barra única interpolada): son
-              datos discretos —cada ingesta está completa o no— y así se ve
-              en la maqueta. */}
-          {todaysDiet && mealsDone && (
-            <button onClick={() => onNavigate('nutrition')} className="w-full text-left bg-surface border border-hairline rounded-control p-4 space-y-3 hover:border-strong transition-colors">
-              <div className="flex items-center justify-between">
-                <p className="text-caption font-mono uppercase text-ink-2">Nutrición de hoy</p>
-                <p className="text-caption font-mono text-ink-2 tabular-nums">{mealsDone.done}/{mealsDone.total} registradas</p>
-              </div>
-              <div className="flex gap-1" role="img" aria-label={`Ingestas de hoy, ${mealsDone.done} de ${mealsDone.total}`}>
-                {Array.from({ length: mealsDone.total }, (_, i) => (
-                  <span key={i} className={`h-1.5 flex-1 rounded-full ${i < mealsDone.done ? 'bg-accent' : 'bg-track'}`} />
-                ))}
-              </div>
-            </button>
-          )}
         </>
       )}
 
@@ -458,8 +484,6 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         )}
       </section>
       )}
-
-      <ResourcesPanel isCoach={false} />
     </div>
   );
 }

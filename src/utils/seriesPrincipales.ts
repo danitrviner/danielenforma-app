@@ -10,3 +10,22 @@
 export function seriesPrincipales<T extends { segmento?: boolean }>(sets: readonly T[]): T[] {
   return sets.filter(s => !s.segmento);
 }
+
+export type EstadoDelEjercicio = 'abierto' | 'tecnica-pendiente' | 'cerrado';
+
+/**
+ * En qué punto está un ejercicio de la sesión.
+ *
+ * `tecnica-pendiente`: las series principales están hechas pero quedan bajadas
+ * o miniseries sin marcar. Antes eso contaba como «abierto» sin salida (Dani,
+ * 28-10-2026): la tarjeta deja las filas de la técnica sin reps «para
+ * marcarlas después», así que un drop set o unas myo-reps sin apuntar dejaban
+ * el ejercicio colgado —sin «Siguiente» y, en el último, sin cierre—. Tampoco
+ * vale cerrarlo solo en ese momento: las filas de la técnica desaparecerían
+ * justo antes de hacerlas. Por eso es un estado propio, con su botón.
+ */
+export function estadoDelEjercicio(sets: readonly { done: boolean; segmento?: boolean }[]): EstadoDelEjercicio {
+  const principales = seriesPrincipales(sets);
+  if (principales.length === 0 || !principales.every(s => s.done)) return 'abierto';
+  return sets.every(s => s.done) ? 'cerrado' : 'tecnica-pendiente';
+}

@@ -44,8 +44,49 @@ export function sugerirCarga(we: WorkoutExercise, previa: WorkoutEntryLog | unde
   const suben = series.filter((s): s is SerieSugerida => s !== null);
   if (suben.length === 0) return { series, resumen: null };
   const pesos = [...new Set(suben.map(s => s.peso))];
+  // En la voz del coach, no de la app (Dani, 28-10-2026): el atleta lo lee
+  // como un consejo suyo, y por eso se hace más caso.
   const resumen = suben.length === filas.length && pesos.length === 1
-    ? `Sube a ${kg(pesos[0])}: la última vez llegaste al tope de repeticiones con margen.`
-    : `Sube la carga en ${suben.length} de ${filas.length} series: ahí llegaste al tope de repeticiones con margen.`;
+    ? `La última vez llegaste al tope de repeticiones con margen. Hoy quiero que pruebes con ${kg(pesos[0])} y vemos cómo va.`
+    : `En ${suben.length} de ${filas.length} series llegaste al tope con margen. Ahí te he subido el peso: pruébalo y vemos cómo va.`;
   return { series, resumen };
+}
+
+export interface ConsejoEnVivo {
+  /** Índice de la serie a la que se refiere (la siguiente sin hacer). */
+  serie: number;
+  peso: number;
+  texto: string;
+}
+
+/**
+ * Consejo en plena sesión: si la última serie marcada pasó del tope del rango
+ * con el esfuerzo pautado (su RIR igual o mayor que el del coach, sin fallo),
+ * la siguiente pide más peso. Es lo que diría el coach al lado del banco, en
+ * vez de esperar a la semana que viene. `null` si no toca decir nada o si la
+ * siguiente ya lleva ese peso o más.
+ */
+export function consejoEnVivo(
+  we: Pick<WorkoutExercise, 'sets' | 'reps' | 'rir' | 'setGroups'>,
+  sets: readonly { weight: string; repsDone: string; rir: string; done: boolean; segmento?: boolean }[],
+): ConsejoEnVivo | null {
+  const filas = expandSetGroups(we);
+  const principales = sets.map((s, i) => ({ s, i })).filter(x => !x.s.segmento);
+  const siguiente = principales.findIndex(x => !x.s.done);
+  if (siguiente <= 0) return null;
+  const hecha = principales[siguiente - 1].s;
+  const proxima = principales[siguiente];
+  const rango = rangoDeReps(filas[siguiente - 1]?.reps ?? '');
+  const peso = parseFloat(hecha.weight);
+  const reps = parseInt(hecha.repsDone, 10);
+  if (!rango || !(peso > 0) || !(reps > rango.max) || hecha.rir === 'fallo') return null;
+  if (Number(hecha.rir) < (filas[siguiente - 1]?.rir ?? 0)) return null;
+  const nuevo = Math.round((peso + incrementoDe(peso)) * 100) / 100;
+  if ((parseFloat(proxima.s.weight) || 0) >= nuevo) return null;
+  const rangoTxt = rango.min === rango.max ? `${rango.max}` : `${rango.min}-${rango.max}`;
+  return {
+    serie: proxima.i,
+    peso: nuevo,
+    texto: `Te has pasado del rango (${reps} reps en ${rangoTxt}) y aún te sobraba. Sube a ${kg(nuevo)} en la siguiente serie y vemos cómo va.`,
+  };
 }

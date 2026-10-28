@@ -60,7 +60,7 @@ export {
 export {
   getFoodItems, getCatalogoAlimentos, createFoodItem, updateFoodItem, deleteFoodItem, seedFoodItemsIfEmpty,
   getAlimentosPersonales, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal,
-  getAthleteNutritionConfig, saveAthleteNutritionConfig,
+  getAthleteNutritionConfig, saveAthleteNutritionConfig, guardarRacionPropia,
   getDietsForAthlete, createDiet, updateDiet, deleteDiet,
   getWeeklyMenusForAthlete, getPublishedMenu, createWeeklyMenu, updateWeeklyMenu, deleteWeeklyMenu, publishWeeklyMenu,
   getDietCompletionLog, getDietCompletionLogsForAthlete, saveDietCompletionLog,

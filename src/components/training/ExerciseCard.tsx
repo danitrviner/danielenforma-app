@@ -1,7 +1,8 @@
 import { useRecienHecho } from '../../hooks/useRecienHecho';
 import React from 'react';
 import { Exercise, WorkoutEntryLog, WorkoutExercise } from '../../types';
-import { Icon } from '../ui';
+import { Icon, Button } from '../ui';
+import { COACH_NOMBRE } from '../../utils/coach';
 import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR } from '../../utils/workoutTechniques';
 import { ajustesDe, partesDeTecnica, llevaSegmentos, pesoDeBajada, serieDelSegmento, seriesConTecnica, seriesPrincipales, pautaDelBloque } from '../../utils/tecnicaDeSerie';
 import { expandSetGroups } from '../../utils/setGroups';
@@ -11,7 +12,7 @@ import ExerciseVideoPlayer from '../ExerciseVideoPlayer';
 import { SetInput, RIR_OPCIONES, rirTexto, rirClaseColor, resumenRangosPautados } from './setInput';
 import RestRing from './RestRing';
 import { MOTIVOS_SALTAR, conMotivo, motivoDeLaNota } from '../../utils/saltarEjercicio';
-import { sugerirCarga } from '../../utils/cargaSugerida';
+import { sugerirCarga, consejoEnVivo } from '../../utils/cargaSugerida';
 
 interface Props {
   we: WorkoutExercise;
@@ -38,6 +39,9 @@ interface Props {
   /** Qué ha cambiado el coach en este ejercicio respecto a la semana pasada
    *  ("3 → 4 series", "RIR 2 → 1"). Vacío o ausente = nada nuevo. */
   cambios?: string[];
+  /** Solo con las series principales hechas y la técnica a medias: da el
+   *  ejercicio por terminado (ver `estadoDelEjercicio`). */
+  onCerrarEjercicio?: () => void;
   /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip.tsx). */
   key?: React.Key;
 }
@@ -60,6 +64,7 @@ export default React.memo(function ExerciseCard({
   onUpdateSet, onMarkDone, onAddRow, noteValue, onNoteChange,
   restTimer, onSkipRest, onAddRestSeconds,
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, cambios,
+  onCerrarEjercicio,
 }: Props) {
   const idNota = React.useId();
   const motivoMarcado = motivoDeLaNota(noteValue);
@@ -77,6 +82,7 @@ export default React.memo(function ExerciseCard({
   });
 
   const sugerencia = React.useMemo(() => sugerirCarga(we, prevEntry), [we, prevEntry]);
+  const consejo = React.useMemo(() => consejoEnVivo(we, exSets), [we, exSets]);
   const esDropset = we.technique === 'dropset';
   const esMyoreps = we.technique === 'myoreps';
   const esRestpause = we.technique === 'restpause';
@@ -239,10 +245,14 @@ export default React.memo(function ExerciseCard({
       {/* Carga sugerida (doble progresión): solo cuando toca subir. La tabla
           ya viene con ese peso; esto dice por qué, para que no parezca un error. */}
       {sugerencia.resumen && doneSets === 0 && (
-        <div className="mx-4 mt-2 flex items-start gap-2 rounded-control border border-success/40 bg-success/10 px-3 py-2">
-          <Icon name="trending_up" size="s" className="text-success mt-0.5" />
-          <p className="font-sans text-caption text-ink">{sugerencia.resumen}</p>
-        </div>
+        <ConsejoDelCoach texto={sugerencia.resumen} />
+      )}
+      {/* En plena sesión: la serie anterior se pasó del rango con margen. */}
+      {consejo && (
+        <ConsejoDelCoach
+          texto={consejo.texto}
+          accion={{ texto: `Poner ${String(consejo.peso).replace('.', ',')} kg`, onClick: () => onUpdateSet(consejo.serie, 'weight', String(consejo.peso)) }}
+        />
       )}
 
       {/* Series */}
@@ -279,6 +289,16 @@ export default React.memo(function ExerciseCard({
               {puedeCompletar && segmentosSiguiente.some(i => !exSets[i].done && !exSets[i].repsDone) && (
                 <p className="mt-1.5 text-center font-sans text-caption text-ink-3">Las {esDropset ? 'bajadas' : 'miniseries'} sin reps se quedan para marcarlas después.</p>
               )}
+            </div>
+          )}
+          {onCerrarEjercicio && (
+            <div className="px-4 pb-4">
+              <Button variant="primary" size="l" icon="check" onClick={onCerrarEjercicio} fullWidth>
+                Cerrar ejercicio
+              </Button>
+              <p className="mt-1.5 text-center font-sans text-caption text-ink-3">
+                Las {esDropset ? 'bajadas' : 'miniseries'} con reps se guardan; las vacías, no.
+              </p>
             </div>
           )}
         </>
@@ -683,3 +703,25 @@ const BotonSerieHecha = React.forwardRef<HTMLButtonElement, { hecha: boolean; on
     );
   }
 );
+
+/* Consejos de carga firmados por el coach (28-10-2026). Antes eran una frase
+   suelta de la app («Sube a 82,5 kg: …»); Dani quería que se leyera como lo
+   que es, una indicación suya, para que el atleta le haga caso. */
+function ConsejoDelCoach({ texto, accion }: { texto: string; accion?: { texto: string; onClick: () => void } }) {
+  return (
+    <div className="mx-4 mt-2 flex items-start gap-2.5 rounded-control border border-success/40 bg-success/10 px-3 py-2.5">
+      <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-success/20 font-sans text-label font-bold text-success" aria-hidden="true">
+        {COACH_NOMBRE.charAt(0)}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-sans text-caption font-bold text-success">{COACH_NOMBRE} te recomienda</p>
+        <p className="font-sans text-caption text-ink">{texto}</p>
+        {accion && (
+          <button type="button" onClick={accion.onClick} className="mt-1.5 rounded-control border border-success/40 px-2.5 py-1 font-sans text-caption font-bold text-success hover:bg-success/10">
+            {accion.texto}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
