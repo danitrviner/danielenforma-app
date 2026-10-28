@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { validateMesocyclePayload, validateNutritionPhases, validateDietPayload, leerDietaPropuesta, type MesocycleProposalPayload } from './validators';
+import { validateMesocyclePayload, validateNutritionPhases, validateDietPayload, leerDietaPropuesta, revisarObjetivoNutricional, avisosDeMesociclo, SEMANAS_POR_DEFECTO, type MesocycleProposalPayload } from './validators';
+import { macrosDesdeGramos } from '../utils/macros';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 
 /* El tope de volumen total era days × 12 y rechazaba repartos normales: con el
@@ -222,5 +223,87 @@ describe('leerDietaPropuesta — objetivo en gramos', () => {
     expect(validateNutritionPhases([{ name: 'Déficit', weeks: 8, diet: { name: 'Baja', objetivo, meals: [] } }], [])).toEqual([]);
     expect(validateNutritionPhases([{ name: 'Déficit', weeks: 8, diet: { name: 'Baja', meals: [] } }], [])
       .some(i => i.message.includes('objetivo'))).toBe(true);
+  });
+});
+
+/* Doctrina en código (28-10-2026). Los casos son los reales de septiembre:
+   Angel (P 250 / G 33 para 86 kg), Marco (−999 kcal frente al alta), Ander
+   (2,4 g/kg), Gonzalo (3.700 kcal de superávit). Lo que entonces pasó sin
+   aviso ahora se rechaza o vuelve con aviso. */
+describe('revisarObjetivoNutricional — proteína, grasa y déficit frente al criterio de Dani', () => {
+  const peso86 = { pesoKg: 86, mantenimientoKcal: 2665 };
+
+  it('la dieta de Angel: 2,9 g/kg de proteína es aviso y 0,4 g/kg de grasa (13 %) se rechaza', () => {
+    const r = revisarObjetivoNutricional(macrosDesdeGramos(250, 225, 33), peso86);
+    expect(r.issues.map(i => i.field)).toEqual(['objetivo.grasa_g']);
+    expect(r.avisos.join(' ')).toMatch(/2,9 g\/kg/);
+  });
+
+  it('un objetivo dentro del rango (2 g/kg, grasa 0,8 g/kg, déficit 400) pasa sin issues ni avisos', () => {
+    const r = revisarObjetivoNutricional(macrosDesdeGramos(172, 230, 70), peso86);
+    expect(r.issues).toEqual([]);
+    expect(r.avisos).toEqual([]);
+  });
+
+  it('la proteína de la doctrina vieja (0,8-1 g/kg) ya no se acepta', () => {
+    const r = revisarObjetivoNutricional(macrosDesdeGramos(86, 300, 70), peso86);
+    expect(r.issues.map(i => i.field)).toEqual(['objetivo.proteina_g']);
+    expect(r.issues[0].message).toContain('1,6-2,2');
+  });
+
+  it('entre 1,2 y 1,6 g/kg es aviso, no rechazo', () => {
+    const r = revisarObjetivoNutricional(macrosDesdeGramos(125, 300, 70), peso86); // 1,45 g/kg
+    expect(r.issues).toEqual([]);
+    expect(r.avisos.some(a => /por debajo del rango/.test(a))).toBe(true);
+  });
+
+  it('un déficit de −999 kcal (Marco) es aviso por encima de 700 y rechazo por encima de 1.000, salvo pérdida acelerada', () => {
+    const d = macrosDesdeGramos(180, 230, 70); // 2.270 kcal
+    const aviso = revisarObjetivoNutricional(d, { pesoKg: 90, mantenimientoKcal: 3000 }); // −730
+    expect(aviso.issues).toEqual([]);
+    expect(aviso.avisos.some(a => /techo de la doctrina/.test(a))).toBe(true);
+    const rechazo = revisarObjetivoNutricional(d, { pesoKg: 90, mantenimientoKcal: 3400 }); // −1.130
+    expect(rechazo.issues.map(i => i.field)).toEqual(['objetivo']);
+    const acelerado = revisarObjetivoNutricional(d, { pesoKg: 90, mantenimientoKcal: 3400, objetivoFase: 'deficit_acelerado' });
+    expect(acelerado.issues).toEqual([]);
+  });
+
+  it('en déficit la grasa por debajo de 0,8 g/kg avisa aunque pase de 0,6', () => {
+    const r = revisarObjetivoNutricional(macrosDesdeGramos(180, 200, 60), { pesoKg: 86, objetivoFase: 'deficit' }); // 0,7 g/kg
+    expect(r.issues).toEqual([]);
+    expect(r.avisos.some(a => /0,8 en déficit/.test(a))).toBe(true);
+  });
+
+  it('un superávit de más de 500 kcal (Gonzalo, 3.700 frente a 3.403) avisa', () => {
+    const r = revisarObjetivoNutricional(macrosDesdeGramos(180, 520, 90), { pesoKg: 90, mantenimientoKcal: 2900 }); // 3.610
+    expect(r.avisos.some(a => /Superávit/.test(a))).toBe(true);
+  });
+
+  it('sin peso ni mantenimiento no acota por kg ni por déficit: solo el suelo de kcal', () => {
+    expect(revisarObjetivoNutricional(macrosDesdeGramos(60, 150, 30), {})).toEqual({
+      issues: [], avisos: [expect.stringMatching(/1400/)],
+    });
+    expect(revisarObjetivoNutricional(macrosDesdeGramos(160, 220, 70))).toEqual({ issues: [], avisos: [] });
+  });
+});
+
+describe('avisosDeMesociclo — lo que Dani corregía siempre', () => {
+  const base: MesocycleProposalPayload = { weeks: SEMANAS_POR_DEFECTO, daysPerWeek: 4, objective: 'Hipertrofia', groups: { pecho: { series: 12 }, dorsal: { series: 14 } } };
+
+  it('12 semanas y pocos grupos: sin avisos', () => {
+    expect(avisosDeMesociclo(base)).toEqual([]);
+    expect(SEMANAS_POR_DEFECTO).toBe(12);
+  });
+
+  it('un bloque de 6 semanas avisa; uno de 8 no', () => {
+    expect(avisosDeMesociclo({ ...base, weeks: 6 })[0]).toMatch(/6 semanas/);
+    expect(avisosDeMesociclo({ ...base, weeks: 8 })).toEqual([]);
+  });
+
+  it('repartir series a 14 o más grupos avisa de los que Dani deja a cero', () => {
+    const todos = Object.fromEntries(['pecho', 'dorsal', 'trapecio', 'deltoide_ant', 'deltoide_lat', 'deltoide_post', 'biceps', 'triceps', 'cuadriceps', 'isquios', 'gluteo', 'aductores', 'gemelo', 'core'].map(g => [g, { series: 4 }]));
+    const avisos = avisosDeMesociclo({ ...base, groups: todos as MesocycleProposalPayload['groups'] });
+    expect(avisos).toHaveLength(1);
+    expect(avisos[0]).toMatch(/glúteo, gemelo y core/);
   });
 });

@@ -28,7 +28,10 @@ const MAX_DURACION_S = 300;
 // corte la conexión: un corte suyo no deja escribir nada.
 const GUARDA_MS = (MAX_DURACION_S - 5) * 1000;
 
-const ALLOWED_MODELS = new Set(['claude-sonnet-5', 'claude-haiku-4-5']);
+// 28-10: Sonnet 5.5 (mismo precio que Sonnet 5) y Haiku 5.5 (diez veces más
+// barato que Haiku 4.5) entran en la lista para que el autopiloto elija modelo
+// por tipo de episodio. El chat del coach sigue en Sonnet 5 hasta que se pruebe.
+const ALLOWED_MODELS = new Set(['claude-sonnet-5', 'claude-sonnet-5-5', 'claude-haiku-4-5', 'claude-haiku-5-5']);
 // 12-09. Con 8192 el asistente NO cabía montando un mes entero: la auditoría
 // del 12-09 tiene dos rondas seguidas cortadas con `stop_reason: max_tokens` y
 // 8192 de salida clavados, y el cliente trata ese corte como turno abortado —
@@ -159,7 +162,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // aiClient.ts con `cache_control: {type: 'ephemeral'}`), 0,1× al LEER.
   const PRECIOS_POR_MTOK: Record<string, { input: number; output: number }> = {
     'claude-sonnet-5': { input: 2, output: 10 },
+    'claude-sonnet-5-5': { input: 2, output: 10 },
     'claude-haiku-4-5': { input: 1, output: 5 },
+    // Precio hasta 100k tokens de entrada por petición (por encima, 0,50/2,50);
+    // ninguna llamada de aquí llega a eso.
+    'claude-haiku-5-5': { input: 0.1, output: 0.5 },
   };
   // Desde el 11-09 el prompt de sistema se cachea con TTL de 1 hora (2× al
   // escribir) y el historial con el de 5 minutos (1,25×). Anthropic desglosa

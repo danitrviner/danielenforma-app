@@ -123,7 +123,7 @@ export const PASOS_DEL_RECORRIDO: PasoDelRecorrido[] = [
     queDecidir:
       'Cuántas semanas dura el bloque, cuántos días entrena y a qué grupos les das prioridad. La prioridad no es un adorno: decide dónde van las series que sobran.',
     instruccionIA:
-      '**Mesociclo** (propose_mesocycle): semanas, días por ciclo, objetivo y reparto de series por grupo. Llama antes a get_volume_suggestion con los días y las prioridades que hayas decidido: ese motor conoce los umbrales por grupo de tu doctrina y lo que pasó en el bloque anterior. Usa sus números y, si te desvías de alguno, di por qué. Después decide el reparto de días con calcular_reparto (días que entrena + veces por semana de cada grupo) o con uno de list_mis_repartos, y pásalo en "reparto".',
+      '**Mesociclo** (propose_mesocycle): semanas, días por ciclo, objetivo y reparto de series por grupo. Llama antes a get_volume_suggestion con los días y las prioridades que hayas decidido: ese motor conoce los umbrales por grupo de tu doctrina y lo que pasó en el bloque anterior. Usa sus números y, si te desvías de alguno, di por qué. Después decide el reparto de días con calcular_reparto (días que entrena + veces por semana de cada grupo) o con uno de list_mis_repartos, y pásalo en "reparto". Doce semanas por defecto (el bloque estándar de Dani; menos de 8 solo con motivo) y los grupos que Dani deja a cero en LO QUE DANI CORRIGE A MANO van a cero también: no repartas series a los 17 grupos por sistema.',
   },
   {
     numero: '2',

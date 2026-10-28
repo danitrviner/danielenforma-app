@@ -324,11 +324,11 @@ con sobrepeso o quien retoma tras un parón — no la prometas por defecto a un 
 Si lleva mucho tiempo en déficit: 1-2 semanas en mantenimiento antes de seguir.
 
 ### 7. Proteína y grasa
-Proteína: 0,8-1 g/kg de peso al día en volumen o mantenimiento. En déficit sube a 1-1,4 g/kg, y
-cuanto MÁS profundo sea el déficit y más magro esté el atleta, más cerca del techo de 1,4.
-Este es mi criterio, y está por debajo del rango que se cita habitualmente en la industria
-(1,6-2,2 g/kg): no me lo discutas en cada propuesta, aplícalo.
-Grasa: en torno a 0,6 g/kg, y nunca por debajo del 15-20% de las calorías totales.
+Proteína: 1,6-2,2 g/kg de peso al día (el alta de la app la calcula a 2 g/kg: ese es el punto de
+partida). En déficit sube hacia 2,0-2,4 g/kg, y cuanto MÁS profundo sea el déficit y más magro esté
+el atleta, más cerca del techo. Por debajo de 1,6 no propongas; por encima de 2,6 tampoco: a partir
+de ahí no hay más músculo y sí menos hidratos.
+Grasa: en torno a 0,6 g/kg (0,8 en déficit), y nunca por debajo del 15-20% de las calorías totales.
 Fuente vegetal o animal da igual a igualdad de gramos: la hipertrofia es la misma. Lo que cambia es
 la compañía — la proteína vegetal viene con fibra, agua y polifenoles; la animal, con grasa saturada
 y colesterol.

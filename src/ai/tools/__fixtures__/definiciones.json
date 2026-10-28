@@ -1,0 +1,2020 @@
+[
+ {
+  "name": "get_client_brief",
+  "description": "TODO el contexto de un cliente en UNA llamada, según la tarea: estado del montaje por fases, ficha viva, resumen (peso, adherencia, dietas, mesociclo), el alta entera, el plan (roadmap, periodización, tareas), la dieta activa, los entrenos de las últimas 4 semanas, los check-ins, las tendencias de cuestionarios y lo que Dani corrige a mano. Es la PRIMERA llamada de \"montar el primer mes\", \"preparar la revisión\" y \"montar el mes siguiente\"; sustituye a encadenar get_client_overview + get_onboarding + get_athlete_dossier + get_plan_context + get_diet + get_training_history + get_checkins una a una. Después de esto no vuelvas a pedir esas piezas por separado: ya las tienes.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "tarea": {
+     "type": "string",
+     "enum": [
+      "mes_nuevo",
+      "revision",
+      "renovar_mes"
+     ],
+     "description": "Qué vas a hacer con el cliente: decide qué secciones trae el brief. \"mes_nuevo\" = alta + ficha + estado; \"revision\" = plan en marcha + entrenos + check-ins + cuestionarios; \"renovar_mes\" = todo."
+    }
+   },
+   "required": [
+    "athlete_email",
+    "tarea"
+   ]
+  }
+ },
+ {
+  "name": "list_clients",
+  "description": "Lista todos los clientes con su estado de un vistazo: último check-in, check-ins pendientes de feedback, peso actual/objetivo y % de setup. Úsala para preguntas tipo \"¿qué clientes necesitan atención?\" o para resolver un nombre a su email.",
+  "input_schema": {
+   "type": "object",
+   "properties": {},
+   "required": []
+  }
+ },
+ {
+  "name": "get_client_overview",
+  "description": "Resumen completo de un cliente: perfil, onboarding relevante, tendencia de peso (28 días), kcal de mantenimiento estimadas, adherencia (entrenos + check-ins, 4 semanas), dietas activas y mesociclo actual. Punto de partida antes de analizar o proponer nada.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string",
+     "description": "Email del cliente (resuélvelo antes con list_clients si solo tienes el nombre)"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "get_onboarding",
+  "description": "El alta ENTERA del atleta, tal y como la contestó él: salud (lesión actual con su intensidad y los gestos que le duelen, lesiones pasadas, medicación, cirugías), disponibilidad real (días que puede entrenar por semana y minutos por sesión), material, ejercicios que le gustan y los que odia, técnica y experiencia, nutrición (comidas al día, apetito, relación con la comida, suplementos, alimentos que le gustan/no le gustan/alergias), descanso y estrés, hasta dónde quiere cambiar sus hábitos y en qué áreas se deja ayudar, qué espera de su entrenador, y las respuestas a las preguntas propias de la plantilla de Dani. get_client_overview solo trae un resumen: llama a ESTA antes de montarle el plan por primera vez, antes de proponer ejercicios y siempre que el porqué de una decisión esté en su historia y no en sus números.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "get_training_history",
+  "description": "Métricas de entrenamiento de un cliente calculadas por el motor determinista: sesiones, tonelaje vs ventana anterior, rendimiento por grupo muscular y por ejercicio (e1RM con la fórmula de CDG, PRs). Ventana en semanas terminando hoy.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "weeks": {
+     "type": "number",
+     "description": "Semanas hacia atrás (por defecto 4, máx 16)"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "get_revision_engine",
+  "description": "La Revisión del atleta tal y como la ve Dani en su pantalla: patrones de movimiento, qué ejercicio sube y cuál baja, series por grupo contra lo programado, sueño/estrés/agujetas crónicas, lo que ha comido frente a su cupo y los TITULARES ya ordenados por lo que cambia una decisión. Es la PRIMERA llamada de la tarea \"revision\", después de get_client_brief. Usa esto en vez de get_training_history + get_checkins por separado: son los mismos datos pasados por el mismo motor que ve Dani, así que lo que le digas al cliente coincide con lo que él tiene delante en el vídeo.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "periodo": {
+     "type": "string",
+     "enum": [
+      "7d",
+      "14d",
+      "bloque"
+     ],
+     "description": "Ventana a revisar. Por defecto el bloque en curso si lo hay, y si no 7 días."
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "get_volume_suggestion",
+  "description": "El reparto de series por grupo que propone el MOTOR de Dani, con el porqué de cada número. Es el mismo que sale al pulsar «Sugerir volumen» en el editor de mesociclos: parte de los umbrales por grupo de su doctrina, de los días que entrena, del reparto elegido y de lo que pasó en el bloque anterior (series hechas, progresión, y lo que el atleta pidió priorizar al cerrarlo). Llámala ANTES de propose_mesocycle y usa sus números como punto de partida en vez de inventarlos: si te desvías de uno, di por qué.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "dias_por_semana": {
+     "type": "number",
+     "description": "Sesiones del microciclo. Por defecto las del bloque en curso, o 4."
+    },
+    "nivel": {
+     "type": "string",
+     "enum": [
+      "principiante",
+      "intermedio",
+      "avanzado"
+     ],
+     "description": "Por defecto, el del alta."
+    },
+    "intencion": {
+     "type": "string",
+     "enum": [
+      "conservador",
+      "estandar",
+      "agresivo"
+     ],
+     "description": "Cuánto apretar. Por defecto \"estandar\". Una recuperación mala lo fuerza a conservador solo."
+    },
+    "prioridades": {
+     "type": "object",
+     "description": "Grupos a subir o bajar: { \"pecho\": \"alta\", \"gemelo\": \"baja\" }. Lo que no se diga queda en \"media\"."
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "get_diet",
+  "description": "Dietas del cliente: objetivo del día en kcal y gramos de proteína, hidratos y grasa, lo que suman los alimentos colocados en sus comidas (si los hay) y la periodización nutricional (fases) si existe.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "get_checkins",
+  "description": "Últimos check-ins de un cliente (id, peso, ánimo, adherencia autodeclarada, notas y si ya tienen feedback del coach) más sus respuestas recientes de cuestionarios. Usa el id devuelto aquí para draft_checkin_feedback.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "limit": {
+     "type": "number",
+     "description": "Cuántos check-ins devolver (por defecto 8, máx 20)"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "get_questionnaire_trends",
+  "description": "Series semanales (media + nº de respuestas por semana) de las preguntas numéricas/escala/medida de los cuestionarios de un cliente — sueño, estrés, dolor, DOM's, motivación, perímetros, etc. A diferencia de get_checkins (que solo da las últimas respuestas sueltas), esto da tendencia en el tiempo. Úsala para detectar patrones (ej. estrés subiendo, sueño empeorando) antes de escribir un reporte o proponer un cambio.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "question_ids": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "Limita a estos ids de pregunta (opcional; si se omite, devuelve todas las graficables con datos en la ventana)"
+    },
+    "weeks": {
+     "type": "number",
+     "description": "Semanas hacia atrás (por defecto 8, máx 26)"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "generate_report_draft",
+  "description": "Genera un borrador de reporte de entrenamiento con el motor determinista de la app (mismos números que \"Análisis > Reportes\") y lo guarda como draft — el atleta NUNCA lo ve hasta que Dani lo revise y lo envíe manualmente desde esa pantalla. Aporta SIEMPRE un `intro` personalizado y humano para ESE atleta (mira antes get_client_overview / get_training_history / get_checkins para anclarlo en su semana, su objetivo y algo concreto suyo; sigue las reglas de \"Cómo escribir\"). El resto de datos vienen del motor.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "period_days": {
+     "type": "number",
+     "description": "Ventana del reporte: 7 o 14 días (por defecto 7)"
+    },
+    "intro": {
+     "type": "string",
+     "description": "Texto de introducción en español para el reporte (opcional; si se omite se usa el narrativo automático de la app)"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "get_food_library",
+  "description": "Lista los alimentos generales de la app: etiqueta exacta, grupo, ración habitual y kcal/macros por 100 g y por ración. Úsala SIEMPRE antes de poner alimentos en una dieta — foodLabel debe coincidir EXACTO con una de estas etiquetas.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "mode": {
+     "type": "string",
+     "enum": [
+      "OMNIVORO",
+      "VEGANO",
+      "SIN_PESAR"
+     ],
+     "description": "Filtra por modo de dieta"
+    },
+    "grupo": {
+     "type": "string",
+     "enum": [
+      "hidratos",
+      "proteinas",
+      "grasas",
+      "mixtos"
+     ],
+     "description": "Filtra por grupo"
+    }
+   },
+   "required": []
+  }
+ },
+ {
+  "name": "propose_diet_update",
+  "description": "Crea una PROPUESTA de dieta (nueva o ajuste de una existente) con su objetivo del día en gramos de proteína, hidratos y grasa. Se valida automáticamente (gramos, kcal, alimentos reconocidos, comidas vs objetivo); si hay errores los recibes de vuelta para corregir antes de reintentar. NUNCA se guarda como dieta real: Dani la aprueba o rechaza desde el panel.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "base_diet_id": {
+     "type": "string",
+     "description": "Id de la dieta que se ajusta (opcional; omítelo si es una dieta nueva)"
+    },
+    "name": {
+     "type": "string",
+     "description": "Nombre de la dieta"
+    },
+    "objetivo": {
+     "type": "object",
+     "description": "Objetivo del día en GRAMOS; las kcal salen solas (P×4 + HC×4 + G×9). Ej. {\"proteina_g\":160,\"hidratos_g\":220,\"grasa_g\":70} ≈ 2150 kcal. Criterio de Dani: proteína 1,6-2,2 g/kg de peso (2,0-2,4 en déficit profundo), grasa ≥ 0,6 g/kg y ≥ 15 % de las kcal, déficit ≤ 700 kcal frente al gasto salvo pérdida acelerada; fuera de eso la propuesta se rechaza o vuelve con aviso.",
+     "properties": {
+      "proteina_g": {
+       "type": "number"
+      },
+      "hidratos_g": {
+       "type": "number"
+      },
+      "grasa_g": {
+       "type": "number"
+      },
+      "kcal": {
+       "type": "number",
+       "description": "Opcional: si la mandas, se comprueba que cuadre con los gramos"
+      }
+     },
+     "required": [
+      "proteina_g",
+      "hidratos_g",
+      "grasa_g"
+     ]
+    },
+    "meals": {
+     "type": "array",
+     "description": "Solo si Dani lo pide: comidas con sus alimentos. Lo que sumen debe cuadrar con el objetivo (±10 %).",
+     "items": {
+      "type": "object",
+      "properties": {
+       "name": {
+        "type": "string"
+       },
+       "items": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "foodLabel": {
+           "type": "string",
+           "description": "Etiqueta EXACTA de get_food_library"
+          },
+          "gramos": {
+           "type": "number",
+           "description": "Gramos del alimento"
+          },
+          "raciones": {
+           "type": "number",
+           "description": "Solo para alimentos sin pesar (medidas caseras), en vez de gramos"
+          }
+         },
+         "required": [
+          "foodLabel"
+         ]
+        }
+       }
+      },
+      "required": [
+       "name",
+       "items"
+      ]
+     }
+    },
+    "rationale": {
+     "type": "string",
+     "description": "Justificación breve para Dani (no la ve el atleta)"
+    },
+    "expediente_datos": {
+     "type": "string",
+     "description": "En qué datos concretos te has apoyado (qué has mirado y qué has visto). Se guarda con la propuesta."
+    },
+    "expediente_huecos": {
+     "type": "string",
+     "description": "Qué NO sabías al proponer esto y has tenido que asumir."
+    },
+    "expediente_preguntas": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "Preguntas que quedan abiertas después de esta propuesta."
+    },
+    "expediente_esperado": {
+     "type": "string",
+     "description": "Qué esperas ver, en cuánto tiempo, y qué harías si no pasa."
+    }
+   },
+   "required": [
+    "athlete_email",
+    "name",
+    "objetivo"
+   ]
+  }
+ },
+ {
+  "name": "search_knowledge",
+  "description": "Busca en la bóveda de metodología del coach (apuntes internos de entrenamiento y nutrición basados en evidencia) por palabras clave. Consúltala para fundamentar decisiones de entrenamiento/nutrición con el criterio propio de Dani antes de proponer dietas, mesociclos o escribir reportes. IMPORTANTE: los apuntes son material interno de cursos — PARAFRASEA y aplica los principios, nunca copies el texto literal ni lo cites hacia el atleta.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "query": {
+     "type": "string",
+     "description": "Términos de búsqueda, ej. \"descanso entre series hipertrofia\" o \"proteína recomposición\""
+    },
+    "folder": {
+     "type": "string",
+     "enum": [
+      "entrenamiento",
+      "nutricion"
+     ],
+     "description": "Limita a un área (opcional)"
+    }
+   },
+   "required": [
+    "query"
+   ]
+  }
+ },
+ {
+  "name": "get_exercise_library",
+  "description": "Lista los ejercicios disponibles (nombre, grupo muscular, tipo, material). Úsala como referencia al planificar el reparto de volumen; el mesociclo se define por SERIES por grupo muscular, no por ejercicios concretos.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "muscle_group": {
+     "type": "string",
+     "description": "Filtra por grupo muscular (ej. pecho, dorsal, cuadriceps…)"
+    }
+   },
+   "required": []
+  }
+ },
+ {
+  "name": "get_exercise_usage",
+  "description": "Cómo programa Dani DE VERDAD, sacado de las rutinas que ya ha montado él. Por grupo muscular: qué ejercicios elige y con qué frecuencia, en qué posición de la sesión los pone, y las series/reps/RIR y descanso que les suele poner. Con athlete_email lo acota a ese atleta (lo que ya ha hecho con él) y añade lo que el atleta odia o prefiere. Sin él, es el patrón de Dani con toda su cartera. Llámala SIEMPRE antes de proponer ejercicios concretos: el catálogo (get_exercise_library) dice qué existe, esto dice qué usa él.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "muscle_group": {
+     "type": "string",
+     "description": "Filtra por grupo muscular (ej. pecho, dorsal, cuadriceps…)"
+    },
+    "athlete_email": {
+     "type": "string",
+     "description": "Opcional: acota a las rutinas de ese atleta"
+    }
+   },
+   "required": []
+  }
+ },
+ {
+  "name": "get_coach_adjustments",
+  "description": "Qué corrige Dani a mano DESPUÉS de aprobar tus propuestas, en toda su cartera: los retoques uno a uno y los patrones que se repiten (ej. \"dorsal: sube series sobre lo propuesto (5 veces)\"). Es la señal más honesta de su criterio — no lo que dice que quiere, lo que corrige. Llámala antes de proponer un mesociclo, un bloque o una dieta: si un patrón lleva repitiéndose, aplícalo YA en la propuesta en vez de hacérselo corregir otra vez. Con athlete_email lo acota a ese atleta.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string",
+     "description": "Opcional: solo los ajustes hechos en ese atleta"
+    }
+   },
+   "required": []
+  }
+ },
+ {
+  "name": "calcular_reparto",
+  "description": "La CALCULADORA DE REPARTO de Dani (la misma de Mesociclo › Distribución): le das los días de la semana que entrena el atleta y cuántas veces por semana quieres tocar cada grupo, y devuelve 3-4 repartos que cumplen esas frecuencias EXACTAS (empuje/tirón/pierna, torso/pierna, torso/pierna/brazo-hombro, por patrones, cuerpo completo), con las series de cada sesión, los avisos (sesiones demasiado largas, grupos en días seguidos) y cuál encaja mejor. Si el atleta ya tiene mesociclo, también su reparto actual medido contra lo que pides. Frecuencias «y media» (1,5×) dan un ciclo de 14 días con los mismos días las dos semanas. Úsala SIEMPRE antes de proponer un mesociclo para decidir el reparto, en vez de elegirlo de memoria; luego pasa el \"reparto\" de la opción elegida a propose_mesocycle.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string",
+     "description": "Opcional: toma las series del bloque en curso, su fecha de inicio y lo compara con su reparto actual."
+    },
+    "dias_semana": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "Días en que entrena: [\"L\",\"M\",\"X\",\"V\",\"S\"] (también \"lunes\"…)."
+    },
+    "frecuencias": {
+     "type": "object",
+     "description": "Veces por semana por grupo, en pasos de 0,5: {\"pecho\":1.5,\"dorsal\":2,…}. Los grupos que no pongas salen de su volumen (series ÷ 6). 0 = ese grupo no entra."
+    },
+    "series": {
+     "type": "object",
+     "description": "Opcional: series semanales por grupo {\"pecho\":12,…}. Por defecto, las del mesociclo en curso del atleta."
+    },
+    "max_series_sesion": {
+     "type": "number",
+     "description": "Tope de series de una sesión (por defecto 23, el de Dani)."
+    },
+    "max_series_grupo_sesion": {
+     "type": "number",
+     "description": "Tope de series de un grupo en una sesión (por defecto 8)."
+    }
+   },
+   "required": [
+    "dias_semana",
+    "frecuencias"
+   ]
+  }
+ },
+ {
+  "name": "list_mis_repartos",
+  "description": "Los repartos que Dani ha guardado en «Mis repartos» (Mesociclo › Distribución) para reutilizar. Cada uno va en la misma forma que acepta propose_mesocycle en \"reparto\". Míralos antes de inventar uno: si alguno encaja, úsalo y dilo.",
+  "input_schema": {
+   "type": "object",
+   "properties": {}
+  }
+ },
+ {
+  "name": "propose_mesocycle",
+  "description": "Crea una PROPUESTA de mesociclo (bloque de entrenamiento) con series semanales objetivo por grupo muscular. Se valida automáticamente (grupos válidos, series 0–25, volumen razonable para los días). NUNCA se crea el mesociclo real: Dani lo aprueba o rechaza desde el panel. Antes conviene mirar get_training_history para respetar la progresión de volumen del bloque anterior. Solo defines el reparto de volumen; los entrenamientos concretos (ejercicios por día) los materializa Dani después en la app.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "weeks": {
+     "type": "number",
+     "description": "Duración en semanas (1–12). Por defecto 12, el bloque estándar de Dani; menos de 8 solo con un motivo que digas en rationale."
+    },
+    "days_per_week": {
+     "type": "number",
+     "description": "Sesiones por ciclo (1–14). Hasta 7 es una semana normal; por encima, el ciclo se repite cada N días. Con reparto, las sesiones de su ciclo (10 en uno de 14 días con 5 días/semana)."
+    },
+    "objective": {
+     "type": "string",
+     "description": "Objetivo del bloque, ej. \"Hipertrofia — énfasis espalda\""
+    },
+    "start_date": {
+     "type": "string",
+     "description": "Fecha de inicio YYYY-MM-DD (opcional; por defecto hoy)"
+    },
+    "reparto": {
+     "type": "object",
+     "description": "Opcional pero recomendado: el reparto de días, tal cual lo devuelven calcular_reparto o list_mis_repartos: {\"nombre\":\"…\",\"dias\":[{\"tipo\":\"Empuje\",\"grupos\":[\"pecho\",\"triceps\"]},{\"tipo\":\"Descanso\"},…],\"frecuencias\":{…}}. Un elemento por día del ciclo, en orden; los libres con tipo \"Descanso\". Con él, days_per_week tiene que ser su número de sesiones, el ciclo dura sus días y la distribución de series sale ya hecha."
+    },
+    "groups": {
+     "type": "object",
+     "description": "Series semanales objetivo por grupo muscular. Solo incluye los grupos que se entrenan. Ej: {\"pecho\":{\"series\":12,\"priority\":\"alta\"},\"dorsal\":{\"series\":16,\"priority\":\"alta\"}}. Grupos válidos: pecho, dorsal, trapecio, deltoide_ant, deltoide_lat, deltoide_post, biceps, triceps, antebrazo, cuadriceps, isquios, gluteo, aductores, gemelo, core, lumbares, rotadores.",
+     "additionalProperties": {
+      "type": "object",
+      "properties": {
+       "series": {
+        "type": "number"
+       },
+       "priority": {
+        "type": "string",
+        "enum": [
+         "alta",
+         "media",
+         "baja"
+        ]
+       }
+      },
+      "required": [
+       "series"
+      ]
+     }
+    },
+    "rationale": {
+     "type": "string",
+     "description": "Justificación breve para Dani (no la ve el atleta)"
+    },
+    "expediente_datos": {
+     "type": "string",
+     "description": "En qué datos concretos te has apoyado (qué has mirado y qué has visto). Se guarda con la propuesta."
+    },
+    "expediente_huecos": {
+     "type": "string",
+     "description": "Qué NO sabías al proponer esto y has tenido que asumir."
+    },
+    "expediente_preguntas": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "Preguntas que quedan abiertas después de esta propuesta."
+    },
+    "expediente_esperado": {
+     "type": "string",
+     "description": "Qué esperas ver, en cuánto tiempo, y qué harías si no pasa."
+    }
+   },
+   "required": [
+    "athlete_email",
+    "days_per_week",
+    "objective",
+    "groups"
+   ]
+  }
+ },
+ {
+  "name": "propose_workout_days",
+  "description": "Crea una PROPUESTA con las SESIONES completas de un mesociclo que YA existe: cada día con sus ejercicios en orden, series, reps, RIR y descanso. Nunca se guarda sola — Dani la revisa, la edita si quiere y la aprueba; al aprobar, cada día se guarda como la rutina de ese día del mesociclo (si ya había una, se reescribe conservando su id, así el calendario del atleta no se rompe). Antes de llamarla, OBLIGATORIO: get_onboarding (material, minutos por sesión, lesiones, ejercicios que odia) y get_exercise_usage (qué ejercicios elige Dani y con qué series/reps/RIR). Los nombres de ejercicio deben coincidir EXACTO con el catálogo; si no, la tool te devuelve los errores y las alternativas para que corrijas.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "mesocycle_id": {
+     "type": "string",
+     "description": "Mesociclo al que pertenecen las sesiones. Si lo omites se usa el más reciente del atleta y se te dice cuál."
+    },
+    "days": {
+     "type": "array",
+     "description": "Una entrada por sesión del microciclo. Puedes mandar solo algunos días si solo cambias esos.",
+     "items": {
+      "type": "object",
+      "properties": {
+       "day_index": {
+        "type": "number",
+        "description": "Sesión del ciclo, empezando en 0"
+       },
+       "name": {
+        "type": "string",
+        "description": "Nombre de la sesión (\"Torso\", \"Empuje\"). Si falta, se nombra como lo hace la app."
+       },
+       "exercises": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "exercise": {
+           "type": "string",
+           "description": "Nombre EXACTO del catálogo (get_exercise_library)"
+          },
+          "sets": {
+           "type": "number",
+           "description": "Series efectivas, 1–10"
+          },
+          "reps": {
+           "type": "string",
+           "description": "Rango (\"8-10\"), número (\"12\") o \"AMRAP\""
+          },
+          "rir": {
+           "type": "number",
+           "description": "Reps en reserva, 0–5"
+          },
+          "rest_seconds": {
+           "type": "number",
+           "description": "Descanso entre series, 0–600"
+          },
+          "notes": {
+           "type": "string",
+           "description": "Nota corta para el atleta (opcional): un matiz de ejecución, no un párrafo"
+          }
+         },
+         "required": [
+          "exercise",
+          "sets",
+          "reps",
+          "rir"
+         ]
+        }
+       }
+      },
+      "required": [
+       "day_index",
+       "exercises"
+      ]
+     }
+    },
+    "rationale": {
+     "type": "string",
+     "description": "Por qué estas sesiones y no otras. Para Dani, no lo ve el atleta."
+    },
+    "expediente_datos": {
+     "type": "string"
+    },
+    "expediente_huecos": {
+     "type": "string"
+    },
+    "expediente_preguntas": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "expediente_esperado": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email",
+    "days"
+   ]
+  }
+ },
+ {
+  "name": "propose_periodization_block",
+  "description": "Crea una PROPUESTA de bloque completo periodizado (Bloque H2.1): el mesociclo (igual que propose_mesocycle, incluyendo semana de descarga si aplica) MÁS la cadencia de revisiones (check-ins) que se programarán automáticamente durante el bloque. Al aprobar, Dani obtiene de golpe el mesociclo y todas sus revisiones ya en el calendario — nada se aplica sin su aprobación. NO incluye las reglas de progresión por ejercicio ni cambios de dieta: esos se configuran después, cuando el mesociclo ya tiene entrenamientos generados. Usa get_training_history y get_questionnaire_trends antes de proponer, para que la cadencia de revisiones y la semana de descarga respondan a cómo le ha ido al atleta, no a un patrón genérico.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "weeks": {
+     "type": "number",
+     "description": "Duración en semanas (1–12). Por defecto 12, el bloque estándar de Dani; menos de 8 solo con un motivo que digas en rationale."
+    },
+    "days_per_week": {
+     "type": "number",
+     "description": "Sesiones por ciclo (1–14). Hasta 7 es una semana normal; por encima, el ciclo se repite cada N días. Con reparto, las sesiones de su ciclo (10 en uno de 14 días con 5 días/semana)."
+    },
+    "objective": {
+     "type": "string",
+     "description": "Objetivo del bloque, ej. \"Hipertrofia — énfasis espalda\""
+    },
+    "start_date": {
+     "type": "string",
+     "description": "Fecha de inicio YYYY-MM-DD (opcional; por defecto hoy)"
+    },
+    "deload_week": {
+     "type": "number",
+     "description": "Semana (1-indexada) de descarga dentro del bloque, si el bloque debe incluir una. Omitir si no aplica."
+    },
+    "review_cadence_weeks": {
+     "type": "number",
+     "description": "Cada cuántas semanas se programa una revisión durante el bloque (ej. 2 = una cada 2 semanas). La primera cae en esa misma semana, la última no más tarde que el fin del bloque."
+    },
+    "review_type": {
+     "type": "string",
+     "enum": [
+      "revision",
+      "cuestionario",
+      "foto"
+     ],
+     "description": "Tipo de revisión a programar en la cadencia."
+    },
+    "groups": {
+     "type": "object",
+     "description": "Series semanales objetivo por grupo muscular. Solo incluye los grupos que se entrenan. Grupos válidos: pecho, dorsal, trapecio, deltoide_ant, deltoide_lat, deltoide_post, biceps, triceps, antebrazo, cuadriceps, isquios, gluteo, aductores, gemelo, core, lumbares, rotadores.",
+     "additionalProperties": {
+      "type": "object",
+      "properties": {
+       "series": {
+        "type": "number"
+       },
+       "priority": {
+        "type": "string",
+        "enum": [
+         "alta",
+         "media",
+         "baja"
+        ]
+       }
+      },
+      "required": [
+       "series"
+      ]
+     }
+    },
+    "rationale": {
+     "type": "string",
+     "description": "Justificación breve para Dani, incluyendo cómo debería progresar el volumen semana a semana (Dani lo configurará por ejercicio después) — no la ve el atleta."
+    },
+    "expediente_datos": {
+     "type": "string",
+     "description": "En qué datos concretos te has apoyado (qué has mirado y qué has visto). Se guarda con la propuesta."
+    },
+    "expediente_huecos": {
+     "type": "string",
+     "description": "Qué NO sabías al proponer esto y has tenido que asumir."
+    },
+    "expediente_preguntas": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "Preguntas que quedan abiertas después de esta propuesta."
+    },
+    "expediente_esperado": {
+     "type": "string",
+     "description": "Qué esperas ver, en cuánto tiempo, y qué harías si no pasa."
+    }
+   },
+   "required": [
+    "athlete_email",
+    "weeks",
+    "days_per_week",
+    "objective",
+    "groups",
+    "review_cadence_weeks",
+    "review_type"
+   ]
+  }
+ },
+ {
+  "name": "draft_checkin_feedback",
+  "description": "Crea una PROPUESTA de feedback para un check-in concreto. NO se envía al atleta directamente: queda pendiente de aprobación de Dani en el panel del asistente. Usa get_checkins primero para obtener el check_in_id exacto.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "check_in_id": {
+     "type": "string",
+     "description": "Id exacto del check-in (de get_checkins)"
+    },
+    "athlete_email": {
+     "type": "string"
+    },
+    "feedback": {
+     "type": "string",
+     "description": "Texto del feedback dirigido al atleta, en español, tono cercano y profesional"
+    },
+    "rationale": {
+     "type": "string",
+     "description": "Justificación breve para Dani (no la ve el atleta)"
+    },
+    "expediente_datos": {
+     "type": "string",
+     "description": "En qué datos concretos te has apoyado (qué has mirado y qué has visto). Se guarda con la propuesta."
+    },
+    "expediente_huecos": {
+     "type": "string",
+     "description": "Qué NO sabías al proponer esto y has tenido que asumir."
+    },
+    "expediente_preguntas": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "Preguntas que quedan abiertas después de esta propuesta."
+    },
+    "expediente_esperado": {
+     "type": "string",
+     "description": "Qué esperas ver, en cuánto tiempo, y qué harías si no pasa."
+    }
+   },
+   "required": [
+    "check_in_id",
+    "athlete_email",
+    "feedback"
+   ]
+  }
+ },
+ {
+  "name": "get_athlete_dossier",
+  "description": "Lee la FICHA VIVA del atleta: sus objetivos, dónde está hoy, qué esperamos ver en las próximas semanas, el foco de la siguiente revisión, las preguntas que quedaron abiertas y el historial de lo que se ha propuesto, aprobado y cambiado. OBLIGATORIO antes de proponer una dieta, un mesociclo o un bloque: es la memoria entre conversaciones, y sin ella repetirás lo que ya se probó y no funcionó.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "log_dossier_fact",
+  "description": "Apunta un HECHO en la ficha viva del atleta. No pide aprobación porque no es criterio: es algo que pasó o que el atleta dijo, y que se perdería al cerrar el chat (ej. \"dice que en agosto su gimnasio cierra tres semanas\", \"probamos hip thrust en máquina y le sigue doliendo la cadera\"). Las propuestas se apuntan solas: NO uses esta tool para registrar que has propuesto algo. Para lo que sea interpretación tuya (objetivos, evaluación, foco) usa propose_dossier_update.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "kind": {
+     "type": "string",
+     "enum": [
+      "cambio",
+      "observacion"
+     ],
+     "description": "\"cambio\" si algo cambió en su situación, \"observacion\" para lo demás"
+    },
+    "text": {
+     "type": "string",
+     "description": "Una frase, concreta y con el dato dentro. Sin interpretación."
+    }
+   },
+   "required": [
+    "athlete_email",
+    "text"
+   ]
+  }
+ },
+ {
+  "name": "get_setup_status",
+  "description": "En qué punto del montaje está este cliente, por FASES: Alta (semana 0), Programación, Primeras semanas (días 0-28) y Consolidación (día 28+). Devuelve qué está hecho, qué falta, qué necesita atención y cuál es el siguiente paso — la misma checklist que Dani ve en la pestaña Setup. Empieza SIEMPRE por aquí cuando te pidan \"monta el plan de X\", \"prepara la revisión de X\" o \"¿qué le falta a X?\": dice en qué fase estás y evita que propongas la fase 3 cuando el alta todavía está a medias.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "get_plan_context",
+  "description": "Lee el PLAN del atleta más allá del mesociclo y la dieta: sus fases macro (roadmap), los hitos y objetivos que tiene puestos con fecha, la periodización nutricional en marcha (fases, semanas, kcal por fase, recargas) y las tareas pendientes. Consúltala antes de proponer hitos, fases de nutrición o días señalados: sin esto no sabes en qué punto del plan está ni qué tiene ya programado, y acabarás duplicando cosas.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "propose_level_ladder",
+  "description": "PROPONE la escalera de niveles del atleta: la progresión con nombre que él ve en su road map (\"Club\" → \"Hombre Sano\" → \"Hombre Fuerte\"…), cada nivel con los criterios que hay que cumplir TODOS para desbloquearlo. Reemplaza la escalera actual entera, así que manda la escalera completa, no un nivel suelto. Los niveles ya conseguidos se conservan. Tipos de criterio: peso_perdido_kg (kg perdidos desde el peso inicial), sentadilla_xbw (e1RM del ejercicio ÷ peso corporal), pasos_media_diaria (media de 4 semanas) y manual (lo verifica Dani: dominadas, flexiones…). Mira antes get_plan_context y la escalera que ya tenga: si la de por defecto le sirve, dilo y no propongas por proponer.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "levels": {
+     "type": "array",
+     "description": "Los niveles en orden, del más fácil al más difícil. Entre 2 y 8.",
+     "items": {
+      "type": "object",
+      "properties": {
+       "name": {
+        "type": "string",
+        "description": "Corto y con gancho, lo lee el atleta"
+       },
+       "icon": {
+        "type": "string",
+        "description": "Nombre de icono de Material Symbols (ej. group, favorite, fitness_center). Opcional."
+       },
+       "criteria": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "kind": {
+           "type": "string",
+           "enum": [
+            "peso_perdido_kg",
+            "sentadilla_xbw",
+            "pasos_media_diaria",
+            "manual"
+           ]
+          },
+          "label": {
+           "type": "string",
+           "description": "La frase que lee el atleta: \"Sentadilla a 1.5x tu peso corporal\""
+          },
+          "target_value": {
+           "type": "number",
+           "description": "Obligatorio salvo en kind \"manual\""
+          },
+          "exercise_name_match": {
+           "type": "string",
+           "description": "Solo con kind \"sentadilla_xbw\": trozo del nombre del ejercicio contra el que se mide"
+          }
+         },
+         "required": [
+          "kind",
+          "label"
+         ]
+        }
+       }
+      },
+      "required": [
+       "name",
+       "criteria"
+      ]
+     }
+    },
+    "rationale": {
+     "type": "string",
+     "description": "Por qué esta escalera para esta persona. Para Dani."
+    }
+   },
+   "required": [
+    "athlete_email",
+    "levels"
+   ]
+  }
+ },
+ {
+  "name": "propose_roadmap_items",
+  "description": "PROPONE hitos y objetivos nuevos para el roadmap del atleta — lo que él ve en su app como el mapa de su plan. Se AÑADEN a los que ya tiene, no lo reemplazan. Úsala para dar horizonte (\"primer dominada estricta\", \"test de 5RM en sentadilla el 14 de octubre\") o para marcar el final de una etapa. No metas aquí los días señalados con instrucción concreta: para eso está propose_special_day.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "items": {
+     "type": "array",
+     "description": "Hitos u objetivos nuevos",
+     "items": {
+      "type": "object",
+      "properties": {
+       "title": {
+        "type": "string",
+        "description": "Corto y en su idioma, lo lee el atleta"
+       },
+       "description": {
+        "type": "string"
+       },
+       "type": {
+        "type": "string",
+        "enum": [
+         "objetivo",
+         "hito",
+         "nota"
+        ]
+       },
+       "lane": {
+        "type": "string",
+        "enum": [
+         "entreno",
+         "nutricion",
+         "movilidad",
+         "general"
+        ]
+       },
+       "startDate": {
+        "type": "string",
+        "description": "YYYY-MM-DD"
+       },
+       "targetDate": {
+        "type": "string",
+        "description": "YYYY-MM-DD"
+       }
+      },
+      "required": [
+       "title",
+       "type",
+       "lane"
+      ]
+     }
+    },
+    "rationale": {
+     "type": "string",
+     "description": "Para Dani, no lo ve el atleta"
+    }
+   },
+   "required": [
+    "athlete_email",
+    "items"
+   ]
+  }
+ },
+ {
+  "name": "propose_nutrition_program",
+  "description": "PROPONE la periodización nutricional entera: la cadena de fases (déficit 8 semanas → mantenimiento 2 → superávit 12), con sus kcal objetivo, y las recargas sueltas con la nota que el atleta lee ese día. Cada fase va enlazada a una dieta: usa dietId si ya existe una que sirva (mírala con get_diet), o manda la dieta completa en diet y se creará al aprobar. Reemplaza la periodización anterior: manda el plan completo, no un trozo.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "start_date": {
+     "type": "string",
+     "description": "YYYY-MM-DD; por defecto hoy"
+    },
+    "phases": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "name": {
+        "type": "string"
+       },
+       "weeks": {
+        "type": "number"
+       },
+       "phase_type": {
+        "type": "string",
+        "enum": [
+         "deficit",
+         "mantenimiento",
+         "superavit"
+        ]
+       },
+       "objetivo": {
+        "type": "string",
+        "enum": [
+         "volumen",
+         "deficit",
+         "deficit_acelerado",
+         "salida_deficit",
+         "mantenimiento",
+         "recomposicion"
+        ],
+        "description": "Objetivo corporal de la fase. Decide el rango con el que se verifica el peso: volumen +0,25–0,4 %/sem, déficit −0,4–0,6, déficit acelerado −0,6–1, salida de déficit 0–0,2, mantenimiento y recomposición ±1 kg. Mándalo siempre; phase_type se deduce de él."
+       },
+       "target_kcal": {
+        "type": "number"
+       },
+       "target_weight": {
+        "type": "number",
+        "description": "kg al final de la fase"
+       },
+       "diet_id": {
+        "type": "string",
+        "description": "Dieta existente del atleta"
+       },
+       "diet": {
+        "type": "object",
+        "description": "Dieta nueva para esta fase, mismo formato que propose_diet_update",
+        "properties": {
+         "name": {
+          "type": "string"
+         },
+         "objetivo": {
+          "type": "object",
+          "description": "Objetivo del día en GRAMOS; las kcal salen solas (P×4 + HC×4 + G×9). Ej. {\"proteina_g\":160,\"hidratos_g\":220,\"grasa_g\":70} ≈ 2150 kcal. Criterio de Dani: proteína 1,6-2,2 g/kg de peso (2,0-2,4 en déficit profundo), grasa ≥ 0,6 g/kg y ≥ 15 % de las kcal, déficit ≤ 700 kcal frente al gasto salvo pérdida acelerada; fuera de eso la propuesta se rechaza o vuelve con aviso.",
+          "properties": {
+           "proteina_g": {
+            "type": "number"
+           },
+           "hidratos_g": {
+            "type": "number"
+           },
+           "grasa_g": {
+            "type": "number"
+           },
+           "kcal": {
+            "type": "number",
+            "description": "Opcional: si la mandas, se comprueba que cuadre con los gramos"
+           }
+          },
+          "required": [
+           "proteina_g",
+           "hidratos_g",
+           "grasa_g"
+          ]
+         },
+         "meals": {
+          "type": "array",
+          "description": "Solo si Dani lo pide: comidas con sus alimentos. Lo que sumen debe cuadrar con el objetivo (±10 %).",
+          "items": {
+           "type": "object",
+           "properties": {
+            "name": {
+             "type": "string"
+            },
+            "items": {
+             "type": "array",
+             "items": {
+              "type": "object",
+              "properties": {
+               "foodLabel": {
+                "type": "string",
+                "description": "Etiqueta EXACTA de get_food_library"
+               },
+               "gramos": {
+                "type": "number",
+                "description": "Gramos del alimento"
+               },
+               "raciones": {
+                "type": "number",
+                "description": "Solo para alimentos sin pesar (medidas caseras), en vez de gramos"
+               }
+              },
+              "required": [
+               "foodLabel"
+              ]
+             }
+            }
+           },
+           "required": [
+            "name",
+            "items"
+           ]
+          }
+         }
+        },
+        "required": [
+         "name",
+         "objetivo"
+        ]
+       }
+      },
+      "required": [
+       "name",
+       "weeks"
+      ]
+     }
+    },
+    "refeed_days": {
+     "type": "array",
+     "description": "Recargas sueltas: el día, y lo que el atleta lee ese día",
+     "items": {
+      "type": "object",
+      "properties": {
+       "date": {
+        "type": "string",
+        "description": "YYYY-MM-DD"
+       },
+       "note": {
+        "type": "string",
+        "description": "Lo que lee el atleta ese día"
+       }
+      },
+      "required": [
+       "date"
+      ]
+     }
+    },
+    "rationale": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email",
+    "phases"
+   ]
+  }
+ },
+ {
+  "name": "propose_special_day",
+  "description": "PROPONE un día señalado. Al aprobarlo pasan tres cosas a la vez: aparece como hito en el roadmap del atleta (lo ve venir), le llega como tarea con fecha, y ese día lee tu nota encima de su entrenamiento. Es la herramienta para que la programación se note VIVA: un AMRAP para revisar técnica e intensidad, una toma de marcas, una subida de peso obligatoria, un test. No la uses para el trabajo normal del mesociclo: solo para lo que quieres que el atleta note.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "date": {
+     "type": "string",
+     "description": "YYYY-MM-DD. Cae mejor en un día que ya tenga entreno asignado."
+    },
+    "kind": {
+     "type": "string",
+     "enum": [
+      "amrap",
+      "marcas",
+      "subida",
+      "otro"
+     ]
+    },
+    "title": {
+     "type": "string",
+     "description": "Corto, lo lee el atleta: \"Toma de marcas — press banca\""
+    },
+    "athlete_note": {
+     "type": "string",
+     "description": "Lo que lee ese día encima de su sesión. Concreto y accionable: qué hace, cómo lo registra y por qué."
+    },
+    "description": {
+     "type": "string",
+     "description": "Detalle del hito en el roadmap (opcional)"
+    },
+    "rationale": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email",
+    "date",
+    "kind",
+    "title",
+    "athlete_note"
+   ]
+  }
+ },
+ {
+  "name": "propose_week_plan",
+  "description": "PROPONE la programación SEMANA A SEMANA de un mesociclo ya creado (con sus sesiones) y/o de la periodización nutricional: semanas de descarga (series a la mitad), semanas de test (AMRAP), RIR que baja a lo largo del bloque, +1 serie cada N semanas, cambios de un ejercicio desde una semana (p. ej. pasar a top set + back-off), y en nutrición ± gramos de un macro desde una semana, semanas de mantenimiento, suplementación y pasos por semana. Las semanas del mesociclo son semanas DE CICLO (vueltas del microciclo); las de nutrición, semanas del programa desde su inicio. Úsala después de propose_mesocycle/propose_workout_days y propose_nutrition_program, no en su lugar.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "mesocycle_id": {
+     "type": "string",
+     "description": "Opcional: por defecto el mesociclo en curso (o el último)."
+    },
+    "semanas_descarga": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     }
+    },
+    "semanas_test": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     }
+    },
+    "rir": {
+     "type": "object",
+     "properties": {
+      "desde": {
+       "type": "number"
+      },
+      "hasta": {
+       "type": "number"
+      }
+     },
+     "description": "RIR de la primera y la última semana; se reparte entre las que no son descarga"
+    },
+    "series": {
+     "type": "object",
+     "properties": {
+      "cada": {
+       "type": "number"
+      },
+      "hasta": {
+       "type": "number"
+      }
+     },
+     "description": "+1 serie cada `cada` semanas hasta la semana `hasta`"
+    },
+    "cambios": {
+     "type": "array",
+     "description": "Cambios de un ejercicio concreto desde una semana (o solo esa, con solo=true)",
+     "items": {
+      "type": "object",
+      "properties": {
+       "ejercicio": {
+        "type": "string",
+        "description": "Nombre del ejercicio tal y como está en las rutinas del mesociclo"
+       },
+       "semana": {
+        "type": "number"
+       },
+       "solo": {
+        "type": "boolean"
+       },
+       "series": {
+        "type": "number"
+       },
+       "reps": {
+        "type": "string"
+       },
+       "rir": {
+        "type": "number"
+       },
+       "descanso_seg": {
+        "type": "number"
+       },
+       "bloques": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "etiqueta": {
+           "type": "string"
+          },
+          "series": {
+           "type": "number"
+          },
+          "reps": {
+           "type": "string"
+          },
+          "rir": {
+           "type": "number"
+          }
+         },
+         "required": [
+          "series",
+          "reps",
+          "rir"
+         ]
+        }
+       }
+      },
+      "required": [
+       "ejercicio",
+       "semana"
+      ]
+     }
+    },
+    "nutricion": {
+     "type": "object",
+     "properties": {
+      "ajustes": {
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "semana": {
+          "type": "number"
+         },
+         "solo": {
+          "type": "boolean"
+         },
+         "franja": {
+          "type": "number",
+          "description": "1=Desayuno 2=Media mañana 3=Comida 4=Merienda 5=Cena; sin ella, la comida con más de ese macro"
+         },
+         "macro": {
+          "type": "string",
+          "enum": [
+           "HC",
+           "PROT",
+           "GRASA"
+          ]
+         },
+         "gramos": {
+          "type": "number",
+          "description": "Gramos de ese macro al día (25 g de HC o P ≈ 100 kcal; 11 g de grasa ≈ 100 kcal), negativo para quitar"
+         }
+        },
+        "required": [
+         "semana",
+         "macro",
+         "gramos"
+        ]
+       }
+      },
+      "semanas_mantenimiento": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       }
+      },
+      "suplementos": {
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "nombre": {
+          "type": "string"
+         },
+         "dosis": {
+          "type": "string"
+         },
+         "momento": {
+          "type": "string"
+         },
+         "desde": {
+          "type": "number"
+         },
+         "hasta": {
+          "type": "number"
+         }
+        },
+        "required": [
+         "nombre"
+        ]
+       }
+      },
+      "pasos_por_semana": {
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "semana": {
+          "type": "number"
+         },
+         "pasos": {
+          "type": "number"
+         }
+        },
+        "required": [
+         "semana",
+         "pasos"
+        ]
+       }
+      }
+     }
+    },
+    "rationale": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "propose_dossier_update",
+  "description": "PROPONE cambiar los campos de juicio de la ficha viva (objetivos, evaluación, qué esperamos, foco de la siguiente revisión, preguntas abiertas). No se aplica solo: Dani lo aprueba desde el panel, igual que una dieta. Manda solo los campos que cambian, con el texto COMPLETO que debe quedar (sustituye, no se acumula). Úsala al cerrar un análisis o tras aprobar un bloque, no en cada mensaje.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "objetivos": {
+     "type": "string",
+     "description": "Los objetivos del atleta, con sus palabras"
+    },
+    "evaluacion": {
+     "type": "string",
+     "description": "Dónde está hoy: fuerza, composición, adherencia, contexto"
+    },
+    "esperado": {
+     "type": "string",
+     "description": "Qué esperamos ver en las próximas semanas, con cifras si las hay"
+    },
+    "foco": {
+     "type": "string",
+     "description": "En qué hay que fijarse en la siguiente revisión"
+    },
+    "preguntas_abiertas": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "Lo que falta saber, y a quién preguntárselo"
+    },
+    "rationale": {
+     "type": "string",
+     "description": "Por qué cambia, para Dani"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "propose_setup_config",
+  "description": "PROPONE la configuración del plan que no es ni entreno ni dieta, y que la checklist de Setup pide: fecha de inicio y duración del plan, peso objetivo, objetivo diario de PASOS, qué dietas quedan activas y el CALENDARIO semanal de dietas, el CUESTIONARIO periódico con su cadencia, las FOTOS de seguimiento, los ejercicios elegibles para retos de carga y el programa de CARDIO (Zona 2 o VO₂máx). Manda solo los campos que toque cambiar. Sin esto, un plan queda a medias aunque el mesociclo y la dieta estén: el atleta no tiene pasos, ni calendario de comidas, ni cuestionario, ni fotos.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "plan_start_date": {
+     "type": "string",
+     "description": "YYYY-MM-DD — cuándo arranca su plan"
+    },
+    "plan_duration_months": {
+     "type": "number",
+     "description": "Meses de plan contratados (1-24)"
+    },
+    "target_weight": {
+     "type": "number",
+     "description": "Peso objetivo en kg"
+    },
+    "step_goal": {
+     "type": "number",
+     "description": "Pasos diarios objetivo (1000-30000)"
+    },
+    "active_diet_names": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "Nombres EXACTOS de las dietas que quedan activas en su registro diario. Se resuelven a id al aprobar."
+    },
+    "weekly_schedule": {
+     "type": "object",
+     "description": "Calendario semanal de dietas: {\"mon\":\"Día de entreno\",\"tue\":\"Día de descanso\",...}. null en un día = libre. Los nombres tienen que ser los de active_diet_names o dietas suyas ya existentes."
+    },
+    "questionnaire": {
+     "type": "object",
+     "description": "Cuestionario periódico a asignar.",
+     "properties": {
+      "title": {
+       "type": "string",
+       "description": "Título EXACTO de un cuestionario de Dani (si no existe, la tool te devuelve la lista de los que hay)"
+      },
+      "schedule": {
+       "type": "object",
+       "description": "{\"type\":\"weekdays\",\"weekdays\":[1]} | {\"type\":\"interval\",\"interval_days\":14} | {\"type\":\"monthly\",\"day_of_month\":1} | {\"type\":\"plan_week\",\"plan_week\":2} | {\"type\":\"mesocycle_end\"} | {\"type\":\"once\"}"
+      },
+      "start_date": {
+       "type": "string",
+       "description": "YYYY-MM-DD"
+      }
+     }
+    },
+    "photos": {
+     "type": "object",
+     "description": "Fotos de seguimiento periódicas.",
+     "properties": {
+      "schedule": {
+       "type": "object",
+       "description": "Mismo formato que questionnaire.schedule"
+      },
+      "start_date": {
+       "type": "string"
+      },
+      "views": {
+       "type": "array",
+       "items": {
+        "type": "string",
+        "enum": [
+         "front",
+         "side",
+         "back"
+        ]
+       }
+      }
+     }
+    },
+    "lift_exercise_names": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "Ejercicios del catálogo en los que se pueden proponer retos de carga (sus básicos reales, no los del libro)"
+    },
+    "cardio": {
+     "type": "object",
+     "description": "Programa de cardio progresivo.",
+     "properties": {
+      "kind": {
+       "type": "string",
+       "enum": [
+        "zona2",
+        "vo2max"
+       ]
+      },
+      "protocol_id": {
+       "type": "string",
+       "description": "Solo vo2max: noruego4x4 | billat30_30 | sprints30_90"
+      },
+      "base_minutes": {
+       "type": "number",
+       "description": "Solo zona2: minutos de la semana 1 (10-120)"
+      },
+      "start_date": {
+       "type": "string",
+       "description": "YYYY-MM-DD"
+      }
+     }
+    },
+    "rationale": {
+     "type": "string"
+    },
+    "expediente_datos": {
+     "type": "string"
+    },
+    "expediente_huecos": {
+     "type": "string"
+    },
+    "expediente_preguntas": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "expediente_esperado": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "propose_publish_block",
+  "description": "PROPONE volcar al calendario del atleta las sesiones de un mesociclo: crea las asignaciones de cada día y cada vuelta, con las fechas que salen del propio mesociclo. Es el paso que hace que el atleta VEA sus entrenos; sin él, el mesociclo y las sesiones existen pero su calendario está vacío. Va SIEMPRE después de propose_workout_days, y su propuesta se aprueba después de la de las sesiones.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "mesocycle_id": {
+     "type": "string",
+     "description": "Opcional: si falta, el mesociclo más reciente del atleta"
+    },
+    "rationale": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "get_challenge_options",
+  "description": "Los RETOS que el motor de la app propone para este atleta esta semana, con sus datos reales (memoria de 4 semanas, dificultad adaptativa, hitos redondos), más el reto que ya tiene puesto y cómo le fue en los últimos. Llámala antes de proponer un reto: las opciones vienen calculadas con sus pasos, sus marcas y su adherencia, no inventadas.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "propose_weekly_challenge",
+  "description": "PROPONE el reto de la semana del atleta. Copia kind, title, description y metric de una opción de get_challenge_options salvo que tengas un motivo para cambiarlo. Al aprobar, sustituye al reto de esa semana (el automático incluido) y el atleta lo ve en su road map.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "kind": {
+     "type": "string",
+     "enum": [
+      "pasos_media",
+      "pasos_total",
+      "carga_ejercicio",
+      "reps_ejercicio",
+      "adherencia_dieta",
+      "peso_objetivo",
+      "entrenos_completados",
+      "series_grupo",
+      "cardio_zona2",
+      "racha_registro",
+      "custom"
+     ]
+    },
+    "title": {
+     "type": "string",
+     "description": "Título corto, lo ve el atleta"
+    },
+    "description": {
+     "type": "string",
+     "description": "Lo que lee el atleta: qué tiene que hacer, con su número dentro"
+    },
+    "metric": {
+     "type": "object",
+     "description": "Cómo se mide.",
+     "properties": {
+      "unit": {
+       "type": "string",
+       "description": "pasos | kg | % | sesiones | series | min | días"
+      },
+      "target": {
+       "type": "number"
+      },
+      "baseline": {
+       "type": "number",
+       "description": "De dónde parte (media previa, peso actual…)"
+      },
+      "exercise_name": {
+       "type": "string",
+       "description": "carga_ejercicio / reps_ejercicio: nombre del catálogo"
+      },
+      "at_weight": {
+       "type": "number",
+       "description": "reps_ejercicio: peso al que hay que sacar las reps"
+      },
+      "muscle_group": {
+       "type": "string",
+       "description": "series_grupo: clave del grupo muscular"
+      }
+     }
+    },
+    "difficulty": {
+     "type": "string",
+     "enum": [
+      "suave",
+      "justo",
+      "ambicioso"
+     ]
+    },
+    "is_milestone": {
+     "type": "boolean"
+    },
+    "today": {
+     "type": "string",
+     "description": "YYYY-MM-DD de la semana a la que va el reto (por defecto hoy)"
+    },
+    "rationale": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email",
+    "kind",
+    "title",
+    "description",
+    "metric"
+   ]
+  }
+ },
+ {
+  "name": "propose_workout_template",
+  "description": "PROPONE una PLANTILLA de rutina del coach: una sesión con sus ejercicios, series, reps, RIR y descansos, SIN atleta ni mesociclo. Al aprobar se guarda en las rutinas de Dani y puede reutilizarla con cualquier cliente. Úsala cuando te pida \"hazme una plantilla de torso\", \"guárdame esta sesión\" o quiera dejar montado un día tipo; para las sesiones de un cliente concreto, propose_workout_days.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string",
+     "description": "El cliente desde cuyo contexto se propone (la plantilla no es suya; sirve para saber a quién enseñarle la propuesta)"
+    },
+    "name": {
+     "type": "string",
+     "description": "Nombre de la plantilla, ej. \"Torso A — fuerza\""
+    },
+    "exercises": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "exercise": {
+        "type": "string",
+        "description": "Nombre EXACTO del catálogo"
+       },
+       "sets": {
+        "type": "number"
+       },
+       "reps": {
+        "type": "string",
+        "description": "\"8-10\", \"AMRAP\", \"12\""
+       },
+       "rir": {
+        "type": "number",
+        "description": "0-5"
+       },
+       "rest_seconds": {
+        "type": "number"
+       },
+       "notes": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "exercise",
+       "sets",
+       "reps",
+       "rir"
+      ]
+     }
+    },
+    "rationale": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email",
+    "name",
+    "exercises"
+   ]
+  }
+ },
+ {
+  "name": "propose_mesocycle_template",
+  "description": "PROPONE una PLANTILLA de mesociclo (biblioteca de plantillas del coach): una o varias etapas encadenadas, cada una con sus semanas, días, reparto de series por grupo y, si quieres, las sesiones con sus ejercicios. Al aprobar queda en Entrenamientos › Plantillas y Dani la aplica a cualquier atleta en dos clics. Úsala para bloques que va a repetir (\"plantilla de definición 8 semanas\"), no para el plan de un cliente concreto.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string",
+     "description": "Desde qué cliente se propone (la plantilla no es suya)"
+    },
+    "name": {
+     "type": "string"
+    },
+    "description": {
+     "type": "string"
+    },
+    "stages": {
+     "type": "array",
+     "description": "Las etapas en orden.",
+     "items": {
+      "type": "object",
+      "properties": {
+       "name": {
+        "type": "string"
+       },
+       "weeks": {
+        "type": "number"
+       },
+       "days_per_week": {
+        "type": "number"
+       },
+       "groups": {
+        "type": "object",
+        "description": "Igual que en propose_mesocycle: {\"pecho\":{\"series\":12,\"priority\":\"alta\"},…}"
+       },
+       "reparto": {
+        "type": "object",
+        "description": "Opcional: el reparto de días de la etapa, igual que en propose_mesocycle (de calcular_reparto o list_mis_repartos). days_per_week = sus sesiones."
+       },
+       "deload_week": {
+        "type": "number"
+       },
+       "review_cadence_weeks": {
+        "type": "number"
+       },
+       "review_type": {
+        "type": "string",
+        "enum": [
+         "revision",
+         "cuestionario",
+         "foto"
+        ]
+       },
+       "days": {
+        "type": "array",
+        "description": "Opcional: las sesiones de la etapa, en orden.",
+        "items": {
+         "type": "object",
+         "properties": {
+          "name": {
+           "type": "string"
+          },
+          "exercises": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "properties": {
+             "exercise": {
+              "type": "string"
+             },
+             "sets": {
+              "type": "number"
+             },
+             "reps": {
+              "type": "string"
+             },
+             "rir": {
+              "type": "number"
+             },
+             "rest_seconds": {
+              "type": "number"
+             },
+             "notes": {
+              "type": "string"
+             }
+            },
+            "required": [
+             "exercise",
+             "sets",
+             "reps",
+             "rir"
+            ]
+           }
+          }
+         },
+         "required": [
+          "exercises"
+         ]
+        }
+       }
+      },
+      "required": [
+       "name",
+       "weeks",
+       "days_per_week",
+       "groups"
+      ]
+     }
+    },
+    "rationale": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email",
+    "name",
+    "stages"
+   ]
+  }
+ },
+ {
+  "name": "add_coach_task",
+  "description": "Deja una NOTA PENDIENTE para Dani en la pestaña Setup del cliente. No pide aprobación y no la ve el atleta: es un recordatorio suyo. Úsala cuando encuentres algo que TÚ no puedes arreglar y él sí — un alta a medias (no dijo los días que entrena, ni el material, ni contestó lo de las lesiones), un peso inicial que falta, una foto que no subió, una pregunta que hay que hacerle al atleta. Una nota por cosa, con el dato concreto dentro. No repitas una que ya exista.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "title": {
+     "type": "string",
+     "description": "Qué falta, concreto: \"Preguntarle cuántos días puede entrenar de verdad (en el alta puso 5 pero entrena 3)\""
+    },
+    "phase": {
+     "type": "string",
+     "enum": [
+      "alta",
+      "programacion",
+      "primeras_semanas",
+      "consolidacion"
+     ],
+     "description": "De qué fase del montaje es"
+    },
+    "due_date": {
+     "type": "string",
+     "description": "YYYY-MM-DD, si tiene fecha tope"
+    }
+   },
+   "required": [
+    "athlete_email",
+    "title"
+   ]
+  }
+ },
+ {
+  "name": "get_proposal_feedback",
+  "description": "Tus propuestas de este atleta que siguen PENDIENTES, con los COMENTARIOS que Dani les ha escrito en la pantalla de Propuestas. Un comentario no es un rechazo: es «esto está casi, pero cámbiame esto». Llámala cuando te pida rehacer, ajustar o atender sus comentarios, y vuelve a proponer con la corrección DENTRO, diciendo en una línea qué has cambiado por cada comentario. Lo que no comentó, no lo toques.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "get_progress_metrics",
+  "description": "El PROGRESO medido del atleta, lo mismo que Dani ve en Cliente › Revisión › El cuerpo: perímetros corporales con su cambio desde la primera medición (y si ese cambio supera el error de medición o es ruido), % de grasa y masa magra estimados (US Navy), índices antropométricos, y el índice de readiness (sueño y estrés). El entrenamiento y las marcas van en get_training_history; esto es el CUERPO. Míralo en una revisión antes de decir si algo está funcionando: el peso solo no distingue perder grasa de perder músculo.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "get_nutrition_analysis",
+  "description": "El análisis nutricional del atleta tal y como lo ve Dani en Cliente › Revisión › Adherencia y hábitos: adherencia a la dieta, cumplimiento de pasos, desviación de macros del plan frente a su objetivo, tendencia de peso y alertas. Úsalo en las revisiones antes de tocar la dieta: ajustar kcal sin mirar la adherencia es cambiar un plan que quizá no se está siguiendo.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ }
+]
