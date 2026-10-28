@@ -8,13 +8,14 @@ import {
 } from '../types';
 import {
   getMesocycles, createMesocycle, updateMesocycle, deleteMesocycle,
-  getAllUserProfilesOrThrow, getExercises, getWorkouts, updateWorkout, updateWorkoutStrict,
+  getAllUserProfilesOrThrow, getExercises, getWorkouts, updateWorkoutStrict,
   createWorkoutStrict,
   deleteWorkoutsByMesocycleIdStrict, reprogramarAsignacionesDelMeso,
   getUserProfileByEmail, migratePrimaryFocusToMuscleGroup,
   getMesocycleTemplates, createTask, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds, createMesocycleTemplate,
   getAssignmentsForAthlete, getQuestionnairesByCoach, updateUserProfile,
   getRepartosGuardados, guardarReparto, borrarRepartoGuardado, repartoDeGuardado,
+  getWorkoutAssignmentsForAthlete, quitarAsignacionesPendientes,
 } from '../dbService';
 import ExerciseConfigEditor, { COLUMNAS_FILA } from './ExerciseConfigEditor';
 import RoutinePreview, { PreviewDay, PreviewExercise } from './training/RoutinePreview';
@@ -67,14 +68,16 @@ import { useToast } from '../hooks/useToast';
 import { nombreDeMeso, nombreDeSesion, nombresCortosDeSesiones } from '../utils/nombresMeso';
 import { fechasDelMesociclo, cicloDiasDeMeso, sesionesDeMesociclo, offsetsDelMesociclo } from '../utils/asignacionMesociclo';
 import { isStale } from '../utils/repartoDesactualizado';
-import { addDays, esFechaIso, hoyIsoLocal, isoLocal } from '../utils/trainingWeek';
+import { addDays, esFechaIso, fechaCorta, hoyIsoLocal, isoLocal } from '../utils/trainingWeek';
 import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
 import { useConfirm } from '../hooks/useConfirm';
 import { getMaquinasDisponibles } from '../db/machines';
 import { catalogoParaGrupo, conNombreDeSesion, idsDelDraft, nombrePropioDeSesion } from '../utils/draftEjercicios';
 import DraftEjercicios from './mesociclo/DraftEjercicios';
-import { Avatar, Skeleton } from './ui';
+import EstadoDelBloque, { LoQueVeElAtleta, chipDeEstado } from './mesociclo/EstadoDelBloque';
+import { estadoDelMeso, sesionesQueEstorban, pendientesDesde, vistaDelAtleta, type SesionesQueEstorban } from '../utils/bloqueDelAtleta';
+import { Avatar, Skeleton, Badge } from './ui';
 import { EmptyState, Dialog, Input, Icon, Tabs, TabItem, Sheet, Pager, Select, Button } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -1935,6 +1938,24 @@ export default function MesocycleManager({
     staleTime: 5 * 60_000,
   });
   const cierreAsignaciones = athleteAssignments ?? asignacionesQuery;
+
+  // TODAS las sesiones del atleta, también las de bloques borrados: es lo que
+  // decide qué ve en su app (`utils/bloqueDelAtleta`). ClientHub ya las trae;
+  // en la pantalla suelta de Macrociclo se piden aquí.
+  const { data: asignacionesSueltas = [] } = useQuery({
+    queryKey: ['workoutAssignmentsCoachEditor', selectedEmail],
+    queryFn: async () => {
+      const perfil = await getUserProfileByEmail(selectedEmail);
+      return perfil ? getWorkoutAssignmentsForAthlete({ uid: perfil.userId, email: selectedEmail }) : [];
+    },
+    enabled: !athleteAssignments && !!selectedEmail && !modoPlantilla,
+  });
+  const asignacionesDelAtleta = athleteAssignments ?? asignacionesSueltas;
+  const hoy = hoyIsoLocal();
+  const invalidarAsignaciones = async () => {
+    await Promise.all(['workoutAssignments', 'workoutAssignmentsForAthlete', 'workoutAssignmentsByMesocycleIds', 'workoutAssignmentsCoachEditor']
+      .map(k => queryClient.invalidateQueries({ queryKey: [k] })));
+  };
   const cierreCargando = (necesitaLogs && logsPending) || (necesitaAsignaciones && asignacionesPending);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2013,6 +2034,9 @@ export default function MesocycleManager({
     const updated = { ...editing, [field]: value };
     setEditing(updated);
     scheduleAutoSave(updated);
+    if ((field === 'startDate' || field === 'weeks') && asignacionesDelAtleta.some(a => a.mesocycleId === editing.id)) {
+      setFechasMovidas(true);
+    }
   };
 
   const updateGroup = (group: MuscleGroup, field: keyof MuscleGroupConfig, value: number | string) => {
@@ -2274,9 +2298,9 @@ export default function MesocycleManager({
     showToast('Rutinas guardadas en la plantilla.', 'success');
   };
 
-  const handleAssign = async () => {
-    if (modoPlantilla) { guardarRutinasEnPlantilla(); return; }
-    if (!editing || !athleteUid) return;
+  const handleAssign = async (): Promise<boolean> => {
+    if (modoPlantilla) { guardarRutinasEnPlantilla(); return true; }
+    if (!editing || !athleteUid) return false;
     // Las semanas del mesociclo son semanas de calendario; lo que se repite es
     // el MICROCICLO. Con uno de 14 días, 8 semanas son 4 vueltas, no 8.
     const vueltas = vueltasDelCiclo(editing.weeks, cicloDiasDeMeso(editing));
@@ -2375,11 +2399,13 @@ export default function MesocycleManager({
 
       await queryClient.invalidateQueries({ queryKey: ['workouts'] });
       setGenPhase('done');
+      return true;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('[handleAssign]', err);
       setGenError(`Error Firestore: ${msg}`);
       setGenPhase('error');
+      return false;
     }
   };
 
@@ -2397,12 +2423,12 @@ export default function MesocycleManager({
    * El día de cada sesión sale de `dayIndex`, no del orden de lectura ni del
    * nombre — ver `groupMesoWorkouts`.
    */
-  const handleAsignarMesociclo = async () => {
-    if (!editing) return;
+  const handleAsignarMesociclo = async (): Promise<boolean> => {
+    if (!editing) return false;
     const sesiones = mesoGroupsForTabs;
     if (sesiones.length === 0) {
       setVolcado({ estado: 'error', mensaje: 'Este mesociclo todavía no tiene sesiones generadas. Genera la rutina desde «Distribución» primero.' });
-      return;
+      return false;
     }
 
     const fechas = fechasDelMesociclo(editing, sesiones.length);
@@ -2434,12 +2460,82 @@ export default function MesocycleManager({
         estado: 'hecho',
         mensaje: `${porCrear.length} ${porCrear.length === 1 ? 'sesión asignada' : 'sesiones asignadas'} · ${vueltas} ${vueltas === 1 ? 'vuelta' : 'vueltas'} × ${sesiones.length} desde el ${editing.startDate}${conservadasTxt}.`,
       });
-      showToast('Mesociclo asignado al atleta', 'success');
+      return true;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('[handleAsignarMesociclo]', err);
       setVolcado({ estado: 'error', mensaje: `Error Firestore: ${msg}` });
+      return false;
     }
+  };
+
+  /* ── Cambio de bloque (28-10) ──────────────────────────────────────────────
+     Asignar un bloque solo reescribe SUS sesiones: las pendientes de otro
+     bloque (o de uno borrado) seguían ahí, y el atleta acababa con 11 sesiones
+     en una semana de 5 sin que el coach supiera cuál veía. Antes de asignar se
+     mira qué se cruza desde que empieza este bloque y se pregunta si quitarlo;
+     al acabar se dice cuándo empieza a verlo. */
+  const [cambioDeBloque, setCambioDeBloque] = useState<{
+    grupos: SesionesQueEstorban[];
+    seguir: (quitar: boolean) => void;
+    cancelar: () => void;
+  } | null>(null);
+
+  /** `alTerminar` recibe si se asignó; null si el coach canceló el diálogo. */
+  const conCambioDeBloque = (asignar: () => Promise<boolean>, alTerminar?: (ok: boolean | null) => void) => {
+    if (!editing || modoPlantilla) { void asignar().then(ok => alTerminar?.(ok)); return; }
+    const meso = editing;
+    const antes = vistaDelAtleta(asignacionesDelAtleta, mesocycles, hoy);
+    const grupos = sesionesQueEstorban(meso, asignacionesDelAtleta, mesocycles, hoy);
+    const seguir = async (quitar: boolean) => {
+      setCambioDeBloque(null);
+      if (quitar) {
+        try {
+          await quitarAsignacionesPendientes(grupos.flatMap(g => g.asignaciones.map(a => a.id)));
+        } catch (err) {
+          console.error('[conCambioDeBloque]', err);
+          showToast('No se pudieron quitar las sesiones del otro bloque. No se ha asignado nada.', 'error');
+          alTerminar?.(false);
+          return;
+        }
+      }
+      const ok = await asignar();
+      await invalidarAsignaciones();
+      alTerminar?.(ok);
+      if (!ok) return;
+      const empieza = meso.startDate > hoy;
+      const otro = antes.meso && antes.meso.id !== meso.id ? `${nombreDeMeso(antes.meso)}, semana ${antes.semana}` : null;
+      showToast(empieza
+        ? `Verá ${nombreDeMeso(meso)} desde el ${fechaCorta(meso.startDate, { dia: true })}${otro ? `; hasta entonces, ${otro}` : ''}.`
+        : `${nombreDeMeso(meso)} ya está en su app.`, 'success');
+    };
+    if (grupos.length === 0) { void seguir(false); return; }
+    setCambioDeBloque({ grupos, seguir, cancelar: () => { setCambioDeBloque(null); alTerminar?.(null); } });
+  };
+
+  // Quitar a mano, desde el aviso del editor, las sesiones que se cruzan.
+  const quitarSesiones = async (g: SesionesQueEstorban) => {
+    try {
+      const n = await quitarAsignacionesPendientes(g.asignaciones.map(a => a.id));
+      await invalidarAsignaciones();
+      showToast(`${n} ${n === 1 ? 'sesión quitada' : 'sesiones quitadas'} del calendario del atleta.`, 'success');
+    } catch (err) {
+      console.error('[quitarSesiones]', err);
+      showToast('No se pudieron quitar las sesiones. No se ha tocado nada.', 'error');
+    }
+  };
+
+  // Fecha de inicio o semanas tocadas en un bloque ya asignado: sus sesiones
+  // no se mueven solas (solo el calendario de días lo hace), así que se avisa.
+  const [fechasMovidas, setFechasMovidas] = useState(false);
+  const [moviendoFechas, setMoviendoFechas] = useState(false);
+  const moverSesiones = () => {
+    setMoviendoFechas(true);
+    conCambioDeBloque(handleAsignarMesociclo, ok => {
+      setMoviendoFechas(false);
+      if (ok) setFechasMovidas(false);
+      else if (ok === false) showToast('No se pudieron mover sus sesiones. Mira el aviso de la pestaña Ejercicios.', 'error');
+    });
   };
 
   /**
@@ -2585,6 +2681,26 @@ export default function MesocycleManager({
   // a group normally wraps a single workoutId — but old mesocycles generated before this
   // change may still have one duplicate per week under the same name, so this still
   // writes through to every id in the group to keep both generations of data correct.
+  /* Los cambios de la pestaña Ejercicios se escriben en la rutina al momento,
+     sin botón — y hasta el 28-10 no pasaban por el «✓ Guardado» de la
+     cabecera, que solo miraba los datos del bloque: el coach no tenía cómo
+     saber si le habían llegado al atleta. Si Firestore fallaba, `updateWorkout`
+     lo guardaba solo en este navegador sin decir nada. Ahora es estricto: o se
+     guarda, o sale el error y se vuelve a leer lo que de verdad hay. */
+  async function escribirEnRutinas(ids: string[], patch: Partial<Workout>) {
+    setSaveState('saving');
+    try {
+      await Promise.all(ids.map(id => updateWorkoutStrict(id, patch)));
+      setSaveState('saved');
+      setTimeout(() => setSaveState(s => (s === 'saved' ? 'idle' : s)), 2500);
+    } catch (err) {
+      console.error('[escribirEnRutinas]', err);
+      setSaveState('error');
+      showToast('No se guardó el cambio en la rutina. Revisa la conexión y vuelve a hacerlo.', 'error');
+      void queryClient.invalidateQueries({ queryKey: ['workouts'] });
+    }
+  }
+
   async function updateMesoWorkoutExercise(
     group: MesoWorkoutGroup, exIdx: number, patch: Partial<WorkoutExercise>,
   ) {
@@ -2593,7 +2709,7 @@ export default function MesocycleManager({
     queryClient.setQueryData<Workout[]>(['workouts'], prev => prev?.map(w =>
       group.workoutIds.includes(w.id) ? { ...w, exercises: updatedExercises } : w
     ));
-    await Promise.all(group.workoutIds.map(id => updateWorkout(id, { exercises: updatedExercises })));
+    await escribirEnRutinas(group.workoutIds, { exercises: updatedExercises });
   }
 
   // T11.a: escribe el Workout del día — se aplica a las semanas restantes de
@@ -2605,7 +2721,7 @@ export default function MesocycleManager({
     queryClient.setQueryData<Workout[]>(['workouts'], prev => prev?.map(w =>
       group.workoutIds.includes(w.id) ? { ...w, exercises: updatedExercises } : w
     ));
-    await Promise.all(group.workoutIds.map(id => updateWorkout(id, { exercises: updatedExercises })));
+    await escribirEnRutinas(group.workoutIds, { exercises: updatedExercises });
   }
 
   // La validación (nombre vacío, duplicado con otro día) vive en `MesoExercisesTabs`
@@ -2616,7 +2732,7 @@ export default function MesocycleManager({
     queryClient.setQueryData<Workout[]>(['workouts'], prev => prev?.map(w =>
       group.workoutIds.includes(w.id) ? { ...w, name: nuevoNombre } : w
     ));
-    await Promise.all(group.workoutIds.map(id => updateWorkout(id, { name: nuevoNombre })));
+    await escribirEnRutinas(group.workoutIds, { name: nuevoNombre });
   }
 
   function handleReplaceMesoExercise(group: MesoWorkoutGroup, exIdx: number, semana?: { semana: number; solo: boolean; semanas?: number[] }) {
@@ -2799,7 +2915,14 @@ export default function MesocycleManager({
   const handleDelete = async () => {
     if (!editing) return;
     try {
+      // Borrar el bloque sin sus sesiones dejaba al atleta con ellas en el
+      // calendario, sueltas y sin bloque (el «Meso #1» de Dani: 70 pendientes
+      // hasta enero). Se quitan las pendientes de hoy en adelante, releídas de
+      // Firestore; lo entrenado y lo pasado se quedan como historial.
+      const suyas = await getWorkoutAssignmentsByMesocycleIds([editing.id]);
+      await quitarAsignacionesPendientes(pendientesDesde(editing.id, suyas, hoyIsoLocal()).map(a => a.id));
       await deleteMesocycle(editing.id);
+      void invalidarAsignaciones();
       queryClient.setQueryData<Mesocycle[]>(mesocyclesQueryKey, prev => prev?.filter(m => m.id !== editing.id));
       setEditing(null);
       setConfirmDelete(false);
@@ -3039,6 +3162,30 @@ export default function MesocycleManager({
   return (
     <div className="pantalla space-y-6">
       <ConfirmDialog />
+      <Dialog open={!!cambioDeBloque} onClose={() => cambioDeBloque?.cancelar()} size="s" title="Cambio de bloque"
+        footer={cambioDeBloque && <>
+          <Button variant="ghost" onClick={cambioDeBloque.cancelar}>Cancelar</Button>
+          <Button variant="secondary" onClick={() => cambioDeBloque.seguir(false)}>Asignar sin quitar</Button>
+          <Button onClick={() => cambioDeBloque.seguir(true)}>Quitar y asignar</Button>
+        </>}>
+        {cambioDeBloque && editing && (
+          <div className="space-y-3 font-sans text-label text-ink">
+            <p>
+              Desde el {fechaCorta(editing.startDate > hoy ? editing.startDate : hoy, { dia: true })} el atleta tendría
+              también estas sesiones, además de las de {nombreDeMeso(editing)}:
+            </p>
+            <ul className="space-y-1">
+              {cambioDeBloque.grupos.map(g => (
+                <li key={g.mesocycleId ?? 'sueltas'} className="font-mono text-caption text-ink-2">
+                  {g.meso ? nombreDeMeso(g.meso) : g.mesocycleId ? 'Un bloque borrado' : 'Sesiones sueltas'} · {g.asignaciones.length} pendientes
+                  · {fechaCorta(g.asignaciones[0].date)} → {fechaCorta(g.asignaciones[g.asignaciones.length - 1].date)}
+                </li>
+              ))}
+            </ul>
+            <p className="text-ink-2">«Quitar y asignar» borra solo esas sesiones pendientes; lo ya entrenado se queda.</p>
+          </div>
+        )}
+      </Dialog>
       {/* Title + selector only in standalone mode */}
       {!athleteEmail && !modoPlantilla && (
         <>
@@ -3073,6 +3220,9 @@ export default function MesocycleManager({
 
       {(selectedEmail || modoPlantilla) && (
         <>
+        {!modoPlantilla && !editing && (
+          <LoQueVeElAtleta assignments={asignacionesDelAtleta} mesos={mesocycles} hoy={hoy} workouts={allWorkouts} />
+        )}
         <div className="flex flex-col xl:flex-row gap-6">
 
           {/* ── Left: list ── (una plantilla edita una sola etapa: no hay lista) */}
@@ -3105,7 +3255,7 @@ export default function MesocycleManager({
             {mesocycles.map(m => (
               <button
                 key={m.id}
-                onClick={() => { setEditing(m); setEditorTab('progression'); setConfirmDelete(false); setGenPhase('idle'); setVolcado({ estado: 'idle', mensaje: '' }); setCalAtleta({ estado: 'idle', mensaje: '' }); }}
+                onClick={() => { setEditing(m); setFechasMovidas(false); setEditorTab('progression'); setConfirmDelete(false); setGenPhase('idle'); setVolcado({ estado: 'idle', mensaje: '' }); setCalAtleta({ estado: 'idle', mensaje: '' }); }}
                 className={`w-full text-left p-3 rounded-control border transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                   editing?.id === m.id
                     ? 'bg-surface border-accent-press ring-1 ring-inset ring-accent-press'
@@ -3124,15 +3274,15 @@ export default function MesocycleManager({
                       <span className="material-symbols-outlined text-caption">grid_view</span>Distribución
                     </span>
                   )}
-                  {/* Qué bloques están cerrados y cuál está en marcha. Se
-                      deduce de las fechas, sin leer nada, y es lo que le dice
-                      al coach que la pestaña «Cierre» ya tiene algo que contar. */}
-                  {addDays(m.startDate, m.weeks * 7 - 1) < hoyIsoLocal() && (
-                    <span className="inline-flex items-center gap-0.5 text-caption font-mono text-ink-3">
-                      <span className="material-symbols-outlined text-caption">check_circle</span>Terminado
-                    </span>
-                  )}
                 </div>
+                {/* En qué punto está cada bloque PARA EL ATLETA: borrador (no lo
+                    ve), programado, en curso o terminado — con la misma cuenta
+                    que su app (`utils/bloqueDelAtleta`). Antes solo salía
+                    «Terminado», deducido de las fechas del bloque. */}
+                {(() => {
+                  const chip = chipDeEstado(estadoDelMeso(m, asignacionesDelAtleta, mesocycles, hoy));
+                  return <div className="mt-1.5"><Badge tone={chip.tono}>{chip.texto}</Badge></div>;
+                })()}
               </button>
             ))}
           </div>
@@ -3149,8 +3299,29 @@ export default function MesocycleManager({
                     saveState === 'saved'  ? 'text-success' :
                     saveState === 'error'  ? 'text-danger' :
                     saveState === 'saving' ? 'text-accent-ink animate-pulse' : 'text-ink-2'
-                  }`}>{saveLabel}</span>
+                  }`}>
+                    {saveLabel}
+                    {saveState === 'saved' && !modoPlantilla && (
+                      <span className="normal-case tracking-normal text-ink-2">
+                        {estadoDelMeso(editing, asignacionesDelAtleta, mesocycles, hoy).tipo === 'borrador'
+                          ? ' · el atleta aún no lo ve'
+                          : ' · lo verá al abrir la app'}
+                      </span>
+                    )}
+                  </span>
                 </div>
+
+                {!modoPlantilla && (
+                  <EstadoDelBloque
+                    meso={editing}
+                    mesos={mesocycles}
+                    assignments={asignacionesDelAtleta}
+                    hoy={hoy}
+                    workouts={allWorkouts}
+                    onQuitar={quitarSesiones}
+                    fechasMovidas={fechasMovidas ? { onMover: moverSesiones, trabajando: moviendoFechas } : undefined}
+                  />
+                )}
 
                 {/* Nombre del bloque. Antes no existía: un mesociclo solo era su
                     número, así que el desplegable de asignar era una lista de
@@ -3812,7 +3983,7 @@ export default function MesocycleManager({
                       })}
                       onAdd={dayIdx => setExercisePicker({ context: 'preview', dayIdx, exIdx: null })}
                       onBack={() => { setGenPhase('idle'); setPreviewDays([]); }}
-                      onAssign={handleAssign}
+                      onAssign={() => conCambioDeBloque(handleAssign)}
                       assignLabel={modoPlantilla ? 'Guardar en la plantilla' : undefined}
                     />
                   )}
@@ -3921,7 +4092,7 @@ export default function MesocycleManager({
                       </p>
                     </div>
                     <Button
-                      onClick={handleAsignarMesociclo}
+                      onClick={() => conCambioDeBloque(handleAsignarMesociclo)}
                       loading={volcado.estado === 'trabajando'}
                       icon="event_available"
                     >
@@ -3990,7 +4161,13 @@ export default function MesocycleManager({
                   </button>
                 ) : (
                   <div className="flex items-center gap-3">
-                    <span className="font-sans text-label text-danger">¿Eliminar este mesociclo?</span>
+                    <span className="font-sans text-label text-danger">
+                      ¿Eliminar este mesociclo?
+                      {(() => {
+                        const n = pendientesDesde(editing.id, asignacionesDelAtleta, hoy).length;
+                        return n > 0 ? ` También se quitan sus ${n} sesiones pendientes de hoy en adelante; lo entrenado se queda.` : '';
+                      })()}
+                    </span>
                     <button onClick={handleDelete}
                       className="px-3 py-2 bg-danger/20 border border-danger/40 text-danger font-sans text-label rounded-control hover:bg-danger/30 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     >Confirmar</button>

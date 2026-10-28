@@ -36,6 +36,7 @@ import { novedadesDeSemana, hayNovedades } from '../utils/semanasDelBloque';
 import { novedadesDeLaSesion, type NovedadesDeLaSesion } from '../utils/planificadorProgresion';
 import { cargarAvisoSesion, guardarAvisoSesion, borrarAvisoSesion } from '../utils/avisoDeSesion';
 import { SetInput, nuevaSerieVacia } from './training/setInput';
+import { AL_VOLVER_A_LA_APP } from '../utils/refrescoDelAtleta';
 
 interface TrainingScreenProps {
   profile: UserProfile;
@@ -127,6 +128,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     queryKey: ['workoutsByIds', workoutIds],
     queryFn: () => getWorkoutsByIds(workoutIds),
     enabled: workoutIds.length > 0,
+    ...AL_VOLVER_A_LA_APP,
   });
   // Con `enabled: false` la consulta se queda en `isPending` para siempre —
   // sin este `&&`, un atleta sin asignaciones vería el esqueleto de carga sin
@@ -175,6 +177,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const { data: mesocycles = [], isPending: loadingMesocycles } = useQuery({
     queryKey: ['mesocycles', profile.email],
     queryFn: () => getMesocycles(profile.email),
+    ...AL_VOLVER_A_LA_APP,
   });
   // Los mesociclos entran en el `loading` porque son los que dicen dónde
   // empieza y acaba la vuelta: sin ellos la lista se agruparía un instante por
