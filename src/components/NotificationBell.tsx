@@ -36,6 +36,7 @@ const TYPE_ICON: Record<AppNotification['type'], string> = {
   academy_access_granted:  'school',
   lesson_completed:        'play_lesson',
   coach_day_note:          'sticky_note_2',
+  note_reply:              'chat',
   coach_task_due:          'alarm',
   menu_draft_ready:        'restaurant',
   revision_recordatorio:   'alarm',

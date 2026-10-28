@@ -25,7 +25,11 @@ const WORKOUT: Workout = {
   ],
 };
 const ANTERIOR: WorkoutEntryLog[] = [
-  { exerciseId: 'press', sets: [80, 80, 80].map(w => ({ weight: w, repsDone: 8, rir: 2 })) },
+  {
+    exerciseId: 'press', sets: [80, 80, 80].map(w => ({ weight: w, repsDone: 8, rir: 2 })),
+    note: 'Me molestó un poco el hombro en la última serie',
+    noteReply: { text: 'Baja un poco el agarre y frena 2 s abajo. Si sigue molestando, me escribes.', at: addDays(HOY, -6) + 'T10:00:00.000Z' },
+  },
   { exerciseId: 'remo', sets: [60, 60].map(w => ({ weight: w, repsDone: 10, rir: 1 })) },
   { exerciseId: 'elev', sets: [10, 10].map(w => ({ weight: w, repsDone: 12, rir: 1 })) },
 ];
