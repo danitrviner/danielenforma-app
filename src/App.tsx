@@ -156,6 +156,11 @@ const NutricionHarness = import.meta.env.DEV
   ? pantallaDiferida('NutricionDevHarness', () => import('./components/NutricionDevHarness'))
   : null;
 
+// Banco de pruebas de «El atleta ve ahora» + estado del bloque (ruta /dev/bloque-atleta).
+const BloqueAtletaHarness = import.meta.env.DEV
+  ? pantallaDiferida('BloqueAtletaDevHarness', () => import('./components/mesociclo/BloqueAtletaDevHarness'))
+  : null;
+
 // Banco de pruebas de «Orden del ciclo» (Mesociclo › Distribución, ruta /dev/orden-ciclo).
 const OrdenCicloHarness = import.meta.env.DEV
   ? pantallaDiferida('OrdenCicloDevHarness', () => import('./components/mesociclo/OrdenCicloDevHarness'))
@@ -818,6 +823,13 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <NutricionHarness />
+      </Suspense>
+    );
+  }
+  if (BloqueAtletaHarness && location.pathname === '/dev/bloque-atleta') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <BloqueAtletaHarness />
       </Suspense>
     );
   }

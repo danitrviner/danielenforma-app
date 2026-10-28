@@ -18,6 +18,7 @@ import { getRepartosGuardados } from '../db/repartos';
 import { totalSemanas as totalSemanasNutri } from '../utils/semanasNutricion';
 import { normalizarTexto as normTexto } from '../utils/busqueda';
 import { nombreDeMeso } from '../utils/nombresMeso';
+import { mesoQueVeElAtleta } from '../utils/bloqueDelAtleta';
 import type { LevelLadder, LadderLevel, LevelCriterionKind, WorkoutDayProposal, WorkoutDaysProposalPayload, RoadmapItem, NutritionPhaseProposal, NutritionProgramProposalPayload, RoadmapProposalPayload, SpecialDayProposalPayload, SpecialDayKind, WeekPlanProposalPayload, MacroAjustable } from '../types';
 import {
   getAllUserProfiles,
@@ -1215,7 +1216,10 @@ async function getClientOverview(email: string): Promise<string> {
   const latestWeight = weightTrend.latestWeight ?? checks[0]?.weight ?? onboarding?.weightKg;
   const maintenanceKcal = onboarding ? estimateMaintenanceKcal(onboarding, latestWeight ?? undefined) : null;
   const adherence = computeAdherenceScore(assignments, checks);
-  const activeMeso = [...mesos].sort((a, b) => b.startDate.localeCompare(a.startDate))[0] ?? null;
+  // El que el atleta tiene en pantalla, con la misma cuenta que su app — antes
+  // era «el de fecha de inicio más reciente», que con un bloque ya programado
+  // para el mes que viene le contaba al asistente el que todavía no ha empezado.
+  const activeMeso = mesoQueVeElAtleta(assignments, mesos, hoyIsoLocal());
 
   return toResult({
     profile: {

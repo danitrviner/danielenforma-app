@@ -1019,6 +1019,30 @@ export async function reprogramarAsignacionesDelMeso(
   };
 }
 
+/**
+ * Quita sesiones PENDIENTES del calendario del atleta (las de un bloque borrado
+ * o las que se cruzan con el bloque nuevo). Estricta: si Firestore falla,
+ * lanza y no toca la copia local — que el coach vea «quitadas» y el atleta
+ * las siga teniendo era peor que un error. Antes de borrar relee cada sesión
+ * y se salta la que ya no esté pendiente (el atleta pudo entrenarla mientras
+ * el coach tenía la pantalla abierta). Devuelve cuántas quitó.
+ */
+export async function quitarAsignacionesPendientes(ids: readonly string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  const vigentes: string[] = [];
+  for (let i = 0; i < ids.length; i += 30) {
+    const snap = await getDocs(query(collection(db, 'workoutAssignments'), where(documentId(), 'in', ids.slice(i, i + 30))));
+    for (const d of snap.docs) if ((d.data() as WorkoutAssignment).status === 'pending') vigentes.push(d.id);
+  }
+  await escribirEnLotes(
+    vigentes.map(id => ({ tipo: 'delete' as const, ref: doc(db, 'workoutAssignments', id) })),
+    'Quitar sesiones pendientes',
+  );
+  const quitadas = new Set(vigentes);
+  saveLocalAssignments(getLocalAssignments().filter(a => !quitadas.has(a.id)));
+  return vigentes.length;
+}
+
 export async function createWorkoutStrict(data: Omit<Workout, 'id'>): Promise<Workout> {
   workoutsCache = null;
   const ref = await addDoc(collection(db, 'workouts'), stripUndefined(data));

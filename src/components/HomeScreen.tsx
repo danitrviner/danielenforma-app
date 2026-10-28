@@ -34,6 +34,7 @@ import { Skeleton } from './ui';
 import { Icon, Button, PageHeader, ListRow } from './ui';
 import { dietaDelDia } from '../utils/diaDeDieta';
 import { addDays } from '../utils/trainingWeek';
+import { AL_VOLVER_A_LA_APP } from '../utils/refrescoDelAtleta';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap' | 'academy' | 'cardio' | 'profile';
 
@@ -123,6 +124,7 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
     queryKey: ['workoutsByIds', workoutIds],
     queryFn: () => getWorkoutsByIds(workoutIds),
     enabled: workoutIds.length > 0,
+    ...AL_VOLVER_A_LA_APP,
   });
   // Con `enabled: false` (sin ids que pedir) la consulta se queda en
   // `isPending` para siempre porque nunca llega a ejecutarse — sin este `&&`,
@@ -137,6 +139,7 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
   const { data: mesocycles = [], isPending: loadingMesocycles } = useQuery({
     queryKey: ['mesocycles', profile.email],
     queryFn: () => getMesocycles(profile.email),
+    ...AL_VOLVER_A_LA_APP,
   });
   // Los mesociclos delimitan la vuelta: sin ellos la lista se agruparía un
   // instante por semanas de calendario y se recolocaría sola al llegar.
