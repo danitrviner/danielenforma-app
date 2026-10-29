@@ -4,7 +4,7 @@ import {
   DIAS_SIN_ENTRAR, DIAS_SIN_CHECKIN, DIAS_DE_GRACIA_SETUP,
 } from './bandejaDelDia';
 import { addDays } from './trainingWeek';
-import type { Mesocycle, UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
+import type { Mesocycle, NutritionProgram, UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
 
 const HOY = '2026-09-16';
 
@@ -391,5 +391,25 @@ describe('los últimos días del plan (tanda 8)', () => {
     expect(s).toMatchObject({ urgencia: 'hoy', categoria: 'renovacion' });
     expect(s!.texto).toMatch(/^El plan termina en \d+ días: escríbele el siguiente paso$/);
     expect(construirBandejaDelDia(entrada({ atletas: [atleta({ planStartDate: addDays(HOY, -30), planDurationMonths: 3 })] })).find(x => x.id.endsWith('plan_vence'))).toBeUndefined();
+  });
+});
+
+describe('sin fases ni peso meta (29-10, tarde)', () => {
+  const programa = (phases: { targetWeight?: number }[]) => new Map([['ana@x.com', { athleteId: 'ana@x.com', startDate: '2026-08-01', phases } as unknown as NutritionProgram]]);
+  const ids = (e: Partial<EntradaBandeja>) => construirBandejaDelDia(entrada({ checkins: [], ...e })).map(s => s.id);
+
+  it('sin el mapa de programas no se calcula', () => {
+    expect(ids({})).not.toContain('plan_ana@x.com_sin_fases');
+  });
+  it('con plan publicado hace una semana y sin programa: «sin fases», a Plan › Objetivo', () => {
+    const s = construirBandejaDelDia(entrada({ checkins: [], programasPorEmail: new Map() })).find(x => x.id === 'plan_ana@x.com_sin_fases')!;
+    expect(s).toMatchObject({ urgencia: 'hoy', categoria: 'plan', destino: '/clients/ana%40x.com/objetivo' });
+  });
+  it('con fases pero ninguna con peso meta: «sin peso meta»', () => {
+    expect(ids({ programasPorEmail: programa([{}, {}]) })).toContain('plan_ana@x.com_sin_peso_meta');
+  });
+  it('con una fase con peso meta, nada; y los primeros 7 días con plan tampoco', () => {
+    expect(ids({ programasPorEmail: programa([{ targetWeight: 80 }]) }).filter(i => /sin_fases|sin_peso_meta/.test(i))).toEqual([]);
+    expect(ids({ atletas: [atleta({ planPublishedAt: addDays(HOY, -3) })], programasPorEmail: new Map() })).not.toContain('plan_ana@x.com_sin_fases');
   });
 });

@@ -1,4 +1,4 @@
-import { Contacto, Mesocycle, QuestionnaireResponse, UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
+import { Contacto, Mesocycle, NutritionProgram, QuestionnaireResponse, UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
 import { addDays, diasEntreFechas, isoLocal } from './trainingWeek';
 import { DIAS_AVISO_RENOVACION } from './calidadDelPlan';
 import type { MotivoContacto } from './plantillasWhatsApp';
@@ -91,6 +91,12 @@ export interface EntradaBandeja {
   contactos?: Contacto[];
   /** Borradores de mensaje por firmar, por email (db/mensajesCoach.ts, 29-10). */
   borradoresPorEmail?: Map<string, number>;
+  /**
+   * Programas de nutrición por email (29-10, tarde). Para «sin fases ni peso
+   * meta»: el Road map del atleta va en arranque hasta que las tenga.
+   * Opcional: sin el mapa, esa señal no se calcula.
+   */
+  programasPorEmail?: Map<string, NutritionProgram>;
   hoy: string;
 }
 
@@ -118,6 +124,8 @@ export const DIAS_SIN_CHECKIN = 10;
 export const SETUP_INCOMPLETO_PCT = 80;
 /** Días desde el alta antes de los cuales no se avisa de un setup incompleto. */
 export const DIAS_DE_GRACIA_SETUP = 7;
+/** Días con plan publicado a partir de los cuales el Road map ya debería tener fases y peso meta. */
+export const DIAS_PARA_PONER_FASES = 7;
 
 const PESO_URGENCIA: Record<UrgenciaSenal, number> = { bloqueado: 0, hoy: 1, pronto: 2 };
 
@@ -206,6 +214,19 @@ export function construirBandejaDelDia(entrada: EntradaBandeja): SenalDelDia[] {
     };
 
     const enMarcha = !!a.planPublishedAt;
+
+    // ── Sin fases ni peso meta (29-10, tarde) ────────────────────────────
+    // El Road map del atleta sale de las fases del programa. Sin ellas va en
+    // «Tu arranque», que vale una semana, no un mes: aquí se le recuerda.
+    if (entrada.programasPorEmail && enMarcha && diasEntreFechas(a.planPublishedAt!.slice(0, 10), hoy) >= DIAS_PARA_PONER_FASES) {
+      const programa = entrada.programasPorEmail.get(email.toLowerCase());
+      const fases = programa?.phases ?? [];
+      if (fases.length === 0) {
+        añadir('sin_fases', 'hoy', 'plan', 'Sin fases en el plan: su Road map va en arranque', 'objetivo');
+      } else if (!fases.some(f => f.targetWeight != null)) {
+        añadir('sin_peso_meta', 'hoy', 'plan', 'Fases sin peso meta: su Road map no enseña lo que falta', 'objetivo');
+      }
+    }
     const s = a.senales;
 
     // ── La primera semana (29-10) ────────────────────────────────────────

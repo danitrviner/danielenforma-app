@@ -6,7 +6,7 @@ import {
   getStepsForAthlete, getWorkoutLogs, getExercises, getDietCompletionLogsForAthlete,
   getDietsForAthlete, getAthleteNutritionConfig, getWorkoutAssignmentsForAthlete,
   getWeeklyChallengesForAthlete, saveRoadmapLevelProgress, createNotificationDeduped,
-  updateUserProfile, getMesocycles, getResponsesForAthlete,
+  updateUserProfile, getMesocycles, getResponsesForAthlete, getOnboarding,
 } from '../dbService';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import WeeklyChallengeCard, { ChallengePendingCard } from './roadmap/WeeklyChallengeCard';
@@ -20,6 +20,10 @@ import { Icon, PageHeader } from './ui';
 import TarjetaIdentidadAtleta from './TarjetaIdentidadAtleta';
 import { COACH_EMAIL } from '../utils/coach';
 import { ventanaPasos } from '../utils/ventanaHistorial';
+import { dietaDelDia } from '../utils/diaDeDieta';
+import { objetivoDeDieta } from '../utils/macrosLegado';
+import { contextoPesoCorporal } from '../utils/pesoCorporal';
+import { lastBodyweight } from '../utils/athleteMetrics';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -104,6 +108,11 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     queryKey: ['responsesForAthlete', profile.email],
     queryFn: () => getResponsesForAthlete(profile.email),
   });
+  // Su frase del alta (misma clave que «Lo que viniste a buscar» en Inicio).
+  const { data: onboarding = null } = useQuery({
+    queryKey: ['onboarding', profile.email],
+    queryFn: () => getOnboarding(profile.email).catch(() => null),
+  });
 
   const loading = loadingNutritionProgram || loadingRoadmap || loadingBodyweight
     || loadingSteps || loadingWorkoutLogs || loadingExercises || loadingDietCompletionLogs
@@ -158,8 +167,16 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
       : [];
     const gasto = calcularGastoReal({ pesos: bodyweightLogs, registros: dietCompletionLogs, diets: coachDiets, hasta: hoy });
     const evaluacion = nutritionProgram ? evaluarPlan(nutritionProgram, semanas, gasto) : null;
-    return construirRoadmap({ program: nutritionProgram, semanas, evaluacion, mesociclos: mesocycles, assignments, workoutLogs, respuestas, stepLogs, stepGoal, hoy });
-  }, [loading, nutritionProgram, diets, bodyweightLogs, dietCompletionLogs, stepLogs, stepGoal, hoy, mesocycles, assignments, workoutLogs, respuestas]);
+    // Sin programa, «Esta semana» tira de la dieta del último día registrado (o la primera del coach).
+    const ultimoRegistro = [...dietCompletionLogs].sort((a, b) => a.date.localeCompare(b.date)).at(-1);
+    const dieta = dietaDelDia(ultimoRegistro, coachDiets) ?? coachDiets[0];
+    const kcalDieta = dieta ? objetivoDeDieta(dieta).kcal || null : null;
+    const ctxFuerza = contextoPesoCorporal(exercises, lastBodyweight(bodyweightLogs)?.weight ?? null);
+    return construirRoadmap({
+      program: nutritionProgram, semanas, evaluacion, mesociclos: mesocycles, assignments, workoutLogs, respuestas, stepLogs, stepGoal, hoy,
+      planPublishedAt: profile.planPublishedAt, pesos: bodyweightLogs, kcalDieta, ctxFuerza,
+    });
+  }, [loading, nutritionProgram, diets, bodyweightLogs, dietCompletionLogs, stepLogs, stepGoal, hoy, mesocycles, assignments, workoutLogs, respuestas, exercises, profile.planPublishedAt]);
 
   // Retos conseguidos: los logros que no salen del plan.
   const logrosExtra: HitoAutomatico[] = useMemo(() =>
@@ -183,7 +200,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
   return (
     <div className="pantalla space-y-6">
       <PageHeader title="Road map" subtitle="Dónde estás, qué viene y qué toca esta semana" />
-      <RoadmapDelAtletaVista roadmap={roadmapDelAtleta} reto={reto} logrosExtra={logrosExtra} />
+      <RoadmapDelAtletaVista roadmap={roadmapDelAtleta} frase={onboarding?.goalFreeText} reto={reto} logrosExtra={logrosExtra} />
       <TarjetaIdentidadAtleta profile={profile} />
     </div>
   );

@@ -12,6 +12,10 @@ import { Icon } from '../ui';
    Versión elegida por Dani el 29-10 entre tres. Nada de rojo, nada de
    «desvío», la fase actual destacada, el plan entero visible, los hitos que
    salen solos.
+
+   Mejoras del 29-10 (tarde): abre con SU frase del alta en una tarjeta
+   encima del plan (Dani eligió esta entre dos), nunca se queda vacío (fase «Tu arranque» sin fases del programa),
+   los hitos del primer mes y la cifra de fuerza en «Esta semana».
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const kg = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -26,32 +30,57 @@ const colorDe = (f: FaseDelCamino) => COLOR_FASE[f.objetivo ?? 'null'];
 
 interface Props {
   roadmap: RoadmapDelAtleta;
+  /** Su objetivo con sus palabras (`goalFreeText` del alta). */
+  frase?: string | null;
   /** La tarjeta del reto de la semana, que ya existe; va entre el plan y lo conseguido. */
   reto?: React.ReactNode;
   /** Logros que no salen del plan (retos conseguidos), para la tira de abajo. */
   logrosExtra?: HitoAutomatico[];
 }
 
-export default function RoadmapDelAtletaVista({ roadmap, reto, logrosExtra = [] }: Props) {
+export default function RoadmapDelAtletaVista({ roadmap, frase, reto, logrosExtra = [] }: Props) {
   const logros = [...roadmap.hitos, ...logrosExtra].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 10);
+  const laFrase = frase?.trim() || null;
   if (roadmap.camino.length === 0) {
     return (
       <div className="space-y-4">
+        <CabeceraCita frase={laFrase} roadmap={roadmap} />
         <SinPlan />
         {reto}
         <Logros logros={logros} />
       </div>
     );
   }
-  return <Camino roadmap={roadmap} reto={reto} logros={logros} />;
+  return <Camino roadmap={roadmap} frase={laFrase} reto={reto} logros={logros} />;
 }
 
+/* ── Cabecera: su frase, en una tarjeta encima del plan ─────────────────── */
+
+function CabeceraCita({ frase, roadmap }: { frase: string | null; roadmap: RoadmapDelAtleta }) {
+  if (!frase) return null;
+  const meta = roadmap.dondeEstas?.fase.pesoMeta ?? null;
+  return (
+    <section className="rounded-canvas border border-accent-line bg-accent-bg/40 p-4 flex gap-3" aria-label="Lo que viniste a buscar">
+      <Icon name="format_quote" size="l" className="text-accent-ink shrink-0" />
+      <div className="min-w-0">
+        <p className="font-mono text-caption uppercase tracking-widest text-ink-3">Lo que viniste a buscar</p>
+        <p className="mt-1 font-display text-title-m font-black leading-tight text-ink text-pretty">{frase}</p>
+        <p className="mt-1.5 font-sans text-caption text-ink-2">
+          {meta != null ? `El camino hasta ahí pasa por ${kg(meta)} kg. Abajo, fase a fase.` : 'Abajo, el camino hasta ahí, fase a fase.'}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* Solo sin plan publicado y sin bloque: con cualquiera de los dos, el camino
+   arranca (`caminoDeArranque`). */
 function SinPlan() {
   return (
     <section className="rounded-canvas border border-dashed border-accent/45 bg-surface p-5">
       <p className="font-sans font-bold text-title-s text-ink">Tu plan, fase a fase</p>
       <p className="mt-1 font-sans text-body-s text-ink-2">
-        En cuanto {COACH_NOMBRE} te ponga el objetivo y las fases, aquí verás en qué punto estás, qué viene y qué toca esta semana.
+        En cuanto {COACH_NOMBRE} publique tu plan, aquí verás en qué punto estás, qué viene y qué toca esta semana.
       </p>
     </section>
   );
@@ -86,11 +115,21 @@ function PesoYFranja({ roadmap }: { roadmap: RoadmapDelAtleta }) {
 function EstaSemana({ roadmap }: { roadmap: RoadmapDelAtleta }) {
   const s = roadmap.estaSemana;
   if (!s) return null;
+  const f = s.fuerza;
+  // Fuerza (29-10, tarde): en recomposición o volumen el peso engaña; los kilos
+  // levantados y los récords, no. Récord = 1RM estimado por encima de su mejor
+  // marca anterior en ese ejercicio.
+  const fuerzaValor = !f ? '—' : f.records > 0 ? `${f.records} ${f.records === 1 ? 'récord' : 'récords'}` : `${miles(f.tonelaje)} kg`;
+  const fuerzaUnidad = !f ? 'sin sesiones aún'
+    : f.records > 0 ? `${miles(f.tonelaje)} kg movidos`
+    : f.deltaPct != null ? `${f.deltaPct > 0 ? '+' : ''}${f.deltaPct} % vs la pasada`
+    : `${f.sesiones} ${f.sesiones === 1 ? 'sesión' : 'sesiones'}`;
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-2 gap-2">
       <Dato etiqueta="Comida" valor={s.kcal != null ? `${miles(s.kcal)}` : '—'} unidad="kcal/día" />
       <Dato etiqueta="Pasos" valor={s.pasos != null ? miles(s.pasos) : '—'} unidad="al día" />
       <Dato etiqueta="Entreno" valor={roadmap.bloque ? `${roadmap.bloque.semana}/${roadmap.bloque.semanas}` : '—'} unidad={roadmap.bloque ? roadmap.bloque.nombre : 'sin bloque'} />
+      <Dato etiqueta="Fuerza" valor={fuerzaValor} unidad={fuerzaUnidad} />
     </div>
   );
 }
@@ -137,12 +176,14 @@ function Logros({ logros }: { logros: HitoAutomatico[] }) {
 
 /* ── El camino ──────────────────────────────────────────────────────────── */
 
-function Camino({ roadmap, reto, logros }: { roadmap: RoadmapDelAtleta; reto?: React.ReactNode; logros: HitoAutomatico[] }) {
+function Camino({ roadmap, frase, reto, logros }: { roadmap: RoadmapDelAtleta; frase: string | null; reto?: React.ReactNode; logros: HitoAutomatico[] }) {
   const d = roadmap.dondeEstas;
+  const titulo = roadmap.arranque ? 'Tu arranque' : `Tu plan · ${roadmap.camino.length} ${roadmap.camino.length === 1 ? 'fase' : 'fases'}`;
   return (
     <div className="space-y-4">
+      <CabeceraCita frase={frase} roadmap={roadmap} />
       <section className="rounded-canvas border border-hairline bg-surface p-5">
-        <p className="font-sans text-caption uppercase tracking-widest text-ink-2 mb-4">Tu plan · {roadmap.camino.length} fases</p>
+        <p className="font-sans text-caption uppercase tracking-widest text-ink-2 mb-4">{titulo}</p>
         <div className="flex flex-col gap-0">
           {roadmap.camino.map((f, i) => {
             const actual = f.estado === 'actual';

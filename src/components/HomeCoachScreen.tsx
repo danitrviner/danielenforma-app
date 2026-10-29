@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
-import { getCrmSuscripciones, getPendingAiProposals, getMesocyclesForAthletes } from '../dbService';
+import { getCrmSuscripciones, getPendingAiProposals, getMesocyclesForAthletes, getNutritionProgramsForAthletes } from '../dbService';
 import { getContactosDesde, registrarContacto } from '../db/contactos';
 import { getBorradoresPorFirmar } from '../db/mensajesCoach';
 import {
@@ -145,6 +145,13 @@ export default function HomeCoachScreen({ athletes, coachId, checkins, assignmen
     for (const b of borradores) m.set(b.athleteId.toLowerCase(), (m.get(b.athleteId.toLowerCase()) ?? 0) + 1);
     return m;
   }, [borradores]);
+  // Programas de nutrición (misma clave que Semana del coach): «sin fases ni peso meta».
+  const { data: programas = [] } = useQuery({
+    queryKey: ['nutritionProgramsForAthletes', emails],
+    queryFn: () => getNutritionProgramsForAthletes(emails),
+    enabled: emails.length > 0,
+  });
+  const programasPorEmail = useMemo(() => new Map(programas.map(p => [p.athleteId.toLowerCase(), p])), [programas]);
   const queryClient = useQueryClient();
   const marcarContacto = useMutation({
     mutationFn: async (s: SenalDelDia) => {
@@ -206,12 +213,13 @@ export default function HomeCoachScreen({ athletes, coachId, checkins, assignmen
       respuestas,
       contactos,
       borradoresPorEmail,
+      programasPorEmail,
       hoy: hoyIso,
     // «Antes de que se te pase» (urgencia `pronto`) se retiró de la pantalla:
     // el coach no la usa. Se filtra aquí para que tampoco cuente en los chips
     // ni dispare el estado vacío con señales que no se pintan.
     }).filter(s => s.urgencia !== 'pronto');
-  }, [loadingAssignments, athletes, checkins, assignmentsByEmail, mesociclos, suscripciones, propuestasPendientes, respuestas, contactos, borradoresPorEmail, hoyIso]);
+  }, [loadingAssignments, athletes, checkins, assignmentsByEmail, mesociclos, suscripciones, propuestasPendientes, respuestas, contactos, borradoresPorEmail, programasPorEmail, hoyIso]);
 
   const visibles = filtro === 'todas' ? senales : senales.filter(s => s.categoria === filtro);
   // Sobre `visibles`, no sobre `senales`: con un filtro de categoría activo, la
