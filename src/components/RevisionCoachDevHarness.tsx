@@ -10,7 +10,7 @@ import { bodyweightForAthleteKey, pesoPrimeroKey, pesoUltimoKey } from '../hooks
 import { VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
 import { isoWeekKey, isoWeekBounds } from '../utils/challengeOptions';
 import ClientRevisionPanel from './revision/ClientRevisionPanel';
-import ConfirmarObjetivosSheet from './ConfirmarObjetivosSheet';
+import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import ClientImplantacionPanel from './implantacion/ClientImplantacionPanel';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -489,8 +489,7 @@ export default function RevisionCoachDevHarness() {
     qc.setQueryData(['bodyMeasurementsForAthlete', EMAIL], MEDICIONES);
     // El dashboard de peso vive de estas seis; `anatomia` las deja vacías para
     // ver también el estado sin periodización.
-    // «Objetivos de los clientes» (?pantalla=objetivos): el simulacro sobre este programa.
-    qc.setQueryData(['nutritionProgramsForAthletes', [EMAIL]], [PROGRAMA]);
+    // Objetivo › Plan (?pantalla=objetivos): el editor de fases sobre este programa.
     qc.setQueryData(['nutritionProgram', EMAIL], anatomia || objetivoParam === 'ninguno' ? null
       : objetivoParam ? { ...PROGRAMA, phases: PROGRAMA.phases.map((f, i) =>
           i === PROGRAMA.phases.length - 1 ? { ...f, objetivo: objetivoParam as NonNullable<typeof f.objetivo> } : f) }
@@ -547,7 +546,16 @@ export default function RevisionCoachDevHarness() {
             /dev/revision-coach — datos de mentira{anatomia ? ' · modo anatomía' : ''}
           </p>
           {pantalla === 'objetivos' ? (
-            <ConfirmarObjetivosSheet open onClose={() => {}} athletes={[PERFIL]} />
+            <NutritionPeriodizationPanel
+              athleteEmail={EMAIL}
+              athleteName={PERFIL.displayName}
+              targetWeightKg={PERFIL.targetWeight}
+              diets={DIETAS}
+              onboarding={ALTA as never}
+              currentWeightKg={PESOS[PESOS.length - 1].weight}
+              stepGoal={8000}
+              kcalPerStep={0.046}
+            />
           ) : pantalla === 'implantacion' ? (
             <ClientImplantacionPanel
               athlete={PERFIL}
