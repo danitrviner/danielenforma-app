@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { UserProfile } from '../types';
 import { getProgressPhotos, getPesoExtremo } from '../dbService';
@@ -21,23 +21,12 @@ const fechaCorta = (iso: string) =>
    dorado es el mismo lenguaje de vacío que Nutrición reutiliza —no un
    patrón nuevo de esta tarjeta.
 
-   Se conserva el checklist "mientras tanto" (foto, peso, Road map): no está
+   Se conserva el checklist "mientras tanto" (foto, peso; el Road map salió
+   el 29-10 a petición de Dani: sin plan no hay nada que explorar): no está
    en el panel del handoff, pero resuelve algo real que el handoff no
    contradice —el "valle de la muerte" post-onboarding— así que se mantiene
    junto al añadido nuevo, no en su lugar.
    ═══════════════════════════════════════════════════════════════════════════ */
-
-// Marca de "ya visitó el Road map" — mismo patrón que enforma_tour_pending_
-// (App.tsx/AppTour.tsx): una bandera en localStorage, sin colección nueva ni
-// lectura extra. AthleteRoadmapScreen la marca sola al montar; el propio
-// checklist también la marca de forma optimista al pulsar el ítem.
-const roadmapVisitedKey = (email: string) => `enforma_roadmap_visited_${email}`;
-export function markRoadmapVisited(email: string): void {
-  try { localStorage.setItem(roadmapVisitedKey(email), '1'); } catch { /* noop */ }
-}
-function isRoadmapVisited(email: string): boolean {
-  try { return localStorage.getItem(roadmapVisitedKey(email)) === '1'; } catch { return false; }
-}
 
 /** La insignia (29-10): si el coach se ha comprometido a una fecha, cuenta
  * HACIA ella («LO TENDRÁS EL JUEVES 30»); si no, lo de antes: desde cuándo
@@ -59,7 +48,7 @@ export function fraseDesde(createdAt: string | undefined, planPrometidoPara?: st
 
 interface Props {
   profile: UserProfile;
-  onNavigate: (tab: 'checkin' | 'roadmap' | 'profile') => void;
+  onNavigate: (tab: 'checkin' | 'profile') => void;
 }
 
 /** Días hasta la fecha comprometida (negativo = ya pasó). */
@@ -74,7 +63,6 @@ export function diasHastaPlan(planPrometidoPara: string, hoy = hoyIsoLocal()): n
 // asignado (HomeScreen ya filtra por eso) — así el coste de las dos lecturas
 // nuevas (fotos, peso) solo lo paga quien de verdad está en ese hueco.
 export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
-  const [roadmapVisited, setRoadmapVisited] = useState(() => isRoadmapVisited(profile.email));
 
   const { data: photos = [], isPending: loadingPhotos } = useQuery({
     queryKey: ['progressPhotos', profile.email],
@@ -111,13 +99,6 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
       label: 'Registra tu peso de hoy',
       done: hasWeight,
       onClick: () => onNavigate('checkin'),
-    },
-    {
-      key: 'roadmap',
-      icon: 'map',
-      label: 'Explora tu Road map',
-      done: roadmapVisited,
-      onClick: () => { markRoadmapVisited(profile.email); setRoadmapVisited(true); onNavigate('roadmap'); },
     },
   ];
   const doneCount = items.filter(i => i.done).length;

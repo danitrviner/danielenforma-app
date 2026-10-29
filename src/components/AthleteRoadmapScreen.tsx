@@ -16,7 +16,6 @@ import { computeLadderStatus } from '../utils/levelLadder';
 import { DEFAULT_LEVEL_LADDER } from '../data/defaultLevelLadder';
 import { semanasDelPlan, evaluarPlan, calcularGastoReal } from '../utils/seguimientoPlan';
 import { construirRoadmap, type HitoAutomatico } from '../utils/roadmapDelAtleta';
-import { markRoadmapVisited } from './PlanInPreparationCard';
 import { Icon, PageHeader } from './ui';
 import TarjetaIdentidadAtleta from './TarjetaIdentidadAtleta';
 import { COACH_EMAIL } from '../utils/coach';
@@ -49,7 +48,6 @@ interface Props {
 }
 
 export default function AthleteRoadmapScreen({ profile }: Props) {
-  useEffect(() => { markRoadmapVisited(profile.email); }, [profile.email]);
   const hoy = hoyIsoLocal();
 
   const { data: nutritionProgram = null, isPending: loadingNutritionProgram } = useQuery({

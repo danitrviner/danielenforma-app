@@ -11,7 +11,7 @@
 | «Dani ha revisado tu semana» | Atleta, Perfil › Revisión | **A · bloques**: tres títulos y su texto | texto corrido | `12d` |
 | «Lo último de Dani» | Atleta, Inicio | **B · último**: solo lo más reciente y «y N más esta semana», **sin fecha** | lista por fecha · carrusel | `12b` |
 | «Tu primera semana» | Atleta, Inicio | **A · lista**: tres filas | tres pasos con barra | `12e` |
-| Sala de espera, fecha comprometida | Atleta, día 0 | **A · insignia**: «LO TENDRÁS EL SÁBADO 31» | cuenta atrás | `12f` |
+| Sala de espera, fecha comprometida | Atleta, día 0 | **A · insignia**: «LO TENDRÁS EL SÁBADO 31»; además fuera «Explora tu Road map» del «mientras tanto» (Dani: sin plan no hay nada que ver) | cuenta atrás | `12f` |
 | «Lo que viniste a buscar» | Atleta, Inicio | **A · cita**: la frase grande y una línea de cifras | — (la forma «cifras» sigue en Mi objetivo, a propósito) | `12g` |
 | «Bienvenido de vuelta» | Atleta, Inicio | **A · banda**: tarjeta con icono | una línea | `13a` |
 | «Tu plan termina pronto» | Atleta, Inicio | **A · tarjeta**: con el antes → ahora | una línea | `14a` |

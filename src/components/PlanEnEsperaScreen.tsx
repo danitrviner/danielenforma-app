@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { UserProfile, WeightCheckIn } from '../types';
 import PlanInPreparationCard from './PlanInPreparationCard';
 import CheckInScreen from './CheckInScreen';
-import AthleteRoadmapScreen from './AthleteRoadmapScreen';
 import MiFichaCard from './MiFichaCard';
 import { signOut, auth } from '../firebase';
 import { Icon, AtlasLogo, Wordmark } from './ui';
@@ -17,12 +16,12 @@ import { Icon, AtlasLogo, Wordmark } from './ui';
    el catálogo de gimnasio — SIN barra de navegación, una única pantalla a
    pantalla completa hasta que el coach publique el plan.
 
-   Las tres acciones de "mientras tanto" (foto inicial, peso, Road map) y
-   "ver mi anamnesis" seguían necesitando pantallas reales —CheckInScreen,
-   AthleteRoadmapScreen—, así que en vez de reconstruirlas aquí dentro, este
-   componente es su propio mini-navegador: un `vista` local en vez de rutas
-   de verdad (no hace falta más — solo hay cuatro sitios a los que ir, y
-   todos vuelven al mismo punto).
+   Las dos acciones de "mientras tanto" (foto inicial, peso) y "ver mi
+   anamnesis" seguían necesitando pantallas reales —CheckInScreen—, así que
+   en vez de reconstruirlas aquí dentro, este componente es su propio
+   mini-navegador: un `vista` local en vez de rutas de verdad (no hace falta
+   más — solo hay tres sitios a los que ir, y todos vuelven al mismo punto).
+   El Road map salió de aquí el 29-10 (Dani): sin plan no hay nada que ver.
 
    T7.a (18-08): "ver mi anamnesis" montaba el ProfileScreen COMPLETO, con sus
    cinco pestañas y el Sheet de Ajustes — un atleta bloqueado podía salir a
@@ -39,7 +38,7 @@ interface Props {
   onLogOut: () => void;
 }
 
-type Vista = 'espera' | 'checkin' | 'roadmap' | 'perfil';
+type Vista = 'espera' | 'checkin' | 'perfil';
 
 export default function PlanEnEsperaScreen({ profile, checkins, onLogOut }: Props) {
   const [vista, setVista] = useState<Vista>('espera');
@@ -71,7 +70,6 @@ export default function PlanEnEsperaScreen({ profile, checkins, onLogOut }: Prop
         </div>
         <div className="max-w-lg mx-auto p-4">
           {vista === 'checkin' && <CheckInScreen profile={profile} checkins={checkins} />}
-          {vista === 'roadmap' && <AthleteRoadmapScreen profile={profile} />}
           {vista === 'perfil' && (
             <div className="space-y-4">
               <MiFichaCard profile={profile} />
@@ -101,7 +99,7 @@ export default function PlanEnEsperaScreen({ profile, checkins, onLogOut }: Prop
       <div className="flex-1 min-h-0 overflow-y-auto w-full max-w-lg mx-auto px-6 py-6">
         <PlanInPreparationCard
           profile={profile}
-          onNavigate={tab => setVista(tab === 'checkin' ? 'checkin' : tab === 'roadmap' ? 'roadmap' : 'perfil')}
+          onNavigate={tab => setVista(tab === 'checkin' ? 'checkin' : 'perfil')}
         />
       </div>
     </div>
