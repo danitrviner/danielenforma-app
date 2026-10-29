@@ -8,8 +8,7 @@ import WeeklyChallengeCard from './roadmap/WeeklyChallengeCard';
 
 /* Banco de pruebas del Road map del atleta (29-10) — `/dev/roadmap`.
    Sin Firestore: el programa, los pesos y el bloque están en memoria. Enseña
-   las dos cabeceras a elegir (cita / meta) y el arranque sin fases;
-   `?v=cita|meta|arranque` una sola. */
+   el camino con fases y el arranque sin ellas; `?v=plan|arranque` una sola. */
 
 const HOY = hoyIsoLocal();
 const EMAIL = 'dev.atleta@example.com';
@@ -54,9 +53,9 @@ const LOGS: WorkoutLog[] = ASIGNACIONES.map((a, i) => ({
 }));
 
 export default function RoadmapDevHarness() {
-  const [vista, setVista] = useState<'todas' | 'cita' | 'meta' | 'arranque'>(() => {
+  const [vista, setVista] = useState<'todas' | 'plan' | 'arranque'>(() => {
     const v = new URLSearchParams(window.location.search).get('v');
-    return v === 'cita' || v === 'meta' || v === 'arranque' ? v : 'todas';
+    return v === 'plan' || v === 'arranque' ? v : 'todas';
   });
   const roadmap = useMemo(() => {
     const semanas = semanasDelPlan({ program: PROGRAMA, diets: DIETAS, pesos: PESOS, registros: [], pasos: PASOS, pasosBase: 9000, hoy: HOY });
@@ -69,35 +68,29 @@ export default function RoadmapDevHarness() {
     planPublishedAt: `${addDays(HOY, -16)}T10:00:00.000Z`, pesos: PESOS, kcalDieta: 2100,
   }), []);
   const reto = <WeeklyChallengeCard challenge={RETO} progress={{ progressValue: 8800, pct: 98, achieved: false }} />;
-  const ver = (v: 'cita' | 'meta' | 'arranque') => vista === 'todas' || vista === v;
-  const columnas = (['cita', 'meta', 'arranque'] as const).filter(ver).length;
+  const ver = (v: 'plan' | 'arranque') => vista === 'todas' || vista === v;
+  const columnas = (['plan', 'arranque'] as const).filter(ver).length;
 
   return (
     <div className="min-h-screen bg-bg text-ink p-4">
       <div className="mx-auto max-w-6xl space-y-4">
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-mono text-caption text-ink-3 uppercase tracking-widest flex-1">/dev/roadmap — datos de mentira · semana 6 de 20</p>
-          {(['todas', 'cita', 'meta', 'arranque'] as const).map(v => (
+          {(['todas', 'plan', 'arranque'] as const).map(v => (
             <button key={v} type="button" onClick={() => setVista(v)} className={`font-mono text-caption uppercase ${vista === v ? 'text-accent-ink' : 'text-ink-3'}`}>{v}</button>
           ))}
         </div>
-        <div className={`grid gap-6 ${columnas > 1 ? 'md:grid-cols-3' : 'max-w-sm'}`}>
-          {ver('cita') && (
+        <div className={`grid gap-6 ${columnas > 1 ? 'md:grid-cols-2' : 'max-w-sm'}`}>
+          {ver('plan') && (
             <div className="space-y-2">
-              <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">A · cabecera cita</p>
-              <div className="max-w-sm"><RoadmapDelAtletaVista roadmap={roadmap} frase={FRASE} cabecera="cita" reto={reto} /></div>
-            </div>
-          )}
-          {ver('meta') && (
-            <div className="space-y-2">
-              <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">B · cabecera meta</p>
-              <div className="max-w-sm"><RoadmapDelAtletaVista roadmap={roadmap} frase={FRASE} cabecera="meta" reto={reto} /></div>
+              <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">Con fases</p>
+              <div className="max-w-sm"><RoadmapDelAtletaVista roadmap={roadmap} frase={FRASE} reto={reto} /></div>
             </div>
           )}
           {ver('arranque') && (
             <div className="space-y-2">
               <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">Sin fases · arranque</p>
-              <div className="max-w-sm"><RoadmapDelAtletaVista roadmap={arranque} frase={FRASE} cabecera="cita" reto={reto} /></div>
+              <div className="max-w-sm"><RoadmapDelAtletaVista roadmap={arranque} frase={FRASE} reto={reto} /></div>
             </div>
           )}
         </div>

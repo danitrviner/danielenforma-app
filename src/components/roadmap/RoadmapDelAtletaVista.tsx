@@ -13,9 +13,8 @@ import { Icon } from '../ui';
    «desvío», la fase actual destacada, el plan entero visible, los hitos que
    salen solos.
 
-   Mejoras del 29-10 (tarde): abre con SU frase del alta (dos versiones a
-   elegir: 'cita', una tarjeta encima; 'meta', dentro del plan con el peso
-   meta), nunca se queda vacío (fase «Tu arranque» sin fases del programa),
+   Mejoras del 29-10 (tarde): abre con SU frase del alta en una tarjeta
+   encima del plan (Dani eligió esta entre dos), nunca se queda vacío (fase «Tu arranque» sin fases del programa),
    los hitos del primer mes y la cifra de fuerza en «Esta semana».
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -29,36 +28,33 @@ const COLOR_FASE: Record<NonNullable<FaseDelCamino['objetivo']> | 'null', string
 };
 const colorDe = (f: FaseDelCamino) => COLOR_FASE[f.objetivo ?? 'null'];
 
-export type CabeceraRoadmap = 'cita' | 'meta';
-
 interface Props {
   roadmap: RoadmapDelAtleta;
   /** Su objetivo con sus palabras (`goalFreeText` del alta). */
   frase?: string | null;
-  cabecera?: CabeceraRoadmap;
   /** La tarjeta del reto de la semana, que ya existe; va entre el plan y lo conseguido. */
   reto?: React.ReactNode;
   /** Logros que no salen del plan (retos conseguidos), para la tira de abajo. */
   logrosExtra?: HitoAutomatico[];
 }
 
-export default function RoadmapDelAtletaVista({ roadmap, frase, cabecera = 'cita', reto, logrosExtra = [] }: Props) {
+export default function RoadmapDelAtletaVista({ roadmap, frase, reto, logrosExtra = [] }: Props) {
   const logros = [...roadmap.hitos, ...logrosExtra].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 10);
   const laFrase = frase?.trim() || null;
   if (roadmap.camino.length === 0) {
     return (
       <div className="space-y-4">
-        {cabecera === 'cita' && <CabeceraCita frase={laFrase} roadmap={roadmap} />}
+        <CabeceraCita frase={laFrase} roadmap={roadmap} />
         <SinPlan />
         {reto}
         <Logros logros={logros} />
       </div>
     );
   }
-  return <Camino roadmap={roadmap} frase={laFrase} cabecera={cabecera} reto={reto} logros={logros} />;
+  return <Camino roadmap={roadmap} frase={laFrase} reto={reto} logros={logros} />;
 }
 
-/* ── Cabecera A · cita: su frase, en una tarjeta encima del plan ───────── */
+/* ── Cabecera: su frase, en una tarjeta encima del plan ─────────────────── */
 
 function CabeceraCita({ frase, roadmap }: { frase: string | null; roadmap: RoadmapDelAtleta }) {
   if (!frase) return null;
@@ -180,23 +176,14 @@ function Logros({ logros }: { logros: HitoAutomatico[] }) {
 
 /* ── El camino ──────────────────────────────────────────────────────────── */
 
-function Camino({ roadmap, frase, cabecera, reto, logros }: { roadmap: RoadmapDelAtleta; frase: string | null; cabecera: CabeceraRoadmap; reto?: React.ReactNode; logros: HitoAutomatico[] }) {
+function Camino({ roadmap, frase, reto, logros }: { roadmap: RoadmapDelAtleta; frase: string | null; reto?: React.ReactNode; logros: HitoAutomatico[] }) {
   const d = roadmap.dondeEstas;
   const titulo = roadmap.arranque ? 'Tu arranque' : `Tu plan · ${roadmap.camino.length} ${roadmap.camino.length === 1 ? 'fase' : 'fases'}`;
   return (
     <div className="space-y-4">
-      {cabecera === 'cita' && <CabeceraCita frase={frase} roadmap={roadmap} />}
+      <CabeceraCita frase={frase} roadmap={roadmap} />
       <section className="rounded-canvas border border-hairline bg-surface p-5">
-        {cabecera === 'meta' && frase ? (
-          /* Cabecera B · meta: su frase como titular del plan, y la meta de la fase debajo. */
-          <div className="mb-4">
-            <p className="font-display text-title-m font-black leading-tight text-ink text-pretty">«{frase}»</p>
-            {d?.fase.pesoMeta != null && <p className="mt-1 font-sans text-body-s text-accent-ink">Ahora: {d.fase.objetivoTexto}</p>}
-            <p className="mt-2 font-mono text-caption uppercase tracking-widest text-ink-3">{titulo}</p>
-          </div>
-        ) : (
-          <p className="font-sans text-caption uppercase tracking-widest text-ink-2 mb-4">{titulo}</p>
-        )}
+        <p className="font-sans text-caption uppercase tracking-widest text-ink-2 mb-4">{titulo}</p>
         <div className="flex flex-col gap-0">
           {roadmap.camino.map((f, i) => {
             const actual = f.estado === 'actual';
