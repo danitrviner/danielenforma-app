@@ -38,6 +38,7 @@ import {
   leerMenusDelAtleta, publicarMenu,
 } from './_lib/db-admin.js';
 import { uidDelCoach, leerPoliticaAutopiloto } from './_lib/fuenteAdmin.js';
+import { autopilotoCubre } from '../src/autopiloto/politica.js';
 import { politicaDeEpisodio, POLITICA_POR_DEFECTO } from '../src/autopiloto/politica.js';
 import { menusQuePublicar, planDePublicacion } from '../src/autopiloto/menuSemanal.js';
 import { detectarEpisodios } from '../src/autopiloto/detectores.js';
@@ -291,7 +292,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // ── 4. El autopiloto: detectar y ENCOLAR (28-10) ──────────────────
         // El latido no llama al modelo. Deja episodios en `episodios/*` y los
         // consume api/autopiloto.ts. Solo atletas con consentimiento aceptado;
-        // en modo sombra hasta que Dani suba la política (tanda 4).
+        // en modo sombra hasta que Dani suba la política (tanda 4). Y solo si
+        // el interruptor está encendido para este atleta (Dani, 30-10): apagado,
+        // ni episodios ni menús solos; el resto del latido sigue igual.
+        if (!autopilotoCubre(politica, email)) {
+          hecho.push('autopiloto apagado para este atleta');
+        } else {
         const onboarding = await leerOnboarding(db, email);
         const episodios = detectarEpisodios({
           email, hoy, ahora: new Date().toISOString(),
@@ -336,6 +342,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             await publicarMenu(db, plan);
           }
           hecho.push(`menú semana ${menu.semanaPrograma ?? '?'} publicado`);
+        }
         }
 
         // ── 6. Señales de acompañamiento (28-10) ───────────────────────────

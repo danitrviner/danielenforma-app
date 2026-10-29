@@ -75,6 +75,12 @@ export const NUNCA_AUTOMATICO = new Set<TipoDecision>([
 export const SIEMPRE_HUMANO = new Set<TipoDecision>(['clinico', 'renovacion']);
 
 export interface PoliticaAutopiloto {
+  /** El interruptor general (Dani, 30-10). Apagado = el latido no encola
+   *  episodios, no publica menús solos y el consumidor no llama al modelo.
+   *  Arranca APAGADO; se enciende desde Política. */
+  activo: boolean;
+  /** Vacío = todos los atletas con consentimiento. Con correos, solo esos. */
+  soloAtletas: string[];
   modo: ModoAutopiloto;
   /** Nivel por tipo cuando `modo === 'politica'`; lo que falte usa NIVEL_DESTINO. */
   nivelPorTipo: Partial<Record<TipoDecision, NivelAutonomia>>;
@@ -86,6 +92,8 @@ export interface PoliticaAutopiloto {
 }
 
 export const POLITICA_POR_DEFECTO: PoliticaAutopiloto = {
+  activo: false,
+  soloAtletas: [],
   modo: 'sombra',
   nivelPorTipo: {},
   presupuesto: { mesUsd: 50, diaUsd: 3 },
@@ -101,7 +109,12 @@ export function normalizarPolitica(raw: unknown): PoliticaAutopiloto {
     if (k in NIVEL_DESTINO && (v === 'automatico' || v === 'aviso' || v === 'proponer')) nivelPorTipo[k as TipoDecision] = v;
   }
   const n = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : d);
+  const soloAtletas = Array.isArray(r.soloAtletas)
+    ? [...new Set(r.soloAtletas.filter((e): e is string => typeof e === 'string' && e.includes('@')).map(e => e.trim().toLowerCase()))]
+    : [];
   return {
+    activo: r.activo === true,
+    soloAtletas,
     modo,
     nivelPorTipo,
     presupuesto: { mesUsd: n(r.presupuesto?.mesUsd, 50), diaUsd: n(r.presupuesto?.diaUsd, 3) },
@@ -109,6 +122,13 @@ export function normalizarPolitica(raw: unknown): PoliticaAutopiloto {
     horasAviso: n(r.horasAviso, 24) || 24,
     ...(typeof r.updatedAt === 'string' ? { updatedAt: r.updatedAt } : {}),
   };
+}
+
+/** ¿El autopiloto trabaja con este atleta? Apagado, con nadie; encendido, con
+ *  todos o solo con los de la lista. El consentimiento se comprueba aparte. */
+export function autopilotoCubre(politica: Pick<PoliticaAutopiloto, 'activo' | 'soloAtletas'>, email: string): boolean {
+  if (!politica.activo) return false;
+  return politica.soloAtletas.length === 0 || politica.soloAtletas.includes(email.trim().toLowerCase());
 }
 
 /** El nivel de la tabla para un tipo, con el nivel del atleta por encima si lo hay. */

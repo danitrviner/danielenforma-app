@@ -30,6 +30,7 @@ import { MODELO_POR_DEFECTO } from '../src/ai/costes.js';
 import { hoyIsoLocal } from '../src/utils/trainingWeek.js';
 import type { Episodio } from '../src/autopiloto/episodios.js';
 import type { AiContentBlock } from '../src/types.js';
+import { autopilotoCubre } from '../src/autopiloto/politica.js';
 
 export const config = { maxDuration: 300 };
 /** Margen para guardar y responder antes de que la plataforma corte. */
@@ -83,7 +84,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     reanudados++;
   }
 
-  const pendientes = await leerEpisodiosPendientes(db, EPISODIOS_POR_PASADA);
+  // El interruptor (Dani, 30-10): apagado, la cola se queda como está y no se
+  // llama al modelo. Encendido solo para algunos, los demás esperan apagados.
+  const politica = await leerPoliticaAutopiloto(db);
+  if (!politica.activo) {
+    res.status(200).json({ fecha: hoy, apagado: true, enEspera: enEspera.length, reanudables: reanudados, episodios: 0 });
+    return;
+  }
+  const pendientes = (await leerEpisodiosPendientes(db, EPISODIOS_POR_PASADA)).filter(e => autopilotoCubre(politica, e.athleteId));
   if (enSeco) {
     res.status(200).json({ fecha: hoy, enSeco: true, enEspera: enEspera.length, reanudables: reanudados, pendientes: pendientes.map(e => ({ id: e.id, tipo: e.tipo, estado: e.estado, ronda: e.ronda, politica: e.politica })) });
     return;
@@ -92,10 +100,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const coachUid = await uidDelCoach(db);
   const fuente = fuenteAdmin(db, coachUid);
   usarFuenteDeDatos(fuente);
-  const [doctrina, instruccionesFijas, politica, perfiles] = await Promise.all([
+  const [doctrina, instruccionesFijas, perfiles] = await Promise.all([
     leerDoctrina(db, DOCTRINA_DEFAULTS),
     leerInstruccionesFijas(db),
-    leerPoliticaAutopiloto(db),
     db.collection('user_profiles').where('role', '==', 'client').get().then(s => s.docs.map(d => d.data() as { email?: string; displayName?: string })),
   ]);
   const aliasDe = (email: string) => aliasDeAtleta(perfiles.find(p => p.email === email)?.displayName, email);
