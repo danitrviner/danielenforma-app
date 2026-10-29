@@ -4,6 +4,7 @@ import { UserProfile, WeightCheckIn, TaskType, Questionnaire, PhotoAssignment } 
 import { getTasksForAthlete, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getPhotoAssignmentsForAthlete, getProgressPhotos, getMesocycles } from '../dbService';
 import { isDueToday, isOverdue, hasAnsweredThisOccurrence, todayStr, ScheduleContext } from '../utils/questionnaireSchedule';
 import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
+import { tareasVigentes } from '../utils/tareasDelAtleta';
 import { Skeleton } from './ui';
 import { ListRow } from './ui';
 
@@ -89,7 +90,9 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
     [mesocycles, diaRevision, pausaRevisiones],
   );
 
-  const manualTasks = tasks.filter(t => t.status === 'pending');
+  // Las de ciclo (revisión, cuestionario, foto) caducan solas a la semana;
+  // antes se acumulaban vencidas desde septiembre (ver utils/tareasDelAtleta.ts).
+  const manualTasks = tareasVigentes(tasks, todayStr());
 
   const due = useMemo(
     () => assignments.filter(a => a.active && isOverdue(a, scheduleCtx) && !hasAnsweredThisOccurrence(a, responses, scheduleCtx)),

@@ -126,7 +126,9 @@ describe('lo que no avisa por su cuenta', () => {
     }));
     const a = s.find(x => x.categoria === 'ausencia')!;
     expect(a.texto).toBe(`Lleva ${DIAS_SIN_ENTRAR + 2} días sin abrir la app`);
-    expect(a.urgencia).toBe('pronto');
+    // Desde el 28-10 es «para hoy»: la pantalla no enseña `pronto`, así que
+    // como aviso con antelación no lo veía nadie.
+    expect(a.urgencia).toBe('hoy');
   });
 
   it('justo en el umbral ya avisa, un día antes no', () => {
@@ -197,7 +199,9 @@ describe('el orden y los contadores', () => {
   it('primero lo que le tiene parado, luego lo de hoy, luego los avisos', () => {
     const s = construirBandejaDelDia(entrada({
       atletas: [atleta({ planPublishedAt: undefined, lastLoginAt: `${addDays(HOY, -20)}T10:00:00.000Z` })],
-      checkins: [checkin('2026-09-14', { approved: false, coachFeedback: '' })],
+      // El check-in viejo sin contestar es «hoy»; el último check-in de hace
+      // 20 días es el aviso con antelación («pronto»).
+      checkins: [checkin(addDays(HOY, -20), { approved: false, coachFeedback: '' })],
     }));
     expect(s.map(x => x.urgencia)).toEqual(['bloqueado', 'hoy', 'pronto']);
   });
@@ -251,5 +255,86 @@ describe('los cobros vencidos', () => {
     }));
     expect(s).toHaveLength(1);
     expect(s[0].athleteName).toBe('Contacto Suelto');
+  });
+});
+
+describe('las señales de acompañamiento (28-10)', () => {
+  const senales = (p: Partial<NonNullable<UserProfile['senales']>> = {}) => ({
+    calculadoEn: HOY, ultimoRegistro: HOY, registros14d: 10, perdidas14d: 0, ultimaRespuesta: null, tieneCuestionarios: true, ...p,
+  });
+  const ausencias = (e: Partial<EntradaBandeja>) => construirBandejaDelDia(entrada(e)).filter(s => s.categoria === 'ausencia');
+
+  it('3 días sin registrar nada: para hoy, con plantilla de WhatsApp', () => {
+    const s = ausencias({ atletas: [atleta({ senales: senales({ ultimoRegistro: addDays(HOY, -3) }) })] });
+    expect(s).toHaveLength(1);
+    expect(s[0]).toMatchObject({ urgencia: 'hoy', texto: '3 días sin registrar nada', contacto: { motivo: 'sin_registrar', dias: 3 } });
+  });
+
+  it('2 días sin registrar todavía no es señal', () => {
+    expect(ausencias({ atletas: [atleta({ senales: senales({ ultimoRegistro: addDays(HOY, -2) }) })] })).toHaveLength(0);
+  });
+
+  it('3 sesiones perdidas en 14 días aunque registre otras cosas', () => {
+    const s = ausencias({ atletas: [atleta({ senales: senales({ perdidas14d: 3 }) })] });
+    expect(s[0]).toMatchObject({ texto: '3 sesiones perdidas en 14 días', contacto: { motivo: 'perdidas', perdidas: 3 } });
+  });
+
+  it('dos semanas sin contestar la revisión', () => {
+    const s = ausencias({ atletas: [atleta({ senales: senales({ ultimaRespuesta: addDays(HOY, -15) }) })] });
+    expect(s[0]).toMatchObject({ contacto: { motivo: 'sin_revision', dias: 15 } });
+  });
+
+  it('sin señales del latido cae al último login, pero ya como «para hoy»', () => {
+    const s = ausencias({ atletas: [atleta({ senales: undefined, lastLoginAt: `${addDays(HOY, -8)}T08:00:00.000Z` })] });
+    expect(s[0]).toMatchObject({ urgencia: 'hoy', contacto: { motivo: 'sin_registrar', dias: 8 } });
+  });
+
+  it('un atleta sin plan publicado no se está apagando: está sin empezar', () => {
+    const s = construirBandejaDelDia(entrada({
+      atletas: [atleta({ planPublishedAt: undefined, createdAt: `${addDays(HOY, -5)}T08:00:00.000Z`, senales: senales({ ultimoRegistro: null }) })],
+      asignacionesPorEmail: new Map(),
+    }));
+    expect(s.filter(x => x.categoria === 'ausencia')).toHaveLength(0);
+    const alta = s.find(x => x.id.endsWith('alta_parada'));
+    expect(alta).toMatchObject({ urgencia: 'hoy', texto: 'Alta sin terminar desde hace 5 días', contacto: { motivo: 'alta_parada' } });
+  });
+
+  it('un contacto reciente por ese motivo calla la señal; uno viejo no', () => {
+    const atletas = [atleta({ senales: senales({ ultimoRegistro: addDays(HOY, -4) }) })];
+    const contacto = (fecha: string) => ({ id: 'c', athleteId: 'ana@x.com', fecha, motivo: 'sin_registrar', canal: 'whatsapp' as const, createdAt: '' });
+    expect(ausencias({ atletas, contactos: [contacto(addDays(HOY, -1))] })).toHaveLength(0);
+    expect(ausencias({ atletas, contactos: [contacto(addDays(HOY, -3))] })).toHaveLength(1);
+  });
+
+  it('una revisión enviada hace más de 24 h sin respuesta del coach', () => {
+    const r = (dia: string, contestada = false) => ({
+      id: `r_${dia}`, questionnaireId: 'q', assignmentId: 'a', athleteId: 'ana@x.com', submittedAt: `${dia}T10:00:00.000Z`, answers: [],
+      respuestaCoach: contestada ? { texto: 'ok', enviadaEn: `${dia}T12:00:00.000Z` } : undefined,
+    });
+    const s = construirBandejaDelDia(entrada({ respuestas: [r(addDays(HOY, -3)), r(addDays(HOY, -3)), r(addDays(HOY, -1)), r(addDays(HOY, -6), true)] }))
+      .filter(x => x.id.endsWith('sin_respuesta'));
+    expect(s).toHaveLength(1);
+    expect(s[0].texto).toMatch(/sin contestar · 3 días · y 1 más/);
+    expect(s[0].contacto).toMatchObject({ motivo: 'sin_respuesta', fechaRevision: addDays(HOY, -3) });
+    // «vista» no basta: el atleta no lo ve.
+    const vista = construirBandejaDelDia(entrada({ respuestas: [{ ...r(addDays(HOY, -3)), reviewedAt: `${HOY}T08:00:00.000Z` }] }))
+      .filter(x => x.id.endsWith('sin_respuesta'));
+    expect(vista).toHaveLength(1);
+  });
+
+  it('una revisión de hoy todavía no es «sin contestar»', () => {
+    const s = construirBandejaDelDia(entrada({ respuestas: [{ id: 'r', questionnaireId: 'q', assignmentId: 'a', athleteId: 'ana@x.com', submittedAt: `${HOY}T09:00:00.000Z`, answers: [] }] }))
+      .filter(x => x.id.endsWith('sin_respuesta'));
+    expect(s).toHaveLength(0);
+  });
+
+  it('bloque terminado sin siguiente: le tiene parado', () => {
+    const meso = (startDate: string, weeks: number): Mesocycle => ({ id: `m_${startDate}`, athleteId: 'ana@x.com', startDate, weeks } as Mesocycle);
+    const terminado = construirBandejaDelDia(entrada({ mesociclos: [meso(addDays(HOY, -8 * 7), 6)] }))
+      .find(x => x.id.endsWith('bloque_sin_siguiente'));
+    expect(terminado).toMatchObject({ urgencia: 'bloqueado', categoria: 'plan', contacto: { motivo: 'bloque_terminado' } });
+    const conSiguiente = construirBandejaDelDia(entrada({ mesociclos: [meso(addDays(HOY, -8 * 7), 6), meso(addDays(HOY, 3), 8)] }))
+      .find(x => x.id.endsWith('bloque_sin_siguiente'));
+    expect(conSiguiente).toBeUndefined();
   });
 });

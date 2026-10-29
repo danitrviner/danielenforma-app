@@ -222,6 +222,12 @@ export interface UserProfile {
   anonimizado?: boolean;
   anonimizadoEn?: string; // ISO
 
+  /** Señales de acompañamiento que calcula el latido diario (28-10-2026).
+   *  Las escribe SOLO el servidor con el Admin SDK (está en la lista bloqueada
+   *  del `allow update` de user_profiles); la bandeja del coach las lee sin
+   *  pagar el historial de cada atleta. Ver utils/senalesDelAtleta.ts. */
+  senales?: SenalesDelAtleta;
+
   // ── Publicación del plan (T7.b, 2026-08-18) ────────────────────────────────
   // Antes la puerta de la sala de espera era `hasPlan` (asignaciones > 0), una
   // deducción: en cuanto el coach asignaba un mesociclo, el atleta veía su
@@ -235,6 +241,37 @@ export interface UserProfile {
   // propio cliente en cada arranque de sesión, ver App.tsx loadUserSession).
   // Solo para mostrarlo en la tarjeta del coach — no gatea nada.
   lastLoginAt?: string;
+}
+
+/**
+ * Lo que la bandeja del día necesita saber de un atleta sin leer sus logs:
+ * cuándo registró algo por última vez, cuántas sesiones ha perdido en dos
+ * semanas y cuándo contestó la última revisión. Lo calcula el latido cada
+ * noche (api/latido-diario.ts) con los datos que ya lee para lo demás.
+ */
+export interface SenalesDelAtleta {
+  /** Día (YYYY-MM-DD, zona del coach) en que se calcularon. */
+  calculadoEn: string;
+  /** Último día con algo registrado: entreno, peso, pasos, comida o cuestionario. */
+  ultimoRegistro: string | null;
+  /** Días distintos con registro en los últimos 14. */
+  registros14d: number;
+  /** Sesiones dadas por perdidas en los últimos 14 días. */
+  perdidas14d: number;
+  /** Última respuesta a un cuestionario (día). */
+  ultimaRespuesta: string | null;
+  tieneCuestionarios: boolean;
+}
+
+/** Constancia de que el coach escribió a un atleta fuera de la app (WhatsApp)
+ *  por una señal de la bandeja. Ver src/db/contactos.ts. */
+export interface Contacto {
+  id: string;             // `${email}_${fecha}_${motivo}`
+  athleteId: string;      // email en minúsculas
+  fecha: string;          // YYYY-MM-DD
+  motivo: string;         // MotivoContacto (utils/plantillasWhatsApp.ts)
+  canal: 'whatsapp';
+  createdAt: string;      // ISO
 }
 
 // Estado comercial del cliente. Deliberadamente separado de `role`, que es un

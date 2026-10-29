@@ -1,12 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
 import { getCrmSuscripciones, getPendingAiProposals, getMesocyclesForAthletes } from '../dbService';
+import { getContactosDesde, registrarContacto } from '../db/contactos';
 import {
   construirBandejaDelDia, contarPorUrgencia, SenalDelDia, UrgenciaSenal, CategoriaSenal,
 } from '../utils/bandejaDelDia';
-import { hoyIsoLocal } from '../utils/trainingWeek';
+import { calcularPanelRetencion, HORAS_RESPUESTA_PROMETIDA } from '../utils/panelRetencion';
+import { plantillaWhatsApp } from '../utils/plantillasWhatsApp';
+import { useRespuestasDeLaBandeja } from '../hooks/useRevisionesSinLeer';
+import { addDays, hoyIsoLocal } from '../utils/trainingWeek';
 import { revisarMenusAutomaticos } from '../services/menuSemanalAutomatico';
 import { auth } from '../firebase';
 import { ActionRow as ActionRowPrimitive, EmptyState, Icon } from './ui';
@@ -36,6 +40,18 @@ import { ActionRow as ActionRowPrimitive, EmptyState, Icon } from './ui';
    atleta. La tarjeta "Revisiones Pendientes" que vivía arriba de la
    parrilla SÍ se retira de ClientsScreen: esta pantalla la sustituye 1:1.
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Una cifra del panel de retención: valor grande, etiqueta en mono, nota
+   opcional. El tono solo cambia el color del valor: ámbar cuando pide mirar. */
+function Cifra({ etiqueta, valor, nota, tono }: { etiqueta: string; valor: string; nota?: string; tono: 'ok' | 'aviso' }) {
+  return (
+    <div className="rounded-field border border-hairline bg-surface px-3 py-2.5">
+      <p className="font-mono text-caption uppercase tracking-widest text-ink-3">{etiqueta}</p>
+      <p className={`mt-0.5 font-sans text-title-l font-bold leading-none ${tono === 'aviso' ? 'text-warning' : 'text-ink'}`}>{valor}</p>
+      {nota && <p className="mt-1 truncate font-mono text-caption text-ink-2">{nota}</p>}
+    </div>
+  );
+}
 
 function iniciales(nombre: string): string {
   const partes = nombre.trim().split(/\s+/);
@@ -75,12 +91,17 @@ const LABEL_CATEGORIA: Record<CategoriaSenal, string> = {
 
 interface Props {
   athletes: UserProfile[];
+  /** Para la bandeja de respuestas de cuestionario (misma consulta que Revisiones). */
+  coachId: string;
   checkins: WeightCheckIn[];
   assignmentsByEmail: Map<string, WorkoutAssignment[]>;
   loadingAssignments: boolean;
 }
 
-export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail, loadingAssignments }: Props) {
+/** Ventana de contactos que se bajan: los que todavía callan una señal y los que mide el panel. */
+const DIAS_DE_CONTACTOS = 28;
+
+export default function HomeCoachScreen({ athletes, coachId, checkins, assignmentsByEmail, loadingAssignments }: Props) {
   // Menús semanales que se generan solos al cambiar la dieta de la semana
   // (ver services/menuSemanalAutomatico.ts). Una vez al día, en segundo plano.
   useEffect(() => {
@@ -114,6 +135,40 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
 
   const hoyIso = hoyIsoLocal();
 
+  // Las respuestas de cuestionario de la bandeja de Revisiones (misma clave de
+  // caché: no cuesta una lectura más si esa pantalla ya se abrió) y los
+  // contactos del coach por WhatsApp (28-10). Con las dos cosas la bandeja
+  // sabe qué revisión lleva días sin contestar y a quién ya le has escrito.
+  const { responses: respuestas } = useRespuestasDeLaBandeja(coachId, true);
+  const desdeContactos = useMemo(() => addDays(hoyIso, -DIAS_DE_CONTACTOS), [hoyIso]);
+  const { data: contactos = [] } = useQuery({
+    queryKey: ['contactos', desdeContactos],
+    queryFn: () => getContactosDesde(desdeContactos),
+  });
+  const queryClient = useQueryClient();
+  const marcarContacto = useMutation({
+    mutationFn: (s: SenalDelDia) => registrarContacto({
+      athleteId: s.athleteEmail, fecha: hoyIso, motivo: s.contacto!.motivo, canal: 'whatsapp',
+    }),
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['contactos'] }); },
+  });
+  const [copiado, setCopiado] = useState<string | null>(null);
+  const escribirle = async (s: SenalDelDia) => {
+    const texto = plantillaWhatsApp(s.contacto!.motivo, { nombre: s.athleteName, hoy: hoyIso, ...s.contacto });
+    try { await navigator.clipboard.writeText(texto); } catch { /* sin portapapeles: el texto se abre igual */ }
+    setCopiado(s.id);
+    const tel = athletes.find(a => a.email === s.athleteEmail)?.telefono;
+    const numero = tel ? `${tel.prefijo}${tel.numero}`.replace(/[^\d]/g, '') : '';
+    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(texto)}`, '_blank', 'noopener');
+  };
+
+  // El panel de retención: las cuatro cifras de la revisión del 28-10, con lo
+  // que ya está cargado (ver utils/panelRetencion.ts).
+  const panel = useMemo(
+    () => calcularPanelRetencion({ atletas: athletes, respuestas, contactos, hoy: hoyIso }),
+    [athletes, respuestas, contactos, hoyIso],
+  );
+
   /* Quién necesita algo tuyo, y con cuánta prisa. La decisión vive en
      `utils/bandejaDelDia.ts`, con sus tests: aquí solo se pinta. Antes estaba
      escrita a mano en este componente y solo miraba tres cosas — lo que de
@@ -139,12 +194,14 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
       mesociclos,
       pagosVencidos,
       propuestasPorEmail,
+      respuestas,
+      contactos,
       hoy: hoyIso,
     // «Antes de que se te pase» (urgencia `pronto`) se retiró de la pantalla:
     // el coach no la usa. Se filtra aquí para que tampoco cuente en los chips
     // ni dispare el estado vacío con señales que no se pintan.
     }).filter(s => s.urgencia !== 'pronto');
-  }, [loadingAssignments, athletes, checkins, assignmentsByEmail, mesociclos, suscripciones, propuestasPendientes, hoyIso]);
+  }, [loadingAssignments, athletes, checkins, assignmentsByEmail, mesociclos, suscripciones, propuestasPendientes, respuestas, contactos, hoyIso]);
 
   const visibles = filtro === 'todas' ? senales : senales.filter(s => s.categoria === filtro);
   // Sobre `visibles`, no sobre `senales`: con un filtro de categoría activo, la
@@ -164,9 +221,32 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
 
   const hoy = new Date();
 
+  /* El panel de retención va SIEMPRE, también con la bandeja vacía: «todo al
+     día» con dos atletas apagándose no es todo al día. Cuatro cifras y, si
+     hay alguien en su primera semana, en qué día va (contacto diario
+     prometido en la venta). */
+  const panelCard = (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Retención">
+      <Cifra etiqueta="En marcha" valor={String(panel.enMarcha)} tono="ok" />
+      <Cifra etiqueta="Apagándose" valor={String(panel.apagandose)} tono={panel.apagandose > 0 ? 'aviso' : 'ok'}
+        nota={panel.callados > 0 ? `+ ${panel.callados} callado${panel.callados === 1 ? '' : 's'}` : undefined} />
+      <Cifra etiqueta="Respuesta" valor={panel.latenciaMedianaH === null ? '—' : `${panel.latenciaMedianaH} h`}
+        tono={panel.latenciaMedianaH !== null && panel.latenciaMedianaH <= HORAS_RESPUESTA_PROMETIDA ? 'ok' : 'aviso'}
+        nota={panel.pctContestadas48h === null ? 'sin revisiones' : `${panel.pctContestadas48h} % en ${HORAS_RESPUESTA_PROMETIDA} h`} />
+      <Cifra etiqueta="Sin contestar" valor={String(panel.sinContestar)} tono={panel.sinContestar > 0 ? 'aviso' : 'ok'}
+        nota={panel.sinPlan > 0 ? `${panel.sinPlan} sin plan` : undefined} />
+      {panel.primeraSemana.length > 0 && (
+        <p className="col-span-2 sm:col-span-4 font-mono text-caption text-ink-2">
+          Primera semana: {panel.primeraSemana.map(p => `${p.nombre} · día ${p.dia}`).join(' · ')}
+        </p>
+      )}
+    </div>
+  );
+
   if (senales.length === 0) {
     return (
-      <section>
+      <section className="space-y-4">
+        {panelCard}
         <EmptyState
           icon="check"
           iconTone="accent"
@@ -179,6 +259,7 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
 
   return (
     <section className="space-y-4">
+      {panelCard}
       {/* Las propuestas del asistente, en la pantalla por la que se entra.
           Su pantalla vive en /propuestas y en la barra lateral de PC, pero en
           el móvil la barra de abajo está llena (cuatro destinos al límite de
@@ -242,14 +323,39 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
           </div>
           <div className="divide-y divide-hairline overflow-hidden rounded-field border border-hairline bg-surface">
             {visibles.filter(s => s.urgencia === u).map(s => (
-              <ActionRowPrimitive
-                key={s.id}
-                initials={iniciales(s.athleteName)}
-                title={s.athleteName}
-                meta={s.texto}
-                urgent
-                onClick={() => irA(s)}
-              />
+              <div key={s.id}>
+                <ActionRowPrimitive
+                  initials={iniciales(s.athleteName)}
+                  title={s.athleteName}
+                  meta={s.texto}
+                  urgent
+                  onClick={() => irA(s)}
+                />
+                {/* La señal se resuelve escribiéndole (28-10): la plantilla
+                    se copia y se abre su WhatsApp; «Ya le he escrito» deja
+                    constancia y calla la señal unos días. */}
+                {s.contacto && (
+                  <div className="flex items-center gap-2 px-4 pb-3 -mt-1">
+                    <button
+                      type="button"
+                      onClick={() => void escribirle(s)}
+                      className="inline-flex items-center gap-1.5 rounded-control border border-accent-line bg-accent-bg px-3 py-1.5 font-mono text-caption font-bold uppercase text-accent-ink transition-colors hover:bg-accent/15"
+                    >
+                      <Icon name="chat" size="s" />
+                      {copiado === s.id ? 'Copiado' : 'Escribirle'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => marcarContacto.mutate(s)}
+                      disabled={marcarContacto.isPending}
+                      className="inline-flex items-center gap-1.5 rounded-control px-3 py-1.5 font-mono text-caption font-bold uppercase text-ink-2 transition-colors hover:bg-raised disabled:opacity-50"
+                    >
+                      <Icon name="check" size="s" />
+                      Ya le he escrito
+                    </button>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>

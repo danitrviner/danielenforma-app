@@ -170,8 +170,18 @@ service cloud.firestore {
                             .hasAny(['planStartDate', 'planDurationMonths', 'role', 'setupSummary',
                                      'currentStreak', 'maxStreak', 'estadoCrm',
                                      'fechaBaja', 'motivoBaja', 'motivoBajaDetalle', 'origen',
-                                     'planPublishedAt', 'archivadoCrm', 'diaRevision', 'pausaRevisiones']));
+                                     'planPublishedAt', 'archivadoCrm', 'diaRevision', 'pausaRevisiones',
+                                     'senales']));
       allow delete: if isCoach();
+    }
+
+    // ── contactos (28-10-2026) ───────────────────────────────────────────────
+    // «Ya le he escrito»: el coach deja constancia de que contactó a un atleta
+    // fuera de la app (WhatsApp) por una señal de la bandeja. Solo el coach lo
+    // escribe y lo lee; el atleta no tiene nada que ver aquí (lo que ve él es
+    // el mensaje en su WhatsApp). docId `${email}_${fecha}_${motivo}`.
+    match /contactos/{docId} {
+      allow read, write: if isCoach();
     }
 
     // ── checkins (auto-id; campos: userId=UID, email) ────────────────────────

@@ -407,6 +407,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       {!loadingAthletes && (
         <HomeCoachScreen
           athletes={athletes}
+          coachId={coachId}
           checkins={checkins}
           assignmentsByEmail={allAssignments}
           loadingAssignments={loadingAssignments}
