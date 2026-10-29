@@ -21,7 +21,7 @@
  * tenga que acordarse de sincronizar.
  */
 
-import { textoDelPlanCompleto } from '../utils/recorridoDelPlan';
+import { textoDelPlanCompleto } from '../utils/recorridoDelPlan.js';
 
 export type TareaId = 'mes_nuevo' | 'revision' | 'renovar_mes';
 
@@ -80,7 +80,9 @@ export const TAREAS: Tarea[] = [
     // por el motor que ve Dani. Mandar los dos es pagar dos veces por lo mismo
     // y arriesgarse a que el modelo saque sus propios porcentajes de los logs
     // crudos, que no coincidirían con los de la pantalla.
-    brief: ['estado', 'ficha', 'resumen', 'plan', 'dieta', 'nutricion', 'cuerpo', 'revisiones', 'cuestionarios'],
+    // 'ajustes' desde el 28-10: una revisión que propone un retoque de sesiones o
+    // de dieta sin saber qué corrige Dani a mano repite el error que él ya arregló.
+    brief: ['estado', 'ficha', 'resumen', 'plan', 'dieta', 'nutricion', 'cuerpo', 'revisiones', 'cuestionarios', 'ajustes'],
     prompt: (nombre, email) =>
       `TAREA: preparar la revisión de ${nombre} (${email}).\n` +
       `Empieza por get_client_brief con tarea "revision" y, justo después, get_revision_engine: eso te da la Revisión tal y como Dani la tiene delante —titulares, patrones, series por grupo, sueño y agujetas, lo que ha comido— con los mismos números que él ve en pantalla. No pidas get_training_history ni get_checkins por separado: ya los tienes ahí, pasados por el motor.\n` +

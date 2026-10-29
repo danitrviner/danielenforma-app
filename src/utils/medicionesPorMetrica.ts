@@ -1,4 +1,4 @@
-import { BodyMeasurement, BodyMetricKey, BODY_METRIC_LABELS } from '../types';
+import { BodyMeasurement, BodyMetricKey, BODY_METRIC_LABELS } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Agrupar las mediciones por métrica, para las tarjetas de Revisión

@@ -13,12 +13,12 @@ import {
   Mesocycle, NutritionProgram, NutritionPhase, PhaseType, NutritionPhaseType,
   WorkoutAssignment, WorkoutLog, Workout, TaskItem, RoadmapItem, DietCompletionLog,
   Diet, CardioSession, BodyweightLog, FoodCategory, RefeedDay,
-} from '../types';
-import { adherenciaPorKcal, dietaDelDia } from './diaDeDieta';
-import { addDays as addDaysStr } from './trainingWeek';
-import { aggregate } from './trainingReport';
-import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
-import { kcalDeIntercambio } from './macrosLegado';
+} from '../types.js';
+import { adherenciaPorKcal, dietaDelDia } from './diaDeDieta.js';
+import { addDays as addDaysStr } from './trainingWeek.js';
+import { aggregate } from './trainingReport.js';
+import { GRAMS_PER_EXCHANGE } from './nutritionConstants.js';
+import { kcalDeIntercambio } from './macrosLegado.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
 
 // ── Fechas — mismo patrón que trainingWeek.ts: todo en YYYY-MM-DD local,

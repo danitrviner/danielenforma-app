@@ -3,6 +3,7 @@ import { bulkUpsertKnowledgeNotes } from '../dbService';
 import { probarConexionProxy } from '../ai/aiClient';
 import { KnowledgeNote } from '../types';
 import { Button, Icon } from './ui';
+import PoliticaAutopiloto from './PoliticaAutopiloto';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Puesta a punto del asistente
@@ -59,6 +60,8 @@ export default function HerramientasAsistente() {
 
   return (
     <div className="space-y-4">
+      <PoliticaAutopiloto />
+
       <div className="bg-surface border border-hairline rounded-surface px-5 py-[18px] space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">

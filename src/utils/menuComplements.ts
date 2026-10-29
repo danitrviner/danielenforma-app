@@ -1,4 +1,4 @@
-import { MealItem, DietMode, FoodCategory } from '../types';
+import { MealItem, DietMode, FoodCategory } from '../types.js';
 
 // Los "extras" que acompañan al plato de una comida generada: lo que cierra el
 // hueco entre lo que da la receta y lo que pide el día.

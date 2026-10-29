@@ -1,5 +1,5 @@
-import type { DietCompletionLog, DietItem } from '../types';
-import { exchangeToKcal } from './nutritionConstants';
+import type { DietCompletionLog, DietItem } from '../types.js';
+import { exchangeToKcal } from './nutritionConstants.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Recientes y frecuentes del Diario (D-03)

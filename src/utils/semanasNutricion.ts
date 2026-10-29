@@ -1,13 +1,13 @@
 import type {
   ReglaDePeso, DietCompletionLog,
   Diet, DietMeal, NutritionProgram, AjusteDeComida, CambioNutricionSemana, MacroAjustable, WeekDay, Suplemento, NutritionPhase,
-} from '../types';
-import { resolveSlots, SLOT_LABEL } from './mealDistribution';
-import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
-import { addToPlaced } from './exchangeHelpers';
-import { objetivoDeDieta } from './macrosLegado';
-import { macrosDesdeGramos } from './macros';
-import type { FoodCategory } from '../types';
+} from '../types.js';
+import { resolveSlots, SLOT_LABEL } from './mealDistribution.js';
+import { GRAMS_PER_EXCHANGE } from './nutritionConstants.js';
+import { addToPlaced } from './exchangeHelpers.js';
+import { objetivoDeDieta } from './macrosLegado.js';
+import { macrosDesdeGramos } from './macros.js';
+import type { FoodCategory } from '../types.js';
 
 /* La periodización nutricional semana a semana. Las fases dicen QUÉ dieta toca
    (déficit, mantenimiento…); esto dice cómo se ajusta esa dieta dentro de la

@@ -64,6 +64,9 @@ const SIN_DATOS_DEL_ATLETA: Record<string, string> = {
   // entera. El detalle con nombres va en la respuesta HTTP y en los logs de la
   // función, que caducan solos.
   latidos: 'solo recuentos de la pasada diaria, sin correos ni ids de atleta',
+  // Lo mismo para el consumidor del autopiloto (api/autopiloto.ts): un resumen
+  // por pasada con recuentos y coste, sin correos ni ids de episodio.
+  autopiloto: 'solo recuentos y coste de cada pasada del autopiloto, sin correos ni ids de atleta',
   // Ruido del parseo: `match /databases/{database}/documents` es el bloque raíz.
   databases: 'no es una colección, es el nodo raíz de las reglas',
 };

@@ -12,8 +12,8 @@
 import {
   Diet, Mesocycle, MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, MuscleGroupConfig,
   NutritionProgram, NutritionProgramProposalPayload,
-} from '../types';
-import { objetivoDeDieta } from '../utils/macrosLegado';
+} from '../types.js';
+import { objetivoDeDieta } from '../utils/macrosLegado.js';
 
 const MACROS_DE_DIETA = [['p', 'Proteína'], ['hc', 'Hidratos'], ['g', 'Grasa']] as const;
 

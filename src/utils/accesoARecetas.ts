@@ -13,7 +13,7 @@
    Aquí solo vive la lógica pura; los documentos están en db/recipes.ts.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-import type { PaqueteDeRecetas } from './seleccionDeRecetas';
+import type { PaqueteDeRecetas } from './seleccionDeRecetas.js';
 
 export type ModoRecetario = 'todas' | 'recomendadas';
 

@@ -1,11 +1,11 @@
 import {
   Exercise, Mesocycle, MuscleGroup, Questionnaire, QuestionnaireResponse, WorkoutAssignment, WorkoutLog,
-} from '../types';
-import { computeAverageRir } from './rirStats';
-import { adherenciaDeMesociclo } from './adherence';
-import { grupoDesdeEtiqueta, esSeñalDoms } from '../data/questionnaireSignals';
-import { seriesRealizadasPorGrupo } from './programacion';
-import { addDays } from './trainingWeek';
+} from '../types.js';
+import { computeAverageRir } from './rirStats.js';
+import { adherenciaDeMesociclo } from './adherence.js';
+import { grupoDesdeEtiqueta, esSeñalDoms } from '../data/questionnaireSignals.js';
+import { seriesRealizadasPorGrupo } from './programacion.js';
+import { addDays } from './trainingWeek.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // HISTORIAL DE VOLUMEN — lo que pasó en el bloque anterior, en la forma exacta

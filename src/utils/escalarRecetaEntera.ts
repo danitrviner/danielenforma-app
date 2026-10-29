@@ -1,5 +1,5 @@
-import { Recipe } from '../types';
-import { roundQuarter } from './exchangeHelpers';
+import { Recipe } from '../types.js';
+import { roundQuarter } from './exchangeHelpers.js';
 
 /**
  * Escala una receta ENTERA por un factor: intercambios, gramos, kcal y macros.

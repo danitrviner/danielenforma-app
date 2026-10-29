@@ -1,10 +1,10 @@
-import type { Diet, DietCompletionLog, DietItem, FoodCategory, Macros } from '../types';
-import { comidasDelDia, cupoDelDia, toleranciaDelDiaKcal, BANDA_EN_OBJETIVO_MIN_KCAL } from './diaDeDieta';
-import { itemWeightLabel, foodNameShort, round2 } from './exchangeHelpers';
-import { macrosDeIntercambios, macrosDeLinea, macrosDeLineas, objetivoDelRegistro } from './macrosLegado';
-import { MACROS_CERO, redondearMacros, sumarMacros } from './macros';
-import { addDays, diasEntreFechas } from './trainingWeek';
-import { slotPercents } from './slotWeights';
+import type { Diet, DietCompletionLog, DietItem, FoodCategory, Macros } from '../types.js';
+import { comidasDelDia, cupoDelDia, toleranciaDelDiaKcal, BANDA_EN_OBJETIVO_MIN_KCAL } from './diaDeDieta.js';
+import { itemWeightLabel, foodNameShort, round2 } from './exchangeHelpers.js';
+import { macrosDeIntercambios, macrosDeLinea, macrosDeLineas, objetivoDelRegistro } from './macrosLegado.js';
+import { MACROS_CERO, redondearMacros, sumarMacros } from './macros.js';
+import { addDays, diasEntreFechas } from './trainingWeek.js';
+import { slotPercents } from './slotWeights.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUÉ HA COMIDO — el registro de comida del atleta, listo para contárselo.

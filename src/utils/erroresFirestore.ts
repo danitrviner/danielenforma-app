@@ -1,4 +1,4 @@
-import { esFalloDePermisos, isLocalBypassActive } from '../db/core';
+import { esFalloDePermisos, isLocalBypassActive } from '../db/core.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Mensajes de error honestos — corrige P1-6 de la auditoría visual.

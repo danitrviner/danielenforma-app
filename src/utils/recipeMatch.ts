@@ -1,15 +1,15 @@
-import type { Recipe, BudgetVec, DietType, FoodCategory, WeekDay, Macros } from '../types';
-import { macrosDeReceta } from './macrosDeReceta';
-import { type ListaDeMenu } from './accesoARecetas';
-import { aplicarSeleccion, type PaqueteDeRecetas, type SeleccionDeRecetas } from './seleccionDeRecetas';
-import { recetasOcultas, type AmbitoDeRegla, type ReglaDeReceta } from './reglasDeReceta';
-import { superaElTiempo } from './tiempoDeReceta';
-import { ingredientMatch, violatesDietType } from './foodPrefs';
-import { violatesHealthConditions } from './dietaryRestrictions';
-import { normalizarTexto } from './busqueda';
-import { dishType, DishType } from './dishTypes';
-import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
-import { snapExchanges } from './exchangeRounding';
+import type { Recipe, BudgetVec, DietType, FoodCategory, WeekDay, Macros } from '../types.js';
+import { macrosDeReceta } from './macrosDeReceta.js';
+import { type ListaDeMenu } from './accesoARecetas.js';
+import { aplicarSeleccion, type PaqueteDeRecetas, type SeleccionDeRecetas } from './seleccionDeRecetas.js';
+import { recetasOcultas, type AmbitoDeRegla, type ReglaDeReceta } from './reglasDeReceta.js';
+import { superaElTiempo } from './tiempoDeReceta.js';
+import { ingredientMatch, violatesDietType } from './foodPrefs.js';
+import { violatesHealthConditions } from './dietaryRestrictions.js';
+import { normalizarTexto } from './busqueda.js';
+import { dishType, DishType } from './dishTypes.js';
+import { GRAMS_PER_EXCHANGE } from './nutritionConstants.js';
+import { snapExchanges } from './exchangeRounding.js';
 
 // Generic L1 distance between a target and an actual macro/exchange vector.
 // Shared by menuEngine's recipe ranking (HC/PROT/GRASA exchange fit) and the

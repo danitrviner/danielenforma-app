@@ -1,4 +1,4 @@
-import { normalizeStr } from './foodPrefs';
+import { normalizeStr } from './foodPrefs.js';
 
 // Ingredient substitution for the menu viewer. The athlete can swap one
 // ingredient of a recipe for a genuinely interchangeable one — same food type

@@ -1,8 +1,8 @@
-import type { Recipe, WeekDay } from '../types';
-import { dishType, type DishType } from './dishTypes';
-import { normalizeStr } from './foodPrefs';
-import { filtrarPorLista, MIN_RECETAS_DE_LISTA, type ListaDeMenu } from './accesoARecetas';
-import type { AmbitoDeRegla } from './reglasDeReceta';
+import type { Recipe, WeekDay } from '../types.js';
+import { dishType, type DishType } from './dishTypes.js';
+import { normalizeStr } from './foodPrefs.js';
+import { filtrarPorLista, MIN_RECETAS_DE_LISTA, type ListaDeMenu } from './accesoARecetas.js';
+import type { AmbitoDeRegla } from './reglasDeReceta.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Qué recetas usa el generador con cada dieta de un atleta

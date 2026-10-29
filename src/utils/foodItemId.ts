@@ -1,5 +1,5 @@
-import { slugify } from './maquinaId';
-import { DietMode, FoodCategory } from '../types';
+import { slugify } from './maquinaId.js';
+import { DietMode, FoodCategory } from '../types.js';
 
 // T14 (18-08). Mismo problema y misma cura que maquinaId.ts: `foodItems` se
 // sembraba con `addDoc` (ID automático) tras una guarda que solo mira "¿está

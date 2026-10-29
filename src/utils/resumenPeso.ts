@@ -1,4 +1,4 @@
-import { lunesDe } from './cardioProgression';
+import { lunesDe } from './cardioProgression.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Lo que se lee de la gráfica de peso sin tener que adivinarlo (28-10-2026)

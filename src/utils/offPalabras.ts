@@ -1,4 +1,4 @@
-import { normalizarTexto } from './busqueda';
+import { normalizarTexto } from './busqueda.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Buscador por nombre sobre TODA la copia de Open Food Facts

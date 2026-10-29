@@ -1,6 +1,6 @@
-import type { FoodCategory, Macros, MenuComplement, MenuDay, MenuMeal, MenuRacionExtra } from '../types';
-import { macrosDeIntercambios } from './macrosLegado';
-import { MACROS_CERO, redondearMacros, sumarMacros } from './macros';
+import type { FoodCategory, Macros, MenuComplement, MenuDay, MenuMeal, MenuRacionExtra } from '../types.js';
+import { macrosDeIntercambios } from './macrosLegado.js';
+import { MACROS_CERO, redondearMacros, sumarMacros } from './macros.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    kcal y gramos de un menú semanal guardado (10-2026)

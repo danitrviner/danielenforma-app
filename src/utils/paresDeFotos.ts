@@ -1,4 +1,4 @@
-import { ProgressPhoto, PhotoView, BodyweightLog } from '../types';
+import { ProgressPhoto, PhotoView, BodyweightLog } from '../types.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Elegir QUÉ DOS FOTOS se comparan.

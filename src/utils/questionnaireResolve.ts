@@ -1,4 +1,4 @@
-import { Questionnaire, QuestionnaireAssignment, QuestionnaireQuestion } from '../types';
+import { Questionnaire, QuestionnaireAssignment, QuestionnaireQuestion } from '../types.js';
 
 // Aplica los overrides de personalización de una asignación sobre la plantilla
 // maestra de un cuestionario: oculta, reformula, cambia obligatoriedad, añade

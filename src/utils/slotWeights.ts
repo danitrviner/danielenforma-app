@@ -17,7 +17,7 @@
 //
 // Módulo hoja, sin imports de menuEngine ni de mealDistribution, para que los
 // dos puedan usarlo sin crear un ciclo entre ellos.
-import { HungerProfile } from '../types';
+import { HungerProfile } from '../types.js';
 
 /** Reparto de referencia por franja. Son PESOS relativos, no porcentajes: lo
  *  que importa es la proporción entre ellos, y quien los usa los normaliza. */

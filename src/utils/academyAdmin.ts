@@ -1,4 +1,4 @@
-import type { AcademyAccess, AcademyCourse, AcademyLesson, AcademyProgress } from '../types';
+import type { AcademyAccess, AcademyCourse, AcademyLesson, AcademyProgress } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Training Lab, lado coach: acceso por curso, orden y progreso.

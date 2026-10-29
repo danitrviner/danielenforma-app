@@ -21,7 +21,7 @@
  *     (Dani, 23-10).
  *  RIR mínimo 0: nunca propone «al fallo» (eso es una técnica aparte).
  */
-import type { MuscleGroup, WorkoutExercise } from '../../types'
+import type { MuscleGroup, WorkoutExercise } from '../../types.js'
 import type { MotorCdg } from './motor.js'
 import { seriesProgramadas, type NombreCdgDe } from './adaptadores.js'
 import { ZONAS_IEM, iemPorZona, type ZonaIem } from './zonas.js'

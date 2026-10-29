@@ -1,4 +1,4 @@
-import { Diet, AthleteDietConfig, WeekDay } from '../types';
+import { Diet, AthleteDietConfig, WeekDay } from '../types.js';
 
 // Resumen de una fila para Hoy (F3.11, módulo 8: "la nutrición se resume en
 // una fila de progreso, nunca repite el detalle del módulo de Nutrición").

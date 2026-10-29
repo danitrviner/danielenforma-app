@@ -1,7 +1,7 @@
-import { WorkoutLog, Exercise } from '../types';
-import { weightedGroupsOf } from './trainingReport';
-import { MovementPattern, PATTERN_LABELS, patronesDeGrupo } from './movementPatterns';
-import { DataPoint, weekKey } from './seriesCorrelation';
+import { WorkoutLog, Exercise } from '../types.js';
+import { weightedGroupsOf } from './trainingReport.js';
+import { MovementPattern, PATTERN_LABELS, patronesDeGrupo } from './movementPatterns.js';
+import { DataPoint, weekKey } from './seriesCorrelation.js';
 
 // Series temporales de tonelaje por patrón, para el panel de correlaciones.
 // Las tablas de patrones de cierreMesociclo.ts dan UN número por mesociclo

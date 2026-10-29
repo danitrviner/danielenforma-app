@@ -6,7 +6,7 @@
  * la hoja. Las fórmulas viven en seguimiento.ts (validadas contra la hoja); aquí
  * solo se agrupan los datos de la app y se deciden las ventanas de semanas.
  */
-import type { WorkoutExercise, WorkoutLog } from '../../types'
+import type { WorkoutExercise, WorkoutLog } from '../../types.js'
 import { mesocycleWeekNumber, resolverEjercicioDelMeso } from '../progression.js'
 import type { MotorCdg } from './motor.js'
 import { cargaProgramada, semanaRealizadaDesdeLogs, type NombreCdgDe } from './adaptadores.js'

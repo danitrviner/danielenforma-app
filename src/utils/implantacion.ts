@@ -1,9 +1,9 @@
-import { CoachClientTask } from '../types';
-import { SetupItem, SetupResult, SetupStatus } from './clientSetup';
+import { CoachClientTask } from '../types.js';
+import { SetupItem, SetupResult, SetupStatus } from './clientSetup.js';
 import {
   PasoDelRecorrido, BloqueRecorrido, MetaBloque, ORDEN_BLOQUES,
   BLOQUES_RECORRIDO, PASOS_DEL_RECORRIDO, idDePaso,
-} from './recorridoDelPlan';
+} from './recorridoDelPlan.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // IMPLANTACIÓN — el estado de cada paso del recorrido.

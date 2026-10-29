@@ -14,11 +14,11 @@
  * generador de rutinas del editor de mesociclos, que elige con el mismo
  * criterio. Aquí solo queda el texto.
  */
-import { Exercise, MUSCLE_LABELS, MUSCLE_ORDER, MuscleGroup, Workout } from '../types';
-import { calcularPerfilProgramacion } from '../utils/perfilProgramacion';
+import { Exercise, MUSCLE_LABELS, MUSCLE_ORDER, MuscleGroup, Workout } from '../types.js';
+import { calcularPerfilProgramacion } from '../utils/perfilProgramacion.js';
 
-export { calcularPerfilProgramacion } from '../utils/perfilProgramacion';
-export type { PerfilEjercicio } from '../utils/perfilProgramacion';
+export { calcularPerfilProgramacion } from '../utils/perfilProgramacion.js';
+export type { PerfilEjercicio } from '../utils/perfilProgramacion.js';
 
 /** El bloque tal y como lo lee el modelo. Vacío si no hay rutinas todavía. */
 export function renderPerfilProgramacion(workouts: Workout[], exercises: Exercise[]): string {

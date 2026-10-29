@@ -1,6 +1,6 @@
-import { WorkoutExercise, WorkoutEntryLog } from '../types';
-import { expandSetGroups } from './setGroups';
-import { seriesPrincipales } from './tecnicaDeSerie';
+import { WorkoutExercise, WorkoutEntryLog } from '../types.js';
+import { expandSetGroups } from './setGroups.js';
+import { seriesPrincipales } from './tecnicaDeSerie.js';
 
 /* Doble progresión: se sube la carga cuando el atleta llegó al TOPE del rango
    de repeticiones con el esfuerzo pautado (su RIR igual o mayor que el del

@@ -1,4 +1,4 @@
-import { normalizarTexto } from './busqueda';
+import { normalizarTexto } from './busqueda.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Lo que el atleta escribe vs. cómo se llama en el banco

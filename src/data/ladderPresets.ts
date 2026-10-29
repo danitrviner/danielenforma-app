@@ -4,8 +4,8 @@
 // habilidades (dominadas lastradas, muscle-up...). El coach carga una plantilla
 // en LevelLadderEditor y la ajusta por cliente.
 
-import { LevelLadder } from '../types';
-import { DEFAULT_LEVEL_LADDER } from './defaultLevelLadder';
+import { LevelLadder } from '../types.js';
+import { DEFAULT_LEVEL_LADDER } from './defaultLevelLadder.js';
 
 export interface LadderPreset {
   id: 'principiante' | 'intermedio' | 'avanzado';

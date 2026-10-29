@@ -1,8 +1,8 @@
-import { WarmupSet, WorkoutSetLog } from '../../types';
-import { rmDeSerie } from '../oneRepMax';
-import { calculateWarmupSets } from './WarmupCalculator';
-import { FALLBACK_RAMP, MAX_STEPS, MAX_TOP_FRACTION, MIN_START_FRACTION, MIN_STEPS } from './constants';
-import { RampParams, WarmupFactor, WarmupResolvedContext } from './types';
+import { WarmupSet, WorkoutSetLog } from '../../types.js';
+import { rmDeSerie } from '../oneRepMax.js';
+import { calculateWarmupSets } from './WarmupCalculator.js';
+import { FALLBACK_RAMP, MAX_STEPS, MAX_TOP_FRACTION, MIN_START_FRACTION, MIN_STEPS } from './constants.js';
+import { RampParams, WarmupFactor, WarmupResolvedContext } from './types.js';
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));

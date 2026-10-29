@@ -1,6 +1,6 @@
-import type { DietMeal, FoodCategory } from '../types';
-import { addToPlaced } from './exchangeHelpers';
-import { exchangeToKcal, GRAMS_PER_EXCHANGE } from './nutritionConstants';
+import type { DietMeal, FoodCategory } from '../types.js';
+import { addToPlaced } from './exchangeHelpers.js';
+import { exchangeToKcal, GRAMS_PER_EXCHANGE } from './nutritionConstants.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Calorías y macros de lo comido en un día (D-02)

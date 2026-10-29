@@ -1,6 +1,6 @@
-import type { MuscleGroup, Questionnaire, QuestionnaireQuestion, QuestionnaireResponse } from '../types';
-import { MUSCLE_ORDER } from '../types';
-import { esSeñalDoms, grupoDesdeEtiqueta } from '../data/questionnaireSignals';
+import type { MuscleGroup, Questionnaire, QuestionnaireQuestion, QuestionnaireResponse } from '../types.js';
+import { MUSCLE_ORDER } from '../types.js';
+import { esSeñalDoms, grupoDesdeEtiqueta } from '../data/questionnaireSignals.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Agujetas de todos los grupos en una sola gráfica

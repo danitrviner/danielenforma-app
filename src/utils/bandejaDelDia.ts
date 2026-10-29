@@ -1,9 +1,9 @@
-import { Contacto, Mesocycle, NutritionProgram, QuestionnaireResponse, UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
-import { addDays, diasEntreFechas, isoLocal } from './trainingWeek';
-import { DIAS_AVISO_RENOVACION } from './calidadDelPlan';
-import type { MotivoContacto } from './plantillasWhatsApp';
-import { diaDePlan, senalPrimeraSemana } from './primeraSemana';
-import { diasHastaFinDePlan, DIAS_ULTIMOS_DEL_PLAN } from './cierreParaAtleta';
+import { Contacto, Mesocycle, NutritionProgram, QuestionnaireResponse, UserProfile, WeightCheckIn, WorkoutAssignment } from '../types.js';
+import { addDays, diasEntreFechas, isoLocal } from './trainingWeek.js';
+import { DIAS_AVISO_RENOVACION } from './calidadDelPlan.js';
+import type { MotivoContacto } from './plantillasWhatsApp.js';
+import { diaDePlan, senalPrimeraSemana } from './primeraSemana.js';
+import { diasHastaFinDePlan, DIAS_ULTIMOS_DEL_PLAN } from './cierreParaAtleta.js';
 
 /** Día del plan en que se celebra el primer mes. */
 export const DIA_PRIMER_MES = 28;

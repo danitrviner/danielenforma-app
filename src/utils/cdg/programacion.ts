@@ -5,7 +5,7 @@
  * `resolverEjercicioDelMeso`) y suma IF, IEM, estrés articular y tiempo con el
  * motor CDG. No cambia ninguna fórmula: solo agrupa lo que el motor ya calcula.
  */
-import type { WorkoutExercise } from '../../types'
+import type { WorkoutExercise } from '../../types.js'
 import { SEGUNDOS_BASE_SERIE, TECNICA_SEGUNDOS, iemCompuesto, type MotorCdg } from './motor.js'
 import { seriesProgramadas, type NombreCdgDe } from './adaptadores.js'
 

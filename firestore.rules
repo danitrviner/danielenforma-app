@@ -774,6 +774,19 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ── episodios (la cola del autopiloto) y autopiloto (resumen por pasada) ──
+    // Los escribe el servidor (latido y api/autopiloto.ts) con el SDK de
+    // administración; el coach los lee en su centro de supervisión. El atleta
+    // no tiene nada que hacer aquí (sus revisiones las encola el latido).
+    match /episodios/{id} {
+      allow read: if isCoach();
+      allow write: if false;
+    }
+    match /autopiloto/{id} {
+      allow read: if isCoach();
+      allow write: if false;
+    }
+
     // ── tasks (athleteId = EMAIL) ────────────────────────────────────────────
     match /tasks/{docId} {
       allow read: if isCoach()

@@ -1,7 +1,7 @@
-import { Questionnaire, QuestionnaireResponse } from '../types';
-import { DataPoint } from './seriesCorrelation';
-import { ewmaDeSeñal } from './wellnessTrend';
-import { domsCronicoGlobal, domsCronicoGlobalEn } from './domsCronico';
+import { Questionnaire, QuestionnaireResponse } from '../types.js';
+import { DataPoint } from './seriesCorrelation.js';
+import { ewmaDeSeñal } from './wellnessTrend.js';
+import { domsCronicoGlobal, domsCronicoGlobalEn } from './domsCronico.js';
 
 // IRP — Índice de Readiness Psicofisiológico. Sueño × (10 − estrés −
 // DOMS_crónico) / 10. Usa el valor EWMA más reciente de sueño/estrés (no el

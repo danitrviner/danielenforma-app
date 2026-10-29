@@ -1,5 +1,5 @@
-import { Questionnaire, QuestionnaireResponse } from '../types';
-import { DataPoint } from './seriesCorrelation';
+import { Questionnaire, QuestionnaireResponse } from '../types.js';
+import { DataPoint } from './seriesCorrelation.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // LECTURA GENÉRICA DE SEÑALES — complementa a volumeHistory.ts::leerFeedback,

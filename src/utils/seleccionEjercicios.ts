@@ -1,6 +1,6 @@
-import { Exercise, MuscleGroup, Workout, WorkoutLog } from '../types';
-import { calcularPerfilProgramacion, PerfilEjercicio } from './perfilProgramacion';
-import { normalizarTexto } from './busqueda';
+import { Exercise, MuscleGroup, Workout, WorkoutLog } from '../types.js';
+import { calcularPerfilProgramacion, PerfilEjercicio } from './perfilProgramacion.js';
+import { normalizarTexto } from './busqueda.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    QUÉ EJERCICIO PONER — con el criterio de Dani, no por orden alfabético.

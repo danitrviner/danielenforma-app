@@ -1,6 +1,6 @@
-import type { WeekDay } from '../types';
-import type { ModoRecetario } from './accesoARecetas';
-import type { SeleccionDeRecetas } from './seleccionDeRecetas';
+import type { WeekDay } from '../types.js';
+import type { ModoRecetario } from './accesoARecetas.js';
+import type { SeleccionDeRecetas } from './seleccionDeRecetas.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Reglas del coach sobre las recetas de UN atleta

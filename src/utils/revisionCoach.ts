@@ -1,25 +1,25 @@
 import {
   WorkoutLog, Exercise, Mesocycle, MuscleGroup, BodyweightLog,
   Questionnaire, QuestionnaireResponse, WeightCheckIn, MUSCLE_ORDER,
-} from '../types';
+} from '../types.js';
 import {
   buildTrainingReport, TrainingReport, ExercisePerf, ComparisonMode, resolveWindows,
-} from './trainingReport';
+} from './trainingReport.js';
 import {
   buildMovementPatternReport, MovementPattern, PatternPerf, patronesDeGrupo, PATTERN_LABELS,
-} from './movementPatterns';
-import { seriesRealizadasPorGrupo } from './programacion';
-import { construirMapaCalor, CeldaMapaCalor } from './mapaCalorCorporal';
-import { VolumeLandmark, VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
-import { addDays, hoyIsoLocal } from './trainingWeek';
-import { nombreDeMeso } from './nombresMeso';
-import { mesocycleWeekNumber } from './progression';
-import { ewmaDeSeñal } from './wellnessTrend';
-import { ewmaDeSeriePorSesion } from './loadTrend';
-import { computeIRP, historialIRP, IRPResult } from './readinessIndex';
-import { domsCronicoDeGrupo, esDomsCronico } from './domsCronico';
-import { DataPoint } from './seriesCorrelation';
-import { pesoRepresentativo } from './verificacionObjetivo';
+} from './movementPatterns.js';
+import { seriesRealizadasPorGrupo } from './programacion.js';
+import { construirMapaCalor, CeldaMapaCalor } from './mapaCalorCorporal.js';
+import { VolumeLandmark, VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks.js';
+import { addDays, hoyIsoLocal } from './trainingWeek.js';
+import { nombreDeMeso } from './nombresMeso.js';
+import { mesocycleWeekNumber } from './progression.js';
+import { ewmaDeSeñal } from './wellnessTrend.js';
+import { ewmaDeSeriePorSesion } from './loadTrend.js';
+import { computeIRP, historialIRP, IRPResult } from './readinessIndex.js';
+import { domsCronicoDeGrupo, esDomsCronico } from './domsCronico.js';
+import { DataPoint } from './seriesCorrelation.js';
+import { pesoRepresentativo } from './verificacionObjetivo.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // REVISIÓN DEL COACH — el motor de la pantalla que Dani graba en vídeo para

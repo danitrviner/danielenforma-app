@@ -1,9 +1,9 @@
-import { MuscleGroup, MuscleGroupConfig, MUSCLE_ORDER, MUSCLE_LABELS_SHORT, MUSCLE_LABELS, RepartoPropio, Mesocycle } from '../types';
-import { DAY_TYPE_MUSCLES, DESCANSO, repartoDelMesociclo, gruposPorSesion } from './trainingSplits';
-import { isStale } from './repartoDesactualizado';
-import { repartoImplicito } from './reordenarMeso';
-import { SERIES_POR_DIA_TOPE, SERIES_POR_SESION } from './volumeSuggestion';
-import { splitEvenly } from './programacion';
+import { MuscleGroup, MuscleGroupConfig, MUSCLE_ORDER, MUSCLE_LABELS_SHORT, MUSCLE_LABELS, RepartoPropio, Mesocycle } from '../types.js';
+import { DAY_TYPE_MUSCLES, DESCANSO, repartoDelMesociclo, gruposPorSesion } from './trainingSplits.js';
+import { isStale } from './repartoDesactualizado.js';
+import { repartoImplicito } from './reordenarMeso.js';
+import { SERIES_POR_DIA_TOPE, SERIES_POR_SESION } from './volumeSuggestion.js';
+import { splitEvenly } from './programacion.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Calculadora de reparto por frecuencias

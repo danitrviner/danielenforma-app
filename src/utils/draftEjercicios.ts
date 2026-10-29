@@ -1,7 +1,7 @@
-import type { Exercise, Mesocycle, MuscleGroup, WorkoutLog } from '../types';
-import { SERIES_MAX_POR_EJERCICIO } from './programacion';
-import { bloquesSeguidosCon, cubreElMaterial } from './seleccionEjercicios';
-import { exerciseBestProgress, exerciseWeightTrend } from './athleteMetrics';
+import type { Exercise, Mesocycle, MuscleGroup, WorkoutLog } from '../types.js';
+import { SERIES_MAX_POR_EJERCICIO } from './programacion.js';
+import { bloquesSeguidosCon, cubreElMaterial } from './seleccionEjercicios.js';
+import { exerciseBestProgress, exerciseWeightTrend } from './athleteMetrics.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Draft de ejercicios

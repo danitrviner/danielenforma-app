@@ -1,7 +1,7 @@
-import { Workout, WorkoutEntryLog } from '../types';
-import { expandSetGroups } from './setGroups';
-import { sugerirCarga } from './cargaSugerida';
-import { segmentosProgramados, seriesPrincipales } from './tecnicaDeSerie';
+import { Workout, WorkoutEntryLog } from '../types.js';
+import { expandSetGroups } from './setGroups.js';
+import { sugerirCarga } from './cargaSugerida.js';
+import { segmentosProgramados, seriesPrincipales } from './tecnicaDeSerie.js';
 
 /** Fila de entrada del editor de series — mismo shape que `SetInput` en
  * TrainingScreen.tsx, extraído aquí para poder testear el prerelleno sin

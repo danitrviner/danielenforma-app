@@ -1,4 +1,4 @@
-import type { BudgetVec } from '../types';
+import type { BudgetVec } from '../types.js';
 
 // Redondeo de los intercambios de una receta a valores "limpios" (enteros),
 // manteniendo el TOTAL prácticamente intacto.

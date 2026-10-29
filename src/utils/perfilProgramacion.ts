@@ -1,4 +1,4 @@
-import { Exercise, MUSCLE_ORDER, MuscleGroup, Workout } from '../types';
+import { Exercise, MUSCLE_ORDER, MuscleGroup, Workout } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CÓMO PROGRAMA DANI — lo que de verdad pone, por grupo, con sus números.

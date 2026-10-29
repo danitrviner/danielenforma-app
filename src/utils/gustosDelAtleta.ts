@@ -1,6 +1,6 @@
-import type { Recipe, WeeklyMenu } from '../types';
-import { dishType, type DishType } from './dishTypes';
-import { normalizeStr } from './foodPrefs';
+import type { Recipe, WeeklyMenu } from '../types.js';
+import { dishType, type DishType } from './dishTypes.js';
+import { normalizeStr } from './foodPrefs.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Lo que el atleta ha hecho con sus menús (Dani, 27-10-2026)

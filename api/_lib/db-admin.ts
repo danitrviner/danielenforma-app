@@ -15,14 +15,16 @@
 // atleta viven en `src/utils/latidoDiario.ts` y en `src/utils/motorRetoSemanal.ts`,
 // que no saben nada de Firestore. Este fichero solo sabe leer y escribir.
 import type {
+  AiProposal, AppNotification, AthleteDietConfig, BodyweightLog, CardioSession, Diet, WeightCheckIn,
   SenalesDelAtleta, MensajeCoach,
-  AppNotification, AthleteDietConfig, BodyweightLog, CardioSession, Diet,
   DietCompletionLog, Exercise, LevelLadder, NutritionProgram, Roadmap, StepLog,
   UserProfile, WeeklyChallenge, WorkoutAssignment, WorkoutLog,
-  Mesocycle, QuestionnaireAssignment, QuestionnaireResponse, Workout, ExperienceLevel,
+  Mesocycle, QuestionnaireAssignment, QuestionnaireResponse, Workout, ExperienceLevel, OnboardingData, Questionnaire, WeeklyMenu,
 } from '../../src/types.js';
+import type { Episodio } from '../../src/autopiloto/episodios.js';
 import { atletasActivos } from '../../src/utils/atletas.js';
 import { getAdminDb } from './auth.js';
+import { isoLocal } from '../../src/utils/trainingWeek.js';
 
 type Firestore = NonNullable<Awaited<ReturnType<typeof getAdminDb>>>;
 
@@ -258,4 +260,99 @@ export async function crearAvisoUnaVez(
   } catch {
     // Ya existía: es exactamente lo que se quería evitar, no un error.
   }
+}
+
+/**
+ * La propuesta ya aplicada que deja el latido para que Dani la vea en «Hecho
+ * hoy» y pueda deshacerla. `set` con id determinista: dos pasadas el mismo
+ * día no duplican. Si ya existía (segunda pasada), se conserva el snapshot de
+ * la primera, que es el «antes» de verdad.
+ */
+export async function guardarHuellaDelLatido(db: Firestore, id: string, huella: Omit<AiProposal, 'id'>): Promise<void> {
+  const ref = db.collection('aiProposals').doc(id);
+  const previa = await ref.get();
+  if (previa.exists) {
+    await ref.set(sinIndefinidos({ summary: huella.summary, cambios: huella.cambios, payload: huella.payload, aplicadaEn: huella.aplicadaEn }), { merge: true });
+    return;
+  }
+  await ref.set(sinIndefinidos({ ...huella, id }));
+}
+
+// ─── Alta y cuestionarios (detectores del autopiloto) ─────────────────────────
+
+/** Check-ins del atleta desde una fecha (colección `checkins`, clave `userId` = uid). */
+export async function leerCheckIns(db: Firestore, uid: string, desde: string): Promise<WeightCheckIn[]> {
+  if (!uid) return [];
+  const snap = await db.collection('checkins').where('userId', '==', uid).get();
+  const aFecha = (v: unknown): Date => (v && typeof (v as { toDate?: () => Date }).toDate === 'function') ? (v as { toDate: () => Date }).toDate() : new Date(v as string);
+  return snap.docs
+    .map(d => { const data = d.data() as Record<string, unknown>; return { id: d.id, ...data, timestamp: aFecha(data.timestamp) } as WeightCheckIn; })
+    .filter(c => !Number.isNaN(c.timestamp.getTime()) && isoLocal(c.timestamp) >= desde);
+}
+
+export async function leerOnboarding(db: Firestore, email: string): Promise<OnboardingData | null> {
+  const snap = await db.collection('onboarding').doc(email).get();
+  return snap.exists ? ({ athleteId: email, ...(snap.data() as object) } as OnboardingData) : null;
+}
+
+export async function leerCuestionariosDelCoach(db: Firestore, coachUid: string): Promise<Questionnaire[]> {
+  const snap = await db.collection('questionnaires').where('ownerId', '==', coachUid).get();
+  return snap.docs.map(d => conId<Questionnaire>(d));
+}
+
+// ─── Episodios del autopiloto ─────────────────────────────────────────────────
+
+/** Encola un episodio. `create` con id determinista: detectar lo mismo dos
+ *  veces no duplica, y un episodio ya en curso no se reinicia. */
+export async function crearEpisodioUnaVez(db: Firestore, ep: Episodio): Promise<boolean> {
+  try {
+    await db.collection('episodios').doc(ep.id).create(sinIndefinidos(ep));
+    return true;
+  } catch {
+    return false; // ya existía
+  }
+}
+
+export async function leerEpisodiosPendientes(db: Firestore, limite: number): Promise<Episodio[]> {
+  const snap = await db.collection('episodios').where('estado', 'in', ['pendiente', 'en_curso']).get();
+  return snap.docs
+    .map(d => conId<Episodio>(d))
+    .sort((a, b) => a.prioridad - b.prioridad || a.creadoEn.localeCompare(b.creadoEn))
+    .slice(0, limite);
+}
+
+/** Episodios parados esperando la decisión de Dani sobre sus propuestas. */
+export async function leerEpisodiosEnEspera(db: Firestore): Promise<Episodio[]> {
+  const snap = await db.collection('episodios').where('estado', '==', 'escalado').get();
+  return snap.docs.map(d => conId<Episodio>(d)).filter(e => (e.esperaPropuestas?.length ?? 0) > 0);
+}
+
+export async function leerPropuestasPorId(db: Firestore, ids: string[]): Promise<AiProposal[]> {
+  const out: AiProposal[] = [];
+  for (const id of ids) {
+    const s = await db.collection('aiProposals').doc(id).get();
+    if (s.exists) out.push({ id: s.id, ...(s.data() as object) } as AiProposal);
+  }
+  return out;
+}
+
+export async function guardarEpisodio(db: Firestore, ep: Episodio): Promise<void> {
+  await db.collection('episodios').doc(ep.id).set(sinIndefinidos(ep));
+}
+
+// ─── Menús semanales (publicación automática a las 24 h) ──────────────────────
+
+export async function leerMenusDelAtleta(db: Firestore, email: string): Promise<WeeklyMenu[]> {
+  const snap = await db.collection('weeklyMenus').where('athleteId', '==', email).get();
+  return snap.docs.map(d => conId<WeeklyMenu>(d));
+}
+
+/** Publica un menú como lo haría `publishWeeklyMenu` en la app: en un lote,
+ *  borrados primero, luego archivar el publicado anterior, luego publicar. */
+export async function publicarMenu(db: Firestore, plan: { publicar: { id: string; publishedAt: string }; archivar: string[]; borrar: string[] }): Promise<void> {
+  const lote = db.batch();
+  for (const id of plan.borrar) lote.delete(db.collection('weeklyMenus').doc(id));
+  for (const id of plan.archivar) lote.update(db.collection('weeklyMenus').doc(id), { status: 'archived' });
+  lote.update(db.collection('weeklyMenus').doc(plan.publicar.id), { status: 'published', publishedAt: plan.publicar.publishedAt });
+  await lote.commit();
 }

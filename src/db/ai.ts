@@ -147,6 +147,53 @@ export async function getApprovedAiProposals(): Promise<AiProposal[]> {
  * `orderBy`, que se resuelve con el índice de campo simple que Firestore crea
  * solo. Nada que desplegar.
  */
+/**
+ * Lo aplicado en las últimas horas, venga de Dani (`approved`), de la máquina
+ * (`aplicada`) o deshecho: es lo que enseña «Hecho hoy» en la bandeja. Sin
+ * índice compuesto: se filtra por estado en Firestore y por fecha en memoria
+ * (son pocas decenas de documentos).
+ */
+export async function getAiProposalsRecientes(desdeIso: string): Promise<AiProposal[]> {
+  const fechaDe = (p: AiProposal) => p.deshechaEn ?? p.aplicadaEn ?? p.reviewedAt ?? p.createdAt;
+  const filtrar = (list: AiProposal[]) => list
+    .filter(p => (p.status === 'approved' || p.status === 'aplicada' || p.status === 'deshecha') && fechaDe(p) >= desdeIso)
+    .sort((a, b) => fechaDe(b).localeCompare(fechaDe(a)));
+  if (forceLocalOnly) return filtrar(getLocalAiProposals());
+  try {
+    const q = query(collection(db, 'aiProposals'), where('status', 'in', ['approved', 'aplicada', 'deshecha']));
+    const snap = await getDocs(q);
+    return filtrar(snap.docs.map(d => ({ id: d.id, ...d.data() } as AiProposal)));
+  } catch (err) {
+    console.warn('getAiProposalsRecientes Firestore failed, using local:', err);
+    setLocalBypassMode(true, err);
+    return filtrar(getLocalAiProposals());
+  }
+}
+
+/**
+ * Propuestas por estado, de todos los atletas: los filtros de la pantalla de
+ * Propuestas (pendientes / aplicadas / rechazadas / sombra) y la auditoría de
+ * calidad. `in` sobre `status`, sin índice compuesto; se ordena en memoria por
+ * la fecha que le toca a cada estado.
+ */
+export async function getAiProposalsPorEstado(estados: AiProposal['status'][]): Promise<AiProposal[]> {
+  const fechaDe = (p: AiProposal) => p.deshechaEn ?? p.aplicadaEn ?? p.reviewedAt ?? p.createdAt;
+  const ordenar = (list: AiProposal[]) => list
+    .filter(p => estados.includes(p.status))
+    .sort((a, b) => fechaDe(b).localeCompare(fechaDe(a)));
+  if (estados.length === 0) return [];
+  if (forceLocalOnly) return ordenar(getLocalAiProposals());
+  try {
+    const q = query(collection(db, 'aiProposals'), where('status', 'in', estados.slice(0, 10)));
+    const snap = await getDocs(q);
+    return ordenar(snap.docs.map(d => ({ id: d.id, ...d.data() } as AiProposal)));
+  } catch (err) {
+    console.warn('getAiProposalsPorEstado Firestore failed, using local:', err);
+    setLocalBypassMode(true, err);
+    return ordenar(getLocalAiProposals());
+  }
+}
+
 export async function getPendingAiProposals(): Promise<AiProposal[]> {
   const ordenar = (list: AiProposal[]) =>
     list.sort((a, b) => a.createdAt.localeCompare(b.createdAt));

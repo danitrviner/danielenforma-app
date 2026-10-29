@@ -1,11 +1,11 @@
 import {
   MuscleGroup, MuscleGroupConfig, DayPlan, WorkoutExercise, Exercise, WorkoutLog, MUSCLE_ORDER,
-} from '../types';
-import { frecuenciaPorSemana } from './progression';
-import { rankMuscleGroups } from './muscleGroupRanking';
-import { DAY_TYPE_MUSCLES } from './trainingSplits';
+} from '../types.js';
+import { frecuenciaPorSemana } from './progression.js';
+import { rankMuscleGroups } from './muscleGroupRanking.js';
+import { DAY_TYPE_MUSCLES } from './trainingSplits.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
-import { SERIES_POR_SESION } from './volumeSuggestion';
+import { SERIES_POR_SESION } from './volumeSuggestion.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Ayudas de PROGRAMACIÓN — lo que el coach necesita ver mientras monta un

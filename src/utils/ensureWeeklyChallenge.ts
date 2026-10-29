@@ -6,15 +6,15 @@
 // las tres funciones de `dbService` y fija el correo del coach.
 import {
   getWeeklyChallenge, saveWeeklyChallenge, createNotificationDeduped,
-} from '../dbService';
-import { ChallengeData } from './weeklyChallenge';
+} from '../dbService.js';
+import { ChallengeData } from './weeklyChallenge.js';
 import {
   ejecutarRetoSemanal, AlmacenDeRetos, EnsureChallengeResult,
-} from './motorRetoSemanal';
+} from './motorRetoSemanal.js';
 
-export type { EnsureChallengeResult } from './motorRetoSemanal';
+export type { EnsureChallengeResult } from './motorRetoSemanal.js';
 
-import { COACH_EMAIL } from './coach';
+import { COACH_EMAIL } from './coach.js';
 
 const ALMACEN: AlmacenDeRetos = {
   getWeeklyChallenge,

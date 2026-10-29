@@ -1,5 +1,5 @@
-import { Questionnaire, QuestionnaireResponse } from '../types';
-import { ultimoValorDeSeñal } from './signalReading';
+import { Questionnaire, QuestionnaireResponse } from '../types.js';
+import { ultimoValorDeSeñal } from './signalReading.js';
 
 // Sexo biológico y antigüedad de entrenamiento — señales de la anamnesis
 // ("Entrenamiento", questionnairePresets.ts), leídas por signalKey igual que

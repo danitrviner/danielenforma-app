@@ -70,6 +70,8 @@ export const POR_CAMPO = [
   'coachReports', 'cardioAssignments', 'cardioSessions', 'cardioWeeklyGoals', 'cardioAplazos', 'revisionProgreso',
   'hrTests', 'hrvReadings', 'aiChats', 'aiProposals', 'coachDayNotes', 'cambiosAtleta', 'lecturasEtiqueta',
   'contactos', 'mensajesCoach', 'planesSemanales',
+  // El autopiloto: cada episodio lleva el email del atleta y su historial.
+  'episodios',
 ];
 
 const CAMPOS_PROPIETARIO = ['userId', 'athleteId', 'email'];

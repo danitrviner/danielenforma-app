@@ -1,10 +1,10 @@
 import type {
   BodyweightLog, PhotoAssignment, PhotoView, ProgresoRevision, ProgressPhoto, Questionnaire,
   QuestionnaireAssignment, QuestionnaireResponse,
-} from '../types';
-import { hasAnsweredThisOccurrence, isOverdue, martesDeCaducidad, viernesDelCiclo } from './questionnaireSchedule';
-import { resolveQuestions } from './questionnaireResolve';
-import type { ScheduleContext } from './scheduleEngine';
+} from '../types.js';
+import { hasAnsweredThisOccurrence, isOverdue, martesDeCaducidad, viernesDelCiclo } from './questionnaireSchedule.js';
+import { resolveQuestions } from './questionnaireResolve.js';
+import type { ScheduleContext } from './scheduleEngine.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Revisión de la semana (K-01)

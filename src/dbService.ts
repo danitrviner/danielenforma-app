@@ -173,7 +173,7 @@ export {
 // import existente (`from '../dbService'`) tenga que cambiar.
 export {
   getAiChats, saveAiChat, deleteAiChat,
-  getAiProposalsForAthlete, getApprovedAiProposals, getPendingAiProposals, createAiProposal, updateAiProposal,
+  getAiProposalsForAthlete, getApprovedAiProposals, getPendingAiProposals, getAiProposalsRecientes, getAiProposalsPorEstado, createAiProposal, updateAiProposal,
   getKnowledgeNotes, bulkUpsertKnowledgeNotes,
 } from './db/ai';
 
@@ -225,3 +225,7 @@ export {
 
 export { corregirClasificacion } from './db/exerciseChanges';
 export type { NuevaClasificacion } from './db/exerciseChanges';
+
+// Autopiloto (28-10-2026)
+export { getPoliticaAutopiloto, savePoliticaAutopiloto } from './db/coachSettings';
+export { getEpisodiosDeAtleta } from './db/episodios';

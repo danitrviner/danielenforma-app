@@ -14,9 +14,9 @@
 // como PROT cuando son MIX_GRASA—, que habrían llegado a los clientes con los
 // macros mal. Un test comprueba que cada etiqueta de aquí abajo sigue existiendo
 // en el banco, para que renombrar un alimento no rompa esto en silencio.
-import { MealItem, FoodCategory, DietMode } from '../types';
-import { parseBaseGrams, foodNameWithoutGrams } from './exchangeHelpers';
-import { normalizeStr } from './foodPrefs';
+import { MealItem, FoodCategory, DietMode } from '../types.js';
+import { parseBaseGrams, foodNameWithoutGrams } from './exchangeHelpers.js';
+import { normalizeStr } from './foodPrefs.js';
 
 /** Un ingrediente base que tiene sentido servir en más cantidad. */
 interface Escalable {

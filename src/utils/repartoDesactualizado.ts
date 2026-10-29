@@ -1,5 +1,5 @@
-import { MuscleGroup, Mesocycle, WeekDistribution, MUSCLE_ORDER } from '../types';
-import { repartoDelMesociclo, huellaDeReparto } from './trainingSplits';
+import { MuscleGroup, Mesocycle, WeekDistribution, MUSCLE_ORDER } from '../types.js';
+import { repartoDelMesociclo, huellaDeReparto } from './trainingSplits.js';
 
 const MUSCLE_GROUPS: MuscleGroup[] = MUSCLE_ORDER;
 

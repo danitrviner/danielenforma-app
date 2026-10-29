@@ -1,7 +1,7 @@
 // Filtros y comparativas del historial de cardio — §6 y §4bis.4(bloque 4)
 // del análisis FITIV. Lógica pura, sin React, para poder testearla aparte.
 
-import { CardioSession, CardioSessionType } from '../types';
+import { CardioSession, CardioSessionType } from '../types.js';
 
 export type DateRangeFilter = 'all' | 'week' | 'month' | 'year';
 

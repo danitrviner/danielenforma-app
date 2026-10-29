@@ -1,4 +1,4 @@
-import { AcademyCourse, AcademyLesson, AcademyProgress } from '../types';
+import { AcademyCourse, AcademyLesson, AcademyProgress } from '../types.js';
 
 export interface Continuacion {
   course: AcademyCourse;

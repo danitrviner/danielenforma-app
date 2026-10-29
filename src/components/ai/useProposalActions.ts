@@ -1,4 +1,4 @@
-/* Aprobar, rechazar y comentar una propuesta de la IA.
+/* Aprobar, rechazar, comentar y DESHACER una propuesta del asistente.
  *
  * Vivía dentro de AiChatPanel, que es donde se revisaban: la bandeja del
  * chat. Pero revisar el plan de un mes ahí es incómodo —ocupa media columna
@@ -6,47 +6,27 @@
  * MISMA lógica de aprobación. Duplicarla habría sido garantizar que las dos
  * se separan en cuanto alguien toque una.
  *
- * Aquí solo está lo que ESCRIBE. Lo que se pinta (tarjeta, editor, «antes →
- * después») vive en ProposalCard, y cada pantalla pone el suyo alrededor.
+ * Desde el 28-10-2026 aquí ya no se decide QUÉ escribir: eso vive en
+ * `autopiloto/aplicarPropuesta.ts` (puro, con tests, el mismo que usará el
+ * servidor) y lo escribe `autopiloto/ejecutarEnCliente.ts`. Este hook pone lo
+ * que es de React —estado, errores, refrescar consultas— y guarda en la
+ * propuesta el snapshot de lo que había antes, que es lo que permite deshacer.
  */
 
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  AiProposal, AiProposalPayload, Diet, DossierPatch, LevelLadder, Mesocycle,
-  PeriodizationBlockPayload, RoadmapProposalPayload, NutritionProgramProposalPayload,
-  SpecialDayProposalPayload, WorkoutDaysProposalPayload, WorkoutExercise, NutritionPhase, Roadmap,
-  SetupConfigProposalPayload, PublishBlockProposalPayload, WeeklyChallengeProposalPayload,
-  WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload, WeeklyChallenge, CardioProgram,
-  TemplateStage, WeekDay, ProposalComment, WeekPlanProposalPayload,
-} from '../../types';
-import {
-  updateAiProposal, submitCoachFeedback, createDiet, updateDiet, createMesocycle,
-  createTask, getRoadmap, saveRoadmap, saveNutritionProgram, getAllUserProfiles,
-  getWorkoutAssignments, updateWorkoutAssignment,
-  getWorkouts, createWorkoutStrict, updateWorkout, getMesocycles, getExercises,
-  updateUserProfile, getAthleteNutritionConfig, saveAthleteNutritionConfig,
-  getAthleteDietConfig, saveAthleteDietConfig, assignQuestionnaire, assignPhotoCheckIn,
-  createCardioAssignment, saveWeeklyChallenge, createMesocycleTemplate,
-  createWorkoutAssignmentStrict, getDietsForAthlete, getNutritionProgram, updateMesocycle,
-} from '../../dbService';
-import { rirDescendente, subirSeries, programarEnSemanas } from '../../utils/semanasDelBloque';
-import { programarAjuste } from '../../utils/semanasNutricion';
-import { objetivoDeDieta } from '../../utils/macrosLegado';
-import { vueltasDelCiclo } from '../../utils/progression';
-import { sesionesDeMesociclo, fechasDelMesociclo, cicloDiasDeMeso } from '../../utils/asignacionMesociclo';
-import { prescripcionDeSemana, ZONA2_BASE_MIN_DEFECTO } from '../../utils/cardioProgression';
-import { isoWeekKey, isoWeekBounds } from '../../utils/challengeOptions';
-import { saveDossierJudgement, appendDossierFacts } from '../../db/dossier';
+import { AiProposal, AiProposalPayload, ProposalComment } from '../../types';
+import { updateAiProposal } from '../../dbService';
+import { appendDossierFacts } from '../../db/dossier';
 import { dossierKey } from '../DossierPanel';
-import { nombreDeSesion } from '../../utils/nombresMeso';
-import { nombrePropioDeSesion } from '../../utils/draftEjercicios';
-import { repartoDelMesociclo, tiposDeEntrenamiento } from '../../utils/trainingSplits';
-import { distribucionDeMeso } from '../../utils/distribucionDeMeso';
 import { describirEdicion, motivoParaNoAprobar } from '../../utils/edicionPropuesta';
 import { ordenarPropuestasPorPlan } from '../../utils/ordenPropuestas';
 import { auth } from '../../firebase';
-import { addDays } from '../../utils/trainingWeek';
+import { aplicarPropuesta } from '../../autopiloto/aplicarPropuesta';
+import { ejecutarEnCliente, ErrorDeEjecucion } from '../../autopiloto/ejecutarEnCliente';
+import { lectorDeCliente } from '../../autopiloto/lectorCliente';
+import { planDeDeshacer, coleccionesDe } from '../../autopiloto/deshacer';
+import { restaurarTodo } from '../../db/restauracion';
 
 function clavesQueRefrescar(kind: AiProposal['kind'], athleteEmail: string): unknown[][] {
   switch (kind) {
@@ -83,17 +63,33 @@ function clavesQueRefrescar(kind: AiProposal['kind'], athleteEmail: string): unk
       return [['workouts']];
     case 'mesocycleTemplate':
       return [['mesocycleTemplates']];
+    case 'dossier':
+      return [[...dossierKey(athleteEmail)]];
     default:
       return [];
   }
 }
 
-/** Una propuesta de antes de pasar a kcal trae solo el cupo en intercambios:
- *  se le pone su objetivo. Sin esto, al aplicarla sobre una dieta que ya tiene
- *  `objetivo` se cambiaría el cupo y el objetivo viejo seguiría mandando. */
-function conObjetivo<T extends Pick<Diet, 'objetivo' | 'budget'>>(d: T): T {
-  return d.objetivo ? d : { ...d, objetivo: objetivoDeDieta(d) };
-}
+/** Qué consultas refrescar según las colecciones que tocó un deshacer. */
+const CLAVES_POR_COLECCION: Record<string, (email: string) => unknown[][]> = {
+  diets: e => [['dietsForAthlete', e]],
+  mesocycles: e => [['mesocycles', e]],
+  workouts: () => [['workouts']],
+  workoutAssignments: () => [['workoutAssignments'], ['workoutAssignmentsForAthlete']],
+  roadmaps: e => [['roadmap', e]],
+  nutritionPrograms: e => [['nutritionProgram', e]],
+  tasks: e => [['tasksForAthlete', e]],
+  athleteStatus: e => [[...dossierKey(e)]],
+  user_profiles: () => [['userProfiles']],
+  athleteNutritionConfigs: e => [['athleteNutritionConfig', e]],
+  athleteDietConfigs: e => [['athleteDietConfig', e]],
+  questionnaireAssignments: e => [['assignmentsForAthlete', e]],
+  photoAssignments: e => [['photoAssignmentsForAthlete', e]],
+  cardioAssignments: e => [['cardioAssignments', e]],
+  weeklyChallenges: e => [['weeklyChallenge', e], ['weeklyChallengesForAthlete', e]],
+  mesocycleTemplates: () => [['mesocycleTemplates']],
+  checkins: () => [['checkins']],
+};
 
 class AprobacionYaAvisada extends Error {
   constructor(readonly causa: unknown) { super('aprobación fallida, ya avisada'); }
@@ -108,6 +104,8 @@ export interface ProposalActions {
   aprobarTodas: (lista: AiProposal[], editsPorId?: Record<string, AiProposalPayload>) => Promise<void>;
   rechazar: (p: AiProposal, motivo?: string) => Promise<void>;
   comentar: (p: AiProposal, texto: string) => Promise<void>;
+  /** Vuelve a dejar los documentos como estaban antes de aplicarla. */
+  deshacer: (p: AiProposal) => Promise<boolean>;
 }
 
 export function useProposalActions(
@@ -124,6 +122,7 @@ export function useProposalActions(
   const refrescarListas = () => {
     queryClient.invalidateQueries({ queryKey: ['aiProposalsPendientes'] });
     queryClient.invalidateQueries({ queryKey: ['aiProposalsForAthlete'] });
+    queryClient.invalidateQueries({ queryKey: ['aiProposalsRecientes'] });
   };
 
   const approveProposal = async (
@@ -133,466 +132,40 @@ export function useProposalActions(
     // Se aprueba lo que Dani tiene delante, no lo que propuso la IA.
     const p: AiProposal = editado ? { ...original, payload: editado } : original;
     try {
-      if (p.kind === 'checkinFeedback') {
-        const { checkInId, feedback } = p.payload as { checkInId: string; feedback: string };
-        await submitCoachFeedback(checkInId, feedback);
-        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: checkInId });
-      } else if (p.kind === 'diet') {
-        const dietPayload = conObjetivo(p.payload as Omit<Diet, 'id'>);
-        if (p.baseEntityId) {
-          // Sobre una dieta existente, una propuesta sin comidas solo cambia
-          // el objetivo: no borra las que el coach tiene colocadas.
-          const { meals, ...soloObjetivo } = dietPayload;
-          await updateDiet(p.baseEntityId, meals.length > 0 ? dietPayload : soloObjetivo);
-          await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.baseEntityId });
-        } else {
-          const created = await createDiet(dietPayload);
-          await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
-        }
-      } else if (p.kind === 'mesocycle') {
-        const meso = p.payload as Omit<Mesocycle, 'id'>;
-        // Con reparto, la distribución se rehace al aprobar: Dani ha podido
-        // tocar las series en la propuesta y la de la propuesta sería vieja.
-        const created = await createMesocycle(meso.reparto
-          ? { ...meso, distribution: distribucionDeMeso({ ...meso, id: '' }) }
-          : meso);
-        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
-      } else if (p.kind === 'roadmap') {
-        // Se AÑADEN a lo que ya tiene: el roadmap es suyo, no se reemplaza.
-        const { items, planPhases } = p.payload as RoadmapProposalPayload;
-        const actual = await getRoadmap(p.athleteId);
-        const base: Roadmap = actual ?? { athleteId: p.athleteId, items: [] };
-        await saveRoadmap({
-          ...base,
-          items: [...base.items, ...items],
-          ...(planPhases ? { planPhases } : {}),
-        });
-        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
-      } else if (p.kind === 'nutritionProgram') {
-        // Las fases que traían dieta nueva la crean AQUÍ y se enlazan por id:
-        // una fase sin dieta enlazada no le enseña nada al atleta.
-        const { startDate, phases, refeedDays } = p.payload as NutritionProgramProposalPayload;
-        const fases: NutritionPhase[] = [];
-        for (const [i, fase] of phases.entries()) {
-          let dietId = fase.dietId ?? '';
-          if (!dietId && fase.diet) {
-            const creada = await createDiet(conObjetivo(fase.diet));
-            dietId = creada.id;
-          }
-          fases.push({
-            id: `nph_${Date.now()}_${i}`,
-            name: fase.name,
-            weeks: fase.weeks,
-            dietId,
-            ...(fase.targetKcal != null ? { targetKcal: fase.targetKcal } : {}),
-            ...(fase.targetWeight != null ? { targetWeight: fase.targetWeight } : {}),
-            ...(fase.phaseType ? { phaseType: fase.phaseType } : {}),
-            ...(fase.objetivo ? { objetivo: fase.objetivo } : {}),
-            // Sin esto, el ritmo que propone el asistente se perdía al aprobar
-            // y la fase volvía a definirse solo por semanas.
-            ...(fase.targetRateKgWeek != null ? { targetRateKgWeek: fase.targetRateKgWeek } : {}),
-          });
-        }
-        // Lo programado semana a semana (suplementos, pasos, ajustes…) no viene
-        // en la propuesta: se conserva del programa que hubiera.
-        const previo = await getNutritionProgram(p.athleteId);
-        await saveNutritionProgram({
-          athleteId: p.athleteId,
-          startDate,
-          phases: fases,
-          ...(refeedDays?.length ? { refeedDays } : {}),
-          ...(previo?.cambiosSemana ? { cambiosSemana: previo.cambiosSemana } : {}),
-          ...(previo?.semanasMantenimiento ? { semanasMantenimiento: previo.semanasMantenimiento } : {}),
-          ...(previo?.comidasLibres ? { comidasLibres: previo.comidasLibres } : {}),
-          ...(previo?.suplementos ? { suplementos: previo.suplementos } : {}),
-          ...(previo?.ciclado ? { ciclado: previo.ciclado } : {}),
-          ...(previo?.pasosPorSemana ? { pasosPorSemana: previo.pasosPorSemana } : {}),
-          ...(previo?.reglasPeso ? { reglasPeso: previo.reglasPeso } : {}),
-          ...(previo?.proteinaMinGKg ? { proteinaMinGKg: previo.proteinaMinGKg } : {}),
-          ...(previo?.minimos ? { minimos: previo.minimos } : {}),
-        });
-        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
-      } else if (p.kind === 'weekPlan') {
-        const plan = p.payload as WeekPlanProposalPayload;
-        if (plan.mesocycleId) {
-          const meso = (await getMesocycles(p.athleteId)).find(m => m.id === plan.mesocycleId);
-          if (!meso) throw new Error('El mesociclo de esta propuesta ya no existe.');
-          const ciclo = cicloDiasDeMeso(meso);
-          const vueltas = vueltasDelCiclo(meso.weeks, ciclo);
-          const descargas = Array.from(new Set<number>([...(meso.semanasDescarga ?? []), ...(plan.semanasDescarga ?? [])])).sort((a, b) => a - b);
-          const tests = Array.from(new Set<number>([...(meso.semanasTest ?? []), ...(plan.semanasTest ?? [])])).sort((a, b) => a - b);
-          const workouts = (await getWorkouts()).filter(w => w.mesocycleId === meso.id);
-          for (const w of workouts) {
-            const exercises = w.exercises.map(we0 => {
-              let we = we0;
-              if (plan.rir) we = { ...we, weeklyProgression: rirDescendente(we, vueltas, plan.rir.desde, plan.rir.hasta, descargas) };
-              if (plan.series) we = { ...we, weeklyProgression: subirSeries(we, plan.series.cada, plan.series.hasta) };
-              for (const c of (plan.cambios ?? []).filter(c => c.workoutId === w.id && c.exerciseId === we.exerciseId)) {
-                we = { ...we, weeklyProgression: programarEnSemanas(we, [c.semana], !!c.solo, r => ({
-                  ...r,
-                  ...(c.sets !== undefined ? { sets: c.sets } : {}),
-                  ...(c.reps !== undefined ? { reps: c.reps } : {}),
-                  ...(c.rir !== undefined ? { rir: c.rir } : {}),
-                  ...(c.restSeconds !== undefined ? { restSeconds: c.restSeconds } : {}),
-                  ...(c.bloques ? { setGroups: c.bloques } : {}),
-                })) };
-              }
-              return we;
-            });
-            if (JSON.stringify(exercises) !== JSON.stringify(w.exercises)) await updateWorkout(w.id, { exercises });
-          }
-          await updateMesocycle(meso.id, {
-            ...(plan.semanasDescarga?.length ? { semanasDescarga: descargas, deloadWeek: Math.floor(((descargas[0] - 1) * ciclo) / 7) + 1 } : {}),
-            ...(plan.semanasTest?.length ? { semanasTest: tests } : {}),
-          });
-        }
-        if (plan.nutricion) {
-          const programa = await getNutritionProgram(p.athleteId);
-          if (!programa) throw new Error('El atleta ya no tiene periodización nutricional.');
-          let nuevo = { ...programa };
-          for (const a of plan.nutricion.ajustes ?? []) {
-            nuevo = { ...nuevo, cambiosSemana: programarAjuste(nuevo, a.semana, !!a.solo, { cat: a.cat, delta: a.delta, ...(a.gramos !== undefined ? { gramos: a.gramos } : {}), ...(a.slot !== undefined ? { slot: a.slot } : {}) }) };
-          }
-          if (plan.nutricion.semanasMantenimiento?.length) {
-            nuevo.semanasMantenimiento = Array.from(new Set<number>([...(nuevo.semanasMantenimiento ?? []), ...plan.nutricion.semanasMantenimiento])).sort((a, b) => a - b);
-          }
-          if (plan.nutricion.suplementos?.length) {
-            nuevo.suplementos = [...(nuevo.suplementos ?? []), ...plan.nutricion.suplementos.map((x, i) => ({ ...x, id: `sup_${Date.now()}_${i}` }))];
-          }
-          if (plan.nutricion.pasosPorSemana?.length) {
-            const porSemana = new Map((nuevo.pasosPorSemana ?? []).map(x => [x.semana, x]));
-            for (const x of plan.nutricion.pasosPorSemana) porSemana.set(x.semana, x);
-            nuevo.pasosPorSemana = [...porSemana.values()].sort((a, b) => a.semana - b.semana);
-          }
-          await saveNutritionProgram(nuevo);
-        }
-        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: plan.mesocycleId ?? p.athleteId });
-      } else if (p.kind === 'specialDay') {
-        // Las tres cosas a la vez: por separado ninguna se nota. El hito lo ve
-        // venir, la tarea le salta ese día, y la nota la lee encima de la sesión.
-        const dia = p.payload as SpecialDayProposalPayload;
-        const actual = await getRoadmap(p.athleteId);
-        const base: Roadmap = actual ?? { athleteId: p.athleteId, items: [] };
-        await saveRoadmap({
-          ...base,
-          items: [...base.items, {
-            id: `rmi_${Date.now()}`,
-            title: dia.title,
-            description: dia.description,
-            type: 'hito',
-            lane: dia.kind === 'otro' ? 'general' : 'entreno',
-            targetDate: dia.date,
-            status: 'pendiente',
-          }],
-        });
-        await createTask({
-          athleteId: p.athleteId, type: 'manual', title: dia.title, dueDate: dia.date,
-          status: 'pending', linkTab: 'training', createdBy: 'coach', createdAt: new Date().toISOString(),
-        });
-        const perfil = (await getAllUserProfiles()).find(u => u.email === p.athleteId);
-        if (perfil) {
-          const asignaciones = await getWorkoutAssignments({ uid: perfil.userId, email: perfil.email });
-          const delDia = asignaciones.find(a => a.date === dia.date);
-          if (delDia) await updateWorkoutAssignment(delDia.id, { note: dia.athleteNote });
-        }
-        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
-      } else if (p.kind === 'dossier') {
-        // La IA solo propone los campos de juicio; aquí es donde se aplican.
-        await saveDossierJudgement(p.athleteId, p.payload as DossierPatch);
-        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
-        await queryClient.invalidateQueries({ queryKey: dossierKey(p.athleteId) });
-      } else if (p.kind === 'workoutDays') {
-        // Cada día se guarda como LA rutina de ese día del mesociclo. Si ya
-        // había una, se reescribe conservando su id: las asignaciones del
-        // calendario del atleta apuntan a ese documento, y crear uno nuevo
-        // dejaría al atleta entrenando la rutina vieja para siempre.
-        const { mesocycleId, days } = p.payload as WorkoutDaysProposalPayload;
-        const [todas, mesos] = await Promise.all([getWorkouts(), getMesocycles(p.athleteId)]);
-        const meso = mesos.find(m => m.id === mesocycleId);
-        const delMeso = todas.filter(w => w.mesocycleId === mesocycleId);
-        const athleteName = (await getAllUserProfiles()).find(u => u.email === p.athleteId)?.displayName;
-        // Se escribe día a día y no hay transacción posible (son documentos
-        // sueltos). Si peta a mitad, lo que NO puede pasar es que el error diga
-        // solo "no se pudo": los días ya escritos están vivos y el atleta los
-        // ve. Se lleva la cuenta para decirlo.
-        const guardados: number[] = [];
-        for (const dia of days) {
-          const exercises: WorkoutExercise[] = dia.exercises.map((ex, i) => ({
-            exerciseId: ex.exerciseId,
-            order: i,
-            sets: ex.sets,
-            reps: ex.reps,
-            rir: ex.rir,
-            restSeconds: ex.restSeconds,
-            ...(ex.notes ? { notes: ex.notes } : {}),
-            ...(ex.muscleGroup ? { muscleGroup: ex.muscleGroup } : {}),
-          }));
-          // Sin nombre, el mismo que pondría el editor: el que le puso Dani a
-          // esa sesión o el tipo de día de su reparto («Pierna», «Empuje»…).
-          const tipo = meso
-            ? nombrePropioDeSesion(meso.nombresSesion, dia.dayIndex)
-              ?? (() => { const r = repartoDelMesociclo(meso); return r ? tiposDeEntrenamiento(r)[dia.dayIndex] : undefined; })()
-            : undefined;
-          const nombre = dia.name?.trim() || (meso
-            ? nombreDeSesion({ tipo, dayIdx: dia.dayIndex, athleteName, meso })
-            : `Sesión ${dia.dayIndex + 1}`);
-          const existente = delMeso.find(w => w.dayIndex === dia.dayIndex);
-          try {
-            if (existente) {
-              await updateWorkout(existente.id, { name: nombre, exercises });
-            } else {
-              await createWorkoutStrict({
-                ownerId: auth.currentUser?.uid ?? '',
-                name: nombre,
-                mesocycleId,
-                dayIndex: dia.dayIndex,
-                exercises,
-              });
-            }
-            guardados.push(dia.dayIndex + 1);
-          } catch (err) {
-            queryClient.invalidateQueries({ queryKey: ['workouts'] });
-            const yaHechos = guardados.length
-              ? ` Los días ${guardados.join(', ')} sí se guardaron: vuelve a aprobarla para terminar (reescribe los mismos días, no duplica).`
-              : ' No se guardó ningún día.';
-            setError(`Falló al guardar el día ${dia.dayIndex + 1}.${yaHechos}`);
-            setReviewingId(null);
-            throw new AprobacionYaAvisada(err);
-          }
-        }
-        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: mesocycleId });
-      } else if (p.kind === 'levelLadder') {
-        const ladder = p.payload as LevelLadder;
-        const actual = await getRoadmap(p.athleteId);
-        const base: Roadmap = actual ?? { athleteId: p.athleteId, items: [] };
-        await saveRoadmap({ ...base, levelLadder: ladder });
-        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
-      } else if (p.kind === 'setupConfig') {
-        // Cada campo va a su sitio; los que no vengan no se tocan. Las dietas
-        // del calendario llegan por NOMBRE porque al proponerlas todavía no
-        // existían (las crea la periodización al aprobarse), así que se
-        // resuelven aquí contra las que el atleta tiene YA.
-        const v = p.payload as SetupConfigProposalPayload;
-        const perfilUpdates: Record<string, unknown> = {};
-        if (v.planStartDate) perfilUpdates.planStartDate = v.planStartDate;
-        if (v.planDurationMonths) perfilUpdates.planDurationMonths = v.planDurationMonths;
-        if (v.targetWeight) perfilUpdates.targetWeight = v.targetWeight;
-        if (Object.keys(perfilUpdates).length) {
-          const perfil = (await getAllUserProfiles()).find(u => u.email === p.athleteId);
-          if (!perfil) throw new Error(`No se encuentra el perfil de ${p.athleteId}.`);
-          await updateUserProfile(perfil.userId, perfilUpdates);
-        }
-        if (v.stepGoal !== undefined) {
-          const cfg = await getAthleteNutritionConfig(p.athleteId);
-          await saveAthleteNutritionConfig({ ...cfg, stepGoal: v.stepGoal });
-        }
-        if (v.activeDietNames || v.weeklyScheduleByName) {
-          const dietas = await getDietsForAthlete(p.athleteId);
-          const idDe = (nombre: string) => dietas.find(d => d.name.trim().toLowerCase() === nombre.trim().toLowerCase())?.id ?? null;
-          const sinResolver = [
-            ...(v.activeDietNames ?? []),
-            ...Object.values(v.weeklyScheduleByName ?? {}).filter((x): x is string => typeof x === 'string'),
-          ].filter(n => !idDe(n));
-          if (sinResolver.length) {
-            setError(`No encuentro estas dietas de ${p.athleteId}: ${[...new Set(sinResolver)].join(', ')}. Aprueba antes la propuesta de dietas o de periodización nutricional.`);
-            setReviewingId(null);
-            throw new AprobacionYaAvisada(new Error('dietas sin resolver'));
-          }
-          const cfg = await getAthleteDietConfig(p.athleteId);
-          const base = cfg ?? { athleteId: p.athleteId, activeDietIds: [] };
-          const schedule: Partial<Record<WeekDay, string | null>> = { ...(base.weeklySchedule ?? {}) };
-          for (const [dia, nombre] of Object.entries(v.weeklyScheduleByName ?? {})) {
-            schedule[dia as WeekDay] = nombre ? idDe(nombre) : null;
-          }
-          await saveAthleteDietConfig({
-            ...base,
-            ...(v.activeDietNames ? { activeDietIds: v.activeDietNames.map(n => idDe(n)!) } : {}),
-            ...(v.weeklyScheduleByName ? { weeklySchedule: schedule } : {}),
-          });
-        }
-        if (v.questionnaire) {
-          await assignQuestionnaire({
-            questionnaireId: v.questionnaire.questionnaireId,
-            athleteId: p.athleteId,
-            schedule: v.questionnaire.schedule,
-            startDate: v.questionnaire.startDate,
-            active: true,
-            createdAt: new Date().toISOString(),
-          });
-        }
-        if (v.photos) {
-          await assignPhotoCheckIn({
-            athleteId: p.athleteId,
-            schedule: v.photos.schedule,
-            startDate: v.photos.startDate,
-            views: v.photos.views,
-            active: true,
-            createdAt: new Date().toISOString(),
-          });
-        }
-        if (v.liftExerciseNames?.length) {
-          const catalogo = await getExercises();
-          const ids = v.liftExerciseNames
-            .map(n => catalogo.find(e => e.name.trim().toLowerCase() === n.trim().toLowerCase())?.id)
-            .filter((x): x is string => !!x);
-          const actual = await getRoadmap(p.athleteId);
-          const base: Roadmap = actual ?? { athleteId: p.athleteId, items: [] };
-          await saveRoadmap({ ...base, challengeConfig: { ...(base.challengeConfig ?? {}), liftExerciseIds: ids } });
-        }
-        if (v.cardio) {
-          const program: CardioProgram = v.cardio.kind === 'vo2max'
-            ? { kind: 'vo2max', protocolId: v.cardio.protocolId ?? 'noruego4x4', startDate: v.cardio.startDate }
-            : { kind: 'zona2', protocolId: 'zona2', startDate: v.cardio.startDate, baseMinutes: v.cardio.baseMinutes ?? ZONA2_BASE_MIN_DEFECTO, targetZone: 'z2' };
-          const semana1 = prescripcionDeSemana(program, 1);
-          await createCardioAssignment({
-            athleteId: p.athleteId,
-            type: v.cardio.kind === 'vo2max' ? 'intervalos' : 'zona2',
-            targetDurationSec: semana1.intervals
-              ? semana1.intervals.reduce((sum, b) => sum + b.durationSec, 0)
-              : semana1.targetDurationSec,
-            ...(v.cardio.kind === 'zona2' ? { targetZone: 'z2' as const } : {}),
-            ...(semana1.intervals ? { intervals: semana1.intervals } : {}),
-            timesPerWeek: semana1.sesionesPorSemana,
-            active: true,
-            createdAt: new Date().toISOString(),
-            program,
-          });
-        }
-        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
-      } else if (p.kind === 'publishBlock') {
-        // El paso que hace que el atleta VEA sus entrenos: una asignación por
-        // sesión y vuelta. Las fechas que ya tenga asignadas no se duplican, así
-        // que volver a aprobar después de un fallo termina el trabajo en vez de
-        // dejarle el calendario doble.
-        const { mesocycleId, mesocycleName } = p.payload as PublishBlockProposalPayload;
-        const perfil = (await getAllUserProfiles()).find(u => u.email === p.athleteId);
-        if (!perfil) throw new Error(`No se encuentra el perfil de ${p.athleteId}.`);
-        const [todas, mesos, yaAsignadas] = await Promise.all([
-          getWorkouts(), getMesocycles(p.athleteId),
-          getWorkoutAssignments({ uid: perfil.userId, email: perfil.email }),
-        ]);
-        const meso = mesos.find(m => m.id === mesocycleId);
-        if (!meso) throw new Error(`El mesociclo de «${mesocycleName}» ya no existe.`);
-        const sesiones = sesionesDeMesociclo(todas, mesocycleId);
-        if (sesiones.length === 0) {
-          setError(`«${mesocycleName}» todavía no tiene sesiones. Aprueba antes la propuesta de sesiones y vuelve a aprobar esta.`);
-          setReviewingId(null);
-          throw new AprobacionYaAvisada(new Error('bloque sin sesiones'));
-        }
-        const ocupadas = new Set(yaAsignadas.filter(a => a.mesocycleId === mesocycleId).map(a => `${a.workoutId}_${a.date}`));
-        const fechas = fechasDelMesociclo(meso, sesiones.length);
-        let creadas = 0;
-        for (const f of fechas) {
-          const workoutId = sesiones[f.dayIdx]?.id;
-          if (!workoutId || ocupadas.has(`${workoutId}_${f.date}`)) continue;
-          try {
-            await createWorkoutAssignmentStrict({
-              workoutId, athleteId: p.athleteId, mesocycleId, date: f.date, status: 'pending',
-            });
-            creadas++;
-          } catch (err) {
-            queryClient.invalidateQueries({ queryKey: ['workoutAssignments', p.athleteId] });
-            setError(`Falló al asignar el ${f.date}. Se habían creado ${creadas} entrenos: vuelve a aprobarla para terminar (no duplica los que ya están).`);
-            setReviewingId(null);
-            throw new AprobacionYaAvisada(err);
-          }
-        }
-        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: mesocycleId });
-      } else if (p.kind === 'weeklyChallenge') {
-        const v = p.payload as WeeklyChallengeProposalPayload;
-        const { weekStart, weekEnd } = isoWeekBounds(v.today);
-        const isoWeek = isoWeekKey(v.today);
-        const reto: WeeklyChallenge = {
-          id: `${p.athleteId}_${isoWeek}`,
-          athleteId: p.athleteId,
-          isoWeek, weekStart, weekEnd,
-          kind: v.kind, title: v.title, description: v.description,
-          origin: 'coach', metric: v.metric,
-          status: 'activo',
-          createdAt: new Date().toISOString(),
-          ...(v.isMilestone ? { isMilestone: true } : {}),
-          ...(v.difficulty ? { difficulty: v.difficulty } : {}),
-        };
-        await saveWeeklyChallenge(reto);
-        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: reto.id });
-      } else if (p.kind === 'workoutTemplate') {
-        // Rutina del coach SIN mesocycleId: es una plantilla suya, no el
-        // entreno de nadie. Aparece en Entrenamientos para reutilizarla.
-        const v = p.payload as WorkoutTemplateProposalPayload;
-        const created = await createWorkoutStrict({
-          ownerId: auth.currentUser?.uid ?? '',
-          name: v.name,
-          exercises: v.exercises.map((ex, i) => ({
-            exerciseId: ex.exerciseId, order: i, sets: ex.sets, reps: ex.reps,
-            rir: ex.rir, restSeconds: ex.restSeconds,
-            ...(ex.notes ? { notes: ex.notes } : {}),
-            ...(ex.muscleGroup ? { muscleGroup: ex.muscleGroup } : {}),
-          })),
-        });
-        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
-      } else if (p.kind === 'mesocycleTemplate') {
-        const v = p.payload as MesocycleTemplateProposalPayload;
-        const stages: TemplateStage[] = v.stages.map((st, i) => ({
-          id: `stage_${Date.now()}_${i}`,
-          name: st.name, weeks: st.weeks, daysPerWeek: st.daysPerWeek, groups: st.groups,
-          ...(st.reparto ? { reparto: st.reparto } : {}),
-          ...(st.cycleDays !== undefined ? { cycleDays: st.cycleDays } : {}),
-          ...(st.distribution ? { distribution: st.distribution } : {}),
-          ...(st.deloadWeek !== undefined ? { deloadWeek: st.deloadWeek } : {}),
-          ...(st.reviewCadenceWeeks !== undefined ? { reviewCadenceWeeks: st.reviewCadenceWeeks, reviewType: st.reviewType ?? 'revision' } : {}),
-          ...(st.days ? {
-            days: st.days.map((d, k) => ({
-              id: `tday_${Date.now()}_${i}_${k}`,
-              name: d.name,
-              exercises: d.exercises.map((ex, j) => ({
-                exerciseId: ex.exerciseId, order: j, sets: ex.sets, reps: ex.reps,
-                rir: ex.rir, restSeconds: ex.restSeconds,
-                ...(ex.notes ? { notes: ex.notes } : {}),
-                ...(ex.muscleGroup ? { muscleGroup: ex.muscleGroup } : {}),
-              })),
-            })),
-          } : {}),
-        }));
-        const created = await createMesocycleTemplate({
-          ownerId: auth.currentUser?.uid ?? '',
-          name: v.name,
-          ...(v.description ? { description: v.description } : {}),
-          stages,
-        });
-        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
-      } else if (p.kind === 'periodizationBlock') {
-        // Bloque H2.1 — al aprobar se crea el mesociclo Y toda la cadencia de
-        // revisiones de golpe; el carril "Revisiones" del cuadro de mando las
-        // pinta solas en cuanto existen como TaskItem, no hace falta nada más.
-        const { mesocycle, reviewCadenceWeeks, reviewType } = p.payload as PeriodizationBlockPayload;
-        const created = await createMesocycle(mesocycle);
-        const reviewCount = Math.max(1, Math.floor(mesocycle.weeks / reviewCadenceWeeks));
-        const reviewTitle = reviewType === 'revision' ? 'Revisión' : reviewType === 'cuestionario' ? 'Cuestionario' : 'Fotos de check-in';
-        await Promise.all(Array.from({ length: reviewCount }, (_, i) => {
-          const weekOffset = (i + 1) * reviewCadenceWeeks;
-          const dueDate = addDays(mesocycle.startDate, weekOffset * 7);
-          return createTask({
-            athleteId: p.athleteId, type: reviewType,
-            title: `${reviewTitle} — bloque #${mesocycle.number}`,
-            dueDate,
-            status: 'pending', createdBy: 'coach', createdAt: new Date().toISOString(),
-          });
-        }));
-        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
+      const ahora = new Date().toISOString();
+      const decision = await aplicarPropuesta(p, lectorDeCliente(), { coachUid: auth.currentUser?.uid ?? '', ahora });
+      if (decision.ok === false) {
+        setError(decision.motivo);
+        throw new AprobacionYaAvisada(new Error(decision.motivo));
       }
-      // Aprobar es un hecho: se apunta solo en la ficha, con el porqué si Dani
-      // lo ha escrito. Lo que él cambie DESPUÉS a mano no se pregunta aquí
-      // (todavía no ha cambiado nada): se detecta comparando la propuesta con
-      // la entidad viva — ver utils/derivaPropuestas.ts.
+      let ejecucion;
+      try {
+        ejecucion = await ejecutarEnCliente(decision.operaciones);
+      } catch (err) {
+        // Lo que ya se escribió está vivo: se refresca lo tocado y el error
+        // dice cuánto se guardó, no solo «no se pudo».
+        for (const op of decision.operaciones) for (const clave of clavesQueRefrescar(p.kind, p.athleteId).concat(op.tipo === 'crearRutina' ? [['workouts']] : [])) {
+          queryClient.invalidateQueries({ queryKey: clave });
+        }
+        setError(err instanceof ErrorDeEjecucion ? err.message : 'No se pudo aprobar la propuesta — inténtalo de nuevo.');
+        throw new AprobacionYaAvisada(err);
+      }
+      const resultEntityId = decision.resultEntityId ?? (decision.resultEntityRef ? ejecucion.refs[decision.resultEntityRef] : undefined);
       const notaLimpia = nota.trim();
-      if (notaLimpia) {
-        await updateAiProposal(p.id, {
-          expediente: { datos: '', huecos: '', preguntas: [], esperado: '', ...p.expediente, notaAlAprobar: notaLimpia },
-        });
-      }
-      // Lo que se acaba de escribir tiene que verse SIN recargar. Antes solo
-      // invalidaba la ficha viva, así que aprobar un roadmap o una
-      // periodización no cambiaba nada en pantalla hasta salir y volver.
+      await updateAiProposal(p.id, {
+        status: 'approved',
+        reviewedAt: ahora,
+        aplicadaEn: ahora,
+        autor: p.autor ?? 'asistente',
+        politica: p.politica ?? 'proponer',
+        ...(resultEntityId ? { resultEntityId } : {}),
+        // Lo que había antes, documento a documento: con esto «Deshacer»
+        // no tiene que adivinar nada.
+        snapshotAntes: [...decision.snapshotAntes, ...ejecucion.creados],
+        ...(notaLimpia ? { expediente: { datos: '', huecos: '', preguntas: [], esperado: '', ...p.expediente, notaAlAprobar: notaLimpia } } : {}),
+      });
+
+      // Lo que se acaba de escribir tiene que verse SIN recargar.
       for (const clave of clavesQueRefrescar(p.kind, p.athleteId)) {
         queryClient.invalidateQueries({ queryKey: clave });
       }
@@ -601,7 +174,7 @@ export function useProposalActions(
       // que más dice de su criterio. Se apunta como hecho para que la próxima
       // propuesta ya venga con ella dentro (la IA lo lee en get_athlete_dossier).
       const hechos = [{
-        at: new Date().toISOString(),
+        at: ahora,
         kind: 'aprobacion' as const,
         text: notaLimpia ? `${p.summary} — ${notaLimpia}` : p.summary,
         proposalId: p.id,
@@ -609,7 +182,7 @@ export function useProposalActions(
       }];
       if (editado) {
         hechos.push({
-          at: new Date().toISOString(),
+          at: ahora,
           kind: 'aprobacion' as const,
           text: `Dani editó la propuesta antes de aprobarla: ${describirEdicion(original, editado)}`,
           proposalId: p.id,
@@ -622,8 +195,8 @@ export function useProposalActions(
       refrescarListas();
       return true;
     } catch (err) {
-      // El error del guardado por días ya trae su propio mensaje, con qué se
-      // llegó a guardar. Pisarlo con el genérico sería peor que no decir nada.
+      // El error del guardado ya trae su propio mensaje, con qué se llegó a
+      // guardar. Pisarlo con el genérico sería peor que no decir nada.
       if (!(err instanceof AprobacionYaAvisada)) {
         setError('No se pudo aprobar la propuesta — inténtalo de nuevo.');
       }
@@ -700,5 +273,34 @@ export function useProposalActions(
     }
   };
 
-  return { reviewingId, aprobandoTodas, aprobar: approveProposal, aprobarTodas, rechazar: rejectProposal, comentar };
+  /** Deshacer: cada documento del snapshot vuelve a como estaba (o se borra si
+   *  no existía), en orden inverso. La propuesta queda `deshecha` y la ficha
+   *  apunta que Dani lo deshizo: es la corrección más clara que puede dar. */
+  const deshacer = async (p: AiProposal): Promise<boolean> => {
+    const plan = planDeDeshacer(p);
+    if (plan.ok === false) { setError(plan.motivo); return false; }
+    setReviewingId(p.id);
+    try {
+      await restaurarTodo(plan.fotos);
+      const ahora = new Date().toISOString();
+      await updateAiProposal(p.id, { status: 'deshecha', deshechaEn: ahora });
+      for (const col of coleccionesDe(plan.fotos)) {
+        for (const clave of (CLAVES_POR_COLECCION[col]?.(p.athleteId) ?? [])) queryClient.invalidateQueries({ queryKey: clave });
+      }
+      appendDossierFacts(p.athleteId, [{
+        at: ahora, kind: 'cambio', text: `Dani deshizo: ${p.summary}`, proposalId: p.id, chatId: p.chatId,
+      }]).catch(err => console.warn('No se pudo apuntar el deshacer en la ficha:', err));
+      onAprobada?.(p.id);
+      refrescarListas();
+      return true;
+    } catch (err) {
+      console.error('deshacer:', err);
+      setError('No se pudo deshacer del todo — revisa el atleta antes de volver a intentarlo.');
+      return false;
+    } finally {
+      setReviewingId(null);
+    }
+  };
+
+  return { reviewingId, aprobandoTodas, aprobar: approveProposal, aprobarTodas, rechazar: rejectProposal, comentar, deshacer };
 }
