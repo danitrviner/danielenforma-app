@@ -154,7 +154,17 @@ const AMBICIOSO = { factor: 1.5,  label: 'ambicioso' as const };
 // Cuánto apretar este tipo de reto, dado lo que pasó las últimas veces.
 // Prioriza el historial DEL MISMO TIPO (que un tío clave los pasos no dice
 // nada de si clavará la dieta) y cae a la tasa global cuando no hay.
-export function difficultyFor(kind: ChallengeKind, memory: ChallengeMemory): DifficultyTuning {
+export function difficultyFor(kind: ChallengeKind, memory: ChallengeMemory, nivel?: 'arranque' | 'constancia' | 'rendimiento'): DifficultyTuning {
+  // En arranque (las primeras semanas entrenando) el reto va SIEMPRE en
+  // suave (Dani, 28-10): en producción se conseguía el 16 % y fallaba el
+  // 67 %, y un reto que falla dos de cada tres semanas desanima en vez de
+  // enganchar. La memoria de fallos de abajo sigue mandando después.
+  const porMemoria = difficultyPorMemoria(kind, memory);
+  if (nivel === 'arranque' && porMemoria.factor > SUAVE.factor) return SUAVE;
+  return porMemoria;
+}
+
+function difficultyPorMemoria(kind: ChallengeKind, memory: ChallengeMemory): DifficultyTuning {
   // Sin ningún reto resuelto no hay nada a lo que adaptarse: se usa el
   // incremento de referencia. Ojo — esto NO es "atleta novato": un cliente de
   // dos años al que se le activa la función hoy también entra por aquí, y

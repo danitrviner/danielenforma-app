@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { EstadoProblema, MensajeCoach, TipoMensajeCoach, UserProfile } from '../../types';
 import { getMensajesDeAtleta, crearMensajeCoach, firmarMensajeCoach, cambiarEstadoProblema } from '../../db/mensajesCoach';
 import { getCambiosAtleta } from '../../db/cambios';
-import { createNotificationDeduped } from '../../dbService';
+import { createNotificationDeduped, uploadRespuestaCoachMedia } from '../../dbService';
 import { cambiosSinContar, traducirCambio } from '../../utils/mensajesCoach';
 import type { CambioAtleta } from '../../utils/cambiosAtleta';
 import { COACH_NOMBRE } from '../../utils/coach';
@@ -86,15 +86,22 @@ export default function MensajesCoachPanel({ athlete }: { athlete: UserProfile }
     onError: err => showToast(mensajeDeErrorFirestore(err, 'cambiar el estado')),
   });
   const libre = useMutation({
-    mutationFn: async (e: { texto: string; tipo: TipoMensajeCoach }) => {
-      const m = await crearMensajeCoach({ athleteId: email, tipo: e.tipo, autor: 'coach', estado: 'aprobado', texto: e.texto, fecha: hoy, firmadoEn: new Date().toISOString() });
-      await avisar(`${COACH_NOMBRE} te ha escrito`, m.texto, `notif_mc_${m.id}`);
+    mutationFn: async (e: { texto: string; tipo: TipoMensajeCoach; archivo?: File | null }) => {
+      let mediaUrl: string | undefined, mediaKind: 'audio' | 'video' | undefined;
+      if (e.archivo) {
+        mediaUrl = await uploadRespuestaCoachMedia(email, e.archivo);
+        mediaKind = e.archivo.type.startsWith('audio/') ? 'audio' : 'video';
+      }
+      const m = await crearMensajeCoach({ athleteId: email, tipo: e.tipo, autor: 'coach', estado: 'aprobado', texto: e.texto, fecha: hoy, firmadoEn: new Date().toISOString(), mediaUrl, mediaKind });
+      await avisar(e.tipo === 'hito' ? `${COACH_NOMBRE} te ha dejado un hito` : `${COACH_NOMBRE} te ha escrito`, m.texto || (mediaKind === 'audio' ? 'Te ha dejado un audio' : 'Te ha dejado un vídeo'), `notif_mc_${m.id}`);
     },
     onSuccess: () => { refrescar(); showToast('Enviado.', 'success'); },
     onError: err => showToast(mensajeDeErrorFirestore(err, 'enviar el mensaje')),
   });
 
   const [textoLibre, setTextoLibre] = useState('');
+  const [archivoLibre, setArchivoLibre] = useState<File | null>(null);
+  const [esHito, setEsHito] = useState(false);
 
   return (
     <section className="space-y-4" aria-label={`Mensajes a ${nombre}`}>
@@ -134,10 +141,22 @@ export default function MensajesCoachPanel({ athlete }: { athlete: UserProfile }
           placeholder={`Lo que le dirías por WhatsApp, pero aquí lo tiene en Inicio con tu nombre.`}
           className="w-full bg-raised border border-hairline rounded-control p-3 text-label text-ink focus:ring-1 focus:ring-accent focus:outline-none resize-y font-sans"
         />
-        <div className="flex justify-end">
-          <Button size="s" iconTrailing="send" disabled={!textoLibre.trim() || libre.isPending} loading={libre.isPending}
-            onClick={() => libre.mutate({ texto: textoLibre.trim(), tipo: 'libre' }, { onSuccess: () => setTextoLibre('') })}>
-            Enviar con mi nombre
+        {/* Hitos con audio o vídeo (Dani, 28-10): primer mes, récord grande,
+            peso objetivo a la vista. Mismo cuadro, marcado como hito. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="inline-flex items-center gap-1.5 cursor-pointer font-sans text-caption text-ink-3 hover:text-ink border border-hairline rounded-control px-2.5 py-1.5">
+            <Icon name="add" size="s" />
+            {archivoLibre ? archivoLibre.name : 'Audio o vídeo'}
+            <input type="file" accept="audio/*,video/*" className="sr-only" onChange={e => setArchivoLibre(e.target.files?.[0] ?? null)} />
+          </label>
+          <label className="inline-flex items-center gap-1.5 font-sans text-caption text-ink-2 cursor-pointer">
+            <input type="checkbox" checked={esHito} onChange={e => setEsHito(e.target.checked)} className="accent-[var(--color-accent)]" />
+            Es un hito (primer mes, récord, objetivo a la vista)
+          </label>
+          <span className="flex-1" />
+          <Button size="s" iconTrailing="send" disabled={(!textoLibre.trim() && !archivoLibre) || libre.isPending} loading={libre.isPending}
+            onClick={() => libre.mutate({ texto: textoLibre.trim(), tipo: esHito ? 'hito' : 'libre', archivo: archivoLibre }, { onSuccess: () => { setTextoLibre(''); setArchivoLibre(null); setEsHito(false); } })}>
+            {esHito ? 'Enviar el hito' : 'Enviar con mi nombre'}
           </Button>
         </div>
       </div>

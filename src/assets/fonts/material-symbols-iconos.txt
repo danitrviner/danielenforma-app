@@ -113,6 +113,7 @@ flag
 folder_open
 format_list_bulleted
 format_list_numbered
+format_quote
 foundation
 free_breakfast
 function

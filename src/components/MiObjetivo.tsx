@@ -10,6 +10,8 @@ import {
 } from '../utils/verificacionObjetivo';
 import GraficaObjetivos from './revision/GraficaObjetivos';
 import { Card, Badge, BadgeTone, Collapsible } from './ui';
+import { COACH_NOMBRE } from '../utils/coach';
+import LoQueVinisteABuscar from './home/LoQueVinisteABuscar';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Mi objetivo — lo que ve el ATLETA de la verificación
@@ -23,17 +25,19 @@ import { Card, Badge, BadgeTone, Collapsible } from './ui';
        peso sube y baja de un día a otro siempre a mano.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+// Honestidad (plan de acompañamiento, 28-10): nada de «tu coach lo está
+// siguiendo y ajustará» cuando nadie ha mirado todavía. Lo que es verdad: Dani
+// lo ve en la revisión del lunes, y si va lento hay algo que hacer esta semana.
 const MENSAJE: Record<EstadoVerificacion, { tono: BadgeTone; etiqueta: string; texto: string }> = {
   'en-rango':   { tono: 'success', etiqueta: 'Vas bien', texto: 'Tu tendencia va al ritmo previsto. Sigue así.' },
-  'lento':      { tono: 'info', etiqueta: 'Algo más lento', texto: 'Vas algo más despacio de lo previsto. Tu coach lo está siguiendo y ajustará si hace falta.' },
-  'rapido':     { tono: 'info', etiqueta: 'Más rápido', texto: 'Vas más rápido de lo previsto. Tu coach lo está siguiendo para que el ritmo sea sostenible.' },
-  'contrario':  { tono: 'warning', etiqueta: 'A revisar', texto: 'Estas semanas el peso va en dirección contraria al objetivo. Tu coach lo revisará contigo.' },
-  'por-encima': { tono: 'info', etiqueta: 'Fuera de la franja', texto: 'Tu tendencia se ha salido de la franja por arriba. Tu coach lo revisará contigo.' },
-  'por-debajo': { tono: 'info', etiqueta: 'Fuera de la franja', texto: 'Tu tendencia se ha salido de la franja por abajo. Tu coach lo revisará contigo.' },
+  'lento':      { tono: 'info', etiqueta: 'Algo más lento', texto: `Vas algo más despacio de lo previsto. Esta semana: registra la comida todos los días y llega a tus pasos. ${COACH_NOMBRE} lo ve en tu revisión del lunes.` },
+  'rapido':     { tono: 'info', etiqueta: 'Más rápido', texto: `Vas más rápido de lo previsto. Mantén las kcal del plan; ${COACH_NOMBRE} lo mira el lunes.` },
+  'contrario':  { tono: 'warning', etiqueta: 'A revisar', texto: `Estas semanas el peso va en dirección contraria al objetivo. Cuéntaselo a ${COACH_NOMBRE} en la revisión: lo ajusta contigo.` },
+  'por-encima': { tono: 'info', etiqueta: 'Fuera de la franja', texto: `Tu tendencia se ha salido de la franja por arriba. ${COACH_NOMBRE} lo revisa contigo el lunes.` },
+  'por-debajo': { tono: 'info', etiqueta: 'Fuera de la franja', texto: `Tu tendencia se ha salido de la franja por abajo. ${COACH_NOMBRE} lo revisa contigo el lunes.` },
   'parcial':    { tono: 'neutral', etiqueta: 'Recogiendo datos', texto: 'Aún faltan datos para una lectura completa.' },
   'sin-datos':  { tono: 'neutral', etiqueta: 'Recogiendo datos', texto: 'Pésate 3 o más veces por semana: con dos semanas de pesos ya se ve tu tendencia.' },
 };
-
 function fmt(n: number, dec = 2): string {
   const s = n.toLocaleString('es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec });
   return n > 0 ? `+${s}` : s;
@@ -72,6 +76,8 @@ export default function MiObjetivo({ athleteEmail }: { athleteEmail: string }) {
   return (
     <Card title={`Tu objetivo: ${OBJETIVO_LABEL[tipo]}`} subtitle={enCurso.fase.name !== OBJETIVO_LABEL[tipo] ? enCurso.fase.name : undefined}>
       <div className="space-y-4">
+        {/* Lo que viniste a buscar, con sus palabras, y el antes → ahora (29-10). */}
+        <LoQueVinisteABuscar athleteEmail={athleteEmail} pesos={pesos} pesoMeta={enCurso.fase.targetWeight ?? null} objetivo={tipo} variante="cifras" sinMarco />
         <div className="space-y-2">
           <Badge tone={m.tono} dot>{m.etiqueta}</Badge>
           <p className="font-sans text-label text-ink">{m.texto}</p>

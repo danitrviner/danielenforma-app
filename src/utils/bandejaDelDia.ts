@@ -2,7 +2,10 @@ import { Contacto, Mesocycle, QuestionnaireResponse, UserProfile, WeightCheckIn,
 import { addDays, diasEntreFechas, isoLocal } from './trainingWeek';
 import { DIAS_AVISO_RENOVACION } from './calidadDelPlan';
 import type { MotivoContacto } from './plantillasWhatsApp';
-import { senalPrimeraSemana } from './primeraSemana';
+import { diaDePlan, senalPrimeraSemana } from './primeraSemana';
+
+/** Día del plan en que se celebra el primer mes. */
+export const DIA_PRIMER_MES = 28;
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LA BANDEJA DEL DÍA — qué atleta necesita algo tuyo, y con cuánta prisa.
@@ -208,6 +211,14 @@ export function construirBandejaDelDia(entrada: EntradaBandeja): SenalDelDia[] {
     if (primera) {
       añadirContacto(`primera_${primera.motivo}`, 'hoy', 'setup', primera.texto, 'revision',
         { motivo: primera.motivo, dias: primera.dia });
+    }
+    // ── El primer mes (29-10) ────────────────────────────────────────────
+    // Un hito que Dani celebra con un audio o vídeo suyo (decisión 28-10):
+    // la bandeja se lo recuerda entre el día 28 y el 31 del plan y lo lleva
+    // al panel de mensajes, donde se graba.
+    const dia = diaDePlan(a, hoy);
+    if (dia !== null && dia >= DIA_PRIMER_MES && dia <= DIA_PRIMER_MES + 3) {
+      añadir('primer_mes', 'hoy', 'revision', `Primer mes cumplido (día ${dia}): grábale un hito`, 'revision');
     }
 
     // «Se está apagando» (Dani, 28-10): 3 días sin registrar nada, 3 sesiones

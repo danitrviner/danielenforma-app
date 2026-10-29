@@ -16,7 +16,10 @@ function stepLog(date: string, steps: number): StepLog {
 }
 
 function input(overrides: Partial<AutoChallengeInput> = {}): AutoChallengeInput {
-  return { ...EMPTY_DATA, athleteId: 'a@x.com', today: TODAY, ...overrides };
+  return {
+    // Nivel explícito (29-10): estos tests miden la cuenta en «justo»; en
+    // arranque el reto va en suave y eso tiene su propio test en challengeMemory.
+    nivelForzado: 'constancia', ...EMPTY_DATA, athleteId: 'a@x.com', today: TODAY, ...overrides };
 }
 
 describe('isoWeekKey', () => {
