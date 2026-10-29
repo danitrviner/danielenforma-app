@@ -1,4 +1,7 @@
-/* Las TRES propuestas visuales de la pantalla de política del autopiloto
+/* Elegida por Dani el 29-10-2026: la variante B (semáforo); las otras dos se
+   compararon en /dev/autopiloto y se retiraron.
+
+   Las TRES propuestas visuales de la pantalla de política del autopiloto
    (29-10-2026). La lógica (leer, guardar, estadísticas, subida) vive en
    PoliticaAutopiloto.tsx; aquí solo cambia cómo se enseña. Se comparan en
    /dev/autopiloto y al final queda una:
@@ -16,12 +19,9 @@ import {
   ETIQUETA_DECISION, NIVEL_DESTINO, NUNCA_AUTOMATICO, SIEMPRE_HUMANO, evaluarSubida, nivelDe,
   type EstadisticaDeTipo, type NivelAutonomia, type PoliticaAutopiloto as Politica, type TipoDecision,
 } from '../../autopiloto/politica';
-import { Button, Icon } from '../ui';
-
-export type VariantePolitica = 'A' | 'B' | 'C';
+import { Icon } from '../ui';
 
 export interface PoliticaVistaProps {
-  variante: VariantePolitica;
   politica: Politica;
   stats: Map<TipoDecision, EstadisticaDeTipo>;
   guardando: boolean;
@@ -44,22 +44,8 @@ export const NIVELES: { id: NivelAutonomia; etiqueta: string; corta: string }[] 
 const TIPOS = Object.keys(ETIQUETA_DECISION) as TipoDecision[];
 const PUNTO: Record<NivelAutonomia, string> = { automatico: 'bg-success', aviso: 'bg-warning', proponer: 'bg-ink-3' };
 
-const BLOQUES: { titulo: string; tipos: TipoDecision[] }[] = [
-  { titulo: 'Nutrición', tipos: ['menu_semanal', 'ajuste_kcal_pequeno', 'ajuste_kcal_medio', 'ajuste_kcal_grande'] },
-  { titulo: 'Entrenamiento', tipos: ['reto', 'progresion_programada', 'progresion_iem', 'cambio_ejercicio_molestia', 'descarga_adelantada', 'mesociclo', 'sesiones', 'publicar_bloque'] },
-  { titulo: 'Comunicación y plan', tipos: ['respuesta_rutinaria', 'mensaje_atleta', 'ficha', 'setup', 'roadmap'] },
-  { titulo: 'Siempre tú', tipos: ['clinico', 'renovacion'] },
-];
-
-function nivelesPermitidos(tipo: TipoDecision) {
-  return NIVELES.filter(n => !(n.id === 'automatico' && NUNCA_AUTOMATICO.has(tipo)));
-}
-
 export default function PoliticaVista(props: PoliticaVistaProps) {
-  const { variante } = props;
-  if (variante === 'B') return <VistaB {...props} />;
-  if (variante === 'C') return <VistaC {...props} />;
-  return <VistaA {...props} />;
+  return <Vista {...props} />;
 }
 
 /* Piezas compartidas ------------------------------------------------------ */
@@ -123,71 +109,13 @@ function Cifras({ e }: { e?: EstadisticaDeTipo }) {
   );
 }
 
-function BotonSubida({ subida, onClick }: { subida: { a: NivelAutonomia; motivo: string } | null; onClick: (a: NivelAutonomia) => void }) {
-  if (!subida) return null;
-  return (
-    <Button size="s" variant="secondary" icon="trending_up" title={subida.motivo} onClick={() => onClick(subida.a)}>
-      Subir a {NIVELES.find(n => n.id === subida.a)?.etiqueta.toLowerCase()}
-    </Button>
-  );
-}
-
 function Mensaje({ msg }: { msg: string | null }) {
   return msg ? <p className="flex items-center gap-2 font-mono text-caption text-data"><Icon name="info" size="s" />{msg}</p> : null;
 }
 
-/* A · Tarjetas ------------------------------------------------------------- */
+/* Semáforo ------------------------------------------------------------- */
 
-function VistaA({ politica, stats, guardando, msg, gastoMesUsd, onGuardar }: PoliticaVistaProps) {
-  const cambiarNivel = (tipo: TipoDecision, nivel: NivelAutonomia) =>
-    onGuardar({ ...politica, nivelPorTipo: { ...politica.nivelPorTipo, [tipo]: nivel } });
-  return (
-    <div className="bg-surface border border-hairline rounded-surface px-5 py-[18px] space-y-4">
-      <Cabecera />
-      <div className="grid gap-2 sm:grid-cols-3">
-        {MODOS.map(m => (
-          <button key={m.id} type="button" disabled={guardando} onClick={() => onGuardar({ ...politica, modo: m.id })}
-            className={`rounded-field border px-3 py-3 text-left transition-colors ${politica.modo === m.id ? 'border-accent-line bg-accent/10' : 'border-hairline hover:bg-raised'}`}>
-            <span className="block font-sans font-bold text-body-s text-ink">{m.titulo}{politica.modo === m.id ? ' · activo' : ''}</span>
-            <span className="block font-sans text-caption text-ink-2 mt-1">{m.texto}</span>
-          </button>
-        ))}
-      </div>
-      <Presupuesto politica={politica} gastoMesUsd={gastoMesUsd} onGuardar={onGuardar} />
-      <div className={`space-y-1 ${politica.modo !== 'politica' ? 'opacity-70' : ''}`}>
-        <p className="font-mono text-caption uppercase tracking-wider text-ink-3">
-          Tabla por tipo de decisión {politica.modo !== 'politica' ? '· manda cuando el modo sea «Política»' : ''}
-        </p>
-        <ul className="divide-y divide-hairline rounded-field border border-hairline overflow-hidden">
-          {TIPOS.map(tipo => {
-            const nivel = nivelDe(politica, tipo);
-            const e = stats.get(tipo);
-            return (
-              <li key={tipo} className="px-3 py-2 flex flex-wrap items-center gap-2">
-                <span className="flex-1 min-w-[12rem] font-sans text-label text-ink">{ETIQUETA_DECISION[tipo]}</span>
-                <Cifras e={e} />
-                {SIEMPRE_HUMANO.has(tipo) ? (
-                  <span className="font-mono text-caption text-ink-3 rounded-chip bg-hairline px-2">siempre tú</span>
-                ) : (
-                  <select value={nivel} disabled={guardando} onChange={ev => cambiarNivel(tipo, ev.target.value as NivelAutonomia)}
-                    className="bg-field border border-control-line rounded-control px-2 py-1 font-sans text-caption text-ink">
-                    {nivelesPermitidos(tipo).map(n => <option key={n.id} value={n.id}>{n.etiqueta}{NIVEL_DESTINO[tipo] === n.id ? ' (destino)' : ''}</option>)}
-                  </select>
-                )}
-                <BotonSubida subida={e ? evaluarSubida(nivel, e) : null} onClick={a => cambiarNivel(tipo, a)} />
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-      <Mensaje msg={msg} />
-    </div>
-  );
-}
-
-/* B · Semáforo ------------------------------------------------------------- */
-
-function VistaB({ politica, stats, guardando, msg, gastoMesUsd, onGuardar }: PoliticaVistaProps) {
+function Vista({ politica, stats, guardando, msg, gastoMesUsd, onGuardar }: PoliticaVistaProps) {
   const cambiarNivel = (tipo: TipoDecision, nivel: NivelAutonomia) =>
     onGuardar({ ...politica, nivelPorTipo: { ...politica.nivelPorTipo, [tipo]: nivel } });
   const cuenta = (n: NivelAutonomia) => TIPOS.filter(t => !SIEMPRE_HUMANO.has(t) && nivelDe(politica, t) === n).length;
@@ -251,95 +179,6 @@ function VistaB({ politica, stats, guardando, msg, gastoMesUsd, onGuardar }: Pol
         <p className="mt-1 px-3 font-mono text-caption text-ink-4">Anillo = destino del diseño · — = no permitido · «Siempre tú» no se mueve.</p>
       </div>
       <Mensaje msg={msg} />
-    </div>
-  );
-}
-
-/* C · Por bloques ---------------------------------------------------------- */
-
-function VistaC({ politica, stats, guardando, msg, gastoMesUsd, onGuardar }: PoliticaVistaProps) {
-  const [abierto, setAbierto] = useState<string | null>(BLOQUES[0].titulo);
-  const cambiarNivel = (tipo: TipoDecision, nivel: NivelAutonomia) =>
-    onGuardar({ ...politica, nivelPorTipo: { ...politica.nivelPorTipo, [tipo]: nivel } });
-  const movibles = TIPOS.filter(t => !SIEMPRE_HUMANO.has(t));
-  const n = (x: NivelAutonomia) => movibles.filter(t => nivelDe(politica, t) === x).length;
-  const resumen = politica.modo === 'sombra'
-    ? 'Hoy el asistente solo mira: decide en sombra y no toca nada.'
-    : politica.modo === 'rodaje'
-      ? `Hoy el asistente te propone todo (${movibles.length} tipos de decisión) y lo apruebas tú.`
-      : `Hoy el asistente aplica solo ${n('automatico')} tipos de decisión, te avisa de ${n('aviso')} y te propone ${n('proponer')}. Lo clínico y el dinero, siempre tú.`;
-
-  return (
-    <div className="space-y-3">
-      <div className="bg-surface border border-hairline rounded-surface px-5 py-[18px] space-y-3">
-        <Cabecera />
-        <p className="font-sans text-body-s text-ink leading-relaxed border-l-2 border-accent-line pl-3">{resumen}</p>
-        <div className="flex flex-wrap gap-2">
-          {MODOS.map(m => (
-            <button key={m.id} type="button" disabled={guardando} title={m.texto} onClick={() => onGuardar({ ...politica, modo: m.id })}
-              className={`rounded-chip border px-3 py-1 font-sans text-caption transition-colors ${politica.modo === m.id ? 'bg-accent border-accent-press text-on-accent' : 'border-strong bg-raised text-ink-2'}`}>
-              {m.titulo}
-            </button>
-          ))}
-        </div>
-        <Presupuesto politica={politica} gastoMesUsd={gastoMesUsd} onGuardar={onGuardar} />
-        <Mensaje msg={msg} />
-      </div>
-
-      {BLOQUES.map(b => {
-        const esta = abierto === b.titulo;
-        const humano = b.tipos.every(t => SIEMPRE_HUMANO.has(t));
-        const porNivel = (x: NivelAutonomia) => b.tipos.filter(t => !SIEMPRE_HUMANO.has(t) && nivelDe(politica, t) === x).length;
-        const subidas = b.tipos.filter(t => { const e = stats.get(t); return e && evaluarSubida(nivelDe(politica, t), e); }).length;
-        return (
-          <section key={b.titulo} className="bg-surface border border-hairline rounded-surface overflow-hidden">
-            <button type="button" onClick={() => setAbierto(esta ? null : b.titulo)} className="w-full flex items-center gap-3 px-5 py-3 text-left">
-              <span className="font-sans font-bold text-body-s text-ink">{b.titulo}</span>
-              {humano ? (
-                <span className="font-mono text-caption text-ink-3 rounded-chip bg-hairline px-2">siempre tú</span>
-              ) : (
-                <span className="flex items-center gap-2 font-mono text-caption text-ink-3">
-                  {NIVELES.map(x => <span key={x.id} className="inline-flex items-center gap-1"><span className={`h-1.5 w-1.5 rounded-full ${PUNTO[x.id]}`} />{porNivel(x.id)}</span>)}
-                </span>
-              )}
-              {subidas > 0 && <span className="font-mono text-caption text-success">{subidas} para subir</span>}
-              <Icon name={esta ? 'expand_less' : 'expand_more'} size="s" className="ml-auto text-ink-3" />
-            </button>
-            {esta && (
-              <ul className="divide-y divide-hairline border-t border-hairline">
-                {b.tipos.map(tipo => {
-                  const nivel = nivelDe(politica, tipo);
-                  const e = stats.get(tipo);
-                  const subida = e ? evaluarSubida(nivel, e) : null;
-                  return (
-                    <li key={tipo} className="px-5 py-3 space-y-2">
-                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                        <span className="font-sans text-label text-ink">{ETIQUETA_DECISION[tipo]}</span>
-                        <Cifras e={e} />
-                      </div>
-                      {SIEMPRE_HUMANO.has(tipo) ? (
-                        <p className="font-sans text-caption text-ink-3">Siempre te lo propone y lo decides tú.</p>
-                      ) : (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div role="radiogroup" className="inline-flex rounded-chip border border-hairline bg-raised p-0.5">
-                            {nivelesPermitidos(tipo).map(x => (
-                              <button key={x.id} type="button" role="radio" aria-checked={nivel === x.id} disabled={guardando} onClick={() => cambiarNivel(tipo, x.id)}
-                                className={`px-3 py-1 rounded-chip font-sans text-caption transition-colors ${nivel === x.id ? 'bg-ink text-bg' : 'text-ink-2 hover:text-ink'}`}>
-                                {x.etiqueta}{NIVEL_DESTINO[tipo] === x.id ? ' ·' : ''}
-                              </button>
-                            ))}
-                          </div>
-                          <BotonSubida subida={subida} onClick={a => cambiarNivel(tipo, a)} />
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-        );
-      })}
     </div>
   );
 }

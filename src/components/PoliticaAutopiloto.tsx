@@ -6,17 +6,14 @@
    nunca sube sola. Vive en Perfil › Ajustes › Entrenadores › Asistente.
 
    Este archivo es la LÓGICA (leer, guardar, medir). La capa visual está en
-   autopiloto/PoliticaVista.tsx en tres variantes que se comparan en
-   /dev/autopiloto; `variante` elige cuál. */
+   autopiloto/PoliticaVista.tsx (variante «semáforo», elegida el 29-10). */
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getPoliticaAutopiloto, savePoliticaAutopiloto, getAiProposalsRecientes } from '../dbService';
 import { estadisticasPorTipo, tipoDeDecision, type PoliticaAutopiloto as Politica } from '../autopiloto/politica';
-import PoliticaVista, { type VariantePolitica } from './autopiloto/PoliticaVista';
+import PoliticaVista from './autopiloto/PoliticaVista';
 
-export const VARIANTE_POLITICA_ACTUAL: VariantePolitica = 'A';
-
-export default function PoliticaAutopiloto({ variante = VARIANTE_POLITICA_ACTUAL }: { variante?: VariantePolitica }) {
+export default function PoliticaAutopiloto() {
   const [politica, setPolitica] = useState<Politica | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -38,5 +35,5 @@ export default function PoliticaAutopiloto({ variante = VARIANTE_POLITICA_ACTUAL
     finally { setGuardando(false); }
   };
 
-  return <PoliticaVista variante={variante} politica={politica} stats={stats} guardando={guardando} msg={msg} onGuardar={nueva => void guardar(nueva)} />;
+  return <PoliticaVista politica={politica} stats={stats} guardando={guardando} msg={msg} onGuardar={nueva => void guardar(nueva)} />;
 }

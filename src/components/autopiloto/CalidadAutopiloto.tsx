@@ -4,8 +4,8 @@
    propuesta (`calidad`); «no vuelvas» además baja ese tipo de decisión a
    `proponer` en la política y deja una instrucción fija para el asistente.
 
-   Este archivo es la LÓGICA; la capa visual está en CalidadVista.tsx en tres
-   variantes que se comparan en /dev/autopiloto; `variante` elige cuál. */
+   Este archivo es la LÓGICA; la capa visual está en CalidadVista.tsx
+   (variante «lista», elegida el 29-10). */
 import React, { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -17,11 +17,9 @@ import {
 import { muestraDeCalidad, resumenCalidad, bajarPorNoVuelvas, instruccionDeNoVuelvas, anadirInstruccionFija, type Veredicto } from '../../autopiloto/calidad';
 import { tipoDeDecision } from '../../autopiloto/politica';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
-import CalidadVista, { type VarianteCalidad } from './CalidadVista';
+import CalidadVista from './CalidadVista';
 
-export const VARIANTE_CALIDAD_ACTUAL: VarianteCalidad = 'A';
-
-export default function CalidadAutopiloto({ variante = VARIANTE_CALIDAD_ACTUAL }: { variante?: VarianteCalidad }) {
+export default function CalidadAutopiloto() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [juzgandoId, setJuzgandoId] = useState<string | null>(null);
@@ -59,7 +57,7 @@ export default function CalidadAutopiloto({ variante = VARIANTE_CALIDAD_ACTUAL }
 
   return (
     <CalidadVista
-      variante={variante} semana={semana} muestra={muestra} total={total} resumen={resumen} nombreDe={nombreDe}
+      semana={semana} muestra={muestra} total={total} resumen={resumen} nombreDe={nombreDe}
       juzgandoId={juzgandoId} error={error} onVeredicto={onVeredicto}
       onIrAlAtleta={email => navigate(`/clients/${encodeURIComponent(email)}/revision`)}
     />

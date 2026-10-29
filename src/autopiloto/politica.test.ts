@@ -11,7 +11,7 @@ describe('política de autonomía', () => {
   it('por defecto se arranca en SOMBRA (decisión de Dani del 28-10) con 50 $/mes', () => {
     expect(POLITICA_POR_DEFECTO.modo).toBe('sombra');
     expect(POLITICA_POR_DEFECTO.presupuesto).toEqual({ mesUsd: 50, diaUsd: 3 });
-    expect(POLITICA_POR_DEFECTO.menuAutomatico).toBe('borrador24h');
+    expect(POLITICA_POR_DEFECTO.menuAutomatico).toBe('publicar');
     expect(normalizarPolitica({ modo: 'lo que sea', presupuesto: { mesUsd: -3 } })).toMatchObject({ modo: 'sombra', presupuesto: { mesUsd: 50, diaUsd: 3 } });
   });
 

@@ -4,21 +4,16 @@
    coach, antes de «Lo que he cambiado», que es lo que hizo Dani a mano.
 
    Este archivo es la LÓGICA (leer y construir); la capa visual está en
-   LineaDeTiempoVista.tsx en tres variantes que se comparan en /dev/autopiloto;
-   `variante` elige cuál. */
+   LineaDeTiempoVista.tsx (variante «tarjetas», elegida el 29-10). */
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import type { UserProfile } from '../../types';
 import { getEpisodiosDeAtleta, getAiProposalsForAthlete, getMesocycles, getDietsForAthlete, getPoliticaAutopiloto } from '../../dbService';
 import { construirLineaDeTiempo } from '../../autopiloto/lineaDeTiempo';
-import LineaDeTiempoVista, { type VarianteLinea } from './LineaDeTiempoVista';
+import LineaDeTiempoVista from './LineaDeTiempoVista';
 
-export const VARIANTE_LINEA_ACTUAL: VarianteLinea = 'A';
-
-export default function LineaDeTiempoAsistente({ athlete, variante = VARIANTE_LINEA_ACTUAL, presentando = false }: {
-  athlete: UserProfile; variante?: VarianteLinea; presentando?: boolean;
-}) {
+export default function LineaDeTiempoAsistente({ athlete, presentando = false }: { athlete: UserProfile; presentando?: boolean }) {
   const navigate = useNavigate();
   const email = athlete.email;
   const { data: episodios = [], isPending: p1 } = useQuery({ queryKey: ['episodios', email], queryFn: () => getEpisodiosDeAtleta(email) });
@@ -35,7 +30,7 @@ export default function LineaDeTiempoAsistente({ athlete, variante = VARIANTE_LI
 
   return (
     <LineaDeTiempoVista
-      variante={variante} linea={linea} modo={politica?.modo ?? 'sombra'} cargando={p1 || p2} presentando={presentando}
+      linea={linea} modo={politica?.modo ?? 'sombra'} cargando={p1 || p2} presentando={presentando}
       onIrAPropuesta={id => navigate(`/propuestas?filtro=aplicadas&propuesta=${encodeURIComponent(id)}`)}
     />
   );

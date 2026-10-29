@@ -4,7 +4,7 @@ import { OnboardingData } from '../types';
 import { updateOnboarding } from '../dbService';
 import { registrarConsentimiento } from '../ai/consentimientoIA';
 import { useToast } from '../hooks/useToast';
-import { Dialog, Button, Icon } from './ui';
+import { Dialog, Button } from './ui';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -68,7 +68,7 @@ export default function SolicitudConsentimientoIA({ onboarding, onRespondido, on
     <Dialog
       open
       onClose={onAhoraNo ?? (() => {})}
-      title="¿Podemos analizar tus datos con el asistente?"
+      title="¿Puede tu entrenador apoyarse en herramientas digitales?"
       size="m"
       footer={
         <div className="flex flex-col gap-2 w-full">
@@ -104,38 +104,18 @@ export default function SolicitudConsentimientoIA({ onboarding, onRespondido, on
       }
     >
       <div className="space-y-4 text-body-s font-sans text-ink-2">
+        {/* Discreto a propósito (Dani, 29-10): aquí lo imprescindible; el
+            detalle de qué datos, qué proveedor y en qué condiciones está en la
+            Política de privacidad, que es el documento que manda. */}
         <p>
-          Tu entrenador puede usar un asistente para <strong className="text-ink">revisar
-          tu evolución</strong> (entrenos, dieta y revisiones) cuando prepara tus ajustes. Los planes
-          los decide y los firma él.
+          Tu entrenador puede apoyarse en herramientas digitales para <strong className="text-ink">preparar
+          y revisar tu plan</strong> (entrenos, dieta y revisiones). Los planes los decide y los firma él.
         </p>
-
-        <div className="rounded-surface border border-hairline bg-raised p-4 space-y-3">
-          <p className="font-bold text-ink flex items-center gap-2">
-            <Icon name="database" size="s" className="text-accent-ink" />
-            Qué se enviaría
-          </p>
-          <ul className="space-y-1 list-disc pl-5">
-            <li>Tu ficha: edad, sexo, peso, altura y objetivo.</li>
-            <li>Tus <strong className="text-ink">lesiones, alergias y medicación</strong>, si las has indicado.</li>
-            <li>Tus entrenamientos, tu dieta y tus revisiones, con lo que escribes en ellas.</li>
-            <li>Tus series de sueño, estrés y dolor.</li>
-          </ul>
-          <p className="font-bold text-ink flex items-center gap-2 pt-1">
-            <Icon name="send" size="s" className="text-accent-ink" />
-            A dónde
-          </p>
-          <p>
-            A <strong className="text-ink">Anthropic PBC</strong>, la empresa que provee el modelo.
-            No usan estos datos para entrenar sus modelos. <strong className="text-ink">No se envía
-            tu nombre completo</strong>: solo tu nombre de pila y la inicial de tu apellido.
-          </p>
-        </div>
-
         <p>
-          Son datos de salud, así que hace falta que lo autorices tú. Puedes decir que no y seguir
-          usando la app exactamente igual: tu entrenador seguirá preparándotelo todo a mano.
-          Si cambias de idea, puedes cambiarlo en <strong className="text-ink">Perfil → Ajustes</strong>.
+          Como entre tus datos hay información de salud, hace falta que lo autorices tú. Puedes decir
+          que no y seguir usando la app exactamente igual. Si cambias de idea, está en{' '}
+          <strong className="text-ink">Perfil → Ajustes</strong>; el detalle, en la{' '}
+          <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 text-ink">Política de privacidad</a>.
         </p>
       </div>
     </Dialog>

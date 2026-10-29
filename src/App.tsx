@@ -924,14 +924,14 @@ function AppContent() {
       role: 'client', avatarUrl: '', level: 0, currentStreak: 0, maxStreak: 0,
       initialWeight: 0, targetWeight: 0, actualWeight: 0,
     } as UserProfile;
-    // `?unificado=A|B|C`: el muro de UNA página (tanda 8, pendiente de D1).
-    const unificado = new URLSearchParams(location.search).get('unificado');
+    // El muro real es el de UNA página (D1, 29-10); `?clasico=1` enseña el de dos
+    // pasos, que sigue sirviendo a Perfil › Ajustes en modo revisión.
+    const clasico = new URLSearchParams(location.search).get('clasico') === '1';
     return (
       <div className="min-h-screen bg-bg">
         <Suspense fallback={<Splash texto="Un momento..." />}>
-          {unificado === 'A' || unificado === 'B' || unificado === 'C' ? (
+          {!clasico ? (
             <MuroLegalUnificado
-              variante={unificado}
               profile={perfilDev}
               guardar={async nuevas => { console.log('guardaría', nuevas); return nuevas; }}
               onCompletado={legal => console.log('onCompletado', legal)}
@@ -971,7 +971,9 @@ function AppContent() {
             es un rectángulo negro y vacío mientras baja el chunk — el mismo
             "la app se ha colgado" que se describe arriba, en Splash. */}
         <Suspense fallback={<Splash texto="Un momento..." />}>
-          <AceptacionLegalGate
+          {/* Desde el 29-10 (D1) el muro es de UNA página: los dos textos con sus
+              casillas debajo y la del asistente dentro de Términos, opcional. */}
+          <MuroLegalUnificado
             profile={profile}
             onCompletado={legal => setProfile(p => (p ? { ...p, legal } : p))}
             onSalir={async () => {

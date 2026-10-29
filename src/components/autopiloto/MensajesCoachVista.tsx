@@ -1,4 +1,7 @@
-/* Las TRES propuestas visuales del CANAL DEL ATLETA (diseño §6): los mensajes
+/* Elegida por Dani el 29-10-2026: la variante B (burbujas tipo chat); las otras dos se
+   compararon en /dev/autopiloto y se retiraron.
+
+   Las TRES propuestas visuales del CANAL DEL ATLETA (diseño §6): los mensajes
    del coach que no caen en una revisión (`mensajesCoach`: qué cambia esta
    semana, una pregunta por sus faltas, un ánimo cuando lleva días sin pesarse).
    Firma siempre Dani; en pantalla nunca aparece el asistente. La lógica (leer,
@@ -18,10 +21,7 @@ import React, { useState } from 'react';
 import type { MensajeCoach } from '../../types';
 import { Icon } from '../ui';
 
-export type VarianteMensajes = 'A' | 'B' | 'C';
-
 export interface MensajesCoachVistaProps {
-  variante: VarianteMensajes;
   mensajes: MensajeCoach[];
   /** Nombre que firma. Siempre Dani; se pasa para el banco de pruebas. */
   firma: string;
@@ -50,55 +50,12 @@ export function mensajesVigentes(mensajes: MensajeCoach[], ahora = Date.now()): 
 export default function MensajesCoachVista(props: MensajesCoachVistaProps) {
   const vigentes = mensajesVigentes(props.mensajes);
   if (vigentes.length === 0) return null;
-  if (props.variante === 'B') return <VistaB {...props} mensajes={vigentes} />;
-  if (props.variante === 'C') return <VistaC {...props} mensajes={vigentes} />;
-  return <VistaA {...props} mensajes={vigentes} />;
+  return <Vista {...props} mensajes={vigentes} />;
 }
 
-/* A · Tarjeta ------------------------------------------------------------- */
+/* Burbuja ------------------------------------------------------------- */
 
-function VistaA({ mensajes, firma, onLeido }: MensajesCoachVistaProps) {
-  const [verAnteriores, setVerAnteriores] = useState(false);
-  const sinLeer = mensajes.filter(m => !m.leidoEn);
-  const leidos = mensajes.filter(m => !!m.leidoEn);
-  const lista = verAnteriores ? mensajes : (sinLeer.length > 0 ? sinLeer : mensajes.slice(0, 1));
-  return (
-    <div className="space-y-3">
-      {lista.map(m => (
-        <section key={m.id} className={`rounded-canvas p-4 border flex gap-3 ${m.leidoEn ? 'border-hairline bg-surface' : 'border-accent-line bg-accent/8'}`} aria-label={`Mensaje de ${firma}`}>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control font-mono text-caption font-bold text-accent-ink"
-            style={{ background: 'color-mix(in oklab, var(--color-accent) 16%, transparent)' }}>
-            <Icon name="chat_bubble" size="s" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline justify-between gap-2">
-              <p className="text-caption font-mono uppercase tracking-wider text-accent-ink">{ETIQUETA_MOTIVO[m.motivo]}</p>
-              <p className="text-caption font-mono text-ink-4 whitespace-nowrap">{fechaCorta(m.creadoEn)}</p>
-            </div>
-            <p className="text-body-s font-sans text-ink mt-1 leading-relaxed whitespace-pre-wrap" style={{ textWrap: 'pretty' }}>{m.texto}</p>
-            <div className="flex items-center justify-between gap-2 mt-2">
-              <p className="text-caption font-sans text-ink-3">— {firma}</p>
-              {!m.leidoEn && (
-                <button type="button" onClick={() => onLeido(m)} className="text-caption font-mono uppercase tracking-wider text-accent-ink hover:underline">
-                  Leído
-                </button>
-              )}
-            </div>
-          </div>
-        </section>
-      ))}
-      {!verAnteriores && leidos.length > 0 && sinLeer.length > 0 && (
-        <button type="button" onClick={() => setVerAnteriores(true)} className="text-caption font-mono text-ink-3 underline underline-offset-2">
-          Ver {leidos.length === 1 ? 'el anterior' : `los ${leidos.length} anteriores`}
-        </button>
-      )}
-    </div>
-  );
-}
-
-/* B · Burbuja ------------------------------------------------------------- */
-
-function VistaB({ mensajes, firma, onLeido }: MensajesCoachVistaProps) {
+function Vista({ mensajes, firma, onLeido }: MensajesCoachVistaProps) {
   const [abierto, setAbierto] = useState(true);
   const sinLeer = mensajes.filter(m => !m.leidoEn).length;
   const enOrden = [...mensajes].reverse(); // el último abajo
@@ -129,44 +86,6 @@ function VistaB({ mensajes, firma, onLeido }: MensajesCoachVistaProps) {
           ))}
         </ol>
       )}
-    </section>
-  );
-}
-
-/* C · Bandeja ------------------------------------------------------------- */
-
-function VistaC({ mensajes, firma, onLeido }: MensajesCoachVistaProps) {
-  const [abiertoId, setAbiertoId] = useState<string | null>(() => mensajes.find(m => !m.leidoEn)?.id ?? null);
-  const abrir = (m: MensajeCoach) => {
-    setAbiertoId(abiertoId === m.id ? null : m.id);
-    if (!m.leidoEn) onLeido(m);
-  };
-  return (
-    <section className="rounded-canvas border border-hairline bg-surface divide-y divide-hairline" aria-label={`Mensajes de ${firma}`}>
-      <p className="px-4 pt-3 pb-2 font-mono text-caption uppercase tracking-wider text-ink-3">Mensajes de {firma}</p>
-      {mensajes.map(m => {
-        const abierto = abiertoId === m.id;
-        return (
-          <div key={m.id}>
-            <button type="button" onClick={() => abrir(m)} className="flex w-full items-start gap-3 px-4 py-3 text-left" aria-expanded={abierto}>
-              <span className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${m.leidoEn ? 'bg-hairline' : 'bg-accent'}`} aria-hidden />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className={`font-sans text-label ${m.leidoEn ? 'text-ink-2' : 'font-bold text-ink'}`}>{ETIQUETA_MOTIVO[m.motivo]}</p>
-                  <p className="font-mono text-caption text-ink-4 whitespace-nowrap">{fechaCorta(m.creadoEn)}</p>
-                </div>
-                {!abierto && <p className="font-sans text-caption text-ink-3 truncate">{m.texto.split('\n')[0]}</p>}
-              </div>
-            </button>
-            {abierto && (
-              <div className="px-4 pb-4 pl-9">
-                <p className="font-sans text-body-s text-ink leading-relaxed whitespace-pre-wrap" style={{ textWrap: 'pretty' }}>{m.texto}</p>
-                <p className="font-sans text-caption text-ink-3 mt-2">— {firma} · {fechaLarga(m.creadoEn)}</p>
-              </div>
-            )}
-          </div>
-        );
-      })}
     </section>
   );
 }

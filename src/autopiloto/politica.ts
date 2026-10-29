@@ -79,7 +79,7 @@ export interface PoliticaAutopiloto {
   /** Nivel por tipo cuando `modo === 'politica'`; lo que falte usa NIVEL_DESTINO. */
   nivelPorTipo: Partial<Record<TipoDecision, NivelAutonomia>>;
   presupuesto: { mesUsd: number; diaUsd: number };
-  /** Menú semanal: borrador que publica Dani, borrador que se publica solo a las 24 h, o publicar directo. */
+  /** Menú semanal: borrador que publica Dani, borrador que se publica solo a las 24 h, o publicar directo (D3, Dani 29-10: «se publicarían solos»). */
   menuAutomatico: 'borrador' | 'borrador24h' | 'publicar';
   horasAviso: number;
   updatedAt?: string;
@@ -89,7 +89,7 @@ export const POLITICA_POR_DEFECTO: PoliticaAutopiloto = {
   modo: 'sombra',
   nivelPorTipo: {},
   presupuesto: { mesUsd: 50, diaUsd: 3 },
-  menuAutomatico: 'borrador24h',
+  menuAutomatico: 'publicar',
   horasAviso: 24,
 };
 
@@ -105,7 +105,7 @@ export function normalizarPolitica(raw: unknown): PoliticaAutopiloto {
     modo,
     nivelPorTipo,
     presupuesto: { mesUsd: n(r.presupuesto?.mesUsd, 50), diaUsd: n(r.presupuesto?.diaUsd, 3) },
-    menuAutomatico: r.menuAutomatico === 'borrador' || r.menuAutomatico === 'publicar' ? r.menuAutomatico : 'borrador24h',
+    menuAutomatico: r.menuAutomatico === 'borrador' || r.menuAutomatico === 'borrador24h' ? r.menuAutomatico : 'publicar',
     horasAviso: n(r.horasAviso, 24) || 24,
     ...(typeof r.updatedAt === 'string' ? { updatedAt: r.updatedAt } : {}),
   };

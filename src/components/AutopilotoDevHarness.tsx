@@ -1,15 +1,17 @@
 /* Banco de pruebas del autopiloto (`/dev/autopiloto`, solo en desarrollo):
-   las tres variantes visuales de cada pantalla nueva, con datos de ejemplo en
-   memoria. Sirve para elegir una de cada (Dani, 29-10-2026: «dame 2-3
-   versiones … elegimos al final»). Guardar, deshacer, juzgar o marcar leído
-   cambian el estado local; nada toca Firestore.
+   las pantallas del autopiloto con datos de ejemplo en memoria. Hasta el
+   29-10-2026 enseñaba tres variantes de cada una; Dani eligió (Política
+   semáforo, Hecho hoy cronología, Línea de tiempo tarjetas, Calidad lista,
+   Mensajes burbujas, Muro legal de un documento) y las otras se retiraron.
+   Guardar, deshacer, juzgar o marcar leído cambian el estado local; nada toca
+   Firestore.
 
-     1 · Política (Perfil › Ajustes › Asistente)        tanda 4
-     2 · Hecho hoy (Inicio del coach)                   tanda 4
-     3 · Lo que ha hecho el asistente (Revisión)        tanda 8
-     4 · Calidad (Propuestas › Calidad)                 tanda 8
-     5 · Mensajes del coach (Inicio del atleta)         tanda 8
-     6 · Muro legal unificado (pendiente de D1)         tanda 8 */
+     1 · Política (Perfil › Ajustes › Asistente)
+     2 · Hecho hoy (Inicio del coach)
+     3 · Lo que ha hecho el asistente (Revisión)
+     4 · Calidad (Propuestas › Calidad)
+     5 · Mensajes del coach (Inicio del atleta)
+     6 · Muro legal unificado */
 import React, { useMemo, useState } from 'react';
 import type { AiProposal, MensajeCoach, UserProfile } from '../types';
 import { POLITICA_POR_DEFECTO, type EstadisticaDeTipo, type PoliticaAutopiloto as Politica, type TipoDecision } from '../autopiloto/politica';
@@ -17,12 +19,12 @@ import type { Episodio } from '../autopiloto/episodios';
 import { construirLineaDeTiempo } from '../autopiloto/lineaDeTiempo';
 import { muestraDeCalidad, resumenCalidad, type Veredicto } from '../autopiloto/calidad';
 import { hoyIsoLocal, addDays } from '../utils/trainingWeek';
-import PoliticaVista, { type VariantePolitica } from './autopiloto/PoliticaVista';
-import HechoHoyVista, { type VarianteHechoHoy } from './autopiloto/HechoHoyVista';
-import LineaDeTiempoVista, { type VarianteLinea } from './autopiloto/LineaDeTiempoVista';
-import CalidadVista, { type VarianteCalidad } from './autopiloto/CalidadVista';
-import MensajesCoachVista, { type VarianteMensajes } from './autopiloto/MensajesCoachVista';
-import MuroLegalUnificado, { type VarianteMuro } from './MuroLegalUnificado';
+import PoliticaVista from './autopiloto/PoliticaVista';
+import HechoHoyVista from './autopiloto/HechoHoyVista';
+import LineaDeTiempoVista from './autopiloto/LineaDeTiempoVista';
+import CalidadVista from './autopiloto/CalidadVista';
+import MensajesCoachVista from './autopiloto/MensajesCoachVista';
+import MuroLegalUnificado from './MuroLegalUnificado';
 
 const AHORA = Date.now();
 const HOY = hoyIsoLocal();
@@ -116,49 +118,11 @@ const PERFIL_DEV = {
   initialWeight: 0, targetWeight: 0, actualWeight: 0,
 } as UserProfile;
 
-/* ── Selector de variantes ─────────────────────────────────────────────────── */
-const VARIANTES = ['A', 'B', 'C'] as const;
-const ETIQUETA_P: Record<VariantePolitica, string> = { A: 'A · Tarjetas', B: 'B · Semáforo', C: 'C · Por bloques' };
-const ETIQUETA_H: Record<VarianteHechoHoy, string> = { A: 'A · Lista', B: 'B · Cronología', C: 'C · Por atleta' };
-const ETIQUETA_L: Record<VarianteLinea, string> = { A: 'A · Tabla por semana', B: 'B · Hilo', C: 'C · Tarjetas' };
-const ETIQUETA_C: Record<VarianteCalidad, string> = { A: 'A · Una a una', B: 'B · Lista', C: 'C · Tabla' };
-const ETIQUETA_M: Record<VarianteMensajes, string> = { A: 'A · Tarjeta', B: 'B · Burbuja', C: 'C · Bandeja' };
-const ETIQUETA_W: Record<VarianteMuro, string> = { A: 'A · Un documento', B: 'B · Acordeón', C: 'C · Resumen + letra' };
-
-function Selector<T extends string>({ valor, opciones, etiquetas, onChange }: { valor: T | 'todas'; opciones: readonly T[]; etiquetas: Record<T, string>; onChange: (v: T | 'todas') => void }) {
-  const todas = [...opciones, 'todas' as const];
-  return (
-    <div className="inline-flex rounded-chip border border-hairline bg-raised p-0.5">
-      {todas.map(o => (
-        <button key={o} type="button" onClick={() => onChange(o)}
-          className={`px-3 py-1 rounded-chip font-mono text-caption uppercase tracking-wider ${valor === o ? 'bg-accent text-on-accent' : 'text-ink-2'}`}>
-          {o === 'todas' ? 'Las tres' : etiquetas[o as T]}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-type Variante = 'A' | 'B' | 'C';
-function Seccion({ n, titulo, valor, etiquetas, onChange, ancho = 'xl:grid-cols-3', unaSola = '', children }: {
-  n: number; titulo: string; valor: Variante | 'todas'; etiquetas: Record<Variante, string>; onChange: (v: Variante | 'todas') => void; ancho?: string; unaSola?: string;
-  children: (v: Variante) => React.ReactNode;
-}) {
-  const lista: readonly Variante[] = valor === 'todas' ? VARIANTES : [valor];
+function Seccion({ n, titulo, ancho = 'max-w-[48rem]', children }: { n: number; titulo: string; ancho?: string; children: React.ReactNode }) {
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <h2 className="font-mono text-caption uppercase tracking-widest text-ink-3">{n} · {titulo}</h2>
-        <Selector valor={valor} opciones={VARIANTES} etiquetas={etiquetas} onChange={onChange} />
-      </div>
-      <div className={`grid gap-6 ${lista.length > 1 ? ancho : unaSola}`}>
-        {lista.map(v => (
-          <div key={v} className="space-y-2 min-w-0">
-            <p className="font-mono text-caption uppercase tracking-wider text-ink-3">{etiquetas[v]}</p>
-            {children(v)}
-          </div>
-        ))}
-      </div>
+      <h2 className="font-mono text-caption uppercase tracking-widest text-ink-3">{n} · {titulo}</h2>
+      <div className={`min-w-0 ${ancho}`}>{children}</div>
     </section>
   );
 }
@@ -166,12 +130,6 @@ function Seccion({ n, titulo, valor, etiquetas, onChange, ancho = 'xl:grid-cols-
 export default function AutopilotoDevHarness() {
   const [politica, setPolitica] = useState<Politica>({ ...POLITICA_POR_DEFECTO, modo: 'politica', nivelPorTipo: { ajuste_kcal_medio: 'proponer' } });
   const [msg, setMsg] = useState<string | null>(null);
-  const [vp, setVp] = useState<VariantePolitica | 'todas'>('todas');
-  const [vh, setVh] = useState<VarianteHechoHoy | 'todas'>('todas');
-  const [vl, setVl] = useState<VarianteLinea | 'todas'>('todas');
-  const [vc, setVc] = useState<VarianteCalidad | 'todas'>('todas');
-  const [vm, setVm] = useState<VarianteMensajes | 'todas'>('todas');
-  const [vw, setVw] = useState<VarianteMuro | 'todas'>('todas');
   const [recientes, setRecientes] = useState(RECIENTES);
   const [automaticas, setAutomaticas] = useState(AUTOMATICAS);
   const [mensajes, setMensajes] = useState(MENSAJES);
@@ -189,36 +147,34 @@ export default function AutopilotoDevHarness() {
   return (
     <div className="min-h-screen bg-bg text-ink px-4 py-6 space-y-12 max-w-[1400px] mx-auto">
       <header className="space-y-1">
-        <h1 className="font-sans font-bold text-title-m">Autopiloto · variantes visuales</h1>
+        <h1 className="font-sans font-bold text-title-m">Autopiloto · pantallas</h1>
         <p className="font-sans text-label text-ink-2">Datos de ejemplo. Guardar, deshacer, juzgar y marcar leído solo cambian la memoria de esta página.</p>
       </header>
 
-      <Seccion n={1} titulo="Política (Perfil › Ajustes › Asistente)" valor={vp} etiquetas={ETIQUETA_P} onChange={setVp}>
-        {v => <PoliticaVista variante={v} politica={politica} stats={STATS} guardando={false} msg={msg} gastoMesUsd={17.4} onGuardar={guardar} />}
+      <Seccion n={1} titulo="Política (Perfil › Ajustes › Asistente)" ancho="max-w-[42rem]">
+        <PoliticaVista politica={politica} stats={STATS} guardando={false} msg={msg} gastoMesUsd={17.4} onGuardar={guardar} />
       </Seccion>
 
-      <Seccion n={2} titulo="Hecho hoy (Inicio del coach)" valor={vh} etiquetas={ETIQUETA_H} onChange={setVh} unaSola="max-w-[42rem]">
-        {v => <HechoHoyVista variante={v} recientes={recientes} horas={24} error={null} ocupadaId={null} nombreDe={nombreDe} onIr={() => undefined} onDeshacer={deshacer} />}
+      <Seccion n={2} titulo="Hecho hoy (Inicio del coach)" ancho="max-w-[42rem]">
+        <HechoHoyVista recientes={recientes} horas={24} error={null} ocupadaId={null} nombreDe={nombreDe} onIr={() => undefined} onDeshacer={deshacer} />
       </Seccion>
 
-      <Seccion n={3} titulo="Lo que ha hecho el asistente (Revisión del coach · Ana)" valor={vl} etiquetas={ETIQUETA_L} onChange={setVl} unaSola="max-w-[48rem]">
-        {v => <LineaDeTiempoVista variante={v} linea={linea} modo="rodaje" onIrAPropuesta={() => undefined} />}
+      <Seccion n={3} titulo="Lo que ha hecho el asistente (Revisión del coach · Ana)">
+        <LineaDeTiempoVista linea={linea} modo="rodaje" onIrAPropuesta={() => undefined} />
       </Seccion>
 
-      <Seccion n={4} titulo="Calidad (Propuestas › Calidad)" valor={vc} etiquetas={ETIQUETA_C} onChange={setVc} unaSola="max-w-[48rem]">
-        {v => <CalidadVista variante={v} semana={calidad.semana} muestra={calidad.muestra} total={calidad.total} resumen={calidad.resumen} nombreDe={nombreDe} juzgandoId={null} error={null} onVeredicto={juzgar} onIrAlAtleta={() => undefined} />}
+      <Seccion n={4} titulo="Calidad (Propuestas › Calidad)">
+        <CalidadVista semana={calidad.semana} muestra={calidad.muestra} total={calidad.total} resumen={calidad.resumen} nombreDe={nombreDe} juzgandoId={null} error={null} onVeredicto={juzgar} onIrAlAtleta={() => undefined} />
       </Seccion>
 
-      <Seccion n={5} titulo="Mensajes del coach (Inicio del atleta · Ana)" valor={vm} etiquetas={ETIQUETA_M} onChange={setVm} unaSola="max-w-[26rem]">
-        {v => <div className="max-w-[26rem]"><MensajesCoachVista variante={v} mensajes={mensajes} firma="Dani" onLeido={leido} /></div>}
+      <Seccion n={5} titulo="Mensajes del coach (Inicio del atleta · Ana)" ancho="max-w-[26rem]">
+        <MensajesCoachVista mensajes={mensajes} firma="Dani" onLeido={leido} />
       </Seccion>
 
-      <Seccion n={6} titulo="Muro legal unificado (pendiente de D1: no cableado)" valor={vw} etiquetas={ETIQUETA_W} onChange={setVw} unaSola="max-w-lg">
-        {v => (
-          <MuroLegalUnificado variante={v} profile={PERFIL_DEV} enMarco
-            guardar={async nuevas => { console.log('guardaría', nuevas); setMsg('Muro: guardaría (solo consola).'); return nuevas; }}
-            onCompletado={legal => console.log('onCompletado', legal)} onSalir={() => console.log('onSalir')} />
-        )}
+      <Seccion n={6} titulo="Muro legal unificado (primer login)" ancho="max-w-lg">
+        <MuroLegalUnificado profile={PERFIL_DEV} enMarco
+          guardar={async nuevas => { console.log('guardaría', nuevas); setMsg('Muro: guardaría (solo consola).'); return nuevas; }}
+          onCompletado={legal => console.log('onCompletado', legal)} onSalir={() => console.log('onSalir')} />
       </Seccion>
     </div>
   );

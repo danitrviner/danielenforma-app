@@ -5,18 +5,16 @@
    (las reglas solo le dejan tocar ese campo).
 
    Este archivo es la LÓGICA; la capa visual está en
-   autopiloto/MensajesCoachVista.tsx en tres variantes que se comparan en
-   /dev/autopiloto; `variante` elige cuál. */
+   autopiloto/MensajesCoachVista.tsx (variante «burbujas», elegida el 29-10). */
 import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { MensajeCoach } from '../types';
 import { getMensajesCoach, marcarMensajeLeido } from '../dbService';
-import MensajesCoachVista, { type VarianteMensajes } from './autopiloto/MensajesCoachVista';
+import MensajesCoachVista from './autopiloto/MensajesCoachVista';
 
-export const VARIANTE_MENSAJES_ACTUAL: VarianteMensajes = 'A';
 export const FIRMA_COACH = 'Dani';
 
-export default function MensajesDelCoach({ athleteEmail, variante = VARIANTE_MENSAJES_ACTUAL }: { athleteEmail: string; variante?: VarianteMensajes }) {
+export default function MensajesDelCoach({ athleteEmail }: { athleteEmail: string }) {
   const queryClient = useQueryClient();
   const clave = ['mensajesCoach', athleteEmail];
   const { data: mensajes = [] } = useQuery({ queryKey: clave, queryFn: () => getMensajesCoach(athleteEmail) });
@@ -32,5 +30,5 @@ export default function MensajesDelCoach({ athleteEmail, variante = VARIANTE_MEN
     });
   };
 
-  return <MensajesCoachVista variante={variante} mensajes={mensajes} firma={FIRMA_COACH} onLeido={onLeido} />;
+  return <MensajesCoachVista mensajes={mensajes} firma={FIRMA_COACH} onLeido={onLeido} />;
 }

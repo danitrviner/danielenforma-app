@@ -2,7 +2,24 @@
 
 Rama `ia-autonoma` (PR #27). Diseño: `docs/diseno-ia-autonoma-2026-10-28.md` §5.2, §5.4 y §6. Como en las tandas 4-7, **nada se despliega**: ni reglas, ni cron, ni `--aplicar`.
 
-Regla de Dani (29-10): todo lo visual nuevo en 2-3 variantes; él elige al final. Las seis piezas de esta tanda están en `/dev/autopiloto` (secciones 3-6) y las capturas en `App enforma/variantes-autopiloto-29-10/tanda8/`. La variante activa en la app es siempre la **A** hasta que elija (`VARIANTE_*_ACTUAL` en cada contenedor).
+Regla de Dani (29-10): todo lo visual nuevo en 2-3 variantes; él elige al final. Capturas de la comparación en `App enforma/variantes-autopiloto-29-10/` (y `/tanda8/`).
+
+## Elecciones de Dani (29-10, misma tarde) — APLICADAS
+| Pantalla | Elegida | Dónde |
+|---|---|---|
+| Política | **B · semáforo** | `autopiloto/PoliticaVista.tsx` |
+| Hecho hoy | **B · cronología** | `autopiloto/HechoHoyVista.tsx` |
+| Lo que ha hecho el asistente | **C · tarjetas** | `autopiloto/LineaDeTiempoVista.tsx` |
+| Calidad | **B · lista** | `autopiloto/CalidadVista.tsx` |
+| Mensajes del coach | **B · burbujas** | `autopiloto/MensajesCoachVista.tsx` |
+| Muro legal | **A · un documento**, con la casilla del asistente **dentro de Términos de uso** (sin apartado propio) | `MuroLegalUnificado.tsx`, **cableado en App.tsx** |
+
+Las variantes no elegidas se han borrado del código; `/dev/autopiloto` enseña ahora solo las elegidas (captura `tanda8/elegidas-29-10.jpg`). Se quitó la prop `variante` y las constantes `VARIANTE_*_ACTUAL`.
+
+- **D1 (muro legal): DECIDIDA.** Muro de una página para quien tenga algo pendiente (nuevos y quien no aceptara aún); quien ya aceptó no lo vuelve a ver (mismos documentos, misma versión, sin cambio de texto). La casilla del asistente sigue siendo opcional y desmarcada aunque viva dentro de Términos: RGPD art. 7.4. Perfil › Ajustes sigue usando `AceptacionLegalGate` en modo revisión para cambiarla. `/dev/legal` enseña el unificado; `?clasico=1` el de dos pasos.
+- **Casilla del asistente, discreta** (Dani, 29-10: «demasiado específicas… disimúlalo»): etiqueta «Permitir que mi entrenador se apoye en herramientas digitales al preparar y revisar mi plan (opcional)» con dos líneas de detalle; el qué, el a quién (Anthropic como encargado) y las condiciones quedan en la Política de privacidad completa (`public/privacidad`), que ya los nombra: información por capas, válida en el RGPD. Mismo tono en el diálogo `SolicitudConsentimientoIA` para los atletas antiguos. Sin subir versión: el texto nuevo pide menos, no más.
+- **D3 (menús en rodaje): DECIDIDA.** «Se publicarían solos»: `POLITICA_POR_DEFECTO.menuAutomatico = 'publicar'` (y es el valor al que cae lo desconocido). Sigue editable en Política.
+- **D2 (cron): PENDIENTE.** Dani: «como mucho una o dos a la semana». Recomendación: **una vez al día** después del latido (el latido ya corre a las 02:00 UTC; el autopiloto a las 03:00 UTC). Motivo: el latido DETECTA a diario y encola; el consumidor solo procesa la cola, y una pasada vacía no gasta nada. Con 1-2 pasadas por semana, un cuestionario del viernes se contesta el lunes y una molestia espera días. Se decide al «de golpe».
 
 ## Qué hay
 
@@ -25,12 +42,12 @@ Regla de Dani (29-10): todo lo visual nuevo en 2-3 variantes; él elige al final
 ### 4 · Canal del atleta: `mensajesCoach` en Inicio — §6
 - `MensajesDelCoach.tsx` (lógica: leer, marcar `leidoEn` optimista) + `autopiloto/MensajesCoachVista.tsx` (A tarjeta como la nota del día / B burbujas tipo chat / C bandeja). Firma **Dani**; ninguna etiqueta nombra al asistente (test). Solo los de las últimas 3 semanas (`mensajesVigentes`). Montado en `HomeScreen` bajo la nota del coach.
 
-### 5 · Muro legal unificado — D1 PENDIENTE, **no cableado**
-- `components/MuroLegalUnificado.tsx` (A un documento / B acordeón / C resumen llano + letra): un solo scroll, las cuatro casillas obligatorias de hoy, y la del análisis con el asistente **aparte, específica y desmarcada**, con la línea de transparencia del §6 («tu plan se ajusta cada semana con lo que registras; lo revisa Dani»). Mismas reglas que el muro de dos pasos (nada premarcado, botón apagado hasta leer y marcar, salida visible) y una sola escritura.
-- Se ve en `/dev/autopiloto` §6 y en `/dev/legal?unificado=A|B|C`. `AceptacionLegalGate` sigue siendo lo que ve el atleta. Para cablearlo hay que (a) decidir D1 y (b) si cambia el texto, subir la versión de los documentos, lo que vuelve a pedírselo a todos.
+### 5 · Muro legal unificado — D1 (ver arriba: decidida y cableada)
+- `components/MuroLegalUnificado.tsx`: un solo scroll con los dos textos y, bajo cada uno, sus casillas; la del análisis con el asistente va dentro de Términos, separada por una línea, **opcional y desmarcada**, con la línea de transparencia del §6 («tu plan se ajusta cada semana con lo que registras; lo revisa Dani»). Mismas reglas que el muro de dos pasos (nada premarcado, botón apagado hasta leer y marcar, re-medida del scroll, Atrás no lo cierra, salida visible) y una sola escritura con los dos documentos.
 
 ## Verificado
-- Suite completa: 304 archivos / 3.437 tests verdes; `tsc` y `eslint` limpios en lo tocado.
+- Suite completa: 304 archivos / 3.435 tests verdes (tras la poda de variantes); `tsc` y `eslint` limpios en lo tocado.
+- `/dev/legal` en el navegador: cinco casillas, la del asistente dentro de Términos; el botón se enciende al marcar las cuatro obligatorias y bajar al final.
 - `/dev/autopiloto` en el navegador: «Bien» avanza a «2 de 5 · 2 juzgadas»; «Mal» pide nota y suma al histórico; «Marcar leído» baja el contador; sin errores de consola.
 
 ## Fuera de esta tanda (apuntado)

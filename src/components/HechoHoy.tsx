@@ -5,20 +5,19 @@
    sin nombres en `latidos/{fecha}`.
 
    Vive en la pantalla de inicio del coach, encima de la bandeja del día. Este
-   archivo es la LÓGICA; la capa visual está en autopiloto/HechoHoyVista.tsx en
-   tres variantes que se comparan en /dev/autopiloto; `variante` elige cuál. */
+   archivo es la LÓGICA; la capa visual está en autopiloto/HechoHoyVista.tsx
+   (variante «cronología», elegida el 29-10). */
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile } from '../types';
 import { getAiProposalsRecientes } from '../dbService';
 import { useProposalActions } from './ai/useProposalActions';
-import HechoHoyVista, { type VarianteHechoHoy } from './autopiloto/HechoHoyVista';
+import HechoHoyVista from './autopiloto/HechoHoyVista';
 
 const HORAS = 24;
-export const VARIANTE_HECHO_HOY_ACTUAL: VarianteHechoHoy = 'A';
 
-export default function HechoHoy({ athletes, variante = VARIANTE_HECHO_HOY_ACTUAL }: { athletes: UserProfile[]; variante?: VarianteHechoHoy }) {
+export default function HechoHoy({ athletes }: { athletes: UserProfile[] }) {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const desde = useMemo(() => new Date(Date.now() - HORAS * 3600_000).toISOString(), []);
@@ -31,7 +30,7 @@ export default function HechoHoy({ athletes, variante = VARIANTE_HECHO_HOY_ACTUA
 
   return (
     <HechoHoyVista
-      variante={variante} recientes={recientes} horas={HORAS} error={error} ocupadaId={acciones.reviewingId}
+      recientes={recientes} horas={HORAS} error={error} ocupadaId={acciones.reviewingId}
       nombreDe={nombreDe} onIr={email => navigate(`/clients/${encodeURIComponent(email)}/revision`)} onDeshacer={p => acciones.deshacer(p)}
     />
   );

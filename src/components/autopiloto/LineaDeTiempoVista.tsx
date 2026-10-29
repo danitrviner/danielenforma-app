@@ -1,4 +1,7 @@
-/* Las TRES propuestas visuales de «Lo que ha hecho el asistente» (la línea de
+/* Elegida por Dani el 29-10-2026: la variante C (tarjetas por episodio); las otras dos se
+   compararon en /dev/autopiloto y se retiraron.
+
+   Las TRES propuestas visuales de «Lo que ha hecho el asistente» (la línea de
    tiempo de un atleta, diseño §5.2). La lógica (leer episodios y propuestas,
    construir la línea) vive en LineaDeTiempoAsistente.tsx; aquí solo cambia
    cómo se ve. Se comparan en /dev/autopiloto y al final queda una:
@@ -20,10 +23,7 @@ import type { DecisionDeLinea, DesenlaceDecision, EntradaDeLinea, LineaDeTiempo 
 import type { ModoAutopiloto } from '../../autopiloto/politica';
 import { Icon } from '../ui';
 
-export type VarianteLinea = 'A' | 'B' | 'C';
-
 export interface LineaDeTiempoVistaProps {
-  variante: VarianteLinea;
   linea: LineaDeTiempo;
   modo: ModoAutopiloto;
   cargando?: boolean;
@@ -80,7 +80,7 @@ export default function LineaDeTiempoVista(props: LineaDeTiempoVistaProps) {
   return (
     <div className="space-y-3">
       <Cabecera {...props} />
-      {props.variante === 'B' ? <VistaB {...props} /> : props.variante === 'C' ? <VistaC {...props} /> : <VistaA {...props} />}
+      <Vista {...props} />
       <PlanInicialVsAhora linea={linea} />
     </div>
   );
@@ -140,73 +140,9 @@ function Decision({ d, onIr, presentando }: { d: DecisionDeLinea; onIr?: (id: st
   );
 }
 
-/* A · Tabla por semana ---------------------------------------------------- */
+/* Tarjetas ------------------------------------------------------------ */
 
-function VistaA({ linea, onIrAPropuesta, presentando }: LineaDeTiempoVistaProps) {
-  return (
-    <div className="border border-hairline rounded-surface overflow-hidden">
-      <table className="w-full table-fixed">
-        <tbody>
-          {linea.entradas.map(e => (
-            <tr key={e.id} className="border-b border-hairline last:border-b-0 align-top">
-              <td className="w-[4.5rem] px-2.5 py-2 font-mono text-caption text-ink-3 whitespace-nowrap">
-                {e.semana !== undefined && <span className="text-ink-2">S{e.semana} </span>}{fechaCorta(e.fecha)}
-              </td>
-              <td className="w-[6.5rem] px-1 py-2 font-mono text-caption text-ink-2 truncate">
-                {e.etiqueta}
-                {e.estado === 'escalado' && <span className="text-warning"> · escalado</span>}
-                {e.estado === 'fallido' && <span className="text-danger"> · falló</span>}
-              </td>
-              <td className="px-2 py-2 space-y-0.5 min-w-0">
-                {e.alertas.length > 0 && <p className="font-sans text-caption text-warning">⚠ {e.alertas.join(' · ')}</p>}
-                {e.decisiones.length === 0
-                  ? <p className="font-sans text-caption text-ink-3 italic">{e.paraDani || 'Sin decisiones'}</p>
-                  : e.decisiones.map(d => <Decision key={d.proposalId} d={d} onIr={onIrAPropuesta} presentando={presentando} />)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-/* B · Hilo ---------------------------------------------------------------- */
-
-function VistaB({ linea, onIrAPropuesta, presentando }: LineaDeTiempoVistaProps) {
-  let semanaAnterior: number | undefined | null = null;
-  return (
-    <ol className="relative pl-5 space-y-3 m-0 list-none">
-      <span className="absolute left-[7px] top-1 bottom-1 w-px bg-hairline" aria-hidden />
-      {linea.entradas.map(e => {
-        const cambiaSemana = e.semana !== semanaAnterior;
-        semanaAnterior = e.semana;
-        const des = desenlaceDeEntrada(e);
-        return (
-          <li key={e.id} className="relative space-y-1">
-            {cambiaSemana && e.semana !== undefined && (
-              <p className="font-mono text-caption uppercase tracking-widest text-ink-4 -ml-5 pl-5 bg-bg">Semana {e.semana}</p>
-            )}
-            <span className={`absolute -left-5 top-[0.45rem] h-2.5 w-2.5 rounded-full ring-2 ring-bg ${des ? PUNTO_DESENLACE[des] : 'bg-ink-3'}`} aria-hidden />
-            <div className="flex flex-wrap items-baseline gap-x-2">
-              <span className="font-mono text-caption text-ink-3">{fechaCorta(e.fecha)}</span>
-              <span className="font-sans text-label font-bold text-ink">{e.etiqueta}</span>
-              {e.estado === 'escalado' && <span className="font-mono text-caption text-warning">escalado</span>}
-              {e.costeUsd !== undefined && e.costeUsd > 0 && !presentando && <span className="font-mono text-caption text-ink-4">{e.costeUsd.toFixed(2)} $</span>}
-            </div>
-            {e.alertas.length > 0 && <p className="font-sans text-caption text-warning">⚠ {e.alertas.join(' · ')}</p>}
-            {e.decisiones.map(d => <Decision key={d.proposalId} d={d} onIr={onIrAPropuesta} presentando={presentando} />)}
-            {e.paraDani && <p className="font-sans text-caption text-ink-3 italic">{e.paraDani}</p>}
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-/* C · Tarjetas ------------------------------------------------------------ */
-
-function VistaC({ linea, onIrAPropuesta, presentando }: LineaDeTiempoVistaProps) {
+function Vista({ linea, onIrAPropuesta, presentando }: LineaDeTiempoVistaProps) {
   const [abiertas, setAbiertas] = useState<Set<string>>(() => new Set(linea.entradas.slice(0, 1).map(e => e.id)));
   const toggle = (id: string) => setAbiertas(s => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   return (

@@ -1,4 +1,7 @@
-/* Las TRES propuestas visuales de «Hecho hoy» (29-10-2026). La lógica (leer
+/* Elegida por Dani el 29-10-2026: la variante B (cronología); las otras dos se
+   compararon en /dev/autopiloto y se retiraron.
+
+   Las TRES propuestas visuales de «Hecho hoy» (29-10-2026). La lógica (leer
    lo aplicado, deshacer) vive en HechoHoy.tsx; aquí solo cambia cómo se ve. Se
    comparan en /dev/autopiloto y al final queda una:
 
@@ -14,10 +17,7 @@ import type { AiProposal } from '../../types';
 import { planDeDeshacer } from '../../autopiloto/deshacer';
 import { Icon } from '../ui';
 
-export type VarianteHechoHoy = 'A' | 'B' | 'C';
-
 export interface HechoHoyVistaProps {
-  variante: VarianteHechoHoy;
   recientes: AiProposal[];
   horas: number;
   error: string | null;
@@ -39,9 +39,7 @@ const cuandoDe = (p: AiProposal) => p.deshechaEn ?? p.aplicadaEn ?? p.reviewedAt
 
 export default function HechoHoyVista(props: HechoHoyVistaProps) {
   if (props.recientes.length === 0) return null;
-  if (props.variante === 'B') return <VistaB {...props} />;
-  if (props.variante === 'C') return <VistaC {...props} />;
-  return <VistaA {...props} />;
+  return <Vista {...props} />;
 }
 
 /* Piezas compartidas ------------------------------------------------------ */
@@ -59,15 +57,6 @@ function Titulo({ n, horas, abierto, onToggle, texto }: { n: number; horas: numb
 
 function Error_({ error }: { error: string | null }) {
   return error ? <div className="bg-danger/10 border border-danger/30 text-danger rounded-surface px-4 py-3 text-caption">{error}</div> : null;
-}
-
-function Etiqueta({ p }: { p: AiProposal }) {
-  const deshecha = p.status === 'deshecha';
-  return (
-    <span className="font-mono text-caption text-ink-3 rounded-chip bg-hairline px-2 whitespace-nowrap">
-      {ETIQUETA_AUTOR[p.autor ?? 'asistente']} · {deshecha ? 'deshecha' : ETIQUETA_POLITICA[p.politica ?? 'proponer']}
-    </span>
-  );
 }
 
 function Deshacer({ p, ocupada, onDeshacer, alineado = 'izquierda' }: { p: AiProposal; ocupada: boolean; onDeshacer: (p: AiProposal) => Promise<unknown>; alineado?: 'izquierda' | 'derecha' }) {
@@ -101,40 +90,9 @@ function Cambios({ p }: { p: AiProposal }) {
   return <p className="text-caption text-ink-2">{p.cambios.slice(0, 3).join(' · ')}{p.cambios.length > 3 ? ` · +${p.cambios.length - 3}` : ''}</p>;
 }
 
-/* A · Lista ---------------------------------------------------------------- */
+/* Cronología ----------------------------------------------------------- */
 
-function VistaA({ recientes, horas, error, ocupadaId, nombreDe, onIr, onDeshacer }: HechoHoyVistaProps) {
-  const [abierto, setAbierto] = useState(true);
-  return (
-    <section className="space-y-2">
-      <Titulo n={recientes.length} horas={horas} abierto={abierto} onToggle={() => setAbierto(a => !a)} />
-      <Error_ error={error} />
-      {abierto && (
-        <ul className="divide-y divide-hairline overflow-hidden rounded-field border border-hairline bg-surface">
-          {recientes.map(p => {
-            const deshecha = p.status === 'deshecha';
-            return (
-              <li key={p.id} className={`px-4 py-3 flex flex-col gap-1 ${deshecha ? 'opacity-60' : ''}`}>
-                <div className="flex items-baseline gap-2 min-w-0">
-                  <button type="button" onClick={() => onIr(p.athleteId)} className="font-sans font-bold text-body-s text-ink hover:text-accent-ink text-left truncate">{nombreDe(p.athleteId)}</button>
-                  <span className="font-mono text-caption text-ink-3">{hora(cuandoDe(p))}</span>
-                  <Etiqueta p={p} />
-                </div>
-                <p className={`text-label text-ink ${deshecha ? 'line-through' : ''}`}>{p.summary}</p>
-                <Cambios p={p} />
-                <div className="pt-1"><Deshacer p={p} ocupada={ocupadaId === p.id} onDeshacer={onDeshacer} /></div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </section>
-  );
-}
-
-/* B · Cronología ----------------------------------------------------------- */
-
-function VistaB({ recientes, horas, error, ocupadaId, nombreDe, onIr, onDeshacer }: HechoHoyVistaProps) {
+function Vista({ recientes, horas, error, ocupadaId, nombreDe, onIr, onDeshacer }: HechoHoyVistaProps) {
   const [abierto, setAbierto] = useState(true);
   const porAutor = (a: string) => recientes.filter(p => (p.autor ?? 'asistente') === a).length;
   const leyenda = (['latido', 'asistente', 'coach'] as const).filter(a => porAutor(a) > 0).map(a => `${porAutor(a)} ${ETIQUETA_AUTOR[a]}`).join(' · ');
@@ -166,57 +124,6 @@ function VistaB({ recientes, horas, error, ocupadaId, nombreDe, onIr, onDeshacer
             );
           })}
         </ol>
-      )}
-    </section>
-  );
-}
-
-/* C · Por atleta ----------------------------------------------------------- */
-
-function VistaC({ recientes, horas, error, ocupadaId, nombreDe, onIr, onDeshacer }: HechoHoyVistaProps) {
-  const [abierto, setAbierto] = useState(true);
-  const [desplegado, setDesplegado] = useState<string | null>(null);
-  const grupos = new Map<string, AiProposal[]>();
-  for (const p of recientes) grupos.set(p.athleteId, [...(grupos.get(p.athleteId) ?? []), p]);
-  return (
-    <section className="space-y-2">
-      <Titulo n={recientes.length} horas={horas} abierto={abierto} onToggle={() => setAbierto(a => !a)} texto={`${grupos.size} atletas · últimas ${horas} h`} />
-      <Error_ error={error} />
-      {abierto && (
-        <ul className="divide-y divide-hairline overflow-hidden rounded-field border border-hairline bg-surface">
-          {[...grupos.entries()].map(([email, lista]) => {
-            const esta = desplegado === email;
-            const autores = [...new Set(lista.map(p => p.autor ?? 'asistente'))];
-            return (
-              <li key={email}>
-                <div className="flex items-center gap-2 px-4 py-2.5">
-                  <span className="flex -space-x-1">{autores.map(a => <span key={a} className={`h-2 w-2 rounded-full ring-2 ring-surface ${PUNTO_AUTOR[a]}`} />)}</span>
-                  <button type="button" onClick={() => onIr(email)} className="font-sans font-bold text-body-s text-ink hover:text-accent-ink text-left truncate">{nombreDe(email)}</button>
-                  <span className="font-mono text-caption text-ink-3 rounded-chip bg-hairline px-2">{lista.length}</span>
-                  {!esta && <span className="font-sans text-caption text-ink-2 truncate">{lista[0].summary}{lista.length > 1 ? ` · +${lista.length - 1}` : ''}</span>}
-                  <button type="button" onClick={() => setDesplegado(esta ? null : email)} aria-label={esta ? 'Plegar' : 'Desplegar'} className="ml-auto text-ink-3">
-                    <Icon name={esta ? 'expand_less' : 'expand_more'} size="s" />
-                  </button>
-                </div>
-                {esta && (
-                  <ul className="border-t border-hairline bg-raised/40 divide-y divide-hairline">
-                    {lista.map(p => {
-                      const deshecha = p.status === 'deshecha';
-                      return (
-                        <li key={p.id} className={`pl-10 pr-4 py-2 grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5 ${deshecha ? 'opacity-60' : ''}`}>
-                          <p className={`text-label text-ink ${deshecha ? 'line-through' : ''}`}>{p.summary}</p>
-                          <span className="font-mono text-caption text-ink-3 whitespace-nowrap">{hora(cuandoDe(p))}</span>
-                          <div className="flex flex-wrap items-baseline gap-2"><Etiqueta p={p} /><Cambios p={p} /></div>
-                          <Deshacer p={p} ocupada={ocupadaId === p.id} onDeshacer={onDeshacer} alineado="derecha" />
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
-        </ul>
       )}
     </section>
   );

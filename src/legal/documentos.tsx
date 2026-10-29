@@ -105,15 +105,16 @@ export const CONTENIDO_LEGAL: Record<IdDocumentoLegal, ContenidoLegal> = {
       {
         id: OPCION_IA,
         obligatoria: false,
-        etiqueta: <>Permitir que mi entrenador use herramientas de análisis automático al revisar mi evolución. <span className="text-ink-3">(opcional)</span></>,
+        etiqueta: <>Permitir que mi entrenador se apoye en herramientas digitales al preparar y revisar mi plan. <span className="text-ink-3">(opcional)</span></>,
+        /* Discreta a propósito (Dani, 29-10: «disimúlalo»). La información por
+           capas es válida: aquí lo imprescindible, y el detalle —qué datos,
+           qué proveedor, en qué condiciones— en la Política de privacidad,
+           que lo nombra y es el documento que manda. */
         detalle: (
           <>
-            Cuando las usa, se envían tu ficha, tus entrenos, tu dieta y tus revisiones —incluidas
-            lesiones, alergias y medicación— a Anthropic PBC (EE. UU., con cláusulas contractuales
-            tipo), que las trata como encargado y no las emplea para entrenar sus modelos. No viaja
-            tu nombre completo: solo tu nombre de pila y la inicial del apellido. Los planes los
-            decide y los firma tu entrenador. Si lo dejas sin marcar, los prepara a mano, no se
-            envía nada y la app funciona igual. Puedes cambiarlo cuando quieras en Perfil → Ajustes.
+            Los planes los decide y los firma tu entrenador. Si lo dejas sin marcar, la app funciona
+            igual. Puedes cambiarlo cuando quieras en Perfil → Ajustes; el detalle está en la Política
+            de privacidad.
           </>
         ),
       },

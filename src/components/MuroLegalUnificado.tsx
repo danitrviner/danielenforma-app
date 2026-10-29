@@ -1,84 +1,64 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   El muro legal UNIFICADO · tres variantes (tanda 8 del autopiloto, D1)
+   El muro legal UNIFICADO · primer login, justo antes del alta (D1, 29-10-2026)
 
    Lo que pidió Dani (28-10): «volver a enseñarlo, pero quiero los términos y
-   condiciones todos juntos, de manera general y que sea obligatorio aceptar».
-   Lo que no se puede hacer tal cual: meter el análisis con el asistente en el
-   paquete obligatorio. Un consentimiento para datos de salud que sea condición
-   del servicio no es «libre» (RGPD art. 9 y considerando 43; art. 7.4). Así
-   que esto es un muro ÚNICO —un documento, un scroll, un botón— donde todo lo
-   que ya era obligatorio sigue siéndolo y la casilla del asistente va aparte,
-   específica y desmarcada, con la línea de transparencia del diseño §6: «tu
-   plan se ajusta cada semana con lo que registras; lo revisa Dani».
+   condiciones todos juntos, de manera general y que sea obligatorio aceptar»;
+   y el 29-10: «quiero que el análisis del asistente esté dentro de los
+   términos de uso, no quiero un apartado propio».
 
-   NO está cableado al flujo real: `AceptacionLegalGate` (dos pasos) sigue
-   siendo lo que ve el atleta hasta que Dani decida D1 y, si cambia el texto,
-   se suba la versión de los documentos (lo que vuelve a pedírselo a todos).
-   Se ve en /dev/autopiloto y en /dev/legal?unificado=A|B|C.
+   Así que es un muro ÚNICO —un documento, un scroll, un botón— en el que cada
+   texto lleva sus casillas justo debajo: Términos de uso con las suyas (y ahí,
+   como tercera casilla, la del análisis con el asistente) y Privacidad con las
+   suyas. Lo que no cambia, porque no puede: la casilla del asistente sigue
+   siendo OPCIONAL y arranca desmarcada. Un consentimiento para datos de salud
+   que sea condición del servicio no es «libre» (RGPD art. 9 y considerando 43;
+   art. 7.4). Va dentro de Términos —sin apartado propio— pero no se acepta con
+   ellos. Lleva además la línea de transparencia del diseño §6.
 
-   Las tres variantes comparten las reglas del muro de dos pasos: nada
+   Reglas heredadas del muro de dos pasos (AceptacionLegalGate): nada
    premarcado, botón apagado hasta marcar lo obligatorio Y llegar al final del
-   texto, salida visible («cerrar sesión»), y se guarda en una sola escritura.
+   texto (con re-medida al cambiar de tamaño: el atasco del 13-10), salida
+   visible («cerrar sesión»), y una sola escritura con los dos documentos.
 
-   A · Un documento   — los dos textos seguidos con sus títulos, y al final las
-                        cinco casillas (cuatro obligatorias + la del asistente
-                        aparte). Lo más parecido a «todo junto».
-   B · Acordeón       — índice con los dos documentos plegados y la casilla del
-                        asistente como tercer bloque; cada uno se abre para
-                        leerlo y hay que haber abierto los obligatorios.
-   C · Resumen + letra — primero una tarjeta de cinco líneas en lenguaje llano
-                        (qué se guarda, para qué, quién lo ve, cómo se borra,
-                        cómo se ajusta el plan) y debajo los textos completos;
-                        las casillas bajo el resumen, el botón al final.
+   Sustituye al muro de dos pasos en App.tsx para quien tenga algo pendiente.
+   Quien ya aceptó no lo ve (mismos documentos, misma versión). Perfil ›
+   Ajustes sigue reabriendo el paso de Términos en modo revisión con
+   AceptacionLegalGate para cambiar la casilla del asistente.
    ═══════════════════════════════════════════════════════════════════════════ */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { UserProfile } from '../types';
-import { DOCUMENTOS_LEGALES, OPCION_IA, registrarAceptacion, type AceptacionesLegales } from '../legal/aceptacion';
+import { DOCUMENTOS_LEGALES, OPCION_IA, registrarAceptacion, type AceptacionesLegales, type IdDocumentoLegal } from '../legal/aceptacion';
 import { CONTENIDO_LEGAL, type CasillaLegal } from '../legal/documentos';
 import { guardarAceptaciones } from '../legal/persistencia';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
+import { useBotonAtras } from '../services/botonAtras';
 import { Button, Icon } from './ui';
 
-export type VarianteMuro = 'A' | 'B' | 'C';
-
 interface Props {
-  variante: VarianteMuro;
   profile: UserProfile;
   onCompletado: (legal: AceptacionesLegales) => void;
+  /** Cerrar sesión: la única salida. */
   onSalir?: () => void;
+  /** Costura para el banco de pruebas, que no tiene sesión. */
   guardar?: (nuevas: AceptacionesLegales) => Promise<AceptacionesLegales>;
   /** En el banco de pruebas se pinta dentro de la página, no a pantalla completa. */
   enMarco?: boolean;
 }
 
-/** La línea de transparencia del diseño §6. Va en el muro, no es una casilla:
- *  es información previa (art. 13), no un consentimiento aparte. */
+/** La línea de transparencia del diseño §6. Información previa (art. 13), no
+ *  una casilla: se lee junto a la del asistente. */
 export const LINEA_TRANSPARENCIA = 'Tu plan se ajusta cada semana con lo que registras (entrenos, comidas, peso, cómo te encuentras); lo revisa Dani.';
 
-const RESUMEN_LLANO: { icono: string; texto: string }[] = [
-  { icono: 'database', texto: 'Se guardan tus datos de salud y de entrenamiento: peso, medidas, lesiones, alergias, medicación, lo que entrenas y lo que comes.' },
-  { icono: 'target', texto: 'Para una sola cosa: diseñar y ajustar tu plan. Nunca se venden ni se usan para publicidad.' },
-  { icono: 'visibility', texto: 'Los ve tu entrenador. Nadie más dentro de la app.' },
-  { icono: 'autorenew', texto: LINEA_TRANSPARENCIA },
-  { icono: 'delete', texto: 'Puedes borrar la cuenta y todo lo tuyo en Perfil → Ajustes, sin escribir a nadie.' },
-];
-
-function todasLasCasillas(): { docId: 'terminos' | 'privacidad'; casilla: CasillaLegal }[] {
-  return DOCUMENTOS_LEGALES.flatMap(d => CONTENIDO_LEGAL[d.id].casillas.map(casilla => ({ docId: d.id, casilla })));
-}
-
-export default function MuroLegalUnificado({ variante, profile, onCompletado, onSalir, guardar, enMarco = false }: Props) {
+export default function MuroLegalUnificado({ profile, onCompletado, onSalir, guardar, enMarco = false }: Props) {
   const [marcas, setMarcas] = useState<Record<string, boolean>>({});
   const [alFinal, setAlFinal] = useState(false);
-  const [abiertos, setAbiertos] = useState<Set<string>>(() => new Set(variante === 'B' ? [] : ['terminos', 'privacidad', 'asistente']));
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cuerpoRef = useRef<HTMLDivElement>(null);
   const contenidoRef = useRef<HTMLDivElement>(null);
 
-  const casillas = todasLasCasillas();
-  const obligatorias = casillas.filter(c => c.casilla.obligatoria);
-  const opcional = casillas.find(c => c.casilla.id === OPCION_IA);
+  // Atrás en Android no se salta el muro (igual que en el de dos pasos).
+  useBotonAtras(() => { /* el muro no se cierra con Atrás */ }, !enMarco);
 
   const comprobarFinal = useCallback(() => {
     const el = cuerpoRef.current;
@@ -87,18 +67,18 @@ export default function MuroLegalUnificado({ variante, profile, onCompletado, on
   useEffect(() => {
     const el = cuerpoRef.current; const contenido = contenidoRef.current;
     if (!el || !contenido) return;
+    let cancelado = false;
+    document.fonts?.ready.then(() => { if (!cancelado) comprobarFinal(); });
     comprobarFinal();
-    if (typeof ResizeObserver === 'undefined') return;
+    if (typeof ResizeObserver === 'undefined') return () => { cancelado = true; };
     const o = new ResizeObserver(() => comprobarFinal());
     o.observe(el); o.observe(contenido);
-    return () => o.disconnect();
-  }, [comprobarFinal, abiertos]);
+    return () => { cancelado = true; o.disconnect(); };
+  }, [comprobarFinal]);
 
-  // En B «llegar al final» es haber abierto los dos documentos obligatorios y
-  // bajado hasta el final de lo abierto; sin abrirlos no hay nada que leer.
-  const leido = variante === 'B' ? alFinal && abiertos.has('terminos') && abiertos.has('privacidad') : alFinal;
-  const faltanMarcas = obligatorias.some(c => !marcas[c.casilla.id]);
-  const puedeContinuar = !faltanMarcas && leido && !guardando;
+  const obligatorias = DOCUMENTOS_LEGALES.flatMap(d => CONTENIDO_LEGAL[d.id].casillas.filter(c => c.obligatoria));
+  const faltanMarcas = obligatorias.some(c => !marcas[c.id]);
+  const puedeContinuar = !faltanMarcas && alFinal && !guardando;
 
   const continuar = async () => {
     setGuardando(true); setError(null);
@@ -106,6 +86,8 @@ export default function MuroLegalUnificado({ variante, profile, onCompletado, on
       const ahora = new Date().toISOString();
       const nuevas: AceptacionesLegales = {};
       for (const meta of DOCUMENTOS_LEGALES) {
+        // Solo las opcionales se guardan como opciones: las obligatorias son
+        // todas `true` por definición (sin ellas no se llega aquí).
         const opcionales = CONTENIDO_LEGAL[meta.id].casillas.filter(c => !c.obligatoria);
         const opciones = opcionales.length > 0 ? Object.fromEntries(opcionales.map(c => [c.id, !!marcas[c.id]])) : undefined;
         nuevas[meta.id] = registrarAceptacion(meta, ahora, opciones);
@@ -119,8 +101,6 @@ export default function MuroLegalUnificado({ variante, profile, onCompletado, on
     }
   };
 
-  const toggleAbierto = (id: string) => setAbiertos(s => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-
   const casilla = (c: CasillaLegal) => (
     <label key={c.id} className="flex cursor-pointer items-start gap-2.5">
       <input type="checkbox" checked={!!marcas[c.id]} disabled={guardando}
@@ -129,22 +109,15 @@ export default function MuroLegalUnificado({ variante, profile, onCompletado, on
       <span className="text-body-s font-sans text-ink-2 leading-snug">
         {c.etiqueta}
         {c.detalle && <span className="mt-0.5 block text-caption text-ink-3 leading-relaxed">{c.detalle}</span>}
+        {c.id === OPCION_IA && <span className="mt-0.5 block text-caption text-ink-3 leading-relaxed">{LINEA_TRANSPARENCIA}</span>}
       </span>
     </label>
   );
 
-  const bloqueAsistente = () => opcional ? (
-    <div className="rounded-surface border border-hairline bg-surface p-3 space-y-2">
-      <p className="text-caption font-sans font-bold text-ink uppercase tracking-wider">Análisis con el asistente de tu entrenador</p>
-      <p className="text-caption font-sans text-ink-2 leading-relaxed">{LINEA_TRANSPARENCIA} Esta casilla es aparte: decir que no no cambia el servicio, lo prepara todo a mano.</p>
-      {casilla(opcional.casilla)}
-    </div>
-  ) : null;
-
-  const documento = (id: 'terminos' | 'privacidad') => {
+  const documento = (id: IdDocumentoLegal) => {
     const doc = CONTENIDO_LEGAL[id];
     return (
-      <section className="space-y-2" aria-label={doc.titulo}>
+      <section key={id} className="space-y-2" aria-label={doc.titulo}>
         <h3 className="font-sans text-label font-bold text-ink">{doc.titulo}</h3>
         {doc.cuerpo}
         {doc.url && (
@@ -152,68 +125,20 @@ export default function MuroLegalUnificado({ variante, profile, onCompletado, on
             <Icon name="description" size="s" /> Leer el documento completo
           </a>
         )}
+        {/* Las casillas de ESTE documento, justo debajo de su texto. La del
+            asistente va aquí dentro, en Términos, separada por una línea y
+            sin bloquear el botón. */}
+        <div className="space-y-2.5 border-t border-hairline pt-3">
+          {doc.casillas.filter(c => c.obligatoria).map(casilla)}
+          {doc.casillas.some(c => !c.obligatoria) && (
+            <div className="space-y-2.5 border-t border-hairline/60 pt-2.5">
+              {doc.casillas.filter(c => !c.obligatoria).map(casilla)}
+            </div>
+          )}
+        </div>
       </section>
     );
   };
-
-  const casillasObligatorias = (
-    <div className="space-y-2.5">
-      {obligatorias.map(c => casilla(c.casilla))}
-    </div>
-  );
-
-  const cuerpo = variante === 'A' ? (
-    <>
-      {documento('terminos')}
-      <hr className="border-hairline" />
-      {documento('privacidad')}
-      <hr className="border-hairline" />
-      {casillasObligatorias}
-      {bloqueAsistente()}
-    </>
-  ) : variante === 'B' ? (
-    <>
-      {(['terminos', 'privacidad'] as const).map(id => (
-        <div key={id} className="rounded-surface border border-hairline overflow-hidden">
-          <button type="button" onClick={() => toggleAbierto(id)} className="flex w-full items-center gap-2 px-3 py-2.5 text-left bg-surface" aria-expanded={abiertos.has(id)}>
-            <Icon name={abiertos.has(id) ? 'check_circle' : 'radio_button_unchecked'} size="s" className={abiertos.has(id) ? 'text-success' : 'text-ink-3'} />
-            <span className="font-sans text-label font-bold text-ink flex-1">{CONTENIDO_LEGAL[id].titulo}</span>
-            <span className="font-mono text-caption text-ink-3">{abiertos.has(id) ? 'cerrar' : 'leer'}</span>
-          </button>
-          {abiertos.has(id) && <div className="px-3 pb-3 pt-1 space-y-2 border-t border-hairline">{CONTENIDO_LEGAL[id].cuerpo}</div>}
-        </div>
-      ))}
-      <div className="rounded-surface border border-hairline overflow-hidden">
-        <button type="button" onClick={() => toggleAbierto('asistente')} className="flex w-full items-center gap-2 px-3 py-2.5 text-left bg-surface" aria-expanded={abiertos.has('asistente')}>
-          <Icon name="smart_toy" size="s" className="text-ink-3" />
-          <span className="font-sans text-label font-bold text-ink flex-1">Análisis con el asistente <span className="font-normal text-ink-3">(opcional)</span></span>
-          <span className="font-mono text-caption text-ink-3">{abiertos.has('asistente') ? 'cerrar' : 'ver'}</span>
-        </button>
-        {abiertos.has('asistente') && <div className="px-3 pb-3 pt-2 border-t border-hairline">{bloqueAsistente()}</div>}
-      </div>
-      <hr className="border-hairline" />
-      {casillasObligatorias}
-    </>
-  ) : (
-    <>
-      <div className="rounded-surface border border-accent-line bg-accent/8 p-3 space-y-2">
-        <p className="text-caption font-mono uppercase tracking-wider text-accent-ink">En cinco líneas</p>
-        <ul className="m-0 p-0 list-none space-y-1.5">
-          {RESUMEN_LLANO.map(r => (
-            <li key={r.icono} className="flex gap-2 text-caption font-sans text-ink-2 leading-relaxed">
-              <Icon name={r.icono} size="s" className="text-accent-ink shrink-0 mt-0.5" />{r.texto}
-            </li>
-          ))}
-        </ul>
-      </div>
-      {casillasObligatorias}
-      {bloqueAsistente()}
-      <hr className="border-hairline" />
-      <p className="text-caption font-mono uppercase tracking-wider text-ink-3">Los textos completos</p>
-      {documento('terminos')}
-      {documento('privacidad')}
-    </>
-  );
 
   const marco = enMarco
     ? 'relative flex max-h-[42rem] w-full flex-col rounded-canvas border border-strong bg-raised shadow-e2'
@@ -224,16 +149,23 @@ export default function MuroLegalUnificado({ variante, profile, onCompletado, on
       <div className="shrink-0 border-b border-hairline px-4 py-3">
         <p className="text-caption font-mono uppercase tracking-wider text-ink-3">Antes de empezar</p>
         <h2 className="mt-1 font-sans text-title-s font-bold text-ink">Condiciones y privacidad</h2>
-        <p className="mt-1 text-caption font-sans text-ink-3">Todo en una página. {variante === 'B' ? 'Abre cada documento para leerlo; ' : 'Baja hasta el final; '}las casillas obligatorias están al pie y la del asistente es aparte.</p>
+        <p className="mt-1 text-caption font-sans text-ink-3">Todo en una página: cada texto con sus casillas debajo. Baja hasta el final para poder aceptar.</p>
       </div>
       <div ref={cuerpoRef} onScroll={comprobarFinal} className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-        <div ref={contenidoRef} className="space-y-3">{cuerpo}</div>
+        <div ref={contenidoRef} className="space-y-4">
+          {DOCUMENTOS_LEGALES.map((d, i) => (
+            <React.Fragment key={d.id}>
+              {i > 0 && <hr className="border-hairline" />}
+              {documento(d.id)}
+            </React.Fragment>
+          ))}
+        </div>
       </div>
       <div className="shrink-0 border-t border-hairline px-4 py-3 space-y-3">
-        {!leido && (
+        {!alFinal && (
           <p className="flex items-center gap-1.5 text-caption font-sans text-ink-3">
             <Icon name="arrow_downward" size="s" />
-            {variante === 'B' ? 'Abre y lee los dos documentos para continuar.' : 'Desplázate hasta el final del texto para continuar.'}
+            Desplázate hasta el final del texto para continuar.
           </p>
         )}
         {error && <p className="text-caption font-sans text-danger">{error}</p>}

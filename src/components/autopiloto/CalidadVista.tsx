@@ -1,4 +1,7 @@
-/* Las TRES propuestas visuales de CALIDAD, «la auditoría de 5 minutos»
+/* Elegida por Dani el 29-10-2026: la variante B (lista con los tres botones a la derecha); las otras dos se
+   compararon en /dev/autopiloto y se retiraron.
+
+   Las TRES propuestas visuales de CALIDAD, «la auditoría de 5 minutos»
    (diseño §5.4). La lógica (la muestra, guardar el veredicto, bajar el nivel
    con «no vuelvas») vive en CalidadAutopiloto.tsx; aquí solo cambia cómo se ve.
    Se comparan en /dev/autopiloto y al final queda una:
@@ -18,10 +21,7 @@ import type { ResumenCalidad, Veredicto } from '../../autopiloto/calidad';
 import { ETIQUETA_DECISION, tipoDeDecision } from '../../autopiloto/politica';
 import { Icon } from '../ui';
 
-export type VarianteCalidad = 'A' | 'B' | 'C';
-
 export interface CalidadVistaProps {
-  variante: VarianteCalidad;
   /** Lunes de la semana auditada (YYYY-MM-DD). */
   semana: string;
   muestra: AiProposal[];
@@ -66,7 +66,7 @@ export default function CalidadVista(props: CalidadVistaProps) {
       {error && <div className="bg-danger/10 border border-danger/30 text-danger rounded-surface px-4 py-3 text-caption">{error}</div>}
       {muestra.length === 0
         ? <p className="font-sans text-label text-ink-3">Nada que auditar esta semana: el asistente no aplicó ninguna decisión solo.</p>
-        : props.variante === 'B' ? <VistaB {...props} /> : props.variante === 'C' ? <VistaC {...props} /> : <VistaA {...props} />}
+        : <Vista {...props} />}
     </div>
   );
 }
@@ -141,43 +141,9 @@ function Botones({ p, juzgando, onVeredicto, tamano = 'm' }: { p: AiProposal; ju
   );
 }
 
-/* A · Una a una ------------------------------------------------------------ */
+/* Lista ---------------------------------------------------------------- */
 
-function VistaA({ muestra, nombreDe, juzgandoId, onVeredicto, onIrAlAtleta }: CalidadVistaProps) {
-  const primeraSinJuzgar = Math.max(0, muestra.findIndex(p => !p.calidad));
-  const [i, setI] = useState(primeraSinJuzgar);
-  const p = muestra[Math.min(i, muestra.length - 1)];
-  const juzgadas = muestra.filter(x => x.calidad).length;
-  return (
-    <div className="bg-surface border border-hairline rounded-surface p-4 space-y-3 max-w-2xl">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          {muestra.map((x, idx) => (
-            <button key={x.id} type="button" onClick={() => setI(idx)} aria-label={`Decisión ${idx + 1}`}
-              className={`h-1.5 rounded-full transition-all ${idx === i ? 'w-6 bg-accent' : x.calidad ? 'w-3 bg-success/60' : 'w-3 bg-hairline'}`} />
-          ))}
-        </div>
-        <p className="font-mono text-caption text-ink-3">{i + 1} de {muestra.length} · {juzgadas} juzgadas</p>
-      </div>
-      <div>
-        <button type="button" onClick={() => onIrAlAtleta?.(p.athleteId)} className="font-sans text-label font-bold text-ink hover:text-accent-ink text-left">{nombreDe(p.athleteId)}</button>
-        <p className="font-sans text-body-s text-ink">{p.summary}</p>
-      </div>
-      <Detalle p={p} />
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-hairline">
-        <Botones p={p} juzgando={juzgandoId === p.id} onVeredicto={async (x, v, n) => { await onVeredicto(x, v, n); if (i < muestra.length - 1) setI(i + 1); }} />
-        <div className="flex items-center gap-1">
-          <button type="button" disabled={i === 0} onClick={() => setI(i - 1)} className="text-ink-3 disabled:opacity-30" aria-label="Anterior"><Icon name="chevron_left" size="s" /></button>
-          <button type="button" disabled={i >= muestra.length - 1} onClick={() => setI(i + 1)} className="text-ink-3 disabled:opacity-30" aria-label="Siguiente"><Icon name="chevron_right" size="s" /></button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* B · Lista ---------------------------------------------------------------- */
-
-function VistaB({ muestra, nombreDe, juzgandoId, onVeredicto, onIrAlAtleta }: CalidadVistaProps) {
+function Vista({ muestra, nombreDe, juzgandoId, onVeredicto, onIrAlAtleta }: CalidadVistaProps) {
   const [abierta, setAbierta] = useState<string | null>(null);
   return (
     <ul className="m-0 p-0 list-none space-y-1.5">
@@ -198,41 +164,5 @@ function VistaB({ muestra, nombreDe, juzgandoId, onVeredicto, onIrAlAtleta }: Ca
         </li>
       ))}
     </ul>
-  );
-}
-
-/* C · Tabla ---------------------------------------------------------------- */
-
-function VistaC({ muestra, nombreDe, juzgandoId, onVeredicto, onIrAlAtleta }: CalidadVistaProps) {
-  const [abierta, setAbierta] = useState<string | null>(null);
-  return (
-    <div className="border border-hairline rounded-surface overflow-x-auto">
-      <table className="w-full min-w-[40rem]">
-        <thead>
-          <tr className="font-mono text-caption uppercase tracking-wider text-ink-4 text-left border-b border-hairline">
-            <th className="px-2.5 py-1.5 font-normal">Atleta</th><th className="px-2.5 py-1.5 font-normal">Decisión</th>
-            <th className="px-2.5 py-1.5 font-normal">Tipo</th><th className="px-2.5 py-1.5 font-normal">Cuándo</th><th className="px-2.5 py-1.5 font-normal">Veredicto</th>
-          </tr>
-        </thead>
-        <tbody>
-          {muestra.map(p => (
-            <React.Fragment key={p.id}>
-              <tr className="border-b border-hairline last:border-b-0 align-top">
-                <td className="px-2.5 py-2 whitespace-nowrap"><button type="button" onClick={() => onIrAlAtleta?.(p.athleteId)} className="font-sans text-caption font-bold text-ink hover:text-accent-ink">{nombreDe(p.athleteId)}</button></td>
-                <td className="px-2.5 py-2">
-                  <button type="button" onClick={() => setAbierta(abierta === p.id ? null : p.id)} className="font-sans text-caption text-ink text-left hover:text-accent-ink">{p.summary}</button>
-                </td>
-                <td className="px-2.5 py-2 font-mono text-caption text-ink-3 whitespace-nowrap">{ETIQUETA_DECISION[tipoDeDecision(p)].split(' (')[0]}</td>
-                <td className="px-2.5 py-2 font-mono text-caption text-ink-3 whitespace-nowrap">{fechaHora(p.aplicadaEn)}</td>
-                <td className="px-2.5 py-2"><Botones p={p} juzgando={juzgandoId === p.id} onVeredicto={onVeredicto} tamano="s" /></td>
-              </tr>
-              {abierta === p.id && (
-                <tr className="border-b border-hairline bg-bg"><td colSpan={5} className="px-2.5 py-2"><Detalle p={p} compacto /></td></tr>
-              )}
-            </React.Fragment>
-          ))}
-        </tbody>
-      </table>
-    </div>
   );
 }
