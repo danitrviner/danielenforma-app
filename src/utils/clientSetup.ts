@@ -103,6 +103,7 @@ const FICHA: SetupItemLink = { tab: 'ficha' };
 const CUERPO: SetupItemLink = { tab: 'cuerpo' };
 const ENTRENAMIENTOS: SetupItemLink = { tab: 'entrenamientos' };
 const DIETAS: SetupItemLink = { tab: 'dietas' };
+const FASES: SetupItemLink = { tab: 'fases' };
 const ROADMAP: SetupItemLink = { tab: 'roadmap' };
 const CARDIO: SetupItemLink = { tab: 'cardio' };
 
@@ -123,7 +124,7 @@ export const SEEDED_ITEMS: SetupItemDef[] = [
   { id: 'prog_calendario_dietas', phase: 'programacion', title: 'Calendario semanal de dietas configurado', link: DIETAS },
   { id: 'prog_pasos', phase: 'programacion', title: 'Objetivo de pasos configurado', link: DIETAS },
   { id: 'prog_fases_plan', phase: 'programacion', title: 'Fases del plan definidas', link: ROADMAP },
-  { id: 'prog_periodizacion', phase: 'programacion', title: 'Periodización nutricional configurada', link: DIETAS },
+  { id: 'prog_periodizacion', phase: 'programacion', title: 'Periodización nutricional configurada', link: FASES },
   { id: 'prog_escalera', phase: 'programacion', title: 'Escalera de niveles configurada', link: ROADMAP },
   { id: 'prog_retos_config', phase: 'programacion', title: 'Ejercicios elegibles para retos configurados', link: ROADMAP },
   { id: 'prog_sesiones', phase: 'programacion', title: 'Sesiones del bloque con ejercicios', link: ENTRENAMIENTOS },
