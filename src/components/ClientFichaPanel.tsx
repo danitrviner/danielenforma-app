@@ -1,4 +1,7 @@
 import React, { useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { updateUserProfile } from '../dbService';
+import { fechaPrometidaPorDefecto } from '../utils/primeraSemana';
 import { tintaDeTexto } from '../utils/coloresPersistidos';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -342,6 +345,12 @@ export default function ClientFichaPanel({
             {savingPlan ? '...' : 'Guardar'}
           </button>
         </div>
+        {/* La fecha comprometida (29-10): mientras no haya plan publicado, el
+            atleta ve en la sala de espera «lo tendrás el jueves 30» en vez de
+            cuántos días lleva esperando. Por defecto, dos días tras el alta. */}
+        {!athlete.planPublishedAt && (
+          <FechaPrometida athlete={athlete} />
+        )}
         <div className="flex flex-wrap gap-x-6 gap-y-1 pt-2 border-t border-hairline font-mono text-label">
           <span className="text-ink-2">Peso inicial: <span className="text-ink font-bold">{athlete.initialWeight || '—'} kg</span></span>
           <span className="text-ink-2">Meta: <span className="text-success font-bold">{athlete.targetWeight || '—'} kg</span></span>
@@ -853,6 +862,43 @@ export default function ClientFichaPanel({
 
       {/* ── Equipamiento del gimnasio ────────────────────────────────── */}
       <EquipoClienteCard athleteEmail={athlete.email} />
+    </div>
+  );
+}
+
+/** «Lo tendrá el»: la fecha a la que el coach se compromete a publicar el plan. */
+function FechaPrometida({ athlete }: { athlete: UserProfile }) {
+  const queryClient = useQueryClient();
+  const [fecha, setFecha] = useState(athlete.planPrometidoPara ?? fechaPrometidaPorDefecto(athlete.createdAt, hoyIsoLocal()));
+  const [guardando, setGuardando] = useState(false);
+  const guardar = async () => {
+    setGuardando(true);
+    try {
+      await updateUserProfile(athlete.userId, { planPrometidoPara: fecha || undefined });
+      queryClient.invalidateQueries({ queryKey: ['userProfiles'] });
+    } catch (err) {
+      console.error('No se pudo guardar la fecha comprometida:', err);
+    } finally {
+      setGuardando(false);
+    }
+  };
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="font-mono text-caption text-ink-2 uppercase">Lo tendrá el:</span>
+      <input
+        type="date"
+        value={fecha}
+        onChange={e => setFecha(e.target.value)}
+        className="bg-raised border border-control-line rounded-control px-2 py-2 text-title-s font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
+      />
+      <button
+        onClick={guardar}
+        disabled={guardando || fecha === (athlete.planPrometidoPara ?? '')}
+        className="px-3 py-2 min-h-[36px] bg-accent text-on-accent font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-50"
+      >
+        {guardando ? '...' : athlete.planPrometidoPara ? 'Cambiar' : 'Comprometer'}
+      </button>
+      <span className="font-sans text-caption text-ink-3">Él lo ve en su sala de espera.</span>
     </div>
   );
 }

@@ -132,6 +132,10 @@ const RespuestaHarness = import.meta.env.DEV
 const MensajesHarness = import.meta.env.DEV
   ? pantallaDiferida('MensajesDevHarness', () => import('./components/MensajesDevHarness'))
   : null;
+// Banco de pruebas de la primera semana: sala de espera y lista (ruta /dev/primera-semana).
+const PrimeraSemanaHarness = import.meta.env.DEV
+  ? pantallaDiferida('PrimeraSemanaDevHarness', () => import('./components/PrimeraSemanaDevHarness'))
+  : null;
 
 // Banco de pruebas de Cliente › Revisiones › Asignadas (ruta /dev/asignados),
 // lado COACH: tampoco hay sesión de coach en este repo.
@@ -846,6 +850,14 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <MensajesHarness />
+      </Suspense>
+    );
+  }
+
+  if (PrimeraSemanaHarness && location.pathname === '/dev/primera-semana') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <PrimeraSemanaHarness />
       </Suspense>
     );
   }

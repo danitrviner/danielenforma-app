@@ -239,6 +239,10 @@ export interface UserProfile {
   // atleta" puede pulsarse, y lo que arranca el tour — pero lo que abre la
   // sala de espera ahora es esto, una decisión explícita del coach.
   planPublishedAt?: string; // ISO, el día en que el coach le mostró su primer plan
+  /** Día (YYYY-MM-DD) en que el coach se compromete a tener el plan (29-10):
+   *  la sala de espera cuenta hacia esa fecha en vez de contar los días que
+   *  lleva esperando. Lo decide el coach; bloqueado al atleta en las reglas. */
+  planPrometidoPara?: string;
 
   // ISO timestamp de la última vez que el atleta abrió la app (escrito por su
   // propio cliente en cada arranque de sesión, ver App.tsx loadUserSession).

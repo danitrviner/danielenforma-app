@@ -2,6 +2,7 @@ import { Contacto, Mesocycle, QuestionnaireResponse, UserProfile, WeightCheckIn,
 import { addDays, diasEntreFechas, isoLocal } from './trainingWeek';
 import { DIAS_AVISO_RENOVACION } from './calidadDelPlan';
 import type { MotivoContacto } from './plantillasWhatsApp';
+import { senalPrimeraSemana } from './primeraSemana';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LA BANDEJA DEL DÍA — qué atleta necesita algo tuyo, y con cuánta prisa.
@@ -199,12 +200,22 @@ export function construirBandejaDelDia(entrada: EntradaBandeja): SenalDelDia[] {
     const enMarcha = !!a.planPublishedAt;
     const s = a.senales;
 
+    // ── La primera semana (29-10) ────────────────────────────────────────
+    // Contacto diario prometido en la venta: día 1-2 con algo registrado,
+    // «dile que lo has visto»; día 3 sin nada, «escríbele». Sale antes que
+    // «se está apagando»: un atleta de tres días no se apaga, empieza mal.
+    const primera = senalPrimeraSemana({ profile: a, hoy });
+    if (primera) {
+      añadirContacto(`primera_${primera.motivo}`, 'hoy', 'setup', primera.texto, 'revision',
+        { motivo: primera.motivo, dias: primera.dia });
+    }
+
     // «Se está apagando» (Dani, 28-10): 3 días sin registrar nada, 3 sesiones
     // perdidas en 14 días o dos ciclos sin contestar la revisión. Lo calcula
     // el latido (utils/senalesDelAtleta.ts); aquí solo se compara con hoy. Se
     // pinta como «para hoy»: la antigua «sin abrir la app» era `pronto` y la
     // pantalla no enseña ese nivel, así que nunca la vio nadie.
-    if (enMarcha && s) {
+    if (enMarcha && s && !primera) {
       const sinRegistrar = s.ultimoRegistro ? diasEntreFechas(s.ultimoRegistro, hoy) : null;
       if (sinRegistrar !== null && sinRegistrar >= DIAS_SIN_REGISTRAR) {
         añadirContacto('apagandose', 'hoy', 'ausencia',

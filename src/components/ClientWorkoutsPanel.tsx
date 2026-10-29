@@ -7,7 +7,9 @@ import {
 import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile, reprogramarAsignacionesDelMeso, createNotificationDeduped } from '../dbService';
 import { COACH_NOMBRE } from '../utils/coach';
 import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMesociclo';
-import { hoyIsoLocal } from '../utils/trainingWeek';
+import { hoyIsoLocal, getWeekStart, addDays } from '../utils/trainingWeek';
+import { crearMensajeCoach } from '../db/mensajesCoach';
+import { textoBienvenida } from '../utils/primeraSemana';
 import { nombreDeMeso } from '../utils/nombresMeso';
 import { mesoQueVeElAtleta } from '../utils/bloqueDelAtleta';
 import { adherenciaDeMesociclo } from '../utils/adherence';
@@ -127,7 +129,16 @@ export default function ClientWorkoutsPanel({
     try {
       await updateUserProfile(athlete.userId, { planPublishedAt: new Date().toISOString() });
       queryClient.invalidateQueries({ queryKey: ['userProfiles'] });
-      showToast(`Plan publicado. ${athlete.displayName} ya puede verlo.`, 'success');
+      // La bienvenida (29-10) queda en BORRADOR en «Mensajes a {nombre}»: el
+      // atleta no la ve hasta que Dani la firma. Días por semana: los de la
+      // semana que viene en sus asignaciones, si ya están.
+      const lunes = getWeekStart(hoyIsoLocal());
+      const diasPorSemana = new Set(assignments.filter(a => a.date >= lunes && a.date <= addDays(lunes, 6)).map(a => a.date)).size || null;
+      crearMensajeCoach({
+        id: `bienvenida_${athlete.email.toLowerCase()}`, athleteId: athlete.email, tipo: 'implantacion', autor: 'asistente', estado: 'borrador',
+        texto: textoBienvenida({ nombre: athlete.displayName || '', diasPorSemana }), fecha: hoyIsoLocal(),
+      }).then(() => queryClient.invalidateQueries({ queryKey: ['mensajesCoach'] })).catch(console.error);
+      showToast(`Plan publicado. ${athlete.displayName} ya puede verlo. Tienes su bienvenida por firmar en Revisión.`, 'success');
     } catch (err) {
       console.error('No se pudo publicar el plan:', err);
       showToast('No se pudo publicar el plan. Inténtalo otra vez.');

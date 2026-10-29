@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn } from '../types';
 import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles, getBodyweightForAthlete, updateUserProfile, getNutritionProgram, getCardioSessionsSince, getResponsesForAthlete } from '../dbService';
 import LoUltimoDeDani from './home/LoUltimoDeDani';
+import PrimeraSemanaCard from './home/PrimeraSemanaCard';
 import { formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
@@ -344,6 +345,17 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         notaDeHoy={coachDayNote}
         onNavigate={onNavigate}
       />
+
+      {/* «Tu primera semana» (29-10): los tres primeros pasos, 14 días. */}
+      {!loadingTraining && (
+        <PrimeraSemanaCard
+          profile={profile}
+          assignments={assignments}
+          pesos={pesajes}
+          respuestas={respuestasRevision}
+          onNavigate={onNavigate}
+        />
+      )}
 
       {/* ── Peso y pasos: los dos de un vistazo, sin hacer scroll ───────────
           En segunda fila y no de protagonistas: si a uno le faltan datos, no

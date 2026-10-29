@@ -12,7 +12,10 @@
    frase el mismo martes.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-export type MotivoContacto = 'sin_registrar' | 'perdidas' | 'sin_revision' | 'sin_respuesta' | 'bloque_terminado' | 'alta_parada';
+export type MotivoContacto =
+  | 'sin_registrar' | 'perdidas' | 'sin_revision' | 'sin_respuesta' | 'bloque_terminado' | 'alta_parada'
+  // Primera semana (29-10): contacto diario prometido en la venta.
+  | 'primera_sesion' | 'dia3_sin_registro';
 
 export interface DatosPlantilla {
   nombre: string;
@@ -60,5 +63,9 @@ export function plantillaWhatsApp(motivo: MotivoContacto, d: DatosPlantilla): st
       return `${ap} Tu bloque de entreno ha terminado. Esta semana te monto el siguiente con lo que has conseguido en este. Dime si cambia algo de tus días o tu material.`;
     case 'alta_parada':
       return `${ap} Veo que te quedaste a medias con el alta en la app. ¿Te ayudo a terminarla? Son unos minutos y en cuanto esté te monto el plan.`;
+    case 'primera_sesion':
+      return `${ap} He visto que ya has empezado con el plan. Esta primera semana no busques marcas: haz las sesiones enteras y apunta lo que pesas. ¿Cómo ha ido la primera?`;
+    case 'dia3_sin_registro':
+      return `${ap} Llevas el plan ${d.dias ?? 'unos'} días y no veo nada registrado todavía. ¿Te ha pillado la semana o hay algo de la app que no te cuadra? Dímelo y lo arreglamos hoy.`;
   }
 }

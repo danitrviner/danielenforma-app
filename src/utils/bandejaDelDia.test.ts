@@ -347,3 +347,19 @@ describe('los mensajes por firmar (29-10)', () => {
     expect(s!.destino).toMatch(/\/revision$/);
   });
 });
+
+describe('la primera semana (29-10)', () => {
+  const senales = (ultimoRegistro: string | null) => ({
+    calculadoEn: HOY, ultimoRegistro, registros14d: ultimoRegistro ? 1 : 0, perdidas14d: 0, ultimaRespuesta: null, tieneCuestionarios: true,
+  });
+  it('día 2 con algo registrado: dile que lo has visto', () => {
+    const s = construirBandejaDelDia(entrada({ atletas: [atleta({ planPublishedAt: `${addDays(HOY, -1)}T10:00:00.000Z`, senales: senales(HOY) })] }))
+      .find(x => x.id.includes('primera_'));
+    expect(s).toMatchObject({ urgencia: 'hoy', categoria: 'setup', contacto: { motivo: 'primera_sesion', dias: 2 } });
+  });
+  it('día 3 sin registrar: escríbele, y no cuenta además como «apagándose»', () => {
+    const s = construirBandejaDelDia(entrada({ atletas: [atleta({ planPublishedAt: `${addDays(HOY, -2)}T10:00:00.000Z`, senales: senales(addDays(HOY, -10)) })] }));
+    expect(s.find(x => x.id.includes('primera_'))).toMatchObject({ contacto: { motivo: 'dia3_sin_registro', dias: 3 } });
+    expect(s.filter(x => x.categoria === 'ausencia')).toHaveLength(0);
+  });
+});

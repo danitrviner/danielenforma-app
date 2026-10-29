@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { plantillaWhatsApp, type MotivoContacto } from './plantillasWhatsApp';
 
-const MOTIVOS: MotivoContacto[] = ['sin_registrar', 'perdidas', 'sin_revision', 'sin_respuesta', 'bloque_terminado', 'alta_parada'];
+const MOTIVOS: MotivoContacto[] = ['sin_registrar', 'perdidas', 'sin_revision', 'sin_respuesta', 'bloque_terminado', 'alta_parada', 'primera_sesion', 'dia3_sin_registro'];
 
 describe('plantillaWhatsApp', () => {
   it('empieza con el nombre de pila, corto y sin viñetas', () => {
