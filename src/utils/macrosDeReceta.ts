@@ -1,6 +1,6 @@
-import type { FoodCategory, Macros, Recipe } from '../types';
-import { kcalDeGramos, MACROS_CERO, restarMacros } from './macros';
-import { macrosDeIntercambios } from './macrosLegado';
+import type { FoodCategory, Macros, Recipe } from '../types.js';
+import { kcalDeGramos, MACROS_CERO, restarMacros } from './macros.js';
+import { macrosDeIntercambios } from './macrosLegado.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Calorías y macros de una receta, y si cabe en lo que te queda (10-2026)

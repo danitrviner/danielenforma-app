@@ -1,6 +1,6 @@
-import type { Mesocycle, RepartoPropio } from '../types';
-import { huellaDeReparto, repartoDelMesociclo, type Reordenacion } from './trainingSplits';
-import { cicloDiasDeMeso, offsetsDelMesociclo } from './asignacionMesociclo';
+import type { Mesocycle, RepartoPropio } from '../types.js';
+import { huellaDeReparto, repartoDelMesociclo, type Reordenacion } from './trainingSplits.js';
+import { cicloDiasDeMeso, offsetsDelMesociclo } from './asignacionMesociclo.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Reordenar los días del ciclo SIN perder lo que ya está hecho

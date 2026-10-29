@@ -18,8 +18,9 @@ import type {
   AiProposal, AppNotification, AthleteDietConfig, BodyweightLog, CardioSession, Diet,
   DietCompletionLog, Exercise, LevelLadder, NutritionProgram, Roadmap, StepLog,
   UserProfile, WeeklyChallenge, WorkoutAssignment, WorkoutLog,
-  Mesocycle, QuestionnaireAssignment, QuestionnaireResponse, Workout, ExperienceLevel,
+  Mesocycle, QuestionnaireAssignment, QuestionnaireResponse, Workout, ExperienceLevel, OnboardingData, Questionnaire,
 } from '../../src/types.js';
+import type { Episodio } from '../../src/autopiloto/episodios.js';
 import { atletasActivos } from '../../src/utils/atletas.js';
 import { getAdminDb } from './auth.js';
 
@@ -250,4 +251,41 @@ export async function guardarHuellaDelLatido(db: Firestore, id: string, huella: 
     return;
   }
   await ref.set(sinIndefinidos({ ...huella, id }));
+}
+
+// ─── Alta y cuestionarios (detectores del autopiloto) ─────────────────────────
+
+export async function leerOnboarding(db: Firestore, email: string): Promise<OnboardingData | null> {
+  const snap = await db.collection('onboarding').doc(email).get();
+  return snap.exists ? ({ athleteId: email, ...(snap.data() as object) } as OnboardingData) : null;
+}
+
+export async function leerCuestionariosDelCoach(db: Firestore, coachUid: string): Promise<Questionnaire[]> {
+  const snap = await db.collection('questionnaires').where('ownerId', '==', coachUid).get();
+  return snap.docs.map(d => conId<Questionnaire>(d));
+}
+
+// ─── Episodios del autopiloto ─────────────────────────────────────────────────
+
+/** Encola un episodio. `create` con id determinista: detectar lo mismo dos
+ *  veces no duplica, y un episodio ya en curso no se reinicia. */
+export async function crearEpisodioUnaVez(db: Firestore, ep: Episodio): Promise<boolean> {
+  try {
+    await db.collection('episodios').doc(ep.id).create(sinIndefinidos(ep));
+    return true;
+  } catch {
+    return false; // ya existía
+  }
+}
+
+export async function leerEpisodiosPendientes(db: Firestore, limite: number): Promise<Episodio[]> {
+  const snap = await db.collection('episodios').where('estado', 'in', ['pendiente', 'en_curso']).get();
+  return snap.docs
+    .map(d => conId<Episodio>(d))
+    .sort((a, b) => a.prioridad - b.prioridad || a.creadoEn.localeCompare(b.creadoEn))
+    .slice(0, limite);
+}
+
+export async function guardarEpisodio(db: Firestore, ep: Episodio): Promise<void> {
+  await db.collection('episodios').doc(ep.id).set(sinIndefinidos(ep));
 }

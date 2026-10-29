@@ -1,8 +1,8 @@
-import { WorkoutExercise, WorkoutLog, WorkoutSetLog, EventoDeSemana } from '../types';
-import { resolveExerciseForWeek, resolverEjercicioDelMeso, mesocycleWeekNumber } from './progression';
-import { expandSetGroups } from './setGroups';
-import { rangoDeReps } from './cargaSugerida';
-import { diferencias, novedadesDeSemana, seriesDe, type NovedadesDeSemana } from './semanasDelBloque';
+import { WorkoutExercise, WorkoutLog, WorkoutSetLog, EventoDeSemana } from '../types.js';
+import { resolveExerciseForWeek, resolverEjercicioDelMeso, mesocycleWeekNumber } from './progression.js';
+import { expandSetGroups } from './setGroups.js';
+import { rangoDeReps } from './cargaSugerida.js';
+import { diferencias, novedadesDeSemana, seriesDe, type NovedadesDeSemana } from './semanasDelBloque.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
 
 /* «Planificar progresión» (Mesociclo › Ejercicios): el coach elige unos pocos

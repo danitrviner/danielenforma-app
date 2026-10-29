@@ -1,5 +1,5 @@
-import { MenuDay, Recipe } from '../types';
-import { parseBaseGrams } from './exchangeHelpers';
+import { MenuDay, Recipe } from '../types.js';
+import { parseBaseGrams } from './exchangeHelpers.js';
 
 // Aggregated weekly shopping list built from a published menu. Sums ingredient
 // quantities across every meal of the week (recipe portions × scale, plus

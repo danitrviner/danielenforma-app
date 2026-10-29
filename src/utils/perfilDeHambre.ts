@@ -1,5 +1,5 @@
-import { HungerProfile } from '../types';
-import { normalizarTexto } from './busqueda';
+import { HungerProfile } from '../types.js';
+import { normalizarTexto } from './busqueda.js';
 
 /**
  * Deduce el perfil de hambre a partir de lo que el atleta escribió en el alta.

@@ -1,8 +1,8 @@
 import {
   MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, MUSCLE_LABELS_SHORT, MUSCLE_ORDER,
-} from '../types';
-import { VolumeLandmark, VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
-import { VolumeZone, zoneOf, zoneLabel, heatmapBg, heatmapText } from './volumeZones';
+} from '../types.js';
+import { VolumeLandmark, VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks.js';
+import { VolumeZone, zoneOf, zoneLabel, heatmapBg, heatmapText } from './volumeZones.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MAPA DE CALOR DE VOLUMEN — cuánto está entrenando de verdad cada grupo,

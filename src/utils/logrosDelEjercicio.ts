@@ -1,5 +1,5 @@
-import type { WorkoutLog } from '../types';
-import { rmDeSerie } from './oneRepMax';
+import type { WorkoutLog } from '../types.js';
+import { rmDeSerie } from './oneRepMax.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Lo que se celebra al cerrar un ejercicio en plena sesión (28-10-2026)

@@ -1,4 +1,4 @@
-import { Recipe } from '../types';
+import { Recipe } from '../types.js';
 
 /* Cuánto se tarda en hacer una receta, en MINUTOS.
  *

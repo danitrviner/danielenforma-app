@@ -2,37 +2,35 @@
 // aprueba, salvo las que dejan hechos en la ficha viva (log_dossier_fact),
 // notas para Dani (add_coach_task) y el borrador de reporte. Nada de esto
 // llega al atleta sin aprobación.
-import { auth } from '../../firebase';
-import { appendDossierFacts } from '../../db/dossier';
-import { sesionesDeMesociclo, fechasDelMesociclo, cicloDiasDeMeso } from '../../utils/asignacionMesociclo';
-import { vueltasDelCiclo } from '../../utils/progression';
-import { repartoDesdeAsistente, sesionesDelReparto } from '../repartoAsistente';
-import { camposDeCalendario } from '../../utils/reordenarMeso';
-import { distribucionDeMeso } from '../../utils/distribucionDeMeso';
-import { totalSemanas as totalSemanasNutri } from '../../utils/semanasNutricion';
-import { normalizarTexto as normTexto } from '../../utils/busqueda';
-import { nombreDeMeso } from '../../utils/nombresMeso';
-import type { LevelLadder, LadderLevel, LevelCriterionKind, WorkoutDayProposal, WorkoutDaysProposalPayload, RoadmapItem, NutritionPhaseProposal, NutritionProgramProposalPayload, RoadmapProposalPayload, SpecialDayProposalPayload, SpecialDayKind, WeekPlanProposalPayload, MacroAjustable } from '../../types';
-import { getWorkoutAssignments, getWorkouts, getWorkoutLogs, getExercises, getMesocycles, getDietsForAthlete, getDietCompletionLogsForAthlete, getAthleteNutritionConfig, getCoachClientTasks, getWeeklyChallenge, getNutritionProgram, getBodyweightForAthlete, getWeeklyChallengesForAthlete, getQuestionnairesByCoach, saveCoachReport, createAiProposal, getRoadmap, createCoachClientTask } from '../../dbService';
-import { PROTOCOLOS_VO2MAX } from '../../utils/cardioProgression';
-import type { SetupConfigProposalPayload, PublishBlockProposalPayload, WeeklyChallengeProposalPayload, WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload, MesocycleTemplateStageProposal, WorkoutDayExerciseProposal, QSchedule, WeekDay, ChallengeKind } from '../../types';
-import { isoWeekKey } from '../../utils/challengeOptions';
-import { OBJETIVOS_ORDEN, ObjetivoCorporalTipo } from '../../utils/verificacionObjetivo';
-import { phaseTypeDeObjetivo } from '../../utils/objetivoDeFase';
-import { buildTrainingReportDraft } from '../../utils/reportBuilder';
-import { objetivoDeDieta, objetivoYCupo } from '../../utils/macrosLegado';
-import { ajusteEnGramos } from '../../utils/semanasNutricion';
-import { GRAMS_PER_EXCHANGE } from '../../utils/nutritionConstants';
-import { addDays, hoyIsoLocal } from '../../utils/trainingWeek';
-import { leerDietaPropuesta, DietUpdatePayload, validateMesocyclePayload, avisosDeMesociclo, revisarObjetivoNutricional, MesocycleProposalPayload, validateNutritionPhases, validateWorkoutDays, claveDeEjercicio, WorkoutDayInput, WorkoutExerciseInput, validateLevelLadder, LadderLevelInput, LadderCriterionInput } from '../validators';
-import { Diet, Macros, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, PeriodizationBlockPayload, ProposalExpediente, DossierFact, DossierPatch } from '../../types';
-import { cambiosDeMesociclo, cambiosDeDieta, cambiosDePeriodizacion } from '../cambiosPropuesta';
-import { alimentosDelBancoDelCoach, contextoNutricional, findProfile, textoDeObjetivo, toResult } from './comunes';
+import { appendDossierFacts, coachActual, createAiProposal, createCoachClientTask, getAthleteNutritionConfig, getBodyweightForAthlete, getCoachClientTasks, getDietCompletionLogsForAthlete, getDietsForAthlete, getExercises, getMesocycles, getNutritionProgram, getQuestionnairesByCoach, getResponsesForAthlete, getRoadmap, getWeeklyChallenge, getWeeklyChallengesForAthlete, getWorkoutAssignments, getWorkoutLogs, getWorkouts, saveCoachReport } from './datos.js';
+import { sesionesDeMesociclo, fechasDelMesociclo, cicloDiasDeMeso } from '../../utils/asignacionMesociclo.js';
+import { vueltasDelCiclo } from '../../utils/progression.js';
+import { repartoDesdeAsistente, sesionesDelReparto } from '../repartoAsistente.js';
+import { camposDeCalendario } from '../../utils/reordenarMeso.js';
+import { distribucionDeMeso } from '../../utils/distribucionDeMeso.js';
+import { totalSemanas as totalSemanasNutri } from '../../utils/semanasNutricion.js';
+import { normalizarTexto as normTexto } from '../../utils/busqueda.js';
+import { nombreDeMeso } from '../../utils/nombresMeso.js';
+import type { LevelLadder, LadderLevel, LevelCriterionKind, WorkoutDayProposal, WorkoutDaysProposalPayload, RoadmapItem, NutritionPhaseProposal, NutritionProgramProposalPayload, RoadmapProposalPayload, SpecialDayProposalPayload, SpecialDayKind, WeekPlanProposalPayload, MacroAjustable } from '../../types.js';
+import { PROTOCOLOS_VO2MAX } from '../../utils/cardioProgression.js';
+import type { SetupConfigProposalPayload, PublishBlockProposalPayload, WeeklyChallengeProposalPayload, WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload, MesocycleTemplateStageProposal, WorkoutDayExerciseProposal, QSchedule, WeekDay, ChallengeKind } from '../../types.js';
+import { isoWeekKey } from '../../utils/challengeOptions.js';
+import { OBJETIVOS_ORDEN, ObjetivoCorporalTipo } from '../../utils/verificacionObjetivo.js';
+import { phaseTypeDeObjetivo } from '../../utils/objetivoDeFase.js';
+import { buildTrainingReportDraft } from '../../utils/reportBuilder.js';
+import { objetivoDeDieta, objetivoYCupo } from '../../utils/macrosLegado.js';
+import { ajusteEnGramos } from '../../utils/semanasNutricion.js';
+import { GRAMS_PER_EXCHANGE } from '../../utils/nutritionConstants.js';
+import { addDays, hoyIsoLocal } from '../../utils/trainingWeek.js';
+import { leerDietaPropuesta, DietUpdatePayload, validateMesocyclePayload, avisosDeMesociclo, revisarObjetivoNutricional, MesocycleProposalPayload, validateNutritionPhases, validateWorkoutDays, claveDeEjercicio, WorkoutDayInput, WorkoutExerciseInput, validateLevelLadder, LadderLevelInput, LadderCriterionInput } from '../validators.js';
+import { Diet, Macros, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, PeriodizationBlockPayload, ProposalExpediente, DossierFact, DossierPatch } from '../../types.js';
+import { cambiosDeMesociclo, cambiosDeDieta, cambiosDePeriodizacion } from '../cambiosPropuesta.js';
+import { alimentosDelBancoDelCoach, contextoNutricional, findProfile, textoDeObjetivo, toResult } from './comunes.js';
 
 export async function generateReportDraft(email: string, periodDaysInput: number, introOverride?: string): Promise<string> {
   const profile = await findProfile(email);
   if (!profile) return toResult({ error: `No existe ningún cliente con email ${email}` });
-  const coachId = auth.currentUser?.uid;
+  const coachId = (coachActual().uid || undefined);
   if (!coachId) return toResult({ error: 'Sesión de coach no disponible' });
 
   const [logs, exercises, mesos, assignments, bwLogs, dietLogs, diets, challenges] = await Promise.all([
@@ -553,6 +551,44 @@ export async function draftCheckinFeedback(
 
 /** La dieta que se guarda al aprobar: el objetivo en kcal y gramos y, para los
  *  binarios viejos, su cupo en intercambios equivalente. */
+/** La respuesta a una revisión (cuestionario): el canal que de verdad usa el
+ *  atleta desde 10-2026. La respuesta de cuestionario tiene que existir y ser
+ *  suya; si ya tiene respuesta del coach, se dice (se sobrescribiría). */
+export async function proposeRespuestaRevision(
+  athleteEmail: string, responseId: string, texto: string, rationale: string, chatId: string,
+  expediente?: ProposalExpediente,
+): Promise<string> {
+  const limpio = texto.trim();
+  if (!responseId || !athleteEmail || !limpio) return toResult({ valid: false, issues: ['Faltan athlete_email, response_id o texto'] });
+  if (/\b(IA|inteligencia artificial|asistente)\b/i.test(limpio)) {
+    return toResult({ valid: false, issues: ['El texto no puede mencionar al asistente ni a la IA: lo firma Dani.'] });
+  }
+  const respuesta = (await getResponsesForAthlete(athleteEmail)).find(r => r.id === responseId);
+  if (!respuesta) return toResult({ valid: false, issues: [`No hay ninguna respuesta de cuestionario ${responseId} de este atleta (mira get_client_brief).`] });
+  const avisos: string[] = [];
+  if (respuesta.respuestaCoach?.texto) avisos.push('Esa revisión ya tiene respuesta de Dani: al aprobar se sustituiría.');
+  const summary = `Respuesta a su revisión del ${respuesta.submittedAt.slice(0, 10)}: «${limpio.length > 80 ? `${limpio.slice(0, 77)}…` : limpio}»`;
+  const proposal = await createAiProposal({
+    athleteId: athleteEmail,
+    kind: 'respuestaRevision',
+    status: 'proposed',
+    chatId,
+    summary,
+    rationale: rationale || '',
+    payload: { responseId, texto: limpio, submittedAt: respuesta.submittedAt },
+    baseEntityId: responseId,
+    paraAtleta: limpio,
+    ...(expediente ? { expediente } : {}),
+    createdAt: new Date().toISOString(),
+  });
+  await registrarPropuesta(athleteEmail, proposal.id, chatId, summary);
+  return toResult({
+    proposalCreated: true, proposalId: proposal.id,
+    ...(avisos.length ? { avisos } : {}),
+    note: 'Propuesta creada. Dani la revisa y la envía desde el panel; el atleta la lee en su revisión.',
+  });
+}
+
 function dietaDePropuesta(
   athleteEmail: string, name: string, objetivo: Macros,
   meals: { name: string; items: Diet['meals'][number]['items'] }[], prefijoId = '',
@@ -1049,7 +1085,7 @@ export async function proposeSetupConfig(
   }
   if (input.questionnaire !== undefined) {
     const q = input.questionnaire as Record<string, unknown> | null;
-    const coachUid = auth.currentUser?.uid;
+    const coachUid = (coachActual().uid || undefined);
     const disponibles = coachUid ? await getQuestionnairesByCoach(coachUid) : [];
     const titulo = typeof q?.title === 'string' ? q.title : '';
     const encontrado = disponibles.find(x => claveDeEjercicio(x.title) === claveDeEjercicio(titulo));

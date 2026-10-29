@@ -2,10 +2,10 @@
 // métricas objetivo — el paso de fase lo decide el coach (fases por progresión,
 // no por tiempo, según la metodología del asesoramiento).
 
-import { PlanPhase, PhaseMetricTarget, DietCompletionLog, Diet } from '../types';
-import { addDays } from './trainingWeek';
-import { LadderData } from './levelLadder';
-import { lastBodyweight, firstBodyweight, bestSet, exerciseIdsMatching, avgSteps, dailyDietPcts } from './athleteMetrics';
+import { PlanPhase, PhaseMetricTarget, DietCompletionLog, Diet } from '../types.js';
+import { addDays } from './trainingWeek.js';
+import { LadderData } from './levelLadder.js';
+import { lastBodyweight, firstBodyweight, bestSet, exerciseIdsMatching, avgSteps, dailyDietPcts } from './athleteMetrics.js';
 
 export interface PhaseData extends LadderData {
   completionLogs: DietCompletionLog[];

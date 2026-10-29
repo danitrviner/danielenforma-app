@@ -1,6 +1,6 @@
-import { Mesocycle, UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
-import { addDays, diasEntreFechas, isoLocal } from './trainingWeek';
-import { DIAS_AVISO_RENOVACION } from './calidadDelPlan';
+import { Mesocycle, UserProfile, WeightCheckIn, WorkoutAssignment } from '../types.js';
+import { addDays, diasEntreFechas, isoLocal } from './trainingWeek.js';
+import { DIAS_AVISO_RENOVACION } from './calidadDelPlan.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LA BANDEJA DEL DÍA — qué atleta necesita algo tuyo, y con cuánta prisa.

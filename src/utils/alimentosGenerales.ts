@@ -1,8 +1,8 @@
-import type { DietMode, FoodCategory, Macros, MealItem } from '../types';
-import { parseBaseGrams } from './conversionNutricional';
-import { foodNameWithoutGrams } from './exchangeHelpers';
-import { macrosDeIntercambios } from './macrosLegado';
-import { escalarMacros, redondearMacros } from './macros';
+import type { DietMode, FoodCategory, Macros, MealItem } from '../types.js';
+import { parseBaseGrams } from './conversionNutricional.js';
+import { foodNameWithoutGrams } from './exchangeHelpers.js';
+import { macrosDeIntercambios } from './macrosLegado.js';
+import { escalarMacros, redondearMacros } from './macros.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    «Alimentos generales»: el banco de 310 alimentos en kcal y gramos (10-2026)

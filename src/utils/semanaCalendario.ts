@@ -8,13 +8,13 @@
  * los 7 días a la vez no es gratis: si esto entrara en `construirIndiceDeDias`
  * se pagaría en el Año y el Mes, donde no se enseña.
  */
-import { ejerciciosDeSesionHecha, logDeAsignacion } from './sesionHecha';
+import { ejerciciosDeSesionHecha, logDeAsignacion } from './sesionHecha.js';
 import {
   WorkoutAssignment, WorkoutLog, Workout, Exercise, Mesocycle,
-} from '../types';
-import { mesocycleWeekNumber, resolverEjercicioDelMeso } from './progression';
-import { cicloDiasDeMeso } from './asignacionMesociclo';
-import { addDays } from './trainingWeek';
+} from '../types.js';
+import { mesocycleWeekNumber, resolverEjercicioDelMeso } from './progression.js';
+import { cicloDiasDeMeso } from './asignacionMesociclo.js';
+import { addDays } from './trainingWeek.js';
 
 export interface EjercicioDelDia {
   exerciseId: string;

@@ -1,8 +1,8 @@
-import { CardioSession } from '../types';
+import { CardioSession } from '../types.js';
 import {
   dailyLoadFromSessions, computeTrainingLoad, classifyTlr, TLR_LABEL,
   trainingFocus, TrainingFocus, TrainingLoadState,
-} from './cardioMetrics';
+} from './cardioMetrics.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    EL CARDIO DE LA VENTANA — lo que el coach necesita decir en la revisión.

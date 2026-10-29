@@ -1,4 +1,4 @@
-import { DataPoint } from './seriesCorrelation';
+import { DataPoint } from './seriesCorrelation.js';
 
 // Resumen de progreso para la vista que el coach graba en vídeo y le enseña
 // al atleta: el titular de cada métrica (dónde empezó, dónde está, cuánto ha

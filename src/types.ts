@@ -2874,7 +2874,10 @@ export type AiProposalKind = 'diet' | 'mesocycle' | 'checkinFeedback' | 'periodi
   | 'setupConfig' | 'publishBlock' | 'weeklyChallenge' | 'workoutTemplate' | 'mesocycleTemplate' | 'weekPlan'
   // Lo que el latido diario aplicó solo (sesiones perdidas, dieta de la fase,
   // niveles): no se aprueba, se ve en «Hecho hoy» y se puede deshacer.
-  | 'latido';
+  | 'latido'
+  // La respuesta del coach a una revisión (cuestionario) del atleta: el canal
+  // vivo desde 10-2026 (131 respuestas en 60 días frente a 1 check-in).
+  | 'respuestaRevision';
 
 /** Programación semana a semana de un mesociclo y/o de la periodización
  *  nutricional, propuesta por el asistente. Los ejercicios ya vienen resueltos
@@ -2968,7 +2971,9 @@ export interface MesocycleTemplateProposalPayload {
  *  `aplicada` = la aplicó la máquina bajo su política (automático o con aviso).
  *  `deshecha` = se restauró el `snapshotAntes`. `caducada` = nadie la decidió
  *  a tiempo (p. ej. el día del reto ya pasó). */
-export type AiProposalStatus = 'proposed' | 'approved' | 'rejected' | 'aplicada' | 'deshecha' | 'caducada';
+export type AiProposalStatus = 'proposed' | 'approved' | 'rejected' | 'aplicada' | 'deshecha' | 'caducada'
+  /** El autopiloto decidió pero NO escribió: se compara con lo que hizo Dani. */
+  | 'sombra';
 
 export type AutorPropuesta = 'asistente' | 'latido' | 'coach';
 export type PoliticaPropuesta = 'automatico' | 'aviso' | 'proponer' | 'sombra';
@@ -3006,7 +3011,16 @@ export interface LatidoProposalPayload {
   acciones: { tipo: string; texto: string }[];
 }
 
+/** Lo que el coach le contesta a una revisión (questionnaireResponses.respuestaCoach). */
+export interface RespuestaRevisionProposalPayload {
+  responseId: string;
+  texto: string;
+  /** Fecha de envío de la revisión, para la tarjeta. */
+  submittedAt?: string;
+}
+
 export type AiProposalPayload =
+  | RespuestaRevisionProposalPayload
   | LatidoProposalPayload
   | WeekPlanProposalPayload
   | Omit<Diet, 'id'>

@@ -3,10 +3,10 @@
    implementará con el SDK de administración. */
 import {
   getDietsForAthlete, getMesocycles, getWorkouts, getRoadmap, getNutritionProgram, getAllUserProfiles,
-  getWorkoutAssignments, getAthleteNutritionConfig, getAthleteDietConfig, getExercises, getCheckIns,
-} from '../dbService';
-import { getDossier } from '../db/dossier';
-import type { LectorAplicacion } from './aplicarPropuesta';
+  getWorkoutAssignments, getAthleteNutritionConfig, getAthleteDietConfig, getExercises, getCheckIns, getResponsesForAthlete,
+} from '../dbService.js';
+import { getDossier } from '../db/dossier.js';
+import type { LectorAplicacion } from './aplicarPropuesta.js';
 
 export function lectorDeCliente(): LectorAplicacion {
   return {
@@ -22,5 +22,6 @@ export function lectorDeCliente(): LectorAplicacion {
     ejercicios: () => getExercises(),
     checkin: async id => (await getCheckIns()).find(c => c.id === id) ?? null,
     ficha: email => getDossier(email),
+    respuestaCuestionario: async (email, id) => (await getResponsesForAthlete(email)).find(r => r.id === id) ?? null,
   };
 }

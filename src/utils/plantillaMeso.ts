@@ -1,4 +1,4 @@
-import type { Mesocycle, TemplateDay, TemplateStage } from '../types';
+import type { Mesocycle, TemplateDay, TemplateStage } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Mesociclo ↔ etapa de plantilla

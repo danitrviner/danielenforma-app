@@ -1,6 +1,6 @@
-import type { DietItem } from '../types';
-import { normalizarTexto } from './busqueda';
-import { palabrasDeConsulta } from './offPalabras';
+import type { DietItem } from '../types.js';
+import { normalizarTexto } from './busqueda.js';
+import { palabrasDeConsulta } from './offPalabras.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Productos de Open Food Facts en local (D-04)

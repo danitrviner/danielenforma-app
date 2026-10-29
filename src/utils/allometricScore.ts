@@ -1,5 +1,5 @@
-import { BodyweightLog } from '../types';
-import { Sexo } from './athleteProfileSignals';
+import { BodyweightLog } from '../types.js';
+import { Sexo } from './athleteProfileSignals.js';
 
 // e1RM alométrico = e1RM / Peso^b — corrige el sesgo de la ley
 // cuadrado-cubo: la fuerza escala con el área transversal (L²), el peso

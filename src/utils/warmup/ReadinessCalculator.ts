@@ -1,5 +1,5 @@
-import { WarmupSet } from '../../types';
-import { ReadinessResult } from './types';
+import { WarmupSet } from '../../types.js';
+import { ReadinessResult } from './types.js';
 
 // Scores how well-calibrated a warm-up ramp looks — not random, built from five objective
 // signals read off the generated (or manually-entered) sets themselves:

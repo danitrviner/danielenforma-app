@@ -1,9 +1,9 @@
-import { macrosDelPlato } from './menuMacros';
-import { intercambiosDeMacros } from './macrosLegado';
-import type { DietItem, MenuMeal, Recipe } from '../types';
-import { itemsDeProducto } from './productoAIntercambios';
-import { alimentoDelExtra } from './extrasDelCatalogo';
-import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
+import { macrosDelPlato } from './menuMacros.js';
+import { intercambiosDeMacros } from './macrosLegado.js';
+import type { DietItem, MenuMeal, Recipe } from '../types.js';
+import { itemsDeProducto } from './productoAIntercambios.js';
+import { alimentoDelExtra } from './extrasDelCatalogo.js';
+import { GRAMS_PER_EXCHANGE } from './nutritionConstants.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Gramos e intercambios: la única puerta

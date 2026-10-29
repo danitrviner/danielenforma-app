@@ -1,4 +1,4 @@
-import { UnlockRule, AcademyProgress, UserProfile } from '../types';
+import { UnlockRule, AcademyProgress, UserProfile } from '../types.js';
 
 export interface UnlockContext {
   profile: UserProfile;

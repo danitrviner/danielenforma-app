@@ -1,4 +1,4 @@
-import { Sexo } from './athleteProfileSignals';
+import { Sexo } from './athleteProfileSignals.js';
 
 // % de grasa corporal método US Navy / DoD — solo cinta métrica (cuello,
 // cintura, cadera en mujeres, altura), sin calibre/plicómetro. Decisión de

@@ -33,21 +33,21 @@ import type {
   NutritionPhase, NutritionProgram, NutritionProgramProposalPayload, PeriodizationBlockPayload, PhotoAssignment,
   PublishBlockProposalPayload, QuestionnaireAssignment, Roadmap, RoadmapProposalPayload, SetupConfigProposalPayload,
   SnapshotDocumento, SpecialDayProposalPayload, TaskItem, TemplateStage, UserProfile, WeekDay, WeekPlanProposalPayload,
-  WeeklyChallenge, WeeklyChallengeProposalPayload, WeightCheckIn, Workout, WorkoutAssignment, WorkoutDaysProposalPayload,
+  WeeklyChallenge, WeeklyChallengeProposalPayload, WeightCheckIn, Workout, WorkoutAssignment, WorkoutDaysProposalPayload, QuestionnaireResponse, RespuestaRevisionProposalPayload,
   WorkoutExercise, WorkoutTemplateProposalPayload,
-} from '../types';
-import { rirDescendente, subirSeries, programarEnSemanas } from '../utils/semanasDelBloque';
-import { programarAjuste } from '../utils/semanasNutricion';
-import { objetivoDeDieta } from '../utils/macrosLegado';
-import { vueltasDelCiclo } from '../utils/progression';
-import { sesionesDeMesociclo, fechasDelMesociclo, cicloDiasDeMeso } from '../utils/asignacionMesociclo';
-import { prescripcionDeSemana, ZONA2_BASE_MIN_DEFECTO } from '../utils/cardioProgression';
-import { isoWeekKey, isoWeekBounds } from '../utils/challengeOptions';
-import { nombreDeSesion } from '../utils/nombresMeso';
-import { nombrePropioDeSesion } from '../utils/draftEjercicios';
-import { repartoDelMesociclo, tiposDeEntrenamiento } from '../utils/trainingSplits';
-import { distribucionDeMeso } from '../utils/distribucionDeMeso';
-import { addDays } from '../utils/trainingWeek';
+} from '../types.js';
+import { rirDescendente, subirSeries, programarEnSemanas } from '../utils/semanasDelBloque.js';
+import { programarAjuste } from '../utils/semanasNutricion.js';
+import { objetivoDeDieta } from '../utils/macrosLegado.js';
+import { vueltasDelCiclo } from '../utils/progression.js';
+import { sesionesDeMesociclo, fechasDelMesociclo, cicloDiasDeMeso } from '../utils/asignacionMesociclo.js';
+import { prescripcionDeSemana, ZONA2_BASE_MIN_DEFECTO } from '../utils/cardioProgression.js';
+import { isoWeekKey, isoWeekBounds } from '../utils/challengeOptions.js';
+import { nombreDeSesion } from '../utils/nombresMeso.js';
+import { nombrePropioDeSesion } from '../utils/draftEjercicios.js';
+import { repartoDelMesociclo, tiposDeEntrenamiento } from '../utils/trainingSplits.js';
+import { distribucionDeMeso } from '../utils/distribucionDeMeso.js';
+import { addDays } from '../utils/trainingWeek.js';
 
 // ── Lo que hay que poder leer ────────────────────────────────────────────────
 
@@ -67,6 +67,7 @@ export interface LectorAplicacion {
    *  pero esa parte no se puede deshacer. */
   checkin?(id: string): Promise<WeightCheckIn | null>;
   ficha?(email: string): Promise<AthleteDossier | null>;
+  respuestaCuestionario?(email: string, id: string): Promise<QuestionnaireResponse | null>;
 }
 
 export interface OpcionesAplicacion {
@@ -99,7 +100,8 @@ export type Operacion =
   | { tipo: 'crearCardio'; asignacion: Omit<CardioAssignment, 'id'> }
   | { tipo: 'guardarReto'; reto: WeeklyChallenge }
   | { tipo: 'crearPlantillaMesociclo'; ref: string; plantilla: Omit<MesocycleTemplate, 'id'> }
-  | { tipo: 'feedbackCheckin'; checkInId: string; feedback: string };
+  | { tipo: 'feedbackCheckin'; checkInId: string; feedback: string }
+  | { tipo: 'responderRevision'; responseId: string; respuesta: { texto: string; enviadaEn: string } };
 
 /** Colección de Firestore que toca cada operación (para el snapshot de lo creado). */
 export const COLECCION_DE_OPERACION: Record<Operacion['tipo'], string> = {
@@ -112,6 +114,7 @@ export const COLECCION_DE_OPERACION: Record<Operacion['tipo'], string> = {
   guardarConfigNutricion: 'athleteNutritionConfigs', guardarConfigDieta: 'athleteDietConfigs',
   asignarCuestionario: 'questionnaireAssignments', asignarFotos: 'photoAssignments', crearCardio: 'cardioAssignments',
   guardarReto: 'weeklyChallenges', crearPlantillaMesociclo: 'mesocycleTemplates', feedbackCheckin: 'checkins',
+  responderRevision: 'questionnaireResponses',
 };
 
 export type ResultadoAplicacion =
@@ -603,6 +606,14 @@ export async function aplicarPropuesta(
         ownerId: opciones.coachUid, name: v.name, ...(v.description ? { description: v.description } : {}), stages,
       } });
       return { ok: true, operaciones: ops, snapshotAntes: antes, resultEntityRef: 'plantilla' };
+    }
+
+    case 'respuestaRevision': {
+      const { responseId, texto } = p.payload as RespuestaRevisionProposalPayload;
+      const previa = lector.respuestaCuestionario ? await lector.respuestaCuestionario(p.athleteId, responseId) : null;
+      if (previa) antes.push(foto('questionnaireResponses', responseId, { respuestaCoach: previa.respuestaCoach ?? null, reviewedAt: previa.reviewedAt ?? null }, true));
+      ops.push({ tipo: 'responderRevision', responseId, respuesta: { texto, enviadaEn: ahora } });
+      return { ok: true, operaciones: ops, snapshotAntes: antes, resultEntityId: responseId };
     }
 
     case 'latido':

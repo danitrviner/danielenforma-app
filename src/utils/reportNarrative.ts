@@ -1,7 +1,7 @@
-import { TrainingReport } from './trainingReport';
+import { TrainingReport } from './trainingReport.js';
 import {
   BodyweightSectionData, AdherenceSectionData, NutritionSectionData, ChallengesSectionData, WellnessSectionData,
-} from './reportExtras';
+} from './reportExtras.js';
 
 // Redactor local del mensaje del reporte: convierte los datos deterministas en
 // un borrador natural y motivador en castellano, sin IA externa. El coach lo

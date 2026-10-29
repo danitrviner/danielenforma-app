@@ -14,10 +14,11 @@ import {
   createWorkoutAssignmentStrict, updateWorkoutAssignment, saveRoadmap, saveNutritionProgram, createTask,
   updateUserProfile, saveAthleteNutritionConfig, saveAthleteDietConfig, assignQuestionnaire, assignPhotoCheckIn,
   createCardioAssignment, saveWeeklyChallenge, createMesocycleTemplate, submitCoachFeedback,
-} from '../dbService';
-import { saveDossierJudgement } from '../db/dossier';
-import type { SnapshotDocumento } from '../types';
-import { fotoDeCreacion, resolverReferencias, type Operacion } from './aplicarPropuesta';
+} from '../dbService.js';
+import { saveDossierJudgement } from '../db/dossier.js';
+import { guardarRespuestaCoach } from '../db/questionnaires.js';
+import type { SnapshotDocumento } from '../types.js';
+import { fotoDeCreacion, resolverReferencias, type Operacion } from './aplicarPropuesta.js';
 
 export interface ResultadoEjecucion {
   /** Ids reales de lo creado, por `ref`. */
@@ -48,6 +49,7 @@ const QUE: Record<Operacion['tipo'], string> = {
   guardarConfigNutricion: 'guardar los pasos', guardarConfigDieta: 'guardar el calendario de dietas',
   asignarCuestionario: 'asignar el cuestionario', asignarFotos: 'asignar las fotos', crearCardio: 'asignar el cardio',
   guardarReto: 'guardar el reto', crearPlantillaMesociclo: 'guardar la plantilla', feedbackCheckin: 'enviar el feedback',
+  responderRevision: 'enviar la respuesta a la revisión',
 };
 
 function describir(hechas: number, total: number, op: Operacion): string {
@@ -87,6 +89,7 @@ export async function ejecutarEnCliente(operaciones: Operacion[]): Promise<Resul
         case 'guardarReto': await saveWeeklyChallenge(op.reto); creados.push(fotoDeCreacion(op, op.reto.id)); break;
         case 'crearPlantillaMesociclo': { const t = await createMesocycleTemplate(op.plantilla); refs[op.ref] = t.id; creados.push(fotoDeCreacion(op, t.id)); break; }
         case 'feedbackCheckin': await submitCoachFeedback(op.checkInId, op.feedback); break;
+        case 'responderRevision': await guardarRespuestaCoach(op.responseId, op.respuesta); break;
       }
     } catch (err) {
       throw new ErrorDeEjecucion(i, operaciones.length, op, err);

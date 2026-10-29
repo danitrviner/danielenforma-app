@@ -34,8 +34,11 @@ import {
   marcarSesionPerdida, guardarConfigDeDieta, marcarFaseVista, guardarNivelesConseguidos,
   actualizarPeldanos, guardarReto, leerReto, crearAvisoUnaVez,
   leerCuestionariosAsignados, leerRespuestasDeCuestionarios, leerMesociclos,
-  leerRutinas, leerRetos, leerExperiencia, guardarHuellaDelLatido,
+  leerRutinas, leerRetos, leerExperiencia, guardarHuellaDelLatido, leerOnboarding, leerCuestionariosDelCoach, crearEpisodioUnaVez,
 } from './_lib/db-admin.js';
+import { uidDelCoach } from './_lib/fuenteAdmin.js';
+import { detectarEpisodios } from '../src/autopiloto/detectores.js';
+import { puedeAnalizarseConIA } from '../src/ai/consentimientoIA.js';
 import { recordatoriosDeRevision } from '../src/utils/recordatoriosRevision.js';
 import { planificarLatido, huellaDelLatido, ID_HUELLA_LATIDO } from '../src/utils/latidoDiario.js';
 import { ejecutarRetoSemanal, type AlmacenDeRetos } from '../src/utils/motorRetoSemanal.js';
@@ -128,6 +131,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(500).json({ error: 'No se pudo leer el catálogo de ejercicios' });
     return;
   }
+
+  // Las plantillas de cuestionario son las mismas para todos: una lectura.
+  // Sin ellas los episodios se encolan igual, solo sin las alertas del motor.
+  let plantillas: Awaited<ReturnType<typeof leerCuestionariosDelCoach>> = [];
+  try { plantillas = await leerCuestionariosDelCoach(db, await uidDelCoach(db)); } catch (err) { console.warn('latido-diario: sin plantillas de cuestionario', err); }
 
   const resumen: ResumenDeAtleta[] = [];
 
@@ -264,6 +272,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const avisos = recordatoriosDeRevision({ hoy, perfil, asignaciones: cuestionarios, respuestas, mesociclos });
         if (!enSeco) for (const r of avisos) await crearAvisoUnaVez(db, r.dedupeKey, r.notificacion);
         if (avisos.length > 0) hecho.push(`recordatorio de revisión: ${avisos.length}`);
+
+        // ── 4. El autopiloto: detectar y ENCOLAR (28-10) ──────────────────
+        // El latido no llama al modelo. Deja episodios en `episodios/*` y los
+        // consume api/autopiloto.ts. Solo atletas con consentimiento aceptado;
+        // en modo sombra hasta que Dani suba la política (tanda 4).
+        const onboarding = await leerOnboarding(db, email);
+        const episodios = detectarEpisodios({
+          email, hoy, ahora: new Date().toISOString(),
+          consentimiento: puedeAnalizarseConIA(onboarding),
+          politica: 'sombra',
+          respuestas, plantillas, asignaciones: cuestionarios,
+        });
+        let encolados = 0;
+        if (!enSeco) for (const ep of episodios) { if (await crearEpisodioUnaVez(db, ep)) encolados++; }
+        if (episodios.length > 0) hecho.push(`episodios: ${enSeco ? episodios.length : encolados} encolados`);
       } catch (err) {
         hecho.push(`recordatorio de revisión: error (${(err as Error)?.message ?? err})`);
       }

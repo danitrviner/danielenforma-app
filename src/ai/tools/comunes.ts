@@ -1,12 +1,12 @@
 // Ayudas compartidas por lectores y propuestas: recorte de resultados,
 // fechas, alias, perfil por email y el banco de alimentos del coach.
-import { getUserProfileByEmail, getFoodItems, getAlimentosPersonales, isLocalBypassActive, getOnboarding, getBodyweightForAthlete } from '../../dbService';
-import { estimateMaintenanceKcal } from '../../utils/energyCalc';
-import type { ContextoNutricional } from '../validators';
-import { objetivoDeDieta } from '../../utils/macrosLegado';
-import { redondearMacros } from '../../utils/macros';
-import { isoLocal } from '../../utils/trainingWeek';
-import { UserProfile, WeightCheckIn, Diet, MealItem } from '../../types';
+import { getAlimentosPersonales, getBodyweightForAthlete, getFoodItems, getOnboarding, getUserProfileByEmail, isLocalBypassActive } from './datos.js';
+import { estimateMaintenanceKcal } from '../../utils/energyCalc.js';
+import type { ContextoNutricional } from '../validators.js';
+import { objetivoDeDieta } from '../../utils/macrosLegado.js';
+import { redondearMacros } from '../../utils/macros.js';
+import { isoLocal } from '../../utils/trainingWeek.js';
+import { UserProfile, WeightCheckIn, Diet, MealItem } from '../../types.js';
 
 const MAX_RESULT_CHARS = 15000;
 

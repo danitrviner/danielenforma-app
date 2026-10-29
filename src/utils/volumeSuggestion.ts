@@ -1,9 +1,9 @@
 import {
   MuscleGroup, MuscleGroupConfig, ExperienceLevel, MUSCLE_LABELS, MUSCLE_ORDER,
-} from '../types';
-import type { VolumeLandmark } from '../data/volumeLandmarks';
-import type { VolumeHistory } from './volumeHistory';
-import { TRAINING_SPLITS, frecuenciaSemanalDeSplit, RepartoResuelto } from './trainingSplits';
+} from '../types.js';
+import type { VolumeLandmark } from '../data/volumeLandmarks.js';
+import type { VolumeHistory } from './volumeHistory.js';
+import { TRAINING_SPLITS, frecuenciaSemanalDeSplit, RepartoResuelto } from './trainingSplits.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SUGERIDOR DE VOLUMEN — propone las series semanales de los 17 grupos.

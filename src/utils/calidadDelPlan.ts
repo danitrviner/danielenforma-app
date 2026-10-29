@@ -1,10 +1,10 @@
 import {
   AthleteDietConfig, Diet, Mesocycle, MuscleGroup, MUSCLE_LABELS,
   PhotoAssignment, QSchedule, QuestionnaireAssignment, Roadmap, UserProfile, WeekDay, Workout,
-} from '../types';
-import { addDays } from './trainingWeek';
-import { objetivoDeDieta } from './macrosLegado';
-import { mesocycleWeekNumber } from './progression';
+} from '../types.js';
+import { addDays } from './trainingWeek.js';
+import { objetivoDeDieta } from './macrosLegado.js';
+import { mesocycleWeekNumber } from './progression.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    ANTES DE PUBLICAR — lo que está puesto pero mal puesto.

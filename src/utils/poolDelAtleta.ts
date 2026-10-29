@@ -1,11 +1,11 @@
-import type { DietType, Recipe } from '../types';
-import { ingredientMatch, violatesDietType } from './foodPrefs';
-import { violatesHealthConditions } from './dietaryRestrictions';
-import { minutosDeReceta, superaElTiempo } from './tiempoDeReceta';
-import { coincideBusqueda } from './busqueda';
-import { CAT_BASICAS, encajaCategoria } from '../db/recetasHidratacion';
-import { grupoDeReceta, GRUPOS_DE_RECETA } from './grupoDeReceta';
-import { dishType, type DishType } from './dishTypes';
+import type { DietType, Recipe } from '../types.js';
+import { ingredientMatch, violatesDietType } from './foodPrefs.js';
+import { violatesHealthConditions } from './dietaryRestrictions.js';
+import { minutosDeReceta, superaElTiempo } from './tiempoDeReceta.js';
+import { coincideBusqueda } from './busqueda.js';
+import { CAT_BASICAS, encajaCategoria } from '../db/recetasHidratacion.js';
+import { grupoDeReceta, GRUPOS_DE_RECETA } from './grupoDeReceta.js';
+import { dishType, type DishType } from './dishTypes.js';
 
 /** Los filtros DUROS que el motor aplica a las recetas de un atleta. */
 export interface FiltrosDelPool {

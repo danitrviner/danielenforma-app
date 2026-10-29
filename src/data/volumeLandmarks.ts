@@ -15,7 +15,7 @@
 // punto de este rango según el nivel del atleta (ver utils/volumeSuggestion.ts).
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { MuscleGroup, MUSCLE_ORDER } from '../types';
+import { MuscleGroup, MUSCLE_ORDER } from '../types.js';
 
 export interface VolumeLandmark {
   mv: number;      // volumen de mantenimiento

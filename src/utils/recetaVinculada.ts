@@ -1,7 +1,7 @@
-import { normalizarTexto } from './busqueda';
-import { leerCsv, type AlimentoCatalogo } from './catalogoAlimentos';
-import { DIETARY_RESTRICTIONS } from './dietaryRestrictions';
-import type { Palanca, IngredienteVinculado, VinculoDeReceta, MacrosCrudos } from '../types';
+import { normalizarTexto } from './busqueda.js';
+import { leerCsv, type AlimentoCatalogo } from './catalogoAlimentos.js';
+import { DIETARY_RESTRICTIONS } from './dietaryRestrictions.js';
+import type { Palanca, IngredienteVinculado, VinculoDeReceta, MacrosCrudos } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Recetas con ingredientes vinculados al catálogo (N-05)

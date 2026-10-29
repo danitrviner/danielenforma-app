@@ -1,7 +1,7 @@
-import type { DietItem, MealItem } from '../types';
-import { parseBaseGrams } from './conversionNutricional';
-import { itemsDeProducto, nutrientesDeRacion, type Nutrientes } from './productoAIntercambios';
-import { resumenDelDia } from './resumenDelDia';
+import type { DietItem, MealItem } from '../types.js';
+import { parseBaseGrams } from './conversionNutricional.js';
+import { itemsDeProducto, nutrientesDeRacion, type Nutrientes } from './productoAIntercambios.js';
+import { resumenDelDia } from './resumenDelDia.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Apuntar un alimento por gramos (D-03, modo «Calorías y macros»)

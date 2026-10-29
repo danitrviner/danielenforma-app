@@ -1,9 +1,9 @@
-import type { Diet, MenuDay, NutritionProgram } from '../types';
-import { objetivoDeDieta } from './macrosLegado';
-import { objetivoDelDiaDeMenu } from './menuMacros';
-import { gramosDeAjuste, gramosDeRegla } from './semanasNutricion';
-import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
-import { redondearMacros } from './macros';
+import type { Diet, MenuDay, NutritionProgram } from '../types.js';
+import { objetivoDeDieta } from './macrosLegado.js';
+import { objetivoDelDiaDeMenu } from './menuMacros.js';
+import { gramosDeAjuste, gramosDeRegla } from './semanasNutricion.js';
+import { GRAMS_PER_EXCHANGE } from './nutritionConstants.js';
+import { redondearMacros } from './macros.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Pasar a kcal lo guardado en intercambios (scripts/migrarAKcal.ts)

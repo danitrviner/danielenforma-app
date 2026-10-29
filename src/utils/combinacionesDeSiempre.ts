@@ -1,6 +1,6 @@
-import type { DietCompletionLog, DietItem } from '../types';
-import { resumenDelDia } from './resumenDelDia';
-import { foodNameWithoutGrams } from './exchangeHelpers';
+import type { DietCompletionLog, DietItem } from '../types.js';
+import { resumenDelDia } from './resumenDelDia.js';
+import { foodNameWithoutGrams } from './exchangeHelpers.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Tus combinaciones de siempre (hoja «Añadir», 27-10)

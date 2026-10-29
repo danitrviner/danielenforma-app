@@ -1,4 +1,4 @@
-import { MuscleGroup } from '../types';
+import { MuscleGroup } from '../types.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SILUETA CORPORAL — la geometría del mapa de calor de volumen.

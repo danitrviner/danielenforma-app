@@ -1,6 +1,6 @@
-import type { Recipe, DietType } from '../types';
-import { violatesRestrictions, violatesHealthConditions } from './dietaryRestrictions';
-import { normalizarTexto } from './busqueda';
+import type { Recipe, DietType } from '../types.js';
+import { violatesRestrictions, violatesHealthConditions } from './dietaryRestrictions.js';
+import { normalizarTexto } from './busqueda.js';
 
 /** Alias histórico de `normalizarTexto` (utils/busqueda). Había tres copias del
  *  mismo criterio y dos se dejaban los espacios de sobra sin colapsar, que es

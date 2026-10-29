@@ -1,12 +1,12 @@
 import type {
   AthleteDietConfig, AthleteNutritionConfig, Diet, Mesocycle, NutritionPhase, NutritionProgram, WeekDay,
-} from '../types';
-import { MUSCLE_LABELS, MUSCLE_ORDER } from '../types';
-import { kcalDeDieta } from './semanasNutricion';
-import { etiquetaDeDias, type ReglasDeReceta } from './reglasDeReceta';
-import { filtroDeTarjeta, resumenDeFiltro, TODAS_LAS_DIETAS } from './seleccionDeRecetas';
-import { dishTypeLabel } from './dishTypes';
-import { objetivoDeDieta } from './macrosLegado';
+} from '../types.js';
+import { MUSCLE_LABELS, MUSCLE_ORDER } from '../types.js';
+import { kcalDeDieta } from './semanasNutricion.js';
+import { etiquetaDeDias, type ReglasDeReceta } from './reglasDeReceta.js';
+import { filtroDeTarjeta, resumenDeFiltro, TODAS_LAS_DIETAS } from './seleccionDeRecetas.js';
+import { dishTypeLabel } from './dishTypes.js';
+import { objetivoDeDieta } from './macrosLegado.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Historial de cambios del coach sobre un atleta

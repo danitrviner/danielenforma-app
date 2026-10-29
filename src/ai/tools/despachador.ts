@@ -1,14 +1,14 @@
 // El despachador: la única puerta por la que el bucle de agente ejecuta una
 // tool. Aquí se comprueba el consentimiento del atleta ANTES de leer o
 // proponer nada sobre él, y se traduce cada tool a su ejecutor.
-import { estadoConsentimiento, motivoParaElCoach, aliasDeAtleta } from '../consentimientoIA';
-import type { RoadmapItem } from '../../types';
-import { getAllUserProfiles, getOnboarding } from '../../dbService';
-import { DietUpdatePayload, MesocycleProposalPayload, WorkoutDayInput, WorkoutExerciseInput, LadderLevelInput } from '../validators';
-import { DossierPatch } from '../../types';
-import { calcularRepartoTool, getChallengeOptions, getCheckinsInfo, getClientBrief, getClientOverview, getCoachAdjustments, getDietInfo, getExerciseLibrary, getExerciseUsage, getFoodLibrary, getNutritionAnalysis, getOnboardingCompleto, getProgressMetrics, getProposalFeedback, getQuestionnaireTrends, getRevisionEngine, getSetupStatus, getTrainingHistory, getVolumeSuggestion, leerContextoDelPlan, leerFicha, listClients, listMisRepartos, searchKnowledge } from './lectores';
-import { SEMANAS_POR_DEFECTO } from '../validators';
-import { addCoachTask, apuntarHecho, draftCheckinFeedback, generateReportDraft, leerExpediente, proposeDietUpdate, proposeDossierUpdate, proposeLevelLadder, proposeMesocycle, proposeMesocycleTemplate, proposeNutritionProgram, proposePeriodizationBlock, proposePublishBlock, proposeRoadmapItems, proposeSetupConfig, proposeSpecialDay, proposeWeekPlan, proposeWeeklyChallenge, proposeWorkoutDays, proposeWorkoutTemplate } from './propuestas';
+import { getAllUserProfiles, getOnboarding } from './datos.js';
+import { estadoConsentimiento, motivoParaElCoach, aliasDeAtleta } from '../consentimientoIA.js';
+import type { RoadmapItem } from '../../types.js';
+import { DietUpdatePayload, MesocycleProposalPayload, WorkoutDayInput, WorkoutExerciseInput, LadderLevelInput } from '../validators.js';
+import { DossierPatch } from '../../types.js';
+import { calcularRepartoTool, getChallengeOptions, getCheckinsInfo, getClientBrief, getClientOverview, getCoachAdjustments, getDietInfo, getExerciseLibrary, getExerciseUsage, getFoodLibrary, getNutritionAnalysis, getOnboardingCompleto, getProgressMetrics, getProposalFeedback, getQuestionnaireTrends, getRevisionEngine, getSetupStatus, getTrainingHistory, getVolumeSuggestion, leerContextoDelPlan, leerFicha, listClients, listMisRepartos, searchKnowledge } from './lectores.js';
+import { SEMANAS_POR_DEFECTO } from '../validators.js';
+import { addCoachTask, apuntarHecho, draftCheckinFeedback, proposeRespuestaRevision, generateReportDraft, leerExpediente, proposeDietUpdate, proposeDossierUpdate, proposeLevelLadder, proposeMesocycle, proposeMesocycleTemplate, proposeNutritionProgram, proposePeriodizationBlock, proposePublishBlock, proposeRoadmapItems, proposeSetupConfig, proposeSpecialDay, proposeWeekPlan, proposeWeeklyChallenge, proposeWorkoutDays, proposeWorkoutTemplate } from './propuestas.js';
 /* ── Consentimiento: UNA puerta, no una lista ────────────────────────────────
    Hasta el 28-10-2026 aquí había una lista blanca de diez tools «con datos de
    atleta» y el resto pasaba sin mirar: `get_client_brief` —que trae el alta
@@ -100,6 +100,15 @@ export async function executeTool(
           content: await draftCheckinFeedback(input.check_in_id, email, input.feedback, typeof input.rationale === 'string' ? input.rationale : '', chatId, leerExpediente(input)),
           isError: false,
         };
+      case 'propose_respuesta_revision':
+        if (!email || typeof input.response_id !== 'string' || typeof input.texto !== 'string') {
+          return { content: 'Faltan athlete_email, response_id o texto', isError: true };
+        }
+        {
+          const content = await proposeRespuestaRevision(email, input.response_id, input.texto, typeof input.rationale === 'string' ? input.rationale : '', chatId, leerExpediente(input));
+          const parsed = JSON.parse(content) as { valid?: boolean };
+          return { content, isError: parsed.valid === false };
+        }
       case 'get_food_library':
         return {
           content: getFoodLibrary(typeof input.mode === 'string' ? input.mode : undefined, typeof input.grupo === 'string' ? input.grupo : undefined),

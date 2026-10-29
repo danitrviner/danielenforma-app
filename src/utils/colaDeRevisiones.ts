@@ -1,7 +1,7 @@
-import type { Questionnaire, QuestionnaireResponse, UserProfile } from '../types';
-import { aperturaDelCiclo, enPausa, normalizarDiaRevision } from './cicloRevision';
-import { addDays } from './trainingWeek';
-import { UMBRAL_RETENCION } from './alertasRevision';
+import type { Questionnaire, QuestionnaireResponse, UserProfile } from '../types.js';
+import { aperturaDelCiclo, enPausa, normalizarDiaRevision } from './cicloRevision.js';
+import { addDays } from './trainingWeek.js';
+import { UMBRAL_RETENCION } from './alertasRevision.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Cola de revisiones del día (27-10)

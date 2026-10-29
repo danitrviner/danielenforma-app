@@ -13,7 +13,7 @@
    Todo aquí es cálculo puro sobre kg y semanas. Nada de kcal: la estimación
    energética vive en `nutritionPeriodization.ts` y se alimenta de esto.
    ═══════════════════════════════════════════════════════════════════════════ */
-import { pendiente } from './verificacionObjetivo';
+import { pendiente } from './verificacionObjetivo.js';
 
 /**
  * Cuántas semanas hacen falta para ir de un peso a otro a un ritmo dado.

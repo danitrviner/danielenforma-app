@@ -1,7 +1,7 @@
-import type { DietMeal, Macros } from '../types';
-import { resolveSlots } from './mealDistribution';
-import { resumenDelDia } from './resumenDelDia';
-import { mealLabel } from '../components/nutrition/dietHelpers';
+import type { DietMeal, Macros } from '../types.js';
+import { resolveSlots } from './mealDistribution.js';
+import { resumenDelDia } from './resumenDelDia.js';
+import { mealLabel } from '../components/nutrition/dietHelpers.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    La tarjeta «Nutrición de hoy» de Inicio (28-10-2026)

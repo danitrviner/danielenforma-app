@@ -6,7 +6,7 @@
  * crea las dietas de cada fase, la ficha se cierra al final. Esto ordena la
  * bandeja por esa cadena, y dentro de cada tipo, por antigüedad.
  */
-import { AiProposal, AiProposalKind } from '../types';
+import { AiProposal, AiProposalKind } from '../types.js';
 
 const ORDEN: Record<AiProposalKind, number> = {
   // El orden en el que se aprueban: cada una necesita que la anterior exista.
@@ -23,6 +23,7 @@ const ORDEN: Record<AiProposalKind, number> = {
   weekPlan: 9,            // necesita el mesociclo con sus sesiones y la periodización
   weeklyChallenge: 10,
   checkinFeedback: 11,
+  respuestaRevision: 11,
   dossier: 12,            // la ficha se cierra al final, con todo ya decidido
   workoutTemplate: 13,    // plantillas: no son del atleta, van al final
   mesocycleTemplate: 13,

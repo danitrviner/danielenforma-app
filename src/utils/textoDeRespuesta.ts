@@ -1,4 +1,4 @@
-import type { QuestionnaireQuestion } from '../types';
+import type { QuestionnaireQuestion } from '../types.js';
 
 /** ¿Es la respuesta-comentario de otra pregunta (`${id}__comentario`)? */
 export const esComentario = (questionId: string) => questionId.endsWith('__comentario');

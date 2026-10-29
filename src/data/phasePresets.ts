@@ -4,7 +4,7 @@
 // PlanPhaseEditor y lo edita a medida; las semanas/dirección/ritmo alimentan
 // el generador de periodización nutricional (planNutritionBridge.ts).
 
-import { PlanPhase, PhaseMetricTarget, WeightDirection } from '../types';
+import { PlanPhase, PhaseMetricTarget, WeightDirection } from '../types.js';
 
 export interface PhasePresetDef {
   name: string;

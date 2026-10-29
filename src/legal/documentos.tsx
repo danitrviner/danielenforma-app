@@ -1,5 +1,5 @@
 import React from 'react';
-import { OPCION_IA, type IdDocumentoLegal } from './aceptacion';
+import { OPCION_IA, type IdDocumentoLegal } from './aceptacion.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El texto del muro legal

@@ -1,4 +1,4 @@
-import { BodyMetricKey } from '../types';
+import { BodyMetricKey } from '../types.js';
 
 // MÍNIMO CAMBIO DETECTABLE (MDC) — por debajo de estos umbrales, un delta de
 // perímetro es ruido de medición (presión de la cinta, hidratación, edema

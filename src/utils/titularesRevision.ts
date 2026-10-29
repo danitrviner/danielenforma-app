@@ -1,7 +1,7 @@
-import { MUSCLE_LABELS } from '../types';
-import { RevisionDelAtleta } from './revisionCoach';
-import { ComidaDeLaSemana } from './comidaDeLaSemana';
-import { PesoVsSemanaPasada } from './revisionCoach';
+import { MUSCLE_LABELS } from '../types.js';
+import { RevisionDelAtleta } from './revisionCoach.js';
+import { ComidaDeLaSemana } from './comidaDeLaSemana.js';
+import { PesoVsSemanaPasada } from './revisionCoach.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LOS TITULARES DE LA REVISIÓN — qué decir, en qué orden.

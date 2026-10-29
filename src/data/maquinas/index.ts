@@ -23,11 +23,11 @@
 // descargue todo el mundo —coaches incluidos— en el primer arranque. Si
 // necesitas solo la versión, importa `./version`, que no trae los JSON.
 
-import type { Maquina } from '../../types';
+import type { Maquina } from '../../types.js';
 import hammerStrength from './hammerStrength.json';
 import technogym from './technogym.json';
 
-export { CATALOGO_VERSION } from './version';
+export { CATALOGO_VERSION } from './version.js';
 
 // 41 Hammer Strength (Plate Loaded) + 22 Technogym (Pure Strength).
 // Todas llegan con `publicadoEn: null`: no las ve ningún atleta hasta que un

@@ -820,6 +820,54 @@
   }
  },
  {
+  "name": "propose_respuesta_revision",
+  "description": "Crea una PROPUESTA de respuesta a una REVISIÓN (cuestionario) del atleta: lo que Dani le contesta en su app. Es el canal vivo (el check-in de peso ya casi no se usa). NO se envía sola: queda pendiente de Dani. El response_id sale de get_client_brief / get_checkins (respuestas de cuestionarios). Escribe uno o dos párrafos, en segunda persona, como Dani en primera persona, sobre SU semana con SUS números (solo lo paraCliente de los titulares y lo que él contó); sin consejos médicos ni mención al asistente.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "response_id": {
+     "type": "string",
+     "description": "Id exacto de la respuesta de cuestionario"
+    },
+    "texto": {
+     "type": "string",
+     "description": "La respuesta al atleta, en español"
+    },
+    "rationale": {
+     "type": "string",
+     "description": "Justificación breve para Dani (no la ve el atleta)"
+    },
+    "expediente_datos": {
+     "type": "string",
+     "description": "En qué datos concretos te has apoyado. Se guarda con la propuesta."
+    },
+    "expediente_huecos": {
+     "type": "string",
+     "description": "Qué NO sabías al proponer esto."
+    },
+    "expediente_preguntas": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "Preguntas que quedan abiertas."
+    },
+    "expediente_esperado": {
+     "type": "string",
+     "description": "Qué esperas ver, en cuánto tiempo."
+    }
+   },
+   "required": [
+    "athlete_email",
+    "response_id",
+    "texto"
+   ]
+  }
+ },
+ {
   "name": "get_athlete_dossier",
   "description": "Lee la FICHA VIVA del atleta: sus objetivos, dónde está hoy, qué esperamos ver en las próximas semanas, el foco de la siguiente revisión, las preguntas que quedaron abiertas y el historial de lo que se ha propuesto, aprobado y cambiado. OBLIGATORIO antes de proponer una dieta, un mesociclo o un bloque: es la memoria entre conversaciones, y sin ella repetirás lo que ya se probó y no funcionó.",
   "input_schema": {

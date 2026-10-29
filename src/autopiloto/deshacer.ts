@@ -1,7 +1,7 @@
 /* Qué hace falta para deshacer una propuesta aplicada: el `snapshotAntes` que
    guardó al aplicarse, en orden inverso. Sin snapshot no hay deshacer, y se
    dice (las propuestas de antes del 28-10-2026 no lo tienen). */
-import type { AiProposal, SnapshotDocumento } from '../types';
+import type { AiProposal, SnapshotDocumento } from '../types.js';
 
 export type PlanDeDeshacer =
   | { ok: true; fotos: SnapshotDocumento[]; resumen: string }

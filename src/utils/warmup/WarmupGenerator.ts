@@ -1,8 +1,8 @@
-import { WarmupMode, WarmupSet, WorkoutSetLog } from '../../types';
-import { DEFAULT_PLATE_INCREMENT_KG } from './constants';
-import { calculateReadiness } from './ReadinessCalculator';
-import { buildWarmupPlan } from './WarmupEngine';
-import { WarmupPlan } from './types';
+import { WarmupMode, WarmupSet, WorkoutSetLog } from '../../types.js';
+import { DEFAULT_PLATE_INCREMENT_KG } from './constants.js';
+import { calculateReadiness } from './ReadinessCalculator.js';
+import { buildWarmupPlan } from './WarmupEngine.js';
+import { WarmupPlan } from './types.js';
 
 interface GenerateWarmupInput {
   mode: WarmupMode | undefined;    // undefined behaves as 'none'

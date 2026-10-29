@@ -1,5 +1,5 @@
-import { getRoadmap, saveRoadmap } from '../dbService';
-import { hoyIsoLocal } from './trainingWeek';
+import { getRoadmap, saveRoadmap } from '../dbService.js';
+import { hoyIsoLocal } from './trainingWeek.js';
 
 // Añade un hito puntual al roadmap del atleta (carril 'general', ya
 // existente y sin rediseñar RoadmapTimeline) — deduplicado por id fijo, así

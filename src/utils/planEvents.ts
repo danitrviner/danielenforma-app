@@ -1,6 +1,6 @@
-import { TaskItem, WorkoutAssignment, Workout, Exercise, Mesocycle, NutritionProgram, WorkoutLog, BodyweightLog } from '../types';
-import { addDays, getWeekStart } from './trainingWeek';
-import { evaluateCondition, ConditionContext } from './conditions';
+import { TaskItem, WorkoutAssignment, Workout, Exercise, Mesocycle, NutritionProgram, WorkoutLog, BodyweightLog } from '../types.js';
+import { addDays, getWeekStart } from './trainingWeek.js';
+import { evaluateCondition, ConditionContext } from './conditions.js';
 
 // ─── PlanEvent — modelo único de evento derivado para el cuadro de mando de
 // periodización ("Pantalla 1"). Nunca se teclea a mano ni se guarda aparte:

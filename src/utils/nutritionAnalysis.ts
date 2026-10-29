@@ -1,11 +1,11 @@
 import {
   Diet, DietCompletionLog, StepLog, BodyweightLog, OnboardingData, FoodCategory,
   MenuCompletionLog, WeeklyMenu, WeekDay, NutritionPhase,
-} from '../types';
-import { adherenciaDelDia, adherenciaPorKcal } from './diaDeDieta';
-import { objetivoDeDieta } from './macrosLegado';
-import { pesoRepresentativo } from './verificacionObjetivo';
-import { hoyIsoLocal, addDays } from './trainingWeek';
+} from '../types.js';
+import { adherenciaDelDia, adherenciaPorKcal } from './diaDeDieta.js';
+import { objetivoDeDieta } from './macrosLegado.js';
+import { pesoRepresentativo } from './verificacionObjetivo.js';
+import { hoyIsoLocal, addDays } from './trainingWeek.js';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 

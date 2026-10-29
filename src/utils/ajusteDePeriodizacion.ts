@@ -1,5 +1,5 @@
-import { desviacionDelRitmo } from './ritmoDePeso';
-import type { Confianza } from './mantenimientoEstimado';
+import { desviacionDelRitmo } from './ritmoDePeso.js';
+import type { Confianza } from './mantenimientoEstimado.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Qué hacer cuando el atleta no va al ritmo previsto

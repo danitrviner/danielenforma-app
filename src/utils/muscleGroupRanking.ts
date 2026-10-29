@@ -1,4 +1,4 @@
-import { MuscleGroup, MuscleGroupConfig } from '../types';
+import { MuscleGroup, MuscleGroupConfig } from '../types.js';
 
 // Ranks muscle groups within a stage's volume config: priority (alta→baja) first,
 // then weekly series descending. Same ordering MesocycleManager's distribution

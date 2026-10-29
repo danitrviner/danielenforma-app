@@ -11,10 +11,10 @@
 import {
   Mesocycle, MesocycleTemplate, TaskItem, TaskType, NutritionProgram, NutritionPhase,
   NutritionPhaseType, WorkoutAssignment, Workout, Exercise, MuscleGroup, RefeedDay,
-} from '../types';
-import { addDays } from './trainingWeek';
-import { mesocycleWeekNumber, resolverEjercicioDelMeso } from './progression';
-import { cicloDiasDeMeso } from './asignacionMesociclo';
+} from '../types.js';
+import { addDays } from './trainingWeek.js';
+import { mesocycleWeekNumber, resolverEjercicioDelMeso } from './progression.js';
+import { cicloDiasDeMeso } from './asignacionMesociclo.js';
 
 function diasEntre(a: string, b: string): number {
   return Math.round((new Date(b + 'T00:00:00').getTime() - new Date(a + 'T00:00:00').getTime()) / 86400000);

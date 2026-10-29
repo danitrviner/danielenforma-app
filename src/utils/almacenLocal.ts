@@ -1,4 +1,4 @@
-import { reportarError } from '../monitorizacion';
+import { reportarError } from '../monitorizacion.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Escribir en localStorage sin tumbar la app

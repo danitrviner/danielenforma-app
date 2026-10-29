@@ -1,4 +1,4 @@
-import { HubTab } from '../components/ClientHub';
+import type { HubTab } from '../components/ClientHub.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // EL RECORRIDO DEL PLAN — montar el mes de un atleta, de la A a la Z.

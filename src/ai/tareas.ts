@@ -21,7 +21,7 @@
  * tenga que acordarse de sincronizar.
  */
 
-import { textoDelPlanCompleto } from '../utils/recorridoDelPlan';
+import { textoDelPlanCompleto } from '../utils/recorridoDelPlan.js';
 
 export type TareaId = 'mes_nuevo' | 'revision' | 'renovar_mes';
 

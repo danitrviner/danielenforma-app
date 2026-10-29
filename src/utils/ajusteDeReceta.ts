@@ -1,4 +1,4 @@
-import type { IngredienteVinculado, Palanca, Recipe } from '../types';
+import type { IngredienteVinculado, Palanca, Recipe } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Ajuste de una receta base al objetivo de una comida (N-06)

@@ -24,13 +24,16 @@ const { lectores, propuestas, estado } = vi.hoisted(() => ({
 
 vi.mock('./lectores', () => lectores);
 vi.mock('./propuestas', () => propuestas);
-vi.mock('../../dbService', () => ({
-  getOnboarding: vi.fn(async () => (estado.consentimiento ? { athleteId: 'ana@x.com', consentimientoIA: estado.consentimiento } : null)),
-  getAllUserProfiles: vi.fn(async () => [{ email: 'ana@x.com', displayName: 'Ana García' }]),
-}));
 
 import { executeTool, requiereConsentimiento, TOOLS_SIN_DATOS_DE_ATLETA } from './despachador';
 import { TOOL_DEFINITIONS } from './definiciones';
+import { usarFuenteDeDatos, type FuenteDeDatos } from './datos';
+
+// Sin Firebase: la fuente de datos es un objeto con lo justo que mira la puerta.
+usarFuenteDeDatos({
+  getOnboarding: async () => (estado.consentimiento ? { athleteId: 'ana@x.com', consentimientoIA: estado.consentimiento } : null),
+  getAllUserProfiles: async () => [{ email: 'ana@x.com', displayName: 'Ana García' }],
+} as unknown as FuenteDeDatos);
 
 const ana = { athlete_email: 'ana@x.com' };
 

@@ -1,5 +1,5 @@
-import type { UserProfile } from '../types';
-import { updateUserProfile } from '../dbService';
+import type { UserProfile } from '../types.js';
+import { updateUserProfile } from '../dbService.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Avisos que solo salen N veces (guía de intercambios, coachmarks…)

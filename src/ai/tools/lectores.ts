@@ -2,52 +2,49 @@
 // cliente, bajo la sesión del coach) y pasan los datos por los motores
 // deterministas de src/utils. Son las que un bucle en servidor podrá reutilizar
 // cambiando solo el lector.
-import { auth } from '../../firebase';
-import { estadoConsentimiento, aliasDeAtleta } from '../consentimientoIA';
-import { getDossier, renderDossier } from '../../db/dossier';
-import { calcularDerivas, resumirPatrones } from '../../utils/derivaPropuestas';
-import { repartoDelMesociclo } from '../../utils/trainingSplits';
-import { repartoParaAsistente, sesionesDelReparto, diasSemanaDesdeAsistente, calcularRepartoParaAsistente } from '../repartoAsistente';
-import { frecuenciaPorDefecto } from '../../utils/calculadoraReparto';
-import { getRepartosGuardados } from '../../db/repartos';
-import { getAllUserProfiles, getCheckIns, getWorkoutAssignments, getWorkouts, getCardioAssignmentsForAthlete, getWorkoutLogs, getExercises, getMesocycles, getDietsForAthlete, getWorkoutAssignmentsByMesocycleIds, getDietCompletionLogsForAthlete, getAthleteNutritionConfig, getAthleteDietConfig, getPhotoAssignmentsForAthlete, getProgressPhotos, getCoachClientTasks, getWeeklyChallenge, getNutritionProgram, getBodyweightForAthlete, getWeeklyChallengesForAthlete, getOnboarding, getOnboardingTemplate, getResponsesForAthlete, getAssignmentsForAthlete, getQuestionnairesByCoach, getAiProposalsForAthlete, getApprovedAiProposals, getRoadmap, getTasksForAthlete, getKnowledgeNotes, getStepsForAthlete, getCardioSessionsForAthlete, getBodyMeasurementsForAthlete } from '../../dbService';
-import { computeAnthropometricIndices, ANTHROPOMETRIC_INDEX_LABELS } from '../../utils/anthropometricIndices';
-import { pctGrasaUSNavy, masaMagraEstimadaKg, computeIRC } from '../../utils/bodyFatUSNavy';
-import { historialIRP } from '../../utils/readinessIndex';
-import { resumirSerie } from '../../utils/progressSummary';
-import { mdcDeMetrica } from '../../utils/mdc';
-import { leerSexo } from '../../utils/athleteProfileSignals';
-import { BODY_METRIC_LABELS, type BodyMetricKey } from '../../types';
-import { generateChallengeOptions, buildChallengeMemory } from '../../utils/weeklyChallenge';
-import { buildNutritionReport } from '../../utils/nutritionAnalysis';
-import { athleteConditions, restrictionLabel } from '../../utils/dietaryRestrictions';
-import { computeAdherenceScore } from '../../utils/adherence';
-import { computeSetupChecklist } from '../../utils/clientSetup';
-import { isoWeekKey } from '../../utils/challengeOptions';
-import { computeWeightTrend } from '../../utils/nutritionAnalysis';
-import { estimateMaintenanceKcal } from '../../utils/energyCalc';
-import { buildTrainingReport } from '../../utils/trainingReport';
-import { buildRevisionCoach, PeriodoRevision, mesoActivo, pesoVsSemanaPasada } from '../../utils/revisionCoach';
-import { suggestVolume, VolumeIntent } from '../../utils/volumeSuggestion';
-import { buildVolumeHistoryFrom } from '../../utils/volumeHistory';
-import { VOLUME_LANDMARKS_DEFAULT } from '../../data/volumeLandmarks';
-import { construirTitulares } from '../../utils/titularesRevision';
-import { construirComidaDeLaSemana } from '../../utils/comidaDeLaSemana';
-import { getVolumeLandmarks } from '../../db/coachSettings';
-import { macrosDeLinea, macrosDeLineas } from '../../utils/macrosLegado';
-import { alimentoGeneral } from '../../utils/alimentosGenerales';
-import { buildPhaseEnergyPlans } from '../../utils/nutritionPeriodization';
-import { computeActivePhase } from '../../utils/fasesNutricion';
-import { dietaDeReferencia } from '../../utils/objetivoDelDia';
-import { addDays, hoyIsoLocal } from '../../utils/trainingWeek';
-import { mesoQueVeElAtleta } from '../../utils/bloqueDelAtleta';
-import { weekKey } from '../../utils/seriesCorrelation';
-import { resolveQuestions } from '../../utils/questionnaireResolve';
-import { SYSTEM_FOODS } from '../../nutricion_seed_en_forma';
-import { Macros, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, MUSCLE_ORDER, ExperienceLevel } from '../../types';
-import { tareaPorId, type BriefSeccion } from '../tareas';
-import { mediana } from '../../utils/perfilProgramacion';
-import { checkinsOf, findProfile, isoDate, markAthleteText, objetivoParaElAsistente, toResult } from './comunes';
+import { coachActual, getAiProposalsForAthlete, getAllUserProfiles, getApprovedAiProposals, getAssignmentsForAthlete, getAthleteDietConfig, getAthleteNutritionConfig, getBodyMeasurementsForAthlete, getBodyweightForAthlete, getCardioAssignmentsForAthlete, getCardioSessionsForAthlete, getCheckIns, getCoachClientTasks, getDietCompletionLogsForAthlete, getDietsForAthlete, getDossier, getExercises, getKnowledgeNotes, getMesocycles, getNutritionProgram, getOnboarding, getOnboardingTemplate, getPhotoAssignmentsForAthlete, getProgressPhotos, getQuestionnairesByCoach, getRepartosGuardados, getResponsesForAthlete, getRoadmap, getStepsForAthlete, getTasksForAthlete, getVolumeLandmarks, getWeeklyChallenge, getWeeklyChallengesForAthlete, getWorkoutAssignments, getWorkoutAssignmentsByMesocycleIds, getWorkoutLogs, getWorkouts } from './datos.js';
+import { renderDossier } from '../../utils/fichaViva.js';
+import { estadoConsentimiento, aliasDeAtleta } from '../consentimientoIA.js';
+import { calcularDerivas, resumirPatrones } from '../../utils/derivaPropuestas.js';
+import { repartoDelMesociclo } from '../../utils/trainingSplits.js';
+import { repartoParaAsistente, sesionesDelReparto, diasSemanaDesdeAsistente, calcularRepartoParaAsistente } from '../repartoAsistente.js';
+import { frecuenciaPorDefecto } from '../../utils/calculadoraReparto.js';
+import { computeAnthropometricIndices, ANTHROPOMETRIC_INDEX_LABELS } from '../../utils/anthropometricIndices.js';
+import { pctGrasaUSNavy, masaMagraEstimadaKg, computeIRC } from '../../utils/bodyFatUSNavy.js';
+import { historialIRP } from '../../utils/readinessIndex.js';
+import { resumirSerie } from '../../utils/progressSummary.js';
+import { mdcDeMetrica } from '../../utils/mdc.js';
+import { leerSexo } from '../../utils/athleteProfileSignals.js';
+import { BODY_METRIC_LABELS, type BodyMetricKey } from '../../types.js';
+import { generateChallengeOptions, buildChallengeMemory } from '../../utils/weeklyChallenge.js';
+import { buildNutritionReport } from '../../utils/nutritionAnalysis.js';
+import { athleteConditions, restrictionLabel } from '../../utils/dietaryRestrictions.js';
+import { computeAdherenceScore } from '../../utils/adherence.js';
+import { computeSetupChecklist } from '../../utils/clientSetup.js';
+import { isoWeekKey } from '../../utils/challengeOptions.js';
+import { computeWeightTrend } from '../../utils/nutritionAnalysis.js';
+import { estimateMaintenanceKcal } from '../../utils/energyCalc.js';
+import { buildTrainingReport } from '../../utils/trainingReport.js';
+import { buildRevisionCoach, PeriodoRevision, mesoActivo, pesoVsSemanaPasada } from '../../utils/revisionCoach.js';
+import { suggestVolume, VolumeIntent } from '../../utils/volumeSuggestion.js';
+import { buildVolumeHistoryFrom } from '../../utils/volumeHistory.js';
+import { VOLUME_LANDMARKS_DEFAULT } from '../../data/volumeLandmarks.js';
+import { construirTitulares } from '../../utils/titularesRevision.js';
+import { construirComidaDeLaSemana } from '../../utils/comidaDeLaSemana.js';
+import { macrosDeLinea, macrosDeLineas } from '../../utils/macrosLegado.js';
+import { alimentoGeneral } from '../../utils/alimentosGenerales.js';
+import { buildPhaseEnergyPlans } from '../../utils/nutritionPeriodization.js';
+import { computeActivePhase } from '../../utils/fasesNutricion.js';
+import { dietaDeReferencia } from '../../utils/objetivoDelDia.js';
+import { addDays, hoyIsoLocal } from '../../utils/trainingWeek.js';
+import { mesoQueVeElAtleta } from '../../utils/bloqueDelAtleta.js';
+import { weekKey } from '../../utils/seriesCorrelation.js';
+import { resolveQuestions } from '../../utils/questionnaireResolve.js';
+import { SYSTEM_FOODS } from '../../nutricion_seed_en_forma.js';
+import { Macros, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, MUSCLE_ORDER, ExperienceLevel } from '../../types.js';
+import { tareaPorId, type BriefSeccion } from '../tareas.js';
+import { mediana } from '../../utils/perfilProgramacion.js';
+import { checkinsOf, findProfile, isoDate, markAthleteText, objetivoParaElAsistente, toResult } from './comunes.js';
 
 // ── Ejecutores ────────────────────────────────────────────────────────────────
 
@@ -180,7 +177,7 @@ export async function getOnboardingCompleto(email: string): Promise<string> {
   const profile = await findProfile(email);
   if (!profile) return toResult({ error: `No existe ningún cliente con email ${email}` });
 
-  const coachEmail = auth.currentUser?.email ?? '';
+  const coachEmail = coachActual().email;
   const [ob, plantilla] = await Promise.all([
     getOnboarding(email),
     coachEmail ? getOnboardingTemplate(coachEmail) : Promise.resolve(null),
@@ -501,7 +498,7 @@ export async function getDietInfo(email: string): Promise<string> {
 
 export async function getCheckinsInfo(email: string, limitN: number): Promise<string> {
   const n = Math.min(Math.max(1, Math.round(limitN || 8)), 20);
-  const coachUid = auth.currentUser?.uid;
+  const coachUid = (coachActual().uid || undefined);
   const [allCheckins, responses, questionnaires] = await Promise.all([
     getCheckIns(),
     getResponsesForAthlete(email),
@@ -535,7 +532,7 @@ export async function getCheckinsInfo(email: string, limitN: number): Promise<st
 
 export async function getQuestionnaireTrends(email: string, questionIds: string[] | undefined, weeksInput: number): Promise<string> {
   const weeks = Math.min(Math.max(1, Math.round(weeksInput || 8)), 26);
-  const coachUid = auth.currentUser?.uid;
+  const coachUid = (coachActual().uid || undefined);
   const [responses, questionnaires, assignments] = await Promise.all([
     getResponsesForAthlete(email),
     coachUid ? getQuestionnairesByCoach(coachUid) : Promise.resolve([]),
@@ -911,7 +908,7 @@ export async function calcularRepartoTool(email: string | undefined, input: Reco
 }
 
 export async function listMisRepartos(): Promise<string> {
-  const uid = auth.currentUser?.uid;
+  const uid = (coachActual().uid || undefined);
   if (!uid) return toResult({ repartos: [], note: 'Sin sesión de coach no se pueden leer.' });
   try {
     const lista = await getRepartosGuardados(uid);
@@ -983,7 +980,7 @@ export async function getProposalFeedback(email: string): Promise<string> {
 export async function getProgressMetrics(email: string): Promise<string> {
   const profile = await findProfile(email);
   if (!profile) return toResult({ error: `No existe ningún cliente con email ${email}` });
-  const coachUid = auth.currentUser?.uid;
+  const coachUid = (coachActual().uid || undefined);
   const [medidas, bwLogs, responses, questionnaires] = await Promise.all([
     getBodyMeasurementsForAthlete(email),
     getBodyweightForAthlete(email),
@@ -1122,7 +1119,7 @@ export async function getNutritionAnalysis(email: string): Promise<string> {
  * tokens en decirle al modelo lo que el motor ya resolvió.
  */
 export async function getRevisionEngine(email: string, periodoPedido: string): Promise<string> {
-  const coachUid = auth.currentUser?.uid;
+  const coachUid = (coachActual().uid || undefined);
   const [logs, exercises, mesos, responses, questionnaires, landmarks, registros, dietas, bwLogs] =
     await Promise.all([
       getWorkoutLogs(email),
@@ -1212,7 +1209,7 @@ export async function getVolumeSuggestion(
   email: string,
   input: Record<string, unknown>,
 ): Promise<string> {
-  const coachUid = auth.currentUser?.uid;
+  const coachUid = (coachActual().uid || undefined);
   const mesos = await getMesocycles(email);
   // Las asignaciones se piden por los ids de los bloques, no por atleta: es la
   // misma consulta acotada que usa «Sugerir volumen» en el editor, y evita

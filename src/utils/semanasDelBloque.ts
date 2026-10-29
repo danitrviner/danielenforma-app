@@ -1,7 +1,7 @@
-import { WorkoutExercise, WeeklyProgressionRule, CambiosDeSemana, WorkoutSetGroup, EventoDeSemana, Mesocycle, QuestionnaireAssignment, WorkoutTechnique, AjustesDeTecnica } from '../types';
-import { resolveExerciseForWeek, resolverEjercicioDelMeso, mesocycleWeekNumber } from './progression';
-import { startOfDay, planWeekDueDate, mesocycleEndDate } from './scheduleEngine';
-import { describirTecnica } from './tecnicaDeSerie';
+import { WorkoutExercise, WeeklyProgressionRule, CambiosDeSemana, WorkoutSetGroup, EventoDeSemana, Mesocycle, QuestionnaireAssignment, WorkoutTechnique, AjustesDeTecnica } from '../types.js';
+import { resolveExerciseForWeek, resolverEjercicioDelMeso, mesocycleWeekNumber } from './progression.js';
+import { startOfDay, planWeekDueDate, mesocycleEndDate } from './scheduleEngine.js';
+import { describirTecnica } from './tecnicaDeSerie.js';
 
 /* Programar un mesociclo semana a semana (barra de semanas de Mesociclo ›
    Ejercicios). Los cambios viven en el propio ejercicio, como reglas de

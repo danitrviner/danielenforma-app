@@ -1,7 +1,7 @@
-import { Questionnaire, QuestionnaireResponse } from '../types';
-import { DataPoint } from './seriesCorrelation';
-import { historialDeSeñal } from './signalReading';
-import { computeEWMA } from './ewma';
+import { Questionnaire, QuestionnaireResponse } from '../types.js';
+import { DataPoint } from './seriesCorrelation.js';
+import { historialDeSeñal } from './signalReading.js';
+import { computeEWMA } from './ewma.js';
 
 /** Curva EWMA de cualquier señal semanal (sueño, estrés) — amortigua un mal día/semana suelta sin el retraso de una media móvil simple. */
 export function ewmaDeSeñal(

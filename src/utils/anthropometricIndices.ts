@@ -1,4 +1,4 @@
-import { BodyMeasurement, BodyMetricKey } from '../types';
+import { BodyMeasurement, BodyMetricKey } from '../types.js';
 
 // Índices antropométricos del protocolo de Dani: ratios entre dos perímetros,
 // nunca almacenados — se derivan al vuelo de la última medida de cada

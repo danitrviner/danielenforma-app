@@ -12,9 +12,9 @@ import type {
   AiProposal, AiProposalPayload, Diet, DossierPatch, LevelLadder, Mesocycle,
   MuscleGroup, NutritionProgramProposalPayload, PeriodizationBlockPayload, RoadmapProposalPayload,
   SpecialDayProposalPayload, WorkoutDaysProposalPayload,
-} from '../types';
-import { MUSCLE_LABELS } from '../types';
-import { macrosDeLineas, objetivoDeDieta } from './macrosLegado';
+} from '../types.js';
+import { MUSCLE_LABELS } from '../types.js';
+import { macrosDeLineas, objetivoDeDieta } from './macrosLegado.js';
 
 function mesoDe(kind: AiProposal['kind'], payload: AiProposalPayload): Omit<Mesocycle, 'id'> {
   return kind === 'periodizationBlock'

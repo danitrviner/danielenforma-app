@@ -9,7 +9,7 @@
  * (panel del asistente → /clients/:email/dietas) y no queremos que un borrador
  * abandonado reaparezca dentro de tres días desde localStorage.
  */
-import type { Diet } from '../types';
+import type { Diet } from '../types.js';
 
 export interface BorradorDePropuesta {
   proposalId: string;

@@ -1,5 +1,5 @@
-import type { AjustesDeTecnica, WorkoutExercise, WorkoutTechnique } from '../types';
-import { TECHNIQUE_LABEL } from './workoutTechniques';
+import type { AjustesDeTecnica, WorkoutExercise, WorkoutTechnique } from '../types.js';
+import { TECHNIQUE_LABEL } from './workoutTechniques.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Técnica por serie (E-06)

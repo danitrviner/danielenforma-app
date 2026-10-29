@@ -7,10 +7,10 @@ import type {
   Diet, AthleteDietConfig, AthleteNutritionConfig, QuestionnaireAssignment,
   PhotoAssignment, ProgressPhoto, WorkoutLog, Roadmap, NutritionProgram,
   WeeklyChallenge, CoachClientTask, Workout, CardioAssignment, AthleteDossier,
-} from '../types';
-import type { HubTab } from '../components/ClientHub';
-import { getWeekStart, addDays, diasEntreFechas } from './trainingWeek';
-import { isCoachGraceDay } from './challengeOptions';
+} from '../types.js';
+import type { HubTab } from '../components/ClientHub.js';
+import { getWeekStart, addDays, diasEntreFechas } from './trainingWeek.js';
+import { isCoachGraceDay } from './challengeOptions.js';
 
 export type SetupPhaseId = 'alta' | 'programacion' | 'primeras_semanas' | 'consolidacion';
 export type SetupStatus = 'done' | 'pending' | 'attention' | 'na';

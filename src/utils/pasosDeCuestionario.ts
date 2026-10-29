@@ -1,4 +1,4 @@
-import type { QuestionnaireQuestion } from '../types';
+import type { QuestionnaireQuestion } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Qué preguntas van juntas en una pantalla (K-03)

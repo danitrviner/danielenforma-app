@@ -179,3 +179,14 @@ describe('aplicarPropuesta · configuración, road map, semana', () => {
     expect(esCreacion({ tipo: 'actualizarDieta', id: 'd', cambios: {} })).toBe(false);
   });
 });
+
+describe('aplicarPropuesta · respuesta a la revisión', () => {
+  it('escribe la respuesta del coach en la revisión y guarda la anterior (parcial) para deshacer', async () => {
+    const r = ok(await aplicarPropuesta(propuesta('respuestaRevision', { responseId: 'r1', texto: 'Buena semana.' }), lector({
+      respuestaCuestionario: async () => ({ id: 'r1', respuestaCoach: undefined, reviewedAt: undefined } as never),
+    }), OPC));
+    expect(r.operaciones).toEqual([{ tipo: 'responderRevision', responseId: 'r1', respuesta: { texto: 'Buena semana.', enviadaEn: AHORA } }]);
+    expect(r.snapshotAntes).toEqual([{ coleccion: 'questionnaireResponses', id: 'r1', datos: { respuestaCoach: null, reviewedAt: null }, parcial: true }]);
+    expect(r.resultEntityId).toBe('r1');
+  });
+});

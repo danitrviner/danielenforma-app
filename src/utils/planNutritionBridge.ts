@@ -4,9 +4,9 @@
 // NutritionPeriodizationPanel, que no se toca). También calcula el estado de
 // peso de la fase actual para el hero del atleta (PhaseHeroCard).
 
-import { PlanPhase, NutritionProgram, NutritionPhase } from '../types';
-import { computeActivePhase } from '../dbService';
-import { ProjectionResult } from './nutritionPeriodization';
+import { PlanPhase, NutritionProgram, NutritionPhase } from '../types.js';
+import { computeActivePhase } from '../dbService.js';
+import { ProjectionResult } from './nutritionPeriodization.js';
 
 function draftNutritionPhase(planPhase: PlanPhase, startWeightKg: number): NutritionPhase {
   const weeks = planPhase.suggestedWeeks ?? 6;

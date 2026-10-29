@@ -2,12 +2,12 @@
 // Si algo no cuadra, el ejecutor de la tool devuelve estos issues como
 // tool_result de error para que el modelo se autocorrija — nunca llega una
 // propuesta rota a la tarjeta de revisión de Dani.
-import { FoodCategory, DietItem, Macros, MealItem, MuscleGroup, MUSCLE_LABELS } from '../types';
-import { CATS, BUDGET_CATS } from '../utils/exchangeHelpers';
-import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
-import { parseBaseGrams } from '../utils/conversionNutricional';
-import { macrosDesdeGramos, redondearMacros } from '../utils/macros';
-import { macrosDeLineas, objetivoDeDieta } from '../utils/macrosLegado';
+import { FoodCategory, DietItem, Macros, MealItem, MuscleGroup, MUSCLE_LABELS } from '../types.js';
+import { CATS, BUDGET_CATS } from '../utils/exchangeHelpers.js';
+import { SYSTEM_FOODS } from '../nutricion_seed_en_forma.js';
+import { parseBaseGrams } from '../utils/conversionNutricional.js';
+import { macrosDesdeGramos, redondearMacros } from '../utils/macros.js';
+import { macrosDeLineas, objetivoDeDieta } from '../utils/macrosLegado.js';
 
 export interface ValidationIssue { field: string; message: string }
 

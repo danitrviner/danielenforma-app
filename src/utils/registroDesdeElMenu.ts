@@ -1,5 +1,5 @@
-import type { DietItem, DietMeal, Macros } from '../types';
-import { intercambiosDeMacros } from './macrosLegado';
+import type { DietItem, DietMeal, Macros } from '../types.js';
+import { intercambiosDeMacros } from './macrosLegado.js';
 
 /**
  * Llevar una comida del menú semanal al registro del día ("Mi plan"), y

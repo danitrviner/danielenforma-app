@@ -7,8 +7,8 @@
 // cuestionarios (QSchedule) no modela "después de X", así que se deja
 // informativa en la tabla y fuera del recuento de "se crearán N cuestionarios".
 
-import { QSchedule, Mesocycle } from '../types';
-import { addDays } from './trainingWeek';
+import { QSchedule, Mesocycle } from '../types.js';
+import { addDays } from './trainingWeek.js';
 
 // ── Modelo de fila ───────────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
-import { CardioAssignment, CardioSession, CardioZones } from '../types';
-import { isoWeekKey, isoWeekBounds } from './challengeOptions';
-import { addDays } from './trainingWeek';
+import { CardioAssignment, CardioSession, CardioZones } from '../types.js';
+import { isoWeekKey, isoWeekBounds } from './challengeOptions.js';
+import { addDays } from './trainingWeek.js';
 
 // Lógica pura de acumulación de una sesión de cardio en vivo — extraída de
 // CardioScreen.tsx para poder testearla sin React (§F1 del plan de réplica
