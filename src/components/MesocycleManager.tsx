@@ -30,6 +30,8 @@ import ExercisePickerSheet from './ExercisePickerSheet';
 import { useFichaDeEjercicio } from './useFichaDeEjercicio';
 import ExerciseVideoPlayer from './ExerciseVideoPlayer';
 import { MesocycleTemplate } from '../types';
+import type { OnboardingData } from '../types';
+import RespuestasDelAlta from './RespuestasDelAlta';
 import { offsetsDeSesiones, formateaFrecuencia, vueltasDelCiclo, resolveExerciseForWeek, resolverEjercicioDelMeso, mesocycleWeekNumber } from '../utils/progression';
 import {
   quitarCambiosDeSemana, semanasConCambios, origenDeCambios, diferencias, compararSemanas,
@@ -1749,6 +1751,8 @@ interface MesocycleManagerProps {
   athleteHatedExercises?: string[];
   /** Del alta, texto libre: lesiones. El generador evita lo que se nombre ahí. */
   athleteInjuries?: string;
+  /** El alta entera, solo para enseñar sus respuestas en un desplegable (RespuestasDelAlta). */
+  athleteOnboarding?: OnboardingData | null;
   athleteName?: string;       // solo para el borrador de texto del cierre de mesociclo
   // Logs y asignaciones del atleta, si quien monta esta pantalla YA los tiene
   // cargados (ClientHub los pasa por props a todo el panel). Se aceptan para no
@@ -1768,7 +1772,7 @@ interface MesocycleManagerProps {
 
 export default function MesocycleManager({
   coachId, athleteEmail, athleteEquipment = [], athleteLevel, athleteName,
-  athleteHatedExercises = [], athleteInjuries = '',
+  athleteHatedExercises = [], athleteInjuries = '', athleteOnboarding,
   athleteLogs, athleteAssignments, plantilla,
 }: MesocycleManagerProps) {
   const modoPlantilla = !!plantilla;
@@ -3290,6 +3294,8 @@ export default function MesocycleManager({
           {/* ── Right: editor ── */}
           {editing ? (
             <div className="flex-1 min-w-0 space-y-4">
+
+              {!modoPlantilla && <RespuestasDelAlta onboarding={athleteOnboarding} tema="entreno" />}
 
               {/* Mesocycle header */}
               <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
