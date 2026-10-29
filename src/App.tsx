@@ -128,6 +128,10 @@ const BandejaHarness = import.meta.env.DEV
 const RespuestaHarness = import.meta.env.DEV
   ? pantallaDiferida('RespuestaDevHarness', () => import('./components/RespuestaDevHarness'))
   : null;
+// Banco de pruebas del canal de mensajes del coach, los dos lados (ruta /dev/mensajes).
+const MensajesHarness = import.meta.env.DEV
+  ? pantallaDiferida('MensajesDevHarness', () => import('./components/MensajesDevHarness'))
+  : null;
 
 // Banco de pruebas de Cliente › Revisiones › Asignadas (ruta /dev/asignados),
 // lado COACH: tampoco hay sesión de coach en este repo.
@@ -834,6 +838,14 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <RespuestaHarness />
+      </Suspense>
+    );
+  }
+
+  if (MensajesHarness && location.pathname === '/dev/mensajes') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <MensajesHarness />
       </Suspense>
     );
   }

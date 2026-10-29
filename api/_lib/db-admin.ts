@@ -15,7 +15,7 @@
 // atleta viven en `src/utils/latidoDiario.ts` y en `src/utils/motorRetoSemanal.ts`,
 // que no saben nada de Firestore. Este fichero solo sabe leer y escribir.
 import type {
-  SenalesDelAtleta,
+  SenalesDelAtleta, MensajeCoach,
   AppNotification, AthleteDietConfig, BodyweightLog, CardioSession, Diet,
   DietCompletionLog, Exercise, LevelLadder, NutritionProgram, Roadmap, StepLog,
   UserProfile, WeeklyChallenge, WorkoutAssignment, WorkoutLog,
@@ -207,6 +207,21 @@ export async function guardarSenales(
   db: Firestore, userId: string, senales: SenalesDelAtleta,
 ): Promise<void> {
   await db.collection('user_profiles').doc(userId).set({ senales }, { merge: true });
+}
+
+/** Un borrador de mensaje al atleta (utils/latidoDiario.ts). `create` y no
+ *  `set`: si Dani ya lo firmó (o lo borró), la noche siguiente no lo pisa. */
+export async function crearMensajeBorrador(
+  db: Firestore, mensaje: Omit<MensajeCoach, 'creadoEn'>,
+): Promise<boolean> {
+  const { id, ...datos } = mensaje;
+  try {
+    await db.collection('mensajesCoach').doc(id).create(sinIndefinidos({ ...datos, creadoEn: new Date().toISOString() }));
+    return true;
+  } catch (err) {
+    if ((err as { code?: number }).code === 6) return false; // ALREADY_EXISTS
+    throw err;
+  }
 }
 
 export async function actualizarPeldanos(

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn } from '../types';
 import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles, getBodyweightForAthlete, updateUserProfile, getNutritionProgram, getCardioSessionsSince, getResponsesForAthlete } from '../dbService';
-import RespuestaDelCoach from './checkin/RespuestaDelCoach';
+import LoUltimoDeDani from './home/LoUltimoDeDani';
 import { formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
@@ -333,12 +333,17 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         : <WeeklyChallengeCard challenge={reto.challenge!} progress={reto.progress!} streak={racha} destacado />
       )}
 
-      {/* ── «Dani ha revisado tu semana» (29-10) ──────────────────────────────
-          La respuesta a su última revisión, siete días, justo debajo del reto:
-          es lo único de esta pantalla que viene de una persona. Misma consulta
-          que Perfil › Revisión y Tareas pendientes (clave compartida). Si no
-          hay respuesta reciente no se pinta nada: no se finge. */}
-      <RespuestaDelCoach responses={respuestasRevision} maxDias={7} />
+      {/* ── «Lo último de Dani» (29-10) ───────────────────────────────────────
+          Todo lo que viene de una persona, justo debajo del reto: la respuesta
+          a su revisión, los cambios explicados, el acuse de lo que contó, la
+          nota del día. Siete días; si no hay nada, dice cuándo se abre la
+          próxima revisión. No se finge. */}
+      <LoUltimoDeDani
+        profile={profile}
+        respuestas={respuestasRevision}
+        notaDeHoy={coachDayNote}
+        onNavigate={onNavigate}
+      />
 
       {/* ── Peso y pasos: los dos de un vistazo, sin hacer scroll ───────────
           En segunda fila y no de protagonistas: si a uno le faltan datos, no
@@ -372,22 +377,6 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         />
       )}
 
-      {/* Nota del coach para hoy (Roadmap → Calendario) — encima del entreno
-          del día, solo si hay una escrita para la fecha de hoy. */}
-      {coachDayNote && (
-        <section className="rounded-canvas p-4 border border-accent-line bg-accent/8 flex gap-3">
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control font-mono text-caption font-bold text-accent-ink"
-            style={{ background: 'color-mix(in oklab, var(--color-accent) 16%, transparent)' }}
-          >
-            <Icon name="sticky_note_2" size="s" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-caption font-mono uppercase tracking-wider text-accent-ink">Nota de tu entrenador</p>
-            <p className="text-body-s font-sans text-ink mt-1 leading-relaxed" style={{ textWrap: 'pretty' }}>{coachDayNote.text}</p>
-          </div>
-        </section>
-      )}
 
       {!loadingTraining && assignments.length === 0 && (
         <PlanInPreparationCard profile={profile} onNavigate={onNavigate} />

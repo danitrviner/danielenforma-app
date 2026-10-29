@@ -42,6 +42,7 @@ const TYPE_ICON: Record<AppNotification['type'], string> = {
   revision_recordatorio:   'alarm',
   revision_alerta:         'warning',
   revision_respondida:     'sticky_note_2',
+  coach_mensaje:           'chat',
 };
 
 export default function NotificationBell({ recipientEmail, onNavigate, mutedTypes }: Props) {

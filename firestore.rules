@@ -184,6 +184,31 @@ service cloud.firestore {
       allow read, write: if isCoach();
     }
 
+    // ── mensajesCoach (29-10-2026) ───────────────────────────────────────────
+    // Lo que el atleta lee «de Dani» fuera de la respuesta a su revisión. El
+    // coach lo escribe y lo lee todo; el atleta solo lee LOS SUYOS y solo los
+    // `aprobado` (un borrador del latido o del asistente no existe para él
+    // hasta que Dani lo firma: es la regla «nada firmado sin que lo vea»).
+    // El atleta puede CREAR un acuse de problema sobre sí mismo (`tipo:
+    // 'problema'`, `autor: 'app'`, `estado: 'aprobado'`): es el «recibido» que
+    // escribe su propia app al marcar una molestia, con texto neutro y sin
+    // firma de nadie. No puede editar ni borrar nada.
+    match /mensajesCoach/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null
+                      && request.auth.token.email_verified == true
+                      && resource.data.athleteId == request.auth.token.email
+                      && resource.data.estado == 'aprobado');
+      allow create: if isCoach()
+                    || (request.auth != null
+                        && request.auth.token.email_verified == true
+                        && request.resource.data.athleteId == request.auth.token.email
+                        && request.resource.data.tipo == 'problema'
+                        && request.resource.data.autor == 'app'
+                        && request.resource.data.estado == 'aprobado');
+      allow update, delete: if isCoach();
+    }
+
     // ── checkins (auto-id; campos: userId=UID, email) ────────────────────────
     // El create acepta match por UID o por email: getOrCreateUserProfile puede
     // devolver un perfil con un UID antiguo cuando la misma persona vuelve a

@@ -20,6 +20,7 @@ import { hoyIsoLocal } from '../../utils/trainingWeek';
 import { useModoPresentacion } from '../../hooks/useModoPresentacion';
 import { HubTab } from '../ClientHub';
 import RevisionCabecera from './RevisionCabecera';
+import MensajesCoachPanel from './MensajesCoachPanel';
 import BodyweightPanel from '../BodyweightPanel';
 import SelectorPeriodoRevision from './SelectorPeriodoRevision';
 import BloquePatrones from './BloquePatrones';
@@ -268,6 +269,11 @@ export default function ClientRevisionPanel({
         faseNutricional={faseActiva?.name ?? null}
         pesoObjetivo={athlete.targetWeight}
       />
+
+      {/* El canal de mensajes (29-10): lo que hay por firmar, los cambios sin
+          contar y lo que el atleta contó, antes de los números. Oculto al
+          presentar: es trabajo del coach, no parte del vídeo. */}
+      {!presentando && <MensajesCoachPanel athlete={athlete} />}
 
       {/* Peso corporal arriba del todo, justo bajo la cabecera: la misma
           gráfica y registro que en Atleta › Cuerpo. */}
