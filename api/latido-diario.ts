@@ -291,7 +291,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           consentimiento: puedeAnalizarseConIA(onboarding),
           politica: politicaDeEpisodio(politica),
           respuestas, plantillas, asignaciones: cuestionarios, mesociclos,
-          onboardingCompletado: !!onboarding?.completedAt, planStartDate: perfil.planStartDate,
+          onboardingCompletado: !!onboarding?.completedAt, planStartDate: perfil.planStartDate, planDurationMonths: perfil.planDurationMonths,
         });
         // Emergentes (tanda 6): dolor, perdidas, peso sin registrar, desvíos,
         // nota libre, bienestar. Misma foto que ya está leída + los check-ins.

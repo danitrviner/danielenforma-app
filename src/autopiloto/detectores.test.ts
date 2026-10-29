@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { detectarEpisodios, detectarSemanaNueva, detectarRevision, detectarAltaCompletada, DIAS_DE_VENTANA_CUESTIONARIO, DIAS_DE_VENTANA_ALTA, type FotoParaDetectar } from './detectores';
-import { idDeEpisodio, extraerParaDani, promptDeEpisodio, nuevoEpisodio, PRIORIDAD } from './episodios';
+import { detectarEpisodios, detectarSemanaNueva, detectarRevision, detectarAltaCompletada, detectarFinDeBloque, detectarRenovacion, finDelPlan, DIAS_DE_VENTANA_CUESTIONARIO, DIAS_DE_VENTANA_ALTA, type FotoParaDetectar } from './detectores';
+import { idDeEpisodio, extraerParaDani, promptDeEpisodio, nuevoEpisodio, PRIORIDAD, type TipoEpisodio } from './episodios';
 import type { Mesocycle, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse } from '../types';
 
 const HOY = '2026-10-29';
@@ -64,9 +64,9 @@ describe('detectarEpisodios · cuestionario recibido', () => {
   });
 
   it('un tipo sin guion no hace nada y lo dice', () => {
-    const ep = nuevoEpisodio({ tipo: 'renovacion', athleteId: 'a@x.com', clave: 'x', disparador: { fuente: 'q', fecha: HOY }, politica: 'sombra', ahora: AHORA });
+    const ep = nuevoEpisodio({ tipo: 'inventado' as TipoEpisodio, athleteId: 'a@x.com', clave: 'x', disparador: { fuente: 'q', fecha: HOY }, politica: 'sombra', ahora: AHORA });
     expect(promptDeEpisodio(ep, { alias: 'A' })).toContain('sin guion');
-    expect(ep.prioridad).toBe(PRIORIDAD.renovacion);
+    expect(PRIORIDAD.renovacion).toBe(9);
   });
 });
 
@@ -138,5 +138,48 @@ describe('detectarRevision', () => {
   it('un bloque de 3 semanas solo tiene revisión de fin', () => {
     expect(detectarRevision(foto({ hoy: '2026-10-12', respuestas: [], mesociclos: [meso({ weeks: 3 })] }))).toEqual([]);
     expect(detectarRevision(foto({ hoy: '2026-10-20', respuestas: [], mesociclos: [meso({ weeks: 3 })] })).map(e => e.id)).toEqual(['revision_ana@x.com_m1_fin']);
+  });
+});
+
+describe('detectarFinDeBloque', () => {
+  const meso = (p: Partial<Mesocycle> = {}): Mesocycle => ({ id: 'm1', athleteId: 'ana@x.com', number: 1, weeks: 8, startDate: '2026-09-07', objective: 'H', daysPerWeek: 4, groups: {}, ...p } as Mesocycle);
+  // Bloque del 07-09 de 8 semanas: último día 01-11.
+  it('el día después de acabar → episodio por bloque, con el estado del plan contratado en el contexto', () => {
+    const [ep] = detectarFinDeBloque(foto({ hoy: '2026-11-02', respuestas: [], mesociclos: [meso()], planStartDate: '2026-09-07', planDurationMonths: 3 }));
+    expect(ep.id).toBe('fin_de_bloque_ana@x.com_m1');
+    expect(ep.contexto).toBe('El plan contratado sigue vigente hasta el 2026-12-07.'); // a 35 días: fuera del aviso de 14
+  });
+  it('dentro de la ventana de 3 días sí; después no; el último día del bloque tampoco', () => {
+    expect(detectarFinDeBloque(foto({ hoy: '2026-11-04', respuestas: [], mesociclos: [meso()] }))).toHaveLength(1);
+    expect(detectarFinDeBloque(foto({ hoy: '2026-11-05', respuestas: [], mesociclos: [meso()] }))).toEqual([]);
+    expect(detectarFinDeBloque(foto({ hoy: '2026-11-01', respuestas: [], mesociclos: [meso()] }))).toEqual([]);
+  });
+  it('si Dani ya creó el bloque siguiente, no hay nada que proponer', () => {
+    const siguiente = meso({ id: 'm2', number: 2, startDate: '2026-11-02' });
+    expect(detectarFinDeBloque(foto({ hoy: '2026-11-02', respuestas: [], mesociclos: [meso(), siguiente] }))).toEqual([]);
+  });
+  it('plan que vence en menos de 14 días o sin fecha: el guion lo dice y manda la tarea de renovación', () => {
+    const [vence] = detectarFinDeBloque(foto({ hoy: '2026-11-02', respuestas: [], mesociclos: [meso()], planStartDate: '2026-08-10', planDurationMonths: 3 }));
+    expect(vence.contexto).toBe('El plan contratado VENCE el 2026-11-10.');
+    expect(promptDeEpisodio(vence, { alias: 'A' })).toContain('Renovación:');
+    const [sin] = detectarFinDeBloque(foto({ hoy: '2026-11-02', respuestas: [], mesociclos: [meso()] }));
+    expect(sin.contexto).toBe('Sin fecha de fin del plan contratado en el perfil.');
+    expect(promptDeEpisodio(sin, { alias: 'A' })).toContain('qué cambia respecto al bloque anterior');
+  });
+});
+
+describe('detectarRenovacion', () => {
+  it('finDelPlan suma meses en fecha local', () => {
+    expect(finDelPlan('2026-08-10', 3)).toBe('2026-11-10');
+    expect(finDelPlan('2026-01-31', 1)).toBe('2026-03-03'); // JS desborda febrero: aceptado, mismo criterio que Date
+  });
+  it('vence en ≤ 14 días → episodio por fecha de fin; más lejos, ya vencido o sin plan, nada', () => {
+    const [ep] = detectarRenovacion(foto({ planStartDate: '2026-08-10', planDurationMonths: 3 }));
+    expect(ep.id).toBe('renovacion_ana@x.com_2026-11-10');
+    expect(ep.contexto).toBe('vence el 2026-11-10');
+    expect(promptDeEpisodio(ep, { alias: 'A' })).toContain('Esto lo decide Dani');
+    expect(detectarRenovacion(foto({ planStartDate: '2026-09-07', planDurationMonths: 3 }))).toEqual([]);
+    expect(detectarRenovacion(foto({ planStartDate: '2026-07-01', planDurationMonths: 3 }))).toEqual([]);
+    expect(detectarRenovacion(foto({ planStartDate: '2026-08-10' }))).toEqual([]);
   });
 });

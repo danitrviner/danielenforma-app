@@ -996,6 +996,25 @@
   }
  },
  {
+  "name": "get_cierre_bloque",
+  "description": "Lee el CIERRE de un bloque (por defecto el en curso o el último): sesiones programadas/completadas, series por grupo programadas vs realizadas, tonelaje y 1RM frente al bloque anterior, patrones de movimiento, récords, titulares y el borrador para el cliente. Son los números de Mesociclo › Cierre. Úsala al acabar un bloque antes de proponer el siguiente, y en la revisión de fin de bloque.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "mesocycle_id": {
+     "type": "string",
+     "description": "Opcional: el bloque a cerrar."
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
   "name": "get_resultado_esperado",
   "description": "Las propuestas aplicadas de este atleta cuyo expediente decía qué ESPERÁBAMOS ver (peso, adherencia, un PR, agujetas) y todavía no se ha comprobado. Úsala en la revisión: compara cada `esperado` con los números de get_revision_engine y ciérralo con cerrar_esperado. Es la métrica de calidad del asistente: lo que no se cierra no se aprende.",
   "input_schema": {

@@ -43,6 +43,8 @@ export interface Episodio {
   esperaPropuestas?: string[];
   /** Lo que el modelo detectó antes de leer (molestia, agujetas 5, retención). */
   alertas?: string[];
+  /** Datos del detector que el guion necesita y las tools no saben (fin del plan contratado, bloque que acaba…). */
+  contexto?: string;
   /** La línea para Dani con la que cerró. */
   paraDani: string;
   coste: { usd: number; llamadas: number; modelo: string };
@@ -73,7 +75,7 @@ export const idDeEpisodio = (tipo: TipoEpisodio, clave: string) => `${tipo}_${cl
 
 export function nuevoEpisodio(e: {
   tipo: TipoEpisodio; athleteId: string; clave: string; disparador: Episodio['disparador'];
-  politica: PoliticaPropuesta; ahora: string; alertas?: string[];
+  politica: PoliticaPropuesta; ahora: string; alertas?: string[]; contexto?: string;
 }): Episodio {
   return {
     id: idDeEpisodio(e.tipo, e.clave),
@@ -86,6 +88,7 @@ export function nuevoEpisodio(e: {
     ronda: 0,
     propuestas: [],
     ...(e.alertas?.length ? { alertas: e.alertas } : {}),
+    ...(e.contexto ? { contexto: e.contexto } : {}),
     paraDani: '',
     coste: { usd: 0, llamadas: 0, modelo: '' },
     creadoEn: e.ahora,
@@ -181,6 +184,19 @@ export function promptDeEpisodio(ep: Episodio, ctx: { alias: string }): string {
         + `· pregunta → add_coach_task con la pregunta literal: la contesta Dani.\n`
         + `· otro → nada salvo que pida algo concreto.\n`
         + `Sin consejo médico ni mención al asistente. En la línea final, la clase y lo hecho.\n${cierre}`;
+    }
+    case 'fin_de_bloque': {
+      return `EPISODIO: el bloque ${ep.disparador.docId ?? ''} de ${ctx.alias} (${ep.athleteId}) ha terminado (${ep.disparador.fecha}). ${ep.contexto ?? ''}\n`
+        + `Empieza por get_cierre_bloque (el cierre, números del motor) y get_client_brief con tarea "renovar_mes" (todo el bloque anterior, la ficha y lo que Dani corrige). Después get_resultado_esperado y cierra lo pendiente con cerrar_esperado.\n\n`
+        + `PRIMERO, el cierre (solo lectura): en cuatro frases qué pasó en el bloque —sesiones, volumen cumplido por grupo, qué patrón subió y cuál se estancó, peso y adherencia— y actualiza la ficha viva (propose_dossier_update) con ello.\n`
+        + `SEGUNDO, si arriba pone que el plan contratado VENCE en menos de 14 días o ya ha vencido: add_coach_task «Renovación: …» con el resumen del bloque en cuatro líneas y PARA. La renovación, la baja y el dinero son de Dani; no propongas bloque nuevo hasta que renueve.\n`
+        + `TERCERO, si el plan sigue vigente, el bloque nuevo igual que en el alta (reparto propio por defecto; CDG si la plantilla elegida lo marca o la tipificación lo pide), pero con una condición OBLIGATORIA (doctrina §15, continuidad): di explícitamente qué cambia respecto al bloque anterior —series por grupo, al menos un ejercicio o esquema nuevo, kcal por fase— y por qué sale del cierre. Si no cambiaras nada, no es un bloque nuevo: dilo y propón solo lo que cambie. Tras propose_mesocycle termina la ronda con «ESPERO: <ids>» y sigue con sesiones → publicar → nutrición → setup → roadmap → reto → ficha cuando Dani decida.\n`
+        + `Nada para el atleta hasta que el bloque nuevo esté publicado; entonces un mensaje con propose_mensaje_atleta (motivo "otro") con qué cambia en dos frases.\n`
+        + `${cierre} En esa línea: «Bloque cerrado: … Bloque nuevo propuesto: …» o «Plan vencido: tarea de renovación».`;
+    }
+    case 'renovacion': {
+      return `EPISODIO: el plan contratado de ${ctx.alias} (${ep.athleteId}) ${ep.contexto ?? 'vence pronto'} (${ep.disparador.fecha}).\n`
+        + `Esto lo decide Dani: tú solo le preparas el resumen. Lee get_cierre_bloque y get_client_overview (nada más) y deja add_coach_task «Renovación el <fecha>: …» con cuatro líneas: qué ha conseguido en el plan (peso, fuerza, adherencia), qué queda pendiente de su objetivo, y qué le propondrías para el siguiente plan. Sin mensaje al atleta, sin propuestas, sin tocar nada.\n${cierre}`;
     }
     case 'bienestar': {
       return `EPISODIO: el bienestar de ${ctx.alias} (${ep.athleteId}) viene mal (${ep.paraDani || 'ver cuestionario'}; ${ep.disparador.fecha}).\n`

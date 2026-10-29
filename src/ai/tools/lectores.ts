@@ -26,6 +26,7 @@ import { computeWeightTrend } from '../../utils/nutritionAnalysis.js';
 import { estimateMaintenanceKcal } from '../../utils/energyCalc.js';
 import { buildTrainingReport } from '../../utils/trainingReport.js';
 import { buildRevisionCoach, PeriodoRevision, mesoActivo, pesoVsSemanaPasada } from '../../utils/revisionCoach.js';
+import { buildCierreMesociclo } from '../../utils/cierreMesociclo.js';
 import { suggestVolume, VolumeIntent } from '../../utils/volumeSuggestion.js';
 import { buildVolumeHistoryFrom } from '../../utils/volumeHistory.js';
 import { VOLUME_LANDMARKS_DEFAULT } from '../../data/volumeLandmarks.js';
@@ -1136,6 +1137,42 @@ export async function getNutritionAnalysis(email: string): Promise<string> {
  * de cuatro semanas era lo que hacía `get_training_history` y se lleva miles de
  * tokens en decirle al modelo lo que el motor ya resolvió.
  */
+/**
+ * El CIERRE del bloque, para el asistente: `buildCierreMesociclo`, el mismo
+ * motor que Dani ve en Mesociclo › Cierre. Sesiones, volumen programado y
+ * realizado por grupo, tonelaje y 1RM frente al bloque anterior, patrones,
+ * titulares y el borrador para el cliente. Solo lectura.
+ */
+export async function getCierreBloque(email: string, mesocycleId?: string): Promise<string> {
+  const profile = await findProfile(email);
+  if (!profile) return toResult({ error: `No existe ningún cliente con email ${email}` });
+  const hoy = hoyIsoLocal();
+  const [mesos, logs, assignments, exercises] = await Promise.all([
+    getMesocycles(email), getWorkoutLogs(email), getWorkoutAssignments({ uid: profile.userId, email: profile.email }), getExercises(),
+  ]);
+  const empezados = mesos.filter(m => !!m.startDate).sort((a, b) => a.startDate.localeCompare(b.startDate));
+  const meso = mesocycleId ? mesos.find(m => m.id === mesocycleId) : (mesoActivo(mesos, hoy) ?? empezados[empezados.length - 1]);
+  if (!meso) return toResult({ error: mesocycleId ? `No existe el mesociclo ${mesocycleId}.` : 'El atleta no tiene mesociclos que cerrar.' });
+  const c = buildCierreMesociclo({ meso, mesocycles: mesos, logs, assignments, exercises, athleteName: aliasDeAtleta(profile.displayName, profile.email), hoy });
+  return toResult({
+    bloque: { id: c.mesoId, numero: c.numero, objetivo: c.objetivo, inicio: c.inicio, fin: c.fin, semanas: c.semanas, diasSemana: c.diasSemana, enCurso: c.enCurso, comparacion: c.comparacion },
+    sesiones: c.sesiones,
+    volumen: {
+      pct: c.volumen.pct, totalProgramadas: c.volumen.totalProgramadas, totalRealizadas: c.volumen.totalRealizadas,
+      porGrupo: c.volumen.filas.map(f => ({ grupo: f.label, semanales: f.semanales, semanalesPrevias: f.semanalesPrevias, programadas: f.programadas, realizadas: f.realizadas, pct: f.pct })),
+    },
+    rendimiento: {
+      tonelaje: c.informe.tonnage,
+      records: c.informe.perExercise.filter(e => e.isPR).map(e => e.name),
+      patrones: c.patrones.map(p => ({ patron: p.label, series: p.sets, tonelajeDeltaPct: p.tonnageDeltaPct, ormDeltaPct: p.ormDeltaPct })),
+      destacado: c.informe.highlights,
+    },
+    titulares: c.titulares,
+    borradorParaElCliente: c.resumenParaCliente,
+    note: 'Son los números de Mesociclo › Cierre, los mismos que ve Dani. Úsalos para el veredicto del bloque y para decir qué cambia en el siguiente (volumen por grupo que se cumplió o no, patrones que suben o se estancan). No recalcules nada.',
+  });
+}
+
 export async function getRevisionEngine(email: string, periodoPedido: string): Promise<string> {
   const coachUid = (coachActual().uid || undefined);
   const [logs, exercises, mesos, responses, questionnaires, landmarks, registros, dietas, bwLogs] =

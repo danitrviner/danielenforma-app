@@ -9,7 +9,7 @@ import { DossierPatch } from '../../types.js';
 import { calcularRepartoTool, getChallengeOptions, getCheckinsInfo, getClientBrief, getClientOverview, getCoachAdjustments, getDietInfo, getExerciseLibrary, getExerciseUsage, getFoodLibrary, getNutritionAnalysis, getOnboardingCompleto, getProgressMetrics, getProposalFeedback, getQuestionnaireTrends, getRevisionEngine, getSetupStatus, getTrainingHistory, getVolumeSuggestion, leerContextoDelPlan, leerFicha, listClients, listMisRepartos, searchKnowledge } from './lectores.js';
 import { SEMANAS_POR_DEFECTO } from '../validators.js';
 import { getCdgSemana, proposeProgresionIem, getAlternativasEjercicio } from './cdg.js';
-import { getResultadoEsperado } from './lectores.js';
+import { getResultadoEsperado, getCierreBloque } from './lectores.js';
 import { cerrarEsperado } from './propuestas.js';
 import { addCoachTask, apuntarHecho, draftCheckinFeedback, proposeRespuestaRevision, proposeMensajeAtleta, generateReportDraft, leerExpediente, proposeDietUpdate, proposeDossierUpdate, proposeLevelLadder, proposeMesocycle, proposeMesocycleTemplate, proposeNutritionProgram, proposePeriodizationBlock, proposePublishBlock, proposeRoadmapItems, proposeSetupConfig, proposeSpecialDay, proposeWeekPlan, proposeWeeklyChallenge, proposeWorkoutDays, proposeWorkoutTemplate } from './propuestas.js';
 /* ── Consentimiento: UNA puerta, no una lista ────────────────────────────────
@@ -133,6 +133,9 @@ export async function executeTool(
       case 'get_alternativas_ejercicio':
         if (!email) return { content: 'Falta athlete_email', isError: true };
         return { content: await getAlternativasEjercicio(email, input), isError: false };
+      case 'get_cierre_bloque':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        return { content: await getCierreBloque(email, typeof input.mesocycle_id === 'string' ? input.mesocycle_id : undefined), isError: false };
       case 'get_resultado_esperado':
         if (!email) return { content: 'Falta athlete_email', isError: true };
         return { content: await getResultadoEsperado(email), isError: false };
