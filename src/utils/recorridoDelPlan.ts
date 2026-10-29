@@ -151,7 +151,7 @@ export const PASOS_DEL_RECORRIDO: PasoDelRecorrido[] = [
     numero: '4',
     titulo: 'Periodización nutricional',
     bloque: 'nutricion',
-    tab: 'dietas',
+    tab: 'fases',
     comprueba: ['prog_periodizacion'],
     queDecidir:
       'Cuántas fases, de cuántas semanas cada una y con qué kcal. Solo el objetivo en gramos de proteína, hidratos y grasa: los alimentos los colocas tú después en el editor.',

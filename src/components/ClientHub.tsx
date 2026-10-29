@@ -54,6 +54,7 @@ const ClientBodyPanel = pantallaDiferida('ClientBodyPanel', () => import('./Clie
 const ReportsPanel = pantallaDiferida('ReportsPanel', () => import('./ReportsPanel'));
 const ClientDietsPanel = pantallaDiferida('ClientDietsPanel', () => import('./ClientDietsPanel'));
 const SeguimientoPlanPanel = pantallaDiferida('SeguimientoPlanPanel', () => import('./plan/SeguimientoPlanPanel'));
+const NutritionPeriodizationPanel = pantallaDiferida('NutritionPeriodizationPanel', () => import('./NutritionPeriodizationPanel'));
 const ClientWorkoutsPanel = pantallaDiferida('ClientWorkoutsPanel', () => import('./ClientWorkoutsPanel'));
 const ClientCardioPanel = pantallaDiferida('ClientCardioPanel', () => import('./ClientCardioPanel'));
 const ClientReviewsPanel = pantallaDiferida('ClientReviewsPanel', () => import('./ClientReviewsPanel'));
@@ -63,14 +64,15 @@ import PendingTray from './PendingTray';
 import ClientAlertsBar from './ClientAlertsBar';
 import { Avatar, Badge, Tabs, Skeleton, Sheet, SearchField, ListRow, Icon, SegmentedControl } from './ui';
 import { coincideBusqueda } from '../utils/busqueda';
+import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 
 export type HubTab =
   | 'revision' | 'setup' | 'revisiones' | 'reportes'
   | 'ficha' | 'cuerpo'
-  | 'entrenamientos' | 'cardio' | 'dietas' | 'objetivo' | 'roadmap';
+  | 'entrenamientos' | 'cardio' | 'dietas' | 'objetivo' | 'fases' | 'roadmap';
 export const HUB_TABS: readonly HubTab[] = [
   'revision', 'revisiones', 'reportes', 'setup', 'ficha', 'cuerpo',
-  'entrenamientos', 'cardio', 'dietas', 'objetivo', 'roadmap',
+  'entrenamientos', 'cardio', 'dietas', 'objetivo', 'fases', 'roadmap',
 ];
 
 /**
@@ -107,7 +109,10 @@ const ZONE_TABS: Record<Zone, HubTab[]> = {
   atleta: ['ficha', 'cuerpo'],
   // Road map vive DENTRO de Objetivo (Dani, 28-10-2026: «objetivo es lo
   // principal para programar; el road map sale de los objetivos»). Su id de
-  // pestaña se conserva para que los enlaces /roadmap sigan abriendo.
+  // pestaña se conserva para que los enlaces /roadmap sigan abriendo. Igual
+  // `fases`: la periodización (fases, objetivo, kcal, semanas) se edita en
+  // Objetivo › Plan, no en Dietas (Dani, 28-10: «los cambios se deberían
+  // hacer desde objetivos no desde dieta, información»).
   plan: ['entrenamientos', 'cardio', 'dietas', 'objetivo'],
 };
 const ZONE_META: Record<Zone, { label: string; icon: string }> = {
@@ -125,11 +130,12 @@ const TAB_META: Record<HubTab, { label: string; icon: string }> = {
   cardio:               { label: 'Cardio',         icon: 'monitor_heart' },
   dietas:               { label: 'Dietas',         icon: 'nutrition' },
   objetivo:             { label: 'Objetivo',       icon: 'timeline' },
+  fases:                { label: 'Plan',           icon: 'tune' },
   roadmap:              { label: 'Road map',       icon: 'map' },
   reportes:             { label: 'Reportes',       icon: 'analytics' },
 };
 function zoneOf(tab: HubTab): Zone {
-  if (tab === 'roadmap') return 'plan';
+  if (tab === 'roadmap' || tab === 'fases') return 'plan';
   return (Object.keys(ZONE_TABS) as Zone[]).find(z => ZONE_TABS[z].includes(tab)) ?? 'hoy';
 }
 
@@ -186,7 +192,7 @@ export default function ClientHub({
   const { data: onboardingData = null } = useQuery({
     queryKey: onboardingKey,
     queryFn: () => getOnboarding(athlete.email),
-    enabled: tabIn('setup', 'ficha', 'dietas'),
+    enabled: tabIn('setup', 'ficha', 'dietas', 'fases'),
   });
   // ClientReviewsPanel writes through this (OnboardingForm / FoodPreferencesPanel
   // saves) without needing to know about react-query — same Dispatch-shaped API
@@ -256,7 +262,7 @@ export default function ClientHub({
   const { data: athleteDiets = [] } = useQuery({
     queryKey: athleteDietsKey,
     queryFn: () => getDietsForAthlete(athlete.email).then(list => list.filter(d => !d.selfManaged)),
-    enabled: tabIn('setup', 'dietas'),
+    enabled: tabIn('setup', 'dietas', 'fases'),
   });
   const setAthleteDiets = (updater: React.SetStateAction<Diet[]>) =>
     queryClient.setQueryData<Diet[]>(athleteDietsKey, prev =>
@@ -266,14 +272,14 @@ export default function ClientHub({
   const { data: athleteDietConfig = null } = useQuery({
     queryKey: athleteDietConfigKey,
     queryFn: () => getAthleteDietConfig(athlete.email),
-    enabled: tabIn('setup', 'dietas'),
+    enabled: tabIn('setup', 'dietas', 'fases'),
   });
 
   const nutritionConfigKey = ['athleteNutritionConfig', athlete.email] as const;
   const { data: nutritionConfig = null } = useQuery({
     queryKey: nutritionConfigKey,
     queryFn: () => getAthleteNutritionConfig(athlete.email),
-    enabled: tabIn('setup', 'dietas'),
+    enabled: tabIn('setup', 'dietas', 'fases'),
   });
 
   // ── Photos ─────────────────────────────────────────────────────────────────
@@ -743,18 +749,19 @@ export default function ClientHub({
           weeklyMenus={weeklyMenus}
           setWeeklyMenus={setWeeklyMenus}
           menuCompletionLogs={menuCompletionLogs}
-          bodyweightLogs={bodyweightLogs}
           onToggleDiet={handleToggleDiet}
           onDeleteDiet={handleDeleteDiet}
           onDuplicateDiet={handleDuplicateDiet}
           onScheduleDay={handleScheduleDay}
           onToggleDietMode={handleToggleDietMode}
           onSaveStepConfig={handleSaveStepConfig}
+          onEditarPlan={() => guardedTabChange('fases')}
         />
       );
 
-      /* ── Tab: Objetivo — seguimiento del plan y, dentro, el Road map ──── */
+      /* ── Tab: Objetivo — seguimiento, el plan de fases y el Road map ──── */
       case 'objetivo':
+      case 'fases':
       case 'roadmap':
         return (
         <div className="space-y-4">
@@ -762,17 +769,33 @@ export default function ClientHub({
             label="Secciones de Objetivo"
             value={activeTab}
             onChange={v => guardedTabChange(v as HubTab)}
-            options={[{ value: 'objetivo', label: 'Seguimiento' }, { value: 'roadmap', label: 'Road map' }]}
+            options={[
+              { value: 'objetivo', label: 'Seguimiento' },
+              { value: 'fases', label: 'Plan' },
+              { value: 'roadmap', label: 'Road map' },
+            ]}
           />
-          {activeTab === 'objetivo'
-            ? <SeguimientoPlanPanel athlete={athlete} />
-            : (
-              <ClientRoadmapPanel
-                athleteEmail={athlete.email}
-                coachId={coachId}
-                onGoToTab={tab => { setActiveZone('plan'); guardedTabChange(tab); }}
-              />
-            )}
+          {activeTab === 'objetivo' && <SeguimientoPlanPanel athlete={athlete} />}
+          {activeTab === 'fases' && (
+            <NutritionPeriodizationPanel
+              athleteEmail={athlete.email}
+              athleteName={athlete.displayName}
+              targetWeightKg={athlete.targetWeight}
+              diets={athleteDiets}
+              onboarding={onboardingData}
+              currentWeightKg={bodyweightLogs.length > 0 ? bodyweightLogs[bodyweightLogs.length - 1].weight : onboardingData?.weightKg}
+              stepGoal={nutritionConfig?.stepGoal ?? 8000}
+              kcalPerStep={nutritionConfig?.kcalPerStep ?? DEFAULT_KCAL_PER_STEP}
+              onDietsChanged={() => { queryClient.invalidateQueries({ queryKey: athleteDietsKey }); }}
+            />
+          )}
+          {activeTab === 'roadmap' && (
+            <ClientRoadmapPanel
+              athleteEmail={athlete.email}
+              coachId={coachId}
+              onGoToTab={tab => { setActiveZone('plan'); guardedTabChange(tab); }}
+            />
+          )}
         </div>
       );
 
@@ -872,7 +895,7 @@ export default function ClientHub({
         {ZONE_TABS[activeZone].length > 1 && (
           <Tabs
             items={ZONE_TABS[activeZone].map(tab => ({ id: tab, label: TAB_META[tab].label, icon: TAB_META[tab].icon }))}
-            value={activeTab === 'roadmap' ? 'objetivo' : activeTab}
+            value={activeTab === 'roadmap' || activeTab === 'fases' ? 'objetivo' : activeTab}
             onChange={id => guardedTabChange(id as HubTab)}
             label="Secciones de la zona"
           />

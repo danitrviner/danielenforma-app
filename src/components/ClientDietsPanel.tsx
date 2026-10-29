@@ -3,26 +3,28 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, OnboardingData, Diet, AthleteDietConfig, AthleteNutritionConfig,
-  DietMode, WeekDay, WeeklyMenu, BodyweightLog, MenuCompletionLog,
+  DietMode, WeekDay, WeeklyMenu, MenuCompletionLog,
 } from '../types';
 import { isMenuStale } from '../utils/menuEngine';
 import { computeMenuAdherenceRate } from '../utils/nutritionAnalysis';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
+import { buildPhaseEnergyPlans } from '../utils/nutritionPeriodization';
+import { objetivoDeFase } from '../utils/objetivoDeFase';
+import { OBJETIVO_LABEL } from '../utils/verificacionObjetivo';
 import { isDietPending } from '../utils/exchangeHelpers';
 import { objetivoDeDieta } from '../utils/macrosLegado';
 import { SLOT_LABEL, HUNGER_PROFILE_LABEL } from '../utils/mealDistribution';
 import { getDietsForAthlete, deleteWeeklyMenu, getWeeklyMenusForAthlete, getNutritionProgram, computeActivePhase, updateAiProposal } from '../dbService';
 import { appendDossierFacts } from '../db/dossier';
 import { recogerBorradorDeDieta } from '../ai/borradorDieta';
-import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import NutritionPlansScreen from './NutritionPlansScreen';
 import WeeklyMenuEditor from './WeeklyMenuEditor';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import MicronutrientesPanel from './MicronutrientesPanel';
-import { EmptyState, SegmentedControl, Dialog, Button, Collapsible } from './ui';
+import { EmptyState, SegmentedControl, Dialog, Button } from './ui';
 
 import { useConfirm } from '../hooks/useConfirm';
-import { hoyIsoLocal } from '../utils/trainingWeek';
+import { hoyIsoLocal, diasEntreFechas } from '../utils/trainingWeek';
 const GOAL_BODY_LABELS: Record<string, string> = {
   aumentar_musculo: 'Aumentar músculo',
   reducir_grasa:    'Reducir grasa',
@@ -61,19 +63,20 @@ interface Props {
   weeklyMenus: WeeklyMenu[];
   setWeeklyMenus: React.Dispatch<React.SetStateAction<WeeklyMenu[]>>;
   menuCompletionLogs: MenuCompletionLog[];
-  bodyweightLogs: BodyweightLog[];
   onToggleDiet: (dietId: string) => void;
   onDeleteDiet: (dietId: string) => Promise<void> | void;
   onDuplicateDiet: (diet: Diet) => Promise<void> | void;
   onScheduleDay: (day: WeekDay, dietId: string | null) => void;
   onToggleDietMode: (mode: DietMode) => void;
   onSaveStepConfig: (updates: Partial<Pick<AthleteNutritionConfig, 'stepGoal' | 'kcalPerStep'>>) => void;
+  /** Abre Objetivo › Plan, donde se editan las fases (ya no aquí). */
+  onEditarPlan: () => void;
 }
 
 export default function ClientDietsPanel({
   athlete, coachId, onboardingData, setOnboardingData, athleteDiets, setAthleteDiets, athleteDietConfig,
-  nutritionConfig, weeklyMenus, setWeeklyMenus, menuCompletionLogs, bodyweightLogs,
-  onToggleDiet, onDeleteDiet, onDuplicateDiet, onScheduleDay, onToggleDietMode, onSaveStepConfig,
+  nutritionConfig, weeklyMenus, setWeeklyMenus, menuCompletionLogs,
+  onToggleDiet, onDeleteDiet, onDuplicateDiet, onScheduleDay, onToggleDietMode, onSaveStepConfig, onEditarPlan,
 }: Props) {
   // Diet editor state: undefined = closed, null = create new, Diet = edit existing
   const [dietEditorDiet, setDietEditorDiet] = useState<Diet | null | undefined>(undefined);
@@ -119,9 +122,8 @@ export default function ClientDietsPanel({
   };
 
   // T12 (18-08). Misma clave de caché que NutritionPeriodizationPanel
-  // (['nutritionProgram', email]) — montado justo debajo, ver más abajo —
-  // así que esto no es una lectura nueva, es reutilizar la que ya hace ese
-  // panel (o al revés, según cuál monte primero).
+  // (['nutritionProgram', email]), que vive en Objetivo › Plan: al volver de
+  // allí no es una lectura nueva.
   const { data: nutritionProgram = null } = useQuery({
     queryKey: ['nutritionProgram', athlete.email],
     queryFn: () => getNutritionProgram(athlete.email),
@@ -130,6 +132,18 @@ export default function ClientDietsPanel({
     () => nutritionProgram ? computeActivePhase(nutritionProgram, hoyIsoLocal()) : null,
     [nutritionProgram]
   );
+  const resumenFase = useMemo(() => {
+    if (!nutritionProgram || !activePhase) return null;
+    const idx = nutritionProgram.phases.indexOf(activePhase);
+    const tramo = buildPhaseEnergyPlans(nutritionProgram, athleteDiets)[idx];
+    const objetivo = objetivoDeFase(nutritionProgram, idx);
+    return {
+      semana: Math.floor(diasEntreFechas(tramo.startDate, hoyIsoLocal()) / 7) + 1,
+      semanas: activePhase.weeks,
+      kcal: tramo.targetKcal,
+      objetivo: objetivo ? OBJETIVO_LABEL[objetivo.tipo] : null,
+    };
+  }, [nutritionProgram, activePhase, athleteDiets]);
 
   // Weekly menu (recipe-first): editor state. undefined = editor closed,
   // 'new' = fresh generation, WeeklyMenu = editing/reviewing an existing one.
@@ -212,13 +226,30 @@ export default function ClientDietsPanel({
         onChange={changeSubView}
       />
 
-      {(activePhase || onboardingData?.goalBody) && (
-        <p className="font-mono text-caption text-ink-2">
-          {activePhase && <>Fase actual: <span className="text-ink font-bold">{activePhase.name}</span></>}
-          {activePhase && onboardingData?.goalBody && ' · '}
-          {onboardingData?.goalBody && <>Objetivo: <span className="text-accent-ink font-bold">{GOAL_BODY_LABELS[onboardingData.goalBody] ?? onboardingData.goalBody}</span></>}
-        </p>
-      )}
+      {/* La periodización (fases, objetivo, kcal, semanas) se edita en
+          Objetivo › Plan (Dani, 28-10-2026). Aquí solo su resumen, para
+          programar las dietas sabiendo en qué fase está. */}
+      <div className="bg-surface border border-hairline rounded-surface px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
+        <div className="min-w-0 space-y-0.5">
+          <p className="font-sans text-caption text-ink-3">Plan nutricional</p>
+          {resumenFase && activePhase ? (
+            <p className="font-sans text-body-s text-ink-2">
+              <span className="text-ink font-bold">{activePhase.name}</span>
+              {resumenFase.objetivo && resumenFase.objetivo !== activePhase.name && <> · {resumenFase.objetivo}</>}
+              {' · '}semana {resumenFase.semana} de {resumenFase.semanas}
+              {resumenFase.kcal != null && <> · <span className="font-mono text-accent-ink">{`${resumenFase.kcal.toLocaleString('es-ES')}\u00a0kcal`}</span></>}
+            </p>
+          ) : (
+            <p className="font-sans text-body-s text-ink-2">
+              {nutritionProgram ? 'Sin fase en curso hoy.' : 'Sin periodización todavía.'}
+              {onboardingData?.goalBody && <> Objetivo de la ficha: <span className="text-ink font-bold">{GOAL_BODY_LABELS[onboardingData.goalBody] ?? onboardingData.goalBody}</span></>}
+            </p>
+          )}
+        </div>
+        <Button variant="secondary" size="s" icon="timeline" onClick={onEditarPlan}>
+          {nutritionProgram ? 'Editar en Objetivo' : 'Crear en Objetivo'}
+        </Button>
+      </div>
 
       {subView === 'programacion' && (
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
@@ -404,35 +435,6 @@ export default function ClientDietsPanel({
       </div>
       )}
 
-      {/* Semanas de la periodización nutricional: antes vivía en Info, pero es
-          programar el calendario, así que va aquí, plegada (rara vez se toca). */}
-      {subView === 'programacion' && nutritionProgram && (
-      <div className="bg-surface border border-hairline rounded-surface px-5 py-2">
-        <Collapsible
-          trigger={
-            <span className="flex items-center gap-2 font-sans font-bold text-title-s text-ink">
-              <span className="material-symbols-outlined text-accent-ink text-body-s">calendar_month</span>
-              Semanas de la periodización
-            </span>
-          }
-        >
-          <div className="pt-2 pb-3">
-            <NutritionPeriodizationPanel
-              parte="semanas"
-              athleteEmail={athlete.email}
-              athleteName={athlete.displayName}
-              targetWeightKg={athlete.targetWeight}
-              diets={athleteDiets}
-              onboarding={onboardingData}
-              currentWeightKg={bodyweightLogs.length > 0 ? bodyweightLogs[bodyweightLogs.length - 1].weight : onboardingData?.weightKg}
-              stepGoal={nutritionConfig?.stepGoal ?? 8000}
-              kcalPerStep={nutritionConfig?.kcalPerStep ?? DEFAULT_KCAL_PER_STEP}
-            />
-          </div>
-        </Collapsible>
-      </div>
-      )}
-
       {/* Menú semanal — generador automático basado en recetas. Lee sus
           puntos de las dietas de tipo de día programadas arriba. */}
       {subView === 'programacion' && (
@@ -540,28 +542,6 @@ export default function ClientDietsPanel({
           </div>
         )}
       </div>
-      )}
-
-      {/* Periodización nutricional — el panel es dueño del estado de
-          edición y renderiza el dashboard de rendimiento (gráfico +
-          stats) como su propia vista de lectura; son una sola sección. */}
-      {subView === 'info' && (
-      <NutritionPeriodizationPanel
-        parte="resto"
-        athleteEmail={athlete.email}
-        athleteName={athlete.displayName}
-        targetWeightKg={athlete.targetWeight}
-        diets={athleteDiets}
-        onboarding={onboardingData}
-        currentWeightKg={bodyweightLogs.length > 0 ? bodyweightLogs[bodyweightLogs.length - 1].weight : onboardingData?.weightKg}
-        stepGoal={nutritionConfig?.stepGoal ?? 8000}
-        kcalPerStep={nutritionConfig?.kcalPerStep ?? DEFAULT_KCAL_PER_STEP}
-        onDietsChanged={() => {
-          getDietsForAthlete(athlete.email)
-            .then(diets => setAthleteDiets(diets.filter(d => !d.selfManaged)))
-            .catch(console.error);
-        }}
-      />
       )}
 
       {/* Referencia rápida para "Repartir objetivos" en Mi plan / Dietas —
