@@ -13,6 +13,7 @@ import LoQueVinisteABuscar from './home/LoQueVinisteABuscar';
 import RoadmapDelAtletaVista from './roadmap/RoadmapDelAtletaVista';
 import VueltaCard from './home/VueltaCard';
 import RenovacionCard from './home/RenovacionCard';
+import HechoCon from './nutrition/HechoCon';
 import WeeklyChallengeCard from './roadmap/WeeklyChallengeCard';
 import { FIXTURE_RESPUESTA } from './RespuestaDevHarness';
 import { FIXTURE_PRIMERA_SEMANA } from './PrimeraSemanaDevHarness';
@@ -47,7 +48,7 @@ const RESPUESTAS: QuestionnaireResponse[] = [{
 }];
 const NOTA: CoachDayNote = { id: 'n', athleteId: EMAIL, date: HOY, text: 'Hoy la última serie de press va al fallo: apunta las reps.', createdAt: '' };
 
-const PIEZAS = ['panel', 'ultimo', 'respuesta', 'atleta', 'primera', 'espera', 'viniste', 'vuelta', 'renovacion', 'roadmap'] as const;
+const PIEZAS = ['panel', 'ultimo', 'respuesta', 'atleta', 'primera', 'espera', 'viniste', 'vuelta', 'renovacion', 'hecho', 'roadmap'] as const;
 type Pieza = typeof PIEZAS[number];
 
 export default function VariantesDevHarness() {
@@ -141,6 +142,13 @@ export default function VariantesDevHarness() {
             <Seccion titulo="8 · «Tu plan termina pronto» (Inicio, últimos 10 días)" columnas={2}>
               <Variante nombre="A · tarjeta"><RenovacionCard profile={{ planStartDate: addDays(HOY, -84), planDurationMonths: 3 }} pesos={FIXTURE_RESPUESTA.pesos} objetivo="deficit" pesoMeta={79} variante="tarjeta" /></Variante>
               <Variante nombre="B · línea"><div className="pt-3"><RenovacionCard profile={{ planStartDate: addDays(HOY, -84), planDurationMonths: 3 }} pesos={FIXTURE_RESPUESTA.pesos} objetivo="deficit" pesoMeta={79} variante="linea" /></div></Variante>
+            </Seccion>
+          )}
+
+          {ver('hecho') && (
+            <Seccion titulo="9 · «Hecho con lo que me dijiste» (Mi menú)" columnas={2}>
+              <Variante nombre="A · línea"><HechoCon etiquetas={['sin lactosa', 'bebida de avena en vez de leche', 'más ensaladas']} variante="linea" /></Variante>
+              <Variante nombre="B · chips"><HechoCon etiquetas={['sin lactosa', 'bebida de avena en vez de leche', 'más ensaladas']} variante="chips" /></Variante>
             </Seccion>
           )}
 
