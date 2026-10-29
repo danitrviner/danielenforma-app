@@ -26,6 +26,7 @@ const ORDEN: Record<AiProposalKind, number> = {
   dossier: 12,            // la ficha se cierra al final, con todo ya decidido
   workoutTemplate: 13,    // plantillas: no son del atleta, van al final
   mesocycleTemplate: 13,
+  latido: 99,             // ya aplicado: nunca está pendiente
 };
 
 export function ordenarPropuestasPorPlan(propuestas: AiProposal[]): AiProposal[] {

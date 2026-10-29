@@ -10,6 +10,7 @@ import { hoyIsoLocal } from '../utils/trainingWeek';
 import { revisarMenusAutomaticos } from '../services/menuSemanalAutomatico';
 import { auth } from '../firebase';
 import { ActionRow as ActionRowPrimitive, EmptyState, Icon } from './ui';
+import HechoHoy from './HechoHoy';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HomeCoachScreen (F3.13a, "Home Coach" del handoff transversal)
@@ -166,7 +167,8 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
 
   if (senales.length === 0) {
     return (
-      <section>
+      <section className="space-y-4">
+        <HechoHoy athletes={athletes} />
         <EmptyState
           icon="check"
           iconTone="accent"
@@ -179,6 +181,9 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
 
   return (
     <section className="space-y-4">
+      {/* Lo que la máquina (o tú) aplicó en las últimas 24 h, con deshacer.
+          Va antes que las señales porque es lo que ya pasó sin que lo pidieras. */}
+      <HechoHoy athletes={athletes} />
       {/* Las propuestas del asistente, en la pantalla por la que se entra.
           Su pantalla vive en /propuestas y en la barra lateral de PC, pero en
           el móvil la barra de abajo está llena (cuatro destinos al límite de

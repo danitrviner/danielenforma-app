@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { huellaDelLatido, ID_HUELLA_LATIDO } from './latidoDiario';
 import { planificarLatido, FotoDelAtleta, DIAS_PARA_DARSE_POR_PERDIDA } from './latidoDiario';
 import { addDays } from './trainingWeek';
 import type {
@@ -153,5 +154,45 @@ describe('planificarLatido · idempotencia', () => {
     const r = planificarLatido(foto(), OPCIONES);
     expect(r.acciones).toEqual([]);
     expect(r.resumen).toEqual([]);
+  });
+});
+
+describe('huellaDelLatido · lo que hizo la máquina queda escrito y se puede deshacer', () => {
+  const AHORA = '2026-10-29T02:00:00.000Z';
+  const foto = {
+    profile: { userId: 'u1', email: 'ana@x.com', displayName: 'Ana', role: 'client', level: 2 },
+    assignments: [{ id: 'as_vieja', athleteId: 'ana@x.com', workoutId: 'w', date: '2026-10-10', status: 'pending' }],
+    workoutLogs: [], bodyweightLogs: [], stepLogs: [], exercises: [],
+    nutritionProgram: { athleteId: 'ana@x.com', startDate: '2026-10-01', phases: [], lastSeenPhaseId: 'f1' },
+    dietConfig: { athleteId: 'ana@x.com', activeDietIds: ['d_vieja'] },
+    roadmap: null,
+  } as unknown as Parameters<typeof huellaDelLatido>[0];
+
+  it('sin acciones con efecto (solo avisos) no deja huella', () => {
+    const aviso = { tipo: 'aviso', dedupeKey: 'k', notificacion: {} } as unknown as Parameters<typeof huellaDelLatido>[1][number];
+    expect(huellaDelLatido(foto, [aviso], [], '2026-10-29', AHORA)).toBeNull();
+  });
+
+  it('cada acción guarda cómo estaba el documento antes, y el id es el mismo las dos veces', () => {
+    const h = huellaDelLatido(foto, [
+      { tipo: 'marcar_sesion_perdida', assignmentId: 'as_vieja', fecha: '2026-10-10' },
+      { tipo: 'activar_dieta', athleteEmail: 'ana@x.com', activeDietIds: ['d_nueva'] },
+      { tipo: 'marcar_fase_vista', athleteEmail: 'ana@x.com', phaseId: 'f2' },
+      { tipo: 'actualizar_peldanos', userId: 'u1', peldanos: 3 },
+    ], ['1 sesión marcada como perdida', 'dieta activa → d_nueva'], '2026-10-29', AHORA);
+    expect(h).not.toBeNull();
+    expect(h!.kind).toBe('latido');
+    expect(h!.status).toBe('aplicada');
+    expect(h!.autor).toBe('latido');
+    expect(h!.politica).toBe('automatico');
+    expect(h!.summary).toBe('1 sesión marcada como perdida · dieta activa → d_nueva');
+    expect(h!.snapshotAntes).toEqual([
+      { coleccion: 'workoutAssignments', id: 'as_vieja', datos: { status: 'pending' }, parcial: true },
+      { coleccion: 'athleteDietConfigs', id: 'ana@x.com', datos: { activeDietIds: ['d_vieja'] } },
+      { coleccion: 'nutritionPrograms', id: 'ana@x.com', datos: { lastSeenPhaseId: 'f1' }, parcial: true },
+      { coleccion: 'user_profiles', id: 'u1', datos: { level: 2 }, parcial: true },
+    ]);
+    expect(JSON.stringify(h)).not.toMatch(/undefined/);
+    expect(ID_HUELLA_LATIDO('ana@x.com', '2026-10-29')).toBe('latido_ana@x.com_2026-10-29');
   });
 });

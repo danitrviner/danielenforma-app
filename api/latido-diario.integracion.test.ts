@@ -134,6 +134,15 @@ describe('api/latido-diario · de punta a punta', () => {
     expect(perdidas).toHaveLength(1);
     expect(perdidas[0].id).toBe('as_vieja');
     expect(perdidas[0].datos).toEqual({ status: 'perdido' });
+    // Y deja huella en aiProposals con el «antes» de la asignación, para
+    // que salga en «Hecho hoy» y se pueda deshacer.
+    const huella = db.escrituras.find(e => e.coleccion === 'aiProposals');
+    expect(huella).toBeDefined();
+    expect(huella!.id).toBe(`latido_ana@x.com_${HOY}`);
+    const datos = huella!.datos as { kind: string; status: string; snapshotAntes: { id: string; datos: unknown }[] };
+    expect(datos.kind).toBe('latido');
+    expect(datos.status).toBe('aplicada');
+    expect(datos.snapshotAntes).toEqual([{ coleccion: 'workoutAssignments', id: 'as_vieja', datos: { status: 'pending' }, parcial: true }]);
   });
 
   it('salta a los atletas dados de baja y al propio coach', async () => {

@@ -34,10 +34,10 @@ import {
   marcarSesionPerdida, guardarConfigDeDieta, marcarFaseVista, guardarNivelesConseguidos,
   actualizarPeldanos, guardarReto, leerReto, crearAvisoUnaVez,
   leerCuestionariosAsignados, leerRespuestasDeCuestionarios, leerMesociclos,
-  leerRutinas, leerRetos, leerExperiencia,
+  leerRutinas, leerRetos, leerExperiencia, guardarHuellaDelLatido,
 } from './_lib/db-admin.js';
 import { recordatoriosDeRevision } from '../src/utils/recordatoriosRevision.js';
-import { planificarLatido } from '../src/utils/latidoDiario.js';
+import { planificarLatido, huellaDelLatido, ID_HUELLA_LATIDO } from '../src/utils/latidoDiario.js';
 import { ejecutarRetoSemanal, type AlmacenDeRetos } from '../src/utils/motorRetoSemanal.js';
 import { DEFAULT_LEVEL_LADDER } from '../src/data/defaultLevelLadder.js';
 import { addDays, getWeekStart } from '../src/utils/trainingWeek.js';
@@ -166,6 +166,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
         { hoy, coachEmail: COACH_EMAIL },
       );
+
+      // La huella de lo que se va a hacer, con el snapshot de ANTES, se escribe
+      // primero: si una escritura falla a mitad, lo que ya cambió sigue
+      // teniendo su «antes» guardado para deshacerlo desde la bandeja.
+      const huella = huellaDelLatido(
+        { profile: perfil, assignments, workoutLogs, bodyweightLogs, stepLogs, exercises, nutritionProgram, dietConfig, roadmap },
+        acciones, lineas, hoy, new Date().toISOString(),
+      );
+      if (!enSeco && huella) await guardarHuellaDelLatido(db, ID_HUELLA_LATIDO(email, hoy), huella);
 
       if (!enSeco) {
         for (const accion of acciones) {

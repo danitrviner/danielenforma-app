@@ -15,7 +15,7 @@
 // atleta viven en `src/utils/latidoDiario.ts` y en `src/utils/motorRetoSemanal.ts`,
 // que no saben nada de Firestore. Este fichero solo sabe leer y escribir.
 import type {
-  AppNotification, AthleteDietConfig, BodyweightLog, CardioSession, Diet,
+  AiProposal, AppNotification, AthleteDietConfig, BodyweightLog, CardioSession, Diet,
   DietCompletionLog, Exercise, LevelLadder, NutritionProgram, Roadmap, StepLog,
   UserProfile, WeeklyChallenge, WorkoutAssignment, WorkoutLog,
   Mesocycle, QuestionnaireAssignment, QuestionnaireResponse, Workout, ExperienceLevel,
@@ -234,4 +234,20 @@ export async function crearAvisoUnaVez(
   } catch {
     // Ya existía: es exactamente lo que se quería evitar, no un error.
   }
+}
+
+/**
+ * La propuesta ya aplicada que deja el latido para que Dani la vea en «Hecho
+ * hoy» y pueda deshacerla. `set` con id determinista: dos pasadas el mismo
+ * día no duplican. Si ya existía (segunda pasada), se conserva el snapshot de
+ * la primera, que es el «antes» de verdad.
+ */
+export async function guardarHuellaDelLatido(db: Firestore, id: string, huella: Omit<AiProposal, 'id'>): Promise<void> {
+  const ref = db.collection('aiProposals').doc(id);
+  const previa = await ref.get();
+  if (previa.exists) {
+    await ref.set(sinIndefinidos({ summary: huella.summary, cambios: huella.cambios, payload: huella.payload, aplicadaEn: huella.aplicadaEn }), { merge: true });
+    return;
+  }
+  await ref.set(sinIndefinidos({ ...huella, id }));
 }
