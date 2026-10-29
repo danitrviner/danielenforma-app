@@ -4,7 +4,13 @@ import { UserProfile } from '../types';
 import { getProgressPhotos, getPesoExtremo } from '../dbService';
 import { pesoUltimoKey } from '../hooks/useAthleteWeight';
 import { Icon, ListRow } from './ui';
-import { hoyIsoLocal } from '../utils/trainingWeek';
+import { addDays, hoyIsoLocal } from '../utils/trainingWeek';
+import { getMensajesAprobados } from '../db/mensajesCoach';
+import { claveMensajesAtleta } from './home/LoUltimoDeDani';
+import { COACH_NOMBRE } from '../utils/coach';
+
+const fechaCorta = (iso: string) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Fase 3 (F3.5): "sala de espera" — re-skin sobre
@@ -33,12 +39,19 @@ function isRoadmapVisited(email: string): boolean {
   try { return localStorage.getItem(roadmapVisitedKey(email)) === '1'; } catch { return false; }
 }
 
-/** "EN REVISIÓN DESDE HOY/AYER/N DÍAS" — sin createdAt, solo "EN REVISIÓN":
- * el dato no está disponible en perfiles creados antes de que este campo
- * existiera, y no se inventa una fecha. */
-function fraseDesde(createdAt: string | undefined): string {
+/** La insignia (29-10): si el coach se ha comprometido a una fecha, cuenta
+ * HACIA ella («LO TENDRÁS EL JUEVES 30»); si no, lo de antes: desde cuándo
+ * está en revisión. Contar los días que lleva esperando jugaba en contra. */
+export function fraseDesde(createdAt: string | undefined, planPrometidoPara?: string, hoy = hoyIsoLocal()): string {
+  if (planPrometidoPara) {
+    const dias = Math.round((Date.parse(`${planPrometidoPara}T12:00:00`) - Date.parse(`${hoy}T12:00:00`)) / 86_400_000);
+    const fecha = new Date(`${planPrometidoPara}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' }).toUpperCase();
+    if (dias <= 0) return 'TU PLAN LLEGA HOY';
+    if (dias === 1) return 'TU PLAN LLEGA MAÑANA';
+    return `LO TENDRÁS EL ${fecha}`;
+  }
   if (!createdAt) return 'EN REVISIÓN';
-  const dias = Math.floor((Date.parse(hoyIsoLocal()) - Date.parse(createdAt.slice(0, 10))) / 86_400_000);
+  const dias = Math.floor((Date.parse(hoy) - Date.parse(createdAt.slice(0, 10))) / 86_400_000);
   if (dias <= 0) return 'EN REVISIÓN DESDE HOY';
   if (dias === 1) return 'EN REVISIÓN DESDE AYER';
   return `EN REVISIÓN DESDE HACE ${dias} DÍAS`;
@@ -69,6 +82,12 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
     queryKey: pesoUltimoKey(profile.email),
     queryFn: () => getPesoExtremo(profile.email, 'ultimo'),
   });
+  const desdeMensajes = addDays(hoyIsoLocal(), -29);
+  const { data: todosLosMensajes = [] } = useQuery({
+    queryKey: claveMensajesAtleta(profile.email, desdeMensajes),
+    queryFn: () => getMensajesAprobados(profile.email, desdeMensajes),
+  });
+  const mensajes = todosLosMensajes.filter(m => m.tipo === 'implantacion' || m.tipo === 'libre').sort((a, b) => b.fecha.localeCompare(a.fecha));
   const hasPhoto = photos.length > 0;
   const hasWeight = algunPeso !== null;
   const loaded = !loadingPhotos && !loadingWeights;
@@ -115,7 +134,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <span className="inline-flex items-center gap-2 rounded-full border border-accent-line bg-accent/13 px-3 py-1 font-mono text-caption font-bold uppercase tracking-widest text-accent-ink">
               <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-accent" aria-hidden />
-              {fraseDesde(profile.createdAt)}
+              {fraseDesde(profile.createdAt, profile.planPrometidoPara)}
             </span>
             <button
               type="button"
@@ -127,6 +146,19 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Lo que Dani le ha dicho ya (29-10): «he leído tu alta…». Mensajes
+          de tipo implantación firmados; si no hay ninguno, nada. */}
+      {mensajes.length > 0 && (
+        <div className="border-t border-hairline pt-4 space-y-2">
+          {mensajes.map(m => (
+            <div key={m.id} className="rounded-control border border-accent-line bg-accent-bg/50 p-3">
+              <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">{COACH_NOMBRE} te ha escrito · {fechaCorta(m.fecha)}</p>
+              <p className="mt-1 font-sans text-body-s text-ink whitespace-pre-wrap text-pretty">{m.texto}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="border-t border-hairline pt-4 space-y-2">
         <p className="font-sans text-caption uppercase tracking-widest text-ink-2">
