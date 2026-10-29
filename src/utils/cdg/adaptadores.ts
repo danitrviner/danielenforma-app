@@ -6,7 +6,7 @@
  * `Exercise.cdgNombre`). Sin ese vínculo el ejercicio cuenta 0, igual que en la
  * hoja cuando el nombre no coincide.
  */
-import type { WorkoutExercise, WorkoutLog, WorkoutTechnique } from '../../types'
+import type { WorkoutExercise, WorkoutLog, WorkoutTechnique } from '../../types.js'
 import { parsearReps, rirARpe, type CdgSerie, type CdgTecnica, type MotorCdg } from './motor.js'
 import type { CdgSerieRealizada, SemanaRealizada, CargaPorSesion } from './seguimiento.js'
 import { seriesPrincipales } from '../seriesPrincipales.js'

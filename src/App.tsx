@@ -54,6 +54,7 @@ const CoachProposalsScreen = pantallaDiferida('CoachProposalsScreen', () => impo
 const CommandPalette       = pantallaDiferida('CommandPalette', () => import('./components/CommandPalette'));
 const AthleteOnboardingWizard = pantallaDiferida('AthleteOnboardingWizard', () => import('./components/AthleteOnboardingWizard'));
 const AceptacionLegalGate = pantallaDiferida('AceptacionLegalGate', () => import('./components/AceptacionLegalGate'));
+const MuroLegalUnificado = pantallaDiferida('MuroLegalUnificado', () => import('./components/MuroLegalUnificado'));
 const PlanEnEsperaScreen     = pantallaDiferida('PlanEnEsperaScreen', () => import('./components/PlanEnEsperaScreen'));
 const ReviewsScreen        = pantallaDiferida('ReviewsScreen', () => import('./components/ReviewsScreen'));
 const TrainingCoachScreen  = pantallaDiferida('TrainingCoachScreen', () => import('./components/TrainingCoachScreen'));
@@ -185,6 +186,11 @@ const BloqueAtletaHarness = import.meta.env.DEV
 // Banco de pruebas de «Orden del ciclo» (Mesociclo › Distribución, ruta /dev/orden-ciclo).
 const OrdenCicloHarness = import.meta.env.DEV
   ? pantallaDiferida('OrdenCicloDevHarness', () => import('./components/mesociclo/OrdenCicloDevHarness'))
+  : null;
+
+// Banco de pruebas del autopiloto: variantes visuales de Política y «Hecho hoy» (ruta /dev/autopiloto).
+const AutopilotoHarness = import.meta.env.DEV
+  ? pantallaDiferida('AutopilotoDevHarness', () => import('./components/AutopilotoDevHarness'))
   : null;
 
 /* La pantalla de espera de la app, con marca. Existe como componente y no como
@@ -901,6 +907,13 @@ function AppContent() {
       </Suspense>
     );
   }
+  if (AutopilotoHarness && location.pathname === '/dev/autopiloto') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <AutopilotoHarness />
+      </Suspense>
+    );
+  }
   if (RetosHarness && location.pathname === '/dev/retos') {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
@@ -967,19 +980,32 @@ function AppContent() {
   // Banco de pruebas del muro legal, misma poda que el del wizard de alta: sin
   // esto hay que crear una cuenta nueva de verdad para ver los tres pasos.
   if (import.meta.env.DEV && location.pathname === '/dev/legal') {
+    const perfilDev = {
+      userId: 'dev', email: 'dev@example.com', displayName: 'Dev Atleta',
+      role: 'client', avatarUrl: '', level: 0, currentStreak: 0, maxStreak: 0,
+      initialWeight: 0, targetWeight: 0, actualWeight: 0,
+    } as UserProfile;
+    // El muro real es el de UNA página (D1, 29-10); `?clasico=1` enseña el de dos
+    // pasos, que sigue sirviendo a Perfil › Ajustes en modo revisión.
+    const clasico = new URLSearchParams(location.search).get('clasico') === '1';
     return (
       <div className="min-h-screen bg-bg">
         <Suspense fallback={<Splash texto="Un momento..." />}>
-          <AceptacionLegalGate
-            profile={{
-              userId: 'dev', email: 'dev@example.com', displayName: 'Dev Atleta',
-              role: 'client', avatarUrl: '', level: 0, currentStreak: 0, maxStreak: 0,
-              initialWeight: 0, targetWeight: 0, actualWeight: 0,
-            } as UserProfile}
-            guardar={async nuevas => { console.log('guardaría', nuevas); return nuevas; }}
-            onCompletado={legal => console.log('onCompletado', legal)}
-            onSalir={() => console.log('onSalir')}
-          />
+          {!clasico ? (
+            <MuroLegalUnificado
+              profile={perfilDev}
+              guardar={async nuevas => { console.log('guardaría', nuevas); return nuevas; }}
+              onCompletado={legal => console.log('onCompletado', legal)}
+              onSalir={() => console.log('onSalir')}
+            />
+          ) : (
+            <AceptacionLegalGate
+              profile={perfilDev}
+              guardar={async nuevas => { console.log('guardaría', nuevas); return nuevas; }}
+              onCompletado={legal => console.log('onCompletado', legal)}
+              onSalir={() => console.log('onSalir')}
+            />
+          )}
         </Suspense>
       </div>
     );
@@ -1006,7 +1032,9 @@ function AppContent() {
             es un rectángulo negro y vacío mientras baja el chunk — el mismo
             "la app se ha colgado" que se describe arriba, en Splash. */}
         <Suspense fallback={<Splash texto="Un momento..." />}>
-          <AceptacionLegalGate
+          {/* Desde el 29-10 (D1) el muro es de UNA página: los dos textos con sus
+              casillas debajo y la del asistente dentro de Términos, opcional. */}
+          <MuroLegalUnificado
             profile={profile}
             onCompletado={legal => setProfile(p => (p ? { ...p, legal } : p))}
             onSalir={async () => {

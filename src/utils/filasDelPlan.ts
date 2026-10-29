@@ -1,5 +1,5 @@
-import type { DietItem, FoodCategory } from '../types';
-import { addToPlaced } from './exchangeHelpers';
+import type { DietItem, FoodCategory } from '../types.js';
+import { addToPlaced } from './exchangeHelpers.js';
 
 /**
  * Cómo se enseña una comida del plan: un renglón por alimento suelto, y UN solo

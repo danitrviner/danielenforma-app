@@ -1,5 +1,5 @@
-import { CardioZones } from '../types';
-import { ZONE_LABEL, BELOW_ZONE_LABEL, pctOfMaxHR } from './cardioZones';
+import { CardioZones } from '../types.js';
+import { ZONE_LABEL, BELOW_ZONE_LABEL, pctOfMaxHR } from './cardioZones.js';
 
 /* Catálogo de métricas del layout Avanzado (F9 del plan de réplica FITIV,
    §4.7 del análisis). Solo entran las que hoy se pueden calcular sin GPS,

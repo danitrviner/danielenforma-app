@@ -64,9 +64,14 @@ describe('doctrina por defecto', () => {
    comprueba que el número o la regla siguen ahí. Si Dani cambia de criterio,
    este test se actualiza CON él, no se borra. */
 describe('decisiones de Dani que no se pueden perder', () => {
-  it('la proteína va por fase: 0,8-1 en volumen y 1-1,4 en déficit', () => {
-    expect(DOCTRINA_NUTRICION_DEFAULT).toContain('0,8-1 g/kg');
-    expect(DOCTRINA_NUTRICION_DEFAULT).toContain('1-1,4 g/kg');
+  // 28-10-2026: Dani decidió que en proteína manda el alta (2 g/kg). El
+  // criterio anterior (0,8-1 g/kg) contradecía al cálculo del alta y a lo que
+  // él mismo aprobaba, y el validador (revisarObjetivoNutricional) ahora
+  // rechaza por debajo de 1,2 g/kg.
+  it('la proteína va a 1,6-2,2 g/kg, con 2,0-2,4 en déficit profundo', () => {
+    expect(DOCTRINA_NUTRICION_DEFAULT).toContain('1,6-2,2 g/kg');
+    expect(DOCTRINA_NUTRICION_DEFAULT).toContain('2,0-2,4 g/kg');
+    expect(DOCTRINA_NUTRICION_DEFAULT).not.toContain('0,8-1 g/kg');
   });
 
   it('la dieta parte de lo que el atleta ya come, y el giro hacia comida vegetal se propone, no se aplica solo', () => {

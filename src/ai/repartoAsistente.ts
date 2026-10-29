@@ -1,7 +1,7 @@
-import { MUSCLE_LABELS, MUSCLE_ORDER, type MuscleGroup, type RepartoPropio, type Mesocycle } from '../types';
-import { DESCANSO } from '../utils/trainingSplits';
-import { calcularRepartos, evaluarRepartoActual, type OpcionDeReparto, type EntradaCalculadora } from '../utils/calculadoraReparto';
-import type { ValidationIssue } from './validators';
+import { MUSCLE_LABELS, MUSCLE_ORDER, type MuscleGroup, type RepartoPropio, type Mesocycle } from '../types.js';
+import { DESCANSO } from '../utils/trainingSplits.js';
+import { calcularRepartos, evaluarRepartoActual, type OpcionDeReparto, type EntradaCalculadora } from '../utils/calculadoraReparto.js';
+import type { ValidationIssue } from './validators.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Repartos para el asistente

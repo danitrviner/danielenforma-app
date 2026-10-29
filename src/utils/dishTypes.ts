@@ -1,5 +1,5 @@
-import { Recipe } from '../types';
-import { normalizeStr } from './foodPrefs';
+import { Recipe } from '../types.js';
+import { normalizeStr } from './foodPrefs.js';
 
 // Heuristic "dish type" classification so the menu can offer variety filters
 // (batidos, tostadas, arroces, pastas…) and stop serving the same kind of meal

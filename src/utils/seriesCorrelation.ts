@@ -6,7 +6,7 @@
 // correlaciones era, en la práctica, inservible. La solución: agregar ambas
 // series a la misma granularidad (normalmente semanal) antes de correlacionar.
 
-import { isoLocal } from './trainingWeek';
+import { isoLocal } from './trainingWeek.js';
 
 export interface DataPoint { date: string; value: number }
 export type Aggregation = 'sum' | 'avg';

@@ -10,7 +10,7 @@
 // que mezcla varios grupos) siguen usando GENERIC_LANDMARK, que reproduce
 // EXACTAMENTE los umbrales antiguos (0 / 1-4 / 5-9 / 10-14 / 15+) — cero
 // cambio de comportamiento visual para esos casos.
-import { VolumeLandmark } from '../data/volumeLandmarks';
+import { VolumeLandmark } from '../data/volumeLandmarks.js';
 
 export type VolumeZone = 'sin_volumen' | 'mev' | 'productivo' | 'mav' | 'mrv';
 

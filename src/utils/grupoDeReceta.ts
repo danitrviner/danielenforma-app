@@ -1,4 +1,4 @@
-import type { Recipe } from '../types';
+import type { Recipe } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Grupo de una receta, para filtrar (Dani, 26-10-2026)

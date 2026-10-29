@@ -1,12 +1,12 @@
 import {
   Mesocycle, WorkoutLog, WorkoutAssignment, Exercise, MuscleGroup,
   MUSCLE_LABELS, MUSCLE_ORDER,
-} from '../types';
-import { buildTrainingReport, TrainingReport } from './trainingReport';
-import { buildMovementPatternReport, PatternPerf } from './movementPatterns';
-import { addDays, hoyIsoLocal, diasEntreFechas } from './trainingWeek';
-import { adherenciaDeMesociclo } from './adherence';
-import { seriesRealizadasPorGrupo } from './programacion';
+} from '../types.js';
+import { buildTrainingReport, TrainingReport } from './trainingReport.js';
+import { buildMovementPatternReport, PatternPerf } from './movementPatterns.js';
+import { addDays, hoyIsoLocal, diasEntreFechas } from './trainingWeek.js';
+import { adherenciaDeMesociclo } from './adherence.js';
+import { seriesRealizadasPorGrupo } from './programacion.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CIERRE DE MESOCICLO — qué pasó de verdad en el bloque que acaba de terminar.

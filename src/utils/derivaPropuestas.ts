@@ -9,8 +9,8 @@
  * con lo que hoy tiene la entidad que salió de ella (`resultEntityId`). No hace
  * falta que Dani escriba nada para que quede constancia de lo que tocó.
  */
-import { AiProposal, Diet, Mesocycle, MuscleGroup, MUSCLE_LABELS, MuscleGroupConfig } from '../types';
-import { objetivoDeDieta } from './macrosLegado';
+import { AiProposal, Diet, Mesocycle, MuscleGroup, MUSCLE_LABELS, MuscleGroupConfig } from '../types.js';
+import { objetivoDeDieta } from './macrosLegado.js';
 
 export interface Deriva {
   proposalId: string;

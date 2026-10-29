@@ -1,8 +1,8 @@
-import { Mesocycle, TaskItem, WorkoutAssignment } from '../types';
-import { PlanEvent } from './planEvents';
-import { mesocycleWeekNumber } from './progression';
-import { esFechaIso } from './trainingWeek';
-import { cicloDiasDeMeso } from './asignacionMesociclo';
+import { Mesocycle, TaskItem, WorkoutAssignment } from '../types.js';
+import { PlanEvent } from './planEvents.js';
+import { mesocycleWeekNumber } from './progression.js';
+import { esFechaIso } from './trainingWeek.js';
+import { cicloDiasDeMeso } from './asignacionMesociclo.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Mover una cosa de un día a otro en el calendario.

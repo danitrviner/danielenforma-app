@@ -1,6 +1,6 @@
-import { MuscleGroup, Questionnaire, QuestionnaireResponse, MUSCLE_ORDER } from '../types';
-import { historialDeSeñal } from './signalReading';
-import { ZONAS_IEM } from './cdg/zonas';
+import { MuscleGroup, Questionnaire, QuestionnaireResponse, MUSCLE_ORDER } from '../types.js';
+import { historialDeSeñal } from './signalReading.js';
+import { ZONAS_IEM } from './cdg/zonas.js';
 
 // DOMS crónico — sin cartas de control (no hay historial suficiente para
 // I-MR), una media simple de las últimas N lecturas por zona. Constantes

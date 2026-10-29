@@ -1,5 +1,5 @@
-import type { QSchedule, Questionnaire, QuestionnaireAssignment, QuestionnairePack, QuestionnairePackItem } from '../types';
-import { PAQUETE_OFICIAL, presetPorTitulo, buildQuestionnaireFromPreset } from '../data/questionnairePresets';
+import type { QSchedule, Questionnaire, QuestionnaireAssignment, QuestionnairePack, QuestionnairePackItem } from '../types.js';
+import { PAQUETE_OFICIAL, presetPorTitulo, buildQuestionnaireFromPreset } from '../data/questionnairePresets.js';
 
 /* Paquete oficial (27-10): lo crea con un toque a partir de las plantillas
    oficiales. Reutiliza los cuestionarios del coach que ya tengan ese título y

@@ -1,4 +1,4 @@
-import { CoachClientTask } from '../types';
+import { CoachClientTask } from '../types.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // AVISOS DEL COACH — las tareas con fecha que Dani se pone a sí mismo.

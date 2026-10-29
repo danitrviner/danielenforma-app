@@ -1,8 +1,8 @@
-import type { Mesocycle, WeekDistribution } from '../types';
-import { repartoDelMesociclo, tiposDeEntrenamiento, gruposPorSesion } from './trainingSplits';
-import { cicloDiasDeMeso, offsetsDelMesociclo } from './asignacionMesociclo';
-import { runDistribution } from './programacion';
-import { buildSnapshot } from './repartoDesactualizado';
+import type { Mesocycle, WeekDistribution } from '../types.js';
+import { repartoDelMesociclo, tiposDeEntrenamiento, gruposPorSesion } from './trainingSplits.js';
+import { cicloDiasDeMeso, offsetsDelMesociclo } from './asignacionMesociclo.js';
+import { runDistribution } from './programacion.js';
+import { buildSnapshot } from './repartoDesactualizado.js';
 
 /**
  * La distribución de un mesociclo tal y como está (reparto, calendario y

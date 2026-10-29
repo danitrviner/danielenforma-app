@@ -1,12 +1,12 @@
-import type { DietCompletionLog, Recipe } from '../types';
-import { dishType, type DishType } from './dishTypes';
-import { normalizarTexto } from './busqueda';
-import { minutosDeReceta } from './tiempoDeReceta';
-import type { Macros } from '../types';
-import { macrosDeReceta, encajaEnLoQueQueda } from './macrosDeReceta';
-import { escalarMacros } from './macros';
-import { violatesDietType } from './foodPrefs';
-import { violatesHealthConditions } from './dietaryRestrictions';
+import type { DietCompletionLog, Recipe } from '../types.js';
+import { dishType, type DishType } from './dishTypes.js';
+import { normalizarTexto } from './busqueda.js';
+import { minutosDeReceta } from './tiempoDeReceta.js';
+import type { Macros } from '../types.js';
+import { macrosDeReceta, encajaEnLoQueQueda } from './macrosDeReceta.js';
+import { escalarMacros } from './macros.js';
+import { violatesDietType } from './foodPrefs.js';
+import { violatesHealthConditions } from './dietaryRestrictions.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Colecciones de la portada «Descubrir» del recetario (10-2026)

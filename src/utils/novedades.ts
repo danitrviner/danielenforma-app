@@ -1,4 +1,4 @@
-import type { Novedad } from '../data/novedades';
+import type { Novedad } from '../data/novedades.js';
 
 /**
  * Las novedades que a este atleta aún no se le han enseñado, de la más

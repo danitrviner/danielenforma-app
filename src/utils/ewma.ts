@@ -1,4 +1,4 @@
-import { DataPoint } from './seriesCorrelation';
+import { DataPoint } from './seriesCorrelation.js';
 
 // Media Móvil Exponencialmente Ponderada — suaviza series de cadencia alta
 // (e1RM por sesión, sueño/estrés semanal) sin el retraso de una media móvil

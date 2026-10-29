@@ -1,4 +1,4 @@
-import { WarmupSet, WorkoutSetLog } from '../../types';
+import { WarmupSet, WorkoutSetLog } from '../../types.js';
 
 // Shape of an in-progress ramp, mutated step by step by the factor pipeline in
 // WarmupEngine.ts before WarmupCalculator.ts turns it into concrete kg/reps.

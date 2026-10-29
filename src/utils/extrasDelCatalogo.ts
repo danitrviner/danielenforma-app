@@ -1,11 +1,11 @@
-import type { DietType, FoodCategory, Macros, MenuComplement } from '../types';
-import { nombreDeAlimento, type AlimentoCatalogo } from './catalogoAlimentos';
+import type { DietType, FoodCategory, Macros, MenuComplement } from '../types.js';
+import { nombreDeAlimento, type AlimentoCatalogo } from './catalogoAlimentos.js';
 import {
   DAIRY_KEYWORDS, FRUIT_KEYWORDS, NUT_KEYWORDS, NUNCA_AUTOMATICO, READY_HC_KEYWORDS,
   labelIncludesAny, nombreVetadoPorCondicion,
-} from './menuComplements';
-import { normalizeStr } from './foodPrefs';
-import { sinNegativos, restarMacros } from './macros';
+} from './menuComplements.js';
+import { normalizeStr } from './foodPrefs.js';
+import { sinNegativos, restarMacros } from './macros.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Extras del catálogo por 100 g (Dani, 28-10-2026)

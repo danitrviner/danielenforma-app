@@ -1,11 +1,11 @@
 import {
   BodyweightLog, WorkoutAssignment, DietCompletionLog, Diet, WeeklyChallenge,
   QuestionnaireResponse, QuestionnaireAssignment, Questionnaire,
-} from '../types';
-import { resolveQuestions } from './questionnaireResolve';
-import { adherenciaPorKcal } from './diaDeDieta';
-import { pesoRepresentativo } from './verificacionObjetivo';
-import { addDays, diasEntreFechas } from './trainingWeek';
+} from '../types.js';
+import { resolveQuestions } from './questionnaireResolve.js';
+import { adherenciaPorKcal } from './diaDeDieta.js';
+import { pesoRepresentativo } from './verificacionObjetivo.js';
+import { addDays, diasEntreFechas } from './trainingWeek.js';
 
 
 // Extra report sections beyond pure training performance (peso corporal,

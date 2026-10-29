@@ -2502,6 +2502,8 @@ export interface MesocycleTemplate {
   stages: TemplateStage[];
   /** Etiquetas para encontrarla (guía del IH: «3 días», «IF bajo», «sin cizalla»…). */
   etiquetas?: string[];
+  /** El bloque se programa por IEM (CDG) en vez de por reparto propio. Lo marca Dani. */
+  cdg?: boolean;
 }
 
 // ─── PENDING TASKS (athlete dashboard) ─────────────────────────────────────────
@@ -2993,7 +2995,16 @@ export interface WorkoutDaysProposalPayload {
 
 export type AiProposalKind = 'diet' | 'mesocycle' | 'checkinFeedback' | 'periodizationBlock' | 'dossier'
   | 'roadmap' | 'nutritionProgram' | 'specialDay' | 'workoutDays' | 'levelLadder'
-  | 'setupConfig' | 'publishBlock' | 'weeklyChallenge' | 'workoutTemplate' | 'mesocycleTemplate' | 'weekPlan';
+  | 'setupConfig' | 'publishBlock' | 'weeklyChallenge' | 'workoutTemplate' | 'mesocycleTemplate' | 'weekPlan'
+  // Lo que el latido diario aplicó solo (sesiones perdidas, dieta de la fase,
+  // niveles): no se aprueba, se ve en «Hecho hoy» y se puede deshacer.
+  | 'latido'
+  // La respuesta del coach a una revisión (cuestionario) del atleta: el canal
+  // vivo desde 10-2026 (131 respuestas en 60 días frente a 1 check-in).
+  | 'respuestaRevision'
+  // Un mensaje del coach al atleta fuera de la revisión (qué cambia esta
+  // semana, perdidas, vuelta de un viaje). Se lee en su Inicio.
+  | 'mensajeAtleta';
 
 /** Programación semana a semana de un mesociclo y/o de la periodización
  *  nutricional, propuesta por el asistente. Los ejercicios ya vienen resueltos
@@ -3009,6 +3020,8 @@ export interface WeekPlanProposalPayload {
     workoutId: string; exerciseId: string; ejercicio: string; semana: number; solo?: boolean;
     sets?: number; reps?: string; rir?: number; restSeconds?: number; bloques?: WorkoutSetGroup[];
   }[];
+  /** Los cambios los calculó el protocolo CDG (propose_progresion_iem): política `progresion_iem`. */
+  origenIem?: boolean;
   nutricion?: {
     /** `gramos` del macro desde 10-2026; `delta` (intercambios) va al lado para binarios viejos. */
     ajustes?: { semana: number; solo?: boolean; slot?: number; cat: MacroAjustable; delta: number; gramos?: number }[];
@@ -3083,7 +3096,28 @@ export interface MesocycleTemplateProposalPayload {
   description?: string;
   stages: MesocycleTemplateStageProposal[];
 }
-export type AiProposalStatus = 'proposed' | 'approved' | 'rejected';
+/** `approved` = Dani la aprobó y la app la aplicó (lo de siempre).
+ *  `aplicada` = la aplicó la máquina bajo su política (automático o con aviso).
+ *  `deshecha` = se restauró el `snapshotAntes`. `caducada` = nadie la decidió
+ *  a tiempo (p. ej. el día del reto ya pasó). */
+export type AiProposalStatus = 'proposed' | 'approved' | 'rejected' | 'aplicada' | 'deshecha' | 'caducada'
+  /** El autopiloto decidió pero NO escribió: se compara con lo que hizo Dani. */
+  | 'sombra';
+
+export type AutorPropuesta = 'asistente' | 'latido' | 'coach';
+export type PoliticaPropuesta = 'automatico' | 'aviso' | 'proponer' | 'sombra';
+
+/** Un documento tal y como estaba ANTES de aplicar la propuesta. `datos: null`
+ *  = no existía (deshacer = borrarlo). Es lo que permite el botón «Deshacer»
+ *  sin tener que adivinar qué había. */
+export interface SnapshotDocumento {
+  coleccion: string;
+  id: string;
+  datos: Record<string, unknown> | null;
+  /** `datos` son solo los campos que se tocaron: deshacer los vuelve a poner
+   *  con un update en vez de reescribir el documento entero. */
+  parcial?: boolean;
+}
 
 // Bloque H2.1 — "la IA propone el bloque entero periodizado". Alcance real:
 // el mesociclo con su semana de descarga (si aplica) más la cadencia de
@@ -3100,7 +3134,34 @@ export interface PeriodizationBlockPayload {
   reviewType: 'revision' | 'cuestionario' | 'foto';
 }
 
+/** Lo que hizo el latido en un atleta un día. Una entrada por acción. */
+export interface LatidoProposalPayload {
+  fecha: string;
+  acciones: { tipo: string; texto: string }[];
+}
+
+/** Lo que el coach le contesta a una revisión (questionnaireResponses.respuestaCoach). */
+export interface RespuestaRevisionProposalPayload {
+  responseId: string;
+  texto: string;
+  /** Fecha de envío de la revisión, para la tarjeta. */
+  submittedAt?: string;
+}
+
+/** Un mensaje del coach al atleta propuesto por el asistente. Al aplicarse se
+ *  escribe en `mensajesCoach` (ver `MensajeCoach`, el canal de 29-10) como
+ *  `aprobado` y firmado: la política o Dani ya lo han decidido. */
+export interface MensajeAtletaProposalPayload {
+  texto: string;
+  /** Por qué se escribe: para agrupar en la bandeja y en la línea de tiempo; se traduce a `TipoMensajeCoach`. */
+  motivo: 'semana_nueva' | 'perdidas' | 'peso_sin_registrar' | 'dolor' | 'viaje' | 'otro';
+  semana?: number;
+}
+
 export type AiProposalPayload =
+  | MensajeAtletaProposalPayload
+  | RespuestaRevisionProposalPayload
+  | LatidoProposalPayload
   | WeekPlanProposalPayload
   | Omit<Diet, 'id'>
   | Omit<Mesocycle, 'id'>
@@ -3147,6 +3208,26 @@ export interface AiProposal {
   resultEntityId?: string; // id de la entidad real creada al aprobar
   createdAt: string;       // ISO
   reviewedAt?: string;     // ISO, al aprobar/rechazar
+  // ── Autopiloto (28-10-2026) ────────────────────────────────────────────────
+  /** Episodio que la generó (`episodios/{id}`); ausente en las del chat. */
+  episodioId?: string;
+  /** Quién la creó. Ausente = `asistente` (las de antes del 28-10). */
+  autor?: AutorPropuesta;
+  /** Con qué política se decidió. Ausente = `proponer` (lo de siempre). */
+  politica?: PoliticaPropuesta;
+  /** Lo que había antes de aplicarla, documento a documento. Se escribe al
+   *  aplicar, venga de Dani o de la máquina. */
+  snapshotAntes?: SnapshotDocumento[];
+  aplicadaEn?: string;     // ISO
+  /** Con política `aviso`: hasta cuándo puede Dani deshacerla sin más. */
+  avisoHasta?: string;     // ISO
+  deshechaEn?: string;     // ISO
+  /** Si se comprobó después lo que el expediente decía esperar. */
+  resultado?: { comprobadoEn: string; cumplioEsperado: boolean | null; nota: string };
+  /** El texto que llegó al atleta, literal, si lo hubo. */
+  paraAtleta?: string;
+  /** Lo que Dani dijo de esta decisión en la auditoría de calidad (§5.4). */
+  calidad?: { veredicto: 'bien' | 'mal' | 'no_vuelvas'; en: string; nota?: string };
 }
 
 // Nota de metodología ingerida desde la bóveda de Obsidian del coach (apuntes

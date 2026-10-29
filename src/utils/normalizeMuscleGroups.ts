@@ -1,4 +1,4 @@
-import { MuscleGroup, MuscleGroupConfig, MUSCLE_ORDER } from '../types';
+import { MuscleGroup, MuscleGroupConfig, MUSCLE_ORDER } from '../types.js';
 
 /* T10 (18-08). `Mesocycle.groups` es un `Record<MuscleGroup, MuscleGroupConfig>`
    y el código lo lee sin comprobar (`groups[g].series` directo, en varios

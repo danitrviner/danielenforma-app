@@ -1,6 +1,6 @@
-import type { BudgetVec, DietItem } from '../types';
-import { exchangesFromMacros } from './exchangeRounding';
-import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
+import type { BudgetVec, DietItem } from '../types.js';
+import { exchangesFromMacros } from './exchangeRounding.js';
+import { GRAMS_PER_EXCHANGE } from './nutritionConstants.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    De un producto con sus macros a líneas de intercambios (D-02)

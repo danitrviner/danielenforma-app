@@ -1,10 +1,10 @@
-import type { UserProfile } from '../types';
-import { updateUserProfile, fusionarConsentimientoIA } from '../dbService';
-import { conTimeout, EscrituraEncolada } from '../db/core';
+import type { UserProfile } from '../types.js';
+import { updateUserProfile, fusionarConsentimientoIA } from '../dbService.js';
+import { conTimeout, EscrituraEncolada } from '../db/core.js';
 import {
   consentimientoIADesdeLegal,
   type AceptacionesLegales,
-} from './aceptacion';
+} from './aceptacion.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Dónde vive la prueba del consentimiento

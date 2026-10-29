@@ -1,8 +1,8 @@
 import type {
   AutoRelleno, BodyweightLog, Exercise, StepLog, WorkoutAssignment, WorkoutLog,
-} from '../types';
-import { ZONAS_IEM, type ZonaIem } from './cdg/zonas';
-import { addDays } from './trainingWeek';
+} from '../types.js';
+import { ZONAS_IEM, type ZonaIem } from './cdg/zonas.js';
+import { addDays } from './trainingWeek.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Lo que la app ya sabe antes de preguntar (cuestionarios, 27-10)

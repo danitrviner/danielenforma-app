@@ -31,14 +31,21 @@ import {
   leerAtletasActivos, leerAsignaciones, leerLogsDeEntreno, leerPesajes, leerPasos,
   leerEjercicios, leerProgramaDeNutricion, leerConfigDeDieta, leerDietas,
   leerRegistrosDeComida, leerRoadmap, leerSesionesDeCardio,
-  marcarSesionPerdida, guardarConfigDeDieta, marcarFaseVista, guardarNivelesConseguidos,
+  marcarSesionPerdida, guardarConfigDeDieta, marcarFaseVista, guardarNivelesConseguidos, leerCheckIns,
   actualizarPeldanos, guardarReto, leerReto, crearAvisoUnaVez, guardarSenales, crearMensajeBorrador,
   leerCuestionariosAsignados, leerRespuestasDeCuestionarios, leerMesociclos,
-  leerRutinas, leerRetos, leerExperiencia,
+  leerRutinas, leerRetos, leerExperiencia, guardarHuellaDelLatido, leerOnboarding, leerCuestionariosDelCoach, crearEpisodioUnaVez,
+  leerMenusDelAtleta, publicarMenu,
 } from './_lib/db-admin.js';
+import { uidDelCoach, leerPoliticaAutopiloto } from './_lib/fuenteAdmin.js';
+import { politicaDeEpisodio, POLITICA_POR_DEFECTO } from '../src/autopiloto/politica.js';
+import { menusQuePublicar, planDePublicacion } from '../src/autopiloto/menuSemanal.js';
+import { detectarEpisodios } from '../src/autopiloto/detectores.js';
+import { detectarEmergentes } from '../src/autopiloto/emergentes.js';
+import { puedeAnalizarseConIA } from '../src/ai/consentimientoIA.js';
 import { recordatoriosDeRevision } from '../src/utils/recordatoriosRevision.js';
 import { calcularSenales, senalesIguales } from '../src/utils/senalesDelAtleta.js';
-import { planificarLatido } from '../src/utils/latidoDiario.js';
+import { planificarLatido, huellaDelLatido, ID_HUELLA_LATIDO } from '../src/utils/latidoDiario.js';
 import { ejecutarRetoSemanal, type AlmacenDeRetos } from '../src/utils/motorRetoSemanal.js';
 import { DEFAULT_LEVEL_LADDER } from '../src/data/defaultLevelLadder.js';
 import { addDays, diasEntreFechas, getWeekStart } from '../src/utils/trainingWeek.js';
@@ -130,6 +137,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  // Las plantillas de cuestionario son las mismas para todos: una lectura.
+  // Sin ellas los episodios se encolan igual, solo sin las alertas del motor.
+  let plantillas: Awaited<ReturnType<typeof leerCuestionariosDelCoach>> = [];
+  try { plantillas = await leerCuestionariosDelCoach(db, await uidDelCoach(db)); } catch (err) { console.warn('latido-diario: sin plantillas de cuestionario', err); }
+  // La política del autopiloto (coachSettings/autopiloto): con qué política se
+  // encolan los episodios y qué se hace con los menús. Sin documento, sombra.
+  let politica = POLITICA_POR_DEFECTO;
+  try { politica = await leerPoliticaAutopiloto(db); } catch (err) { console.warn('latido-diario: sin política del autopiloto, se usa sombra', err); }
+
   const resumen: ResumenDeAtleta[] = [];
 
   for (const perfil of atletas) {
@@ -167,6 +183,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
         { hoy, coachEmail: COACH_EMAIL },
       );
+
+      // La huella de lo que se va a hacer, con el snapshot de ANTES, se escribe
+      // primero: si una escritura falla a mitad, lo que ya cambió sigue
+      // teniendo su «antes» guardado para deshacerlo desde la bandeja.
+      const huella = huellaDelLatido(
+        { profile: perfil, assignments, workoutLogs, bodyweightLogs, stepLogs, exercises, nutritionProgram, dietConfig, roadmap },
+        acciones, lineas, hoy, new Date().toISOString(),
+      );
+      if (!enSeco && huella) await guardarHuellaDelLatido(db, ID_HUELLA_LATIDO(email, hoy), huella);
 
       if (!enSeco) {
         for (const accion of acciones) {
@@ -263,7 +288,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!enSeco) for (const r of avisos) await crearAvisoUnaVez(db, r.dedupeKey, r.notificacion);
         if (avisos.length > 0) hecho.push(`recordatorio de revisión: ${avisos.length}`);
 
-        // ── 4. Señales de acompañamiento (28-10) ───────────────────────────
+        // ── 4. El autopiloto: detectar y ENCOLAR (28-10) ──────────────────
+        // El latido no llama al modelo. Deja episodios en `episodios/*` y los
+        // consume api/autopiloto.ts. Solo atletas con consentimiento aceptado;
+        // en modo sombra hasta que Dani suba la política (tanda 4).
+        const onboarding = await leerOnboarding(db, email);
+        const episodios = detectarEpisodios({
+          email, hoy, ahora: new Date().toISOString(),
+          consentimiento: puedeAnalizarseConIA(onboarding),
+          politica: politicaDeEpisodio(politica),
+          respuestas, plantillas, asignaciones: cuestionarios, mesociclos,
+          onboardingCompletado: !!onboarding?.completedAt, planStartDate: perfil.planStartDate, planDurationMonths: perfil.planDurationMonths,
+        });
+        // Emergentes (tanda 6): dolor, perdidas, peso sin registrar, desvíos,
+        // nota libre, bienestar. Misma foto que ya está leída + los check-ins.
+        const checkins = await leerCheckIns(db, perfil.userId, addDays(hoy, -3));
+        episodios.push(...detectarEmergentes({
+          email, hoy, ahora: new Date().toISOString(), consentimiento: puedeAnalizarseConIA(onboarding), politica: politicaDeEpisodio(politica),
+          asignaciones: assignments, logs: workoutLogs, pesajes: bodyweightLogs, registros: registrosDeComida, dietas, programa: nutritionProgram,
+          respuestas, plantillas, checkins, alta: onboarding,
+        }));
+        let encolados = 0;
+        if (!enSeco) for (const ep of episodios) { if (await crearEpisodioUnaVez(db, ep)) encolados++; }
+        if (episodios.length > 0) hecho.push(`episodios: ${enSeco ? episodios.length : encolados} encolados`);
+
+        // ── 5. El menú de la semana: borrador 24 h y luego solo (28-10) ────
+        // El borrador lo genera la app del coach al abrir Inicio; aquí se
+        // publica cuando lleva un día sin que Dani lo toque, según la política.
+        const menus = await leerMenusDelAtleta(db, email);
+        const ahoraIso = new Date().toISOString();
+        for (const menu of menusQuePublicar(menus, politica, ahoraIso)) {
+          if (!enSeco) {
+            const plan = planDePublicacion(menu, menus, ahoraIso);
+            await guardarHuellaDelLatido(db, `latido_menu_${email}_${hoy}`, {
+              athleteId: email, kind: 'latido', status: 'aplicada', chatId: 'latido',
+              summary: `Menú de la semana ${menu.semanaPrograma ?? '?'} publicado (${politica.menuAutomatico === 'publicar' ? 'publicación directa' : '24 h sin cambios'})`,
+              rationale: 'El borrador lo generó la app con la dieta de la semana; la política del autopiloto lo publica si Dani no lo toca.',
+              payload: { fecha: hoy, acciones: [{ tipo: 'publicar_menu', texto: `Menú ${menu.id} publicado` }] },
+              cambios: [`Menú «${menu.name}»: borrador → publicado`],
+              autor: 'latido', politica: 'automatico',
+              snapshotAntes: [
+                { coleccion: 'weeklyMenus', id: menu.id, datos: { status: 'draft', publishedAt: null }, parcial: true },
+                ...plan.archivar.map(id => ({ coleccion: 'weeklyMenus', id, datos: { status: 'published' }, parcial: true })),
+              ],
+              createdAt: ahoraIso, aplicadaEn: ahoraIso,
+            });
+            await publicarMenu(db, plan);
+          }
+          hecho.push(`menú semana ${menu.semanaPrograma ?? '?'} publicado`);
+        }
+
+        // ── 6. Señales de acompañamiento (28-10) ───────────────────────────
         // Lo que la bandeja del coach necesita para ver quién se está
         // apagando, calculado aquí con lo que ya se ha leído y guardado en el
         // perfil solo si cambia. `respuestas` lleva 21 días: de sobra para la

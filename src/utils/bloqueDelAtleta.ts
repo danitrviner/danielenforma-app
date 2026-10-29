@@ -1,8 +1,8 @@
-import type { Mesocycle, Workout, WorkoutAssignment } from '../types';
-import { bloquesDelCiclo, bloqueActual, type BloqueDelCiclo } from './cicloDelAtleta';
-import { cicloDiasDeMeso } from './asignacionMesociclo';
-import { vueltasDelCiclo } from './progression';
-import { addDays, esFechaIso } from './trainingWeek';
+import type { Mesocycle, Workout, WorkoutAssignment } from '../types.js';
+import { bloquesDelCiclo, bloqueActual, type BloqueDelCiclo } from './cicloDelAtleta.js';
+import { cicloDiasDeMeso } from './asignacionMesociclo.js';
+import { vueltasDelCiclo } from './progression.js';
+import { addDays, esFechaIso } from './trainingWeek.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Qué bloque está viendo el atleta — contado desde el lado del coach

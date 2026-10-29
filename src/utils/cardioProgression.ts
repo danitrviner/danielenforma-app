@@ -1,4 +1,4 @@
-import { CardioAssignment, CardioIntervalBlock, CardioProgram, CardioSession, CardioZones } from '../types';
+import { CardioAssignment, CardioIntervalBlock, CardioProgram, CardioSession, CardioZones } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Progresión de cardio — Zona 2 y VO₂máx

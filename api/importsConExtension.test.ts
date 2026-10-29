@@ -54,7 +54,11 @@ describe('imports de todo lo que corre como función de Vercel', () => {
       if (vistos.has(fichero)) continue;
       vistos.add(fichero);
 
-      const texto = readFileSync(fichero, 'utf8');
+      // Los `import type` / `export type … from` se borran al compilar: no
+      // existen en tiempo de ejecución, así que ni se exige extensión ni se
+      // sigue el grafo por ellos (un tipo de un componente .tsx no arrastra
+      // React al servidor).
+      const texto = readFileSync(fichero, 'utf8').replace(/\b(?:import|export)\s+type\s+[^;]*?from\s+['"][^'"]+['"];?/g, '');
       for (const m of texto.matchAll(IMPORT_RELATIVO)) {
         const destino = resolverImport(fichero, m[1]);
         if (destino) pendientes.push(destino);

@@ -1,7 +1,7 @@
-import { WorkoutLog } from '../types';
-import { rmDeSerie } from './oneRepMax';
-import { DataPoint } from './seriesCorrelation';
-import { computeEWMA } from './ewma';
+import { WorkoutLog } from '../types.js';
+import { rmDeSerie } from './oneRepMax.js';
+import { DataPoint } from './seriesCorrelation.js';
+import { computeEWMA } from './ewma.js';
 
 /**
  * Curva EWMA del mejor e1RM por sesión de un ejercicio — para no leer un mal

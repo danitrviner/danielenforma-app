@@ -1,6 +1,6 @@
-import type { CardioAplazo, CardioAssignment } from '../types';
-import { addDays, fechaCorta } from './trainingWeek';
-import { protocoloVo2max } from './cardioProgression';
+import type { CardioAplazo, CardioAssignment } from '../types.js';
+import { addDays, fechaCorta } from './trainingWeek.js';
+import { protocoloVo2max } from './cardioProgression.js';
 
 /** El día siguiente a `hoy` (YYYY-MM-DD). */
 export function mananaDe(hoy: string): string {

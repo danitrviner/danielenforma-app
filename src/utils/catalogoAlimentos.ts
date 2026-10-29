@@ -1,5 +1,5 @@
-import { normalizarTexto } from './busqueda';
-import type { OffProducto } from './productoOff';
+import { normalizarTexto } from './busqueda.js';
+import type { OffProducto } from './productoOff.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Catálogo de alimentos por 100 g (N-04)

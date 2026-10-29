@@ -1,9 +1,9 @@
 // Franjas de las comidas (1 Desayuno … 5 Cena) y sus nombres. Hasta 10-2026
 // aquí vivía también el reparto de intercambios por comida; desde que solo
 // cuenta el objetivo del día, no hay nada que repartir.
-import { HungerProfile } from '../types';
-import { normalizeStr } from './foodPrefs';
-import { FALLBACK_SLOTS, CONTEOS_COMIDAS, ConteoComidas } from './menuEngine';
+import { HungerProfile } from '../types.js';
+import { normalizeStr } from './foodPrefs.js';
+import { FALLBACK_SLOTS, CONTEOS_COMIDAS, ConteoComidas } from './menuEngine.js';
 
 export const SLOT_LABEL: Record<number, string> = { 1: 'Desayuno', 2: 'Media mañana', 3: 'Comida', 4: 'Merienda', 5: 'Cena' };
 export const HUNGER_PROFILE_LABEL: Record<HungerProfile, string> = {

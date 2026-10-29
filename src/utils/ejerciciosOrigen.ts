@@ -1,5 +1,5 @@
 import origen from '../data/ejerciciosOrigen.json';
-import { Exercise, MuscleGroup } from '../types';
+import { Exercise, MuscleGroup } from '../types.js';
 
 // Nombre original en inglés y categoría de origen de los 1.681 ejercicios
 // importados del banco de vídeos, indexados por su ID de Firestore. Ver

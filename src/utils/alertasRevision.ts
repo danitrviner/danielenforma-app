@@ -1,5 +1,5 @@
-import type { QuestionnaireQuestion, QuestionnaireResponse } from '../types';
-import { ZONA_POR_CLAVE, esZonaIem } from './cdg/zonas';
+import type { QuestionnaireQuestion, QuestionnaireResponse } from '../types.js';
+import { ZONA_POR_CLAVE, esZonaIem } from './cdg/zonas.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Alertas de una revisión (27-10)

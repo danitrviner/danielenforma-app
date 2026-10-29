@@ -1,4 +1,4 @@
-import { WorkoutLog } from '../types';
+import { WorkoutLog } from '../types.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
 
 const WINDOW_DAYS = 28; // misma ventana que computeAdherenceScore (adherence.ts)

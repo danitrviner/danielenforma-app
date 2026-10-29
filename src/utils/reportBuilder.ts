@@ -2,18 +2,18 @@ import {
   CoachReport, CoachReportSection, WorkoutLog, Exercise, Mesocycle,
   BodyweightLog, WorkoutAssignment, DietCompletionLog, Diet, WeeklyChallenge,
   QuestionnaireResponse, QuestionnaireAssignment, Questionnaire,
-} from '../types';
-import { buildTrainingReport, resolveWindows, ComparisonMode, ExercisePerf, MuscleGroupPerf } from './trainingReport';
+} from '../types.js';
+import { buildTrainingReport, resolveWindows, ComparisonMode, ExercisePerf, MuscleGroupPerf } from './trainingReport.js';
 import {
   computeBodyweightSection, computeAdherenceSection, computeNutritionSection, computeChallengesSection,
   computeWellnessSection,
   BodyweightSectionData, AdherenceSectionData, NutritionSectionData, ChallengesSectionData, WellnessSectionData,
-} from './reportExtras';
-import { buildNarrativeIntro } from './reportNarrative';
+} from './reportExtras.js';
+import { buildNarrativeIntro } from './reportNarrative.js';
 
 export type {
   BodyweightSectionData, AdherenceSectionData, NutritionSectionData, ChallengesSectionData, WellnessSectionData,
-} from './reportExtras';
+} from './reportExtras.js';
 
 // Assembles a draft CoachReport from the deterministic engines. The coach then
 // edits title/intro, toggles sections and adds notes before sending. Section

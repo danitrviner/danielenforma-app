@@ -1,6 +1,6 @@
 import {
-  AppNotification, AthleteDietConfig, BodyweightLog, Exercise, LevelLadder, MensajeCoach,
-  NutritionProgram, Roadmap, StepLog, UserProfile, WorkoutAssignment, WorkoutLog,
+  AiProposal, AppNotification, AthleteDietConfig, BodyweightLog, Exercise, LevelLadder, MensajeCoach,
+  NutritionProgram, Roadmap, SnapshotDocumento, StepLog, UserProfile, WorkoutAssignment, WorkoutLog,
 } from '../types.js';
 import { addDays } from './trainingWeek.js';
 import { conEstadoReal } from './estadoDeAsignacion.js';
@@ -197,4 +197,83 @@ export function planificarLatido(
   }
 
   return { acciones, resumen };
+}
+
+/* ── La huella de lo que hizo el latido (28-10-2026) ────────────────────────
+   Hasta ahora el latido escribía en los documentos del atleta y lo único que
+   quedaba era un recuento sin nombres en `latidos/{fecha}`. Dani no tenía
+   dónde ver «a Marco le marqué dos sesiones perdidas y le activé la dieta de
+   la fase 2», ni forma de deshacerlo. Ahora cada atleta con acciones deja UNA
+   propuesta ya aplicada (`kind: 'latido'`, `autor: 'latido'`) con el snapshot
+   de cómo estaba cada documento antes: sale en «Hecho hoy» y se puede deshacer.
+
+   Idempotente por construcción: el id es `latido_{email}_{fecha}` y el latido
+   lo escribe con `set`, así que dos pasadas el mismo día dejan un documento. */
+
+export const ID_HUELLA_LATIDO = (email: string, fecha: string) => `latido_${email}_${fecha}`;
+
+export function huellaDelLatido(
+  foto: FotoDelAtleta, acciones: AccionDelLatido[], resumen: string[], hoy: string, ahora: string,
+): Omit<AiProposal, 'id'> | null {
+  const conEfecto = acciones.filter(a => a.tipo !== 'aviso');
+  if (conEfecto.length === 0) return null;
+  const email = foto.profile.email;
+  const snapshot: SnapshotDocumento[] = [];
+  const vistos = new Set<string>();
+  const foto1 = (coleccion: string, id: string, datos: Record<string, unknown> | null, parcial = true) => {
+    const clave = `${coleccion}/${id}`;
+    if (vistos.has(clave)) return;
+    vistos.add(clave);
+    snapshot.push({ coleccion, id, datos, ...(parcial ? { parcial: true } : {}) });
+  };
+  const textos: { tipo: string; texto: string }[] = [];
+  for (const a of conEfecto) {
+    switch (a.tipo) {
+      case 'marcar_sesion_perdida': {
+        const antes = foto.assignments.find(x => x.id === a.assignmentId);
+        foto1('workoutAssignments', a.assignmentId, { status: antes?.status ?? 'pending' });
+        textos.push({ tipo: a.tipo, texto: `Sesión del ${a.fecha} dada por perdida` });
+        break;
+      }
+      case 'activar_dieta': {
+        const cfg = foto.dietConfig;
+        if (cfg) {
+          const { athleteId: _a, ...resto } = cfg;
+          foto1('athleteDietConfigs', email, resto as Record<string, unknown>, false);
+        } else {
+          foto1('athleteDietConfigs', email, null, false);
+        }
+        textos.push({ tipo: a.tipo, texto: `Dieta activa de la fase → ${a.activeDietIds.join(', ')}` });
+        break;
+      }
+      case 'marcar_fase_vista':
+        foto1('nutritionPrograms', email, { lastSeenPhaseId: foto.nutritionProgram?.lastSeenPhaseId ?? null });
+        textos.push({ tipo: a.tipo, texto: 'Fase de nutrición nueva anunciada' });
+        break;
+      case 'guardar_niveles':
+        foto1('roadmaps', email, { levelLadder: foto.roadmap?.levelLadder ?? null });
+        textos.push({ tipo: a.tipo, texto: `Nivel conseguido: ${Object.keys(a.achievedLevelIds).length} peldaños` });
+        break;
+      case 'actualizar_peldanos':
+        foto1('user_profiles', a.userId, { level: foto.profile.level ?? null });
+        textos.push({ tipo: a.tipo, texto: `Peldaños del perfil → ${a.peldanos}` });
+        break;
+    }
+  }
+  const summary = resumen.length ? resumen.join(' · ') : textos.map(t => t.texto).join(' · ');
+  return {
+    athleteId: email,
+    kind: 'latido',
+    status: 'aplicada',
+    chatId: 'latido',
+    summary,
+    rationale: 'Reglas fijas del latido diario: sesiones pendientes de más de 7 días, dieta de la fase que toca, niveles alcanzados.',
+    payload: { fecha: hoy, acciones: textos },
+    cambios: resumen,
+    autor: 'latido',
+    politica: 'automatico',
+    snapshotAntes: snapshot,
+    createdAt: ahora,
+    aplicadaEn: ahora,
+  };
 }

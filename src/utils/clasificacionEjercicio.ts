@@ -1,4 +1,4 @@
-import { MUSCLE_LABELS, MUSCLE_ORDER, type MuscleGroup } from '../types';
+import { MUSCLE_LABELS, MUSCLE_ORDER, type MuscleGroup } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Clasificación muscular de un ejercicio (E-04)

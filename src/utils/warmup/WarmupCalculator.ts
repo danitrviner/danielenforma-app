@@ -1,5 +1,5 @@
-import { WarmupSet } from '../../types';
-import { RampParams } from './types';
+import { WarmupSet } from '../../types.js';
+import { RampParams } from './types.js';
 
 function roundToIncrement(weight: number, incrementKg: number): number {
   return Math.round(weight / incrementKg) * incrementKg;

@@ -5,7 +5,7 @@
  * plantilla CDG, por músculo (33) y por grupo compuesto, con la misma fórmula
  * que la hoja. «IEA» queda reservado al estrés ARTICULAR.
  */
-import type { WorkoutLog } from '../../types'
+import type { WorkoutLog } from '../../types.js'
 import { COMPUESTOS, iemCompuesto, type MotorCdg } from './motor.js'
 import { semanaRealizadaDesdeLogs, type NombreCdgDe } from './adaptadores.js'
 import { calcularSemana } from './seguimiento.js'

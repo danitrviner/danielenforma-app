@@ -18,6 +18,7 @@ import { addDays, hoyIsoLocal } from '../utils/trainingWeek';
 import { revisarMenusAutomaticos } from '../services/menuSemanalAutomatico';
 import { auth } from '../firebase';
 import { ActionRow as ActionRowPrimitive, EmptyState, Icon } from './ui';
+import HechoHoy from './HechoHoy';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HomeCoachScreen (F3.13a, "Home Coach" del handoff transversal)
@@ -248,6 +249,7 @@ export default function HomeCoachScreen({ athletes, coachId, checkins, assignmen
   if (senales.length === 0) {
     return (
       <section className="space-y-4">
+        <HechoHoy athletes={athletes} />
         {panelCard}
         <EmptyState
           icon="check"
@@ -261,6 +263,10 @@ export default function HomeCoachScreen({ athletes, coachId, checkins, assignmen
 
   return (
     <section className="space-y-4">
+      {/* Lo que la máquina (o tú) aplicó en las últimas 24 h, con deshacer.
+          Va antes que las señales porque es lo que ya pasó sin que lo pidieras. */}
+      <HechoHoy athletes={athletes} />
+
       {panelCard}
 
       {/* La cola de WhatsApp del día (tanda 7): todo lo que hay que mandar, junto. */}

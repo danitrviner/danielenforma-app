@@ -1,9 +1,9 @@
-import type { AthleteDietConfig, Diet, NutritionProgram, WeekDay } from '../types';
-import { computeActivePhase } from './fasesNutricion';
-import { dietaDeLaSemana, diaDeLaSemana, kcalDeDieta, macrosDeCupo } from './semanasNutricion';
-import { addDays } from './trainingWeek';
-import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
-import { objetivoDeDieta } from './macrosLegado';
+import type { AthleteDietConfig, Diet, NutritionProgram, WeekDay } from '../types.js';
+import { computeActivePhase } from './fasesNutricion.js';
+import { dietaDeLaSemana, diaDeLaSemana, kcalDeDieta, macrosDeCupo } from './semanasNutricion.js';
+import { addDays } from './trainingWeek.js';
+import { GRAMS_PER_EXCHANGE } from './nutritionConstants.js';
+import { objetivoDeDieta } from './macrosLegado.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    EL OBJETIVO DEL DÍA — una sola respuesta a «¿qué le toca comer hoy a este

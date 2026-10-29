@@ -1,4 +1,4 @@
-import { WorkoutTechnique } from '../types';
+import { WorkoutTechnique } from '../types.js';
 
 // Emoji instead of material-symbols so la insignia siempre se ve, sin
 // depender de que la fuente de iconos haya cargado ya (mismo patrón que la

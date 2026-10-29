@@ -1,6 +1,6 @@
-import { PhotoAssignment, ProgressPhoto } from '../types';
-import { todayStr, isDueToday, isUpcoming } from './scheduleEngine';
-import { addDays } from './trainingWeek';
+import { PhotoAssignment, ProgressPhoto } from '../types.js';
+import { todayStr, isDueToday, isUpcoming } from './scheduleEngine.js';
+import { addDays } from './trainingWeek.js';
 
 // Same "is this recurring photo check-in due, has the athlete already covered
 // this occurrence" pattern as questionnaireSchedule.ts, but checking uploaded

@@ -1,7 +1,7 @@
-import { Diet } from '../types';
+import { Diet } from '../types.js';
 import {
   MicroKey, MICRO_KEYS, MICRO_META, VEG_SERVING_PER100, VEG_SERVING_GRAMS, VEGETABLES, matchCanonical,
-} from '../data/micronutrients';
+} from '../data/micronutrients.js';
 
 // Deterministic micronutrient ESTIMATE for an exchange-based diet. Because the
 // diet only records counted exchanges (vegetables are "libre"/uncounted but are

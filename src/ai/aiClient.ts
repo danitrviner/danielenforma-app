@@ -7,13 +7,14 @@
 // token a token en vez de esperar la respuesta completa, y el turno se puede
 // cancelar a mitad de camino con el `signal` que pasa AiChatPanel (botón
 // «Detener»).
-import { auth } from '../firebase';
-import { AiChatMessage, AiContentBlock, AiTextBlock, AiThinkingBlock, AiToolUseBlock } from '../types';
-import { SYSTEM_PROMPT, buildContextSuffix } from './systemPrompt';
-import { buildDoctrinaBlock } from './doctrina';
-import { TOOL_DEFINITIONS, executeTool, toolStatusLabel } from './tools';
-import { cierreDeToolUse } from './historial';
-import { apiUrl } from '../db/apiBase';
+import { auth } from '../firebase.js';
+import { AiChatMessage, AiContentBlock, AiTextBlock, AiThinkingBlock, AiToolUseBlock } from '../types.js';
+import { SYSTEM_PROMPT, buildContextSuffix } from './systemPrompt.js';
+import { buildDoctrinaBlock } from './doctrina.js';
+import { TOOL_DEFINITIONS, executeTool, toolStatusLabel } from './tools.js';
+import { cierreDeToolUse } from './historial.js';
+import { CACHE_1H, conMarcaDeCacheAlFinal } from './cache.js';
+import { apiUrl } from '../db/apiBase.js';
 
 // VITE_AI_PROXY_URL sigue teniendo prioridad (dev contra un despliegue
 // concreto). Sin ella, `apiUrl` decide: ruta relativa en web, y absoluta a
@@ -364,31 +365,8 @@ export async function probarConexionProxy(): Promise<DiagnosticoConexion> {
   return resultado;
 }
 
-const CACHE_1H = { type: 'ephemeral', ttl: '1h' } as const;
-
-/** El historial con una marca de caché en el último bloque del último mensaje.
- *
- *  Sin esto solo se cacheaba el prompt de sistema, y cada ronda de tools
- *  reenviaba TODO el historial (brief, resultados anteriores, propuestas) como
- *  entrada normal: en un chat de 31 llamadas, 1,47 millones de tokens sin
- *  caché frente a 0,74 leídos de ella. La marca va en el último mensaje `user`
- *  (el texto de Dani o los tool_results de la ronda anterior) y avanza con
- *  cada ronda, así que cada llamada solo paga de nuevo lo que ha cambiado desde
- *  la anterior.
- *
- *  Se marca en una COPIA: el historial que se guarda en Firestore no lleva la
- *  marca (la API admite cuatro como máximo por petición, y un chat de treinta
- *  mensajes acumularía treinta). TTL de 5 minutos, que es el que hay entre dos
- *  rondas de un mismo turno; las entradas de 1h (el sistema) van antes, como
- *  exige la API. */
-export function conMarcaDeCacheAlFinal(messages: AiChatMessage[]): AiChatMessage[] {
-  const ultimo = messages[messages.length - 1];
-  if (!ultimo || ultimo.role !== 'user' || ultimo.content.length === 0) return messages;
-  const content = ultimo.content.map((bloque, i) =>
-    i === ultimo.content.length - 1 ? { ...bloque, cache_control: { type: 'ephemeral' } } : bloque,
-  );
-  return [...messages.slice(0, -1), { ...ultimo, content: content as AiChatMessage['content'] }];
-}
+// Las marcas de caché viven en ./cache.ts (compartidas con el servidor).
+export { conMarcaDeCacheAlFinal } from './cache.js';
 
 export async function runAgentTurn(
   history: AiChatMessage[],

@@ -1,4 +1,4 @@
-import type { Exercise } from '../types';
+import type { Exercise } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Atributos de ejercicio y cuándo se pueden filtrar por ellos (E-03)

@@ -9,7 +9,7 @@
  * sin pasar del objetivo de Volumen. No se guarda: cada semana se vuelve a
  * proponer con lo que haya pasado de verdad.
  */
-import type { WorkoutExercise, WorkoutLog } from '../../types'
+import type { WorkoutExercise, WorkoutLog } from '../../types.js'
 import type { MotorCdg } from './motor.js'
 import type { NombreCdgDe } from './adaptadores.js'
 import type { ZonaIem } from './zonas.js'

@@ -1,7 +1,7 @@
-import type { Mesocycle, Workout, WorkoutAssignment } from '../types';
-import { mesocycleWeekNumber } from './progression';
-import { cicloDiasDeMeso } from './asignacionMesociclo';
-import { addDays, getWeekStart } from './trainingWeek';
+import type { Mesocycle, Workout, WorkoutAssignment } from '../types.js';
+import { mesocycleWeekNumber } from './progression.js';
+import { cicloDiasDeMeso } from './asignacionMesociclo.js';
+import { addDays, getWeekStart } from './trainingWeek.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El microciclo del atleta: qué sesiones ve y en qué orden

@@ -1,5 +1,5 @@
-import type { DietItem, DietMeal } from '../types';
-import { resumenDelDia } from './resumenDelDia';
+import type { DietItem, DietMeal } from '../types.js';
+import { resumenDelDia } from './resumenDelDia.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El Diario en modo «Calorías y macros» (Dani, 25-10-2026)

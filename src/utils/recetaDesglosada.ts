@@ -1,14 +1,14 @@
-import type { DietItem, DietMode, Recipe } from '../types';
-import type { AlimentoCatalogo } from './catalogoAlimentos';
-import { nombreDeAlimento } from './catalogoAlimentos';
-import { itemsDeProducto } from './productoAIntercambios';
-import { recipeToDietItems, ALL_DIET_MODES } from './exchangeHelpers';
-import { emparejarRevisado, esIngredienteQueNoCuenta } from './recetaVinculada';
-import { parseBaseGrams } from './conversionNutricional';
-import { macrosDeReceta } from './macrosDeReceta';
-import { kcalDeGramos } from './macros';
-import { alimentoGeneral } from './alimentosGenerales';
-import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
+import type { DietItem, DietMode, Recipe } from '../types.js';
+import type { AlimentoCatalogo } from './catalogoAlimentos.js';
+import { nombreDeAlimento } from './catalogoAlimentos.js';
+import { itemsDeProducto } from './productoAIntercambios.js';
+import { recipeToDietItems, ALL_DIET_MODES } from './exchangeHelpers.js';
+import { emparejarRevisado, esIngredienteQueNoCuenta } from './recetaVinculada.js';
+import { parseBaseGrams } from './conversionNutricional.js';
+import { macrosDeReceta } from './macrosDeReceta.js';
+import { kcalDeGramos } from './macros.js';
+import { alimentoGeneral } from './alimentosGenerales.js';
+import { SYSTEM_FOODS } from '../nutricion_seed_en_forma.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Una receta apuntada ingrediente a ingrediente (modo «Calorías y macros»)

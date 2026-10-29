@@ -1,4 +1,4 @@
-import { WorkoutAssignment, WeightCheckIn } from '../types';
+import { WorkoutAssignment, WeightCheckIn } from '../types.js';
 
 const ADVAL: Record<string, number> = { 'Sí': 1, 'Parcial': 0.5, 'No': 0 };
 

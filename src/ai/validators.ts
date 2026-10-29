@@ -2,12 +2,12 @@
 // Si algo no cuadra, el ejecutor de la tool devuelve estos issues como
 // tool_result de error para que el modelo se autocorrija — nunca llega una
 // propuesta rota a la tarjeta de revisión de Dani.
-import { FoodCategory, DietItem, Macros, MealItem, MuscleGroup, MUSCLE_LABELS } from '../types';
-import { CATS, BUDGET_CATS } from '../utils/exchangeHelpers';
-import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
-import { parseBaseGrams } from '../utils/conversionNutricional';
-import { macrosDesdeGramos, redondearMacros } from '../utils/macros';
-import { macrosDeLineas, objetivoDeDieta } from '../utils/macrosLegado';
+import { FoodCategory, DietItem, Macros, MealItem, MuscleGroup, MUSCLE_LABELS } from '../types.js';
+import { CATS, BUDGET_CATS } from '../utils/exchangeHelpers.js';
+import { SYSTEM_FOODS } from '../nutricion_seed_en_forma.js';
+import { parseBaseGrams } from '../utils/conversionNutricional.js';
+import { macrosDesdeGramos, redondearMacros } from '../utils/macros.js';
+import { macrosDeLineas, objetivoDeDieta } from '../utils/macrosLegado.js';
 
 export interface ValidationIssue { field: string; message: string }
 
@@ -215,6 +215,29 @@ export interface MesocycleProposalPayload {
   daysPerWeek: number;
   objective: string;
   groups: Partial<Record<MuscleGroup, { series: number; priority?: 'alta' | 'media' | 'baja' }>>;
+}
+
+/** El bloque estándar de Dani (doctrina §11). Si el asistente no dice semanas,
+ *  son estas; en septiembre proponía 4-8 y Dani alargaba a 12 en 6 de 12. */
+export const SEMANAS_POR_DEFECTO = 12;
+/** Por debajo de esto el bloque es raro y hay que justificarlo. */
+export const SEMANAS_MINIMAS_SIN_AVISO = 8;
+
+/**
+ * Avisos de un mesociclo que PASA la validación: no bloquean la propuesta,
+ * vuelven al modelo en el resultado para que diga por qué, y Dani los ve en el
+ * `rationale`. Es la diferencia entre «rechazado» y «raro».
+ */
+export function avisosDeMesociclo(payload: MesocycleProposalPayload): string[] {
+  const avisos: string[] = [];
+  if (Number.isInteger(payload.weeks) && payload.weeks < SEMANAS_MINIMAS_SIN_AVISO) {
+    avisos.push(`Bloque de ${payload.weeks} semanas: el estándar de Dani son ${SEMANAS_POR_DEFECTO} (doctrina §11) y en septiembre alargó a 12 seis bloques cortos. Si es corto a propósito, dilo en rationale.`);
+  }
+  const conSeries = Object.entries(payload.groups ?? {}).filter(([, g]) => (g?.series ?? 0) > 0).length;
+  if (conSeries >= 14) {
+    avisos.push(`${conSeries} grupos con series: Dani suele trabajar 9-10 y deja a cero deltoide anterior y posterior, glúteo, gemelo y core cuando ya reciben trabajo indirecto. Mira LO QUE DANI CORRIGE A MANO antes de repartir a todos.`);
+  }
+  return avisos;
 }
 
 export function validateMesocyclePayload(payload: MesocycleProposalPayload): ValidationIssue[] {
@@ -497,4 +520,78 @@ export function validateLevelLadder(niveles: LadderLevelInput[]): ValidationIssu
   });
 
   return issues;
+}
+
+// ── Objetivo nutricional frente al criterio de Dani (28-10-2026) ─────────────
+// Hasta aquí una dieta solo tenía que caer entre 600 y 7.000 kcal. Las 29
+// dietas que el asistente propuso en septiembre iban de 1,1 a 2,9 g/kg de
+// proteína, una llevaba la grasa a 0,4 g/kg (13 % de las kcal) y dos pasaban de
+// −800 kcal frente al alta. Dani decidió el 28-10 que en proteína manda el
+// alta (2 g/kg): el rango bueno es 1,6-2,2, y 2,0-2,4 en déficit profundo. Lo
+// que está fuera de lo razonable se RECHAZA (vuelve al modelo como issue); lo
+// que es discutible vuelve como AVISO y acaba en el rationale.
+
+/** Lo que hace falta saber del atleta para hablar en g/kg y en déficit real.
+ *  Cualquier campo puede faltar: entonces esa comprobación no se hace. */
+export interface ContextoNutricional {
+  pesoKg?: number | null;
+  /** Gasto estimado (Mifflin del alta) o medido (gasto real). */
+  mantenimientoKcal?: number | null;
+  /** Objetivo de la fase, si se sabe: abre o cierra el techo de déficit. */
+  objetivoFase?: string | null;
+}
+
+export const PROTEINA_G_KG = { rechazoMin: 1.2, avisoMin: 1.6, avisoMax: 2.6 } as const;
+export const GRASA = { rechazoGKg: 0.5, avisoGKg: 0.6, avisoGKgDeficit: 0.8, rechazoPct: 0.15, avisoPct: 0.2 } as const;
+/** Techo de déficit de la doctrina (§6); se abre solo en pérdida acelerada. */
+export const DEFICIT_MAX_KCAL = 700;
+export const DEFICIT_RECHAZO_KCAL = 1000;
+export const SUPERAVIT_AVISO_KCAL = 500;
+export const KCAL_SUELO_AVISO = 1400;
+
+const d1 = (v: number) => (Math.round(v * 10) / 10).toString().replace('.', ',');
+
+export function revisarObjetivoNutricional(
+  objetivo: Macros, contexto: ContextoNutricional = {},
+): { issues: ValidationIssue[]; avisos: string[] } {
+  const issues: ValidationIssue[] = [];
+  const avisos: string[] = [];
+  const peso = contexto.pesoKg && contexto.pesoKg > 0 ? contexto.pesoKg : null;
+  const fase = contexto.objetivoFase ?? null;
+  const enDeficit = fase === 'deficit' || fase === 'deficit_acelerado';
+
+  if (peso) {
+    const pGKg = objetivo.p / peso;
+    if (pGKg < PROTEINA_G_KG.rechazoMin) {
+      issues.push({ field: 'objetivo.proteina_g', message: `Proteína ${d1(pGKg)} g/kg (${objetivo.p} g para ${d1(peso)} kg): por debajo de ${d1(PROTEINA_G_KG.rechazoMin)} g/kg no se acepta. El criterio de Dani es 1,6-2,2 g/kg (2,0-2,4 en déficit profundo).` });
+    } else if (pGKg < PROTEINA_G_KG.avisoMin) {
+      avisos.push(`Proteína ${d1(pGKg)} g/kg: por debajo del rango de Dani (1,6-2,2 g/kg). Sube proteína o di por qué.`);
+    } else if (pGKg > PROTEINA_G_KG.avisoMax) {
+      avisos.push(`Proteína ${d1(pGKg)} g/kg: por encima de 2,6 g/kg no aporta más músculo y quita hidratos (doctrina §7: en déficit el hidrato pesa más). Baja proteína y sube hidratos.`);
+    }
+
+    const gGKg = objetivo.g / peso;
+    const gPct = objetivo.kcal > 0 ? (objetivo.g * 9) / objetivo.kcal : 0;
+    if (gGKg < GRASA.rechazoGKg || gPct < GRASA.rechazoPct) {
+      issues.push({ field: 'objetivo.grasa_g', message: `Grasa ${d1(gGKg)} g/kg y ${Math.round(gPct * 100)} % de las kcal: por debajo de ${d1(GRASA.rechazoGKg)} g/kg o del 15 % no se acepta (doctrina §7: en torno a 0,6 g/kg y nunca menos del 15-20 %).` });
+    } else if (gGKg < (enDeficit ? GRASA.avisoGKgDeficit : GRASA.avisoGKg) || gPct < GRASA.avisoPct) {
+      avisos.push(`Grasa ${d1(gGKg)} g/kg (${Math.round(gPct * 100)} % kcal): justa. Doctrina: ~0,6 g/kg, 0,8 en déficit, y 15-20 % de las kcal como suelo.`);
+    }
+  }
+
+  const mant = contexto.mantenimientoKcal && contexto.mantenimientoKcal > 0 ? contexto.mantenimientoKcal : null;
+  if (mant) {
+    const deficit = mant - objetivo.kcal;
+    if (deficit > DEFICIT_RECHAZO_KCAL && fase !== 'deficit_acelerado') {
+      issues.push({ field: 'objetivo', message: `${objetivo.kcal} kcal son ${Math.round(deficit)} por debajo del gasto estimado (${mant}): más de ${DEFICIT_RECHAZO_KCAL} solo en una fase de pérdida acelerada abierta por Dani (objetivo "deficit_acelerado"). Sube kcal o márcala así con su motivo.` });
+    } else if (deficit > DEFICIT_MAX_KCAL && fase !== 'deficit_acelerado') {
+      avisos.push(`Déficit de ${Math.round(deficit)} kcal frente al gasto estimado (${mant}): el techo de la doctrina (§6) son ${DEFICIT_MAX_KCAL} salvo pérdida acelerada en alguien con mucha grasa. Justifícalo o súbelas.`);
+    } else if (-deficit > SUPERAVIT_AVISO_KCAL) {
+      avisos.push(`Superávit de ${Math.round(-deficit)} kcal frente al gasto estimado (${mant}): la doctrina (§5) pone +200-500. Lo que pase del ritmo de 150-300 g/semana es grasa.`);
+    }
+  }
+  if (objetivo.kcal < KCAL_SUELO_AVISO) {
+    avisos.push(`${objetivo.kcal} kcal: por debajo de ${KCAL_SUELO_AVISO} nadie baja por un ajuste; solo con un motivo clínico o un atleta muy pequeño.`);
+  }
+  return { issues, avisos };
 }

@@ -1,33 +1,33 @@
-import { type ListaDeMenu } from './accesoARecetas';
-import { aplicarSeleccion, type PaqueteDeRecetas, type SeleccionDeRecetas } from './seleccionDeRecetas';
-import { recetasOcultas, type AmbitoDeRegla, type ReglaDeReceta } from './reglasDeReceta';
+import { type ListaDeMenu } from './accesoARecetas.js';
+import { aplicarSeleccion, type PaqueteDeRecetas, type SeleccionDeRecetas } from './seleccionDeRecetas.js';
+import { recetasOcultas, type AmbitoDeRegla, type ReglaDeReceta } from './reglasDeReceta.js';
 import {
   Recipe, MealItem, Diet, WeekDay, DietType, DietMode, FoodCategory, Macros, NutritionProgram,
   MenuDay, MenuMeal, MenuComplement, MenuRacionExtra, HungerProfile, AjusteDeReceta,
-} from '../types';
-import { round2 } from './exchangeHelpers';
-import { ingredientesEscalables } from './escalarIngrediente';
-import { superaElTiempo } from './tiempoDeReceta';
-import { slotPercents } from './slotWeights';
-import { ingredientMatch, violatesDietType } from './foodPrefs';
-import { violatesHealthConditions } from './dietaryRestrictions';
-import { ajustarReceta, sePuedeAjustar } from './ajusteDeReceta';
-import type { IngredienteVinculado } from '../types';
-import { simpleComplementsFor, encajaEnCategoria } from './menuComplements';
-import { dishType, DishType } from './dishTypes';
-import { fotoDeReceta } from './fotoDeReceta';
-import { kcalDeGramos, MACROS_CERO, redondearMacros, restarMacros, sinNegativos, sumarMacros, escalarMacros } from './macros';
-import { intercambiosDeMacros, macrosDeIntercambios, objetivoDeDieta } from './macrosLegado';
+} from '../types.js';
+import { round2 } from './exchangeHelpers.js';
+import { ingredientesEscalables } from './escalarIngrediente.js';
+import { superaElTiempo } from './tiempoDeReceta.js';
+import { slotPercents } from './slotWeights.js';
+import { ingredientMatch, violatesDietType } from './foodPrefs.js';
+import { violatesHealthConditions } from './dietaryRestrictions.js';
+import { ajustarReceta, sePuedeAjustar } from './ajusteDeReceta.js';
+import type { IngredienteVinculado } from '../types.js';
+import { simpleComplementsFor, encajaEnCategoria } from './menuComplements.js';
+import { dishType, DishType } from './dishTypes.js';
+import { fotoDeReceta } from './fotoDeReceta.js';
+import { kcalDeGramos, MACROS_CERO, redondearMacros, restarMacros, sinNegativos, sumarMacros, escalarMacros } from './macros.js';
+import { intercambiosDeMacros, macrosDeIntercambios, objetivoDeDieta } from './macrosLegado.js';
 import {
   macrosDeLaComida, macrosDelPlato, macrosDeRaciones, macrosDeRacionesExtra, macrosDeAcompanamientos, macrosDeAcompanamiento,
   objetivoDeLaComida, objetivoDelDiaDeMenu, macrosDelDiaDeMenu,
-} from './menuMacros';
-import { ajustesDeLaSemana, aplicarAjustes, semanaDelPrograma, gramosDeMantenimiento } from './semanasNutricion';
-import { hoyIsoLocal } from './trainingWeek';
-import { gustoPorTipo, sustitucionesPara, type SenalesDeCambios } from './gustosDelAtleta';
-import type { IngredienteEscalable } from './escalarIngrediente';
-import { alimentosParaExtras, elegirExtras, esExtraDelCatalogo, recortarExtra, type CandidatoAExtra } from './extrasDelCatalogo';
-import type { AlimentoCatalogo } from './catalogoAlimentos';
+} from './menuMacros.js';
+import { ajustesDeLaSemana, aplicarAjustes, semanaDelPrograma, gramosDeMantenimiento } from './semanasNutricion.js';
+import { hoyIsoLocal } from './trainingWeek.js';
+import { gustoPorTipo, sustitucionesPara, type SenalesDeCambios } from './gustosDelAtleta.js';
+import type { IngredienteEscalable } from './escalarIngrediente.js';
+import { alimentosParaExtras, elegirExtras, esExtraDelCatalogo, recortarExtra, type CandidatoAExtra } from './extrasDelCatalogo.js';
+import type { AlimentoCatalogo } from './catalogoAlimentos.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Generador de menús semanales por recetas, en kcal y gramos (10-2026)

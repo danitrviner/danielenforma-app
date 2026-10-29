@@ -1,5 +1,5 @@
-import { WorkoutLog, Exercise, Mesocycle, MuscleGroup } from '../types';
-import { aggregate, weightedGroupsOf, resolveWindows, ComparisonMode, Agg } from './trainingReport';
+import { WorkoutLog, Exercise, Mesocycle, MuscleGroup } from '../types.js';
+import { aggregate, weightedGroupsOf, resolveWindows, ComparisonMode, Agg } from './trainingReport.js';
 
 // Bloque "Rendimiento" del protocolo de mediciones de Dani: variación de 1RM
 // estimado y tonelaje agrupada por PATRÓN DE MOVIMIENTO (empuje torso,

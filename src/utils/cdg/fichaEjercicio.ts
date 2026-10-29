@@ -1,6 +1,6 @@
-import type { MuscleGroup } from '../../types'
-import { parsearEsfuerzo, parsearReps, type MotorCdg } from './motor'
-import { ZONAS_IEM, iemPorZona } from './zonas'
+import type { MuscleGroup } from '../../types.js'
+import { parsearEsfuerzo, parsearReps, type MotorCdg } from './motor.js'
+import { ZONAS_IEM, iemPorZona } from './zonas.js'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Valores de UNA serie de un ejercicio, para su ficha (E-05)

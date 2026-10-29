@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { db, terminate, clearIndexedDbPersistence } from '../firebase';
+import { db, terminate, clearIndexedDbPersistence } from '../firebase.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Cerrar sesión de verdad · `03-5` / `04-14`

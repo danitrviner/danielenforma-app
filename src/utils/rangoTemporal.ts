@@ -1,5 +1,5 @@
-import { addDays, hoyIsoLocal } from './trainingWeek';
-import type { SegmentedOption } from '../components/ui/SegmentedControl';
+import { addDays, hoyIsoLocal } from './trainingWeek.js';
+import type { SegmentedOption } from '../components/ui/SegmentedControl.js';
 
 // Selector de rango temporal para gráficas de historial (peso, periodización…).
 // Un mismo puñado de ventanas para todas: últimos 7/14 días, el último mes,

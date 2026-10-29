@@ -1,5 +1,5 @@
-import { kcalDeGramos, macrosDesdeGramos } from './macros';
-import type { Macros } from '../types';
+import { kcalDeGramos, macrosDesdeGramos } from './macros.js';
+import type { Macros } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    AJUSTAR EL CUPO A UNAS KCAL — sin tocar la proteína.

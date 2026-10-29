@@ -1,4 +1,4 @@
-import type { MuscleGroup, MuscleGroupConfig } from '../types';
+import type { MuscleGroup, MuscleGroupConfig } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Orden de los ejercicios dentro de una sesión (guía del Índice de Hipertrofia)

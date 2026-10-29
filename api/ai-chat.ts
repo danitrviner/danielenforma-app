@@ -14,6 +14,7 @@ import { esCoach, getAdminDb, setCors, tokenDeLaCabecera, verifyFirebaseIdToken 
 import { sanearHistorial } from '../src/ai/historial.js';
 import type { AiChatMessage } from '../src/types.js';
 import { hoyIsoLocal } from '../src/utils/trainingWeek.js';
+import { MODELOS_PERMITIDOS, calcularCosteUsd } from '../src/ai/costes.js';
 
 // Vercel mata la función al llegar aquí, y hasta ahora lo hacía en seco: el
 // coach veía las herramientas ejecutarse, el coste, y después NADA. Subimos el
@@ -28,7 +29,10 @@ const MAX_DURACION_S = 300;
 // corte la conexión: un corte suyo no deja escribir nada.
 const GUARDA_MS = (MAX_DURACION_S - 5) * 1000;
 
-const ALLOWED_MODELS = new Set(['claude-sonnet-5', 'claude-haiku-4-5']);
+// 28-10: Sonnet 5.5 (mismo precio que Sonnet 5) y Haiku 5.5 (diez veces más
+// barato que Haiku 4.5) entran en la lista para que el autopiloto elija modelo
+// por tipo de episodio. El chat del coach sigue en Sonnet 5 hasta que se pruebe.
+const ALLOWED_MODELS = new Set<string>(MODELOS_PERMITIDOS);
 // 12-09. Con 8192 el asistente NO cabía montando un mes entero: la auditoría
 // del 12-09 tiene dos rondas seguidas cortadas con `stop_reason: max_tokens` y
 // 8192 de salida clavados, y el cliente trata ese corte como turno abortado —
@@ -151,40 +155,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // ── Coste en USD, para que el coach vea lo que cuesta cada petición ───────
-  // Precios oficiales por millón de tokens (ver la whitelist ALLOWED_MODELS,
-  // arriba) — si Anthropic cambia precios, esto es lo único que hay que tocar.
-  // Multiplicadores de caché fijos según la documentación de Anthropic: 1,25×
-  // el precio de entrada al ESCRIBIR en caché (TTL de 5 min, el que usa
-  // aiClient.ts con `cache_control: {type: 'ephemeral'}`), 0,1× al LEER.
-  const PRECIOS_POR_MTOK: Record<string, { input: number; output: number }> = {
-    'claude-sonnet-5': { input: 2, output: 10 },
-    'claude-haiku-4-5': { input: 1, output: 5 },
-  };
-  // Desde el 11-09 el prompt de sistema se cachea con TTL de 1 hora (2× al
-  // escribir) y el historial con el de 5 minutos (1,25×). Anthropic desglosa
-  // la escritura por TTL en `usage.cache_creation`; si falta el desglose
-  // (respuesta antigua), todo se cobra al 1,25× de antes.
-  function calcularCosteUsd(modelo: string, usage: {
-    input_tokens: number; output_tokens: number;
-    cache_creation_input_tokens?: number | null; cache_read_input_tokens?: number | null;
-    cache_creation?: { ephemeral_5m_input_tokens?: number | null; ephemeral_1h_input_tokens?: number | null } | null;
-  }): number {
-    const precio = PRECIOS_POR_MTOK[modelo];
-    if (!precio) return 0;
-    const MTOK = 1_000_000;
-    const escritura1h = usage.cache_creation?.ephemeral_1h_input_tokens ?? 0;
-    const escritura5m = usage.cache_creation
-      ? (usage.cache_creation.ephemeral_5m_input_tokens ?? 0)
-      : (usage.cache_creation_input_tokens ?? 0);
-    return (
-      (usage.input_tokens * precio.input) / MTOK +
-      (usage.output_tokens * precio.output) / MTOK +
-      (escritura5m * precio.input * 1.25) / MTOK +
-      (escritura1h * precio.input * 2) / MTOK +
-      ((usage.cache_read_input_tokens ?? 0) * precio.input * 0.1) / MTOK
-    );
-  }
+  // ── Coste en USD: tabla compartida con el autopiloto (src/ai/costes.ts) ──
 
   // ── Llamada a Anthropic, en streaming ─────────────────────────────────────
   // A partir de aquí cualquier fallo SOLO puede comunicarse dentro del propio

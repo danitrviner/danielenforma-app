@@ -1,4 +1,4 @@
-import type { FoodCategory } from '../types';
+import type { FoodCategory } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    De la etiqueta del producto al banco de intercambios
