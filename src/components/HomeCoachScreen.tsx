@@ -10,6 +10,8 @@ import {
 } from '../utils/bandejaDelDia';
 import { calcularPanelRetencion } from '../utils/panelRetencion';
 import PanelRetencionCard from './coach/PanelRetencionCard';
+import ColaWhatsAppCard from './coach/ColaWhatsAppCard';
+import { crearMensajeCoach } from '../db/mensajesCoach';
 import { plantillaWhatsApp } from '../utils/plantillasWhatsApp';
 import { useRespuestasDeLaBandeja } from '../hooks/useRevisionesSinLeer';
 import { addDays, hoyIsoLocal } from '../utils/trainingWeek';
@@ -145,20 +147,29 @@ export default function HomeCoachScreen({ athletes, coachId, checkins, assignmen
   }, [borradores]);
   const queryClient = useQueryClient();
   const marcarContacto = useMutation({
-    mutationFn: (s: SenalDelDia) => registrarContacto({
-      athleteId: s.athleteEmail, fecha: hoyIso, motivo: s.contacto!.motivo, canal: 'whatsapp',
-    }),
+    mutationFn: async (s: SenalDelDia) => {
+      await registrarContacto({ athleteId: s.athleteEmail, fecha: hoyIso, motivo: s.contacto!.motivo, canal: 'whatsapp' });
+      // Que la app no se quede muda (tanda 7): el atleta ve en «Lo último de
+      // Dani» que le ha escrito por WhatsApp. Es verdad y va con su nombre.
+      await crearMensajeCoach({
+        id: `wa_${s.athleteEmail.toLowerCase()}_${hoyIso}`, athleteId: s.athleteEmail, tipo: 'libre', autor: 'coach', estado: 'aprobado',
+        texto: `Te he escrito por WhatsApp: mira el móvil y contéstame por ahí.`, fecha: hoyIso, firmadoEn: new Date().toISOString(),
+      }).catch(console.error);
+    },
     onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['contactos'] }); },
   });
   const [copiado, setCopiado] = useState<string | null>(null);
-  const escribirle = async (s: SenalDelDia) => {
-    const texto = plantillaWhatsApp(s.contacto!.motivo, { nombre: s.athleteName, hoy: hoyIso, ...s.contacto });
-    try { await navigator.clipboard.writeText(texto); } catch { /* sin portapapeles: el texto se abre igual */ }
+  const textoDe = (s: SenalDelDia) => plantillaWhatsApp(s.contacto!.motivo, { nombre: s.athleteName, hoy: hoyIso, ...s.contacto });
+  const copiar = async (s: SenalDelDia) => {
+    try { await navigator.clipboard.writeText(textoDe(s)); } catch { /* sin portapapeles: el texto se abre igual */ }
     setCopiado(s.id);
+  };
+  const abrirChat = (s: SenalDelDia) => {
     const tel = athletes.find(a => a.email === s.athleteEmail)?.telefono;
     const numero = tel ? `${tel.prefijo}${tel.numero}`.replace(/[^\d]/g, '') : '';
-    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(texto)}`, '_blank', 'noopener');
+    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(textoDe(s))}`, '_blank', 'noopener');
   };
+  const escribirle = async (s: SenalDelDia) => { await copiar(s); abrirChat(s); };
 
   // El panel de retención: las cuatro cifras de la revisión del 28-10, con lo
   // que ya está cargado (ver utils/panelRetencion.ts).
@@ -243,6 +254,17 @@ export default function HomeCoachScreen({ athletes, coachId, checkins, assignmen
   return (
     <section className="space-y-4">
       {panelCard}
+
+      {/* La cola de WhatsApp del día (tanda 7): todo lo que hay que mandar, junto. */}
+      <ColaWhatsAppCard
+        senales={senales}
+        textoDe={textoDe}
+        onCopiar={s => void copiar(s)}
+        onAbrir={abrirChat}
+        onMandado={s => marcarContacto.mutate(s)}
+        copiadoId={copiado}
+        ocupado={marcarContacto.isPending}
+      />
       {/* Las propuestas del asistente, en la pantalla por la que se entra.
           Su pantalla vive en /propuestas y en la barra lateral de PC, pero en
           el móvil la barra de abajo está llena (cuatro destinos al límite de

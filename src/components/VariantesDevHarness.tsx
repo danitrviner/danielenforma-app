@@ -11,6 +11,7 @@ import PrimeraSemanaCard from './home/PrimeraSemanaCard';
 import PlanInPreparationCard from './PlanInPreparationCard';
 import LoQueVinisteABuscar from './home/LoQueVinisteABuscar';
 import RoadmapDelAtletaVista from './roadmap/RoadmapDelAtletaVista';
+import VueltaCard from './home/VueltaCard';
 import WeeklyChallengeCard from './roadmap/WeeklyChallengeCard';
 import { FIXTURE_RESPUESTA } from './RespuestaDevHarness';
 import { FIXTURE_PRIMERA_SEMANA } from './PrimeraSemanaDevHarness';
@@ -45,7 +46,7 @@ const RESPUESTAS: QuestionnaireResponse[] = [{
 }];
 const NOTA: CoachDayNote = { id: 'n', athleteId: EMAIL, date: HOY, text: 'Hoy la última serie de press va al fallo: apunta las reps.', createdAt: '' };
 
-const PIEZAS = ['panel', 'ultimo', 'respuesta', 'atleta', 'primera', 'espera', 'viniste', 'roadmap'] as const;
+const PIEZAS = ['panel', 'ultimo', 'respuesta', 'atleta', 'primera', 'espera', 'viniste', 'vuelta', 'roadmap'] as const;
 type Pieza = typeof PIEZAS[number];
 
 export default function VariantesDevHarness() {
@@ -125,6 +126,13 @@ export default function VariantesDevHarness() {
             <Seccion titulo="5b · «Lo que viniste a buscar» (Inicio y Mi objetivo)" columnas={2}>
               <Variante nombre="A · cita"><LoQueVinisteABuscar athleteEmail={EMAIL} pesos={FIXTURE_RESPUESTA.pesos} pesoMeta={79} objetivo="deficit" variante="cita" /></Variante>
               <Variante nombre="B · cifras"><LoQueVinisteABuscar athleteEmail={EMAIL} pesos={FIXTURE_RESPUESTA.pesos} pesoMeta={79} objetivo="deficit" variante="cifras" /></Variante>
+            </Seccion>
+          )}
+
+          {ver('vuelta') && (
+            <Seccion titulo="6 · «Bienvenido de vuelta» (Inicio, tras 3 días sin registrar)" columnas={2}>
+              <Variante nombre="A · banda"><VueltaCard profile={{ displayName: 'Javier', senales: { calculadoEn: HOY, ultimoRegistro: addDays(HOY, -4), registros14d: 2, perdidas14d: 1, ultimaRespuesta: null, tieneCuestionarios: true } }} variante="banda" /></Variante>
+              <Variante nombre="B · línea"><div className="pt-3"><VueltaCard profile={{ displayName: 'Javier', senales: { calculadoEn: HOY, ultimoRegistro: addDays(HOY, -4), registros14d: 2, perdidas14d: 1, ultimaRespuesta: null, tieneCuestionarios: true } }} variante="linea" /></div></Variante>
             </Seccion>
           )}
 
