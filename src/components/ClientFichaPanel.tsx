@@ -20,6 +20,10 @@ import HistorialFichaPanel, { ActividadAtleta } from './HistorialFichaPanel';
 import EquipoClienteCard from '../features/gimnasio/EquipoClienteCard';
 import { Collapsible, Icon } from './ui';
 import { hoyIsoLocal } from '../utils/trainingWeek';
+import {
+  ALCANCE_LABELS, LIFESTYLE_AREA_LABELS, DIET_LABELS, EXP_LABELS, ACTIVITY_LABELS,
+  GOAL_BODY_LABELS, GOAL_CAP_LABELS, PROGRESS_FREQ_LABELS, TECHNIQUE_LABELS,
+} from '../utils/etiquetasDelAlta';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    ClientFichaPanel — LA ficha del atleta (Hub, pestaña "Ficha", zona "Atleta")
@@ -70,53 +74,8 @@ function ZonaTitulo({ icon, children }: { icon: string; children: React.ReactNod
   );
 }
 
-/* Espejo de ALCANCE y LIFESTYLE_AREAS del alta (AthleteOnboardingWizard). Se
-   guardan los ids y no las etiquetas para poder reescribir los textos sin tocar
-   lo ya guardado; el precio es esta tabla, que hay que mantener a la par. */
-const ALCANCE_LABELS: Record<string, string> = {
-  solo_fisico: 'Solo quiere el resultado físico — no quiere que le toquen los hábitos',
-  abierto:     'Abierto a cambiar cosas si se le explica el porqué',
-  cambio_vida: 'Quiere cambiar de hábitos, no solo de cuerpo',
-};
-
-const LIFESTYLE_AREA_LABELS: Record<string, string> = {
-  verdura_fruta:    'Más verdura y fruta',
-  legumbres_fibra:  'Legumbres y fibra',
-  mas_vegetal:      'Más vegetal',
-  menos_procesados: 'Menos ultraprocesados',
-  alcohol:          'Menos alcohol',
-  tabaco:           'Dejar de fumar',
-  sueno:            'Dormir mejor',
-  estres:           'Relajación / estrés',
-  mas_pasos:        'Moverse más',
-};
-
-const DIET_LABELS: Record<string, string> = {
-  omnivoro: 'Omnívoro', vegetariano: 'Vegetariano', vegano: 'Vegano', otro: 'Otro',
-};
-const EXP_LABELS: Record<string, string> = {
-  principiante: 'Principiante', intermedio: 'Intermedio', avanzado: 'Avanzado',
-};
 const SECTION_LABELS: Record<string, string> = {
   entrenamiento: 'Entrenamiento', nutricion: 'Nutrición', descanso: 'Descanso / Recuperación',
-};
-const ACTIVITY_LABELS: Record<string, string> = {
-  sedentario: 'Sedentario (×1.2)', poco_activo: 'Poco activo (×1.375)',
-  activo: 'Activo (×1.55)', muy_activo: 'Muy activo (×1.725)',
-};
-const GOAL_BODY_LABELS: Record<string, string> = {
-  aumentar_musculo: 'Aumentar músculo (+10%)',
-  reducir_grasa:    'Reducir grasa (−20%)',
-  mantener:         'Mantener (0%)',
-};
-const GOAL_CAP_LABELS: Record<string, string> = {
-  fuerza: 'Fuerza', fuerza_resistencia: 'Fuerza-resistencia', salud: 'Salud',
-};
-const PROGRESS_FREQ_LABELS: Record<string, string> = {
-  cada_semana: 'Cada semana', cada_varias_semanas: 'Cada varias semanas', con_dificultad: 'Con dificultad',
-};
-const TECHNIQUE_LABELS: Record<string, string> = {
-  mala: 'Mala', regular: 'Regular', buena: 'Buena', muy_buena: 'Muy buena',
 };
 
 function esFormat(n: number): string {
