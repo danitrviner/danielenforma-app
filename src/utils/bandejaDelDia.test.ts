@@ -371,3 +371,16 @@ describe('el primer mes (29-10)', () => {
     expect(construirBandejaDelDia(entrada({ atletas: [atleta({ planPublishedAt: `${addDays(HOY, -40)}T10:00:00.000Z` })] })).find(x => x.id.endsWith('primer_mes'))).toBeUndefined();
   });
 });
+
+describe('pausa o baja (29-10)', () => {
+  const senales = { calculadoEn: HOY, ultimoRegistro: addDays(HOY, -16), registros14d: 0, perdidas14d: 2, ultimaRespuesta: null, tieneCuestionarios: true };
+  const contacto = (fecha: string, motivo: string) => ({ id: `c_${fecha}`, athleteId: 'ana@x.com', fecha, motivo, canal: 'whatsapp' as const, createdAt: '' });
+  it('dos semanas callado tras dos mensajes: decidir en el CRM', () => {
+    const s = construirBandejaDelDia(entrada({ atletas: [atleta({ senales })], contactos: [contacto(addDays(HOY, -12), 'sin_registrar'), contacto(addDays(HOY, -5), 'sin_registrar')] }))
+      .find(x => x.id.endsWith('pausa_o_baja'));
+    expect(s).toMatchObject({ urgencia: 'hoy', categoria: 'renovacion', texto: '16 días callado tras 2 mensajes: ¿pausa o baja?' });
+  });
+  it('con un solo mensaje todavía no', () => {
+    expect(construirBandejaDelDia(entrada({ atletas: [atleta({ senales })], contactos: [contacto(addDays(HOY, -5), 'sin_registrar')] })).find(x => x.id.endsWith('pausa_o_baja'))).toBeUndefined();
+  });
+});

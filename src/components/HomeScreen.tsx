@@ -7,6 +7,7 @@ import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignments
 import LoUltimoDeDani from './home/LoUltimoDeDani';
 import PrimeraSemanaCard from './home/PrimeraSemanaCard';
 import LoQueVinisteABuscar from './home/LoQueVinisteABuscar';
+import VueltaCard from './home/VueltaCard';
 import { faseEnCurso } from '../utils/objetivoDeFase';
 import { formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, EstadoDeDia } from '../utils/cicloDelAtleta';
@@ -88,7 +89,10 @@ const MARCO_DEL_DIA: Record<EstadoDeDia, string> = {
   completado: 'border-success/30',
   saltado:    'border-hairline',
   hoy:        'border-accent/50',
-  perdido:    'border-danger/30',
+  // Sin rojo (29-10): una sesión no hecha es un hecho, no una alarma. Al
+  // volver tras unos días, una fila de rojos es lo primero que ve y lo que
+  // le hace cerrar la app.
+  perdido:    'border-hairline opacity-70',
   pendiente:  'border-hairline',
 };
 
@@ -96,7 +100,7 @@ const TEXTO_DEL_DIA: Record<EstadoDeDia, string> = {
   completado: 'text-success',
   saltado:    'text-ink-3',
   hoy:        'text-accent-ink',
-  perdido:    'text-danger',
+  perdido:    'text-ink-3 line-through',
   pendiente:  'text-ink-2',
 };
 
@@ -320,6 +324,9 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
           </span>
         ) : undefined}
       />
+
+      {/* Tras tres días sin registrar nada: vuelta sin culpa (29-10). */}
+      <VueltaCard profile={profile} />
 
       {/* ═══ El reto de la semana ══════════════════════════════════════════
           Lo primero que se ve, y es el único candidato que aguanta ahí:

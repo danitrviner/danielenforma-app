@@ -41,7 +41,7 @@ import { calcularSenales, senalesIguales } from '../src/utils/senalesDelAtleta.j
 import { planificarLatido } from '../src/utils/latidoDiario.js';
 import { ejecutarRetoSemanal, type AlmacenDeRetos } from '../src/utils/motorRetoSemanal.js';
 import { DEFAULT_LEVEL_LADDER } from '../src/data/defaultLevelLadder.js';
-import { addDays, getWeekStart } from '../src/utils/trainingWeek.js';
+import { addDays, diasEntreFechas, getWeekStart } from '../src/utils/trainingWeek.js';
 
 export const config = { maxDuration: 300 };
 
@@ -238,7 +238,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const [workouts, mesocycles, history, experienceLevel] = await Promise.all([
               leerRutinas(db, ids), leerMesociclos(db, email), leerRetos(db, email), leerExperiencia(db, email),
             ]);
-            return { workouts, mesocycles, history, experienceLevel, nivelForzado: roadmap?.challengeConfig?.nivel };
+            // Días sin registrar (señales de la noche anterior): tras una
+            // semana de silencio el reto sale en suave (29-10).
+            const silencioDias = perfil.senales?.ultimoRegistro ? diasEntreFechas(perfil.senales.ultimoRegistro, hoy) : null;
+            return { workouts, mesocycles, history, experienceLevel, nivelForzado: roadmap?.challengeConfig?.nivel, silencioDias };
           },
         },
       );

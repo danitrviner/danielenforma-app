@@ -23,6 +23,8 @@ export const VARIANTES = {
   salaEspera: 'insignia' as 'insignia' | 'cuenta',
   /** «Lo que viniste a buscar». */
   viniste: 'cita' as 'cita' | 'cifras',
+  /** «Bienvenido de vuelta» tras días sin registrar. */
+  vuelta: 'banda' as 'banda' | 'linea',
   /** Road map del atleta. */
   roadmap: 'camino' as 'camino' | 'mapa' | 'compacta',
 };

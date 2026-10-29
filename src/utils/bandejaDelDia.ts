@@ -105,6 +105,10 @@ export const DIAS_SIN_REVISION = 14;
 export const HORAS_SIN_RESPUESTA = 24;
 /** Días que un contacto registrado calla la señal que lo motivó. */
 export const DIAS_QUE_CALLA_UN_CONTACTO = 3;
+/** Días callado tras los que, con dos contactos ya hechos, toca decidir pausa o baja (29-10). */
+export const DIAS_CALLADO_PARA_DECIDIR = 14;
+/** Contactos sin respuesta en tres semanas antes de proponer pausa o baja. */
+export const CONTACTOS_ANTES_DE_DECIDIR = 2;
 /** Días con la cuenta creada y sin plan a partir de los cuales el alta está parada. */
 export const DIAS_ALTA_PARADA = 3;
 /** Días sin mandar un check-in a partir de los cuales se avisa. */
@@ -251,6 +255,18 @@ export function construirBandejaDelDia(entrada: EntradaBandeja): SenalDelDia[] {
           añadirContacto('sin_entrar', 'hoy', 'ausencia', `Lleva ${dias} días sin abrir la app`, 'revision',
             { motivo: 'sin_registrar', dias });
         }
+      }
+    }
+
+    // ── Dos mensajes y sigue callado: pausa o baja ───────────────────────
+    // No es una señal más para escribirle: es la decisión que Dani tiene que
+    // tomar en el CRM (pausar, dar de baja con motivo) en vez de arrastrar
+    // al atleta como «activo» durante meses.
+    if (enMarcha && s?.ultimoRegistro && diasEntreFechas(s.ultimoRegistro, hoy) >= DIAS_CALLADO_PARA_DECIDIR) {
+      const intentos = contactos.filter(c => c.athleteId === email.toLowerCase() && diasEntreFechas(c.fecha, hoy) <= 21).length;
+      if (intentos >= CONTACTOS_ANTES_DE_DECIDIR) {
+        añadir('pausa_o_baja', 'hoy', 'renovacion',
+          `${diasEntreFechas(s.ultimoRegistro, hoy)} días callado tras ${intentos} mensajes: ¿pausa o baja?`, 'setup');
       }
     }
 

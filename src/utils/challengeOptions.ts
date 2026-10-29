@@ -99,6 +99,9 @@ export interface ChallengeData {
   mesocycles?: Mesocycle[];
   experienceLevel?: ExperienceLevel;     // del alta
   nivelForzado?: NivelDeRetos;           // roadmap.challengeConfig.nivel
+  /** Días sin registrar nada (user_profiles.senales, 29-10). Con una semana
+   *  o más de silencio el reto vuelve al nivel de arranque: en suave. */
+  silencioDias?: number | null;
 }
 
 export interface AutoChallengeInput extends ChallengeData {
@@ -175,6 +178,9 @@ const CIERRES = [
 
 // ── Generación de opciones ────────────────────────────────────────────────────
 
+/** Días sin registrar a partir de los cuales el reto vuelve a suave. */
+export const DIAS_SILENCIO_RETO_SUAVE = 7;
+
 export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOption[] {
   const { weekStart, weekEnd } = isoWeekBounds(input.today);
   const isoWeek = isoWeekKey(input.today);
@@ -196,7 +202,7 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
   // elegía por palabra clave y el atleta recibía «Mejora tu remo» semanas en
   // las que no tenía remo — fallo con 0, dificultad a la baja y vuelta a los
   // retos de hábito.
-  const nivel = nivelDeRetos({
+  const nivel = (input.silencioDias ?? 0) >= DIAS_SILENCIO_RETO_SUAVE ? 'arranque' : nivelDeRetos({
     workoutLogs: input.workoutLogs, today: input.today,
     experienceLevel: input.experienceLevel, nivelForzado: input.nivelForzado,
   });

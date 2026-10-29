@@ -408,3 +408,12 @@ describe('rotación sobre 4 semanas', () => {
     expect(despues).toBe(antes - 18);
   });
 });
+
+describe('silencio (29-10)', () => {
+  it('con una semana sin registrar el reto vuelve a suave aunque el nivel sea de rendimiento', () => {
+    const conSilencio = generateChallengeOptions(input({ stepLogs: [] as never, nivelForzado: 'rendimiento', silencioDias: 9 }));
+    const sinSilencio = generateChallengeOptions(input({ stepLogs: [] as never, nivelForzado: 'rendimiento', silencioDias: 0 }));
+    expect(conSilencio.every(o => o.difficulty === 'suave')).toBe(true);
+    expect(sinSilencio.some(o => o.difficulty !== 'suave')).toBe(true);
+  });
+});
