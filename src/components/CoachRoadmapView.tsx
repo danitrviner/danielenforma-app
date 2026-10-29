@@ -13,11 +13,9 @@ import {
 } from '../dbService';
 import { planificarPlantillaMeso, insertarFaseNutricion, alternarRefeeds, FaseNueva } from '../utils/accionesCalendario';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
-import PlanPhaseEditor from './roadmap/PlanPhaseEditor';
 import ChallengeManager from './roadmap/ChallengeManager';
 import LevelLadderEditor from './roadmap/LevelLadderEditor';
 import RoadmapCalendario, { DestinoPlan } from './roadmap/calendario/RoadmapCalendario';
-import { PhaseData } from '../utils/planPhase';
 import { LadderData } from '../utils/levelLadder';
 import { ChallengeData } from '../utils/weeklyChallenge';
 import { Icon, Tabs } from './ui';
@@ -30,10 +28,9 @@ interface Props {
   onGoToClientTab?: (tab: DestinoPlan) => void;
 }
 
-type SubTab = 'fases' | 'retos' | 'niveles' | 'calendario';
+type SubTab = 'retos' | 'niveles' | 'calendario';
 
 const SUB_TABS: { id: SubTab; label: string; icon: string }[] = [
-  { id: 'fases', label: 'Fases', icon: 'route' },
   { id: 'retos', label: 'Retos', icon: 'flag' },
   { id: 'niveles', label: 'Niveles', icon: 'military_tech' },
   { id: 'calendario', label: 'Calendario', icon: 'calendar_month' },
@@ -41,7 +38,7 @@ const SUB_TABS: { id: SubTab; label: string; icon: string }[] = [
 
 export default function CoachRoadmapView({ athleteEmail, coachId, onGoToClientTab }: Props) {
   const queryClient = useQueryClient();
-  const [subTab, setSubTab] = useState<SubTab>('fases');
+  const [subTab, setSubTab] = useState<SubTab>('retos');
   const { logs: bodyweightLogs } = useAthleteWeight(athleteEmail);
 
   const roadmapKey = ['roadmap', athleteEmail] as const;
@@ -339,10 +336,10 @@ export default function CoachRoadmapView({ athleteEmail, coachId, onGoToClientTa
   // intercambios y macros", "Editar cardio"): saltan a la PESTAÑA REAL del
   // cliente, donde vive cada editor. `onGoToClientTab` lo inyecta ClientHub,
   // que es quien controla la navegación por pestañas; sin él (por ejemplo
-  // montado suelto) se cae a Fases, el editor más cercano que hay aquí dentro.
+  // montado suelto) se cae a Retos, lo más cercano que queda aquí dentro.
   function handleGoToTab(tab: DestinoPlan) {
     if (onGoToClientTab) onGoToClientTab(tab);
-    else setSubTab('fases');
+    else setSubTab('retos');
   }
 
   if (loading) {
@@ -356,10 +353,6 @@ export default function CoachRoadmapView({ athleteEmail, coachId, onGoToClientTa
   const rm = roadmap ?? { athleteId: athleteEmail, items: [] };
   const today = hoyIsoLocal();
 
-  const phaseData: PhaseData = {
-    bodyweightLogs, stepLogs, workoutLogs, exercises, initialWeight, today,
-    completionLogs: dietCompletionLogs, coachDiets: diets.filter(d => !d.selfManaged),
-  };
   const ladderData: LadderData = { bodyweightLogs, stepLogs, workoutLogs, exercises, initialWeight, today };
 
   const challengeData: ChallengeData = {
@@ -373,21 +366,11 @@ export default function CoachRoadmapView({ athleteEmail, coachId, onGoToClientTa
     <div className="pantalla space-y-6">
       <div>
         <h2 className="font-sans font-bold text-title-m text-ink uppercase tracking-tight">Road map del atleta</h2>
-        <p className="text-ink-2 text-label font-sans mt-1">Fases, retos semanales, niveles y calendario — editable por el coach</p>
+        <p className="text-ink-2 text-label font-sans mt-1">Retos semanales, niveles y calendario. Las fases salen del objetivo (Plan › Objetivo): el atleta las ve en su Road map sin montarlas aquí.</p>
       </div>
 
       <Tabs items={SUB_TABS} value={subTab} onChange={id => setSubTab(id as SubTab)} label="Secciones del Road map" />
 
-      {subTab === 'fases' && (
-        <PlanPhaseEditor
-          roadmap={rm}
-          onSave={handleSave}
-          phaseData={phaseData}
-          nutritionProgram={nutritionProgram}
-          currentWeightKg={initialWeight}
-          onProgramSaved={program => queryClient.setQueryData(['nutritionProgram', athleteEmail], program)}
-        />
-      )}
       {subTab === 'retos' && (uid
         ? <ChallengeManager athleteEmail={athleteEmail} challengeData={challengeData} roadmap={rm} onSaveRoadmap={handleSave} />
         : <p className="text-label text-ink-3 font-sans py-4">No se ha podido cargar el perfil del atleta.</p>
