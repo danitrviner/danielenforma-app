@@ -146,7 +146,7 @@ function Seccion({ n, titulo, ancho = 'max-w-[48rem]', children }: { n: number; 
 }
 
 export default function AutopilotoDevHarness() {
-  const [politica, setPolitica] = useState<Politica>({ ...POLITICA_POR_DEFECTO, modo: 'politica', nivelPorTipo: { ajuste_kcal_medio: 'proponer' } });
+  const [politica, setPolitica] = useState<Politica>({ ...POLITICA_POR_DEFECTO, activo: true, soloAtletas: ['ana@x.com', 'javi@x.com'], modo: 'politica', nivelPorTipo: { ajuste_kcal_medio: 'proponer' } });
   const [msg, setMsg] = useState<string | null>(null);
   const [recientes, setRecientes] = useState(RECIENTES);
   const [automaticas, setAutomaticas] = useState(AUTOMATICAS);
@@ -168,7 +168,7 @@ export default function AutopilotoDevHarness() {
       </header>
 
       <Seccion n={1} titulo="Política (Perfil › Ajustes › Asistente)" ancho="max-w-[42rem]">
-        <PoliticaVista politica={politica} stats={STATS} guardando={false} msg={msg} gastoMesUsd={17.4} sombra={INFORME_SOMBRA} onGuardar={guardar} />
+        <PoliticaVista politica={politica} stats={STATS} guardando={false} msg={msg} gastoMesUsd={17.4} sombra={INFORME_SOMBRA} atletas={Object.entries(NOMBRES).map(([email, nombre]) => ({ email, nombre }))} onGuardar={guardar} />
       </Seccion>
 
       <Seccion n={2} titulo="Hecho hoy (Inicio del coach)" ancho="max-w-[42rem]">

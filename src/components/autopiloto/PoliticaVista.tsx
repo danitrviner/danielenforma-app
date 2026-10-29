@@ -31,6 +31,8 @@ export interface PoliticaVistaProps {
   gastoMesUsd?: number;
   /** Lo que el modo sombra ha medido: coincidencia con Dani por tipo (sombra.ts). */
   sombra?: InformeDeSombra;
+  /** Los atletas (con consentimiento o sin él) para el selector «solo estos». */
+  atletas?: { email: string; nombre: string }[];
   onGuardar: (nueva: Politica) => void;
 }
 
@@ -112,6 +114,72 @@ function Cifras({ e }: { e?: EstadisticaDeTipo }) {
   );
 }
 
+/** El interruptor general y la lista «solo estos atletas» (Dani, 30-10:
+ *  «quiero poder activarlo o desactivarlo de manera general o con X
+ *  clientes; de momento apagado»). Apagado, el latido no encola nada, no se
+ *  publican menús solos y el consumidor no llama al modelo. */
+function Interruptor({ politica, atletas, guardando, onGuardar }: { politica: Politica; atletas: { email: string; nombre: string }[]; guardando: boolean; onGuardar: (p: Politica) => void }) {
+  const [filtro, setFiltro] = useState('');
+  const soloAlgunos = politica.soloAtletas.length > 0;
+  const alternar = (email: string) => {
+    const e = email.toLowerCase();
+    const lista = politica.soloAtletas.includes(e) ? politica.soloAtletas.filter(x => x !== e) : [...politica.soloAtletas, e];
+    onGuardar({ ...politica, soloAtletas: lista });
+  };
+  const visibles = atletas.filter(a => !filtro || `${a.nombre} ${a.email}`.toLowerCase().includes(filtro.toLowerCase()));
+  const nombreDe = (email: string) => atletas.find(a => a.email.toLowerCase() === email)?.nombre ?? email;
+  return (
+    <div className={`rounded-field border px-3 py-2.5 space-y-2 ${politica.activo ? 'border-success/40 bg-success/5' : 'border-hairline bg-raised'}`}>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" role="switch" aria-checked={politica.activo} disabled={guardando}
+          onClick={() => onGuardar({ ...politica, activo: !politica.activo })}
+          className="inline-flex items-center gap-2 font-mono text-caption uppercase tracking-wider text-ink">
+          <span className={`relative inline-block h-5 w-9 rounded-full transition-colors ${politica.activo ? 'bg-success' : 'bg-hairline'}`} aria-hidden>
+            <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-raised shadow transition-transform ${politica.activo ? 'translate-x-4' : 'translate-x-0.5'}`} />
+          </span>
+          {politica.activo ? 'Encendido' : 'Apagado'}
+        </button>
+        <span className="font-sans text-caption text-ink-2">
+          {politica.activo
+            ? (soloAlgunos ? `Trabaja solo con ${politica.soloAtletas.length} ${politica.soloAtletas.length === 1 ? 'atleta' : 'atletas'}.` : 'Trabaja con todos los atletas que hayan dado permiso.')
+            : 'El asistente no decide nada por su cuenta: ni episodios, ni menús, ni propuestas automáticas.'}
+        </span>
+        {politica.activo && (
+          <div role="radiogroup" aria-label="Con quién" className="inline-flex rounded-chip border border-hairline bg-raised p-0.5 ml-auto">
+            <button type="button" role="radio" aria-checked={!soloAlgunos} disabled={guardando} onClick={() => onGuardar({ ...politica, soloAtletas: [] })}
+              className={`px-3 py-1 rounded-chip font-mono text-caption uppercase tracking-wider ${!soloAlgunos ? 'bg-accent text-on-accent' : 'text-ink-2'}`}>Todos</button>
+            <button type="button" role="radio" aria-checked={soloAlgunos} disabled={guardando} onClick={() => { if (!soloAlgunos && atletas[0]) alternar(atletas[0].email); }}
+              className={`px-3 py-1 rounded-chip font-mono text-caption uppercase tracking-wider ${soloAlgunos ? 'bg-accent text-on-accent' : 'text-ink-2'}`}>Solo estos</button>
+          </div>
+        )}
+      </div>
+      {politica.activo && soloAlgunos && (
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap gap-1.5">
+            {politica.soloAtletas.map(e => (
+              <button key={e} type="button" onClick={() => alternar(e)} disabled={guardando} title="Quitar"
+                className="inline-flex items-center gap-1 rounded-chip bg-accent text-on-accent px-2.5 py-0.5 font-sans text-caption">
+                {nombreDe(e)} <Icon name="close" size="s" />
+              </button>
+            ))}
+          </div>
+          <input value={filtro} onChange={e => setFiltro(e.target.value)} placeholder="Añadir atleta…"
+            className="w-full bg-field border border-control-line rounded-control px-3 py-1.5 font-sans text-caption text-ink placeholder:text-ink-4 focus:border-accent-line focus:outline-none" />
+          <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+            {visibles.filter(a => !politica.soloAtletas.includes(a.email.toLowerCase())).map(a => (
+              <button key={a.email} type="button" onClick={() => alternar(a.email)} disabled={guardando}
+                className="rounded-chip border border-hairline bg-raised px-2.5 py-0.5 font-sans text-caption text-ink-2 hover:text-ink hover:border-strong">
+                + {a.nombre}
+              </button>
+            ))}
+            {visibles.length === 0 && <span className="font-sans text-caption text-ink-4">Nadie con ese nombre.</span>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Mensaje({ msg }: { msg: string | null }) {
   return msg ? <p className="flex items-center gap-2 font-mono text-caption text-data"><Icon name="info" size="s" />{msg}</p> : null;
 }
@@ -169,7 +237,7 @@ function Sombra({ informe, politica, onGuardar }: { informe: InformeDeSombra; po
 
 /* Semáforo ------------------------------------------------------------- */
 
-function Vista({ politica, stats, guardando, msg, gastoMesUsd, sombra, onGuardar }: PoliticaVistaProps) {
+function Vista({ politica, stats, guardando, msg, gastoMesUsd, sombra, atletas = [], onGuardar }: PoliticaVistaProps) {
   const cambiarNivel = (tipo: TipoDecision, nivel: NivelAutonomia) =>
     onGuardar({ ...politica, nivelPorTipo: { ...politica.nivelPorTipo, [tipo]: nivel } });
   const cuenta = (n: NivelAutonomia) => TIPOS.filter(t => !SIEMPRE_HUMANO.has(t) && nivelDe(politica, t) === n).length;
@@ -188,6 +256,8 @@ function Vista({ politica, stats, guardando, msg, gastoMesUsd, sombra, onGuardar
         </div>
       )} />
       <p className="font-sans text-caption text-ink-2">{MODOS.find(m => m.id === politica.modo)?.texto}</p>
+
+      <Interruptor politica={politica} atletas={atletas} guardando={guardando} onGuardar={onGuardar} />
 
       <Presupuesto politica={politica} gastoMesUsd={gastoMesUsd} onGuardar={onGuardar} compacto />
 

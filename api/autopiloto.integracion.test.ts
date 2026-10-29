@@ -111,7 +111,7 @@ function datosBase(episodios: Record<string, Doc> = {}) {
       coach: { userId: 'coach-uid', email: 'coach@x.com', displayName: 'Coach', role: 'coach' },
     },
     onboarding: { 'ana@x.com': { athleteId: 'ana@x.com', completedAt: '2026-10-05T10:00:00.000Z', consentimientoIA: { aceptado: true, fecha: '2026-10-05T10:00:00.000Z', version: 1 } } },
-    coachSettings: { autopiloto: { modo: 'sombra', nivelPorTipo: {}, presupuesto: { mesUsd: 50, diaUsd: 3 }, menuAutomatico: 'publicar', horasAviso: 24 } },
+    coachSettings: { autopiloto: { activo: true, soloAtletas: [], modo: 'sombra', nivelPorTipo: {}, presupuesto: { mesUsd: 50, diaUsd: 3 }, menuAutomatico: 'publicar', horasAviso: 24 } },
     episodios,
     aiProposals: {}, aiUsage: {}, aiAuditLog: {}, autopiloto: {}, coachClientTasks: {}, athleteStatus: {},
   } as Record<string, Record<string, Doc>>;
@@ -194,6 +194,24 @@ describe('api/autopiloto · de punta a punta', () => {
     expect(ep.estado).toBe('hecho');
     expect(ep.propuestas).toHaveLength(1);
     expect(ep.aplicadas ?? []).toEqual([]);
+  });
+
+  it('apagado (el valor por defecto) no toca la cola ni llama al modelo; «solo estos» salta a los demás', async () => {
+    const datos = datosBase({ ep1: episodio('ep1') });
+    delete datos.coachSettings.autopiloto;
+    const db = firestoreFalso(datos);
+    const modelo = modeloGuionado([{}]);
+    const r = await ejecutar(db, modelo);
+    expect(r.code).toBe(200);
+    expect(r.body.apagado).toBe(true);
+    expect(modelo.llamadas).toEqual([]);
+    expect(db.escrituras).toEqual([]);
+
+    const datos2 = datosBase({ ep1: episodio('ep1'), otro: episodio('otro', { athleteId: 'javi@x.com' }) });
+    datos2.coachSettings.autopiloto = { ...datos2.coachSettings.autopiloto, soloAtletas: ['javi@x.com'] };
+    const db2 = firestoreFalso(datos2);
+    const r2 = await ejecutar(db2, modeloGuionado([{}]), { seco: '1' });
+    expect(r2.body.pendientes.map((p: { id: string }) => p.id)).toEqual(['otro']);
   });
 
   it('en seco lista la cola y no escribe ni llama al modelo', async () => {

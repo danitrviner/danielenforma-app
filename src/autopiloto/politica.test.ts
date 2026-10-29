@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   POLITICA_POR_DEFECTO, NIVEL_DESTINO, NUNCA_AUTOMATICO, nivelDe, politicaEfectiva, politicaDeEpisodio,
-  tipoDeDecision, evaluarSubida, estadisticasPorTipo, normalizarPolitica, type PoliticaAutopiloto,
+  tipoDeDecision, evaluarSubida, estadisticasPorTipo, normalizarPolitica, autopilotoCubre, type PoliticaAutopiloto,
 } from './politica';
 import type { AiProposal } from '../types';
 
@@ -15,6 +15,18 @@ describe('política de autonomía', () => {
     expect(normalizarPolitica({ modo: 'lo que sea', presupuesto: { mesUsd: -3 } })).toMatchObject({ modo: 'sombra', presupuesto: { mesUsd: 50, diaUsd: 3 } });
   });
 
+  it('arranca APAGADO (Dani, 30-10) y la lista «solo estos» se normaliza a correos en minúscula', () => {
+    expect(POLITICA_POR_DEFECTO.activo).toBe(false);
+    expect(normalizarPolitica({})).toMatchObject({ activo: false, soloAtletas: [] });
+    expect(normalizarPolitica({ activo: 'sí' })).toMatchObject({ activo: false });
+    expect(normalizarPolitica({ activo: true, soloAtletas: [' Ana@X.com ', 'ana@x.com', 'sin-arroba', 7] })).toMatchObject({ activo: true, soloAtletas: ['ana@x.com'] });
+  });
+  it('apagado no cubre a nadie; encendido cubre a todos o solo a la lista', () => {
+    expect(autopilotoCubre({ activo: false, soloAtletas: [] }, 'ana@x.com')).toBe(false);
+    expect(autopilotoCubre({ activo: true, soloAtletas: [] }, 'ana@x.com')).toBe(true);
+    expect(autopilotoCubre({ activo: true, soloAtletas: ['ana@x.com'] }, 'Ana@x.com')).toBe(true);
+    expect(autopilotoCubre({ activo: true, soloAtletas: ['ana@x.com'] }, 'javi@x.com')).toBe(false);
+  });
   it('en sombra nada se aplica ni se propone; en rodaje todo se propone', () => {
     expect(politicaEfectiva(conModo('sombra'), 'respuesta_rutinaria')).toBe('sombra');
     expect(politicaEfectiva(conModo('rodaje'), 'respuesta_rutinaria')).toBe('proponer');

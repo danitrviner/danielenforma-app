@@ -9,7 +9,7 @@
    autopiloto/PoliticaVista.tsx (variante «semáforo», elegida el 29-10). */
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getPoliticaAutopiloto, savePoliticaAutopiloto, getAiProposalsRecientes, getAiProposalsPorEstado, getResponsesForAthlete } from '../dbService';
+import { getPoliticaAutopiloto, savePoliticaAutopiloto, getAiProposalsRecientes, getAiProposalsPorEstado, getResponsesForAthlete, getAllUserProfilesOrThrow } from '../dbService';
 import { getCambiosAtleta } from '../db/cambios';
 import { estadisticasPorTipo, tipoDeDecision, type PoliticaAutopiloto as Politica } from '../autopiloto/politica';
 import { compararSombra, informeDeSombra } from '../autopiloto/sombra';
@@ -48,6 +48,12 @@ export default function PoliticaAutopiloto() {
     propuestas: recientes, cambios: referencia?.cambios ?? [], respuestas: referencia?.respuestas ?? [],
   }, new Date().toISOString())), [sombras, recientes, referencia]);
 
+  const { data: perfiles = [] } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfilesOrThrow });
+  const atletas = useMemo(() => perfiles
+    .filter(u => u.role === 'client' && u.estadoCrm !== 'baja')
+    .map(u => ({ email: u.email.toLowerCase(), nombre: u.displayName || u.email }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [perfiles]);
+
   if (!politica) return null;
 
   const guardar = async (nueva: Politica) => {
@@ -57,5 +63,5 @@ export default function PoliticaAutopiloto() {
     finally { setGuardando(false); }
   };
 
-  return <PoliticaVista politica={politica} stats={stats} guardando={guardando} msg={msg} sombra={sombra} onGuardar={nueva => void guardar(nueva)} />;
+  return <PoliticaVista politica={politica} stats={stats} guardando={guardando} msg={msg} sombra={sombra} atletas={atletas} onGuardar={nueva => void guardar(nueva)} />;
 }
