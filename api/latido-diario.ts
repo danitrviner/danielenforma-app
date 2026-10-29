@@ -32,11 +32,12 @@ import {
   leerEjercicios, leerProgramaDeNutricion, leerConfigDeDieta, leerDietas,
   leerRegistrosDeComida, leerRoadmap, leerSesionesDeCardio,
   marcarSesionPerdida, guardarConfigDeDieta, marcarFaseVista, guardarNivelesConseguidos,
-  actualizarPeldanos, guardarReto, leerReto, crearAvisoUnaVez,
+  actualizarPeldanos, guardarReto, leerReto, crearAvisoUnaVez, guardarSenales,
   leerCuestionariosAsignados, leerRespuestasDeCuestionarios, leerMesociclos,
   leerRutinas, leerRetos, leerExperiencia,
 } from './_lib/db-admin.js';
 import { recordatoriosDeRevision } from '../src/utils/recordatoriosRevision.js';
+import { calcularSenales, senalesIguales } from '../src/utils/senalesDelAtleta.js';
 import { planificarLatido } from '../src/utils/latidoDiario.js';
 import { ejecutarRetoSemanal, type AlmacenDeRetos } from '../src/utils/motorRetoSemanal.js';
 import { DEFAULT_LEVEL_LADDER } from '../src/data/defaultLevelLadder.js';
@@ -255,6 +256,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const avisos = recordatoriosDeRevision({ hoy, perfil, asignaciones: cuestionarios, respuestas, mesociclos });
         if (!enSeco) for (const r of avisos) await crearAvisoUnaVez(db, r.dedupeKey, r.notificacion);
         if (avisos.length > 0) hecho.push(`recordatorio de revisión: ${avisos.length}`);
+
+        // ── 4. Señales de acompañamiento (28-10) ───────────────────────────
+        // Lo que la bandeja del coach necesita para ver quién se está
+        // apagando, calculado aquí con lo que ya se ha leído y guardado en el
+        // perfil solo si cambia. `respuestas` lleva 21 días: de sobra para la
+        // ventana de 14 y para la última respuesta reciente; una más antigua
+        // ya cuenta como «sin contestar» igual.
+        const senales = calcularSenales(
+          { assignments, workoutLogs, bodyweightLogs, stepLogs, dietLogs: registrosDeComida, respuestas, cuestionarios },
+          hoy,
+        );
+        if (!senalesIguales(perfil.senales, senales)) {
+          if (!enSeco) await guardarSenales(db, perfil.userId, senales);
+          hecho.push(`señales: último registro ${senales.ultimoRegistro ?? 'nunca'}, ${senales.perdidas14d} perdidas en 14 días`);
+        }
       } catch (err) {
         hecho.push(`recordatorio de revisión: error (${(err as Error)?.message ?? err})`);
       }

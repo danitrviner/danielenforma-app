@@ -15,6 +15,7 @@
 // atleta viven en `src/utils/latidoDiario.ts` y en `src/utils/motorRetoSemanal.ts`,
 // que no saben nada de Firestore. Este fichero solo sabe leer y escribir.
 import type {
+  SenalesDelAtleta,
   AppNotification, AthleteDietConfig, BodyweightLog, CardioSession, Diet,
   DietCompletionLog, Exercise, LevelLadder, NutritionProgram, Roadmap, StepLog,
   UserProfile, WeeklyChallenge, WorkoutAssignment, WorkoutLog,
@@ -198,6 +199,14 @@ export async function guardarNivelesConseguidos(
 ): Promise<void> {
   await db.collection('roadmaps').doc(email)
     .set({ levelLadder: sinIndefinidos(ladder) }, { merge: true });
+}
+
+/** Señales de acompañamiento del atleta (utils/senalesDelAtleta.ts). Merge:
+ *  el perfil lo edita el coach y el atleta a la vez; aquí solo entra este campo. */
+export async function guardarSenales(
+  db: Firestore, userId: string, senales: SenalesDelAtleta,
+): Promise<void> {
+  await db.collection('user_profiles').doc(userId).set({ senales }, { merge: true });
 }
 
 export async function actualizarPeldanos(

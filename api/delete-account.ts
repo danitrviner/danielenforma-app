@@ -69,6 +69,7 @@ export const POR_CAMPO = [
   'notifications', 'tasks', 'coachNotes', 'coachClientTasks', 'athleteStatus',
   'coachReports', 'cardioAssignments', 'cardioSessions', 'cardioWeeklyGoals', 'cardioAplazos', 'revisionProgreso',
   'hrTests', 'hrvReadings', 'aiChats', 'aiProposals', 'coachDayNotes', 'cambiosAtleta', 'lecturasEtiqueta',
+  'contactos',
 ];
 
 const CAMPOS_PROPIETARIO = ['userId', 'athleteId', 'email'];

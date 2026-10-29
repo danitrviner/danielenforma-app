@@ -119,6 +119,12 @@ const RevisionCoachHarness = import.meta.env.DEV
   ? pantallaDiferida('RevisionCoachDevHarness', () => import('./components/RevisionCoachDevHarness'))
   : null;
 
+// Banco de pruebas de la bandeja del día del coach con el panel de retención
+// (ruta /dev/bandeja). Datos en memoria: no hay sesión de coach en desarrollo.
+const BandejaHarness = import.meta.env.DEV
+  ? pantallaDiferida('BandejaDevHarness', () => import('./components/BandejaDevHarness'))
+  : null;
+
 // Banco de pruebas de Cliente › Revisiones › Asignadas (ruta /dev/asignados),
 // lado COACH: tampoco hay sesión de coach en este repo.
 const AsignadosHarness = import.meta.env.DEV
@@ -808,6 +814,14 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <RevisionCoachHarness />
+      </Suspense>
+    );
+  }
+
+  if (BandejaHarness && location.pathname === '/dev/bandeja') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <BandejaHarness />
       </Suspense>
     );
   }
