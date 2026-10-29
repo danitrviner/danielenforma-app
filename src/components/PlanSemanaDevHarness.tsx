@@ -3,13 +3,11 @@ import type { PlatoDelPlan, Recipe } from '../types';
 import type { AlimentoCatalogo } from '../utils/catalogoAlimentos';
 import { macrosDesdeGramos } from '../utils/macros';
 import { macrosDeAlimento, objetivoDeLaSemana } from '../utils/planSemanal';
-import { SegmentedControl } from './ui';
-import PlanDeLaSemana, { type VariantePlan } from './nutrition/PlanDeLaSemana';
+import PlanDeLaSemana from './nutrition/PlanDeLaSemana';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Banco de pruebas de «Mi semana» — ruta `/dev/plan-semana`, solo en
-   desarrollo. Las dos variantes con el mismo plan de ejemplo, para que Dani
-   elija; la elegida se fija en `VARIANTE_PLAN`. Nada se guarda.
+   desarrollo, con un plan de ejemplo. Nada se guarda.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const CATALOGO: AlimentoCatalogo[] = [
@@ -50,20 +48,17 @@ const DESCANSO = macrosDesdeGramos(170, 200, 70);
 const { objetivo, dias } = objetivoDeLaSemana([ENTRENO, DESCANSO, ENTRENO, DESCANSO, ENTRENO, DESCANSO, DESCANSO]);
 
 export default function PlanSemanaDevHarness() {
-  const [variante, setVariante] = useState<VariantePlan>('grupos');
   const [platos, setPlatos] = useState<PlatoDelPlan[]>(PLAN);
   return (
     <div className="min-h-screen bg-bg px-4 py-6">
       <div className="mx-auto max-w-[440px] space-y-4">
         <header className="space-y-2">
-          <h1 className="font-sans text-title-l font-bold text-ink">Mi semana — 2 variantes</h1>
+          <h1 className="font-sans text-title-l font-bold text-ink">Mi semana</h1>
           <p className="font-sans text-body-s text-ink-2">Nutrición de quien cocina en tandas. Prueba a cambiar las veces, quitar o añadir.</p>
-          <SegmentedControl label="Variante" value={variante} onChange={v => setVariante(v as VariantePlan)}
-            options={[{ value: 'grupos', label: 'A · Por grupos' }, { value: 'lista', label: 'B · Lista + resumen abajo' }]} />
           <button type="button" onClick={() => setPlatos(PLAN)} className="font-sans text-caption text-ink-3 underline">Volver al plan de ejemplo</button>
         </header>
         <PlanDeLaSemana objetivo={objetivo} dias={dias} platos={platos} onCambiar={setPlatos}
-          catalogo={CATALOGO} recetas={RECETAS} variante={variante} etiquetaSemana="Semana del 27 oct" />
+          catalogo={CATALOGO} recetas={RECETAS} etiquetaSemana="Semana del 27 oct" />
       </div>
     </div>
   );

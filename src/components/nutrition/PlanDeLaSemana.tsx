@@ -15,16 +15,9 @@ import {
 
    Una lista de lo que vas a comer esta semana con cuántas veces, y arriba si
    cuadra con tu objetivo de los siete días. No hay nada que marcar como comido.
-
-   Dos maneras de enseñarlo, para que Dani elija (/dev/plan-semana):
-     · «grupos» — tres bloques (táperes, cada día, sueltas), cada uno con su +.
-     · «lista»  — una sola lista y el resumen fijo abajo, siempre a la vista.
+   Tres bloques (táperes, cada día, sueltas), cada uno con su +: la variante
+   que eligió Dani el 30-10-2026 entre esta y una lista con el resumen abajo.
    ═══════════════════════════════════════════════════════════════════════════ */
-
-export type VariantePlan = 'grupos' | 'lista';
-
-/** La que sale en la app mientras Dani no elija (cambiar aquí). */
-export const VARIANTE_PLAN: VariantePlan = 'grupos';
 
 const MACROS = [
   { k: 'p', etiqueta: 'Proteína', color: 'var(--color-macro-prot-fill)' },
@@ -56,22 +49,7 @@ const COLOR_ESTADO: Record<EstadoMacro, string> = { ok: 'text-ink-2', falta: 'te
 
 /* ── Resumen ───────────────────────────────────────────────────────────── */
 
-function Resumen({ b, dias, compacto = false }: { b: BalanceDelPlan; dias: number; compacto?: boolean }) {
-  if (compacto) {
-    return (
-      <div className="space-y-2">
-        <p className={`font-sans text-body-s font-bold ${b.cuadra ? 'text-accent-ink' : 'text-ink'}`}>{fraseBalance(b) || 'Añade lo que vas a comer esta semana.'}</p>
-        <div className="grid grid-cols-3 gap-3">
-          {MACROS.map(m => (
-            <div key={m.k} className="min-w-0">
-              <span className={`block font-mono text-caption ${COLOR_ESTADO[b.estado[m.k]]}`}>{m.etiqueta.slice(0, 4)}. {num(b.total[m.k])}/{num(b.objetivo[m.k])}</span>
-              <Barra puesto={b.total[m.k]} objetivo={b.objetivo[m.k]} color={m.color} sobra={b.estado[m.k] === 'sobra'} />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+function Resumen({ b, dias }: { b: BalanceDelPlan; dias: number }) {
   return (
     <section aria-label="Tu semana" className="space-y-3 rounded-canvas bg-surface px-4 py-4">
       <div className="flex items-baseline justify-between gap-2">
@@ -110,12 +88,11 @@ function Barra({ puesto, objetivo, color, sobra }: { puesto: number; objetivo: n
 
 /* ── Fila de un plato ──────────────────────────────────────────────────── */
 
-function FilaPlato({ plato, conGrupo, onVeces, onQuitar }: {
-  plato: PlatoDelPlan; conGrupo: boolean; onVeces: (v: number) => void; onQuitar: () => void;
+function FilaPlato({ plato, onVeces, onQuitar }: {
+  plato: PlatoDelPlan; onVeces: (v: number) => void; onQuitar: () => void;
   key?: string;
 }) {
   const racion = plato.gramos ? `${num(plato.gramos)} g` : '1 ración';
-  const grupo = GRUPOS_DEL_PLAN.find(g => g.id === plato.grupo)!;
   const boton = 'flex h-8 w-8 items-center justify-center rounded-control border border-hairline bg-raised text-ink-2 disabled:opacity-30';
   return (
     <div className="px-4 py-3">
@@ -127,7 +104,6 @@ function FilaPlato({ plato, conGrupo, onVeces, onQuitar }: {
       </div>
       <div className="mt-1.5 flex items-center gap-3">
         <p className="min-w-0 flex-1 font-mono text-caption text-ink-3">
-          {conGrupo && <span className="block text-ink-2">{grupo.titulo}</span>}
           {racion} · {num(plato.macros.kcal)} kcal
           <span className="block text-ink-2">Semana: {num(macrosDelPlato(plato).kcal)} kcal</span>
         </p>
@@ -258,14 +234,13 @@ function AnadirAlPlan({ grupoInicial, catalogo, recetas, onAnadir, onClose }: {
 
 /* ── Pantalla ──────────────────────────────────────────────────────────── */
 
-export default function PlanDeLaSemana({ objetivo, dias, platos, onCambiar, catalogo, recetas, variante = VARIANTE_PLAN, etiquetaSemana }: {
+export default function PlanDeLaSemana({ objetivo, dias, platos, onCambiar, catalogo, recetas, etiquetaSemana }: {
   objetivo: Macros;
   dias: number;
   platos: PlatoDelPlan[];
   onCambiar: (platos: PlatoDelPlan[]) => void;
   catalogo: AlimentoCatalogo[];
   recetas: Recipe[];
-  variante?: VariantePlan;
   /** «Semana del 27 oct». */
   etiquetaSemana?: string;
 }) {
@@ -292,25 +267,6 @@ export default function PlanDeLaSemana({ objetivo, dias, platos, onCambiar, cata
     </p>
   );
 
-  if (variante === 'lista') {
-    const ordenados = [...platos].sort((x, y) => GRUPOS_DEL_PLAN.findIndex(g => g.id === x.grupo) - GRUPOS_DEL_PLAN.findIndex(g => g.id === y.grupo));
-    return (
-      <div className="space-y-3 pb-28">
-        {intro}
-        <Button variant="primary" onClick={() => setAnadiendo('tanda')} fullWidth icon="add">Añadir comida o alimento</Button>
-        {ordenados.length > 0 && (
-          <div className="divide-y divide-hairline overflow-hidden rounded-canvas bg-surface">
-            {ordenados.map(p => <FilaPlato key={p.id} plato={p} conGrupo onVeces={v => cambiar(p.id, v)} onQuitar={() => quitar(p.id)} />)}
-          </div>
-        )}
-        <div className="sticky bottom-[calc(var(--nav-h)+12px)] z-10 rounded-canvas border border-hairline bg-raised px-4 py-3 shadow-lg">
-          <Resumen b={b} dias={dias} compacto />
-        </div>
-        {hoja}
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       <Resumen b={b} dias={dias} />
@@ -333,7 +289,7 @@ export default function PlanDeLaSemana({ objetivo, dias, platos, onCambiar, cata
               <p className="px-4 py-3 font-sans text-caption text-ink-3">Nada todavía.</p>
             ) : (
               <div className="divide-y divide-hairline">
-                {delGrupo.map(p => <FilaPlato key={p.id} plato={p} conGrupo={false} onVeces={v => cambiar(p.id, v)} onQuitar={() => quitar(p.id)} />)}
+                {delGrupo.map(p => <FilaPlato key={p.id} plato={p} onVeces={v => cambiar(p.id, v)} onQuitar={() => quitar(p.id)} />)}
               </div>
             )}
           </section>
