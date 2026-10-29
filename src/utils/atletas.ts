@@ -14,7 +14,10 @@ import { UserProfile } from '../types.js';
 
 export const esAnonimizado = (p: UserProfile): boolean => p.anonimizado === true;
 export const esBaja = (p: UserProfile): boolean => p.estadoCrm === 'baja';
+/** Archivado desde el CRM («quítamelo de delante»). Archivar además le corta
+ *  el acceso, así que tampoco es alguien a quien entrenar (29-10). */
+export const esArchivado = (p: UserProfile): boolean => p.archivadoCrm === true;
 
-/** Atletas que el coach entrena HOY: ni anonimizados ni dados de baja. */
+/** Atletas que el coach entrena HOY: ni anonimizados, ni de baja, ni archivados. */
 export const atletasActivos = (ps: UserProfile[]): UserProfile[] =>
-  ps.filter(p => !esAnonimizado(p) && !esBaja(p));
+  ps.filter(p => !esAnonimizado(p) && !esBaja(p) && !esArchivado(p));

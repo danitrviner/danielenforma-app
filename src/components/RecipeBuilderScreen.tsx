@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
+import LimpiarRecetario from './recetario/LimpiarRecetario';
 import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryRecetas, cargarIndiceRecetas, getRecipeById } from '../dbService';
 import type { RecetasCursor } from '../dbService';
 import { CAT_BASICAS, encajaCategoria, FILTROS_RAPIDAS, type FiltroRapidas } from '../db/recetasHidratacion';
@@ -151,6 +152,14 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
      atleta se arregló el 07-09-2026; esta pantalla se quedó fuera. */
   const [indiceRecetas, setIndiceRecetas]       = useState<Recipe[]>([]);
   useEffect(() => { cargarIndiceRecetas().then(setIndiceRecetas).catch(() => {}); }, []);
+  // Limpiador del recetario (29-10). Al cerrarlo se relee: lo retirado ya no sale.
+  const [limpiando, setLimpiando] = useState(false);
+  const [vueltaDeLimpieza, setVueltaDeLimpieza] = useState(0);
+  const cerrarLimpieza = () => {
+    setLimpiando(false);
+    setVueltaDeLimpieza(v => v + 1);
+    cargarIndiceRecetas().then(setIndiceRecetas).catch(() => {});
+  };
   /* La receta abierta. El índice empaquetado NO trae la preparación ni los
      gramos —se dejaron fuera a propósito, son 4,9 MB solo con lo demás—, así
      que al abrirla se pide el documento completo. Se pinta lo que ya se tiene y
@@ -180,7 +189,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
   useEffect(() => {
     setRecetasLoading(true);
     loadRecetas(recetasCat, recetasIntake, recetasRapidas, null, false).finally(() => setRecetasLoading(false));
-  }, [recetasCat, recetasIntake, recetasRapidas, loadRecetas]);
+  }, [recetasCat, recetasIntake, recetasRapidas, loadRecetas, vueltaDeLimpieza]);
 
   const handleRecetasLoadMore = async () => {
     setRecetasLoadingMore(true);
@@ -407,7 +416,15 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
         <h2 className="font-sans font-bold text-body-s text-ink uppercase tracking-wider flex items-center gap-2">
           <Icon name="library_books" size="m" className="text-data" />
           Recetario
-          <span className="font-sans text-caption text-ink-2 normal-case font-normal">8.850 recetas · solo lectura</span>
+          <span className="font-sans text-caption text-ink-2 normal-case font-normal">{indiceRecetas.length ? indiceRecetas.length.toLocaleString('es-ES') : '8.850'} recetas · solo lectura</span>
+          <button
+            type="button"
+            onClick={() => setLimpiando(true)}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-control border border-hairline px-3 py-1.5 font-sans text-caption font-bold normal-case tracking-normal text-ink-2 hover:border-strong hover:text-ink"
+          >
+            <Icon name="cleaning_services" size="s" />
+            Limpiar recetario
+          </button>
         </h2>
 
         <div className="w-full overflow-x-auto hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
@@ -769,6 +786,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
           </p>
         </Dialog>
       )}
+      {limpiando && <LimpiarRecetario onCerrar={cerrarLimpieza} />}
     </div>
   );
 }

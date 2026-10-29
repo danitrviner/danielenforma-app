@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { UserProfile } from '../../types';
 import { updateUserProfile } from '../../dbService';
 import { diasDelCiclo, normalizarDiaRevision } from '../../utils/cicloRevision';
@@ -24,10 +25,14 @@ interface Props {
   athlete: UserProfile;
   /** Para que el resto del panel recalcule fechas con el día nuevo. */
   onCambio?: (cambios: Pick<UserProfile, 'diaRevision' | 'pausaRevisiones'>) => void;
+  /** Suelto en su propia tarjeta (Hoy › Revisión) en vez de como franja de
+   *  cabecera de otra: sin la raya de abajo. */
+  suelto?: boolean;
 }
 
-export default function DiaRevisionAtleta({ athlete, onCambio }: Props) {
+export default function DiaRevisionAtleta({ athlete, onCambio, suelto = false }: Props) {
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const [dia, setDia] = useState(normalizarDiaRevision(athlete.diaRevision));
   const [pausa, setPausa] = useState(athlete.pausaRevisiones ?? null);
   const [editandoPausa, setEditandoPausa] = useState(false);
@@ -37,6 +42,9 @@ export default function DiaRevisionAtleta({ athlete, onCambio }: Props) {
     try {
       await updateUserProfile(athlete.userId, cambios);
       onCambio?.(cambios);
+      // Ahora se edita desde dos pestañas (Revisión y Revisiones) y la lista
+      // de Clientes filtra por él: que todas lean el día nuevo, no el viejo.
+      void queryClient.invalidateQueries({ queryKey: ['userProfiles'] });
     } catch (err) {
       deshacer();
       showToast(mensajeDeErrorFirestore(err, 'guardar el día de revisión'));
@@ -70,7 +78,7 @@ export default function DiaRevisionAtleta({ athlete, onCambio }: Props) {
   const corta = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-5 py-2 border-b border-hairline text-caption text-ink-3 font-sans">
+    <div className={`flex flex-wrap items-center gap-x-3 gap-y-1.5 px-5 py-2 text-caption text-ink-3 font-sans ${suelto ? '' : 'border-b border-hairline'}`}>
       <span className="inline-flex items-center gap-1.5">
         <Icon name="event" size="s" className="text-ink-4" />
         Revisa los

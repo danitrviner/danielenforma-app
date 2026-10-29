@@ -178,7 +178,7 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
     queryFn: () => getDietCompletionLog(profile.email, TODAY_DATE),
   });
 
-  /* El reto de la semana, que desde 09-2026 es lo primero que se ve.
+  /* El reto de la semana (va debajo de Nutrición de hoy desde el 29-10).
      Comparte todas las claves de consulta con el Road map, así que un atleta
      que pase por las dos pantallas paga las lecturas UNA vez. */
   const { resultado: reto, racha, cargando: cargandoReto } =
@@ -329,23 +329,6 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
       {/* Tras tres días sin registrar nada: vuelta sin culpa (29-10). */}
       <VueltaCard profile={profile} />
 
-      {/* ═══ El reto de la semana ══════════════════════════════════════════
-          Lo primero que se ve, y es el único candidato que aguanta ahí:
-           · Siempre hay uno — si el coach no asigna, se genera solo.
-           · El progreso sale de lo ya registrado, sin marcar nada a mano.
-           · El generador solo propone retos de los que HAY datos, así que un
-             atleta que no ha sincronizado los pasos no recibe un reto de
-             pasos que no pueda cumplir.
-          Los pasos fallaban lo tercero y las fases lo primero: una fase la
-          monta el coach a mano cliente a cliente, y ponerle los objetivos en
-          la cara exige que eso esté impecable (Dani, 10-09-2026). */}
-      {cargandoReto ? (
-        <Skeleton className="h-[188px] w-full rounded-canvas" />
-      ) : reto && (reto.pending
-        ? <ChallengePendingCard />
-        : <WeeklyChallengeCard challenge={reto.challenge!} progress={reto.progress!} streak={racha} destacado />
-      )}
-
       {/* ── «Lo último de Dani» (29-10) ───────────────────────────────────────
           Todo lo que viene de una persona, justo debajo del reto: la respuesta
           a su revisión, los cambios explicados, el acuse de lo que contó, la
@@ -386,8 +369,7 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
       )}
 
       {/* ── Peso y pasos: los dos de un vistazo, sin hacer scroll ───────────
-          En segunda fila y no de protagonistas: si a uno le faltan datos, no
-          deja un agujero en lo primero que ve el atleta. Cada tarjeta resuelve
+          Si a uno le faltan datos, no deja un agujero: cada tarjeta resuelve
           su propio hueco por dentro. */}
       <div className="grid grid-cols-2 gap-2">
         <TarjetaPeso
@@ -415,6 +397,24 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
           objetivo={diaNutricion.objetivo}
           onAbrir={abrirNutricion}
         />
+      )}
+
+      {/* ═══ El reto de la semana ══════════════════════════════════════════
+          Debajo de Nutrición de hoy (Dani, 29-10): arriba restaba sitio a lo
+          que se abre varias veces al día. Antes iba lo primero porque:
+           · Siempre hay uno — si el coach no asigna, se genera solo.
+           · El progreso sale de lo ya registrado, sin marcar nada a mano.
+           · El generador solo propone retos de los que HAY datos, así que un
+             atleta que no ha sincronizado los pasos no recibe un reto de
+             pasos que no pueda cumplir.
+          Los pasos fallaban lo tercero y las fases lo primero: una fase la
+          monta el coach a mano cliente a cliente, y ponerle los objetivos en
+          la cara exige que eso esté impecable (Dani, 10-09-2026). */}
+      {cargandoReto ? (
+        <Skeleton className="h-[188px] w-full rounded-canvas" />
+      ) : reto && (reto.pending
+        ? <ChallengePendingCard />
+        : <WeeklyChallengeCard challenge={reto.challenge!} progress={reto.progress!} streak={racha} destacado />
       )}
 
 

@@ -78,10 +78,15 @@ día que arranca.
   selectores del CRM hasta que lo desarchives desde el filtro «Archivados». No
   pierde nada, y no es lo mismo que ponerlo de **baja** —una baja es un hecho
   comercial, con fecha y motivo, que sigue contando para el churn—.
-- **Borrar de verdad** solo donde no deja nada huérfano: contactos sin cuenta y
-  perfiles ya anonimizados (los `borrado_xxxx` que deja el borrado de cuenta).
-  Arrastra sus servicios, cobros pendientes, suscripciones y reuniones.
-- Un cliente con **cobros ya cobrados no se puede borrar**: se archiva. Borrarlo
-  descuadraría lo facturado de meses ya cerrados.
-- Una **cuenta viva** no se borra desde el CRM: eso es el borrado de cuenta
-  (`api/delete-account.ts`), que además limpia Auth, Storage y sus entrenos.
+- **Archivar a un cliente con cuenta le quita el acceso a la app**
+  (`api/gestionar-acceso.ts`: usuario de Auth desactivado + sesiones revocadas;
+  la app además cierra la sesión si ve `archivadoCrm`). Desarchivar se lo
+  devuelve. Los datos no se tocan.
+- **Borrar un contacto sin cuenta** (o un perfil anonimizado) arrastra sus
+  servicios, cobros pendientes, suscripciones y reuniones. Con **cobros ya
+  cobrados no se puede borrar**: se archiva, porque borrarlo descuadraría lo
+  facturado de meses ya cerrados.
+- **Borrar un cliente con cuenta** lo hace el servidor con el mismo borrado que
+  «Eliminar mi cuenta» (`api/_lib/borrarCuenta.ts`): datos, ficheros y acceso
+  fuera; servicios y cobros se conservan anonimizados, así que aquí no hay
+  bloqueo por cobros.

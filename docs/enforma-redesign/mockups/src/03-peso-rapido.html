@@ -1,0 +1,47 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><title>03 Peso rápido</title>
+<style>
+.wheel{display:flex;justify-content:center;align-items:center;gap:6px;height:150px;border-radius:18px;background:var(--raised);border:1px solid var(--hairline);position:relative}
+.wheel .col{text-align:center;font-family:"IBM Plex Mono";font-weight:600}
+.wheel .col div{height:40px;line-height:40px;color:var(--ink-4);font-size:22px}
+.wheel .col .sel{color:var(--ink);font-size:38px}
+.wheel:before{content:"";position:absolute;left:12px;right:12px;top:55px;height:40px;border-radius:12px;background:var(--accent-bg)}
+</style></head><body>
+<div class="sheetpage">
+  <div><div class="cap">Actual · al pulsar «Tu peso» te lleva a Perfil › Revisión</div><div class="frame" style="width:406px"><img src="../actual/peso-revision.png" style="width:390px;display:block"></div></div>
+  <div><div class="cap">Propuesta · hoja sobre Inicio</div>
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span></div>
+    <div class="appbar"><span class="wordmark">En <b>Forma</b></span></div>
+    <div class="scroll" style="padding-top:18px"><div class="h-display">Hola, Daniel</div><div class="card" style="height:200px;margin-top:18px"></div></div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="row between"><div><div class="label">Peso de hoy</div><div class="h-m" style="margin-top:2px">Miércoles 22 oct</div></div><span class="iconbtn" style="background:var(--inset)"><span class="ms">close</span></span></div>
+      <div class="row" style="margin:14px 0;gap:8px;font-size:14px;color:var(--ink-2)"><span class="ms" style="font-size:18px">history</span>Último: <b class="num" style="color:var(--ink)">80,7 kg</b> · el miércoles 15</div>
+      <div class="wheel"><div class="col"><div>79</div><div class="sel">80</div><div>81</div></div><div class="col"><div class="sel" style="height:auto;line-height:1">,</div></div><div class="col"><div>3</div><div class="sel">4</div><div>5</div></div><div class="col" style="margin-left:4px"><div style="font-size:18px;color:var(--ink-3)">&nbsp;</div><div style="font-size:20px;color:var(--ink-3)">kg</div><div>&nbsp;</div></div></div>
+      <div class="row" style="justify-content:center;margin-top:10px;font-size:14px;font-weight:700;color:var(--success)"><span class="ms" style="font-size:18px">trending_down</span>−0,3 kg respecto al último</div>
+      <div class="btn btn-primary" style="width:100%;margin-top:18px">Guardar peso</div>
+      <div style="text-align:center;margin-top:12px;font-size:14px;font-weight:600;color:var(--accent-ink)">Ver historial y editar</div>
+    </div>
+  </div></div></div>
+  <div><div class="cap">Ya registrado hoy</div>
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span></div>
+    <div class="appbar"><span class="wordmark">En <b>Forma</b></span></div>
+    <div class="scroll" style="padding-top:18px"><div class="h-display">Hola, Daniel</div><div class="card" style="height:200px;margin-top:18px"></div></div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="row" style="gap:12px"><span class="ms fill" style="font-size:34px;color:var(--success)">check_circle</span><div><div class="h-m">Peso guardado</div><div class="body-s">80,4 kg · hoy a las 8:12</div></div></div>
+      <div class="card pad" style="margin-top:16px;background:var(--raised)"><div class="body-s"><b style="color:var(--ink)">Ya tienes un peso hoy.</b> Si guardas otro, <b>sustituye</b> al de hoy; no se crea un segundo registro.</div></div>
+      <div class="row" style="margin-top:16px"><div class="btn btn-ghost" style="flex:1">Corregir</div><div class="btn btn-primary" style="flex:1">Hecho</div></div>
+    </div>
+    <div style="position:absolute;top:60px;left:16px;right:16px;background:var(--veil);color:#fff;border-radius:14px;padding:12px 16px;font-weight:600;font-size:15px" class="row"><span class="ms fill" style="color:#3ECF8E">check_circle</span>Peso de hoy actualizado</div>
+  </div></div></div>
+  <div class="note"><h3>Reglas</h3><ul>
+    <li>Reutiliza el selector <span class="mono">ui/WeightWheelPicker.tsx</span> y la escritura de <span class="mono">BodyweightPanel</span>; misma colección <span class="mono">bodyweightLogs</span>.</li>
+    <li><b>Un registro por atleta y día</b>: id determinista <span class="mono">{email}_{fecha}</span> (hoy <span class="mono">addDoc</span> aleatorio, sin control de duplicados).</li>
+    <li>El check-in semanal usa <b>el mismo componente</b> como primer paso.</li>
+    <li>El historial y la edición siguen en Perfil › Revisión.</li>
+  </ul></div>
+</div></body></html>

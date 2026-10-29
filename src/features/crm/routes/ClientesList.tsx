@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getCrmServicios } from '../../../dbService';
 import { useClientes } from '../hooks/useClientes';
 import { useArchivarCliente, useEliminarCliente } from '../hooks/useClienteMutations';
-import { motivoNoBorrable } from '../lib/archivado';
+import { tieneCuentaActiva } from '../lib/archivado';
 import { useToast } from '../../../hooks/useToast';
 import { ClienteConCobros } from '../../../db/crm';
 import { servicioActual } from '../hooks/useServicios';
@@ -84,22 +84,35 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
   const eliminar = useEliminarCliente();
 
   const onArchivar = async (c: Cliente) => {
+    const conCuenta = tieneCuentaActiva(c);
+    if (conCuenta && !c.archivado && !await confirm(
+      `¿Archivar a «${c.nombre}»? Dejará de salir en tus listas y perderá el acceso a la app `
+      + 'hasta que lo desarchives. Sus datos se conservan.'
+    )) return;
     try {
       await archivar.mutateAsync({ cliente: c, archivar: !c.archivado });
-      showToast(c.archivado ? `${c.nombre} vuelve a tus listas` : `${c.nombre} archivado`, 'success');
+      showToast(
+        c.archivado
+          ? `${c.nombre} vuelve a tus listas${conCuenta ? ' y recupera el acceso' : ''}`
+          : `${c.nombre} archivado${conCuenta ? ' — sin acceso a la app' : ''}`,
+        'success',
+      );
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'No se ha podido archivar', 'error');
     }
   };
 
   const onEliminar = async (c: Cliente) => {
-    const bloqueo = motivoNoBorrable(c);
-    if (bloqueo) { showToast(bloqueo, 'info'); return; }
     if (!await confirm(
-      `¿Borrar «${c.nombre}» para siempre? `
-      + 'Se borra también todo su rastro en el CRM: servicios, cobros pendientes, '
-      + 'suscripciones y reuniones. Esto no se puede deshacer. '
-      + 'Si solo quieres quitarlo de en medio, archívalo.'
+      tieneCuentaActiva(c)
+        ? `¿Borrar «${c.nombre}» para siempre? Pierde el acceso a la app y se borran sus entrenos, `
+          + 'check-ins, fotos, dietas y todo su rastro en el CRM. Los servicios y cobros se '
+          + 'conservan sin su nombre. Esto no se puede deshacer. '
+          + 'Si solo quieres quitarlo de en medio, archívalo.'
+        : `¿Borrar «${c.nombre}» para siempre? `
+          + 'Se borra también todo su rastro en el CRM: servicios, cobros pendientes, '
+          + 'suscripciones y reuniones. Esto no se puede deshacer. '
+          + 'Si solo quieres quitarlo de en medio, archívalo.'
     )) return;
     try {
       await eliminar.mutateAsync(c);
@@ -226,29 +239,30 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
       // `stopPropagation` en cada botón: la fila entera navega a la ficha
       // (onRowClick), y sin esto archivar abriría además el detalle.
       render: c => {
-        const bloqueo = motivoNoBorrable(c);
         return (
           <div className="flex items-center justify-end gap-1">
             <button
               type="button"
               onClick={e => { e.stopPropagation(); onArchivar(c); }}
               aria-label={c.archivado ? `Desarchivar a ${c.nombre}` : `Archivar a ${c.nombre}`}
-              title={c.archivado ? 'Desarchivar' : 'Archivar — desaparece de tus listas'}
+              title={
+                c.archivado
+                  ? (tieneCuentaActiva(c) ? 'Desarchivar — recupera el acceso a la app' : 'Desarchivar')
+                  : (tieneCuentaActiva(c) ? 'Archivar — desaparece de tus listas y pierde el acceso a la app' : 'Archivar — desaparece de tus listas')
+              }
               className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-hairline transition-colors"
             >
               <Icon name={c.archivado ? 'unarchive' : 'archive'} size="m" />
             </button>
-            {!bloqueo && (
-              <button
-                type="button"
-                onClick={e => { e.stopPropagation(); onEliminar(c); }}
-                aria-label={`Borrar a ${c.nombre}`}
-                title="Borrar para siempre"
-                className="w-7 h-7 rounded-control inline-flex items-center justify-center text-danger hover:bg-hairline transition-colors"
-              >
-                <Icon name="delete" size="m" />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onEliminar(c); }}
+              aria-label={`Borrar a ${c.nombre}`}
+              title="Borrar para siempre"
+              className="w-7 h-7 rounded-control inline-flex items-center justify-center text-danger hover:bg-hairline transition-colors"
+            >
+              <Icon name="delete" size="m" />
+            </button>
             <Icon name="chevron_right" size="m" className="text-ink-3" />
           </div>
         );
@@ -352,7 +366,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
                 <EmptyState
                   icon="inventory_2"
                   titulo="No has archivado a nadie"
-                  descripcion="Lo que archives desde la lista o desde su ficha se guarda aquí, fuera de los contadores, hasta que lo desarchives."
+                  descripcion="Lo que archives desde la lista o desde su ficha se guarda aquí, fuera de los contadores y sin acceso a la app, hasta que lo desarchives."
                 />
               ) : clientes.length === 0 ? (
                 <EmptyState

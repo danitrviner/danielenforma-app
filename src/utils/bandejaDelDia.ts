@@ -97,6 +97,9 @@ export interface EntradaBandeja {
    * Opcional: sin el mapa, esa señal no se calcula.
    */
   programasPorEmail?: Map<string, NutritionProgram>;
+  /** Correos (en minúsculas) que el coach archivó en el CRM: sus check-ins
+   *  sueltos no se avisan. Archivar es «quítamelo de delante» (29-10). */
+  archivados?: Set<string>;
   hoy: string;
 }
 
@@ -387,8 +390,9 @@ export function construirBandejaDelDia(entrada: EntradaBandeja): SenalDelDia[] {
      Un cliente de baja que manda un check-in es precisamente de lo que hay
      que enterarse. */
   const conocidos = new Set(atletas.map(a => a.email.toLowerCase()));
+  const archivados = entrada.archivados ?? new Set<string>();
   for (const [emailMin, suyos] of checkinsPorEmail) {
-    if (conocidos.has(emailMin)) continue;
+    if (conocidos.has(emailMin) || archivados.has(emailMin)) continue;
     const pendientes = suyos.filter(c => !c.approved).length;
     if (pendientes === 0) continue;
     const email = suyos[0].email;

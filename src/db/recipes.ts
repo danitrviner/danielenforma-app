@@ -1,4 +1,4 @@
-import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
+import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, deleteField, documentId, query, where } from '../firebase';
 import { Recipe, RecipeFavorites } from '../types';
 import type { ReglasDeReceta } from '../utils/reglasDeReceta';
 import { filtrarPorLista, type AccesoGlobalARecetas, type ListaDeMenu } from '../utils/accesoARecetas';
@@ -139,7 +139,9 @@ function parsearIndiceEnWorker(texto: string): Promise<Recipe[]> {
 
 let indicePromesa: Promise<Recipe[]> | null = null;
 
-export function cargarIndiceRecetas(): Promise<Recipe[]> {
+/** El índice ENTERO, retiradas incluidas. Solo para el limpiador del coach:
+ *  todo lo demás usa `cargarIndiceRecetas`, que ya las quita. */
+export function cargarIndiceCompleto(): Promise<Recipe[]> {
   // Se memoiza la promesa, no el resultado: si la lista y el generador de menús
   // lo piden a la vez durante el arranque, comparten la misma carga en lugar de
   // parsear 4,7 MB dos veces.
@@ -169,6 +171,93 @@ export function cargarIndiceRecetas(): Promise<Recipe[]> {
       return [];
     });
   return indicePromesa;
+}
+
+/* ── Limpieza del recetario (29-10) ─────────────────────────────────────────
+   El coach retira recetas que no quiere (productos de marca, batidos toscos,
+   duplicados…) y desaparecen de TODO: recetario, menús nuevos, cambios y
+   planes, para él y para los atletas. No se borran del fichero: van a
+   `recipeAccess/limpieza` (la lee cualquier sesión, la escribe el coach — misma
+   regla que `recipeAccess/global`), así que se recuperan con un toque.
+   `mantenidas` son las revisadas que se quedan: dejan de salir en «Sin revisar». */
+export interface LimpiezaRecetario {
+  /** id → fecha ISO en que se retiró. */
+  retiradas?: Record<string, string>;
+  /** id → fecha ISO en que se revisó y se decidió mantener. */
+  mantenidas?: Record<string, string>;
+  updatedAt?: string;
+}
+export type EstadoDeLimpieza = 'retirada' | 'mantenida' | 'sin_revisar';
+
+const refLimpieza = () => doc(db, 'recipeAccess', 'limpieza');
+
+export async function getLimpiezaRecetario(): Promise<LimpiezaRecetario> {
+  if (forceLocalOnly) return {};
+  try {
+    const snap = await getDoc(refLimpieza());
+    return snap.exists() ? (snap.data() as LimpiezaRecetario) : {};
+  } catch (err) {
+    console.warn('getLimpiezaRecetario failed:', err);
+    return {};
+  }
+}
+
+/** Quita del índice las retiradas. Puro, para poder probarlo sin Firestore. */
+export function sinRetiradas(recetas: Recipe[], limpieza: LimpiezaRecetario): Recipe[] {
+  const fuera = limpieza.retiradas ?? {};
+  return Object.keys(fuera).length ? recetas.filter(r => !(r.id in fuera)) : recetas;
+}
+
+let indiceVigentePromesa: Promise<Recipe[]> | null = null;
+/** Si la lectura de la limpieza se atasca, no se deja al atleta sin recetario. */
+const ESPERA_LIMPIEZA_MS = 4000;
+
+/** El recetario que ve todo el mundo: el índice sin las recetas retiradas. */
+export function cargarIndiceRecetas(): Promise<Recipe[]> {
+  indiceVigentePromesa ??= Promise.all([
+    cargarIndiceCompleto(),
+    Promise.race([
+      getLimpiezaRecetario(),
+      new Promise<LimpiezaRecetario>(resolve => setTimeout(() => resolve({}), ESPERA_LIMPIEZA_MS)),
+    ]),
+  ]).then(([recetas, limpieza]) => {
+    if (recetas.length === 0) indiceVigentePromesa = null;  // que el siguiente intento vuelva a probar
+    return sinRetiradas(recetas, limpieza);
+  });
+  return indiceVigentePromesa;
+}
+
+/** Tras retirar o recuperar: que la próxima lectura del recetario lo tenga en cuenta. */
+export function olvidarIndiceVigente(): void {
+  indiceVigentePromesa = null;
+  recetasGeneratorCache.clear();
+}
+
+/** Varias recetas completas (con cantidades y pasos) de una vez, para comparar
+ *  duplicados en el limpiador: consultas de 30 en 30 en vez de una por receta. */
+export async function getRecetasCompletas(ids: string[]): Promise<Recipe[]> {
+  const tandas: string[][] = [];
+  for (let i = 0; i < ids.length; i += 30) tandas.push(ids.slice(i, i + 30));
+  // En paralelo: una detrás de otra eran ~15 s para los 600 duplicados.
+  const snaps = await Promise.all(tandas.map(t => getDocs(query(collection(db, 'recipes'), where(documentId(), 'in', t)))));
+  return snaps.flatMap(snap => snap.docs.map(d => ({ id: d.id, ...d.data() }) as Recipe));
+}
+
+/** Marca recetas como retiradas, mantenidas o sin revisar (las saca de las otras dos). */
+export async function marcarRecetas(ids: string[], estado: EstadoDeLimpieza): Promise<void> {
+  if (forceLocalOnly || ids.length === 0) return;
+  const ahora = new Date().toISOString();
+  await setDoc(refLimpieza(), { updatedAt: ahora }, { merge: true });
+  // Por tandas: un update con miles de rutas es lento y se acerca al límite.
+  for (let i = 0; i < ids.length; i += 400) {
+    const cambios: Record<string, unknown> = { updatedAt: ahora };
+    for (const id of ids.slice(i, i + 400)) {
+      cambios[`retiradas.${id}`] = estado === 'retirada' ? ahora : deleteField();
+      cambios[`mantenidas.${id}`] = estado === 'mantenida' ? ahora : deleteField();
+    }
+    await updateDoc(refLimpieza(), cambios);
+  }
+  olvidarIndiceVigente();
 }
 
 export async function queryRecetas(

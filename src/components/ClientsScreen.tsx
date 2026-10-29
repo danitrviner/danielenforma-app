@@ -1,7 +1,7 @@
 import { nombreDeTransicion } from '../utils/transicionDeVista';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQueries, useQuery, useIsFetching, useIsMutating } from '@tanstack/react-query';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog } from '../types';
 import {
   getAllUserProfilesOrThrow, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs,
@@ -11,24 +11,25 @@ import { avisosActivos, claveDeAviso } from '../utils/avisosDelCoach';
 import { addDays, hoyIsoLocal } from '../utils/trainingWeek';
 import ClientHub, { HubTab, HUB_TABS, PESTANAS_RETIRADAS } from './ClientHub';
 import HomeCoachScreen from './HomeCoachScreen';
-import AthletesBar from './AthletesBar';
+import InvitacionesPendientesPanel from '../features/crm/components/InvitacionesPendientesPanel';
 import CoachNotesPanel from './CoachNotesPanel';
 import InvitarAtletaModal from '../features/crm/components/InvitarAtletaModal';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { useRevisionesSinLeer } from '../hooks/useRevisionesSinLeer';
 import { estimateSetupPct } from '../utils/clientSetup';
-import { atletasActivos, esBaja, esAnonimizado } from '../utils/atletas';
-import { Avatar, Skeleton } from './ui';
+import { atletasActivos, esBaja, esArchivado, esAnonimizado } from '../utils/atletas';
+import { Avatar, Skeleton, Button, Icon, SearchField, Chip } from './ui';
 import { EmptyState, Badge } from './ui';
 import { compararNombres } from '../utils/ordenAlfabetico';
-import { coincideBusqueda } from '../utils/busqueda';
+import { coincideBusqueda, normalizarTexto } from '../utils/busqueda';
+import { normalizarDiaRevision } from '../utils/cicloRevision';
 
 const DEFAULT_HUB_TAB: HubTab = 'revisiones';
 
 // Forma de cada elemento de `enrichedAthletes` (más abajo) — hecha a mano
-// porque ese array sale de un useMemo sin tipo propio y AthleteRow necesita
+// porque ese array sale de un useMemo sin tipo propio y AthleteTile necesita
 // un tipo con nombre para vivir fuera del componente (ver comentario junto a
-// AthleteRow). Si el useMemo deja de calcular alguno de estos campos, tsc lo
+// AthleteTile). Si el useMemo deja de calcular alguno de estos campos, tsc lo
 // marca aquí como incompatibilidad de tipos.
 type EnrichedAthlete = UserProfile & {
   planDaysLeft: number | null;
@@ -44,39 +45,77 @@ type EnrichedAthlete = UserProfile & {
   setupPct: number;
 };
 
-// Envuelta en React.memo y hecha componente aparte (antes iba inline dentro
-// del .map()) — la lista de atletas puede ser larga y antes cualquier estado
-// de ClientsScreen (búsqueda, sincronización...) repintaba cada fila igual.
-// Depende de que `onOpen` tenga identidad estable (useCallback más abajo) y
-// de que `athlete` no se reconstruya en cada render (ya sale de un useMemo).
-const AthleteRow = React.memo(function AthleteRow({ athlete, onOpen }: {
-  athlete: EnrichedAthlete;
-  onOpen: (athlete: EnrichedAthlete) => void;
-}) {
-  const { pendingCount, daysSince, daysSinceLogin } = athlete;
+/** Ruta del Hub de un atleta. Sin pestaña, quien tiene la ficha a medias
+ *  aterriza en «Setup». La usan el enlace de la baldosa y `openAthleteHub`,
+ *  así que abrir en pestaña nueva y abrir aquí llevan al mismo sitio. */
+function rutaDelHub(athlete: UserProfile & { setupPct?: number }, tab?: HubTab): string {
+  const landingTab = tab ?? ((athlete.setupPct ?? 100) < 100 ? 'setup' : undefined);
+  return `/clients/${encodeURIComponent(athlete.email)}${landingTab ? `/${landingTab}` : ''}`;
+}
+
+/** Letra del índice A–Z: la inicial sin tildes; lo que no empieza por letra va a «#». */
+function letraDe(nombre: string): string {
+  const c = normalizarTexto(nombre).charAt(0).toUpperCase();
+  return c >= 'A' && c <= 'Z' ? c : '#';
+}
+
+const LETRAS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('');
+
+/** Filtro por día de revisión, en orden de semana (lunes primero). El índice
+ *  es el de `diaRevision`: 0 = domingo … 6 = sábado. */
+const DIAS_DE_REVISION: { dia: number; corto: string }[] = [
+  { dia: 1, corto: 'Lun' }, { dia: 2, corto: 'Mar' }, { dia: 3, corto: 'Mié' }, { dia: 4, corto: 'Jue' },
+  { dia: 5, corto: 'Vie' }, { dia: 6, corto: 'Sáb' }, { dia: 0, corto: 'Dom' },
+];
+
+/** El estado del atleta en un punto de color (variante B elegida por Dani,
+ *  29-10). El detalle de fechas queda en el `title` y, entero, en el Hub. */
+function puntoDeEstado(a: EnrichedAthlete): { clase: string; texto: string } | null {
+  if (a.pendingCount > 0) return { clase: 'bg-warning', texto: `${a.pendingCount} revisión${a.pendingCount === 1 ? '' : 'es'} pendiente${a.pendingCount === 1 ? '' : 's'}` };
+  if (a.daysSinceLogin === null || a.daysSinceLogin >= 14) return { clase: 'bg-danger', texto: 'Más de 14 días sin entrar' };
+  if (a.daysSinceLogin <= 7) return { clase: 'bg-success', texto: 'Entró esta semana' };
+  return null;
+}
+
+// Envuelta en React.memo y hecha componente aparte — la lista de atletas
+// puede ser larga y cualquier estado de ClientsScreen (búsqueda,
+// sincronización...) repintaría cada baldosa igual.
+//
+// Es un <Link>, no un <button> (29-10): Dani abre varios atletas a la vez y un
+// botón no deja ⌘+clic, clic central ni «Abrir en pestaña nueva».
+const AthleteTile = React.memo(function AthleteTile({ athlete }: { athlete: EnrichedAthlete }) {
+  const { daysSince, daysSinceLogin } = athlete;
   const revisionLabel = daysSince === null ? '—' : daysSince <= 0 ? 'hoy' : `hace ${daysSince}d`;
   const loginLabel = daysSinceLogin === null ? '—' : daysSinceLogin <= 0 ? 'hoy' : `hace ${daysSinceLogin}d`;
-  const metaLine = pendingCount > 0
-    ? `${pendingCount} revisión${pendingCount === 1 ? '' : 'es'} pendiente${pendingCount === 1 ? '' : 's'}`
-    : `Último acceso: ${loginLabel} · Última revisión: ${revisionLabel}`;
+  const punto = puntoDeEstado(athlete);
 
   return (
-    <button
-      onClick={() => onOpen(athlete)}
-      className="fila-pulsable flex items-center gap-3 bg-raised border border-hairline rounded-control px-3 py-2.5 text-left hover:border-accent/40"
-    >
-      {/* El nombre es lo que el coach viene a buscar, así que manda en la fila:
-          sube de 12 px a 15 px (`text-body`) y el avatar crece con él. Antes el
-          nombre pesaba lo mismo que su línea de datos y costaba localizar a
-          alguien de un vistazo (auditoría §3.1). */}
-      <div className="w-10 h-10 rounded-full overflow-hidden border border-hairline flex-shrink-0">
-        <Avatar src={athlete.avatarUrl} name={athlete.displayName} className="w-full h-full object-cover" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="font-sans font-bold text-ink text-body truncate" style={{ viewTransitionName: nombreDeTransicion('atleta', athlete.userId) }}>{athlete.displayName}</p>
-        <p className="font-mono text-caption text-ink-3 truncate mt-0.5">{metaLine}</p>
-      </div>
-    </button>
+    <div className="group relative flex min-w-0 items-center bg-raised border border-hairline rounded-control hover:border-accent/40">
+      <Link
+        to={rutaDelHub(athlete)}
+        viewTransition
+        title={`${athlete.displayName} · último acceso: ${loginLabel} · última revisión: ${revisionLabel}`}
+        className="fila-pulsable flex min-w-0 flex-1 items-center gap-2.5 rounded-control py-2 pl-2.5 pr-1"
+      >
+        <div className="w-8 h-8 rounded-full overflow-hidden border border-hairline flex-shrink-0">
+          <Avatar src={athlete.avatarUrl} name={athlete.displayName} className="w-full h-full object-cover" />
+        </div>
+        <p className="min-w-0 flex-1 font-sans font-bold text-ink text-body-s truncate" style={{ viewTransitionName: nombreDeTransicion('atleta', athlete.userId) }}>{athlete.displayName}</p>
+        {punto && <span className={`h-2 w-2 shrink-0 rounded-full ${punto.clase}`} role="img" aria-label={punto.texto} />}
+      </Link>
+      {/* Pestaña nueva de un toque, sin tener que acordarse del ⌘+clic.
+          Hermano del enlace y no dentro: un <a> no puede ir dentro de otro. */}
+      <Link
+        to={rutaDelHub(athlete)}
+        target="_blank"
+        rel="noopener"
+        aria-label={`Abrir a ${athlete.displayName} en una pestaña nueva`}
+        title="Abrir en pestaña nueva"
+        className="mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-control text-ink-3 hover:bg-accent/10 hover:text-accent-ink"
+      >
+        <Icon name="open_in_new" size="s" />
+      </Link>
+    </div>
   );
 });
 
@@ -114,7 +153,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   });
   const athletes: UserProfile[] = useMemo(() => atletasActivos(allProfiles), [allProfiles]);
   const archivedAthletes = useMemo(
-    () => allProfiles.filter(p => esBaja(p) && !esAnonimizado(p)),
+    () => allProfiles.filter(p => (esBaja(p) || esArchivado(p)) && !esAnonimizado(p)),
+    [allProfiles]
+  );
+  const emailsArchivados = useMemo(
+    () => new Set(allProfiles.filter(esArchivado).map(p => p.email.toLowerCase())),
     [allProfiles]
   );
 
@@ -139,7 +182,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   });
   // Memoizado: sin esto, un Map nuevo en cada render invalidaba también el
   // useMemo de `enrichedAthletes` (lo tiene como dependencia) en cada render
-  // — lo que a su vez habría dejado sin efecto el React.memo de AthleteRow,
+  // — lo que a su vez habría dejado sin efecto el React.memo de AthleteTile,
   // porque cada `athlete` habría sido un objeto distinto cada vez aunque
   // nada suyo hubiera cambiado de verdad.
   const allAssignments = useMemo(() => {
@@ -185,6 +228,8 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
   // Buscador de la lista de atletas.
   const [search, setSearch] = useState('');
+  // Día de revisión a filtrar; null = todos (29-10).
+  const [diaFiltro, setDiaFiltro] = useState<number | null>(null);
 
   // "Todos los atletas" — desplegable 1:1 con `OFICIAL - Home Coach.dc.html`:
   // abierto por defecto, igual que el mockup (`allAthletesOpen: true`).
@@ -192,9 +237,8 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   const [inviteOpen, setInviteOpen] = useState(false);
 
   const openAthleteHub = useCallback((athlete: UserProfile & { setupPct?: number }, tab?: HubTab) => {
-    const landingTab = tab ?? ((athlete.setupPct ?? 100) < 100 ? 'setup' : undefined);
     // El nombre del atleta «vuela» de la fila a la cabecera del Hub (transición de vista).
-    navigate(`/clients/${encodeURIComponent(athlete.email)}${landingTab ? `/${landingTab}` : ''}`, { viewTransition: true });
+    navigate(rutaDelHub(athlete, tab), { viewTransition: true });
   }, [navigate]);
 
   // Busca en allProfiles, no en athletes: un enlace desde "Archivados" apunta
@@ -292,13 +336,34 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       compararNombres(a.displayName, b.displayName) || a.sortScore - b.sortScore);
   }, [athletes, checkins, todayMs, allAssignments, allWorkoutLogs, revisionesSinLeer]);
 
+  // Cuántos atletas revisa cada día — para el contador de cada chip.
+  const atletasPorDia = useMemo(() => {
+    const cuenta = new Map<number, number>();
+    for (const a of enrichedAthletes) {
+      const dia = normalizarDiaRevision(a.diaRevision);
+      cuenta.set(dia, (cuenta.get(dia) ?? 0) + 1);
+    }
+    return cuenta;
+  }, [enrichedAthletes]);
+
   const filteredAthletes = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return enrichedAthletes;
     return enrichedAthletes.filter(a =>
-      coincideBusqueda(a.displayName, q) || coincideBusqueda(a.email, q)
+      (diaFiltro === null || normalizarDiaRevision(a.diaRevision) === diaFiltro)
+      && (!q || coincideBusqueda(a.displayName, q) || coincideBusqueda(a.email, q))
     );
-  }, [enrichedAthletes, search]);
+  }, [enrichedAthletes, search, diaFiltro]);
+
+  // Rejilla A–Z: grupos por inicial, en el orden alfabético que ya trae la lista.
+  const gruposPorLetra = useMemo(() => {
+    const grupos = new Map<string, EnrichedAthlete[]>();
+    for (const a of filteredAthletes) {
+      const l = letraDe(a.displayName);
+      grupos.set(l, [...(grupos.get(l) ?? []), a]);
+    }
+    return LETRAS.filter(l => grupos.has(l)).map(l => [l, grupos.get(l)!] as const);
+  }, [filteredAthletes]);
+  const letrasConAtletas = useMemo(() => new Set(gruposPorLetra.map(([l]) => l)), [gruposPorLetra]);
 
   // Emit coach notifications for urgent clients (once per unique condition)
   useEffect(() => {
@@ -401,8 +466,10 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       </header>
 
 
-      {/* Buscador — 1:1 con `OFICIAL - Home Coach.dc.html`. */}
-      <AthletesBar search={search} onSearchChange={setSearch} />
+      {/* Invitaciones pendientes: se oculta sola cuando no hay ninguna. El
+          buscador que iba aquí vive ahora dentro de «Todos los atletas»,
+          junto a la lista que filtra (29-10). */}
+      <InvitacionesPendientesPanel />
 
       {!loadingAthletes && (
         <HomeCoachScreen
@@ -411,6 +478,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           checkins={checkins}
           assignmentsByEmail={allAssignments}
           loadingAssignments={loadingAssignments}
+          archivados={emailsArchivados}
         />
       )}
 
@@ -460,6 +528,33 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           </div>
         </div>
 
+        {allAthletesOpen && athletes.length > 0 && (
+          <>
+            <SearchField value={search} onChange={setSearch} placeholder="Buscar atleta por nombre o email..." label="Buscar atleta" className="mb-3" />
+            <div role="group" aria-label="Filtrar por día de revisión" className="flex flex-wrap gap-1.5 mb-3">
+              <Chip selected={diaFiltro === null} onClick={() => setDiaFiltro(null)}>Todos · {athletes.length}</Chip>
+              {DIAS_DE_REVISION.filter(d => atletasPorDia.has(d.dia)).map(d => (
+                <Chip key={d.dia} selected={diaFiltro === d.dia} onClick={() => setDiaFiltro(diaFiltro === d.dia ? null : d.dia)}>
+                  {d.corto} · {atletasPorDia.get(d.dia)}
+                </Chip>
+              ))}
+            </div>
+            <nav aria-label="Saltar a la letra" className="flex flex-wrap gap-0.5 mb-3">
+              {LETRAS.filter(l => l !== '#' || letrasConAtletas.has('#')).map(letra => (
+                <button
+                  key={letra}
+                  type="button"
+                  disabled={!letrasConAtletas.has(letra)}
+                  onClick={() => document.getElementById(`atletas-${letra}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  className="h-7 w-7 rounded-control font-mono text-caption font-bold text-ink-2 hover:bg-raised hover:text-accent-ink disabled:text-ink-5 disabled:hover:bg-transparent"
+                >
+                  {letra}
+                </button>
+              ))}
+            </nav>
+          </>
+        )}
+
         {allAthletesOpen && (
           loadingAthletes ? (
             <div className="space-y-1">
@@ -483,14 +578,22 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               onAction={() => setInviteOpen(true)}
             />
           ) : filteredAthletes.length === 0 ? (
-            <EmptyState icon="search_off" title={`Ningún atleta coincide con "${search}".`} />
+            <EmptyState icon="search_off" title={search.trim() ? `Ningún atleta coincide con "${search}".` : 'Nadie revisa ese día.'} />
           ) : (
-            <div className="flex flex-col gap-1.5">
-              {filteredAthletes.map((athlete, i) => (
-                <div key={athlete.userId} className="animate-fade-up stagger-child" style={{ '--i': Math.min(i, 8) } as React.CSSProperties}>
-                  <AthleteRow athlete={athlete} onOpen={openAthleteHub} />
-                </div>
+            <div className="space-y-3">
+              {gruposPorLetra.map(([letra, delGrupo]) => (
+                <section key={letra} id={`atletas-${letra}`} aria-label={letra} className="scroll-mt-24">
+                  <h3 className="font-mono text-caption font-bold text-accent-ink mb-1.5 ml-0.5">{letra}</h3>
+                  <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-1.5">
+                    {delGrupo.map(athlete => <AthleteTile key={athlete.userId} athlete={athlete} />)}
+                  </div>
+                </section>
               ))}
+              <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 font-mono text-caption text-ink-3">
+                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-warning" />Revisión pendiente</span>
+                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-danger" />+14 días sin entrar</span>
+                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-success" />Entró esta semana</span>
+              </div>
             </div>
           )
         )}
@@ -498,7 +601,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
       {inviteOpen && <InvitarAtletaModal onCerrar={() => setInviteOpen(false)} />}
 
-      {/* Bajas no anonimizadas: fuera de la lista principal (no molestan en
+      {/* Bajas y archivados (no anonimizados): fuera de la lista principal (no molestan en
           HOME COACH ni en el contador), pero no desaparecidas — el coach
           puede volver a abrir su ficha. Los anonimizados no se listan aquí
           ni en ningún sitio: ya no tienen nombre ni datos, solo cuentan para

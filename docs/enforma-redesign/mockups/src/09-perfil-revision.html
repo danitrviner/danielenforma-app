@@ -1,0 +1,35 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><title>09 Revisión</title>
+<style>.tabs2{display:flex;gap:6px;overflow:hidden}.tabs2 div{height:38px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font-size:14px;font-weight:600;color:var(--ink-2);background:var(--surface);border:1px solid var(--strong);white-space:nowrap}.tabs2 .on{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:800}
+.q{display:flex;gap:12px;align-items:center;padding:14px 0;border-top:1px solid var(--hairline)}</style>
+</head><body>
+<div class="sheetpage">
+  <div><div class="cap">Actual · Perfil › Revisión</div><div class="frame" style="width:406px;height:860px;overflow:hidden"><img src="../actual/revision-atleta-vista.png" style="width:390px;display:block"></div></div>
+  <div><div class="cap">Actual · calendario del Perfil (se elimina)</div><div class="frame" style="width:406px;height:860px;overflow:hidden"><img src="../actual/perfil-calendario.png" style="width:390px;display:block"></div></div>
+  <div><div class="cap">Propuesta · Perfil › Revisión</div>
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span></div>
+    <div class="appbar"><span class="wordmark">Perfil</span><span style="flex:1"></span><span class="iconbtn"><span class="ms">settings</span></span></div>
+    <div class="scroll" style="padding-top:14px">
+      <div class="tabs2"><div>Resumen</div><div class="on">Revisión</div><div>Roadmap</div><div>Preferencias</div></div>
+      <div class="card pad row" style="margin-top:16px;background:#FFFBF0;border-color:rgba(154,110,12,.45)"><span class="ms fill" style="color:var(--accent-ink)">assignment</span><div style="flex:1"><div class="h-s">Esta semana: 1 de 4 hecho</div><div class="body-s">Caduca el martes 28</div></div><div class="btn btn-primary" style="height:40px;padding:0 14px;font-size:14px">Seguir</div></div>
+      <div class="label" style="margin-top:20px">Historial de revisiones</div>
+      <div class="card pad" style="margin-top:8px">
+        <div class="q" style="border:0;padding-top:0"><span class="ms fill" style="color:var(--success)">check_circle</span><div style="flex:1"><div class="h-s">Semana del 17 oct</div><div class="caption">Peso 80,7 · 3 cuestionarios · fotos</div></div><span class="pill" style="background:#E3F1EA;color:var(--success)">Leída</span></div>
+        <div class="q"><span class="ms fill" style="color:var(--success)">check_circle</span><div style="flex:1"><div class="h-s">Semana del 10 oct</div><div class="caption">Peso 81,0 · 2 cuestionarios</div></div><span class="pill" style="background:var(--accent-bg);color:var(--accent-ink)">Con nota</span></div>
+        <div class="q"><span class="ms fill" style="color:var(--warning)">error</span><div style="flex:1"><div class="h-s">Semana del 3 oct</div><div class="caption">Incompleta · faltaron fotos</div></div><span class="ms">chevron_right</span></div>
+      </div>
+      <div class="label" style="margin-top:20px">Tus datos</div>
+      <div class="row" style="margin-top:8px;align-items:stretch">
+        <div class="card pad" style="flex:1"><div class="caption">Peso</div><div class="num" style="font-size:20px;margin-top:2px">80,4 kg</div></div>
+        <div class="card pad" style="flex:1"><div class="caption">Cintura</div><div class="num" style="font-size:20px;margin-top:2px">84 cm</div></div>
+        <div class="card pad" style="flex:1"><div class="caption">Fotos</div><div class="num" style="font-size:20px;margin-top:2px">12</div></div>
+      </div>
+    </div>
+    <div class="tabbar"><div class="tab"><span class="ms">today</span>Hoy</div><div class="tab"><span class="ms">fitness_center</span>Rutinas</div><div class="tab"><div class="fab"><span class="ms" style="font-size:30px">add</span></div></div><div class="tab"><span class="ms">restaurant</span>Nutrición</div><div class="tab on"><span class="ms fill">person</span>Perfil</div></div>
+  </div></div></div>
+  <div class="note"><h3>Qué cambia</h3><ul>
+    <li><b>Pestañas</b> como píldoras de 38 px: activa en tinta llena; inactivas con borde y texto ink-2 sólido. Siguen las mismas 4 (+ Gimnasio y Ajustes pasan al engranaje).</li>
+    <li>Revisión = <b>consulta</b>: estado de la semana + historial. Rellenar se hace en Check-ins (mismo motor y mismos datos).</li>
+    <li>El <b>calendario del Perfil</b> (<span class="mono">roadmap/calendario/atleta/*</span>) se retira de Roadmap. El motor <span class="mono">utils/roadmapCalendar.ts</span> se conserva porque lo usa el calendario del coach.</li>
+  </ul></div>
+</div></body></html>

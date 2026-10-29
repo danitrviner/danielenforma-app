@@ -1,0 +1,61 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><title>14 Técnicas</title>
+<style>
+.srow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--raised);border:1px solid var(--hairline);margin-top:8px}
+.srow .n{width:64px;font-family:"IBM Plex Mono";font-weight:600;font-size:14px}
+.srow select,.fake{height:36px;border-radius:10px;border:1px solid var(--strong);background:#fff;padding:0 10px;font-size:14px;display:flex;align-items:center;gap:6px}
+.seg2{margin-left:76px;border-left:3px solid var(--accent);padding:6px 0 6px 12px;margin-top:4px;font-size:14px;color:var(--ink-2)}
+.at{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--hairline)}
+.at .k{width:44px;font-family:"IBM Plex Mono";font-weight:700;font-size:14px}
+.inp{width:62px;height:42px;border-radius:12px;border:1.5px solid var(--strong);display:grid;place-items:center;font-family:"IBM Plex Mono";font-weight:600;font-size:16px;background:#fff}
+.sub{margin-left:20px;padding-left:14px;border-left:3px solid var(--accent)}
+.sub .k{color:var(--accent-ink)}
+.bad{display:flex;gap:8px;align-items:center;padding:8px 0;font-family:"IBM Plex Mono";font-size:14px;font-weight:600;border-top:1px solid var(--hairline)}
+</style></head><body>
+<div class="sheetpage">
+  <div style="width:420px"><div class="cap">Actual · cómo se pinta hoy (código)</div>
+    <div class="card pad">
+      <div class="h-s">Aperturas pec deck · 3 series · técnica: Drop</div>
+      <div class="caption" style="margin:4px 0 8px">La técnica es un campo del ejercicio entero (<span class="mono">types.ts WorkoutExercise.technique</span>)</div>
+      <div class="bad"><span style="width:60px">BASE</span><span>70 kg × 12</span></div>
+      <div class="bad" style="color:var(--danger)"><span style="width:60px">D1</span><span>— la serie 2 se convierte en bajada</span></div>
+      <div class="bad" style="color:var(--danger)"><span style="width:60px">D2</span><span>— la serie 3 se convierte en bajada</span></div>
+      <div class="card pad" style="margin-top:12px;background:#FDF1EE;border-color:rgba(168,42,32,.25);box-shadow:none"><div class="body-s"><b style="color:var(--danger)">Resultado:</b> 1 serie + 2 bajadas en vez de 3 series + 1 bajada. Las bajadas se registran como series completas y cuentan volumen. <span class="mono">ExerciseCard.tsx:76, :438</span></div></div>
+    </div>
+  </div>
+  <div style="width:560px"><div class="cap">Propuesta · coach programa por serie</div>
+    <div class="card pad">
+      <div class="row between"><div><div class="h-m">Aperturas pec deck</div><div class="caption">Semana 3 · 3 series · 10-12 · RIR 1</div></div><span class="fake">Aplicar a: <b>esta semana y siguientes</b> <span class="ms" style="font-size:18px">expand_more</span></span></div>
+      <div class="srow"><span class="n">Serie 1</span><span style="flex:1;font-size:14px">10-12 · RIR 1</span><span class="fake">Sin técnica <span class="ms" style="font-size:18px">expand_more</span></span></div>
+      <div class="srow"><span class="n">Serie 2</span><span style="flex:1;font-size:14px">10-12 · RIR 1</span><span class="fake">Sin técnica <span class="ms" style="font-size:18px">expand_more</span></span></div>
+      <div class="srow" style="border-color:var(--accent)"><span class="n">Serie 3</span><span style="flex:1;font-size:14px">10-12 · RIR 0</span><span class="fake" style="border-color:var(--accent);color:var(--accent-ink);font-weight:700">+ Drop set <span class="ms" style="font-size:18px">expand_more</span></span></div>
+      <div class="seg2">Después de la serie: <b>2 bajadas</b> · <b>−20 %</b> de carga cada una · al fallo · sin descanso</div>
+      <div class="label" style="margin-top:16px">Parámetros por técnica</div>
+      <table style="margin-top:6px"><tr><th>Técnica</th><th>Qué se programa</th></tr>
+        <tr><td><b>Drop set</b></td><td>nº de bajadas · % de bajada · objetivo (fallo / reps)</td></tr>
+        <tr><td><b>Myo-reps</b></td><td>reps de activación · nº de mini-series · reps objetivo · descanso 15-20 s</td></tr>
+        <tr><td><b>Rest-pause</b></td><td>nº de pausas · segundos de pausa · reps objetivo</td></tr></table>
+      <div class="caption" style="margin-top:10px">Para IEM/IF: la técnica se cuenta en la serie a la que pertenece (como el motor CDG con «última serie»), y los segmentos <b>no</b> suman series de volumen.</div>
+    </div>
+  </div>
+  <div><div class="cap">Propuesta · el atleta lo ve así</div>
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span></div>
+    <div class="appbar"><span class="iconbtn"><span class="ms">arrow_back</span></span><span style="font-weight:700">Torso A · 4/6</span></div>
+    <div class="scroll" style="padding-top:14px">
+      <div class="h-l">Aperturas pec deck</div>
+      <div class="body-s">3 series · 10-12 reps · RIR 1 · última con drop set</div>
+      <div class="card pad" style="margin-top:14px">
+        <div class="row" style="font-size:12px;font-family:'IBM Plex Mono';font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em"><span style="width:44px">Serie</span><span style="flex:1">Anterior</span><span style="width:62px;text-align:center">kg</span><span style="width:10px"></span><span style="width:62px;text-align:center">reps</span><span style="width:28px"></span></div>
+        <div class="at"><span class="k">1</span><span style="flex:1;font-size:14px;color:var(--ink-3)">70×12</span><span class="inp">70</span><span>×</span><span class="inp">12</span><span class="ms fill" style="color:var(--success)">check_circle</span></div>
+        <div class="at"><span class="k">2</span><span style="flex:1;font-size:14px;color:var(--ink-3)">70×11</span><span class="inp">70</span><span>×</span><span class="inp">11</span><span class="ms fill" style="color:var(--success)">check_circle</span></div>
+        <div class="at"><span class="k">3</span><span style="flex:1;font-size:14px;color:var(--ink-3)">70×10</span><span class="inp" style="border-color:var(--ink)">70</span><span>×</span><span class="inp" style="border-color:var(--ink)">10</span><span class="ms" style="color:var(--ink-4)">radio_button_unchecked</span></div>
+        <div class="sub">
+          <div class="row" style="gap:6px;margin:6px 0 2px"><span class="pill" style="background:var(--accent-bg);color:var(--accent-ink)">Drop set</span><span class="caption">sin descanso · −20 %</span></div>
+          <div class="at" style="border:0"><span class="k">↳ D1</span><span style="flex:1;font-size:14px;color:var(--ink-3)">56×8</span><span class="inp">56</span><span>×</span><span class="inp" style="color:var(--ink-4)">—</span><span style="width:28px"></span></div>
+          <div class="at"><span class="k">↳ D2</span><span style="flex:1;font-size:14px;color:var(--ink-3)">45×6</span><span class="inp">45</span><span>×</span><span class="inp" style="color:var(--ink-4)">—</span><span style="width:28px"></span></div>
+        </div>
+      </div>
+      <div class="btn btn-primary" style="width:100%;margin-top:14px">Completar serie 3 + drop</div>
+    </div>
+  </div></div></div>
+</div></body></html>

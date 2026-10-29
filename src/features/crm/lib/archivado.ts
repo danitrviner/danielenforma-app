@@ -21,23 +21,12 @@ export function partirPorArchivado(clientes: Cliente[]): { visibles: Cliente[]; 
 }
 
 /**
- * Por qué este cliente NO se puede borrar del todo, o null si sí se puede.
- *
- * El caso que importa es la cuenta viva: borrar su `user_profiles` desde el
- * CRM dejaría huérfanos sus entrenos, check-ins y fotos, y la app le crearía
- * un perfil nuevo y vacío en su siguiente arranque. Ese borrado tiene su
- * propio camino (api/delete-account.ts), que limpia además Auth y Storage y
- * deja el perfil anonimizado — y un perfil ya anonimizado sí se puede barrer
- * desde aquí, que es justo el «borrado_xxxx» que se queda en la lista.
- *
- * El otro bloqueo, tener cobros ya cobrados, NO se decide aquí: depende de los
- * pagos, que esta función no ve. Lo impone `eliminarClienteDelCrm`
- * (src/db/crm.ts) lanzando `ClienteConCobros`, y antes que él la propia regla
- * de Firestore.
+ * ¿Tiene una cuenta con la que entrar a la app? Si sí, archivarlo o borrarlo
+ * pasa por el servidor (api/gestionar-acceso.ts), que le quita el acceso: un
+ * flag en Firestore no basta, la persona seguiría teniendo su sesión y su
+ * contraseña. Un contacto sin cuenta, o el perfil anonimizado de una cuenta ya
+ * borrada, no tiene nada que bloquear.
  */
-export function motivoNoBorrable(cliente: Cliente): string | null {
-  if (cliente.userId && !cliente.anonimizado) {
-    return 'Tiene cuenta activa en la app. Archívalo, o bórralo desde el borrado de cuenta (limpia también sus entrenos y su acceso).';
-  }
-  return null;
+export function tieneCuentaActiva(cliente: Cliente): boolean {
+  return !!cliente.userId && !!cliente.email && !cliente.anonimizado;
 }

@@ -1,0 +1,44 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><title>02 Navegación</title>
+<style>
+.alt{width:390px;background:var(--bg);border-radius:20px;overflow:hidden;position:relative;height:120px;border:1px solid var(--hairline)}
+.alt .tabbar{position:absolute}
+.act{display:flex;align-items:center;gap:14px;padding:14px;border-radius:16px;background:var(--raised);border:1px solid var(--hairline)}
+.act .ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;flex:none}
+.lbl{font-size:13px;font-family:"IBM Plex Mono";font-weight:600;color:var(--ink-3);margin:18px 0 8px;text-transform:uppercase;letter-spacing:.05em}
+</style></head><body>
+<div class="sheetpage">
+  <div><div class="cap">Alternativas del botón central</div>
+    <div class="lbl">A · «+» (recomendada)</div>
+    <div class="alt"><div class="tabbar"><div class="tab on"><span class="ms fill">today</span>Hoy</div><div class="tab"><span class="ms">fitness_center</span>Rutinas</div><div class="tab"><div class="fab"><span class="ms" style="font-size:30px">add</span></div></div><div class="tab"><span class="ms">restaurant</span>Nutrición</div><div class="tab"><span class="ms">person</span>Perfil</div></div></div>
+    <div class="lbl">B · Mancuerna</div>
+    <div class="alt"><div class="tabbar"><div class="tab on"><span class="ms fill">today</span>Hoy</div><div class="tab"><span class="ms">fitness_center</span>Rutinas</div><div class="tab"><div class="fab" style="background:var(--accent);color:var(--ink)"><span class="ms" style="font-size:28px;transform:rotate(-45deg)">fitness_center</span></div></div><div class="tab"><span class="ms">restaurant</span>Nutrición</div><div class="tab"><span class="ms">person</span>Perfil</div></div></div>
+    <div class="lbl">C · Logotipo En Forma</div>
+    <div class="alt"><div class="tabbar"><div class="tab on"><span class="ms fill">today</span>Hoy</div><div class="tab"><span class="ms">fitness_center</span>Rutinas</div><div class="tab"><div class="fab"><img src="../../../../public/atlas-logo.png" style="width:34px;height:34px"></div></div><div class="tab"><span class="ms">restaurant</span>Nutrición</div><div class="tab"><span class="ms">person</span>Perfil</div></div></div>
+    <p class="note" style="width:390px;margin-top:18px"><b>Por qué A:</b> «+» dice «añadir/empezar algo», que es lo que hace el panel (sesión de cardio, check-in, Training Lab). La mancuerna se confunde con Rutinas y el logo no comunica acción. El «+» negro con oro conserva la marca sin competir con la pestaña activa.</p>
+  </div>
+  <div><div class="cap">Al pulsar · hoja inferior</div>
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span class="ms">signal_cellular_alt</span></div>
+    <div class="appbar"><span class="wordmark">En <b>Forma</b></span></div>
+    <div class="scroll" style="padding-top:18px"><div class="h-display">Hola, Daniel</div><div style="margin-top:6px;font-size:16px;font-weight:600;color:var(--ink-2)">Miércoles 22 de octubre</div><div class="card" style="height:220px;margin-top:18px"></div></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="bottom:0;padding-bottom:110px">
+      <div class="grab"></div>
+      <div class="label">Herramientas</div>
+      <div class="h-m" style="margin:4px 0 14px">¿Qué quieres hacer?</div>
+      <div class="stack">
+        <div class="act"><div class="ic" style="background:#E6F1F3;color:var(--data)"><span class="ms fill">monitor_heart</span></div><div style="flex:1"><div class="h-s">Cardio</div><div class="body-s">Sesión libre o la pautada de hoy</div></div><span class="ms">chevron_right</span></div>
+        <div class="act"><div class="ic" style="background:var(--accent-bg);color:var(--accent-ink)"><span class="ms fill">assignment</span></div><div style="flex:1"><div class="row" style="gap:8px"><span class="h-s">Check-ins</span><span class="pill" style="background:#F6E3D9;color:var(--warning)">1 pendiente</span></div><div class="body-s">Peso, cuestionarios y fotos de la semana</div></div><span class="ms">chevron_right</span></div>
+        <div class="act"><div class="ic" style="background:#EEE8F8;color:#6A3BC4"><span class="ms fill">school</span></div><div style="flex:1"><div class="h-s">Training Lab</div><div class="body-s">Cursos y lecciones de tu coach</div></div><span class="ms">chevron_right</span></div>
+      </div>
+    </div>
+    <div class="tabbar" style="z-index:3"><div class="tab"><span class="ms">today</span>Hoy</div><div class="tab"><span class="ms">fitness_center</span>Rutinas</div><div class="tab"><div class="fab"><span class="ms" style="font-size:30px">close</span></div></div><div class="tab"><span class="ms">restaurant</span>Nutrición</div><div class="tab"><span class="ms">person</span>Perfil</div></div>
+  </div></div></div>
+  <div class="note"><h3>Decisiones</h3><ul>
+    <li>Barra: <b>Hoy · Rutinas · [+] · Nutrición · Perfil</b>. Training Lab sale de la barra (hoy ocupa hueco aunque no haya acceso, <span class="mono">App.tsx:209</span>).</li>
+    <li><b>Hoja inferior</b> con el <span class="mono">ui/Sheet.tsx</span> existente: una sola interacción, se cierra con el mismo botón (el «+» gira a «×»).</li>
+    <li>El icono de cardio de la cabecera desaparece: pasa a la hoja.</li>
+    <li>Check-ins muestra el número de pendientes también en el «+» (punto ámbar).</li>
+    <li>Si el atleta no tiene acceso a Training Lab, la fila se muestra atenuada con «Tu coach aún no lo ha activado».</li>
+  </ul></div>
+</div></body></html>

@@ -23,6 +23,7 @@ import RevisionCabecera from './RevisionCabecera';
 import MensajesCoachPanel, { type CierrePorFirmar } from './MensajesCoachPanel';
 import { buildCierreMesociclo } from '../../utils/cierreMesociclo';
 import { bloqueCerradoRecientemente, idDeCierre, textoCierre } from '../../utils/cierreParaAtleta';
+import DiaRevisionAtleta from './DiaRevisionAtleta';
 import BodyweightPanel from '../BodyweightPanel';
 import SelectorPeriodoRevision from './SelectorPeriodoRevision';
 import BloquePatrones from './BloquePatrones';
@@ -240,6 +241,15 @@ export default function ClientRevisionPanel({
         <p className="font-mono text-caption text-ink-3 text-right">
           Modo presentación · P o Esc para salir
         </p>
+      )}
+
+      {/* ── Día de revisión y pausa: se cambian aquí también, no solo en
+          Revisiones, que es donde Dani está cuando lo decide (29-10). Fuera
+          en modo presentación, como el resto de controles. */}
+      {!presentando && (
+        <div className="bg-surface border border-hairline rounded-surface">
+          <DiaRevisionAtleta athlete={athlete} suelto />
+        </div>
       )}
 
       {/* ── Controles de la pantalla ─────────────────────────────────────── */}

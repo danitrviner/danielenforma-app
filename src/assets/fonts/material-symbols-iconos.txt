@@ -57,6 +57,7 @@ chevron_left
 chevron_right
 chips
 circle
+cleaning_services
 close
 cloud_off
 cloud_sync
@@ -70,7 +71,6 @@ cottage
 create
 cyclone
 dashboard
-database
 delete
 delete_forever
 description
@@ -126,6 +126,7 @@ grocery
 group
 groups
 health_and_safety
+height
 help
 history
 history_edu
@@ -133,11 +134,13 @@ home
 hourglass_top
 icecream
 image
+inbox
 info
 input
 insights
 inventory_2
 ios
+join_inner
 kebab_dining
 keyboard_arrow_down
 keyboard_arrow_up
@@ -172,6 +175,7 @@ monitor_weight
 monitoring
 mood
 more_vert
+move
 network_check
 notes
 notifications
@@ -271,6 +275,7 @@ takeout_dining
 target
 task_alt
 thumb_down
+thumb_up
 timelapse
 timeline
 title

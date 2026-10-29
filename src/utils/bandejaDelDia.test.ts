@@ -85,6 +85,17 @@ describe('lo que hay que contestar hoy', () => {
     expect(huerfano!.destino).toBe('/reviews');
   });
 
+  it('pero no el de alguien archivado en el CRM', () => {
+    const c = checkin('2026-09-14', { approved: false, coachFeedback: '' });
+    const r = construirBandejaDelDia(entrada({
+      atletas: [],
+      checkins: [c],
+      asignacionesPorEmail: new Map(),
+      archivados: new Set([c.email.toLowerCase()]),
+    }));
+    expect(r.filter(s => s.categoria === 'revision')).toHaveLength(0);
+  });
+
 
   it('cuenta los check-ins sin contestar', () => {
     const s = construirBandejaDelDia(entrada({
