@@ -11,7 +11,7 @@ import { distribucionDeMeso } from '../../utils/distribucionDeMeso.js';
 import { totalSemanas as totalSemanasNutri } from '../../utils/semanasNutricion.js';
 import { normalizarTexto as normTexto } from '../../utils/busqueda.js';
 import { nombreDeMeso } from '../../utils/nombresMeso.js';
-import type { LevelLadder, LadderLevel, LevelCriterionKind, WorkoutDayProposal, WorkoutDaysProposalPayload, RoadmapItem, NutritionPhaseProposal, NutritionProgramProposalPayload, RoadmapProposalPayload, SpecialDayProposalPayload, SpecialDayKind, WeekPlanProposalPayload, MacroAjustable } from '../../types.js';
+import type { LevelLadder, LadderLevel, LevelCriterionKind, WorkoutDayProposal, WorkoutDaysProposalPayload, RoadmapItem, NutritionPhaseProposal, NutritionProgramProposalPayload, RoadmapProposalPayload, SpecialDayProposalPayload, SpecialDayKind, WeekPlanProposalPayload, MacroAjustable, MensajeAtletaProposalPayload } from '../../types.js';
 import { PROTOCOLOS_VO2MAX } from '../../utils/cardioProgression.js';
 import type { SetupConfigProposalPayload, PublishBlockProposalPayload, WeeklyChallengeProposalPayload, WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload, MesocycleTemplateStageProposal, WorkoutDayExerciseProposal, QSchedule, WeekDay, ChallengeKind } from '../../types.js';
 import { isoWeekKey } from '../../utils/challengeOptions.js';
@@ -551,6 +551,35 @@ export async function draftCheckinFeedback(
 
 /** La dieta que se guarda al aprobar: el objetivo en kcal y gramos y, para los
  *  binarios viejos, su cupo en intercambios equivalente. */
+/** Un mensaje del coach al atleta fuera de la revisión. Firma Dani: el texto
+ *  no puede nombrar al asistente. Se aplica escribiendo en `mensajesCoach`. */
+export async function proposeMensajeAtleta(
+  athleteEmail: string, texto: string, motivo: string, semana: number | undefined, rationale: string, chatId: string,
+): Promise<string> {
+  const limpio = texto.trim();
+  const MOTIVOS = ['semana_nueva', 'perdidas', 'peso_sin_registrar', 'dolor', 'viaje', 'otro'];
+  if (!athleteEmail || !limpio) return toResult({ valid: false, issues: ['Faltan athlete_email o texto'] });
+  if (!MOTIVOS.includes(motivo)) return toResult({ valid: false, issues: [`motivo debe ser uno de: ${MOTIVOS.join(', ')}`] });
+  if (/\b(IA|inteligencia artificial|asistente)\b/i.test(limpio)) {
+    return toResult({ valid: false, issues: ['El texto no puede mencionar al asistente ni a la IA: lo firma Dani.'] });
+  }
+  if (limpio.length > 700) return toResult({ valid: false, issues: ['Demasiado largo: un párrafo, como mucho dos (700 caracteres).'] });
+  const summary = `Mensaje al atleta (${motivo.replace('_', ' ')}): «${limpio.length > 80 ? `${limpio.slice(0, 77)}…` : limpio}»`;
+  const proposal = await createAiProposal({
+    athleteId: athleteEmail,
+    kind: 'mensajeAtleta',
+    status: 'proposed',
+    chatId,
+    summary,
+    rationale: rationale || '',
+    payload: { texto: limpio, motivo: motivo as MensajeAtletaProposalPayload['motivo'], ...(semana !== undefined ? { semana } : {}) },
+    paraAtleta: limpio,
+    createdAt: new Date().toISOString(),
+  });
+  await registrarPropuesta(athleteEmail, proposal.id, chatId, summary);
+  return toResult({ proposalCreated: true, proposalId: proposal.id, note: 'Propuesta creada. Dani la revisa y la envía; el atleta la lee en su Inicio.' });
+}
+
 /** La respuesta a una revisión (cuestionario): el canal que de verdad usa el
  *  atleta desde 10-2026. La respuesta de cuestionario tiene que existir y ser
  *  suya; si ya tiene respuesta del coach, se dice (se sobrescribiría). */

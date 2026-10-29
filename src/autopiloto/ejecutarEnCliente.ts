@@ -17,6 +17,7 @@ import {
 } from '../dbService.js';
 import { saveDossierJudgement } from '../db/dossier.js';
 import { guardarRespuestaCoach } from '../db/questionnaires.js';
+import { enviarMensajeCoach } from '../db/mensajesCoach.js';
 import type { SnapshotDocumento } from '../types.js';
 import { fotoDeCreacion, resolverReferencias, type Operacion } from './aplicarPropuesta.js';
 
@@ -49,7 +50,7 @@ const QUE: Record<Operacion['tipo'], string> = {
   guardarConfigNutricion: 'guardar los pasos', guardarConfigDieta: 'guardar el calendario de dietas',
   asignarCuestionario: 'asignar el cuestionario', asignarFotos: 'asignar las fotos', crearCardio: 'asignar el cardio',
   guardarReto: 'guardar el reto', crearPlantillaMesociclo: 'guardar la plantilla', feedbackCheckin: 'enviar el feedback',
-  responderRevision: 'enviar la respuesta a la revisión',
+  responderRevision: 'enviar la respuesta a la revisión', enviarMensaje: 'enviar el mensaje al atleta',
 };
 
 function describir(hechas: number, total: number, op: Operacion): string {
@@ -90,6 +91,7 @@ export async function ejecutarEnCliente(operaciones: Operacion[]): Promise<Resul
         case 'crearPlantillaMesociclo': { const t = await createMesocycleTemplate(op.plantilla); refs[op.ref] = t.id; creados.push(fotoDeCreacion(op, t.id)); break; }
         case 'feedbackCheckin': await submitCoachFeedback(op.checkInId, op.feedback); break;
         case 'responderRevision': await guardarRespuestaCoach(op.responseId, op.respuesta); break;
+        case 'enviarMensaje': { const m = await enviarMensajeCoach(op.mensaje); creados.push(fotoDeCreacion(op, m.id)); break; }
       }
     } catch (err) {
       throw new ErrorDeEjecucion(i, operaciones.length, op, err);

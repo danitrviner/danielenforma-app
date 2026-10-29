@@ -18,7 +18,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
 import { timingSafeEqual } from 'node:crypto';
 import { COACH_EMAIL, getAdminDb } from './_lib/auth.js';
-import { fuenteAdmin, uidDelCoach, leerDoctrina, leerInstruccionesFijas } from './_lib/fuenteAdmin.js';
+import { fuenteAdmin, uidDelCoach, leerDoctrina, leerInstruccionesFijas, leerPoliticaAutopiloto } from './_lib/fuenteAdmin.js';
+import { aplicarPropuestaEnServidor } from './_lib/aplicarEnServidor.js';
 import { ejecutarRonda, type ClienteModelo } from './_lib/agente.js';
 import { leerEpisodiosPendientes, guardarEpisodio } from './_lib/db-admin.js';
 import { usarFuenteDeDatos } from '../src/ai/tools.server.js';
@@ -76,10 +77,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const coachUid = await uidDelCoach(db);
-  usarFuenteDeDatos(fuenteAdmin(db, coachUid));
-  const [doctrina, instruccionesFijas, perfiles] = await Promise.all([
+  const fuente = fuenteAdmin(db, coachUid);
+  usarFuenteDeDatos(fuente);
+  const [doctrina, instruccionesFijas, politica, perfiles] = await Promise.all([
     leerDoctrina(db, DOCTRINA_DEFAULTS),
     leerInstruccionesFijas(db),
+    leerPoliticaAutopiloto(db),
     db.collection('user_profiles').where('role', '==', 'client').get().then(s => s.docs.map(d => d.data() as { email?: string; displayName?: string })),
   ]);
   const aliasDe = (email: string) => aliasDeAtleta(perfiles.find(p => p.email === email)?.displayName, email);
@@ -97,12 +100,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Presupuesto diario, compartido con el chat del coach.
       const uso = await db.collection('aiUsage').doc(`daily_${hoy}`).get();
       const gastoHoy = (uso.data()?.gastoUsd as number | undefined) ?? 0;
-      if (DAILY_USD_LIMIT > 0 && gastoHoy >= DAILY_USD_LIMIT) { paradoPor = `presupuesto diario (${gastoHoy.toFixed(2)} $ de ${DAILY_USD_LIMIT} $)`; break; }
+      // El tope diario es el menor de los dos: el de la política que edita Dani
+      // y el de la variable de entorno, que es el techo duro.
+      const topeDia = [politica.presupuesto.diaUsd, DAILY_USD_LIMIT].filter(x => x > 0);
+      const tope = topeDia.length ? Math.min(...topeDia) : 0;
+      if (tope > 0 && gastoHoy >= tope) { paradoPor = `presupuesto diario (${gastoHoy.toFixed(2)} $ de ${tope} $)`; break; }
 
       const ahora = new Date().toISOString();
       let resultado;
       try {
-        resultado = await ejecutarRonda({ episodio: ep, modelo, cliente, sistema: { doctrina, instruccionesFijas }, alias: aliasDe(ep.athleteId), ahora });
+        const alertas = ep.alertas;
+        resultado = await ejecutarRonda({
+          episodio: ep, modelo, cliente, sistema: { doctrina, instruccionesFijas }, alias: aliasDe(ep.athleteId), ahora,
+          aplicar: id => aplicarPropuestaEnServidor(db, fuente, id, { politica, alertas, coachUid, ahora: new Date().toISOString() }),
+        });
       } catch (err) {
         ep = { ...ep, estado: 'fallido', error: (err as Error)?.message ?? String(err), actualizadoEn: ahora, cerradoEn: ahora };
         await guardarEpisodio(db, ep);

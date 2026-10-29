@@ -33,7 +33,7 @@ import type {
   NutritionPhase, NutritionProgram, NutritionProgramProposalPayload, PeriodizationBlockPayload, PhotoAssignment,
   PublishBlockProposalPayload, QuestionnaireAssignment, Roadmap, RoadmapProposalPayload, SetupConfigProposalPayload,
   SnapshotDocumento, SpecialDayProposalPayload, TaskItem, TemplateStage, UserProfile, WeekDay, WeekPlanProposalPayload,
-  WeeklyChallenge, WeeklyChallengeProposalPayload, WeightCheckIn, Workout, WorkoutAssignment, WorkoutDaysProposalPayload, QuestionnaireResponse, RespuestaRevisionProposalPayload,
+  WeeklyChallenge, WeeklyChallengeProposalPayload, WeightCheckIn, Workout, WorkoutAssignment, WorkoutDaysProposalPayload, QuestionnaireResponse, RespuestaRevisionProposalPayload, MensajeCoach, MensajeAtletaProposalPayload,
   WorkoutExercise, WorkoutTemplateProposalPayload,
 } from '../types.js';
 import { rirDescendente, subirSeries, programarEnSemanas } from '../utils/semanasDelBloque.js';
@@ -101,7 +101,8 @@ export type Operacion =
   | { tipo: 'guardarReto'; reto: WeeklyChallenge }
   | { tipo: 'crearPlantillaMesociclo'; ref: string; plantilla: Omit<MesocycleTemplate, 'id'> }
   | { tipo: 'feedbackCheckin'; checkInId: string; feedback: string }
-  | { tipo: 'responderRevision'; responseId: string; respuesta: { texto: string; enviadaEn: string } };
+  | { tipo: 'responderRevision'; responseId: string; respuesta: { texto: string; enviadaEn: string } }
+  | { tipo: 'enviarMensaje'; mensaje: Omit<MensajeCoach, 'id'> & { id: string } };
 
 /** Colección de Firestore que toca cada operación (para el snapshot de lo creado). */
 export const COLECCION_DE_OPERACION: Record<Operacion['tipo'], string> = {
@@ -114,7 +115,7 @@ export const COLECCION_DE_OPERACION: Record<Operacion['tipo'], string> = {
   guardarConfigNutricion: 'athleteNutritionConfigs', guardarConfigDieta: 'athleteDietConfigs',
   asignarCuestionario: 'questionnaireAssignments', asignarFotos: 'photoAssignments', crearCardio: 'cardioAssignments',
   guardarReto: 'weeklyChallenges', crearPlantillaMesociclo: 'mesocycleTemplates', feedbackCheckin: 'checkins',
-  responderRevision: 'questionnaireResponses',
+  responderRevision: 'questionnaireResponses', enviarMensaje: 'mensajesCoach',
 };
 
 export type ResultadoAplicacion =
@@ -616,6 +617,13 @@ export async function aplicarPropuesta(
       return { ok: true, operaciones: ops, snapshotAntes: antes, resultEntityId: responseId };
     }
 
+    case 'mensajeAtleta': {
+      const { texto, motivo } = p.payload as MensajeAtletaProposalPayload;
+      const id = `${p.athleteId}_${Date.parse(ahora)}`;
+      ops.push({ tipo: 'enviarMensaje', mensaje: { id, athleteId: p.athleteId, texto, motivo, creadoEn: ahora, proposalId: p.id } });
+      return { ok: true, operaciones: ops, snapshotAntes: antes, resultEntityId: id };
+    }
+
     case 'latido':
       return { ok: false, motivo: 'Lo que hizo el latido ya está aplicado: solo se puede deshacer.' };
   }
@@ -648,5 +656,5 @@ export function esCreacion(op: Operacion): boolean {
   return op.tipo === 'crearDieta' || op.tipo === 'crearMesociclo' || op.tipo === 'crearRutina'
     || op.tipo === 'crearAsignacion' || op.tipo === 'crearTarea' || op.tipo === 'asignarCuestionario'
     || op.tipo === 'asignarFotos' || op.tipo === 'crearCardio' || op.tipo === 'crearPlantillaMesociclo'
-    || op.tipo === 'guardarReto';
+    || op.tipo === 'guardarReto' || op.tipo === 'enviarMensaje';
 }

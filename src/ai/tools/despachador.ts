@@ -8,7 +8,7 @@ import { DietUpdatePayload, MesocycleProposalPayload, WorkoutDayInput, WorkoutEx
 import { DossierPatch } from '../../types.js';
 import { calcularRepartoTool, getChallengeOptions, getCheckinsInfo, getClientBrief, getClientOverview, getCoachAdjustments, getDietInfo, getExerciseLibrary, getExerciseUsage, getFoodLibrary, getNutritionAnalysis, getOnboardingCompleto, getProgressMetrics, getProposalFeedback, getQuestionnaireTrends, getRevisionEngine, getSetupStatus, getTrainingHistory, getVolumeSuggestion, leerContextoDelPlan, leerFicha, listClients, listMisRepartos, searchKnowledge } from './lectores.js';
 import { SEMANAS_POR_DEFECTO } from '../validators.js';
-import { addCoachTask, apuntarHecho, draftCheckinFeedback, proposeRespuestaRevision, generateReportDraft, leerExpediente, proposeDietUpdate, proposeDossierUpdate, proposeLevelLadder, proposeMesocycle, proposeMesocycleTemplate, proposeNutritionProgram, proposePeriodizationBlock, proposePublishBlock, proposeRoadmapItems, proposeSetupConfig, proposeSpecialDay, proposeWeekPlan, proposeWeeklyChallenge, proposeWorkoutDays, proposeWorkoutTemplate } from './propuestas.js';
+import { addCoachTask, apuntarHecho, draftCheckinFeedback, proposeRespuestaRevision, proposeMensajeAtleta, generateReportDraft, leerExpediente, proposeDietUpdate, proposeDossierUpdate, proposeLevelLadder, proposeMesocycle, proposeMesocycleTemplate, proposeNutritionProgram, proposePeriodizationBlock, proposePublishBlock, proposeRoadmapItems, proposeSetupConfig, proposeSpecialDay, proposeWeekPlan, proposeWeeklyChallenge, proposeWorkoutDays, proposeWorkoutTemplate } from './propuestas.js';
 /* ── Consentimiento: UNA puerta, no una lista ────────────────────────────────
    Hasta el 28-10-2026 aquí había una lista blanca de diez tools «con datos de
    atleta» y el resto pasaba sin mirar: `get_client_brief` —que trae el alta
@@ -106,6 +106,15 @@ export async function executeTool(
         }
         {
           const content = await proposeRespuestaRevision(email, input.response_id, input.texto, typeof input.rationale === 'string' ? input.rationale : '', chatId, leerExpediente(input));
+          const parsed = JSON.parse(content) as { valid?: boolean };
+          return { content, isError: parsed.valid === false };
+        }
+      case 'propose_mensaje_atleta':
+        if (!email || typeof input.texto !== 'string' || typeof input.motivo !== 'string') {
+          return { content: 'Faltan athlete_email, texto o motivo', isError: true };
+        }
+        {
+          const content = await proposeMensajeAtleta(email, input.texto, input.motivo, typeof input.semana === 'number' ? input.semana : undefined, typeof input.rationale === 'string' ? input.rationale : '', chatId);
           const parsed = JSON.parse(content) as { valid?: boolean };
           return { content, isError: parsed.valid === false };
         }

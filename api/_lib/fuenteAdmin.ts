@@ -26,6 +26,7 @@ import { normalizarFicha, MAX_HECHOS_FICHA } from '../../src/utils/fichaViva.js'
 import { VOLUME_LANDMARKS_DEFAULT } from '../../src/data/volumeLandmarks.js';
 import { hoyIsoLocal, addDays } from '../../src/utils/trainingWeek.js';
 import { COACH_EMAIL, getAdminDb } from './auth.js';
+import { normalizarPolitica, type PoliticaAutopiloto } from '../../src/autopiloto/politica.js';
 
 type Firestore = NonNullable<Awaited<ReturnType<typeof getAdminDb>>>;
 type Doc = { id: string; data(): unknown; exists: boolean };
@@ -261,6 +262,12 @@ export async function leerDoctrina(db: Firestore, defaults: { entrenamiento: str
 export async function leerInstruccionesFijas(db: Firestore): Promise<string> {
   const s = await db.collection('coachSettings').doc('instructions').get();
   return s.exists ? ((s.data() as { text?: string }).text ?? '') : '';
+}
+
+/** La política del autopiloto que Dani edita en la app (coachSettings/autopiloto). */
+export async function leerPoliticaAutopiloto(db: Firestore): Promise<PoliticaAutopiloto> {
+  const s = await db.collection('coachSettings').doc('autopiloto').get();
+  return normalizarPolitica(s.exists ? s.data() : null);
 }
 
 export { addDays };

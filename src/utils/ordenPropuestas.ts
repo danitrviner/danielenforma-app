@@ -24,6 +24,7 @@ const ORDEN: Record<AiProposalKind, number> = {
   weeklyChallenge: 10,
   checkinFeedback: 11,
   respuestaRevision: 11,
+  mensajeAtleta: 11,
   dossier: 12,            // la ficha se cierra al final, con todo ya decidido
   workoutTemplate: 13,    // plantillas: no son del atleta, van al final
   mesocycleTemplate: 13,

@@ -461,6 +461,22 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'propose_mensaje_atleta',
+    description:
+      'Crea una PROPUESTA de mensaje del coach al atleta fuera de la revisión (qué cambia esta semana, una pregunta por sus faltas, la vuelta de un viaje). Lo lee en su Inicio, firmado por Dani. NO se envía solo. Un párrafo, en segunda persona, con SU dato concreto; sin consejos médicos ni mención al asistente.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        texto: { type: 'string', description: 'El mensaje, en español' },
+        motivo: { type: 'string', enum: ['semana_nueva', 'perdidas', 'peso_sin_registrar', 'dolor', 'viaje', 'otro'] },
+        semana: { type: 'number', description: 'Semana del bloque a la que se refiere, si aplica' },
+        rationale: { type: 'string', description: 'Justificación breve para Dani (no la ve el atleta)' },
+      },
+      required: ['athlete_email', 'texto', 'motivo'],
+    },
+  },
+  {
     name: 'get_athlete_dossier',
     description:
       'Lee la FICHA VIVA del atleta: sus objetivos, dónde está hoy, qué esperamos ver en las próximas semanas, el foco de la siguiente revisión, las preguntas que quedaron abiertas y el historial de lo que se ha propuesto, aprobado y cambiado. OBLIGATORIO antes de proponer una dieta, un mesociclo o un bloque: es la memoria entre conversaciones, y sin ella repetirás lo que ya se probó y no funcionó.',

@@ -127,3 +127,18 @@ describe('ejecutarRonda', () => {
     expect(c.llamadas).toHaveLength(0);
   });
 });
+
+describe('ejecutarRonda · aplicar según política', () => {
+  it('cada propuesta nueva pasa por `aplicar`; las de rondas anteriores no se repiten', async () => {
+    const aplicadas: string[] = [];
+    const c = cliente([{ content: [toolUse('t2', 'propose_respuesta_revision', { athlete_email: 'ana@x.com', response_id: 'r1', texto: 'Hola.' })], stop_reason: 'tool_use' }]);
+    const r = await ejecutarRonda({ episodio: { ...episodio(), propuestas: ['prop_vieja'] }, modelo: 'm', cliente: c, sistema, alias: 'A', ahora: AHORA, aplicar: async id => { aplicadas.push(id); } });
+    expect(aplicadas).toEqual(['prop_1']);
+    expect(r.episodio.propuestas).toEqual(['prop_vieja', 'prop_1']);
+  });
+  it('si aplicar falla, la ronda no se cae: queda para Dani', async () => {
+    const c = cliente([{ content: [toolUse('t2', 'propose_respuesta_revision', { athlete_email: 'ana@x.com', response_id: 'r1', texto: 'Hola.' })], stop_reason: 'tool_use' }]);
+    const r = await ejecutarRonda({ episodio: episodio(), modelo: 'm', cliente: c, sistema, alias: 'A', ahora: AHORA, aplicar: async () => { throw new Error('boom'); } });
+    expect(r.episodio.estado).toBe('en_curso');
+  });
+});

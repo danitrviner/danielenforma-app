@@ -2877,7 +2877,10 @@ export type AiProposalKind = 'diet' | 'mesocycle' | 'checkinFeedback' | 'periodi
   | 'latido'
   // La respuesta del coach a una revisión (cuestionario) del atleta: el canal
   // vivo desde 10-2026 (131 respuestas en 60 días frente a 1 check-in).
-  | 'respuestaRevision';
+  | 'respuestaRevision'
+  // Un mensaje del coach al atleta fuera de la revisión (qué cambia esta
+  // semana, perdidas, vuelta de un viaje). Se lee en su Inicio.
+  | 'mensajeAtleta';
 
 /** Programación semana a semana de un mesociclo y/o de la periodización
  *  nutricional, propuesta por el asistente. Los ejercicios ya vienen resueltos
@@ -3019,7 +3022,27 @@ export interface RespuestaRevisionProposalPayload {
   submittedAt?: string;
 }
 
+/** Mensaje del coach al atleta (colección `mensajesCoach`). Firma siempre Dani. */
+export interface MensajeAtletaProposalPayload {
+  texto: string;
+  /** Por qué se escribe: para agrupar en la bandeja y en la línea de tiempo. */
+  motivo: 'semana_nueva' | 'perdidas' | 'peso_sin_registrar' | 'dolor' | 'viaje' | 'otro';
+  semana?: number;
+}
+
+export interface MensajeCoach {
+  id: string;
+  athleteId: string;      // email
+  texto: string;
+  motivo: MensajeAtletaProposalPayload['motivo'];
+  creadoEn: string;       // ISO
+  leidoEn?: string;       // ISO, cuando el atleta lo abre
+  /** De qué propuesta salió, para la línea de tiempo del coach. */
+  proposalId?: string;
+}
+
 export type AiProposalPayload =
+  | MensajeAtletaProposalPayload
   | RespuestaRevisionProposalPayload
   | LatidoProposalPayload
   | WeekPlanProposalPayload

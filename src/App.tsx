@@ -166,6 +166,11 @@ const OrdenCicloHarness = import.meta.env.DEV
   ? pantallaDiferida('OrdenCicloDevHarness', () => import('./components/mesociclo/OrdenCicloDevHarness'))
   : null;
 
+// Banco de pruebas del autopiloto: variantes visuales de Política y «Hecho hoy» (ruta /dev/autopiloto).
+const AutopilotoHarness = import.meta.env.DEV
+  ? pantallaDiferida('AutopilotoDevHarness', () => import('./components/AutopilotoDevHarness'))
+  : null;
+
 /* La pantalla de espera de la app, con marca. Existe como componente y no como
    un `<div className="min-h-screen bg-bg" />` suelto por un motivo concreto:
    ese div es NEGRO Y VACÍO, exactamente igual que una app colgada. Cuando un
@@ -837,6 +842,13 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <OrdenCicloHarness />
+      </Suspense>
+    );
+  }
+  if (AutopilotoHarness && location.pathname === '/dev/autopiloto') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <AutopilotoHarness />
       </Suspense>
     );
   }

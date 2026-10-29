@@ -35,8 +35,11 @@ import {
   actualizarPeldanos, guardarReto, leerReto, crearAvisoUnaVez,
   leerCuestionariosAsignados, leerRespuestasDeCuestionarios, leerMesociclos,
   leerRutinas, leerRetos, leerExperiencia, guardarHuellaDelLatido, leerOnboarding, leerCuestionariosDelCoach, crearEpisodioUnaVez,
+  leerMenusDelAtleta, publicarMenu,
 } from './_lib/db-admin.js';
-import { uidDelCoach } from './_lib/fuenteAdmin.js';
+import { uidDelCoach, leerPoliticaAutopiloto } from './_lib/fuenteAdmin.js';
+import { politicaDeEpisodio, POLITICA_POR_DEFECTO } from '../src/autopiloto/politica.js';
+import { menusQuePublicar, planDePublicacion } from '../src/autopiloto/menuSemanal.js';
 import { detectarEpisodios } from '../src/autopiloto/detectores.js';
 import { puedeAnalizarseConIA } from '../src/ai/consentimientoIA.js';
 import { recordatoriosDeRevision } from '../src/utils/recordatoriosRevision.js';
@@ -136,6 +139,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Sin ellas los episodios se encolan igual, solo sin las alertas del motor.
   let plantillas: Awaited<ReturnType<typeof leerCuestionariosDelCoach>> = [];
   try { plantillas = await leerCuestionariosDelCoach(db, await uidDelCoach(db)); } catch (err) { console.warn('latido-diario: sin plantillas de cuestionario', err); }
+  // La política del autopiloto (coachSettings/autopiloto): con qué política se
+  // encolan los episodios y qué se hace con los menús. Sin documento, sombra.
+  let politica = POLITICA_POR_DEFECTO;
+  try { politica = await leerPoliticaAutopiloto(db); } catch (err) { console.warn('latido-diario: sin política del autopiloto, se usa sombra', err); }
 
   const resumen: ResumenDeAtleta[] = [];
 
@@ -281,12 +288,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const episodios = detectarEpisodios({
           email, hoy, ahora: new Date().toISOString(),
           consentimiento: puedeAnalizarseConIA(onboarding),
-          politica: 'sombra',
-          respuestas, plantillas, asignaciones: cuestionarios,
+          politica: politicaDeEpisodio(politica),
+          respuestas, plantillas, asignaciones: cuestionarios, mesociclos,
         });
         let encolados = 0;
         if (!enSeco) for (const ep of episodios) { if (await crearEpisodioUnaVez(db, ep)) encolados++; }
         if (episodios.length > 0) hecho.push(`episodios: ${enSeco ? episodios.length : encolados} encolados`);
+
+        // ── 5. El menú de la semana: borrador 24 h y luego solo (28-10) ────
+        // El borrador lo genera la app del coach al abrir Inicio; aquí se
+        // publica cuando lleva un día sin que Dani lo toque, según la política.
+        const menus = await leerMenusDelAtleta(db, email);
+        const ahoraIso = new Date().toISOString();
+        for (const menu of menusQuePublicar(menus, politica, ahoraIso)) {
+          if (!enSeco) {
+            const plan = planDePublicacion(menu, menus, ahoraIso);
+            await guardarHuellaDelLatido(db, `latido_menu_${email}_${hoy}`, {
+              athleteId: email, kind: 'latido', status: 'aplicada', chatId: 'latido',
+              summary: `Menú de la semana ${menu.semanaPrograma ?? '?'} publicado (${politica.menuAutomatico === 'publicar' ? 'publicación directa' : '24 h sin cambios'})`,
+              rationale: 'El borrador lo generó la app con la dieta de la semana; la política del autopiloto lo publica si Dani no lo toca.',
+              payload: { fecha: hoy, acciones: [{ tipo: 'publicar_menu', texto: `Menú ${menu.id} publicado` }] },
+              cambios: [`Menú «${menu.name}»: borrador → publicado`],
+              autor: 'latido', politica: 'automatico',
+              snapshotAntes: [
+                { coleccion: 'weeklyMenus', id: menu.id, datos: { status: 'draft', publishedAt: null }, parcial: true },
+                ...plan.archivar.map(id => ({ coleccion: 'weeklyMenus', id, datos: { status: 'published' }, parcial: true })),
+              ],
+              createdAt: ahoraIso, aplicadaEn: ahoraIso,
+            });
+            await publicarMenu(db, plan);
+          }
+          hecho.push(`menú semana ${menu.semanaPrograma ?? '?'} publicado`);
+        }
       } catch (err) {
         hecho.push(`recordatorio de revisión: error (${(err as Error)?.message ?? err})`);
       }

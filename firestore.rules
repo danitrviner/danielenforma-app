@@ -734,6 +734,20 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ── mensajesCoach (athleteId = EMAIL): los textos del coach al atleta ─────
+    // Los escribe el coach (o el servidor, con Admin SDK); el atleta lee los
+    // suyos y solo puede marcar `leidoEn`.
+    match /mensajesCoach/{id} {
+      allow read: if isCoach()
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                      && request.auth.token.email_verified == true);
+      allow create, delete: if isCoach();
+      allow update: if isCoach()
+                    || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                        && request.auth.token.email_verified == true
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['leidoEn']));
+    }
+
     // ── tasks (athleteId = EMAIL) ────────────────────────────────────────────
     match /tasks/{docId} {
       allow read: if isCoach()

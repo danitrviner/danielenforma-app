@@ -10,7 +10,9 @@
    lo toca (decisión de Dani, 28-10-2026). Lo determinista del latido sigue
    corriendo para él como siempre.
    ═══════════════════════════════════════════════════════════════════════════ */
-import type { PoliticaPropuesta, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse } from '../types.js';
+import type { Mesocycle, PoliticaPropuesta, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse } from '../types.js';
+import { mesocycleWeekNumber } from '../utils/progression.js';
+import { cicloDiasDeMeso } from '../utils/asignacionMesociclo.js';
 import { alertasDeRespuesta } from '../utils/alertasRevision.js';
 import { resolveQuestions } from '../utils/questionnaireResolve.js';
 import { addDays } from '../utils/trainingWeek.js';
@@ -28,6 +30,8 @@ export interface FotoParaDetectar {
   respuestas: QuestionnaireResponse[];
   plantillas: Questionnaire[];
   asignaciones: QuestionnaireAssignment[];
+  /** Para «semana nueva»: los bloques del atleta. Sin ellos no se detecta. */
+  mesociclos?: Mesocycle[];
 }
 
 /** Una revisión (cuestionario) recibida en los últimos días → episodio. */
@@ -55,7 +59,32 @@ export function detectarCuestionariosRecibidos(f: FotoParaDetectar): Episodio[] 
     });
 }
 
+/** El bloque que está en curso hoy (empezado y no acabado), si lo hay. */
+export function mesoEnCurso(mesociclos: Mesocycle[], hoy: string): Mesocycle | null {
+  return mesociclos.find(m => !!m.startDate && hoy >= m.startDate && hoy <= addDays(m.startDate, m.weeks * 7 - 1)) ?? null;
+}
+
+/** El día que el bloque cambia de semana (hoy es otra semana que ayer) → episodio. */
+export function detectarSemanaNueva(f: FotoParaDetectar): Episodio[] {
+  if (!f.consentimiento || !f.mesociclos?.length) return [];
+  const meso = mesoEnCurso(f.mesociclos, f.hoy);
+  if (!meso || f.hoy === meso.startDate) return []; // la semana 1 es el alta, no una semana nueva
+  const ciclo = cicloDiasDeMeso(meso);
+  const semana = mesocycleWeekNumber(meso.startDate, f.hoy, ciclo);
+  const ayer = mesocycleWeekNumber(meso.startDate, addDays(f.hoy, -1), ciclo);
+  if (semana === ayer) return [];
+  return [nuevoEpisodio({
+    tipo: 'semana_nueva',
+    athleteId: f.email,
+    clave: `${f.email}_${meso.id}_S${semana}`,
+    disparador: { fuente: 'mesocycles', docId: meso.id, fecha: f.hoy },
+    politica: f.politica,
+    ahora: f.ahora,
+  })];
+}
+
 /** Todos los detectores de hoy, en orden de prioridad. */
 export function detectarEpisodios(f: FotoParaDetectar): Episodio[] {
-  return [...detectarCuestionariosRecibidos(f)].sort((a, b) => a.prioridad - b.prioridad || a.creadoEn.localeCompare(b.creadoEn));
+  return [...detectarCuestionariosRecibidos(f), ...detectarSemanaNueva(f)]
+    .sort((a, b) => a.prioridad - b.prioridad || a.creadoEn.localeCompare(b.creadoEn));
 }

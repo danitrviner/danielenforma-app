@@ -6,15 +6,15 @@ import { TOOL_DEFINITIONS as desdeLaPuerta, executeTool, toolStatusLabel as etiq
 /* Las definiciones forman parte del prefijo cacheado del prompt y son el
    contrato con el modelo: un cambio accidental no da error de compilación y se
    nota semanas después como «el asistente ya no llama a X». El fixture es la
-   foto de las 44 tools (43 al partir tools.ts el 28-10-2026 + propose_respuesta_revision el 29-10);
+   foto de las 45 tools (43 al partir tools.ts el 28-10-2026; + propose_respuesta_revision y propose_mensaje_atleta el 29-10);
    quien cambie una definición a propósito regenera el fixture y el diff enseña
    exactamente qué cambió. */
 
 const fixture = JSON.parse(readFileSync(new URL('./__fixtures__/definiciones.json', import.meta.url), 'utf8'));
 
 describe('TOOL_DEFINITIONS', () => {
-  it('son las 44 tools, iguales al fixture byte a byte', () => {
-    expect(TOOL_DEFINITIONS.length).toBe(44);
+  it('son las 45 tools, iguales al fixture byte a byte', () => {
+    expect(TOOL_DEFINITIONS.length).toBe(45);
     expect(JSON.parse(JSON.stringify(TOOL_DEFINITIONS))).toEqual(fixture);
   });
 

@@ -259,3 +259,39 @@ export async function saveQuickReplies(replies: string[]): Promise<void> {
     if (esFalloDePermisos(err)) throw err;
   }
 }
+
+// ─── POLÍTICA DEL AUTOPILOTO ────────────────────────────────────────────────────
+// Doc `autopiloto` en coachSettings: modo (sombra / rodaje / política), nivel por
+// tipo de decisión, presupuesto y qué hacer con el menú semanal. La lee también
+// el servidor (api/_lib/fuenteAdmin.ts) antes de encolar o aplicar nada.
+import { normalizarPolitica, type PoliticaAutopiloto } from '../autopiloto/politica.js';
+
+const AUTOPILOTO_DOC_ID = 'autopiloto';
+const AUTOPILOTO_LOCAL_KEY = 'enforma_politica_autopiloto_v1';
+
+export async function getPoliticaAutopiloto(): Promise<PoliticaAutopiloto> {
+  const local = (() => { try { const raw = localStorage.getItem(AUTOPILOTO_LOCAL_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; } })();
+  if (forceLocalOnly) return normalizarPolitica(local);
+  try {
+    const snap = await getDoc(doc(db, 'coachSettings', AUTOPILOTO_DOC_ID));
+    const politica = normalizarPolitica(snap.exists() ? snap.data() : local);
+    escribirLocal(AUTOPILOTO_LOCAL_KEY, JSON.stringify(politica));
+    return politica;
+  } catch (err) {
+    console.warn('getPoliticaAutopiloto Firestore failed, using local:', err);
+    return normalizarPolitica(local);
+  }
+}
+
+export async function savePoliticaAutopiloto(politica: PoliticaAutopiloto): Promise<void> {
+  const data = { ...normalizarPolitica(politica), updatedAt: new Date().toISOString() };
+  escribirLocal(AUTOPILOTO_LOCAL_KEY, JSON.stringify(data));
+  if (forceLocalOnly) return;
+  try {
+    await setDoc(doc(db, 'coachSettings', AUTOPILOTO_DOC_ID), data);
+  } catch (err) {
+    console.warn('savePoliticaAutopiloto Firestore failed, kept local:', err);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
+  }
+}

@@ -46,6 +46,9 @@ export interface EntradaRonda {
   /** Alias del atleta para el prompt (nunca el nombre completo). */
   alias: string;
   ahora: string;
+  /** Qué hacer con cada propuesta que una tool acabe de crear: aplicarla si la
+   *  política lo permite, o dejarla. Inyectable; sin él, nada se aplica. */
+  aplicar?: (propuestaId: string) => Promise<unknown>;
 }
 
 export interface Auditoria {
@@ -143,6 +146,13 @@ export async function ejecutarRonda(e: EntradaRonda): Promise<ResultadoRonda> {
       }
     } finally {
       fijarContextoDeEpisodio(null);
+    }
+    // Las propuestas recién creadas pasan por la política: en sombra y rodaje
+    // se quedan; con automático o aviso se aplican ya (aplicarEnServidor.ts).
+    if (e.aplicar) {
+      for (const id of propuestas.filter(id => !ep.propuestas.includes(id))) {
+        try { await e.aplicar(id); } catch (err) { console.warn(`autopiloto: no se pudo aplicar ${id}`, err); }
+      }
     }
     return { episodio: { ...ep, historial: [...mensajes, { role: 'user', content: resultados }], propuestas }, auditoria };
   }

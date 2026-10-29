@@ -104,6 +104,13 @@ export function promptDeEpisodio(ep: Episodio, ctx: { alias: string }): string {
         + `Si ves un desvío (peso fuera del rango de su fase dos semanas seguidas, adherencia por kcal por debajo del 70 % dos semanas, tres sesiones perdidas en catorce días), NO toques kcal, sesiones ni reparto: la respuesta al atleta lo reconoce en una frase sin anunciar cambios, y se lo dices a Dani en la línea final.\n`
         + `Si el brief trae lo que Dani esperaba ver (expediente de propuestas anteriores), di en la línea final si se está cumpliendo.\n${cierre}`;
     }
+    case 'semana_nueva': {
+      const semana = ep.disparador.docId ? ` del bloque ${ep.disparador.docId}` : '';
+      return `EPISODIO: hoy ${ep.disparador.fecha} empieza una semana nueva${semana} para ${ctx.alias} (${ep.athleteId}).\n`
+        + `Empieza por get_client_brief con tarea "revision" (trae el plan, la periodización, la dieta y lo que Dani corrige). Lo que esta semana cambia en su entreno (descarga, test, RIR que baja, +1 serie) y en su comida (ajustes de la semana, mantenimiento) ya lo aplica la app sola: tú NO lo cambias ni lo propones.\n`
+        + `Tu trabajo es decidir si merece un mensaje y escribirlo con propose_mensaje_atleta (motivo "semana_nueva", semana = la que empieza): un párrafo en segunda persona, como Dani, que diga qué cambia esta semana y por qué, con SU número (la semana del bloque, las series o el RIR nuevos, el reto si lo hay). Si no cambia nada, NO mandes mensaje.\n`
+        + `Nada de kcal, sesiones ni reparto: si ves un desvío (peso fuera del rango dos semanas, adherencia por kcal < 70 % dos semanas, tres sesiones perdidas en catorce días), se lo dices a Dani en la línea final.\n${cierre}`;
+    }
     default:
       return `EPISODIO ${ep.tipo} de ${ctx.alias} (${ep.athleteId}): todavía no tiene guion. No hagas nada y cierra con «PARA DANI: episodio sin guion».`;
   }

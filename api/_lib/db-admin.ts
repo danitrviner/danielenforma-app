@@ -18,7 +18,7 @@ import type {
   AiProposal, AppNotification, AthleteDietConfig, BodyweightLog, CardioSession, Diet,
   DietCompletionLog, Exercise, LevelLadder, NutritionProgram, Roadmap, StepLog,
   UserProfile, WeeklyChallenge, WorkoutAssignment, WorkoutLog,
-  Mesocycle, QuestionnaireAssignment, QuestionnaireResponse, Workout, ExperienceLevel, OnboardingData, Questionnaire,
+  Mesocycle, QuestionnaireAssignment, QuestionnaireResponse, Workout, ExperienceLevel, OnboardingData, Questionnaire, WeeklyMenu,
 } from '../../src/types.js';
 import type { Episodio } from '../../src/autopiloto/episodios.js';
 import { atletasActivos } from '../../src/utils/atletas.js';
@@ -288,4 +288,21 @@ export async function leerEpisodiosPendientes(db: Firestore, limite: number): Pr
 
 export async function guardarEpisodio(db: Firestore, ep: Episodio): Promise<void> {
   await db.collection('episodios').doc(ep.id).set(sinIndefinidos(ep));
+}
+
+// ─── Menús semanales (publicación automática a las 24 h) ──────────────────────
+
+export async function leerMenusDelAtleta(db: Firestore, email: string): Promise<WeeklyMenu[]> {
+  const snap = await db.collection('weeklyMenus').where('athleteId', '==', email).get();
+  return snap.docs.map(d => conId<WeeklyMenu>(d));
+}
+
+/** Publica un menú como lo haría `publishWeeklyMenu` en la app: en un lote,
+ *  borrados primero, luego archivar el publicado anterior, luego publicar. */
+export async function publicarMenu(db: Firestore, plan: { publicar: { id: string; publishedAt: string }; archivar: string[]; borrar: string[] }): Promise<void> {
+  const lote = db.batch();
+  for (const id of plan.borrar) lote.delete(db.collection('weeklyMenus').doc(id));
+  for (const id of plan.archivar) lote.update(db.collection('weeklyMenus').doc(id), { status: 'archived' });
+  lote.update(db.collection('weeklyMenus').doc(plan.publicar.id), { status: 'published', publishedAt: plan.publicar.publishedAt });
+  await lote.commit();
 }

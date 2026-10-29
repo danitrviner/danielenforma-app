@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { detectarEpisodios, DIAS_DE_VENTANA_CUESTIONARIO, type FotoParaDetectar } from './detectores';
+import { detectarEpisodios, detectarSemanaNueva, DIAS_DE_VENTANA_CUESTIONARIO, type FotoParaDetectar } from './detectores';
 import { idDeEpisodio, extraerParaDani, promptDeEpisodio, nuevoEpisodio, PRIORIDAD } from './episodios';
-import type { Questionnaire, QuestionnaireAssignment, QuestionnaireResponse } from '../types';
+import type { Mesocycle, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse } from '../types';
 
 const HOY = '2026-10-29';
 const AHORA = `${HOY}T02:00:00.000Z`;
@@ -76,5 +76,31 @@ describe('extraerParaDani', () => {
   });
   it('sin la línea, se queda con el último párrafo recortado', () => {
     expect(extraerParaDani('Párrafo 1.\n\nPárrafo final.')).toBe('Párrafo final.');
+  });
+});
+
+describe('detectarSemanaNueva', () => {
+  const meso = (p: Partial<Mesocycle> = {}): Mesocycle => ({ id: 'm1', athleteId: 'ana@x.com', number: 1, weeks: 8, startDate: '2026-10-05', objective: 'H', daysPerWeek: 4, groups: {}, ...p } as Mesocycle);
+
+  it('el lunes 26-10 empieza la semana 4 del bloque del 05-10: episodio con la semana en la clave', () => {
+    const eps = detectarSemanaNueva(foto({ hoy: '2026-10-26', respuestas: [], mesociclos: [meso()] }));
+    expect(eps).toHaveLength(1);
+    expect(eps[0].id).toBe('semana_nueva_ana@x.com_m1_S4');
+    expect(eps[0].disparador).toEqual({ fuente: 'mesocycles', docId: 'm1', fecha: '2026-10-26' });
+    expect(promptDeEpisodio(eps[0], { alias: 'Ana R.' })).toContain('propose_mensaje_atleta');
+  });
+  it('un martes no es semana nueva; el primer día del bloque tampoco; sin bloque en curso, nada', () => {
+    expect(detectarSemanaNueva(foto({ hoy: '2026-10-27', respuestas: [], mesociclos: [meso()] }))).toEqual([]);
+    expect(detectarSemanaNueva(foto({ hoy: '2026-10-05', respuestas: [], mesociclos: [meso()] }))).toEqual([]);
+    expect(detectarSemanaNueva(foto({ hoy: '2026-12-28', respuestas: [], mesociclos: [meso()] }))).toEqual([]);
+  });
+  it('con ciclo de 10 días la semana cambia cada 10 días, no cada lunes', () => {
+    const m = meso({ cycleDays: 10, startDate: '2026-10-05' });
+    expect(detectarSemanaNueva(foto({ hoy: '2026-10-15', respuestas: [], mesociclos: [m] }))).toHaveLength(1);
+    expect(detectarSemanaNueva(foto({ hoy: '2026-10-12', respuestas: [], mesociclos: [m] }))).toEqual([]);
+  });
+  it('detectarEpisodios ordena: el cuestionario (prioridad 2) antes que la semana nueva (5)', () => {
+    const eps = detectarEpisodios(foto({ hoy: '2026-10-26', respuestas: [respuesta('r1', '2026-10-26T01:00:00.000Z')], mesociclos: [meso()] }));
+    expect(eps.map(e => e.tipo)).toEqual(['cuestionario_recibido', 'semana_nueva']);
   });
 });
