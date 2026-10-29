@@ -21,6 +21,16 @@ const MENSAJES: MensajeCoach[] = [{
   texto: 'He leído tu alta, David. Lo del hombro lo tengo en cuenta y empezamos con 4 días, como me has dicho. El jueves tienes el plan.',
 }];
 
+/** Para la galería de variantes. */
+export const FIXTURE_PRIMERA_SEMANA = {
+  esperando: ESPERANDO, conPlan: CON_PLAN,
+  sembrar(c: QueryClient) {
+    c.setQueryData(['progressPhotos', EMAIL], []);
+    c.setQueryData(pesoUltimoKey(EMAIL), null);
+    c.setQueryData(claveMensajesAtleta(EMAIL, addDays(HOY, -29)), MENSAJES);
+  },
+};
+
 export default function PrimeraSemanaDevHarness() {
   const client = useMemo(() => {
     const c = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });

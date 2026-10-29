@@ -6,6 +6,7 @@ import { loUltimoDeDani, proximaRevision, type ItemDeDani } from '../../utils/me
 import { COACH_NOMBRE } from '../../utils/coach';
 import { addDays, hoyIsoLocal } from '../../utils/trainingWeek';
 import { Icon } from '../ui';
+import { VARIANTES } from '../../data/variantes';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    «Lo último de Dani» (29-10-2026) — la tarjeta de Inicio.
@@ -39,9 +40,11 @@ interface Props {
   respuestas: QuestionnaireResponse[];
   notaDeHoy?: CoachDayNote | null;
   onNavigate: (tab: 'checkin' | 'nutrition' | 'training') => void;
+  /** 'lista' (todo por fecha) · 'ultimo' (solo lo más reciente, y cuántos más) · 'carrusel' (tarjetas en horizontal). */
+  variante?: typeof VARIANTES.loUltimo;
 }
 
-export default function LoUltimoDeDani({ profile, respuestas, notaDeHoy, onNavigate }: Props) {
+export default function LoUltimoDeDani({ profile, respuestas, notaDeHoy, onNavigate, variante = VARIANTES.loUltimo }: Props) {
   const hoy = hoyIsoLocal();
   const desde = addDays(hoy, -(DIAS_LO_ULTIMO - 1));
   const { data: mensajes = [] } = useQuery({
@@ -64,6 +67,23 @@ export default function LoUltimoDeDani({ profile, respuestas, notaDeHoy, onNavig
           Nada nuevo esta semana. Tu próxima revisión se abre el{' '}
           <span className="font-semibold text-ink">{fechaCorta(proximaRevision(hoy, profile.diaRevision))}</span>.
         </p>
+      ) : variante === 'ultimo' ? (
+        <>
+          <ul><Item item={items[0]} onNavigate={onNavigate} /></ul>
+          {items.length > 1 && (
+            <button type="button" onClick={() => onNavigate('checkin')} className="font-mono text-caption uppercase tracking-wider text-accent-ink">
+              Y {items.length - 1} más esta semana
+            </button>
+          )}
+        </>
+      ) : variante === 'carrusel' ? (
+        <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-1 px-1 pb-1">
+          {items.map(it => (
+            <div key={it.id} className="w-[240px] flex-shrink-0 rounded-field border border-hairline bg-raised p-3">
+              <ul><Item item={it} onNavigate={onNavigate} /></ul>
+            </div>
+          ))}
+        </div>
       ) : (
         <ul className="divide-y divide-hairline">
           {items.map(it => <Item key={it.id} item={it} onNavigate={onNavigate} />)}
