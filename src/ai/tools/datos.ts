@@ -25,6 +25,9 @@ export interface FuenteDeDatos {
   createAiProposal: typeof DB.createAiProposal;
   createCoachClientTask: typeof DB.createCoachClientTask;
   getAiProposalsForAthlete: typeof DB.getAiProposalsForAthlete;
+  updateAiProposal: typeof DB.updateAiProposal;
+  /** El catálogo CDG compacto (JSON en un string) o null si no está subido. Solo coach. */
+  getCdgCatalogoJson(): Promise<string | null>;
   getAlimentosPersonales: typeof DB.getAlimentosPersonales;
   getAllUserProfiles: typeof DB.getAllUserProfiles;
   getApprovedAiProposals: typeof DB.getApprovedAiProposals;
@@ -84,6 +87,8 @@ export const coachActual = (): { uid: string; email: string } => datos().coachAc
 export const appendDossierFacts: FuenteDeDatos['appendDossierFacts'] = (...a) => (datos().appendDossierFacts as (...x: unknown[]) => unknown)(...a) as ReturnType<FuenteDeDatos['appendDossierFacts']>;
 export const createAiProposal: FuenteDeDatos['createAiProposal'] = (...a) => (datos().createAiProposal as (...x: unknown[]) => unknown)(...a) as ReturnType<FuenteDeDatos['createAiProposal']>;
 export const createCoachClientTask: FuenteDeDatos['createCoachClientTask'] = (...a) => (datos().createCoachClientTask as (...x: unknown[]) => unknown)(...a) as ReturnType<FuenteDeDatos['createCoachClientTask']>;
+export const updateAiProposal: FuenteDeDatos['updateAiProposal'] = (...a) => (datos().updateAiProposal as (...x: unknown[]) => unknown)(...a) as ReturnType<FuenteDeDatos['updateAiProposal']>;
+export const getCdgCatalogoJson: FuenteDeDatos['getCdgCatalogoJson'] = () => datos().getCdgCatalogoJson();
 export const getAiProposalsForAthlete: FuenteDeDatos['getAiProposalsForAthlete'] = (...a) => (datos().getAiProposalsForAthlete as (...x: unknown[]) => unknown)(...a) as ReturnType<FuenteDeDatos['getAiProposalsForAthlete']>;
 export const getAlimentosPersonales: FuenteDeDatos['getAlimentosPersonales'] = (...a) => (datos().getAlimentosPersonales as (...x: unknown[]) => unknown)(...a) as ReturnType<FuenteDeDatos['getAlimentosPersonales']>;
 export const getAllUserProfiles: FuenteDeDatos['getAllUserProfiles'] = (...a) => (datos().getAllUserProfiles as (...x: unknown[]) => unknown)(...a) as ReturnType<FuenteDeDatos['getAllUserProfiles']>;

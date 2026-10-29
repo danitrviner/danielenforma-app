@@ -977,6 +977,24 @@ export async function getProposalFeedback(email: string): Promise<string> {
   });
 }
 
+/** Lo aplicado con un `esperado` en el expediente que nadie ha comprobado aún. */
+export async function getResultadoEsperado(email: string): Promise<string> {
+  const todas = await getAiProposalsForAthlete(email);
+  const abiertas = todas
+    .filter(p => (p.status === 'approved' || p.status === 'aplicada') && p.expediente?.esperado && !p.resultado)
+    .sort((a, b) => (a.aplicadaEn ?? a.reviewedAt ?? a.createdAt).localeCompare(b.aplicadaEn ?? b.reviewedAt ?? b.createdAt));
+  const cerradas = todas.filter(p => p.resultado).slice(0, 5);
+  return toResult({
+    sinComprobar: abiertas.map(p => ({
+      proposalId: p.id, fecha: (p.aplicadaEn ?? p.reviewedAt ?? p.createdAt).slice(0, 10), tipo: p.kind, resumen: p.summary, esperado: p.expediente!.esperado,
+    })),
+    ultimasCerradas: cerradas.map(p => ({ proposalId: p.id, resumen: p.summary, cumplio: p.resultado!.cumplioEsperado, nota: p.resultado!.nota })),
+    note: abiertas.length
+      ? 'Para cada una: ¿ha pasado lo que decía `esperado`? Compáralo con los números de get_revision_engine y ciérralo con cerrar_esperado (true, false o null si aún no se puede saber), citando el dato.'
+      : 'No hay nada pendiente de comprobar.',
+  });
+}
+
 export async function getProgressMetrics(email: string): Promise<string> {
   const profile = await findProfile(email);
   if (!profile) return toResult({ error: `No existe ningún cliente con email ${email}` });

@@ -154,7 +154,8 @@ export function tipoDeDecision(p: Pick<AiProposal, 'kind' | 'payload' | 'baseEnt
     case 'specialDay': return 'roadmap';
     case 'nutritionProgram': return 'ajuste_kcal_grande';
     case 'weekPlan': {
-      const plan = p.payload as { semanasDescarga?: number[]; cambios?: unknown[]; nutricion?: { semanasMantenimiento?: number[] } };
+      const plan = p.payload as { semanasDescarga?: number[]; cambios?: unknown[]; nutricion?: { semanasMantenimiento?: number[] }; origenIem?: boolean };
+      if (plan.origenIem) return 'progresion_iem';
       if (plan.semanasDescarga?.length || plan.nutricion?.semanasMantenimiento?.length) return 'descarga_adelantada';
       if (plan.cambios?.length) return 'cambio_ejercicio_molestia';
       return 'progresion_programada';

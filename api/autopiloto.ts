@@ -21,7 +21,8 @@ import { COACH_EMAIL, getAdminDb } from './_lib/auth.js';
 import { fuenteAdmin, uidDelCoach, leerDoctrina, leerInstruccionesFijas, leerPoliticaAutopiloto } from './_lib/fuenteAdmin.js';
 import { aplicarPropuestaEnServidor } from './_lib/aplicarEnServidor.js';
 import { ejecutarRonda, type ClienteModelo } from './_lib/agente.js';
-import { leerEpisodiosPendientes, guardarEpisodio } from './_lib/db-admin.js';
+import { leerEpisodiosPendientes, guardarEpisodio, leerEpisodiosEnEspera, leerPropuestasPorId } from './_lib/db-admin.js';
+import { reanudar } from '../src/autopiloto/reanudacion.js';
 import { usarFuenteDeDatos } from '../src/ai/tools.server.js';
 import { DOCTRINA_DEFAULTS } from '../src/ai/doctrina.js';
 import { aliasDeAtleta } from '../src/ai/consentimientoIA.js';
@@ -70,9 +71,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const comenzoEn = Date.now();
   const hoy = hoyIsoLocal();
 
+  // ── 0. Reanudar lo que esperaba a Dani (reanudacion.ts) ────────────────
+  // Un episodio en `escalado` con `esperaPropuestas` vuelve a `en_curso` cuando
+  // él ha decidido sobre todas; así entra en la cola de abajo.
+  const enEspera = await leerEpisodiosEnEspera(db);
+  let reanudados = 0;
+  for (const ep of enEspera) {
+    const r = reanudar(ep, await leerPropuestasPorId(db, ep.esperaPropuestas ?? []), new Date().toISOString());
+    if (!r) continue;
+    if (!enSeco) await guardarEpisodio(db, r);
+    reanudados++;
+  }
+
   const pendientes = await leerEpisodiosPendientes(db, EPISODIOS_POR_PASADA);
   if (enSeco) {
-    res.status(200).json({ fecha: hoy, enSeco: true, pendientes: pendientes.map(e => ({ id: e.id, tipo: e.tipo, estado: e.estado, ronda: e.ronda, politica: e.politica })) });
+    res.status(200).json({ fecha: hoy, enSeco: true, enEspera: enEspera.length, reanudables: reanudados, pendientes: pendientes.map(e => ({ id: e.id, tipo: e.tipo, estado: e.estado, ronda: e.ronda, politica: e.politica })) });
     return;
   }
 
@@ -143,7 +156,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     fecha: hoy, ejecutadoEn: new Date().toISOString(), coach: COACH_EMAIL === 'danitrviner@gmail.com',
     episodios: procesados.length, hechos: procesados.filter(p => p.estado === 'hecho').length,
     escalados: procesados.filter(p => p.estado === 'escalado').length, fallidos: procesados.filter(p => p.estado === 'fallido').length,
-    enCurso: procesados.filter(p => p.estado === 'en_curso').length, usd: procesados.reduce((s, p) => s + p.usd, 0),
+    enCurso: procesados.filter(p => p.estado === 'en_curso').length, esperando: procesados.filter(p => p.estado === 'escalado').length, reanudados, usd: procesados.reduce((s, p) => s + p.usd, 0),
     duracionMs: Date.now() - comenzoEn, paradoPor,
   };
   try { await db.collection('autopiloto').doc(`${hoy}_${Date.now()}`).set(registro); } catch (err) { console.warn('autopiloto: no se pudo guardar el resumen', err); }

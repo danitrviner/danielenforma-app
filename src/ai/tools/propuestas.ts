@@ -2,7 +2,7 @@
 // aprueba, salvo las que dejan hechos en la ficha viva (log_dossier_fact),
 // notas para Dani (add_coach_task) y el borrador de reporte. Nada de esto
 // llega al atleta sin aprobación.
-import { appendDossierFacts, coachActual, createAiProposal, createCoachClientTask, getAthleteNutritionConfig, getBodyweightForAthlete, getCoachClientTasks, getDietCompletionLogsForAthlete, getDietsForAthlete, getExercises, getMesocycles, getNutritionProgram, getQuestionnairesByCoach, getResponsesForAthlete, getRoadmap, getWeeklyChallenge, getWeeklyChallengesForAthlete, getWorkoutAssignments, getWorkoutLogs, getWorkouts, saveCoachReport } from './datos.js';
+import { appendDossierFacts, coachActual, createAiProposal, updateAiProposal, getAiProposalsForAthlete, createCoachClientTask, getAthleteNutritionConfig, getBodyweightForAthlete, getCoachClientTasks, getDietCompletionLogsForAthlete, getDietsForAthlete, getExercises, getMesocycles, getNutritionProgram, getQuestionnairesByCoach, getResponsesForAthlete, getRoadmap, getWeeklyChallenge, getWeeklyChallengesForAthlete, getWorkoutAssignments, getWorkoutLogs, getWorkouts, saveCoachReport } from './datos.js';
 import { sesionesDeMesociclo, fechasDelMesociclo, cicloDiasDeMeso } from '../../utils/asignacionMesociclo.js';
 import { vueltasDelCiclo } from '../../utils/progression.js';
 import { repartoDesdeAsistente, sesionesDelReparto } from '../repartoAsistente.js';
@@ -1359,3 +1359,14 @@ export async function addCoachTask(email: string, title: string, phase: string |
 /* Lo que Dani le ha dicho a una propuesta sin llegar a aprobarla. Es la
    corrección más barata que existe —más que rechazar y volver a empezar— y
    hasta ahora no había forma de dársela sin escribirla otra vez en el chat. */
+
+/** Cierra el `esperado` de una propuesta aplicada (métrica de calidad, diseño §3). No toca el plan. */
+export async function cerrarEsperado(athleteEmail: string, proposalId: string, cumplio: boolean | null, nota: string): Promise<string> {
+  const p = (await getAiProposalsForAthlete(athleteEmail)).find(x => x.id === proposalId);
+  if (!p) return toResult({ ok: false, error: `La propuesta ${proposalId} no es de este atleta o no existe.` });
+  if (p.status !== 'approved' && p.status !== 'aplicada') return toResult({ ok: false, error: `Solo se cierra lo aplicado; esta está en «${p.status}».` });
+  const limpia = nota.trim().slice(0, 300);
+  if (!limpia) return toResult({ ok: false, error: 'La nota tiene que citar el dato.' });
+  await updateAiProposal(proposalId, { resultado: { comprobadoEn: new Date().toISOString(), cumplioEsperado: cumplio, nota: limpia } });
+  return toResult({ ok: true, proposalId, cumplio, note: 'Cerrado. Si no se cumplió, dilo en el veredicto y en la ficha viva: es lo que cambia el criterio la próxima vez.' });
+}

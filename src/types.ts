@@ -2380,6 +2380,8 @@ export interface MesocycleTemplate {
   stages: TemplateStage[];
   /** Etiquetas para encontrarla (guía del IH: «3 días», «IF bajo», «sin cizalla»…). */
   etiquetas?: string[];
+  /** El bloque se programa por IEM (CDG) en vez de por reparto propio. Lo marca Dani. */
+  cdg?: boolean;
 }
 
 // ─── PENDING TASKS (athlete dashboard) ─────────────────────────────────────────
@@ -2896,6 +2898,8 @@ export interface WeekPlanProposalPayload {
     workoutId: string; exerciseId: string; ejercicio: string; semana: number; solo?: boolean;
     sets?: number; reps?: string; rir?: number; restSeconds?: number; bloques?: WorkoutSetGroup[];
   }[];
+  /** Los cambios los calculó el protocolo CDG (propose_progresion_iem): política `progresion_iem`. */
+  origenIem?: boolean;
   nutricion?: {
     /** `gramos` del macro desde 10-2026; `delta` (intercambios) va al lado para binarios viejos. */
     ajustes?: { semana: number; solo?: boolean; slot?: number; cat: MacroAjustable; delta: number; gramos?: number }[];

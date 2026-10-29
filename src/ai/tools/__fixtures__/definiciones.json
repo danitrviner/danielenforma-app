@@ -908,6 +908,139 @@
   }
  },
  {
+  "name": "get_cdg_semana",
+  "description": "Lee el bloque en CDG (Índice de Hipertrofia): por zona, el IEM programado esta semana, el realizado la semana pasada, las agujetas vigentes (1-5), el contexto de la semana (sueño, estrés, motivación, fatiga al salir) y la PROPUESTA del protocolo freno/acelerador para la semana que viene. Son los números de Mesociclo › Seguimiento: no los recalcules. Úsala antes de propose_progresion_iem y cuando haya una molestia o agujetas altas.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "mesocycle_id": {
+     "type": "string",
+     "description": "Opcional: por defecto el mesociclo en curso."
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "propose_progresion_iem",
+  "description": "PROPONE la progresión de una semana del bloque por IEM: el motor CDG calcula los cambios por ejercicio (serie de más, RIR de menos) para subir o bajar cada zona el % que marca el protocolo, respetando el tiempo de sesión del atleta y el MRV por grupo. Crea una propuesta weekPlan que Dani aprueba (o se aplica con aviso según la política). Tú NO eliges los porcentajes al alza: solo puedes descartar cambios (`descartar`) o ser más prudente (`pct_por_zona` igual o menor que el del motor). Llama antes a get_cdg_semana.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "mesocycle_id": {
+     "type": "string"
+    },
+    "semana": {
+     "type": "number",
+     "description": "Semana del bloque a programar; por defecto la siguiente a la actual."
+    },
+    "pct_por_zona": {
+     "type": "object",
+     "description": "Opcional: % por zona (clave de zona → número). Solo se acepta si es igual o más prudente que el del motor.",
+     "additionalProperties": {
+      "type": "number"
+     }
+    },
+    "descartar": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "exerciseId (o \"workoutId:exerciseId\") que NO se tocan: molestia, ejercicio que el atleta no quiere subir…"
+    },
+    "rationale": {
+     "type": "string",
+     "description": "Por qué, para Dani"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "get_alternativas_ejercicio",
+  "description": "Ejercicios equivalentes a uno dado: mismo grupo muscular, con el material del atleta, ordenados por el estímulo (IEM) que dan a la zona en una serie de referencia según el catálogo CDG. Con `evitar_articulacion` («hombro», «rodilla», «cadera», «columna», «codo») solo devuelve los que cargan claramente menos esa articulación. Úsala para cambiar un ejercicio por una molestia leve antes de propose_workout_days o propose_week_plan.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "exercise_id": {
+     "type": "string"
+    },
+    "ejercicio": {
+     "type": "string",
+     "description": "Nombre del ejercicio si no tienes el id"
+    },
+    "evitar_articulacion": {
+     "type": "string"
+    },
+    "max": {
+     "type": "number",
+     "description": "Cuántas devolver (1-15, por defecto 8)"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "get_resultado_esperado",
+  "description": "Las propuestas aplicadas de este atleta cuyo expediente decía qué ESPERÁBAMOS ver (peso, adherencia, un PR, agujetas) y todavía no se ha comprobado. Úsala en la revisión: compara cada `esperado` con los números de get_revision_engine y ciérralo con cerrar_esperado. Es la métrica de calidad del asistente: lo que no se cierra no se aprende.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email"
+   ]
+  }
+ },
+ {
+  "name": "cerrar_esperado",
+  "description": "Cierra el `esperado` de una propuesta ya aplicada: si pasó lo que se esperaba (true), no pasó (false) o no se puede saber todavía (null), con una nota de una línea citando el dato. No cambia nada del plan del atleta.",
+  "input_schema": {
+   "type": "object",
+   "properties": {
+    "athlete_email": {
+     "type": "string"
+    },
+    "proposal_id": {
+     "type": "string"
+    },
+    "cumplio": {
+     "type": [
+      "boolean",
+      "null"
+     ]
+    },
+    "nota": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "athlete_email",
+    "proposal_id",
+    "cumplio",
+    "nota"
+   ]
+  }
+ },
+ {
   "name": "get_athlete_dossier",
   "description": "Lee la FICHA VIVA del atleta: sus objetivos, dónde está hoy, qué esperamos ver en las próximas semanas, el foco de la siguiente revisión, las preguntas que quedaron abiertas y el historial de lo que se ha propuesto, aprobado y cambiado. OBLIGATORIO antes de proponer una dieta, un mesociclo o un bloque: es la memoria entre conversaciones, y sin ella repetirás lo que ya se probó y no funcionó.",
   "input_schema": {

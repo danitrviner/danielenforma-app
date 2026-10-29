@@ -230,6 +230,12 @@ export function fuenteAdmin(db: Firestore, coachUid: string): FuenteDeDatos {
       return { id: ref.id, ...conContexto };
     },
     saveCoachReport: async (report: CoachReport) => { await col('coachReports').doc(report.id).set(sinIndefinidos(report)); },
+    updateAiProposal: async (id, updates) => { await col('aiProposals').doc(id).set(sinIndefinidos(updates as Record<string, unknown>), { merge: true }); },
+    getCdgCatalogoJson: async () => {
+      const s = await uno('cdgCatalogo', 'v4');
+      const json = s.exists ? (s.data() as { json?: unknown }).json : null;
+      return typeof json === 'string' && json.length > 0 ? json : null;
+    },
     getKnowledgeNotes: () => todos<KnowledgeNote>('knowledgeBase'),
     getVolumeLandmarks: async () => {
       const s = await uno('coachSettings', 'volumeLandmarks');

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { detectarEpisodios, detectarSemanaNueva, DIAS_DE_VENTANA_CUESTIONARIO, type FotoParaDetectar } from './detectores';
+import { detectarEpisodios, detectarSemanaNueva, detectarRevision, detectarAltaCompletada, DIAS_DE_VENTANA_CUESTIONARIO, DIAS_DE_VENTANA_ALTA, type FotoParaDetectar } from './detectores';
 import { idDeEpisodio, extraerParaDani, promptDeEpisodio, nuevoEpisodio, PRIORIDAD } from './episodios';
 import type { Mesocycle, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse } from '../types';
 
@@ -99,8 +99,44 @@ describe('detectarSemanaNueva', () => {
     expect(detectarSemanaNueva(foto({ hoy: '2026-10-15', respuestas: [], mesociclos: [m] }))).toHaveLength(1);
     expect(detectarSemanaNueva(foto({ hoy: '2026-10-12', respuestas: [], mesociclos: [m] }))).toEqual([]);
   });
-  it('detectarEpisodios ordena: el cuestionario (prioridad 2) antes que la semana nueva (5)', () => {
+  it('detectarEpisodios ordena: el cuestionario (prioridad 2), la semana nueva (5) y la revisión (7)', () => {
     const eps = detectarEpisodios(foto({ hoy: '2026-10-26', respuestas: [respuesta('r1', '2026-10-26T01:00:00.000Z')], mesociclos: [meso()] }));
-    expect(eps.map(e => e.tipo)).toEqual(['cuestionario_recibido', 'semana_nueva']);
+    // el 26-10 es además la semana 4 de 8: la revisión de mitad (prioridad 7) va la última
+    expect(eps.map(e => e.tipo)).toEqual(['cuestionario_recibido', 'semana_nueva', 'revision']);
+  });
+});
+
+describe('detectarAltaCompletada', () => {
+  it('alta cerrada + fecha de inicio reciente + consentimiento → un episodio por atleta, id por email', () => {
+    const [ep] = detectarAltaCompletada(foto({ onboardingCompletado: true, planStartDate: HOY }));
+    expect(ep.id).toBe('alta_completada_ana@x.com');
+    expect(ep.disparador).toEqual({ fuente: 'onboarding', docId: 'ana@x.com', fecha: HOY });
+    const prompt = promptDeEpisodio(ep, { alias: 'Ana R.' });
+    expect(prompt).toContain('ESPERO:');
+    expect(prompt).toContain('get_setup_status');
+    expect(prompt).toContain('2 g/kg');
+  });
+  it('sin alta cerrada, sin fecha de inicio, o con un alta vieja (plan montado a mano), nada', () => {
+    expect(detectarAltaCompletada(foto({ onboardingCompletado: false, planStartDate: HOY }))).toEqual([]);
+    expect(detectarAltaCompletada(foto({ onboardingCompletado: true }))).toEqual([]);
+    expect(detectarAltaCompletada(foto({ onboardingCompletado: true, planStartDate: `2026-10-${29 - DIAS_DE_VENTANA_ALTA - 1}` }))).toEqual([]);
+    expect(detectarAltaCompletada(foto({ onboardingCompletado: true, planStartDate: HOY, consentimiento: false }))).toEqual([]);
+  });
+});
+
+describe('detectarRevision', () => {
+  const meso = (p: Partial<Mesocycle> = {}): Mesocycle => ({ id: 'm1', athleteId: 'ana@x.com', number: 1, weeks: 8, startDate: '2026-10-05', objective: 'H', daysPerWeek: 4, groups: {}, ...p } as Mesocycle);
+  it('en la semana 4 de 8 (mitad) y en la 8 (fin), con ids distintos; en la 3, nada', () => {
+    const mitad = detectarRevision(foto({ hoy: '2026-10-28', respuestas: [], mesociclos: [meso()] }));
+    expect(mitad.map(e => e.id)).toEqual(['revision_ana@x.com_m1_mitad']);
+    expect(promptDeEpisodio(mitad[0], { alias: 'Ana R.' })).toContain('cerrar_esperado');
+    const fin = detectarRevision(foto({ hoy: '2026-11-25', respuestas: [], mesociclos: [meso()] }));
+    expect(fin.map(e => e.id)).toEqual(['revision_ana@x.com_m1_fin']);
+    expect(promptDeEpisodio(fin[0], { alias: 'Ana R.' })).toContain('la última semana');
+    expect(detectarRevision(foto({ hoy: '2026-10-21', respuestas: [], mesociclos: [meso()] }))).toEqual([]);
+  });
+  it('un bloque de 3 semanas solo tiene revisión de fin', () => {
+    expect(detectarRevision(foto({ hoy: '2026-10-12', respuestas: [], mesociclos: [meso({ weeks: 3 })] }))).toEqual([]);
+    expect(detectarRevision(foto({ hoy: '2026-10-20', respuestas: [], mesociclos: [meso({ weeks: 3 })] })).map(e => e.id)).toEqual(['revision_ana@x.com_m1_fin']);
   });
 });

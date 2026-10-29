@@ -23,6 +23,7 @@ import {
 } from '../../src/autopiloto/episodios.js';
 import type { AiChatMessage, AiContentBlock, AiToolUseBlock } from '../../src/types.js';
 import { fijarContextoDeEpisodio } from './fuenteAdmin.js';
+import { esperaTrasTurno } from '../../src/autopiloto/reanudacion.js';
 
 /** Lo justo de la Messages API que usa el bucle: inyectable para probarlo sin red. */
 export interface ClienteModelo {
@@ -48,7 +49,7 @@ export interface EntradaRonda {
   ahora: string;
   /** Qué hacer con cada propuesta que una tool acabe de crear: aplicarla si la
    *  política lo permite, o dejarla. Inyectable; sin él, nada se aplica. */
-  aplicar?: (propuestaId: string) => Promise<unknown>;
+  aplicar?: (propuestaId: string) => Promise<{ resultado: 'aplicada' | 'dejada' | 'fallida' } | void>;
 }
 
 export interface Auditoria {
@@ -149,17 +150,24 @@ export async function ejecutarRonda(e: EntradaRonda): Promise<ResultadoRonda> {
     }
     // Las propuestas recién creadas pasan por la política: en sombra y rodaje
     // se quedan; con automático o aviso se aplican ya (aplicarEnServidor.ts).
+    const aplicadas = [...(ep.aplicadas ?? [])];
     if (e.aplicar) {
       for (const id of propuestas.filter(id => !ep.propuestas.includes(id))) {
-        try { await e.aplicar(id); } catch (err) { console.warn(`autopiloto: no se pudo aplicar ${id}`, err); }
+        try {
+          const r = await e.aplicar(id);
+          if (r && r.resultado === 'aplicada') aplicadas.push(id);
+        } catch (err) { console.warn(`autopiloto: no se pudo aplicar ${id}`, err); }
       }
     }
-    return { episodio: { ...ep, historial: [...mensajes, { role: 'user', content: resultados }], propuestas }, auditoria };
+    return { episodio: { ...ep, historial: [...mensajes, { role: 'user', content: resultados }], propuestas, aplicadas }, auditoria };
   }
 
   // end_turn: el modelo ha terminado. La última línea «PARA DANI:» es lo que
   // Dani ve en la bandeja; el resto queda en el historial del episodio.
   const texto = respuesta.content.filter((b): b is Extract<AiContentBlock, { type: 'text' }> => b.type === 'text').map(b => b.text).join('\n');
+  // «ESPERO: …»: el guion necesita que Dani decida antes de seguir (reanudacion.ts).
+  const espera = esperaTrasTurno({ ...ep, historial: mensajes }, texto, ahora);
+  if (espera) return { episodio: espera, auditoria };
   const paraDani = extraerParaDani(texto);
   const estado: Episodio['estado'] = ep.alertas?.length ? 'escalado' : 'hecho';
   return { episodio: cerrar(ep, estado, ahora, { historial: mensajes, paraDani }), auditoria };

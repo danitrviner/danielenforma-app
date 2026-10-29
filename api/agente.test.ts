@@ -142,3 +142,32 @@ describe('ejecutarRonda · aplicar según política', () => {
     expect(r.episodio.estado).toBe('en_curso');
   });
 });
+
+describe('ejecutarRonda · esperar a Dani (ESPERO)', () => {
+  const alta = (): Episodio => nuevoEpisodio({
+    tipo: 'alta_completada', athleteId: 'ana@x.com', clave: 'ana@x.com',
+    disparador: { fuente: 'onboarding', fecha: '2026-10-29' }, politica: 'proponer', ahora: AHORA,
+  });
+  it('una propuesta que la política deja y un turno con ESPERO → escalado con esa propuesta', async () => {
+    const c = cliente([
+      { content: [toolUse('t1', 'propose_mensaje_atleta', { athlete_email: 'ana@x.com', texto: 'Hola.', motivo: 'otro' })], stop_reason: 'tool_use' },
+      { content: [texto('Propuesto.\nESPERO: prop_1\nPARA DANI: mesociclo propuesto.')], stop_reason: 'end_turn' },
+    ]);
+    const r1 = await ejecutarRonda({ episodio: alta(), modelo: 'm', cliente: c, sistema, alias: 'A', ahora: AHORA, aplicar: async () => ({ resultado: 'dejada' }) });
+    expect(r1.episodio.aplicadas).toEqual([]);
+    const r2 = await ejecutarRonda({ episodio: r1.episodio, modelo: 'm', cliente: c, sistema, alias: 'A', ahora: AHORA });
+    expect(r2.episodio.estado).toBe('escalado');
+    expect(r2.episodio.esperaPropuestas).toEqual(['prop_1']);
+    expect(r2.episodio.paraDani).toContain('Esperando tu decisión');
+  });
+  it('si la política la aplicó, la ronda la apunta en `aplicadas` y el ESPERO no para', async () => {
+    const c = cliente([
+      { content: [toolUse('t1', 'propose_mensaje_atleta', { athlete_email: 'ana@x.com', texto: 'Hola.', motivo: 'otro' })], stop_reason: 'tool_use' },
+      { content: [texto('ESPERO: prop_1\nPARA DANI: x')], stop_reason: 'end_turn' },
+    ]);
+    const r1 = await ejecutarRonda({ episodio: alta(), modelo: 'm', cliente: c, sistema, alias: 'A', ahora: AHORA, aplicar: async () => ({ resultado: 'aplicada' }) });
+    expect(r1.episodio.aplicadas).toEqual(['prop_1']);
+    const r2 = await ejecutarRonda({ episodio: r1.episodio, modelo: 'm', cliente: c, sistema, alias: 'A', ahora: AHORA });
+    expect(r2.episodio.estado).toBe('en_curso');
+  });
+});

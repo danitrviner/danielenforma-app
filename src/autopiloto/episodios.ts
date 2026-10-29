@@ -11,6 +11,7 @@
    El bucle vive en api/_lib/agente.ts y quien detecta en ./detectores.ts.
    ═══════════════════════════════════════════════════════════════════════════ */
 import type { AiChatMessage, PoliticaPropuesta } from '../types.js';
+import { textoDelPlanCompleto } from '../utils/recorridoDelPlan.js';
 
 export type TipoEpisodio =
   | 'cuestionario_recibido' | 'semana_nueva' | 'revision' | 'alta_completada' | 'fin_de_bloque'
@@ -36,6 +37,10 @@ export interface Episodio {
   historial?: AiChatMessage[];
   /** Ids de `aiProposals` creadas. */
   propuestas: string[];
+  /** De esas, las que ya se aplicaron (por política o porque Dani aprobó al reanudar). */
+  aplicadas?: string[];
+  /** En `escalado`: propuestas sobre las que hay que esperar la decisión de Dani (reanudacion.ts). */
+  esperaPropuestas?: string[];
   /** Lo que el modelo detectó antes de leer (molestia, agujetas 5, retención). */
   alertas?: string[];
   /** La línea para Dani con la que cerró. */
@@ -110,6 +115,31 @@ export function promptDeEpisodio(ep: Episodio, ctx: { alias: string }): string {
         + `Empieza por get_client_brief con tarea "revision" (trae el plan, la periodización, la dieta y lo que Dani corrige). Lo que esta semana cambia en su entreno (descarga, test, RIR que baja, +1 serie) y en su comida (ajustes de la semana, mantenimiento) ya lo aplica la app sola: tú NO lo cambias ni lo propones.\n`
         + `Tu trabajo es decidir si merece un mensaje y escribirlo con propose_mensaje_atleta (motivo "semana_nueva", semana = la que empieza): un párrafo en segunda persona, como Dani, que diga qué cambia esta semana y por qué, con SU número (la semana del bloque, las series o el RIR nuevos, el reto si lo hay). Si no cambia nada, NO mandes mensaje.\n`
         + `Nada de kcal, sesiones ni reparto: si ves un desvío (peso fuera del rango dos semanas, adherencia por kcal < 70 % dos semanas, tres sesiones perdidas en catorce días), se lo dices a Dani en la línea final.\n${cierre}`;
+    }
+    case 'alta_completada': {
+      return `EPISODIO: ${ctx.alias} (${ep.athleteId}) ha completado el alta (${ep.disparador.fecha}) y hay que montarle el primer mes ENTERO, sin Dani delante.\n`
+        + `Empieza por get_client_brief con tarea "mes_nuevo" (alta, ficha, estado del montaje y lo que Dani corrige en toda la cartera). No pidas nada más de lectura salvo lo que diga el guion.\n\n`
+        + `${textoDelPlanCompleto()}\n\n`
+        + `REGLAS DEL AUTOPILOTO para este recorrido:\n`
+        + `1. Antes de CADA pieza mira el estado del montaje que trajo el brief (o get_setup_status si han pasado varias rondas): lo que ya esté puesto no se propone otra vez.\n`
+        + `2. Entreno: reparto propio con las plantillas de Dani (list_mis_repartos) por defecto. CDG solo si la plantilla elegida está marcada cdg o la tipificación de la ficha lo pide (freno ≤ 2 o tiempo ≥ 4); entonces, tras publicar el bloque, mira get_cdg_semana.\n`
+        + `3. Hay piezas que DEPENDEN de que la anterior exista de verdad: las sesiones del mesociclo, publicar de las sesiones, el calendario de dietas de las dietas. Cuando propongas una de esas piezas base, termina la ronda con una línea «ESPERO: <ids de las propuestas>» justo antes de la línea para Dani y para. Se te reanudará cuando él decida, con el resultado de cada una.\n`
+        + `4. Proteína manda: 2 g/kg del alta (doctrina §7); 100 g de HC fijos en mantenimiento; el objetivo del día en kcal/gramos, nunca alimentos.\n`
+        + `5. Nada de anabolizantes, preparación de competición ni consejo médico. Lo que no puedas decidir con lo que hay, add_coach_task con la pregunta concreta.\n`
+        + `6. Al final, solo cuando el bloque esté PUBLICADO, un mensaje de bienvenida con propose_mensaje_atleta (motivo "otro"): su primera semana en dos frases, como Dani.\n`
+        + `${cierre} En esa línea: «Plan montado: N piezas propuestas/aplicadas, K preguntas».`;
+    }
+    case 'revision': {
+      const momento = ep.id.endsWith('_fin') ? 'la última semana' : 'la mitad';
+      return `EPISODIO: ${ctx.alias} (${ep.athleteId}) está en ${momento} de su bloque${ep.disparador.docId ? ` ${ep.disparador.docId}` : ''} (${ep.disparador.fecha}): toca la REVISIÓN de medio/fin de bloque.\n`
+        + `Empieza por get_client_brief con tarea "revision" y después get_revision_engine con periodo "bloque", y get_resultado_esperado: lo que las propuestas anteriores decían que esperábamos ver.\n\n`
+        + `Entrega, en este orden:\n`
+        + `1. Cierra cada \`esperado\` pendiente con cerrar_esperado (true, false o null) citando el número del motor que lo confirma o lo desmiente.\n`
+        + `2. Veredicto en tres frases con los números del motor (peso, adherencia por kcal, sesiones, PRs, agujetas). Nada tuyo.\n`
+        + `3. Los cambios, solo los que cambien algo: dieta (propose_diet_update sobre la activa, objetivo en gramos), sesiones (propose_workout_days) o progresión (propose_week_plan; si el bloque va por CDG, get_cdg_semana y propose_progresion_iem), pasos/cardio (propose_setup_config), hitos. Si no hay que tocar nada, dilo en una frase.\n`
+        + `4. Ficha viva (propose_dossier_update): dónde está, qué esperamos ver hasta la próxima revisión (con número y plazo) y el foco.\n`
+        + `No le escribes al atleta aquí: la revisión le llega con la respuesta a su cuestionario de esa semana. Nada de anabolizantes ni consejo médico; con dolor persistente o patología, add_coach_task «Revisar ya:» y para.\n`
+        + `${cierre} En esa línea va el veredicto en tres frases.`;
     }
     default:
       return `EPISODIO ${ep.tipo} de ${ctx.alias} (${ep.athleteId}): todavía no tiene guion. No hagas nada y cierra con «PARA DANI: episodio sin guion».`;

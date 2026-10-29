@@ -290,6 +290,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           consentimiento: puedeAnalizarseConIA(onboarding),
           politica: politicaDeEpisodio(politica),
           respuestas, plantillas, asignaciones: cuestionarios, mesociclos,
+          onboardingCompletado: !!onboarding?.completedAt, planStartDate: perfil.planStartDate,
         });
         let encolados = 0;
         if (!enSeco) for (const ep of episodios) { if (await crearEpisodioUnaVez(db, ep)) encolados++; }

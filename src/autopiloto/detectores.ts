@@ -11,7 +11,7 @@
    corriendo para él como siempre.
    ═══════════════════════════════════════════════════════════════════════════ */
 import type { Mesocycle, PoliticaPropuesta, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse } from '../types.js';
-import { mesocycleWeekNumber } from '../utils/progression.js';
+import { mesocycleWeekNumber, vueltasDelCiclo } from '../utils/progression.js';
 import { cicloDiasDeMeso } from '../utils/asignacionMesociclo.js';
 import { alertasDeRespuesta } from '../utils/alertasRevision.js';
 import { resolveQuestions } from '../utils/questionnaireResolve.js';
@@ -30,9 +30,15 @@ export interface FotoParaDetectar {
   respuestas: QuestionnaireResponse[];
   plantillas: Questionnaire[];
   asignaciones: QuestionnaireAssignment[];
-  /** Para «semana nueva»: los bloques del atleta. Sin ellos no se detecta. */
+  /** Para «semana nueva» y «revisión»: los bloques del atleta. Sin ellos no se detecta. */
   mesociclos?: Mesocycle[];
+  /** Para «alta completada»: `onboarding.completedAt` presente y la fecha de inicio del plan del perfil. */
+  onboardingCompletado?: boolean;
+  planStartDate?: string;
 }
+
+/** Un alta de hace más de esto no es «nueva»: el plan lo montó Dani a mano. */
+export const DIAS_DE_VENTANA_ALTA = 14;
 
 /** Una revisión (cuestionario) recibida en los últimos días → episodio. */
 export function detectarCuestionariosRecibidos(f: FotoParaDetectar): Episodio[] {
@@ -83,8 +89,43 @@ export function detectarSemanaNueva(f: FotoParaDetectar): Episodio[] {
   })];
 }
 
+/** Alta completada hace poco (consentimiento, alta cerrada y fecha de inicio puesta) → montar el primer mes. */
+export function detectarAltaCompletada(f: FotoParaDetectar): Episodio[] {
+  if (!f.consentimiento || !f.onboardingCompletado || !f.planStartDate) return [];
+  if (f.planStartDate < addDays(f.hoy, -DIAS_DE_VENTANA_ALTA) || f.planStartDate > addDays(f.hoy, DIAS_DE_VENTANA_ALTA)) return [];
+  return [nuevoEpisodio({
+    tipo: 'alta_completada',
+    athleteId: f.email,
+    clave: f.email,
+    disparador: { fuente: 'onboarding', docId: f.email, fecha: f.hoy },
+    politica: f.politica,
+    ahora: f.ahora,
+  })];
+}
+
+/** Mitad del bloque (`floor(vueltas/2)`, si el bloque tiene al menos 4) y última semana → revisión. */
+export function detectarRevision(f: FotoParaDetectar): Episodio[] {
+  if (!f.consentimiento || !f.mesociclos?.length) return [];
+  const meso = mesoEnCurso(f.mesociclos, f.hoy);
+  if (!meso) return [];
+  const ciclo = cicloDiasDeMeso(meso);
+  const vueltas = vueltasDelCiclo(meso.weeks, ciclo);
+  const semana = mesocycleWeekNumber(meso.startDate, f.hoy, ciclo);
+  const mitad = vueltas >= 4 ? Math.floor(vueltas / 2) : 0;
+  const momento = semana === vueltas ? 'fin' : semana === mitad ? 'mitad' : null;
+  if (!momento) return [];
+  return [nuevoEpisodio({
+    tipo: 'revision',
+    athleteId: f.email,
+    clave: `${f.email}_${meso.id}_${momento}`,
+    disparador: { fuente: 'mesocycles', docId: meso.id, fecha: f.hoy },
+    politica: f.politica,
+    ahora: f.ahora,
+  })];
+}
+
 /** Todos los detectores de hoy, en orden de prioridad. */
 export function detectarEpisodios(f: FotoParaDetectar): Episodio[] {
-  return [...detectarCuestionariosRecibidos(f), ...detectarSemanaNueva(f)]
+  return [...detectarCuestionariosRecibidos(f), ...detectarSemanaNueva(f), ...detectarRevision(f), ...detectarAltaCompletada(f)]
     .sort((a, b) => a.prioridad - b.prioridad || a.creadoEn.localeCompare(b.creadoEn));
 }

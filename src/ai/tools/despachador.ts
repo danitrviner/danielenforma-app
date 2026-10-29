@@ -8,6 +8,9 @@ import { DietUpdatePayload, MesocycleProposalPayload, WorkoutDayInput, WorkoutEx
 import { DossierPatch } from '../../types.js';
 import { calcularRepartoTool, getChallengeOptions, getCheckinsInfo, getClientBrief, getClientOverview, getCoachAdjustments, getDietInfo, getExerciseLibrary, getExerciseUsage, getFoodLibrary, getNutritionAnalysis, getOnboardingCompleto, getProgressMetrics, getProposalFeedback, getQuestionnaireTrends, getRevisionEngine, getSetupStatus, getTrainingHistory, getVolumeSuggestion, leerContextoDelPlan, leerFicha, listClients, listMisRepartos, searchKnowledge } from './lectores.js';
 import { SEMANAS_POR_DEFECTO } from '../validators.js';
+import { getCdgSemana, proposeProgresionIem, getAlternativasEjercicio } from './cdg.js';
+import { getResultadoEsperado } from './lectores.js';
+import { cerrarEsperado } from './propuestas.js';
 import { addCoachTask, apuntarHecho, draftCheckinFeedback, proposeRespuestaRevision, proposeMensajeAtleta, generateReportDraft, leerExpediente, proposeDietUpdate, proposeDossierUpdate, proposeLevelLadder, proposeMesocycle, proposeMesocycleTemplate, proposeNutritionProgram, proposePeriodizationBlock, proposePublishBlock, proposeRoadmapItems, proposeSetupConfig, proposeSpecialDay, proposeWeekPlan, proposeWeeklyChallenge, proposeWorkoutDays, proposeWorkoutTemplate } from './propuestas.js';
 /* ── Consentimiento: UNA puerta, no una lista ────────────────────────────────
    Hasta el 28-10-2026 aquí había una lista blanca de diez tools «con datos de
@@ -118,6 +121,29 @@ export async function executeTool(
           const parsed = JSON.parse(content) as { valid?: boolean };
           return { content, isError: parsed.valid === false };
         }
+      case 'get_cdg_semana':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        return { content: await getCdgSemana(email, typeof input.mesocycle_id === 'string' ? input.mesocycle_id : undefined), isError: false };
+      case 'propose_progresion_iem': {
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        const content = await proposeProgresionIem(email, input, typeof input.rationale === 'string' ? input.rationale : '', chatId);
+        const parsed = JSON.parse(content) as { valid?: boolean };
+        return { content, isError: parsed.valid === false };
+      }
+      case 'get_alternativas_ejercicio':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        return { content: await getAlternativasEjercicio(email, input), isError: false };
+      case 'get_resultado_esperado':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        return { content: await getResultadoEsperado(email), isError: false };
+      case 'cerrar_esperado': {
+        if (!email || typeof input.proposal_id !== 'string' || typeof input.nota !== 'string' || !(typeof input.cumplio === 'boolean' || input.cumplio === null)) {
+          return { content: 'Faltan athlete_email, proposal_id, cumplio (true/false/null) o nota', isError: true };
+        }
+        const content = await cerrarEsperado(email, input.proposal_id, input.cumplio as boolean | null, input.nota);
+        const parsed = JSON.parse(content) as { ok?: boolean };
+        return { content, isError: parsed.ok === false };
+      }
       case 'get_food_library':
         return {
           content: getFoodLibrary(typeof input.mode === 'string' ? input.mode : undefined, typeof input.grupo === 'string' ? input.grupo : undefined),

@@ -286,6 +286,21 @@ export async function leerEpisodiosPendientes(db: Firestore, limite: number): Pr
     .slice(0, limite);
 }
 
+/** Episodios parados esperando la decisión de Dani sobre sus propuestas. */
+export async function leerEpisodiosEnEspera(db: Firestore): Promise<Episodio[]> {
+  const snap = await db.collection('episodios').where('estado', '==', 'escalado').get();
+  return snap.docs.map(d => conId<Episodio>(d)).filter(e => (e.esperaPropuestas?.length ?? 0) > 0);
+}
+
+export async function leerPropuestasPorId(db: Firestore, ids: string[]): Promise<AiProposal[]> {
+  const out: AiProposal[] = [];
+  for (const id of ids) {
+    const s = await db.collection('aiProposals').doc(id).get();
+    if (s.exists) out.push({ id: s.id, ...(s.data() as object) } as AiProposal);
+  }
+  return out;
+}
+
 export async function guardarEpisodio(db: Firestore, ep: Episodio): Promise<void> {
   await db.collection('episodios').doc(ep.id).set(sinIndefinidos(ep));
 }
