@@ -9,7 +9,18 @@ import DataTable, { Columna } from './DataTable';
 import EmptyState from './EmptyState';
 import MetricCard from './MetricCard';
 import SuscripcionesBlock from './SuscripcionesBlock';
-import type { Cliente, CrmServicio, ResultadoRenovacion } from '../types';
+import type { Cliente, CrmServicio, MotivoBaja, ResultadoRenovacion } from '../types';
+
+// Los mismos seis motivos de la baja (decididos con Dani): sin motivo, el
+// panel de retención no aprende nada de un «perdido».
+const MOTIVOS: { id: MotivoBaja; label: string }[] = [
+  { id: 'precio', label: 'Precio' },
+  { id: 'resultados', label: 'No veía resultados' },
+  { id: 'tiempo_disponibilidad', label: 'Falta de tiempo' },
+  { id: 'insatisfaccion', label: 'Insatisfacción' },
+  { id: 'lesion_salud', label: 'Lesión o salud' },
+  { id: 'otro', label: 'Otro' },
+];
 import { Badge, Icon } from '../../../components/ui';
 
 /* Renovaciones ya no es «la pantalla de las suscripciones»: son los SERVICIOS
@@ -97,6 +108,20 @@ export default function RenovacionesTab({ cliente, coachEmail }: { cliente: Clie
         return (
           <div className="flex items-center gap-1.5 flex-wrap">
             <Badge tone={RESULTADO[r].tone}>{RESULTADO[r].label}</Badge>
+            {/* Por qué no renovó (tanda 8): obligatorio en la práctica, es lo
+                que alimenta el panel de retención. */}
+            {r === 'perdido' && (
+              <select
+                value={s.motivoNoRenovacion ?? ''}
+                onClick={e => e.stopPropagation()}
+                onChange={e => { e.stopPropagation(); void actualizar.mutateAsync({ id: s.id, updates: { motivoNoRenovacion: (e.target.value || undefined) as MotivoBaja | undefined } }); }}
+                className={`bg-field border rounded-control px-2 py-1 font-mono text-caption text-ink ${s.motivoNoRenovacion ? 'border-control-line' : 'border-danger/50'}`}
+                aria-label="Por qué no renovó"
+              >
+                <option value="">¿Por qué?</option>
+                {MOTIVOS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+              </select>
+            )}
             {/* Se puede corregir siempre: marcar «perdido» por error y no
                 poder deshacerlo falsearía la tasa de renovación para siempre. */}
             {(['renovado', 'perdido', 'pendiente'] as ResultadoRenovacion[])

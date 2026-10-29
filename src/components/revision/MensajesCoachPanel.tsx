@@ -33,7 +33,9 @@ const ESTADOS: { id: EstadoProblema; label: string }[] = [
 
 export function claveMensajesCoach(email: string) { return ['mensajesCoachDeAtleta', email] as const; }
 
-export default function MensajesCoachPanel({ athlete }: { athlete: UserProfile }) {
+export interface CierrePorFirmar { id: string; texto: string; fecha: string; mesoNombre: string }
+
+export default function MensajesCoachPanel({ athlete, cierre = null }: { athlete: UserProfile; cierre?: CierrePorFirmar | null }) {
   const email = athlete.email;
   const nombre = (athlete.displayName || email).split(' ')[0];
   const hoy = hoyIsoLocal();
@@ -43,7 +45,16 @@ export default function MensajesCoachPanel({ athlete }: { athlete: UserProfile }
   const { data: mensajes = [] } = useQuery({ queryKey: claveMensajesCoach(email), queryFn: () => getMensajesDeAtleta(email) });
   const { data: cambios = [] } = useQuery({ queryKey: ['cambiosAtleta', email], queryFn: () => getCambiosAtleta(email) });
 
-  const borradores = useMemo(() => mensajes.filter(m => m.estado === 'borrador').sort((a, b) => b.fecha.localeCompare(a.fecha)), [mensajes]);
+  // El cierre del bloque recién terminado (tanda 8) entra como borrador
+  // local si todavía no hay mensaje con su id: se calcula en la ficha con
+  // los logs que ya están cargados, no lo escribe nadie hasta que Dani firma.
+  const cierrePendiente = cierre && !mensajes.some(m => m.id === cierre.id) ? cierre : null;
+  const borradores = useMemo(() => {
+    const deBase = mensajes.filter(m => m.estado === 'borrador').sort((a, b) => b.fecha.localeCompare(a.fecha));
+    if (!cierrePendiente) return deBase;
+    const local: MensajeCoach = { id: cierrePendiente.id, athleteId: email, tipo: 'hito', autor: 'asistente', estado: 'borrador', texto: cierrePendiente.texto, fecha: cierrePendiente.fecha, creadoEn: '' };
+    return [local, ...deBase];
+  }, [mensajes, cierrePendiente, email]);
   const sinContar = useMemo(() => cambiosSinContar(cambios, mensajes, hoy), [cambios, mensajes, hoy]);
   const problemas = useMemo(() => mensajes.filter(m => m.tipo === 'problema' && m.problema?.estado !== 'hecho').sort((a, b) => b.fecha.localeCompare(a.fecha)), [mensajes]);
   const enviados = useMemo(() => mensajes.filter(m => m.estado === 'aprobado' && m.autor === 'coach').sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 5), [mensajes]);
@@ -59,7 +70,12 @@ export default function MensajesCoachPanel({ athlete }: { athlete: UserProfile }
 
   const firmar = useMutation({
     mutationFn: async (m: { id: string; texto: string; porque?: string }) => {
-      await firmarMensajeCoach(m.id, m.texto, m.porque);
+      if (cierrePendiente && m.id === cierrePendiente.id) {
+        // Borrador local: se crea ya firmado.
+        await crearMensajeCoach({ id: m.id, athleteId: email, tipo: 'hito', autor: 'asistente', estado: 'aprobado', texto: m.texto, porque: m.porque, fecha: hoy, firmadoEn: new Date().toISOString() });
+      } else {
+        await firmarMensajeCoach(m.id, m.texto, m.porque);
+      }
       await avisar(`${COACH_NOMBRE} te ha escrito`, m.texto, `notif_mc_${m.id}`);
     },
     onSuccess: () => { refrescar(); showToast('Firmado y enviado.', 'success'); },

@@ -55,7 +55,7 @@ export default function MensajesDevHarness() {
             <LoUltimoDeDani profile={ATLETA} respuestas={vacio ? [] : RESPUESTAS} notaDeHoy={vacio ? null : NOTA} onNavigate={() => undefined} />
           </div>
           <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">Coach · Cliente › Revisión</p>
-          <MensajesCoachPanel athlete={ATLETA} />
+          <MensajesCoachPanel athlete={ATLETA} cierre={{ id: 'cierre_m1', fecha: HOY, mesoNombre: 'Hipertrofia 1', texto: 'Bloque «Hipertrofia 1» terminado: 20 de 24 sesiones, 90 % del trabajo programado, 2 récords. Has subido en press banca y en remo; el tercer día te ha costado más, y lo tengo en cuenta para el siguiente.' }} />
         </div>
       </div>
     </QueryClientProvider>
