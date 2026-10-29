@@ -363,3 +363,11 @@ describe('la primera semana (29-10)', () => {
     expect(s.filter(x => x.categoria === 'ausencia')).toHaveLength(0);
   });
 });
+
+describe('el primer mes (29-10)', () => {
+  it('entre el día 28 y el 31 del plan recuerda grabar el hito', () => {
+    const s = construirBandejaDelDia(entrada({ atletas: [atleta({ planPublishedAt: `${addDays(HOY, -27)}T10:00:00.000Z` })] })).find(x => x.id.endsWith('primer_mes'));
+    expect(s).toMatchObject({ urgencia: 'hoy', texto: 'Primer mes cumplido (día 28): grábale un hito' });
+    expect(construirBandejaDelDia(entrada({ atletas: [atleta({ planPublishedAt: `${addDays(HOY, -40)}T10:00:00.000Z` })] })).find(x => x.id.endsWith('primer_mes'))).toBeUndefined();
+  });
+});

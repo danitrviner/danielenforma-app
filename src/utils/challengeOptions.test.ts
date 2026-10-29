@@ -269,9 +269,11 @@ describe('adherencia a la dieta', () => {
   });
 
   it('la adherencia es en kcal: el techo es el 100 % y a quien ya se lo come todo no se le propone (26-10-2026)', () => {
-    const casi = generateChallengeOptions(input({ coachDiets: [diet], completionLogs: completions(90) }));
+    // Nivel explícito: en arranque el reto va en suave (29-10) y aquí se
+    // prueba el techo, no la dificultad.
+    const casi = generateChallengeOptions(input({ coachDiets: [diet], completionLogs: completions(90), nivelForzado: 'constancia' }));
     expect(casi.find(o => o.kind === 'adherencia_dieta')!.metric.target).toBe(95);
-    const todo = generateChallengeOptions(input({ coachDiets: [diet], completionLogs: completions(100) }));
+    const todo = generateChallengeOptions(input({ coachDiets: [diet], completionLogs: completions(100), nivelForzado: 'constancia' }));
     expect(todo.find(o => o.kind === 'adherencia_dieta')).toBeUndefined();
   });
 });

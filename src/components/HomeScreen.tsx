@@ -6,6 +6,8 @@ import { UserProfile, WeightCheckIn } from '../types';
 import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles, getBodyweightForAthlete, updateUserProfile, getNutritionProgram, getCardioSessionsSince, getResponsesForAthlete } from '../dbService';
 import LoUltimoDeDani from './home/LoUltimoDeDani';
 import PrimeraSemanaCard from './home/PrimeraSemanaCard';
+import LoQueVinisteABuscar from './home/LoQueVinisteABuscar';
+import { faseEnCurso } from '../utils/objetivoDeFase';
 import { formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
@@ -223,6 +225,8 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
      para el martes": el plan del día vive en su propio documento desde 09-2026
      (ver DietCompletionLog.meals). `dietaDelDia` cae a la dieta antigua para
      los días de antes del cambio, así que un histórico viejo se sigue leyendo. */
+  // La fase en curso del programa: la meta de peso de «Lo que viniste a buscar».
+  const faseDelPlan = useMemo(() => faseEnCurso(nutritionProgram, TODAY_DATE), [nutritionProgram]); // eslint-disable-line react-hooks/exhaustive-deps -- TODAY_DATE es constante del módulo
   const entrenaHoy = nutritionProgram?.ciclado
     ? assignments.some(a => a.date === TODAY_DATE && a.status !== 'skipped')
     : undefined;
@@ -344,6 +348,14 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         respuestas={respuestasRevision}
         notaDeHoy={coachDayNote}
         onNavigate={onNavigate}
+      />
+
+      {/* «Lo que viniste a buscar» (29-10): su frase del alta y el antes → ahora. */}
+      <LoQueVinisteABuscar
+        athleteEmail={profile.email}
+        pesos={pesajes}
+        pesoMeta={faseDelPlan?.fase.targetWeight ?? null}
+        objetivo={faseDelPlan?.objetivo?.tipo ?? null}
       />
 
       {/* «Tu primera semana» (29-10): los tres primeros pasos, 14 días. */}

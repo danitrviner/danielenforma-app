@@ -181,3 +181,24 @@ describe('variación de copy', () => {
     }
   });
 });
+
+describe('difficultyFor · nivel de arranque (29-10)', () => {
+  const reto = (kind: ChallengeKind, status: 'conseguido' | 'fallido', isoWeek: string): WeeklyChallenge => ({
+    id: `${kind}_${isoWeek}`, athleteId: 'a@x.com', isoWeek, weekStart: '2026-10-05', weekEnd: '2026-10-11', kind, title: '', description: '',
+    origin: 'auto', metric: { unit: 'pasos', target: 9000, baseline: 8000 }, status, progressValue: status === 'conseguido' ? 9500 : 7000,
+    createdAt: '', resolvedAt: '2026-10-11T00:00:00.000Z',
+  });
+  it('en arranque nunca pasa de suave; en constancia se guía por la memoria', () => {
+    const vacio = buildChallengeMemory([], '2026-W44');
+    expect(difficultyFor('pasos_media', vacio, 'arranque').label).toBe('suave');
+    expect(difficultyFor('pasos_media', vacio, 'constancia').label).toBe('justo');
+  });
+  it('en arranque el fallo repetido sigue rebajando por debajo de suave', () => {
+    const memoria = buildChallengeMemory([
+      reto('entrenos_completados', 'conseguido', '2026-W41'),
+      reto('pasos_media', 'fallido', '2026-W42'),
+      reto('pasos_media', 'fallido', '2026-W43'),
+    ], '2026-W44');
+    expect(difficultyFor('pasos_media', memoria, 'arranque').factor).toBeLessThan(0.6);
+  });
+});
