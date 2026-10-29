@@ -1015,6 +1015,31 @@ export interface QuestionnairePack {
   createdAt: string;
 }
 
+/** Los tres bloques fijos de la respuesta a la revisión (Dani, 28-10). */
+export interface BloquesRespuesta {
+  comoHaIdo: string;
+  queCambia: string;
+  queEspero: string;
+}
+
+/**
+ * Respuesta del coach a una revisión (27-10, ampliada 29-10).
+ * `texto` sigue siendo lo que se enseña y se copia; `bloques` es la misma
+ * respuesta partida en tres, para pintarla con sus títulos. `canal: 'whatsapp'`
+ * significa «te he escrito por WhatsApp»: sin texto en la app, pero el atleta
+ * ve que hubo respuesta y la latencia se mide igual.
+ */
+export interface RespuestaCoachRevision {
+  texto: string;
+  mediaUrl?: string;
+  mediaKind?: 'audio' | 'video';
+  enviadaEn: string;
+  bloques?: BloquesRespuesta;
+  canal?: 'app' | 'whatsapp';
+  /** De dónde salió el texto antes de que el coach lo firmara. */
+  borrador?: 'asistente' | 'coach';
+}
+
 export interface QuestionnaireResponse {
   id: string;
   questionnaireId: string;
@@ -1034,7 +1059,7 @@ export interface QuestionnaireResponse {
   reviewedAt?: string;
   /** Lo que el coach le contesta sobre esta revisión (texto y, si quiere, un
    *  audio o vídeo). Al guardarla se marca también `reviewedAt`. */
-  respuestaCoach?: { texto: string; mediaUrl?: string; mediaKind?: 'audio' | 'video'; enviadaEn: string };
+  respuestaCoach?: RespuestaCoachRevision;
 }
 
 /**

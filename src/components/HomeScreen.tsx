@@ -3,7 +3,8 @@ import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn } from '../types';
-import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles, getBodyweightForAthlete, updateUserProfile, getNutritionProgram, getCardioSessionsSince } from '../dbService';
+import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles, getBodyweightForAthlete, updateUserProfile, getNutritionProgram, getCardioSessionsSince, getResponsesForAthlete } from '../dbService';
+import RespuestaDelCoach from './checkin/RespuestaDelCoach';
 import { formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
@@ -108,6 +109,13 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
   // "Nota") — cierra el hueco que este archivo documenta más abajo como
   // pendiente por no existir "campo de nota por asignación". Un doc por
   // fetch, no la lista entera: es un dato de un solo día.
+  // La última respuesta del coach a su revisión (29-10). Misma clave que
+  // PendingTasksPanel y CheckInScreen: una sola lectura entre las tres.
+  const { data: respuestasRevision = [] } = useQuery({
+    queryKey: ['responsesForAthlete', profile.email],
+    queryFn: () => getResponsesForAthlete(profile.email),
+  });
+
   const { data: coachDayNote } = useQuery({
     queryKey: ['coachDayNote', profile.email, TODAY_DATE],
     queryFn: () => getCoachDayNote(profile.email, TODAY_DATE),
@@ -324,6 +332,13 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         ? <ChallengePendingCard />
         : <WeeklyChallengeCard challenge={reto.challenge!} progress={reto.progress!} streak={racha} destacado />
       )}
+
+      {/* ── «Dani ha revisado tu semana» (29-10) ──────────────────────────────
+          La respuesta a su última revisión, siete días, justo debajo del reto:
+          es lo único de esta pantalla que viene de una persona. Misma consulta
+          que Perfil › Revisión y Tareas pendientes (clave compartida). Si no
+          hay respuesta reciente no se pinta nada: no se finge. */}
+      <RespuestaDelCoach responses={respuestasRevision} maxDias={7} />
 
       {/* ── Peso y pasos: los dos de un vistazo, sin hacer scroll ───────────
           En segunda fila y no de protagonistas: si a uno le faltan datos, no
