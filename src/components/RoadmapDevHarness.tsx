@@ -45,6 +45,14 @@ const RETO: WeeklyChallenge = {
   metric: { unit: 'pasos', target: 9000, baseline: 8600 }, status: 'activo', progressValue: 8800, createdAt: '',
 };
 
+/** Para la galería de variantes. */
+export function fixtureRoadmap() {
+  const semanas = semanasDelPlan({ program: PROGRAMA, diets: DIETAS, pesos: PESOS, registros: [], pasos: PASOS, pasosBase: 9000, hoy: HOY });
+  const evaluacion = evaluarPlan(PROGRAMA, semanas, calcularGastoReal({ pesos: PESOS, registros: [], diets: DIETAS, hasta: HOY }));
+  return construirRoadmap({ program: PROGRAMA, semanas, evaluacion, mesociclos: MESOS, assignments: ASIGNACIONES, workoutLogs: [], respuestas: RESPUESTAS, stepLogs: PASOS, stepGoal: 9000, hoy: HOY });
+}
+export const RETO_FIXTURE = RETO;
+
 export default function RoadmapDevHarness() {
   const [variante, setVariante] = useState<VarianteRoadmap | 'todas'>(() => {
     const v = new URLSearchParams(window.location.search).get('v');

@@ -8,6 +8,7 @@ import { addDays, hoyIsoLocal } from '../utils/trainingWeek';
 import { getMensajesAprobados } from '../db/mensajesCoach';
 import { claveMensajesAtleta } from './home/LoUltimoDeDani';
 import { COACH_NOMBRE } from '../utils/coach';
+import { VARIANTES } from '../data/variantes';
 
 const fechaCorta = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -60,6 +61,13 @@ export function fraseDesde(createdAt: string | undefined, planPrometidoPara?: st
 interface Props {
   profile: UserProfile;
   onNavigate: (tab: 'checkin' | 'roadmap' | 'profile') => void;
+  /** 'insignia' («LO TENDRÁS EL JUEVES 30») · 'cuenta' (los días que faltan, en grande). */
+  variante?: typeof VARIANTES.salaEspera;
+}
+
+/** Días hasta la fecha comprometida (negativo = ya pasó). */
+export function diasHastaPlan(planPrometidoPara: string, hoy = hoyIsoLocal()): number {
+  return Math.round((Date.parse(`${planPrometidoPara}T12:00:00`) - Date.parse(`${hoy}T12:00:00`)) / 86_400_000);
 }
 
 // El "valle de la muerte" post-onboarding: el atleta termina el wizard en su
@@ -68,7 +76,7 @@ interface Props {
 // solo se monta cuando el atleta todavía no tiene NINGÚN entrenamiento
 // asignado (HomeScreen ya filtra por eso) — así el coste de las dos lecturas
 // nuevas (fotos, peso) solo lo paga quien de verdad está en ese hueco.
-export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
+export default function PlanInPreparationCard({ profile, onNavigate, variante = VARIANTES.salaEspera }: Props) {
   const [roadmapVisited, setRoadmapVisited] = useState(() => isRoadmapVisited(profile.email));
 
   const { data: photos = [], isPending: loadingPhotos } = useQuery({
@@ -132,10 +140,21 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
             avisamos en cuanto esté listo.
           </p>
           <div className="flex flex-wrap items-center gap-3 pt-1">
-            <span className="inline-flex items-center gap-2 rounded-full border border-accent-line bg-accent/13 px-3 py-1 font-mono text-caption font-bold uppercase tracking-widest text-accent-ink">
-              <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-accent" aria-hidden />
-              {fraseDesde(profile.createdAt, profile.planPrometidoPara)}
-            </span>
+            {variante === 'cuenta' && profile.planPrometidoPara ? (
+              <span className="inline-flex items-baseline gap-2">
+                <span className="font-display text-title-l font-black leading-none text-accent-ink">
+                  {Math.max(0, diasHastaPlan(profile.planPrometidoPara))}
+                </span>
+                <span className="font-mono text-caption font-bold uppercase tracking-widest text-ink-2">
+                  {diasHastaPlan(profile.planPrometidoPara) <= 0 ? 'llega hoy' : diasHastaPlan(profile.planPrometidoPara) === 1 ? 'día · mañana' : `días · ${new Date(`${profile.planPrometidoPara}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' })}`}
+                </span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-2 rounded-full border border-accent-line bg-accent/13 px-3 py-1 font-mono text-caption font-bold uppercase tracking-widest text-accent-ink">
+                <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-accent" aria-hidden />
+                {fraseDesde(profile.createdAt, profile.planPrometidoPara)}
+              </span>
+            )}
             <button
               type="button"
               onClick={() => onNavigate('profile')}

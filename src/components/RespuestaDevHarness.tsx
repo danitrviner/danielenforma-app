@@ -65,6 +65,24 @@ const RESPUESTA: QuestionnaireResponse = {
   ],
 };
 
+/** Para la galería de variantes: los mismos datos, sembrados en cualquier QueryClient. */
+export const FIXTURE_RESPUESTA = {
+  atleta: ATLETA, cuestionario: CUESTIONARIO, respuesta: RESPUESTA,
+  sembrar(c: QueryClient) {
+    c.setQueryData(['nutritionProgram', EMAIL], PROGRAMA);
+    c.setQueryData(['dietsForAthlete', EMAIL], [DIETA]);
+    c.setQueryData(['dietCompletionLogsForAthlete', EMAIL], REGISTROS);
+    c.setQueryData(['stepsForAthlete', EMAIL], PASOS);
+    c.setQueryData(['athleteNutritionConfig', EMAIL], { stepGoal: 9000 });
+    c.setQueryData(['cambiosAtleta', EMAIL], CAMBIOS);
+    c.setQueryData(['workoutAssignments', UID], ASIGNACIONES);
+    c.setQueryData(['workoutLogs', EMAIL], LOGS);
+    c.setQueryData(bodyweightForAthleteKey(EMAIL), PESOS);
+    c.setQueryData(['onboarding', EMAIL], { goalFreeText: 'Llegar a los 40 en forma me haría sentir muy orgulloso de mí mismo' });
+  },
+  pesos: PESOS,
+};
+
 export default function RespuestaDevHarness() {
   const client = useMemo(() => {
     const c = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });

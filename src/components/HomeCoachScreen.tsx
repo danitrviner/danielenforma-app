@@ -8,7 +8,8 @@ import { getBorradoresPorFirmar } from '../db/mensajesCoach';
 import {
   construirBandejaDelDia, contarPorUrgencia, SenalDelDia, UrgenciaSenal, CategoriaSenal,
 } from '../utils/bandejaDelDia';
-import { calcularPanelRetencion, HORAS_RESPUESTA_PROMETIDA } from '../utils/panelRetencion';
+import { calcularPanelRetencion } from '../utils/panelRetencion';
+import PanelRetencionCard from './coach/PanelRetencionCard';
 import { plantillaWhatsApp } from '../utils/plantillasWhatsApp';
 import { useRespuestasDeLaBandeja } from '../hooks/useRevisionesSinLeer';
 import { addDays, hoyIsoLocal } from '../utils/trainingWeek';
@@ -41,18 +42,6 @@ import { ActionRow as ActionRowPrimitive, EmptyState, Icon } from './ui';
    atleta. La tarjeta "Revisiones Pendientes" que vivía arriba de la
    parrilla SÍ se retira de ClientsScreen: esta pantalla la sustituye 1:1.
    ═══════════════════════════════════════════════════════════════════════════ */
-
-/* Una cifra del panel de retención: valor grande, etiqueta en mono, nota
-   opcional. El tono solo cambia el color del valor: ámbar cuando pide mirar. */
-function Cifra({ etiqueta, valor, nota, tono }: { etiqueta: string; valor: string; nota?: string; tono: 'ok' | 'aviso' }) {
-  return (
-    <div className="rounded-field border border-hairline bg-surface px-3 py-2.5">
-      <p className="font-mono text-caption uppercase tracking-widest text-ink-3">{etiqueta}</p>
-      <p className={`mt-0.5 font-sans text-title-l font-bold leading-none ${tono === 'aviso' ? 'text-warning' : 'text-ink'}`}>{valor}</p>
-      {nota && <p className="mt-1 truncate font-mono text-caption text-ink-2">{nota}</p>}
-    </div>
-  );
-}
 
 function iniciales(nombre: string): string {
   const partes = nombre.trim().split(/\s+/);
@@ -235,23 +224,7 @@ export default function HomeCoachScreen({ athletes, coachId, checkins, assignmen
      día» con dos atletas apagándose no es todo al día. Cuatro cifras y, si
      hay alguien en su primera semana, en qué día va (contacto diario
      prometido en la venta). */
-  const panelCard = (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Retención">
-      <Cifra etiqueta="En marcha" valor={String(panel.enMarcha)} tono="ok" />
-      <Cifra etiqueta="Apagándose" valor={String(panel.apagandose)} tono={panel.apagandose > 0 ? 'aviso' : 'ok'}
-        nota={panel.callados > 0 ? `+ ${panel.callados} callado${panel.callados === 1 ? '' : 's'}` : undefined} />
-      <Cifra etiqueta="Respuesta" valor={panel.latenciaMedianaH === null ? '—' : `${panel.latenciaMedianaH} h`}
-        tono={panel.latenciaMedianaH !== null && panel.latenciaMedianaH <= HORAS_RESPUESTA_PROMETIDA ? 'ok' : 'aviso'}
-        nota={panel.pctContestadas48h === null ? 'sin revisiones' : `${panel.pctContestadas48h} % en ${HORAS_RESPUESTA_PROMETIDA} h`} />
-      <Cifra etiqueta="Sin contestar" valor={String(panel.sinContestar)} tono={panel.sinContestar > 0 ? 'aviso' : 'ok'}
-        nota={panel.sinPlan > 0 ? `${panel.sinPlan} sin plan` : undefined} />
-      {panel.primeraSemana.length > 0 && (
-        <p className="col-span-2 sm:col-span-4 font-mono text-caption text-ink-2">
-          Primera semana: {panel.primeraSemana.map(p => `${p.nombre} · día ${p.dia}`).join(' · ')}
-        </p>
-      )}
-    </div>
-  );
+  const panelCard = <PanelRetencionCard panel={panel} />;
 
   if (senales.length === 0) {
     return (
