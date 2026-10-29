@@ -16,7 +16,6 @@ import { semanasDelPlan, evaluarPlan, calcularGastoReal } from '../../utils/segu
 import { conEstadoReal } from '../../utils/estadoDeAsignacion';
 import { borradorDeRespuesta, textoDeBloques, TITULOS_BLOQUES } from '../../utils/borradorRespuesta';
 import { Button, Icon } from '../ui';
-import { VARIANTES } from '../../data/variantes';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Respuesta del coach a una revisión (27-10; tres bloques y borrador, 29-10)
@@ -45,8 +44,6 @@ interface Props {
   questionnaire?: Questionnaire;
   athlete: UserProfile;
   onGuardada: (r: QuestionnaireResponse) => void;
-  /** 'tres' (un campo por bloque) · 'uno' (un solo campo con el borrador entero). */
-  variante?: typeof VARIANTES.respuestaCoach;
 }
 
 const VACIOS: BloquesRespuesta = { comoHaIdo: '', queCambia: '', queEspero: '' };
@@ -88,7 +85,7 @@ function useBorrador(athlete: UserProfile, respuesta: QuestionnaireResponse, que
   }, [activo, program, dietsRaw, pesos, registros, pasos, config?.stepGoal, hoy, asignaciones, logs, cambios, questionnaire, respuesta, athlete.displayName]);
 }
 
-export default function RespuestaCoachBox({ respuesta, questionnaire, athlete, onGuardada, variante = VARIANTES.respuestaCoach }: Props) {
+export default function RespuestaCoachBox({ respuesta, questionnaire, athlete, onGuardada }: Props) {
   const { showToast } = useToast();
   const existente = respuesta.respuestaCoach;
   const [editando, setEditando] = useState(!existente);
@@ -217,22 +214,9 @@ export default function RespuestaCoachBox({ respuesta, questionnaire, athlete, o
           <span className="font-mono text-caption uppercase tracking-wider text-ink-3">Borrador del asistente · edítalo y firma</span>
         )}
       </div>
-      {variante === 'uno' ? (
-        <textarea
-          id={`rc-${respuesta.id}-uno`}
-          aria-label="Respuesta"
-          value={textoDeBloques(bloques, true)}
-          onChange={e => { setTocado(true); setBloques({ comoHaIdo: e.target.value, queCambia: '', queEspero: '' }); }}
-          rows={7}
-          className="w-full bg-raised border border-hairline rounded-control p-3 text-label text-ink focus:ring-1 focus:ring-accent focus:outline-none resize-y font-sans"
-        />
-      ) : (
-        <>
-          {campo('comoHaIdo', 'Qué has visto esta semana, con su nombre.')}
-          {campo('queCambia', 'Qué cambias y por qué; si nada, dilo.')}
-          {campo('queEspero', 'Qué tiene que pasar la semana que viene.')}
-        </>
-      )}
+      {campo('comoHaIdo', 'Qué has visto esta semana, con su nombre.')}
+      {campo('queCambia', 'Qué cambias y por qué; si nada, dilo.')}
+      {campo('queEspero', 'Qué tiene que pasar la semana que viene.')}
       <div className="flex flex-wrap items-center gap-2">
         <label className="inline-flex items-center gap-1.5 cursor-pointer font-sans text-caption text-ink-3 hover:text-ink border border-hairline rounded-control px-2.5 py-1.5">
           <Icon name="add" size="s" />

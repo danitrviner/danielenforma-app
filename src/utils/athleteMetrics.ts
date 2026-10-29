@@ -1,7 +1,7 @@
 // Primitivas compartidas para leer el progreso del atleta desde sus logs.
 // Usadas por el motor de retos semanales (weeklyChallenge.ts), la escalera de
-// niveles (levelLadder.ts) y el progreso de fase (planPhase.ts) para que todos
-// midan igual las mismas cosas.
+// niveles (levelLadder.ts) y el Road map del atleta (roadmapDelAtleta.ts)
+// para que todos midan igual las mismas cosas.
 
 import {
   BodyweightLog, StepLog, WorkoutLog, Exercise, DietCompletionLog, Diet,

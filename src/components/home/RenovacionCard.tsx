@@ -5,15 +5,13 @@ import { antesAhora } from './LoQueVinisteABuscar';
 import { diasHastaFinDePlan, finDePlan, DIAS_ULTIMOS_DEL_PLAN } from '../../utils/cierreParaAtleta';
 import { COACH_NOMBRE } from '../../utils/coach';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
-import { VARIANTES } from '../../data/variantes';
 import { Icon } from '../ui';
 
 /* «Esto hemos conseguido · esto viene» (tanda 8): los últimos diez días del
    plan contratado. Es lo que decide la renovación: llegar con la sensación
    de haber conseguido algo y con un siguiente paso claro. El siguiente paso
-   lo escribe Dani (Lo último de Dani); aquí solo se dice que llega.
-
-   Dos versiones: 'tarjeta' (con el antes → ahora) y 'linea' (una línea). */
+   lo escribe Dani (Lo último de Dani); aquí solo se dice que llega. Tarjeta
+   con el antes → ahora (versión elegida por Dani el 29-10). */
 
 const kg = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const fechaLarga = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -23,26 +21,15 @@ interface Props {
   pesos: readonly Pick<BodyweightLog, 'date' | 'weight'>[];
   objetivo: ObjetivoCorporalTipo | null;
   pesoMeta: number | null;
-  variante?: typeof VARIANTES.renovacion;
 }
 
-export default function RenovacionCard({ profile, pesos, objetivo, pesoMeta, variante = VARIANTES.renovacion }: Props) {
+export default function RenovacionCard({ profile, pesos, objetivo, pesoMeta }: Props) {
   const hoy = hoyIsoLocal();
   const dias = diasHastaFinDePlan(profile, hoy);
   if (dias === null || dias < 0 || dias > DIAS_ULTIMOS_DEL_PLAN) return null;
   const fin = finDePlan(profile)!;
   const aa = antesAhora(pesos, pesoMeta, objetivo, hoy);
   const cuando = dias === 0 ? 'hoy' : dias === 1 ? 'mañana' : `en ${dias} días`;
-
-  if (variante === 'linea') {
-    return (
-      <p className="font-sans text-body-s text-ink-2 text-pretty">
-        Tu plan termina <span className="font-semibold text-ink">{cuando}</span> ({fechaLarga(fin)}).
-        {aa.cambio != null && aa.cambio !== 0 && <> Llevas <span className="font-semibold text-ink">{aa.cambio > 0 ? '+' : ''}{kg(aa.cambio)} kg</span> desde que empezaste.</>}
-        {' '}{COACH_NOMBRE} te cuenta el siguiente paso estos días.
-      </p>
-    );
-  }
 
   return (
     <section className="rounded-canvas border border-accent-line bg-surface p-4 space-y-3" aria-label="Tu plan termina pronto">

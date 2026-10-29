@@ -1,31 +1,29 @@
-# Acompañamiento · Galería de variantes para elegir
+# Acompañamiento · Galería de variantes → elección (cerrada)
 
-29-10-2026 · rama `acompanamiento-variantes` (apilada sobre la 5b) · regla de Dani (29-10): cada pieza nueva de la app se enseña en 2-3 versiones y se elige al final, también las de las tandas 1-4.
+29-10-2026 · galería en rama `acompanamiento-variantes` (apilada sobre la 5b) · elección aplicada en `acompanamiento-10-eleccion` (apilada sobre la 9). Regla de Dani (29-10): cada pieza nueva de la app se enseña en 2-3 versiones y se elige al final, también las de las tandas 1-4.
 
-Todo vive en `/dev/variantes` (una sección por pieza, una columna por versión, mismos datos de mentira; `?pieza=…` enseña una sola). Lo elegido se fija en **`src/data/variantes.ts`**: una línea por pieza; cada componente lee su variante de ahí y la admite como prop para la galería. Hasta la elección, la app usa la **A** de cada una.
+## Lo que eligió Dani (29-10)
 
-| Pieza | Dónde | A | B | C | Captura |
-|---|---|---|---|---|---|
-| Panel de retención | Coach, encima de la bandeja | **cifras**: 4 cifras en rejilla | **línea**: una frase con lo que pide mirar en ámbar | **dos grandes**: apagándose y sin contestar en grande, el resto en una línea | `12a` |
-| Cuadro de respuesta a la revisión | Coach, Recibidas | **tres**: un campo por bloque | **uno**: un solo campo con el borrador entero (con títulos) | — | `12c` |
-| «Dani ha revisado tu semana» | Atleta, Perfil › Revisión | **bloques**: tres títulos y su texto | **corrido**: un párrafo con los títulos en negrita | — | `12d` |
-| «Lo último de Dani» | Atleta, Inicio | **lista**: todo por fecha | **último**: solo lo más reciente y «y N más» | **carrusel**: tarjetas en horizontal | `12b` |
-| «Tu primera semana» | Atleta, Inicio | **lista**: tres filas | **pasos**: tres pasos en horizontal con barra | — | `12e` |
-| Sala de espera, fecha comprometida | Atleta, día 0 | **insignia**: «LO TENDRÁS EL SÁBADO 31» | **cuenta atrás**: «2 días · sábado 31» en grande | — | `12f` |
-| «Lo que viniste a buscar» | Atleta, Inicio y Mi objetivo | **cita**: la frase grande y una línea de cifras | **cifras**: empezaste · ahora · meta y la frase pequeña | — | `12g` |
-| Road map | Atleta, Perfil › Road map | **camino**: escalera vertical de fases, la actual abierta | **mapa**: barra del plan entero + tarjetas | **compacta**: una tarjeta con las fases como píldoras | `11a/11b/11c` |
+| Pieza | Dónde | Elegida | Descartadas | Captura |
+|---|---|---|---|---|
+| Panel de retención | Coach, encima de la bandeja | **A · cifras**: 4 cifras en rejilla | línea · dos grandes | `12a` |
+| Cuadro de respuesta a la revisión | Coach, Recibidas | **A · tres**: un campo por bloque | un solo campo | `12c` |
+| «Dani ha revisado tu semana» | Atleta, Perfil › Revisión | **A · bloques**: tres títulos y su texto | texto corrido | `12d` |
+| «Lo último de Dani» | Atleta, Inicio | **B · último**: solo lo más reciente y «y N más esta semana», **sin fecha** | lista por fecha · carrusel | `12b` |
+| «Tu primera semana» | Atleta, Inicio | **A · lista**: tres filas | tres pasos con barra | `12e` |
+| Sala de espera, fecha comprometida | Atleta, día 0 | **A · insignia**: «LO TENDRÁS EL SÁBADO 31»; además fuera «Explora tu Road map» del «mientras tanto» (Dani: sin plan no hay nada que ver) | cuenta atrás | `12f` |
+| «Lo que viniste a buscar» | Atleta, Inicio | **A · cita**: la frase grande y una línea de cifras | — (la forma «cifras» sigue en Mi objetivo, a propósito) | `12g` |
+| «Bienvenido de vuelta» | Atleta, Inicio | **A · banda**: tarjeta con icono | una línea | `13a` |
+| «Tu plan termina pronto» | Atleta, Inicio | **A · tarjeta**: con el antes → ahora | una línea | `14a` |
+| «Hecho con lo que me dijiste» | Atleta, Mi menú | **B · chips**: píldoras | una frase | `15` |
+| Road map | Atleta, Perfil › Road map | **A · camino**: escalera vertical de fases, la actual abierta | mapa · compacta | `11a/11b/11c` |
 
-Lo que no cambia entre versiones: los datos, los textos (voz de Dani), nada firmado sin que lo vea, nada de rojo ni «desvío».
+## Qué se hizo al elegir
 
-## Cómo
-
-- `src/data/variantes.ts` (la elección) · `components/coach/PanelRetencionCard.tsx` (el panel, sacado de `HomeCoachScreen`) · prop `variante` en `LoUltimoDeDani`, `RespuestaCoachBox`, `RespuestaDelCoach`, `PrimeraSemanaCard`, `PlanInPreparationCard`, `LoQueVinisteABuscar`, `RoadmapDelAtletaVista`.
-- Los bancos `/dev/respuesta`, `/dev/primera-semana` y `/dev/roadmap` exportan sus fixtures para la galería.
+- Cada componente se queda con su versión: fuera la prop `variante` y fuera `src/data/variantes.ts` y la galería `/dev/variantes` (`VariantesDevHarness`). `/dev/roadmap` enseña solo el camino.
+- Borradas las piezas viejas del Road map que ya no usaba nadie: `PhaseHeroCard`, `PhasePathStepper`, `LevelLadderCard`, `PlanPhaseEditor`, `RecentAchievements`, `utils/planPhase.ts`, `data/phasePresets.ts`, `utils/planNutritionBridge.ts` (+ su test). `LevelLadderEditor` sigue (lo usa el coach en Road map › Niveles, que alimenta la Academia y los retos).
+- Lo que no cambia: los datos, los textos (voz de Dani), nada firmado sin que lo vea, nada de rojo ni «desvío».
 
 ## Pruebas
 
-`tsc` 0 · `vitest` 3.363 en verde · eslint e iconos OK · `/dev/variantes` comprobado pieza a pieza.
-
-## Qué tiene que hacer Dani
-
-Abrir `/dev/variantes` (o mirar las capturas 11-12) y decir una letra por pieza. Después: una línea por pieza en `variantes.ts`, se borran las versiones no elegidas y las piezas antiguas del Road map (`PhaseHeroCard`, `PhasePathStepper`, `LevelLadderCard`, `PlanPhaseEditor`, `planPhase.ts`).
+`tsc` 0 · `vitest` 3.368 en verde · eslint e iconos OK.

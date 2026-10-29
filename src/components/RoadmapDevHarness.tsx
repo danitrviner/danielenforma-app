@@ -1,15 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import type { Mesocycle, NutritionProgram, WeeklyChallenge, WorkoutAssignment } from '../types';
 import { addDays, getWeekStart, hoyIsoLocal } from '../utils/trainingWeek';
 import { semanasDelPlan, evaluarPlan, calcularGastoReal } from '../utils/seguimientoPlan';
 import { construirRoadmap } from '../utils/roadmapDelAtleta';
-import RoadmapDelAtletaVista, { type VarianteRoadmap } from './roadmap/RoadmapDelAtletaVista';
+import RoadmapDelAtletaVista from './roadmap/RoadmapDelAtletaVista';
 import WeeklyChallengeCard from './roadmap/WeeklyChallengeCard';
 
 /* Banco de pruebas del Road map del atleta (29-10) — `/dev/roadmap`.
-   Las tres variantes sobre los mismos datos, para elegir una. Sin Firestore:
-   el programa, los pesos y el bloque están en memoria; `?v=camino|mapa|compacta`
-   enseña una sola. */
+   Sin Firestore: el programa, los pesos y el bloque están en memoria. */
 
 const HOY = hoyIsoLocal();
 const EMAIL = 'dev.atleta@example.com';
@@ -45,46 +43,19 @@ const RETO: WeeklyChallenge = {
   metric: { unit: 'pasos', target: 9000, baseline: 8600 }, status: 'activo', progressValue: 8800, createdAt: '',
 };
 
-/** Para la galería de variantes. */
-export function fixtureRoadmap() {
-  const semanas = semanasDelPlan({ program: PROGRAMA, diets: DIETAS, pesos: PESOS, registros: [], pasos: PASOS, pasosBase: 9000, hoy: HOY });
-  const evaluacion = evaluarPlan(PROGRAMA, semanas, calcularGastoReal({ pesos: PESOS, registros: [], diets: DIETAS, hasta: HOY }));
-  return construirRoadmap({ program: PROGRAMA, semanas, evaluacion, mesociclos: MESOS, assignments: ASIGNACIONES, workoutLogs: [], respuestas: RESPUESTAS, stepLogs: PASOS, stepGoal: 9000, hoy: HOY });
-}
-export const RETO_FIXTURE = RETO;
-
 export default function RoadmapDevHarness() {
-  const [variante, setVariante] = useState<VarianteRoadmap | 'todas'>(() => {
-    const v = new URLSearchParams(window.location.search).get('v');
-    return v === 'camino' || v === 'mapa' || v === 'compacta' ? v : 'todas';
-  });
   const roadmap = useMemo(() => {
     const semanas = semanasDelPlan({ program: PROGRAMA, diets: DIETAS, pesos: PESOS, registros: [], pasos: PASOS, pasosBase: 9000, hoy: HOY });
     const evaluacion = evaluarPlan(PROGRAMA, semanas, calcularGastoReal({ pesos: PESOS, registros: [], diets: DIETAS, hasta: HOY }));
     return construirRoadmap({ program: PROGRAMA, semanas, evaluacion, mesociclos: MESOS, assignments: ASIGNACIONES, workoutLogs: [], respuestas: RESPUESTAS, stepLogs: PASOS, stepGoal: 9000, hoy: HOY });
   }, []);
   const reto = <WeeklyChallengeCard challenge={RETO} progress={{ progressValue: 8800, pct: 98, achieved: false }} />;
-  const variantes: VarianteRoadmap[] = variante === 'todas' ? ['camino', 'mapa', 'compacta'] : [variante];
 
   return (
     <div className="min-h-screen bg-bg text-ink p-4">
-      <div className="mx-auto max-w-6xl space-y-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="font-mono text-caption text-ink-3 uppercase tracking-widest flex-1">/dev/roadmap — datos de mentira · semana 6 de 20</p>
-          {(['todas', 'camino', 'mapa', 'compacta'] as const).map(v => (
-            <button key={v} type="button" onClick={() => setVariante(v)} className={`font-mono text-caption uppercase ${variante === v ? 'text-accent-ink' : 'text-ink-3'}`}>{v}</button>
-          ))}
-        </div>
-        <div className={`grid gap-6 ${variantes.length > 1 ? 'md:grid-cols-3' : 'max-w-sm'}`}>
-          {variantes.map(v => (
-            <div key={v} className="space-y-2">
-              <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">{v === 'camino' ? 'A · Camino' : v === 'mapa' ? 'B · Mapa' : 'C · Compacta'}</p>
-              <div className="max-w-sm">
-                <RoadmapDelAtletaVista roadmap={roadmap} variante={v} reto={reto} />
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="mx-auto max-w-sm space-y-4">
+        <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">/dev/roadmap — datos de mentira · semana 6 de 20</p>
+        <RoadmapDelAtletaVista roadmap={roadmap} reto={reto} />
       </div>
     </div>
   );

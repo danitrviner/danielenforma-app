@@ -3,7 +3,6 @@ import type { QuestionnaireResponse, RespuestaCoachRevision } from '../../types'
 import { COACH_NOMBRE } from '../../utils/coach';
 import { TITULOS_BLOQUES } from '../../utils/borradorRespuesta';
 import { Icon } from '../ui';
-import { VARIANTES } from '../../data/variantes';
 
 /* «Dani ha revisado tu semana» (27-10, con nombre y bloques desde el 29-10):
    la última respuesta del coach a una revisión. En Perfil › Revisión se
@@ -23,7 +22,7 @@ export function ultimaRespuestaDelCoach(responses: QuestionnaireResponse[], maxD
   return ultima?.respuestaCoach ?? null;
 }
 
-export default function RespuestaDelCoach({ responses, maxDias = 14, variante = VARIANTES.respuestaAtleta }: { responses: QuestionnaireResponse[]; maxDias?: number; variante?: typeof VARIANTES.respuestaAtleta }) {
+export default function RespuestaDelCoach({ responses, maxDias = 14 }: { responses: QuestionnaireResponse[]; maxDias?: number }) {
   const rc = ultimaRespuestaDelCoach(responses, maxDias);
   if (!rc) return null;
   const fecha = new Date(rc.enviadaEn).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -41,13 +40,7 @@ export default function RespuestaDelCoach({ responses, maxDias = 14, variante = 
           <p className="font-sans text-caption text-ink-4">{fecha}</p>
         </div>
       </div>
-      {rc.bloques && variante === 'corrido' ? (
-        <p className="font-sans text-body-s text-ink-2 whitespace-pre-wrap text-pretty">
-          {(Object.keys(TITULOS_BLOQUES) as (keyof typeof TITULOS_BLOQUES)[]).filter(k => rc.bloques![k].trim()).map(k => (
-            <span key={k}><span className="font-semibold text-ink">{TITULOS_BLOQUES[k]}: </span>{rc.bloques![k]}{' '}</span>
-          ))}
-        </p>
-      ) : rc.bloques ? (
+      {rc.bloques ? (
         <dl className="space-y-2.5">
           {(Object.keys(TITULOS_BLOQUES) as (keyof typeof TITULOS_BLOQUES)[]).filter(k => rc.bloques![k].trim()).map(k => (
             <div key={k}>

@@ -16,9 +16,9 @@ import { Icon } from '../ui';
    → ahora del peso con lo que falta hasta la meta de la fase. Principio 1 del
    plan: progreso visible hacia SU objetivo, medido como él lo entiende.
 
-   Dos variantes para elegir (Dani, 29-10):
-   · 'cita'   — la frase grande, como una cita, y debajo una línea de cifras.
-   · 'cifras' — tres cifras (empezaste · ahora · meta) y la frase pequeña.
+   Dos formas, cada una en su sitio (Dani, 29-10):
+   · 'cita'   — la frase grande, como una cita, y debajo una línea de cifras (Inicio).
+   · 'cifras' — tres cifras (empezaste · ahora · meta) y la frase pequeña (Mi objetivo).
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export type VarianteViniste = 'cita' | 'cifras';

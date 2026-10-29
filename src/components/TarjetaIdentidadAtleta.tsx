@@ -15,7 +15,7 @@ import StatTile from './StatTile';
  * salían en esta misma pantalla: el numérico —que nadie leía fuera de esta
  * tarjeta, que subía viendo lecciones y cuyos dos escritores ni siquiera se
  * ponían de acuerdo en cuántos puntos vale un nivel— y la escalera con nombres
- * y criterios de `LevelLadderCard`, que es la que significa algo. «Lv 3» al
+ * y criterios de `levelLadder.ts`, que es la que significa algo. «Lv 3» al
  * lado de «Nivel: Guerrero» no se entendía (Dani, 10-09-2026).
  *
  * El numérico se fue; la escalera se queda, justo encima de esta tarjeta.

@@ -1,7 +1,6 @@
 // Las 7 plantillas reales que Dani usa hoy en HubFit, traídas a En Forma.
 // El coach las carga con un click en QuestionnaireManagerScreen (mismo patrón
-// que STANDARD_PLAN_PRESET en phasePresets.ts / LADDER_PRESETS en
-// ladderPresets.ts) y luego las edita a medida con QuestionnaireEditor.
+// que LADDER_PRESETS en ladderPresets.ts) y luego las edita a medida con QuestionnaireEditor.
 //
 // Tipos subidos respecto a la hoja original de Dani (todo lo demás respeta su
 // tipo exacto — Text/Number/Scale/Yes-No/Metric/Media tal cual los definió):

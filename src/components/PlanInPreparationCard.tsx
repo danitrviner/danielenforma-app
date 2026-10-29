@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { UserProfile } from '../types';
 import { getProgressPhotos, getPesoExtremo } from '../dbService';
@@ -8,7 +8,6 @@ import { addDays, hoyIsoLocal } from '../utils/trainingWeek';
 import { getMensajesAprobados } from '../db/mensajesCoach';
 import { claveMensajesAtleta } from './home/LoUltimoDeDani';
 import { COACH_NOMBRE } from '../utils/coach';
-import { VARIANTES } from '../data/variantes';
 
 const fechaCorta = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -22,23 +21,12 @@ const fechaCorta = (iso: string) =>
    dorado es el mismo lenguaje de vacío que Nutrición reutiliza —no un
    patrón nuevo de esta tarjeta.
 
-   Se conserva el checklist "mientras tanto" (foto, peso, Road map): no está
+   Se conserva el checklist "mientras tanto" (foto, peso; el Road map salió
+   el 29-10 a petición de Dani: sin plan no hay nada que explorar): no está
    en el panel del handoff, pero resuelve algo real que el handoff no
    contradice —el "valle de la muerte" post-onboarding— así que se mantiene
    junto al añadido nuevo, no en su lugar.
    ═══════════════════════════════════════════════════════════════════════════ */
-
-// Marca de "ya visitó el Road map" — mismo patrón que enforma_tour_pending_
-// (App.tsx/AppTour.tsx): una bandera en localStorage, sin colección nueva ni
-// lectura extra. AthleteRoadmapScreen la marca sola al montar; el propio
-// checklist también la marca de forma optimista al pulsar el ítem.
-const roadmapVisitedKey = (email: string) => `enforma_roadmap_visited_${email}`;
-export function markRoadmapVisited(email: string): void {
-  try { localStorage.setItem(roadmapVisitedKey(email), '1'); } catch { /* noop */ }
-}
-function isRoadmapVisited(email: string): boolean {
-  try { return localStorage.getItem(roadmapVisitedKey(email)) === '1'; } catch { return false; }
-}
 
 /** La insignia (29-10): si el coach se ha comprometido a una fecha, cuenta
  * HACIA ella («LO TENDRÁS EL JUEVES 30»); si no, lo de antes: desde cuándo
@@ -60,9 +48,7 @@ export function fraseDesde(createdAt: string | undefined, planPrometidoPara?: st
 
 interface Props {
   profile: UserProfile;
-  onNavigate: (tab: 'checkin' | 'roadmap' | 'profile') => void;
-  /** 'insignia' («LO TENDRÁS EL JUEVES 30») · 'cuenta' (los días que faltan, en grande). */
-  variante?: typeof VARIANTES.salaEspera;
+  onNavigate: (tab: 'checkin' | 'profile') => void;
 }
 
 /** Días hasta la fecha comprometida (negativo = ya pasó). */
@@ -76,8 +62,7 @@ export function diasHastaPlan(planPrometidoPara: string, hoy = hoyIsoLocal()): n
 // solo se monta cuando el atleta todavía no tiene NINGÚN entrenamiento
 // asignado (HomeScreen ya filtra por eso) — así el coste de las dos lecturas
 // nuevas (fotos, peso) solo lo paga quien de verdad está en ese hueco.
-export default function PlanInPreparationCard({ profile, onNavigate, variante = VARIANTES.salaEspera }: Props) {
-  const [roadmapVisited, setRoadmapVisited] = useState(() => isRoadmapVisited(profile.email));
+export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
 
   const { data: photos = [], isPending: loadingPhotos } = useQuery({
     queryKey: ['progressPhotos', profile.email],
@@ -115,13 +100,6 @@ export default function PlanInPreparationCard({ profile, onNavigate, variante = 
       done: hasWeight,
       onClick: () => onNavigate('checkin'),
     },
-    {
-      key: 'roadmap',
-      icon: 'map',
-      label: 'Explora tu Road map',
-      done: roadmapVisited,
-      onClick: () => { markRoadmapVisited(profile.email); setRoadmapVisited(true); onNavigate('roadmap'); },
-    },
   ];
   const doneCount = items.filter(i => i.done).length;
 
@@ -140,21 +118,10 @@ export default function PlanInPreparationCard({ profile, onNavigate, variante = 
             avisamos en cuanto esté listo.
           </p>
           <div className="flex flex-wrap items-center gap-3 pt-1">
-            {variante === 'cuenta' && profile.planPrometidoPara ? (
-              <span className="inline-flex items-baseline gap-2">
-                <span className="font-display text-title-l font-black leading-none text-accent-ink">
-                  {Math.max(0, diasHastaPlan(profile.planPrometidoPara))}
-                </span>
-                <span className="font-mono text-caption font-bold uppercase tracking-widest text-ink-2">
-                  {diasHastaPlan(profile.planPrometidoPara) <= 0 ? 'llega hoy' : diasHastaPlan(profile.planPrometidoPara) === 1 ? 'día · mañana' : `días · ${new Date(`${profile.planPrometidoPara}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' })}`}
-                </span>
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-2 rounded-full border border-accent-line bg-accent/13 px-3 py-1 font-mono text-caption font-bold uppercase tracking-widest text-accent-ink">
-                <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-accent" aria-hidden />
-                {fraseDesde(profile.createdAt, profile.planPrometidoPara)}
-              </span>
-            )}
+            <span className="inline-flex items-center gap-2 rounded-full border border-accent-line bg-accent/13 px-3 py-1 font-mono text-caption font-bold uppercase tracking-widest text-accent-ink">
+              <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-accent" aria-hidden />
+              {fraseDesde(profile.createdAt, profile.planPrometidoPara)}
+            </span>
             <button
               type="button"
               onClick={() => onNavigate('profile')}

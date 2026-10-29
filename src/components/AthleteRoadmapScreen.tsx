@@ -10,13 +10,12 @@ import {
 } from '../dbService';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import WeeklyChallengeCard, { ChallengePendingCard } from './roadmap/WeeklyChallengeCard';
-import RoadmapDelAtletaVista, { type VarianteRoadmap } from './roadmap/RoadmapDelAtletaVista';
+import RoadmapDelAtletaVista from './roadmap/RoadmapDelAtletaVista';
 import { useRetoDeLaSemana } from '../hooks/useRetoDeLaSemana';
 import { computeLadderStatus } from '../utils/levelLadder';
 import { DEFAULT_LEVEL_LADDER } from '../data/defaultLevelLadder';
 import { semanasDelPlan, evaluarPlan, calcularGastoReal } from '../utils/seguimientoPlan';
 import { construirRoadmap, type HitoAutomatico } from '../utils/roadmapDelAtleta';
-import { markRoadmapVisited } from './PlanInPreparationCard';
 import { Icon, PageHeader } from './ui';
 import TarjetaIdentidadAtleta from './TarjetaIdentidadAtleta';
 import { COACH_EMAIL } from '../utils/coach';
@@ -44,16 +43,11 @@ import { hoyIsoLocal } from '../utils/trainingWeek';
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const DEFAULT_STEP_GOAL = 8000;
 
-/** Variante visual, hasta que Dani elija una en /dev/roadmap. */
-const VARIANTE_POR_DEFECTO: VarianteRoadmap = 'camino';
-
 interface Props {
   profile: UserProfile;
-  variante?: VarianteRoadmap;
 }
 
-export default function AthleteRoadmapScreen({ profile, variante = VARIANTE_POR_DEFECTO }: Props) {
-  useEffect(() => { markRoadmapVisited(profile.email); }, [profile.email]);
+export default function AthleteRoadmapScreen({ profile }: Props) {
   const hoy = hoyIsoLocal();
 
   const { data: nutritionProgram = null, isPending: loadingNutritionProgram } = useQuery({
@@ -189,7 +183,7 @@ export default function AthleteRoadmapScreen({ profile, variante = VARIANTE_POR_
   return (
     <div className="pantalla space-y-6">
       <PageHeader title="Road map" subtitle="Dónde estás, qué viene y qué toca esta semana" />
-      <RoadmapDelAtletaVista roadmap={roadmapDelAtleta} variante={variante} reto={reto} logrosExtra={logrosExtra} />
+      <RoadmapDelAtletaVista roadmap={roadmapDelAtleta} reto={reto} logrosExtra={logrosExtra} />
       <TarjetaIdentidadAtleta profile={profile} />
     </div>
   );
