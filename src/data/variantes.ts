@@ -25,6 +25,8 @@ export const VARIANTES = {
   viniste: 'cita' as 'cita' | 'cifras',
   /** «Bienvenido de vuelta» tras días sin registrar. */
   vuelta: 'banda' as 'banda' | 'linea',
+  /** «Tu plan termina pronto» (últimos 10 días). */
+  renovacion: 'tarjeta' as 'tarjeta' | 'linea',
   /** Road map del atleta. */
   roadmap: 'camino' as 'camino' | 'mapa' | 'compacta',
 };

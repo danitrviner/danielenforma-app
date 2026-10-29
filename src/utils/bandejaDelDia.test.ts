@@ -384,3 +384,12 @@ describe('pausa o baja (29-10)', () => {
     expect(construirBandejaDelDia(entrada({ atletas: [atleta({ senales })], contactos: [contacto(addDays(HOY, -5), 'sin_registrar')] })).find(x => x.id.endsWith('pausa_o_baja'))).toBeUndefined();
   });
 });
+
+describe('los últimos días del plan (tanda 8)', () => {
+  it('con el plan a diez días o menos pide el siguiente paso', () => {
+    const s = construirBandejaDelDia(entrada({ atletas: [atleta({ planStartDate: addDays(HOY, -83), planDurationMonths: 3 })] })).find(x => x.id.endsWith('plan_vence'));
+    expect(s).toMatchObject({ urgencia: 'hoy', categoria: 'renovacion' });
+    expect(s!.texto).toMatch(/^El plan termina en \d+ días: escríbele el siguiente paso$/);
+    expect(construirBandejaDelDia(entrada({ atletas: [atleta({ planStartDate: addDays(HOY, -30), planDurationMonths: 3 })] })).find(x => x.id.endsWith('plan_vence'))).toBeUndefined();
+  });
+});

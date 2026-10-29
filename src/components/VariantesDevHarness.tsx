@@ -12,6 +12,7 @@ import PlanInPreparationCard from './PlanInPreparationCard';
 import LoQueVinisteABuscar from './home/LoQueVinisteABuscar';
 import RoadmapDelAtletaVista from './roadmap/RoadmapDelAtletaVista';
 import VueltaCard from './home/VueltaCard';
+import RenovacionCard from './home/RenovacionCard';
 import WeeklyChallengeCard from './roadmap/WeeklyChallengeCard';
 import { FIXTURE_RESPUESTA } from './RespuestaDevHarness';
 import { FIXTURE_PRIMERA_SEMANA } from './PrimeraSemanaDevHarness';
@@ -46,7 +47,7 @@ const RESPUESTAS: QuestionnaireResponse[] = [{
 }];
 const NOTA: CoachDayNote = { id: 'n', athleteId: EMAIL, date: HOY, text: 'Hoy la última serie de press va al fallo: apunta las reps.', createdAt: '' };
 
-const PIEZAS = ['panel', 'ultimo', 'respuesta', 'atleta', 'primera', 'espera', 'viniste', 'vuelta', 'roadmap'] as const;
+const PIEZAS = ['panel', 'ultimo', 'respuesta', 'atleta', 'primera', 'espera', 'viniste', 'vuelta', 'renovacion', 'roadmap'] as const;
 type Pieza = typeof PIEZAS[number];
 
 export default function VariantesDevHarness() {
@@ -133,6 +134,13 @@ export default function VariantesDevHarness() {
             <Seccion titulo="6 · «Bienvenido de vuelta» (Inicio, tras 3 días sin registrar)" columnas={2}>
               <Variante nombre="A · banda"><VueltaCard profile={{ displayName: 'Javier', senales: { calculadoEn: HOY, ultimoRegistro: addDays(HOY, -4), registros14d: 2, perdidas14d: 1, ultimaRespuesta: null, tieneCuestionarios: true } }} variante="banda" /></Variante>
               <Variante nombre="B · línea"><div className="pt-3"><VueltaCard profile={{ displayName: 'Javier', senales: { calculadoEn: HOY, ultimoRegistro: addDays(HOY, -4), registros14d: 2, perdidas14d: 1, ultimaRespuesta: null, tieneCuestionarios: true } }} variante="linea" /></div></Variante>
+            </Seccion>
+          )}
+
+          {ver('renovacion') && (
+            <Seccion titulo="8 · «Tu plan termina pronto» (Inicio, últimos 10 días)" columnas={2}>
+              <Variante nombre="A · tarjeta"><RenovacionCard profile={{ planStartDate: addDays(HOY, -84), planDurationMonths: 3 }} pesos={FIXTURE_RESPUESTA.pesos} objetivo="deficit" pesoMeta={79} variante="tarjeta" /></Variante>
+              <Variante nombre="B · línea"><div className="pt-3"><RenovacionCard profile={{ planStartDate: addDays(HOY, -84), planDurationMonths: 3 }} pesos={FIXTURE_RESPUESTA.pesos} objetivo="deficit" pesoMeta={79} variante="linea" /></div></Variante>
             </Seccion>
           )}
 

@@ -8,6 +8,7 @@ import LoUltimoDeDani from './home/LoUltimoDeDani';
 import PrimeraSemanaCard from './home/PrimeraSemanaCard';
 import LoQueVinisteABuscar from './home/LoQueVinisteABuscar';
 import VueltaCard from './home/VueltaCard';
+import RenovacionCard from './home/RenovacionCard';
 import { faseEnCurso } from '../utils/objetivoDeFase';
 import { formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, EstadoDeDia } from '../utils/cicloDelAtleta';
@@ -363,6 +364,14 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         pesos={pesajes}
         pesoMeta={faseDelPlan?.fase.targetWeight ?? null}
         objetivo={faseDelPlan?.objetivo?.tipo ?? null}
+      />
+
+      {/* Los últimos 10 días del plan (tanda 8): esto hemos conseguido, esto viene. */}
+      <RenovacionCard
+        profile={profile}
+        pesos={pesajes}
+        objetivo={faseDelPlan?.objetivo?.tipo ?? null}
+        pesoMeta={faseDelPlan?.fase.targetWeight ?? null}
       />
 
       {/* «Tu primera semana» (29-10): los tres primeros pasos, 14 días. */}

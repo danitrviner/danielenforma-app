@@ -3,6 +3,7 @@ import { addDays, diasEntreFechas, isoLocal } from './trainingWeek';
 import { DIAS_AVISO_RENOVACION } from './calidadDelPlan';
 import type { MotivoContacto } from './plantillasWhatsApp';
 import { diaDePlan, senalPrimeraSemana } from './primeraSemana';
+import { diasHastaFinDePlan, DIAS_ULTIMOS_DEL_PLAN } from './cierreParaAtleta';
 
 /** Día del plan en que se celebra el primer mes. */
 export const DIA_PRIMER_MES = 28;
@@ -336,6 +337,15 @@ export function construirBandejaDelDia(entrada: EntradaBandeja): SenalDelDia[] {
           `Bloque terminado el ${fechaCorta(ultimoFin)} · sin bloque siguiente`, 'entrenamientos',
           { motivo: 'bloque_terminado', dias: diasEntreFechas(ultimoFin, hoy) });
       }
+    }
+
+    // ── Los últimos días del plan contratado (tanda 8) ───────────────────
+    // El atleta ve «esto hemos conseguido · esto viene»; lo que viene lo
+    // escribe Dani. Diez días para hacerlo, y la renovación en el CRM.
+    const quedanPlan = diasHastaFinDePlan(a, hoy);
+    if (enMarcha && quedanPlan !== null && quedanPlan >= 0 && quedanPlan <= DIAS_ULTIMOS_DEL_PLAN) {
+      añadir('plan_vence', 'hoy', 'renovacion',
+        `El plan termina ${quedanPlan === 0 ? 'hoy' : `en ${quedanPlan} ${quedanPlan === 1 ? 'día' : 'días'}`}: escríbele el siguiente paso`, 'revision');
     }
 
     // ── El montaje que se quedó a medias ─────────────────────────────────
