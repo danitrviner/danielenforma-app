@@ -64,9 +64,9 @@ describe('detectarEpisodios · cuestionario recibido', () => {
   });
 
   it('un tipo sin guion no hace nada y lo dice', () => {
-    const ep = nuevoEpisodio({ tipo: 'bienestar', athleteId: 'a@x.com', clave: 'x', disparador: { fuente: 'q', fecha: HOY }, politica: 'sombra', ahora: AHORA });
+    const ep = nuevoEpisodio({ tipo: 'renovacion', athleteId: 'a@x.com', clave: 'x', disparador: { fuente: 'q', fecha: HOY }, politica: 'sombra', ahora: AHORA });
     expect(promptDeEpisodio(ep, { alias: 'A' })).toContain('sin guion');
-    expect(ep.prioridad).toBe(PRIORIDAD.bienestar);
+    expect(ep.prioridad).toBe(PRIORIDAD.renovacion);
   });
 });
 

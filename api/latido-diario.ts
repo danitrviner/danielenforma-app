@@ -31,7 +31,7 @@ import {
   leerAtletasActivos, leerAsignaciones, leerLogsDeEntreno, leerPesajes, leerPasos,
   leerEjercicios, leerProgramaDeNutricion, leerConfigDeDieta, leerDietas,
   leerRegistrosDeComida, leerRoadmap, leerSesionesDeCardio,
-  marcarSesionPerdida, guardarConfigDeDieta, marcarFaseVista, guardarNivelesConseguidos,
+  marcarSesionPerdida, guardarConfigDeDieta, marcarFaseVista, guardarNivelesConseguidos, leerCheckIns,
   actualizarPeldanos, guardarReto, leerReto, crearAvisoUnaVez,
   leerCuestionariosAsignados, leerRespuestasDeCuestionarios, leerMesociclos,
   leerRutinas, leerRetos, leerExperiencia, guardarHuellaDelLatido, leerOnboarding, leerCuestionariosDelCoach, crearEpisodioUnaVez,
@@ -41,6 +41,7 @@ import { uidDelCoach, leerPoliticaAutopiloto } from './_lib/fuenteAdmin.js';
 import { politicaDeEpisodio, POLITICA_POR_DEFECTO } from '../src/autopiloto/politica.js';
 import { menusQuePublicar, planDePublicacion } from '../src/autopiloto/menuSemanal.js';
 import { detectarEpisodios } from '../src/autopiloto/detectores.js';
+import { detectarEmergentes } from '../src/autopiloto/emergentes.js';
 import { puedeAnalizarseConIA } from '../src/ai/consentimientoIA.js';
 import { recordatoriosDeRevision } from '../src/utils/recordatoriosRevision.js';
 import { planificarLatido, huellaDelLatido, ID_HUELLA_LATIDO } from '../src/utils/latidoDiario.js';
@@ -292,6 +293,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           respuestas, plantillas, asignaciones: cuestionarios, mesociclos,
           onboardingCompletado: !!onboarding?.completedAt, planStartDate: perfil.planStartDate,
         });
+        // Emergentes (tanda 6): dolor, perdidas, peso sin registrar, desvíos,
+        // nota libre, bienestar. Misma foto que ya está leída + los check-ins.
+        const checkins = await leerCheckIns(db, perfil.userId, addDays(hoy, -3));
+        episodios.push(...detectarEmergentes({
+          email, hoy, ahora: new Date().toISOString(), consentimiento: puedeAnalizarseConIA(onboarding), politica: politicaDeEpisodio(politica),
+          asignaciones: assignments, logs: workoutLogs, pesajes: bodyweightLogs, registros: registrosDeComida, dietas, programa: nutritionProgram,
+          respuestas, plantillas, checkins, alta: onboarding,
+        }));
         let encolados = 0;
         if (!enSeco) for (const ep of episodios) { if (await crearEpisodioUnaVez(db, ep)) encolados++; }
         if (episodios.length > 0) hecho.push(`episodios: ${enSeco ? episodios.length : encolados} encolados`);

@@ -15,7 +15,7 @@
 // atleta viven en `src/utils/latidoDiario.ts` y en `src/utils/motorRetoSemanal.ts`,
 // que no saben nada de Firestore. Este fichero solo sabe leer y escribir.
 import type {
-  AiProposal, AppNotification, AthleteDietConfig, BodyweightLog, CardioSession, Diet,
+  AiProposal, AppNotification, AthleteDietConfig, BodyweightLog, CardioSession, Diet, WeightCheckIn,
   DietCompletionLog, Exercise, LevelLadder, NutritionProgram, Roadmap, StepLog,
   UserProfile, WeeklyChallenge, WorkoutAssignment, WorkoutLog,
   Mesocycle, QuestionnaireAssignment, QuestionnaireResponse, Workout, ExperienceLevel, OnboardingData, Questionnaire, WeeklyMenu,
@@ -23,6 +23,7 @@ import type {
 import type { Episodio } from '../../src/autopiloto/episodios.js';
 import { atletasActivos } from '../../src/utils/atletas.js';
 import { getAdminDb } from './auth.js';
+import { isoLocal } from '../../src/utils/trainingWeek.js';
 
 type Firestore = NonNullable<Awaited<ReturnType<typeof getAdminDb>>>;
 
@@ -254,6 +255,16 @@ export async function guardarHuellaDelLatido(db: Firestore, id: string, huella: 
 }
 
 // ─── Alta y cuestionarios (detectores del autopiloto) ─────────────────────────
+
+/** Check-ins del atleta desde una fecha (colección `checkins`, clave `userId` = uid). */
+export async function leerCheckIns(db: Firestore, uid: string, desde: string): Promise<WeightCheckIn[]> {
+  if (!uid) return [];
+  const snap = await db.collection('checkins').where('userId', '==', uid).get();
+  const aFecha = (v: unknown): Date => (v && typeof (v as { toDate?: () => Date }).toDate === 'function') ? (v as { toDate: () => Date }).toDate() : new Date(v as string);
+  return snap.docs
+    .map(d => { const data = d.data() as Record<string, unknown>; return { id: d.id, ...data, timestamp: aFecha(data.timestamp) } as WeightCheckIn; })
+    .filter(c => !Number.isNaN(c.timestamp.getTime()) && isoLocal(c.timestamp) >= desde);
+}
 
 export async function leerOnboarding(db: Firestore, email: string): Promise<OnboardingData | null> {
   const snap = await db.collection('onboarding').doc(email).get();

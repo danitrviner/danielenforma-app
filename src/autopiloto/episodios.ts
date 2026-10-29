@@ -141,6 +141,51 @@ export function promptDeEpisodio(ep: Episodio, ctx: { alias: string }): string {
         + `No le escribes al atleta aquí: la revisión le llega con la respuesta a su cuestionario de esa semana. Nada de anabolizantes ni consejo médico; con dolor persistente o patología, add_coach_task «Revisar ya:» y para.\n`
         + `${cierre} En esa línea va el veredicto en tres frases.`;
     }
+    case 'dolor': {
+      const clinico = !!ep.alertas?.length;
+      const cabecera = `EPISODIO: ${ctx.alias} (${ep.athleteId}) ha escrito algo con DOLOR o molestia el ${ep.disparador.fecha} (${ep.disparador.fuente}${ep.disparador.docId ? ` ${ep.disparador.docId}` : ''}).\n`
+        + `Empieza por get_client_brief con tarea "revision": trae el alta (lesiones declaradas), el bloque y sus sesiones. Lee el texto exacto en la fuente que trae el brief; si no está, get_questionnaire_trends o get_training_history de 1 semana.\n`;
+      if (clinico) {
+        return cabecera
+          + `\nALERTA CLÍNICA (motor): ${ep.alertas!.join(' · ')}. Esto lo decide Dani, no tú: NO propongas cambios de sesiones ni mensajes. Deja una nota con add_coach_task que empiece por «Revisar ya:» con el texto literal del atleta, el ejercicio o zona, lo que declara el alta y qué alternativas hay (get_alternativas_ejercicio con evitar_articulacion), y cierra.\n${cierre}`;
+      }
+      return cabecera
+        + `\nMolestia leve y sin lesión declarada. Tu trabajo: (1) deducir la articulación o zona del texto; (2) get_alternativas_ejercicio con evitar_articulacion para cada ejercicio implicado; (3) proponer el cambio desde esta semana con propose_week_plan (cambios con solo=false, mismo número de series) eligiendo entre las alternativas del motor; (4) propose_mensaje_atleta (motivo "dolor"): «he cambiado X por Y esta semana; si sigue, me lo dices», sin diagnóstico ni consejo médico; (5) SIEMPRE add_coach_task «Revisar ya:» con el texto literal y lo que has cambiado.\n`
+        + `Nada de kcal ni reparto. Si el texto habla de dolor en reposo, de semanas o de médico, trátalo como clínico: solo la nota.\n${cierre}`;
+    }
+    case 'perdidas': {
+      return `EPISODIO: ${ctx.alias} (${ep.athleteId}) ha perdido ${3} sesiones o más en catorce días (última el ${ep.disparador.fecha}).\n`
+        + `Empieza por get_client_brief con tarea "revision" (plan, entrenos, lo que contó en la revisión). Doctrina §15: la adherencia va antes que la programación, así que NO toques el plan: ni sesiones, ni días, ni reparto.\n`
+        + `Escribe un mensaje con propose_mensaje_atleta (motivo "perdidas"): un párrafo, como Dani, que diga que le ha visto faltar (con las fechas o los días) y pregunte qué está pasando, sin reproche. Y add_coach_task «Hablar con él/ella: 3 sesiones perdidas» con lo que veas en el brief que lo explique (viaje, trabajo, nota).\n${cierre}`;
+    }
+    case 'peso_sin_registrar': {
+      return `EPISODIO: ${ctx.alias} (${ep.athleteId}) lleva ${10} días o más sin registrar el peso y está en una fase con objetivo de peso (${ep.disparador.fecha}).\n`
+        + `No leas nada más que get_client_overview. Escribe UN recordatorio con propose_mensaje_atleta (motivo "peso_sin_registrar"): dos frases, como Dani, por qué hace falta el peso para ajustar su comida y cuándo pesarse (en ayunas, mismas condiciones). Sin más.\n${cierre}`;
+    }
+    case 'desvio_peso': {
+      return `EPISODIO: el peso de ${ctx.alias} (${ep.athleteId}) va fuera del rango de su fase dos semanas seguidas (${ep.disparador.fecha}). MOTOR: ${ep.paraDani || 'ver brief'}.\n`
+        + `Empieza por get_client_brief con tarea "revision" (trae el análisis de nutrición, el gasto real y lo que Dani corrige). El ajuste de kcal es el ORIENTATIVO del motor que va arriba: no otro número, salvo para redondearlo a 50. Suelo 1.400 kcal, paso 50, nunca más de 400 de golpe. Proteína fija (2 g/kg del alta); 100 g de HC fijos en mantenimiento.\n`
+        + `Si la adherencia de las dos semanas es ≥ 70 %, propón el ajuste con propose_diet_update sobre la dieta activa (objetivo en gramos de P/HC/G, no alimentos) y un mensaje con propose_mensaje_atleta (motivo "otro") que diga qué cambia y por qué con SU dato. Si no llega al 70 %, no toques kcal: dilo en la línea final.\n`
+        + `Ritmo «rápido» en déficit: sube kcal, no bajes. Ritmo «contrario»: comprueba primero pasos y registros antes de tocar nada.\n${cierre}`;
+    }
+    case 'desvio_adherencia': {
+      return `EPISODIO: ${ctx.alias} (${ep.athleteId}) lleva dos semanas con la comida por debajo del 70 % de su objetivo (${ep.paraDani || 'ver brief'}; ${ep.disparador.fecha}).\n`
+        + `Empieza por get_client_brief con tarea "revision" (análisis de nutrición: días registrados, por encima, por debajo, alimentos frecuentes). NO toques las kcal: cambiar un plan que no se sigue es cambiar nada.\n`
+        + `Propón simplificar: un mensaje con propose_mensaje_atleta (motivo "otro") que reconozca que la comida no está saliendo, pregunte qué comida del día falla y ofrezca una cosa concreta (menos comidas, sus recetas de siempre, registrar solo la cena). Y add_coach_task con lo que ves (si no registra, si come el doble, si deja la proteína).\n${cierre}`;
+    }
+    case 'nota_libre': {
+      return `EPISODIO: ${ctx.alias} (${ep.athleteId}) ha escrito un texto libre el ${ep.disparador.fecha} (${ep.disparador.fuente}${ep.disparador.docId ? ` ${ep.disparador.docId}` : ''}).\n`
+        + `Empieza por get_client_brief con tarea "revision" y localiza el texto literal (cuestionario, check-in o nota de entreno). Clasifícalo en UNA de: viaje | enfermedad | disponibilidad | material | pregunta | otro, y actúa así:\n`
+        + `· viaje o enfermedad → acuse breve con propose_mensaje_atleta (motivo "viaje" u "otro") diciendo qué hacer esa semana (sesiones que pueda, mantener proteína), y add_coach_task con las fechas; NO cambies kcal ni reparto.\n`
+        + `· disponibilidad o material (menos días, otro gimnasio) → si lo que pide es claro, propose_workout_days con la adaptación; si no, pregunta por mensaje.\n`
+        + `· pregunta → add_coach_task con la pregunta literal: la contesta Dani.\n`
+        + `· otro → nada salvo que pida algo concreto.\n`
+        + `Sin consejo médico ni mención al asistente. En la línea final, la clase y lo hecho.\n${cierre}`;
+    }
+    case 'bienestar': {
+      return `EPISODIO: el bienestar de ${ctx.alias} (${ep.athleteId}) viene mal (${ep.paraDani || 'ver cuestionario'}; ${ep.disparador.fecha}).\n`
+        + `No cambies nada del plan: el protocolo ya modula la semana nueva con este contexto. Lee get_questionnaire_trends (sueño, estrés, motivación, fatiga) y deja add_coach_task con la tendencia en una línea y, si hay un texto del atleta que lo explique, cítalo. Sin mensaje al atleta.\n${cierre}`;
+    }
     default:
       return `EPISODIO ${ep.tipo} de ${ctx.alias} (${ep.athleteId}): todavía no tiene guion. No hagas nada y cierra con «PARA DANI: episodio sin guion».`;
   }
