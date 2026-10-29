@@ -1,0 +1,263 @@
+import type { Mesocycle, NutritionProgram, QuestionnaireResponse, StepLog, WorkoutAssignment, WorkoutLog } from '../types.js';
+import type { SemanaDelPlan, EvaluacionDelPlan } from './seguimientoPlan.js';
+import { objetivoDeFase } from './objetivoDeFase.js';
+import { OBJETIVO_LABEL, type ObjetivoCorporalTipo } from './verificacionObjetivo.js';
+import { conEstadoReal } from './estadoDeAsignacion.js';
+import { addDays, diasEntreFechas, getWeekStart } from './trainingWeek.js';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   El Road map del atleta, derivado de los objetivos (29-10-2026)
+
+   Decisión de Dani (28-10): el Road map es la pantalla con la que el cliente
+   sabe en qué momento está, qué le queda y cuáles son los objetivos a corto
+   y medio plazo. No se monta aparte: SALE de las fases del programa de
+   nutrición (objetivo, semanas, peso meta) y del bloque de entreno. Las
+   fases manuales del road map (`roadmap.planPhases`) se retiran.
+
+   Lo que devuelve:
+   · dondeEstas: la fase en curso, su objetivo en el idioma del cliente,
+     «semana N de M», la franja de peso esperada esta semana y su peso. Sin
+     rojo ni «desvío»: si va lento, qué hacer esta semana.
+   · camino: TODAS las fases del plan (pasadas, actual, futuras), con el
+     bloque de entreno en curso.
+   · estaSemana: kcal, pasos (el reto y el cardio los pone la pantalla).
+   · proximoHito: lo primero que llega (cambio de fase, fin de bloque, peso
+     objetivo).
+   · hitos: los que SALEN SOLOS del plan: fase completada, peso objetivo
+     conseguido, bloque terminado, y constancia (4 semanas seguidas con todos
+     los entrenos, 4 revisiones seguidas, 4 semanas cumpliendo pasos).
+
+   Puro: recibe `semanasDelPlan` ya calculado (la misma fuente que ve Dani en
+   Plan › Objetivo) y lo demás, con la fecha inyectada.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export interface FaseDelCamino {
+  idx: number;
+  nombre: string;
+  objetivo: ObjetivoCorporalTipo | null;
+  objetivoTexto: string;
+  semanas: number;
+  desde: string;
+  hasta: string;
+  pesoMeta: number | null;
+  estado: 'pasada' | 'actual' | 'futura';
+}
+
+export interface DondeEstas {
+  fase: FaseDelCamino;
+  semanaDeFase: number;
+  franja: [number, number] | null;
+  pesoReal: number | null;
+  /** Lo que se le dice del peso: nunca un reproche. */
+  mensaje: string;
+  /** kg que faltan hasta el peso meta de la fase (positivo = aún no), si hay. */
+  faltanKg: number | null;
+}
+
+export interface BloqueDelCamino {
+  id: string;
+  nombre: string;
+  semana: number;
+  semanas: number;
+  desde: string;
+  hasta: string;
+}
+
+export interface HitoAutomatico {
+  id: string;
+  titulo: string;
+  fecha: string; // YYYY-MM-DD
+  icon: string;
+  tipo: 'fase' | 'peso' | 'bloque' | 'constancia';
+}
+
+export interface ProximoHito { texto: string; fecha: string; tipo: HitoAutomatico['tipo'] }
+
+export interface RoadmapDelAtleta {
+  dondeEstas: DondeEstas | null;
+  camino: FaseDelCamino[];
+  bloque: BloqueDelCamino | null;
+  estaSemana: { kcal: number | null; pasos: number | null; desde: string; hasta: string } | null;
+  proximoHito: ProximoHito | null;
+  hitos: HitoAutomatico[];
+}
+
+const kg = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const fechaCorta = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+
+function objetivoTexto(tipo: ObjetivoCorporalTipo | null, pesoMeta: number | null, hasta: string): string {
+  const etiqueta = tipo ? OBJETIVO_LABEL[tipo] : 'Fase';
+  if (pesoMeta == null) return etiqueta;
+  const verbo = tipo === 'volumen' ? 'subir a' : tipo === 'mantenimiento' || tipo === 'recomposicion' ? 'mantener' : 'bajar a';
+  return `${etiqueta} · ${verbo} ${kg(pesoMeta)} kg antes del ${fechaCorta(hasta)}`;
+}
+
+/** Las fases del programa como camino, a partir de las semanas del plan. */
+export function caminoDeFases(program: NutritionProgram, semanas: SemanaDelPlan[], hoy: string): FaseDelCamino[] {
+  const out: FaseDelCamino[] = [];
+  program.phases.forEach((fase, idx) => {
+    const suyas = semanas.filter(s => s.faseIdx === idx);
+    if (suyas.length === 0) return;
+    const desde = suyas[0].desde, hasta = suyas[suyas.length - 1].hasta;
+    const objetivo = objetivoDeFase(program, idx)?.tipo ?? null;
+    const pesoMeta = fase.targetWeight ?? null;
+    out.push({
+      idx, nombre: fase.name, objetivo, objetivoTexto: objetivoTexto(objetivo, pesoMeta, hasta), semanas: suyas.length,
+      desde, hasta, pesoMeta, estado: hasta < hoy ? 'pasada' : desde > hoy ? 'futura' : 'actual',
+    });
+  });
+  return out;
+}
+
+function mensajeDelPeso(e: { ev: EvaluacionDelPlan | null | undefined; objetivo: ObjetivoCorporalTipo | null; faltanKg: number | null }): string {
+  const { ev } = e;
+  if (!ev || ev.ritmo == null) return 'Pésate tres mañanas por semana: con eso se ve la tendencia, no un día suelto.';
+  if (ev.estado === 'en-plan') return 'Vas en el plan. Sigue igual esta semana.';
+  const baja = (ev.ritmoPlan ?? 0) < 0;
+  const lento = baja ? ev.estado === 'por-encima' : ev.estado === 'por-debajo';
+  if (lento) {
+    // Enfocado a la acción (Dani, 28-10): qué hacer esta semana, nunca reproche.
+    const pasos = ev.pasosPlan && ev.pasosMedios != null && ev.pasosMedios < ev.pasosPlan * 0.9
+      ? ` y llega a los ${String(Math.round(ev.pasosPlan)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')} pasos`
+      : '';
+    return `Esta semana: registra la comida todos los días${pasos}. Con eso Dani ajusta el lunes si hace falta.`;
+  }
+  return baja
+    ? 'Vas más rápido de lo previsto. Mantén las kcal del plan; Dani lo mira el lunes.'
+    : 'Vas más rápido de lo previsto. Mantén las kcal del plan; Dani lo mira el lunes.';
+}
+
+export function dondeEstas(e: { camino: FaseDelCamino[]; semanas: SemanaDelPlan[]; evaluacion?: EvaluacionDelPlan | null; hoy: string }): DondeEstas | null {
+  const fase = e.camino.find(f => f.estado === 'actual');
+  if (!fase) return null;
+  const semanaEnCurso = e.semanas.find(s => s.enCurso) ?? e.semanas.filter(s => s.faseIdx === fase.idx && !s.futura).at(-1) ?? null;
+  const semanaDeFase = semanaEnCurso ? e.semanas.filter(s => s.faseIdx === fase.idx && s.semana <= semanaEnCurso.semana).length : 1;
+  const pesoReal = semanaEnCurso?.real ?? e.semanas.filter(s => s.real != null && !s.futura).at(-1)?.real ?? null;
+  const faltanKg = fase.pesoMeta != null && pesoReal != null
+    ? Math.round((fase.objetivo === 'volumen' ? fase.pesoMeta - pesoReal : pesoReal - fase.pesoMeta) * 10) / 10
+    : null;
+  return {
+    fase, semanaDeFase, franja: semanaEnCurso?.franja ?? null, pesoReal, faltanKg,
+    mensaje: mensajeDelPeso({ ev: e.evaluacion, objetivo: fase.objetivo, faltanKg }),
+  };
+}
+
+export function bloqueEnCurso(mesociclos: readonly Mesocycle[], hoy: string): BloqueDelCamino | null {
+  const m = mesociclos.find(m => !!m.startDate && hoy >= m.startDate && hoy <= addDays(m.startDate, m.weeks * 7 - 1));
+  if (!m) return null;
+  return {
+    id: m.id, nombre: m.name || 'Bloque de entreno',
+    semana: Math.floor(diasEntreFechas(m.startDate, hoy) / 7) + 1, semanas: m.weeks,
+    desde: m.startDate, hasta: addDays(m.startDate, m.weeks * 7 - 1),
+  };
+}
+
+/** Semanas (lunes) terminadas antes de hoy, de la más antigua a la más reciente, hasta `n` atrás. */
+function semanasCerradas(hoy: string, n: number): string[] {
+  const lunesActual = getWeekStart(hoy);
+  return Array.from({ length: n }, (_, i) => addDays(lunesActual, -7 * (n - i)));
+}
+
+/** La racha más reciente de semanas cerradas que cumplen `ok`; devuelve el lunes de la 4.ª si llega a 4. */
+function rachaDeCuatro(lunes: string[], ok: (lunes: string) => boolean): string | null {
+  let racha = 0, ultimaConCuatro: string | null = null;
+  for (const l of lunes) {
+    racha = ok(l) ? racha + 1 : 0;
+    if (racha >= 4 && racha % 4 === 0) ultimaConCuatro = l;
+  }
+  return ultimaConCuatro;
+}
+
+export function hitosAutomaticos(e: {
+  camino: FaseDelCamino[];
+  semanas: SemanaDelPlan[];
+  mesociclos: readonly Mesocycle[];
+  assignments: readonly WorkoutAssignment[];
+  workoutLogs: readonly WorkoutLog[];
+  respuestas: readonly Pick<QuestionnaireResponse, 'submittedAt'>[];
+  stepLogs: readonly Pick<StepLog, 'date' | 'steps'>[];
+  stepGoal: number;
+  hoy: string;
+}): HitoAutomatico[] {
+  const hitos: HitoAutomatico[] = [];
+
+  for (const f of e.camino) {
+    if (f.estado !== 'pasada') continue;
+    hitos.push({ id: `fase_${f.idx}`, titulo: `Fase «${f.nombre}» completada`, fecha: f.hasta, icon: 'route', tipo: 'fase' });
+    const ultima = e.semanas.filter(s => s.faseIdx === f.idx && s.real != null).at(-1);
+    if (f.pesoMeta != null && ultima?.real != null) {
+      const conseguido = f.objetivo === 'volumen' ? ultima.real >= f.pesoMeta : f.objetivo === 'mantenimiento' || f.objetivo === 'recomposicion' ? Math.abs(ultima.real - f.pesoMeta) <= 1 : ultima.real <= f.pesoMeta;
+      if (conseguido) hitos.push({ id: `peso_${f.idx}`, titulo: `Peso objetivo de la fase: ${kg(f.pesoMeta)} kg`, fecha: f.hasta, icon: 'flag', tipo: 'peso' });
+    }
+  }
+
+  for (const m of e.mesociclos) {
+    if (!m.startDate) continue;
+    const fin = addDays(m.startDate, m.weeks * 7 - 1);
+    if (fin < e.hoy) hitos.push({ id: `bloque_${m.id}`, titulo: `Bloque «${m.name || 'de entreno'}» terminado`, fecha: fin, icon: 'fitness_center', tipo: 'bloque' });
+  }
+
+  // Constancia: cuatro semanas seguidas (cerradas) con todos los entrenos,
+  // cuatro revisiones seguidas, cuatro semanas cumpliendo pasos.
+  const lunes = semanasCerradas(e.hoy, 26);
+  const enSemana = (l: string, fecha: string) => fecha >= l && fecha <= addDays(l, 6);
+  const asignaciones = conEstadoReal(e.assignments, e.workoutLogs);
+  const entrenos = rachaDeCuatro(lunes, l => {
+    const deLaSemana = asignaciones.filter(a => enSemana(l, a.date));
+    return deLaSemana.length > 0 && deLaSemana.every(a => a.status === 'completed');
+  });
+  if (entrenos) hitos.push({ id: `const_entrenos_${entrenos}`, titulo: '4 semanas seguidas con todos los entrenos', fecha: addDays(entrenos, 6), icon: 'local_fire_department', tipo: 'constancia' });
+  const revisiones = rachaDeCuatro(lunes, l => e.respuestas.some(r => enSemana(l, r.submittedAt.slice(0, 10))));
+  if (revisiones) hitos.push({ id: `const_revisiones_${revisiones}`, titulo: '4 revisiones seguidas', fecha: addDays(revisiones, 6), icon: 'fact_check', tipo: 'constancia' });
+  const pasos = rachaDeCuatro(lunes, l => {
+    const dias = e.stepLogs.filter(s => enSemana(l, s.date));
+    return dias.length >= 5 && dias.reduce((a, s) => a + s.steps, 0) / dias.length >= e.stepGoal;
+  });
+  if (pasos) hitos.push({ id: `const_pasos_${pasos}`, titulo: '4 semanas cumpliendo los pasos', fecha: addDays(pasos, 6), icon: 'directions_walk', tipo: 'constancia' });
+
+  return hitos.sort((a, b) => b.fecha.localeCompare(a.fecha));
+}
+
+export function proximoHito(e: { camino: FaseDelCamino[]; bloque: BloqueDelCamino | null; donde: DondeEstas | null; hoy: string }): ProximoHito | null {
+  const candidatos: ProximoHito[] = [];
+  const actual = e.camino.find(f => f.estado === 'actual');
+  const siguiente = actual ? e.camino.find(f => f.idx === actual.idx + 1) : e.camino.find(f => f.estado === 'futura');
+  if (actual && siguiente) {
+    const en = diasEntreFechas(e.hoy, siguiente.desde);
+    candidatos.push({ texto: `${OBJETIVO_LABEL[siguiente.objetivo ?? 'mantenimiento']} en ${en <= 7 ? `${en} días` : `${Math.round(en / 7)} semanas`}`, fecha: siguiente.desde, tipo: 'fase' });
+  } else if (actual) {
+    candidatos.push({ texto: `Fin de la fase «${actual.nombre}»`, fecha: addDays(actual.hasta, 1), tipo: 'fase' });
+  }
+  if (e.bloque) {
+    const en = diasEntreFechas(e.hoy, e.bloque.hasta);
+    candidatos.push({ texto: `Fin del bloque «${e.bloque.nombre}» en ${en <= 7 ? `${en} días` : `${Math.round(en / 7)} semanas`}`, fecha: e.bloque.hasta, tipo: 'bloque' });
+  }
+  if (e.donde?.faltanKg != null && e.donde.fase.pesoMeta != null && e.donde.faltanKg > 0 && e.donde.faltanKg <= 1.5) {
+    candidatos.push({ texto: `Peso objetivo a ${kg(e.donde.faltanKg)} kg`, fecha: e.hoy, tipo: 'peso' });
+  }
+  return candidatos.sort((a, b) => a.fecha.localeCompare(b.fecha))[0] ?? null;
+}
+
+export function construirRoadmap(e: {
+  program: NutritionProgram | null;
+  semanas: SemanaDelPlan[];
+  evaluacion?: EvaluacionDelPlan | null;
+  mesociclos: readonly Mesocycle[];
+  assignments: readonly WorkoutAssignment[];
+  workoutLogs: readonly WorkoutLog[];
+  respuestas: readonly Pick<QuestionnaireResponse, 'submittedAt'>[];
+  stepLogs: readonly Pick<StepLog, 'date' | 'steps'>[];
+  stepGoal: number;
+  hoy: string;
+}): RoadmapDelAtleta {
+  const camino = e.program ? caminoDeFases(e.program, e.semanas, e.hoy) : [];
+  const donde = dondeEstas({ camino, semanas: e.semanas, evaluacion: e.evaluacion, hoy: e.hoy });
+  const bloque = bloqueEnCurso(e.mesociclos, e.hoy);
+  const enCurso = e.semanas.find(s => s.enCurso) ?? null;
+  const estaSemana = enCurso ? { kcal: enCurso.kcalPlan, pasos: enCurso.pasosPlan, desde: enCurso.desde, hasta: enCurso.hasta } : null;
+  return {
+    dondeEstas: donde, camino, bloque, estaSemana,
+    proximoHito: proximoHito({ camino, bloque, donde, hoy: e.hoy }),
+    hitos: hitosAutomaticos({ ...e, camino }),
+  };
+}

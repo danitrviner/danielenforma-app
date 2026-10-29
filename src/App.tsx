@@ -136,6 +136,10 @@ const MensajesHarness = import.meta.env.DEV
 const PrimeraSemanaHarness = import.meta.env.DEV
   ? pantallaDiferida('PrimeraSemanaDevHarness', () => import('./components/PrimeraSemanaDevHarness'))
   : null;
+// Banco de pruebas del Road map del atleta, tres variantes (ruta /dev/roadmap).
+const RoadmapHarness = import.meta.env.DEV
+  ? pantallaDiferida('RoadmapDevHarness', () => import('./components/RoadmapDevHarness'))
+  : null;
 
 // Banco de pruebas de Cliente › Revisiones › Asignadas (ruta /dev/asignados),
 // lado COACH: tampoco hay sesión de coach en este repo.
@@ -858,6 +862,14 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <PrimeraSemanaHarness />
+      </Suspense>
+    );
+  }
+
+  if (RoadmapHarness && location.pathname === '/dev/roadmap') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <RoadmapHarness />
       </Suspense>
     );
   }
