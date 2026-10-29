@@ -6,15 +6,16 @@ import { loUltimoDeDani, proximaRevision, type ItemDeDani } from '../../utils/me
 import { COACH_NOMBRE } from '../../utils/coach';
 import { addDays, hoyIsoLocal } from '../../utils/trainingWeek';
 import { Icon } from '../ui';
-import { VARIANTES } from '../../data/variantes';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    «Lo último de Dani» (29-10-2026) — la tarjeta de Inicio.
 
-   Todo lo que viene de una persona, en un sitio y por fecha: la respuesta a
-   su revisión, un cambio explicado con su porqué, el acuse de lo que contó
-   (con su estado), un hito, la nota del día. Siete días. Si no hay nada, no
-   se finge: dice cuándo se abre la próxima revisión y nada más.
+   Todo lo que viene de una persona, en un sitio: la respuesta a su
+   revisión, un cambio explicado con su porqué, el acuse de lo que contó
+   (con su estado), un hito, la nota del día. Se enseña solo lo más reciente
+   de los últimos siete días, sin fecha, y «y N más esta semana» lleva a
+   Revisión (versión elegida por Dani el 29-10). Si no hay nada, no se
+   finge: dice cuándo se abre la próxima revisión y nada más.
 
    Lo firmado lleva el nombre; lo que escribió la app (el acuse «Recibido»)
    no, y se distingue a la vista. Es la regla de honestidad del plan.
@@ -40,11 +41,9 @@ interface Props {
   respuestas: QuestionnaireResponse[];
   notaDeHoy?: CoachDayNote | null;
   onNavigate: (tab: 'checkin' | 'nutrition' | 'training') => void;
-  /** 'lista' (todo por fecha) · 'ultimo' (solo lo más reciente, y cuántos más) · 'carrusel' (tarjetas en horizontal). */
-  variante?: typeof VARIANTES.loUltimo;
 }
 
-export default function LoUltimoDeDani({ profile, respuestas, notaDeHoy, onNavigate, variante = VARIANTES.loUltimo }: Props) {
+export default function LoUltimoDeDani({ profile, respuestas, notaDeHoy, onNavigate }: Props) {
   const hoy = hoyIsoLocal();
   const desde = addDays(hoy, -(DIAS_LO_ULTIMO - 1));
   const { data: mensajes = [] } = useQuery({
@@ -67,7 +66,7 @@ export default function LoUltimoDeDani({ profile, respuestas, notaDeHoy, onNavig
           Nada nuevo esta semana. Tu próxima revisión se abre el{' '}
           <span className="font-semibold text-ink">{fechaCorta(proximaRevision(hoy, profile.diaRevision))}</span>.
         </p>
-      ) : variante === 'ultimo' ? (
+      ) : (
         <>
           <ul><Item item={items[0]} onNavigate={onNavigate} /></ul>
           {items.length > 1 && (
@@ -76,18 +75,6 @@ export default function LoUltimoDeDani({ profile, respuestas, notaDeHoy, onNavig
             </button>
           )}
         </>
-      ) : variante === 'carrusel' ? (
-        <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-1 px-1 pb-1">
-          {items.map(it => (
-            <div key={it.id} className="w-[240px] flex-shrink-0 rounded-field border border-hairline bg-raised p-3">
-              <ul><Item item={it} onNavigate={onNavigate} /></ul>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <ul className="divide-y divide-hairline">
-          {items.map(it => <Item key={it.id} item={it} onNavigate={onNavigate} />)}
-        </ul>
       )}
     </section>
   );
@@ -98,7 +85,6 @@ function Item({ item, onNavigate }: { item: ItemDeDani; onNavigate: Props['onNav
     <>
       <div className="flex items-center gap-2">
         <span className="font-mono text-caption uppercase tracking-[.16em] text-accent-ink">{item.etiqueta}</span>
-        <span className="font-mono text-caption text-ink-4">{fechaCorta(item.fecha)}</span>
         {item.problema && (
           <span className={`ml-auto rounded-control px-2 py-0.5 font-mono text-caption font-bold uppercase ${ESTADO_PROBLEMA[item.problema.estado].tono}`}>
             {ESTADO_PROBLEMA[item.problema.estado].texto}

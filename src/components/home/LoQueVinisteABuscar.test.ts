@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { antesAhora } from './LoQueVinisteABuscar';
+import { addDays } from '../../utils/trainingWeek';
 
 const HOY = '2026-10-29';
 const pesos = (desde: string, n: number, inicial: number, paso: number) =>
-  Array.from({ length: n }, (_, i) => ({ date: new Date(Date.parse(`${desde}T12:00:00Z`) + i * 86400000).toISOString().slice(0, 10), weight: Math.round((inicial + i * paso) * 10) / 10 }));
+  Array.from({ length: n }, (_, i) => ({ date: addDays(desde, i), weight: Math.round((inicial + i * paso) * 10) / 10 }));
 
 describe('antesAhora', () => {
   it('empezaste = primer pesaje, ahora = mediana de los últimos 7 días, faltan hasta la meta', () => {

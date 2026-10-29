@@ -20,9 +20,9 @@ Encargo de Dani (28-10): el Road map es la pantalla con la que el cliente sabe e
 ## Cómo
 
 - `utils/roadmapDelAtleta.ts` (puro, con tests): `construirRoadmap` ← `semanasDelPlan` + `evaluarPlan` (la misma fuente que ve Dani en Plan › Objetivo; no se tocan) + mesociclos + asignaciones + respuestas + pasos. `caminoDeFases`, `dondeEstas`, `bloqueEnCurso`, `proximoHito`, `hitosAutomaticos`.
-- `components/roadmap/RoadmapDelAtletaVista.tsx`: las tres variantes. `AthleteRoadmapScreen.tsx` reescrito (carga, escalera en silencio, vista). `CoachRoadmapView.tsx` sin la pestaña Fases.
-- `PhaseHeroCard`, `PhasePathStepper`, `LevelLadderCard`, `PlanPhaseEditor`, `planPhase.ts` quedan sin uso en el atleta; se borran cuando Dani confirme la variante (por si quiere rescatar algo de ellas).
-- Banco `/dev/roadmap` (`?v=camino|mapa|compacta`).
+- `components/roadmap/RoadmapDelAtletaVista.tsx`: la vista (tres variantes hasta el 29-10; Dani eligió «camino», ver `acompanamiento-variantes.md`). `AthleteRoadmapScreen.tsx` reescrito (carga, escalera en silencio, vista). `CoachRoadmapView.tsx` sin la pestaña Fases.
+- `PhaseHeroCard`, `PhasePathStepper`, `LevelLadderCard`, `PlanPhaseEditor`, `planPhase.ts` quedaron sin uso en el atleta; BORRADOS el 29-10 (rama `acompanamiento-10-eleccion`) con `RecentAchievements`, `phasePresets.ts` y `planNutritionBridge.ts`.
+- Banco `/dev/roadmap`.
 
 ## Pruebas
 
