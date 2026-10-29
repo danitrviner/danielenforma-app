@@ -83,6 +83,16 @@ const RESPUESTAS: QuestionnaireResponse[] = [
       { questionId: 'q_sem_3', value: [7200, 8100, 6400, 9500, 10200][i] },
       { questionId: 'q_sem_4', value: ['Semana liada en el trabajo.', 'Mejor.', 'Dormí mal el martes.', 'Todo bien.', 'Muy fino esta semana.'][i] },
     ],
+    // La última lleva la respuesta firmada por el coach en tres bloques
+    // (29-10): es lo que pinta «Dani ha revisado tu semana».
+    ...(i === 4 ? { respuestaCoach: {
+      texto: '', enviadaEn: `${haceDias(5)}T09:30:00.000Z`, canal: 'app' as const, borrador: 'asistente' as const,
+      bloques: {
+        comoHaIdo: 'Buena semana, Nora: 4 de 4 entrenos hechos y el peso bajando 0,4 kg a la semana, justo en el ritmo que buscamos. Lo de la rodilla en la última serie de sentadilla lo he leído.',
+        queCambia: 'Esta semana cambio la sentadilla por prensa, con el mismo esquema, hasta que la rodilla esté callada. Lo demás igual: toca subir una serie en dorsal.',
+        queEspero: 'Otra semana entre 80,1 y 80,9 kg y la prensa sin molestia. Si la rodilla sigue, me lo pones el viernes y lo vemos.',
+      },
+    } } : {}),
   })),
   ...[28, 14].map((d, i) => ({
     id: `r_doms_${i}`, questionnaireId: 'q_doms', assignmentId: 'as_doms', athleteId: EMAIL,

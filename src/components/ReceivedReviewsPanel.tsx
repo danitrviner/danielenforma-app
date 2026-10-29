@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { WeightCheckIn, Questionnaire, QuestionnaireResponse } from '../types';
+import { UserProfile, WeightCheckIn, Questionnaire, QuestionnaireResponse } from '../types';
 import {
   submitCoachFeedback, updateCheckIn, deleteCheckIn,
   updateQuestionnaireResponse, deleteQuestionnaireResponse,
@@ -26,6 +26,8 @@ import { textoDeRespuesta, esComentario } from '../utils/textoDeRespuesta';
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
+  /** Para el borrador de la respuesta (nombre, claves de sus entrenos). */
+  athlete: UserProfile;
   athleteCheckins: WeightCheckIn[];
   onRefreshCheckIns: () => void;
   athleteQResponses: QuestionnaireResponse[];
@@ -52,7 +54,7 @@ const fechaLarga = (iso: string | number | Date) =>
 const fechaLargaDeDia = (dateStr: string) => fechaLarga(`${dateStr}T00:00:00`);
 
 export default function ReceivedReviewsPanel({
-  athleteCheckins, onRefreshCheckIns,
+  athlete, athleteCheckins, onRefreshCheckIns,
   athleteQResponses, setAthleteQResponses,
   coachQuestionnaires,
 }: Props) {
@@ -471,6 +473,8 @@ export default function ReceivedReviewsPanel({
                 </ol>
                 <RespuestaCoachBox
                   respuesta={r}
+                  questionnaire={q}
+                  athlete={athlete}
                   onGuardada={nueva => setAthleteQResponses(prev => prev.map(x => x.id === nueva.id ? nueva : x))}
                 />
                 </>
