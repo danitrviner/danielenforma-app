@@ -34,6 +34,7 @@ import BloqueRecibido from './BloqueRecibido';
 import BloqueRetosNivel from './BloqueRetosNivel';
 import BloqueCierre from './BloqueCierre';
 import BloqueCambios from './BloqueCambios';
+import LineaDeTiempoAsistente from '../autopiloto/LineaDeTiempoAsistente';
 import { Card, Button, Icon } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -431,6 +432,12 @@ export default function ClientRevisionPanel({
             onGoToTab={onGoToTab}
             todoAbierto={todoAbierto}
           />
+        </Seccion>
+
+        {/* Antes de «Lo que he cambiado» porque son las dos mitades de la misma
+            pregunta: qué le tocó la máquina y qué le toqué yo. */}
+        <Seccion titulo="Lo que ha hecho el asistente">
+          <LineaDeTiempoAsistente athlete={athlete} presentando={presentando} />
         </Seccion>
 
         <Seccion titulo="Lo que he cambiado">

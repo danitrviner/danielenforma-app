@@ -1,25 +1,43 @@
 /* Banco de pruebas del autopiloto (`/dev/autopiloto`, solo en desarrollo):
-   las tres variantes visuales de la pantalla de POLÍTICA y de «HECHO HOY»,
-   con datos de ejemplo en memoria. Sirve para elegir una de cada (Dani,
-   29-10-2026: «dame 2-3 versiones … elegimos al final»). Guardar cambia el
-   estado local; nada toca Firestore. */
-import { useState } from 'react';
-import type { AiProposal } from '../types';
+   las tres variantes visuales de cada pantalla nueva, con datos de ejemplo en
+   memoria. Sirve para elegir una de cada (Dani, 29-10-2026: «dame 2-3
+   versiones … elegimos al final»). Guardar, deshacer, juzgar o marcar leído
+   cambian el estado local; nada toca Firestore.
+
+     1 · Política (Perfil › Ajustes › Asistente)        tanda 4
+     2 · Hecho hoy (Inicio del coach)                   tanda 4
+     3 · Lo que ha hecho el asistente (Revisión)        tanda 8
+     4 · Calidad (Propuestas › Calidad)                 tanda 8
+     5 · Mensajes del coach (Inicio del atleta)         tanda 8
+     6 · Muro legal unificado (pendiente de D1)         tanda 8 */
+import React, { useMemo, useState } from 'react';
+import type { AiProposal, MensajeCoach, UserProfile } from '../types';
 import { POLITICA_POR_DEFECTO, type EstadisticaDeTipo, type PoliticaAutopiloto as Politica, type TipoDecision } from '../autopiloto/politica';
+import type { Episodio } from '../autopiloto/episodios';
+import { construirLineaDeTiempo } from '../autopiloto/lineaDeTiempo';
+import { muestraDeCalidad, resumenCalidad, type Veredicto } from '../autopiloto/calidad';
+import { hoyIsoLocal, addDays } from '../utils/trainingWeek';
 import PoliticaVista, { type VariantePolitica } from './autopiloto/PoliticaVista';
 import HechoHoyVista, { type VarianteHechoHoy } from './autopiloto/HechoHoyVista';
+import LineaDeTiempoVista, { type VarianteLinea } from './autopiloto/LineaDeTiempoVista';
+import CalidadVista, { type VarianteCalidad } from './autopiloto/CalidadVista';
+import MensajesCoachVista, { type VarianteMensajes } from './autopiloto/MensajesCoachVista';
+import MuroLegalUnificado, { type VarianteMuro } from './MuroLegalUnificado';
 
 const AHORA = Date.now();
+const HOY = hoyIsoLocal();
 const hace = (min: number) => new Date(AHORA - min * 60_000).toISOString();
+const dia = (n: number, h = '07:00') => `${addDays(HOY, -n)}T${h}:00.000Z`;
 const NOMBRES: Record<string, string> = { 'ana@x.com': 'Ana Ruiz', 'javi@x.com': 'Javi Moreno', 'lucia@x.com': 'Lucía Pardo', 'marcos@x.com': 'Marcos Gil' };
 
 const prop = (id: string, athleteId: string, p: Partial<AiProposal>): AiProposal => ({
-  id, athleteId, kind: 'diet', status: 'aplicada', chatId: 'c', createdAt: hace(600), summary: '', payload: {} as never,
+  id, athleteId, kind: 'diet', status: 'aplicada', chatId: 'c', createdAt: hace(600), summary: '', rationale: '', payload: {} as never,
   autor: 'asistente', politica: 'automatico', aplicadaEn: hace(60),
   snapshotAntes: [{ coleccion: 'diets', id: 'd1', datos: { budget: { kcal: 2200 } } }],
   ...p,
 } as AiProposal);
 
+/* 2 · Hecho hoy ------------------------------------------------------------ */
 const RECIENTES: AiProposal[] = [
   prop('p1', 'ana@x.com', { summary: 'Respuesta a la revisión: peso en rango, mantener', kind: 'respuestaRevision', aplicadaEn: hace(35), politica: 'automatico', cambios: ['Respuesta enviada', 'Ficha: foco de la semana'] }),
   prop('p2', 'javi@x.com', { summary: '−100 kcal: dos semanas sin bajar', aplicadaEn: hace(95), politica: 'aviso', avisoHasta: hace(-23 * 60), cambios: ['Objetivo 2.300 → 2.200 kcal', 'Proteína 180 g fija'] }),
@@ -30,6 +48,7 @@ const RECIENTES: AiProposal[] = [
   prop('p7', 'lucia@x.com', { summary: '+150 kcal para la semana de descarga', status: 'deshecha', deshechaEn: hace(20), aplicadaEn: hace(3 * 60), politica: 'aviso' }),
 ];
 
+/* 1 · Política ------------------------------------------------------------- */
 const est = (tipo: TipoDecision, ok: number, ed = 0, re = 0, de = 0): [TipoDecision, EstadisticaDeTipo] =>
   [tipo, { tipo, decididas: ok + ed + re + de, aprobadasSinCambios: ok, editadas: ed, rechazadas: re, deshechas: de, avisosSinDeshacer: 0 }];
 const STATS = new Map<TipoDecision, EstadisticaDeTipo>([
@@ -37,9 +56,74 @@ const STATS = new Map<TipoDecision, EstadisticaDeTipo>([
   est('ajuste_kcal_medio', 3, 2, 1), est('mensaje_atleta', 5, 3), est('mesociclo', 2, 4, 1), est('clinico', 0, 0, 2),
 ]);
 
+/* 3 · Línea de tiempo de Ana ----------------------------------------------- */
+const INICIO = addDays(HOY, -23); // S4 hoy
+const ep = (id: string, tipo: Episodio['tipo'], diasAtras: number, e: Partial<Episodio>): Episodio => ({
+  id, tipo, athleteId: 'ana@x.com', disparador: { fuente: 'latido', fecha: addDays(HOY, -diasAtras) }, estado: 'hecho', prioridad: 5,
+  politica: 'automatico', ronda: 1, propuestas: [], paraDani: '', coste: { usd: 0.21, llamadas: 3, modelo: 'sonnet' },
+  creadoEn: dia(diasAtras), actualizadoEn: dia(diasAtras), ...e,
+});
+const EPISODIOS_ANA: Episodio[] = [
+  ep('e_alta', 'alta_completada', 23, { disparador: { fuente: 'onboarding', fecha: INICIO }, politica: 'proponer', propuestas: ['a_meso', 'a_dieta', 'a_menu', 'a_reto', 'a_ficha'], paraDani: 'Plan montado: 12×4, tres dietas, menú y reto. Pregunta para ella: ¿horario del gimnasio?' }),
+  ep('e_s2', 'semana_nueva', 16, { propuestas: ['s2_menu', 's2_reto'], paraDani: 'Semana 2: menú publicado y reto de pasos.' }),
+  ep('e_q2', 'cuestionario_recibido', 14, { disparador: { fuente: 'questionnaireResponses', fecha: addDays(HOY, -14) }, propuestas: ['q2_resp'], paraDani: 'Revisión rutinaria: peso en rango.' }),
+  ep('e_s3', 'semana_nueva', 9, { propuestas: ['s3_prog', 's3_menu'], paraDani: 'Semana 3: +1 serie pecho/dorsal según progresión.' }),
+  ep('e_dolor', 'dolor', 7, { disparador: { fuente: 'questionnaireResponses', fecha: addDays(HOY, -7) }, estado: 'escalado', politica: 'proponer', alertas: ['molestia hombro derecho (press militar)'], propuestas: ['d_cambio'], paraDani: 'Hombro: te lo paso; borrador de cambio press militar → máquina.' }),
+  ep('e_peso', 'desvio_peso', 2, { estado: 'escalado', politica: 'proponer', propuestas: ['w_kcal'], paraDani: 'Peso lento dos semanas con adherencia 84 %: propongo −150 kcal.' }),
+];
+const MESO_PROPUESTO = { number: 1, weeks: 12, daysPerWeek: 4, startDate: INICIO, objective: 'Hipertrofia', groups: { gluteo: { series: 6 }, pecho: { series: 10 } } };
+const pa = (id: string, p: Partial<AiProposal>) => prop(id, 'ana@x.com', p);
+const PROPUESTAS_ANA: AiProposal[] = [
+  pa('a_meso', { kind: 'mesocycle', status: 'approved', politica: 'proponer', episodioId: 'e_alta', reviewedAt: dia(23, '12:00'), summary: 'Mesociclo #1 · 12 semanas · 4 días', resultEntityId: 'm1', payload: MESO_PROPUESTO as never, cambios: ['Nuevo bloque: 12×4, hipertrofia'], expediente: { datos: 'alta + 2 g/kg', huecos: 'horario del gimnasio', preguntas: ['¿Horario del gimnasio?'], esperado: 'registra ≥ 3 sesiones/semana', notaAlAprobar: 'glúteo fuera: ya lo trabaja en pilates' } }),
+  pa('a_dieta', { kind: 'diet', status: 'approved', politica: 'proponer', episodioId: 'e_alta', reviewedAt: dia(23, '12:01'), summary: 'Dieta Déficit 1.900 kcal · P 150 g', cambios: ['Objetivo 1.900 kcal, 150 g P, 100 g HC'] }),
+  pa('a_menu', { kind: 'latido', status: 'approved', politica: 'proponer', episodioId: 'e_alta', reviewedAt: dia(23, '12:02'), summary: 'Menú semana 1 (borrador)' }),
+  pa('a_reto', { kind: 'weeklyChallenge', status: 'approved', politica: 'proponer', episodioId: 'e_alta', reviewedAt: dia(23, '12:03'), summary: 'Reto: 3 de 3 sesiones' }),
+  pa('a_ficha', { kind: 'dossier', status: 'approved', politica: 'proponer', episodioId: 'e_alta', reviewedAt: dia(23, '12:04'), summary: 'Ficha viva: objetivos, esperado y foco' }),
+  pa('s2_menu', { kind: 'latido', episodioId: 'e_s2', aplicadaEn: dia(16), summary: 'Menú semana 2 publicado', cambios: ['Menú: 7 días, dieta Déficit'], resultado: { comprobadoEn: dia(9), cumplioEsperado: true, nota: 'registró 6 de 7 días' } }),
+  pa('s2_reto', { kind: 'weeklyChallenge', episodioId: 'e_s2', aplicadaEn: dia(16), summary: 'Reto: 8.000 pasos 4 días', cambios: ['Reto: pasos 8.000 × 4'] }),
+  pa('q2_resp', { kind: 'respuestaRevision', episodioId: 'e_q2', aplicadaEn: dia(14, '09:30'), summary: 'Respuesta a su revisión', paraAtleta: 'Buena semana, Ana. El peso va como esperábamos; esta semana vigila el sueño, que lo marcas en 5.' }),
+  pa('s3_prog', { kind: 'weekPlan', episodioId: 'e_s3', aplicadaEn: dia(9), summary: 'Progresión S3: +1 serie pecho y dorsal', cambios: ['Press banca 3 → 4 series', 'Jalón 3 → 4 series'], resultado: { comprobadoEn: dia(2), cumplioEsperado: false, nota: 'RIR 0 en press: demasiado pronto' } }),
+  pa('s3_menu', { kind: 'latido', episodioId: 'e_s3', aplicadaEn: dia(9), summary: 'Menú semana 3 publicado' }),
+  pa('d_cambio', { kind: 'workoutDays', status: 'rejected', politica: 'proponer', episodioId: 'e_dolor', reviewedAt: dia(6, '18:00'), summary: 'Press militar → press en máquina', cambios: ['Sesión B: press militar → press en máquina'], comentarios: [{ at: dia(6, '18:00'), text: 'Rechazada: mejor jalón al pecho hasta que lo vea el fisio' }] }),
+  pa('w_kcal', { kind: 'diet', status: 'proposed', politica: 'proponer', episodioId: 'e_peso', summary: '−150 kcal (1.900 → 1.750)', cambios: ['Objetivo 1.900 → 1.750 kcal', 'Proteína 150 g fija'] }),
+  pa('chat_1', { kind: 'roadmap', status: 'approved', politica: 'proponer', reviewedAt: dia(12, '20:00'), summary: 'Día señalado: boda el sábado', cambios: ['Sábado: día libre de dieta'] }),
+  pa('lat_1', { kind: 'latido', autor: 'latido', aplicadaEn: dia(11, '05:00'), summary: 'Sesión del martes marcada como perdida' }),
+];
+const MESO_REAL = { id: 'm1', athleteId: 'ana@x.com', ...MESO_PROPUESTO, groups: { gluteo: { series: 0 }, pecho: { series: 10 } } };
+
+/* 4 · Calidad: automáticas de la semana pasada ------------------------------ */
+const lunesPasado = (() => { const d = new Date(`${HOY}T12:00:00`); d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - 7); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+const sem = (n: number, h = '07:05') => `${addDays(lunesPasado, n)}T${h}:00.000Z`;
+const AUTOMATICAS: AiProposal[] = [
+  prop('c1', 'ana@x.com', { aplicadaEn: sem(0), kind: 'latido', summary: 'Menú semana 4 publicado', rationale: 'Dieta Déficit 2, mismas recetas que la semana 3 con dos cambios de cena.', cambios: ['Menú: 7 días, 2 cenas nuevas'], expediente: { datos: 'registro 6/7 días, peso −0,4 kg', huecos: '', preguntas: [], esperado: 'registro ≥ 5 días' } }),
+  prop('c2', 'javi@x.com', { aplicadaEn: sem(1), kind: 'mensajeAtleta', summary: 'Mensaje: qué cambia esta semana', paraAtleta: 'Javi, esta semana subimos a 4 series en press y jalón. Si el RIR baja de 1, para y me lo dices.', expediente: { datos: 'progresión programada S6', huecos: '', preguntas: [], esperado: '' } }),
+  prop('c3', 'lucia@x.com', { aplicadaEn: sem(2), kind: 'weeklyChallenge', summary: 'Reto: 8.000 pasos 4 días', rationale: 'Media de 6.200 pasos las dos últimas semanas; nivel intermedio.', cambios: ['Reto: pasos 8.000 × 4'] }),
+  prop('c4', 'marcos@x.com', { aplicadaEn: sem(2, '09:40'), kind: 'respuestaRevision', summary: 'Respuesta a su revisión', paraAtleta: 'Marcos, buena semana. Peso estable como toca en mantenimiento. Sigue igual.', expediente: { datos: 'peso 82,1 → 82,0; adherencia 91 %', huecos: '', preguntas: [], esperado: 'peso ±0,3 kg' } }),
+  prop('c5', 'ana@x.com', { aplicadaEn: sem(3), kind: 'diet', summary: '−100 kcal: dos semanas sin bajar', politica: 'automatico', cambios: ['Objetivo 2.000 → 1.900 kcal'], rationale: 'Adherencia 88 %, peso +0,1 kg en 14 días.' }),
+  prop('c6', 'javi@x.com', { aplicadaEn: sem(4), kind: 'weekPlan', summary: 'Progresión S6: +1 serie dorsal', cambios: ['Jalón 3 → 4 series'] }),
+  prop('c7', 'lucia@x.com', { aplicadaEn: sem(5), kind: 'latido', summary: 'Menú semana 3 publicado', calidad: { veredicto: 'bien', en: sem(6) } }),
+];
+
+/* 5 · Mensajes del coach a Ana ----------------------------------------------- */
+const MENSAJES: MensajeCoach[] = [
+  { id: 'm1', athleteId: 'ana@x.com', motivo: 'semana_nueva', creadoEn: dia(0, '07:10'), texto: 'Ana, esta semana entramos en la 4: subimos a 4 series en press banca y jalón. Si en alguna te quedas sin reserva (RIR 0), para ahí y me lo apuntas en el cuestionario.\n\nEl menú ya está publicado; he cambiado dos cenas porque me dijiste que el salmón te cansa.' },
+  { id: 'm2', athleteId: 'ana@x.com', motivo: 'perdidas', creadoEn: dia(4, '19:30'), texto: 'He visto que se te han quedado dos sesiones esta semana. ¿Ha sido por horario o por otra cosa? Si el jueves no te cuadra, lo movemos al sábado sin problema.' },
+  { id: 'm3', athleteId: 'ana@x.com', motivo: 'peso_sin_registrar', creadoEn: dia(9, '08:00'), texto: 'Llevas diez días sin pesarte. No pasa nada, pero sin ese dato voy a ciegas con las calorías: pésate dos o tres mañanas seguidas cuando puedas.', leidoEn: dia(9, '12:00') },
+];
+
+const PERFIL_DEV = {
+  userId: 'dev', email: 'dev@example.com', displayName: 'Dev Atleta', role: 'client', avatarUrl: '', level: 0, currentStreak: 0, maxStreak: 0,
+  initialWeight: 0, targetWeight: 0, actualWeight: 0,
+} as UserProfile;
+
+/* ── Selector de variantes ─────────────────────────────────────────────────── */
 const VARIANTES = ['A', 'B', 'C'] as const;
 const ETIQUETA_P: Record<VariantePolitica, string> = { A: 'A · Tarjetas', B: 'B · Semáforo', C: 'C · Por bloques' };
 const ETIQUETA_H: Record<VarianteHechoHoy, string> = { A: 'A · Lista', B: 'B · Cronología', C: 'C · Por atleta' };
+const ETIQUETA_L: Record<VarianteLinea, string> = { A: 'A · Tabla por semana', B: 'B · Hilo', C: 'C · Tarjetas' };
+const ETIQUETA_C: Record<VarianteCalidad, string> = { A: 'A · Una a una', B: 'B · Lista', C: 'C · Tabla' };
+const ETIQUETA_M: Record<VarianteMensajes, string> = { A: 'A · Tarjeta', B: 'B · Burbuja', C: 'C · Bandeja' };
+const ETIQUETA_W: Record<VarianteMuro, string> = { A: 'A · Un documento', B: 'B · Acordeón', C: 'C · Resumen + letra' };
 
 function Selector<T extends string>({ valor, opciones, etiquetas, onChange }: { valor: T | 'todas'; opciones: readonly T[]; etiquetas: Record<T, string>; onChange: (v: T | 'todas') => void }) {
   const todas = [...opciones, 'todas' as const];
@@ -55,55 +139,87 @@ function Selector<T extends string>({ valor, opciones, etiquetas, onChange }: { 
   );
 }
 
+type Variante = 'A' | 'B' | 'C';
+function Seccion({ n, titulo, valor, etiquetas, onChange, ancho = 'xl:grid-cols-3', unaSola = '', children }: {
+  n: number; titulo: string; valor: Variante | 'todas'; etiquetas: Record<Variante, string>; onChange: (v: Variante | 'todas') => void; ancho?: string; unaSola?: string;
+  children: (v: Variante) => React.ReactNode;
+}) {
+  const lista: readonly Variante[] = valor === 'todas' ? VARIANTES : [valor];
+  return (
+    <section className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 className="font-mono text-caption uppercase tracking-widest text-ink-3">{n} · {titulo}</h2>
+        <Selector valor={valor} opciones={VARIANTES} etiquetas={etiquetas} onChange={onChange} />
+      </div>
+      <div className={`grid gap-6 ${lista.length > 1 ? ancho : unaSola}`}>
+        {lista.map(v => (
+          <div key={v} className="space-y-2 min-w-0">
+            <p className="font-mono text-caption uppercase tracking-wider text-ink-3">{etiquetas[v]}</p>
+            {children(v)}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function AutopilotoDevHarness() {
   const [politica, setPolitica] = useState<Politica>({ ...POLITICA_POR_DEFECTO, modo: 'politica', nivelPorTipo: { ajuste_kcal_medio: 'proponer' } });
   const [msg, setMsg] = useState<string | null>(null);
   const [vp, setVp] = useState<VariantePolitica | 'todas'>('todas');
   const [vh, setVh] = useState<VarianteHechoHoy | 'todas'>('todas');
+  const [vl, setVl] = useState<VarianteLinea | 'todas'>('todas');
+  const [vc, setVc] = useState<VarianteCalidad | 'todas'>('todas');
+  const [vm, setVm] = useState<VarianteMensajes | 'todas'>('todas');
+  const [vw, setVw] = useState<VarianteMuro | 'todas'>('todas');
   const [recientes, setRecientes] = useState(RECIENTES);
+  const [automaticas, setAutomaticas] = useState(AUTOMATICAS);
+  const [mensajes, setMensajes] = useState(MENSAJES);
   const guardar = (nueva: Politica) => { setPolitica(nueva); setMsg('Guardado (solo en memoria).'); };
   const deshacer = async (p: AiProposal) => { setRecientes(r => r.map(x => x.id === p.id ? { ...x, status: 'deshecha', deshechaEn: new Date().toISOString() } : x)); };
+  const juzgar = async (p: AiProposal, veredicto: Veredicto, nota: string) => {
+    setAutomaticas(l => l.map(x => x.id === p.id ? { ...x, calidad: { veredicto, en: new Date().toISOString(), ...(nota ? { nota } : {}) } } : x));
+  };
+  const leido = (m: MensajeCoach) => setMensajes(l => l.map(x => x.id === m.id ? { ...x, leidoEn: new Date().toISOString() } : x));
 
-  const listaP = vp === 'todas' ? VARIANTES : [vp];
-  const listaH = vh === 'todas' ? VARIANTES : [vh];
+  const linea = useMemo(() => construirLineaDeTiempo(EPISODIOS_ANA, PROPUESTAS_ANA, { inicioPlan: INICIO, mesociclos: [MESO_REAL as never], dietas: [] }), []);
+  const calidad = useMemo(() => ({ ...muestraDeCalidad(automaticas, HOY), resumen: resumenCalidad(automaticas) }), [automaticas]);
+  const nombreDe = (e: string) => NOMBRES[e] ?? e;
 
   return (
-    <div className="min-h-screen bg-bg text-ink px-4 py-6 space-y-10 max-w-[1400px] mx-auto">
+    <div className="min-h-screen bg-bg text-ink px-4 py-6 space-y-12 max-w-[1400px] mx-auto">
       <header className="space-y-1">
         <h1 className="font-sans font-bold text-title-m">Autopiloto · variantes visuales</h1>
-        <p className="font-sans text-label text-ink-2">Datos de ejemplo. Guardar y deshacer solo cambian la memoria de esta página.</p>
+        <p className="font-sans text-label text-ink-2">Datos de ejemplo. Guardar, deshacer, juzgar y marcar leído solo cambian la memoria de esta página.</p>
       </header>
 
-      <section className="space-y-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-mono text-caption uppercase tracking-widest text-ink-3">1 · Política (Perfil › Ajustes › Asistente)</h2>
-          <Selector valor={vp} opciones={VARIANTES} etiquetas={ETIQUETA_P} onChange={setVp} />
-        </div>
-        <div className={`grid gap-6 ${listaP.length > 1 ? 'xl:grid-cols-3' : ''}`}>
-          {listaP.map(v => (
-            <div key={v} className="space-y-2 min-w-0">
-              <p className="font-mono text-caption uppercase tracking-wider text-ink-3">{ETIQUETA_P[v]}</p>
-              <PoliticaVista variante={v} politica={politica} stats={STATS} guardando={false} msg={msg} gastoMesUsd={17.4} onGuardar={guardar} />
-            </div>
-          ))}
-        </div>
-      </section>
+      <Seccion n={1} titulo="Política (Perfil › Ajustes › Asistente)" valor={vp} etiquetas={ETIQUETA_P} onChange={setVp}>
+        {v => <PoliticaVista variante={v} politica={politica} stats={STATS} guardando={false} msg={msg} gastoMesUsd={17.4} onGuardar={guardar} />}
+      </Seccion>
 
-      <section className="space-y-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-mono text-caption uppercase tracking-widest text-ink-3">2 · Hecho hoy (Inicio del coach)</h2>
-          <Selector valor={vh} opciones={VARIANTES} etiquetas={ETIQUETA_H} onChange={setVh} />
-        </div>
-        <div className={`grid gap-6 ${listaH.length > 1 ? 'xl:grid-cols-3' : 'max-w-[42rem]'}`}>
-          {listaH.map(v => (
-            <div key={v} className="space-y-2 min-w-0">
-              <p className="font-mono text-caption uppercase tracking-wider text-ink-3">{ETIQUETA_H[v]}</p>
-              <HechoHoyVista variante={v} recientes={recientes} horas={24} error={null} ocupadaId={null}
-                nombreDe={e => NOMBRES[e] ?? e} onIr={() => undefined} onDeshacer={deshacer} />
-            </div>
-          ))}
-        </div>
-      </section>
+      <Seccion n={2} titulo="Hecho hoy (Inicio del coach)" valor={vh} etiquetas={ETIQUETA_H} onChange={setVh} unaSola="max-w-[42rem]">
+        {v => <HechoHoyVista variante={v} recientes={recientes} horas={24} error={null} ocupadaId={null} nombreDe={nombreDe} onIr={() => undefined} onDeshacer={deshacer} />}
+      </Seccion>
+
+      <Seccion n={3} titulo="Lo que ha hecho el asistente (Revisión del coach · Ana)" valor={vl} etiquetas={ETIQUETA_L} onChange={setVl} unaSola="max-w-[48rem]">
+        {v => <LineaDeTiempoVista variante={v} linea={linea} modo="rodaje" onIrAPropuesta={() => undefined} />}
+      </Seccion>
+
+      <Seccion n={4} titulo="Calidad (Propuestas › Calidad)" valor={vc} etiquetas={ETIQUETA_C} onChange={setVc} unaSola="max-w-[48rem]">
+        {v => <CalidadVista variante={v} semana={calidad.semana} muestra={calidad.muestra} total={calidad.total} resumen={calidad.resumen} nombreDe={nombreDe} juzgandoId={null} error={null} onVeredicto={juzgar} onIrAlAtleta={() => undefined} />}
+      </Seccion>
+
+      <Seccion n={5} titulo="Mensajes del coach (Inicio del atleta · Ana)" valor={vm} etiquetas={ETIQUETA_M} onChange={setVm} unaSola="max-w-[26rem]">
+        {v => <div className="max-w-[26rem]"><MensajesCoachVista variante={v} mensajes={mensajes} firma="Dani" onLeido={leido} /></div>}
+      </Seccion>
+
+      <Seccion n={6} titulo="Muro legal unificado (pendiente de D1: no cableado)" valor={vw} etiquetas={ETIQUETA_W} onChange={setVw} unaSola="max-w-lg">
+        {v => (
+          <MuroLegalUnificado variante={v} profile={PERFIL_DEV} enMarco
+            guardar={async nuevas => { console.log('guardaría', nuevas); setMsg('Muro: guardaría (solo consola).'); return nuevas; }}
+            onCompletado={legal => console.log('onCompletado', legal)} onSalir={() => console.log('onSalir')} />
+        )}
+      </Seccion>
     </div>
   );
 }

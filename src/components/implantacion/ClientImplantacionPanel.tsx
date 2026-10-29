@@ -6,7 +6,7 @@ import {
   ProgressPhoto, WorkoutLog, CoachClientTask,
 } from '../../types';
 import {
-  getRoadmap, getNutritionProgram, getWeeklyChallenge, getCoachClientTasks,
+  getRoadmap, getNutritionProgram, getWeeklyChallenge, getCoachClientTasks, getAiProposalsForAthlete,
   setSeededTaskDone, createCoachClientTask, updateCoachClientTask, deleteCoachClientTask,
   updateUserProfile, getWorkouts, getCardioAssignmentsForAthlete,
 } from '../../dbService';
@@ -100,6 +100,9 @@ export default function ClientImplantacionPanel({
   const { data: weeklyChallenge, isPending: cargandoReto } = useQuery({
     queryKey: ['weeklyChallenge', athlete.email, isoWeekKey(hoy)],
     queryFn: () => getWeeklyChallenge(athlete.email, isoWeekKey(hoy)),
+  });
+  const { data: propuestasDelAtleta = [] } = useQuery({
+    queryKey: ['aiProposalsForAthlete', athlete.email], queryFn: () => getAiProposalsForAthlete(athlete.email),
   });
   const { data: manualTasks, isPending: cargandoTareas } = useQuery({
     queryKey: tareasKey, queryFn: () => getCoachClientTasks(athlete.email),
@@ -442,6 +445,7 @@ export default function ClientImplantacionPanel({
                 paso={elegido}
                 titulo={tituloCorto(elegido)}
                 athlete={athlete}
+                propuestas={propuestasDelAtleta}
                 onAbrirEditor={onAbrirEditor}
                 onMarcar={marcarPaso}
                 onFecha={ponerFecha}

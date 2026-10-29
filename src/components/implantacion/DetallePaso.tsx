@@ -1,5 +1,6 @@
 import React from 'react';
-import { UserProfile } from '../../types';
+import { AiProposal, UserProfile } from '../../types';
+import { autorDelPaso, textoDeAutor } from '../../autopiloto/lineaDeTiempo';
 import { PasoConEstado } from '../../utils/implantacion';
 import { SetupStatus } from '../../utils/clientSetup';
 import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../../ai/events';
@@ -43,16 +44,21 @@ interface Props {
   paso: PasoConEstado;
   titulo: string;
   athlete: UserProfile;
+  /** Las propuestas del atleta, para decir quién cerró el paso (autopiloto §5.2). */
+  propuestas?: AiProposal[];
   onAbrirEditor: (tab: HubTab) => void;
   onMarcar: (paso: PasoConEstado, hecho: boolean) => void;
   onFecha: (paso: PasoConEstado, fecha: string | undefined) => void;
 }
 
 export default function DetallePaso({
-  paso, titulo, athlete, onAbrirEditor, onMarcar, onFecha,
+  paso, titulo, athlete, propuestas = [], onAbrirEditor, onMarcar, onFecha,
 }: Props) {
   const { estado, items, manual } = paso;
   const et = ETIQUETA_ESTADO[estado];
+  // Quién lo dejó hecho: la última propuesta aplicada o aprobada de los tipos
+  // que este paso comprueba. Sin propuesta, lo hizo Dani a mano en el editor.
+  const autor = estado === 'done' ? autorDelPaso(items, propuestas) : null;
 
   const pedirAlAsistente = () => {
     const nombre = athlete.displayName?.trim().split(/\s+/)[0] || 'el atleta';
@@ -78,6 +84,11 @@ export default function DetallePaso({
           {paso.aviso && <Badge tone="neutral">Recordatorio: {paso.aviso}</Badge>}
         </div>
         <h3 className="font-sans font-bold text-title-s text-ink">{titulo}</h3>
+        {estado === 'done' && !manual && (
+          <p className="font-mono text-caption text-ink-3">
+            {autor ? textoDeAutor(autor) : 'Lo hiciste tú, a mano'}
+          </p>
+        )}
       </header>
 
       {/* Lo primero: la elección que hay delante. */}

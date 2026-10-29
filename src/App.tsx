@@ -54,6 +54,7 @@ const CoachProposalsScreen = pantallaDiferida('CoachProposalsScreen', () => impo
 const CommandPalette       = pantallaDiferida('CommandPalette', () => import('./components/CommandPalette'));
 const AthleteOnboardingWizard = pantallaDiferida('AthleteOnboardingWizard', () => import('./components/AthleteOnboardingWizard'));
 const AceptacionLegalGate = pantallaDiferida('AceptacionLegalGate', () => import('./components/AceptacionLegalGate'));
+const MuroLegalUnificado = pantallaDiferida('MuroLegalUnificado', () => import('./components/MuroLegalUnificado'));
 const PlanEnEsperaScreen     = pantallaDiferida('PlanEnEsperaScreen', () => import('./components/PlanEnEsperaScreen'));
 const ReviewsScreen        = pantallaDiferida('ReviewsScreen', () => import('./components/ReviewsScreen'));
 const TrainingCoachScreen  = pantallaDiferida('TrainingCoachScreen', () => import('./components/TrainingCoachScreen'));
@@ -918,19 +919,32 @@ function AppContent() {
   // Banco de pruebas del muro legal, misma poda que el del wizard de alta: sin
   // esto hay que crear una cuenta nueva de verdad para ver los tres pasos.
   if (import.meta.env.DEV && location.pathname === '/dev/legal') {
+    const perfilDev = {
+      userId: 'dev', email: 'dev@example.com', displayName: 'Dev Atleta',
+      role: 'client', avatarUrl: '', level: 0, currentStreak: 0, maxStreak: 0,
+      initialWeight: 0, targetWeight: 0, actualWeight: 0,
+    } as UserProfile;
+    // `?unificado=A|B|C`: el muro de UNA página (tanda 8, pendiente de D1).
+    const unificado = new URLSearchParams(location.search).get('unificado');
     return (
       <div className="min-h-screen bg-bg">
         <Suspense fallback={<Splash texto="Un momento..." />}>
-          <AceptacionLegalGate
-            profile={{
-              userId: 'dev', email: 'dev@example.com', displayName: 'Dev Atleta',
-              role: 'client', avatarUrl: '', level: 0, currentStreak: 0, maxStreak: 0,
-              initialWeight: 0, targetWeight: 0, actualWeight: 0,
-            } as UserProfile}
-            guardar={async nuevas => { console.log('guardaría', nuevas); return nuevas; }}
-            onCompletado={legal => console.log('onCompletado', legal)}
-            onSalir={() => console.log('onSalir')}
-          />
+          {unificado === 'A' || unificado === 'B' || unificado === 'C' ? (
+            <MuroLegalUnificado
+              variante={unificado}
+              profile={perfilDev}
+              guardar={async nuevas => { console.log('guardaría', nuevas); return nuevas; }}
+              onCompletado={legal => console.log('onCompletado', legal)}
+              onSalir={() => console.log('onSalir')}
+            />
+          ) : (
+            <AceptacionLegalGate
+              profile={perfilDev}
+              guardar={async nuevas => { console.log('guardaría', nuevas); return nuevas; }}
+              onCompletado={legal => console.log('onCompletado', legal)}
+              onSalir={() => console.log('onSalir')}
+            />
+          )}
         </Suspense>
       </div>
     );

@@ -18,6 +18,7 @@ import { objetivoDelDia } from '../utils/objetivoDelDia';
 import PendingTasksPanel from './PendingTasksPanel';
 import SolicitudConsentimientoIA from './SolicitudConsentimientoIA';
 import NovedadesSheet from './NovedadesSheet';
+import MensajesDelCoach from './MensajesDelCoach';
 import { NOVEDADES } from '../data/novedades';
 import { idMasReciente, novedadesPendientes, MAX_EN_VENTANA } from '../utils/novedades';
 import { debePedirseConsentimiento, haSidoAplazado, marcarAplazado } from '../ai/consentimientoIA';
@@ -373,6 +374,10 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
           </div>
         </section>
       )}
+
+      {/* Lo que el coach le dice fuera de la revisión (qué cambia esta
+          semana, una pregunta por sus faltas): el canal único del plan. */}
+      <MensajesDelCoach athleteEmail={profile.email} />
 
       {!loadingTraining && assignments.length === 0 && (
         <PlanInPreparationCard profile={profile} onNavigate={onNavigate} />

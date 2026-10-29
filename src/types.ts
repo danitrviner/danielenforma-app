@@ -3113,6 +3113,8 @@ export interface AiProposal {
   resultado?: { comprobadoEn: string; cumplioEsperado: boolean | null; nota: string };
   /** El texto que llegó al atleta, literal, si lo hubo. */
   paraAtleta?: string;
+  /** Lo que Dani dijo de esta decisión en la auditoría de calidad (§5.4). */
+  calidad?: { veredicto: 'bien' | 'mal' | 'no_vuelvas'; en: string; nota?: string };
 }
 
 // Nota de metodología ingerida desde la bóveda de Obsidian del coach (apuntes
