@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { construirRoadmap, hitosAutomaticos, caminoDeFases } from './roadmapDelAtleta';
+import { construirRoadmap, hitosAutomaticos, caminoDeFases, fuerzaDeLaSemana } from './roadmapDelAtleta';
 import type { Mesocycle, NutritionProgram, WorkoutAssignment, WorkoutLog } from '../types';
 import type { SemanaDelPlan, EvaluacionDelPlan } from './seguimientoPlan';
 import { addDays, getWeekStart } from './trainingWeek';
@@ -99,5 +99,77 @@ describe('hitos automáticos', () => {
     const lunes = Array.from({ length: 4 }, (_, i) => addDays(getWeekStart(HOY), -7 * (4 - i)));
     const assignments: WorkoutAssignment[] = lunes.map((l, i) => ({ id: `a_${l}`, athleteId: 'a@x.com', workoutId: 'w', date: l, status: i === 1 ? 'perdido' as const : 'completed' as const }));
     expect(hitosAutomaticos({ ...base, assignments }).filter(x => x.tipo === 'constancia')).toEqual([]);
+  });
+});
+
+describe('arranque: sin fases del programa el camino no se queda vacío', () => {
+  const meso = { id: 'm1', athleteId: 'a@x.com', name: 'Adaptación', startDate: addDays(getWeekStart(HOY), -14), weeks: 6 } as Mesocycle;
+  const base = { program: null, semanas: [], mesociclos: [meso], assignments: [], workoutLogs: [], respuestas: [], stepLogs: [], stepGoal: 8000, hoy: HOY };
+
+  it('una fase «Tu arranque» con el bloque, el último peso y las kcal de la dieta', () => {
+    const r = construirRoadmap({ ...base, planPublishedAt: `${addDays(HOY, -10)}T10:00:00.000Z`, pesos: [{ date: addDays(HOY, -1), weight: 84.2 }], kcalDieta: 2300 });
+    expect(r.arranque).toBe(true);
+    expect(r.camino).toHaveLength(1);
+    expect(r.camino[0]).toMatchObject({ nombre: 'Tu arranque', estado: 'actual', desde: meso.startDate, hasta: addDays(meso.startDate, 41), semanas: 6, pesoMeta: null });
+    expect(r.dondeEstas).toMatchObject({ semanaDeFase: 3, pesoReal: 84.2, franja: null, faltanKg: null });
+    expect(r.dondeEstas!.mensaje).toMatch(/Dani te pone las fases/);
+    expect(r.estaSemana).toMatchObject({ kcal: 2300, pasos: 8000 });
+    expect(r.proximoHito).toMatchObject({ tipo: 'bloque' });
+  });
+
+  it('sin bloque dura 4 semanas desde que se publicó el plan y nunca se queda en el pasado', () => {
+    const r = construirRoadmap({ ...base, mesociclos: [], planPublishedAt: `${addDays(HOY, -60)}T10:00:00.000Z` });
+    expect(r.camino[0].estado).toBe('actual');
+    expect(r.camino[0].hasta).toBe(addDays(getWeekStart(HOY), 6));
+    expect(r.proximoHito).toBeNull();
+  });
+
+  it('sin plan publicado ni bloque, nada (y arranque = false)', () => {
+    const r = construirRoadmap({ ...base, mesociclos: [] });
+    expect(r.camino).toEqual([]);
+    expect(r.arranque).toBe(false);
+  });
+});
+
+describe('hitos del arranque y fuerza de la semana', () => {
+  const publicado = addDays(getWeekStart(HOY), -14); // lunes, dos semanas atrás
+  const log = (date: string, weight: number, reps = 8): WorkoutLog => ({
+    id: `l_${date}`, athleteId: 'a@x.com', workoutId: 'w', assignmentId: `a_${date}`, date, completedAt: `${date}T19:00:00.000Z`,
+    entries: [{ exerciseId: 'press', sets: [{ weight, repsDone: reps, rir: 2 }, { weight, repsDone: reps, rir: 1 }] }],
+  });
+  const assignments: WorkoutAssignment[] = [0, 2, 7, 9, 14].map(d => ({ id: `a_${addDays(publicado, d)}`, athleteId: 'a@x.com', workoutId: 'w', date: addDays(publicado, d), status: 'completed' as const }));
+  const logs = [log(addDays(publicado, 0), 60), log(addDays(publicado, 2), 60), log(addDays(publicado, 7), 62), log(addDays(publicado, 9), 62), log(addDays(publicado, 14), 66)];
+
+  it('primera sesión, primer peso, primera revisión y primera semana completa, con su fecha', () => {
+    const r = construirRoadmap({
+      program: null, semanas: [], mesociclos: [], assignments, workoutLogs: logs, respuestas: [{ submittedAt: `${addDays(publicado, 4)}T18:00:00.000Z` }],
+      stepLogs: [], stepGoal: 8000, hoy: HOY, planPublishedAt: `${publicado}T10:00:00.000Z`, pesos: [{ date: addDays(publicado, 1), weight: 84 }],
+    });
+    const arranque = r.hitos.filter(h => h.tipo === 'arranque');
+    expect(arranque.map(h => [h.titulo, h.fecha])).toEqual([
+      ['Primera semana con todos los entrenos', addDays(publicado, 6)],
+      ['Primera revisión enviada', addDays(publicado, 4)],
+      ['Primer peso registrado', addDays(publicado, 1)],
+      ['Primera sesión hecha', publicado],
+    ]);
+  });
+
+  it('sin plan publicado no hay hitos del arranque', () => {
+    expect(hitosAutomaticos({ camino: [], semanas: [], mesociclos: [], assignments, workoutLogs: logs, respuestas: [], stepLogs: [], stepGoal: 8000, hoy: HOY })).toEqual([]);
+  });
+
+  it('fuerza: kilos de la semana, récord sobre la mejor marca anterior y cambio por sesión', () => {
+    const f = fuerzaDeLaSemana({ workoutLogs: logs, hoy: HOY })!;
+    expect(f.sesiones).toBe(1);
+    expect(f.tonelaje).toBe(66 * 8 * 2);
+    expect(f.records).toBe(1);
+    // semana pasada: dos sesiones de 62×8×2 = 992 por sesión; esta: 1.056 → +6 %
+    expect(f.deltaPct).toBe(6);
+  });
+
+  it('fuerza: un ejercicio nuevo no es un récord, y sin sesiones esta semana es null', () => {
+    const nuevo = { ...log(addDays(getWeekStart(HOY), 1), 40), entries: [{ exerciseId: 'remo', sets: [{ weight: 40, repsDone: 10, rir: 2 }] }] };
+    expect(fuerzaDeLaSemana({ workoutLogs: [nuevo], hoy: HOY })!.records).toBe(0);
+    expect(fuerzaDeLaSemana({ workoutLogs: logs.slice(0, 4), hoy: HOY })).toBeNull();
   });
 });

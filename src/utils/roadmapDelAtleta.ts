@@ -1,9 +1,11 @@
-import type { Mesocycle, NutritionProgram, QuestionnaireResponse, StepLog, WorkoutAssignment, WorkoutLog } from '../types.js';
+import type { BodyweightLog, Mesocycle, NutritionProgram, QuestionnaireResponse, StepLog, WorkoutAssignment, WorkoutLog } from '../types.js';
 import type { SemanaDelPlan, EvaluacionDelPlan } from './seguimientoPlan.js';
 import { objetivoDeFase } from './objetivoDeFase.js';
 import { OBJETIVO_LABEL, type ObjetivoCorporalTipo } from './verificacionObjetivo.js';
 import { conEstadoReal } from './estadoDeAsignacion.js';
 import { addDays, diasEntreFechas, getWeekStart } from './trainingWeek.js';
+import { aggregate, allTimeBestBefore } from './trainingReport.js';
+import type { ContextoPesoCorporal } from './pesoCorporal.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El Road map del atleta, derivado de los objetivos (29-10-2026)
@@ -25,7 +27,16 @@ import { addDays, diasEntreFechas, getWeekStart } from './trainingWeek.js';
      objetivo).
    · hitos: los que SALEN SOLOS del plan: fase completada, peso objetivo
      conseguido, bloque terminado, y constancia (4 semanas seguidas con todos
-     los entrenos, 4 revisiones seguidas, 4 semanas cumpliendo pasos).
+     los entrenos, 4 revisiones seguidas, 4 semanas cumpliendo pasos). Y los
+     del arranque (29-10, tarde): primera sesión, primer peso, primera
+     revisión, primera semana con todos los entrenos, para que «Conseguido»
+     no esté en blanco el primer mes.
+   · estaSemana.fuerza: kilos levantados esta semana, récords (1RM estimado
+     por encima del mejor histórico) y el cambio por sesión frente a la
+     semana pasada. En recomposición o volumen el peso engaña; esto no.
+   · arranque: sin fases del programa, el camino NO se queda vacío: una sola
+     fase «Tu arranque» montada con la fecha de publicación del plan, el
+     bloque de entreno y la dieta. Dani ve en la bandeja que faltan fases.
 
    Puro: recibe `semanasDelPlan` ya calculado (la misma fuente que ve Dani en
    Plan › Objetivo) y lo demás, con la fecha inyectada.
@@ -68,7 +79,17 @@ export interface HitoAutomatico {
   titulo: string;
   fecha: string; // YYYY-MM-DD
   icon: string;
-  tipo: 'fase' | 'peso' | 'bloque' | 'constancia';
+  tipo: 'fase' | 'peso' | 'bloque' | 'constancia' | 'arranque';
+}
+
+export interface FuerzaDeLaSemana {
+  /** kg levantados esta semana (lunes → hoy). */
+  tonelaje: number;
+  sesiones: number;
+  /** Ejercicios cuyo 1RM estimado esta semana supera su mejor marca anterior. */
+  records: number;
+  /** Cambio del tonelaje por sesión frente a la semana pasada, en %. */
+  deltaPct: number | null;
 }
 
 export interface ProximoHito { texto: string; fecha: string; tipo: HitoAutomatico['tipo'] }
@@ -77,9 +98,11 @@ export interface RoadmapDelAtleta {
   dondeEstas: DondeEstas | null;
   camino: FaseDelCamino[];
   bloque: BloqueDelCamino | null;
-  estaSemana: { kcal: number | null; pasos: number | null; desde: string; hasta: string } | null;
+  estaSemana: { kcal: number | null; pasos: number | null; fuerza: FuerzaDeLaSemana | null; desde: string; hasta: string } | null;
   proximoHito: ProximoHito | null;
   hitos: HitoAutomatico[];
+  /** Sin fases del programa: el camino es la fase de arranque. */
+  arranque: boolean;
 }
 
 const kg = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -109,8 +132,31 @@ export function caminoDeFases(program: NutritionProgram, semanas: SemanaDelPlan[
   return out;
 }
 
-function mensajeDelPeso(e: { ev: EvaluacionDelPlan | null | undefined; objetivo: ObjetivoCorporalTipo | null; faltanKg: number | null }): string {
+/** Semanas que dura «Tu arranque» cuando no hay bloque de entreno que las marque. */
+export const SEMANAS_ARRANQUE = 4;
+
+/**
+ * Sin fases del programa, el camino no se queda vacío: una fase «Tu arranque»
+ * desde que se publicó el plan (o empezó el bloque), que dura lo que el
+ * bloque y nunca se queda en el pasado. Sin plan publicado ni bloque, nada.
+ */
+export function caminoDeArranque(e: { planPublishedAt?: string | null; bloque: BloqueDelCamino | null; hoy: string }): FaseDelCamino[] {
+  const publicado = e.planPublishedAt?.slice(0, 10) ?? null;
+  const desde = [publicado, e.bloque?.desde ?? null].filter((d): d is string => !!d && d <= e.hoy).sort()[0] ?? null;
+  if (!desde) return [];
+  const hastaBase = e.bloque?.hasta ?? addDays(desde, SEMANAS_ARRANQUE * 7 - 1);
+  const hasta = hastaBase < e.hoy ? addDays(getWeekStart(e.hoy), 6) : hastaBase;
+  return [{
+    idx: 0, nombre: 'Tu arranque', objetivo: null, objetivoTexto: 'Coger el ritmo: entrenar, pesarte y registrar lo que comes',
+    semanas: Math.max(1, Math.ceil((diasEntreFechas(desde, hasta) + 1) / 7)), desde, hasta, pesoMeta: null, estado: 'actual',
+  }];
+}
+
+const MENSAJE_ARRANQUE = 'Estas semanas cuenta el hábito: la sesión, el peso y la comida registrada. Con eso Dani te pone las fases y el peso meta.';
+
+function mensajeDelPeso(e: { ev: EvaluacionDelPlan | null | undefined; objetivo: ObjetivoCorporalTipo | null; faltanKg: number | null; arranque?: boolean }): string {
   const { ev } = e;
+  if (e.arranque) return MENSAJE_ARRANQUE;
   if (!ev || ev.ritmo == null) return 'Pésate tres mañanas por semana: con eso se ve la tendencia, no un día suelto.';
   if (ev.estado === 'en-plan') return 'Vas en el plan. Sigue igual esta semana.';
   const baja = (ev.ritmoPlan ?? 0) < 0;
@@ -127,9 +173,16 @@ function mensajeDelPeso(e: { ev: EvaluacionDelPlan | null | undefined; objetivo:
     : 'Vas más rápido de lo previsto. Mantén las kcal del plan; Dani lo mira el lunes.';
 }
 
-export function dondeEstas(e: { camino: FaseDelCamino[]; semanas: SemanaDelPlan[]; evaluacion?: EvaluacionDelPlan | null; hoy: string }): DondeEstas | null {
+export function dondeEstas(e: { camino: FaseDelCamino[]; semanas: SemanaDelPlan[]; evaluacion?: EvaluacionDelPlan | null; hoy: string; arranque?: boolean; pesos?: readonly Pick<BodyweightLog, 'date' | 'weight'>[] }): DondeEstas | null {
   const fase = e.camino.find(f => f.estado === 'actual');
   if (!fase) return null;
+  if (e.arranque) {
+    const ultimo = [...(e.pesos ?? [])].filter(p => p.date <= e.hoy).sort((a, b) => a.date.localeCompare(b.date)).at(-1);
+    return {
+      fase, semanaDeFase: Math.floor(diasEntreFechas(fase.desde, e.hoy) / 7) + 1, franja: null, pesoReal: ultimo?.weight ?? null, faltanKg: null,
+      mensaje: mensajeDelPeso({ ev: null, objetivo: null, faltanKg: null, arranque: true }),
+    };
+  }
   const semanaEnCurso = e.semanas.find(s => s.enCurso) ?? e.semanas.filter(s => s.faseIdx === fase.idx && !s.futura).at(-1) ?? null;
   const semanaDeFase = semanaEnCurso ? e.semanas.filter(s => s.faseIdx === fase.idx && s.semana <= semanaEnCurso.semana).length : 1;
   const pesoReal = semanaEnCurso?.real ?? e.semanas.filter(s => s.real != null && !s.futura).at(-1)?.real ?? null;
@@ -168,6 +221,58 @@ function rachaDeCuatro(lunes: string[], ok: (lunes: string) => boolean): string 
   return ultimaConCuatro;
 }
 
+/** Los primeros logros, desde que se publicó el plan: el primer mes no está en blanco. */
+export function hitosDelArranque(e: {
+  planPublishedAt?: string | null;
+  assignments: readonly WorkoutAssignment[];
+  workoutLogs: readonly WorkoutLog[];
+  pesos?: readonly Pick<BodyweightLog, 'date'>[];
+  respuestas: readonly Pick<QuestionnaireResponse, 'submittedAt'>[];
+  hoy: string;
+}): HitoAutomatico[] {
+  const desde = e.planPublishedAt?.slice(0, 10);
+  if (!desde) return [];
+  const hitos: HitoAutomatico[] = [];
+  const enRango = (d: string) => d >= desde && d <= e.hoy;
+  const asignaciones = conEstadoReal(e.assignments, e.workoutLogs).filter(a => enRango(a.date));
+  const sesion = asignaciones.filter(a => a.status === 'completed').map(a => a.date).sort()[0];
+  if (sesion) hitos.push({ id: 'arranque_sesion', titulo: 'Primera sesión hecha', fecha: sesion, icon: 'check_circle', tipo: 'arranque' });
+  const peso = (e.pesos ?? []).map(p => p.date).filter(enRango).sort()[0];
+  if (peso) hitos.push({ id: 'arranque_peso', titulo: 'Primer peso registrado', fecha: peso, icon: 'monitor_weight', tipo: 'arranque' });
+  const revision = e.respuestas.map(r => r.submittedAt.slice(0, 10)).filter(enRango).sort()[0];
+  if (revision) hitos.push({ id: 'arranque_revision', titulo: 'Primera revisión enviada', fecha: revision, icon: 'fact_check', tipo: 'arranque' });
+  const primerLunes = getWeekStart(desde);
+  for (const l of semanasCerradas(e.hoy, 26)) {
+    if (l < primerLunes) continue;
+    const deLaSemana = asignaciones.filter(a => a.date >= l && a.date <= addDays(l, 6));
+    if (deLaSemana.length > 0 && deLaSemana.every(a => a.status === 'completed')) {
+      hitos.push({ id: 'arranque_semana', titulo: 'Primera semana con todos los entrenos', fecha: addDays(l, 6), icon: 'event_available', tipo: 'arranque' });
+      break;
+    }
+  }
+  return hitos;
+}
+
+/** Kilos levantados esta semana, récords y el cambio por sesión frente a la pasada. */
+export function fuerzaDeLaSemana(e: { workoutLogs: readonly WorkoutLog[]; hoy: string; ctx?: ContextoPesoCorporal | null }): FuerzaDeLaSemana | null {
+  const lunes = getWeekStart(e.hoy);
+  const deSemana = e.workoutLogs.filter(l => l.date >= lunes && l.date <= e.hoy);
+  if (deSemana.length === 0) return null;
+  const actual = aggregate(deSemana as WorkoutLog[], e.ctx);
+  const pasada = aggregate(e.workoutLogs.filter(l => l.date >= addDays(lunes, -7) && l.date < lunes) as WorkoutLog[], e.ctx);
+  const mejores = allTimeBestBefore(e.workoutLogs as WorkoutLog[], lunes, e.ctx);
+  let records = 0;
+  for (const [id, fila] of actual.perExercise) {
+    const previo = mejores.get(id);
+    // Un ejercicio nuevo no es un récord: hace falta una marca anterior que superar.
+    if (previo != null && previo > 0 && fila.bestOrm > previo + 0.5) records++;
+  }
+  const porSesion = actual.tonnage / Math.max(1, actual.dates.size);
+  const porSesionPasada = pasada.dates.size > 0 ? pasada.tonnage / pasada.dates.size : null;
+  const deltaPct = porSesionPasada ? Math.round(((porSesion - porSesionPasada) / porSesionPasada) * 100) : null;
+  return { tonelaje: Math.round(actual.tonnage), sesiones: actual.dates.size, records, deltaPct };
+}
+
 export function hitosAutomaticos(e: {
   camino: FaseDelCamino[];
   semanas: SemanaDelPlan[];
@@ -178,8 +283,10 @@ export function hitosAutomaticos(e: {
   stepLogs: readonly Pick<StepLog, 'date' | 'steps'>[];
   stepGoal: number;
   hoy: string;
+  planPublishedAt?: string | null;
+  pesos?: readonly Pick<BodyweightLog, 'date' | 'weight'>[];
 }): HitoAutomatico[] {
-  const hitos: HitoAutomatico[] = [];
+  const hitos: HitoAutomatico[] = hitosDelArranque(e);
 
   for (const f of e.camino) {
     if (f.estado !== 'pasada') continue;
@@ -225,7 +332,8 @@ export function proximoHito(e: { camino: FaseDelCamino[]; bloque: BloqueDelCamin
   if (actual && siguiente) {
     const en = diasEntreFechas(e.hoy, siguiente.desde);
     candidatos.push({ texto: `${OBJETIVO_LABEL[siguiente.objetivo ?? 'mantenimiento']} en ${en <= 7 ? `${en} días` : `${Math.round(en / 7)} semanas`}`, fecha: siguiente.desde, tipo: 'fase' });
-  } else if (actual) {
+  } else if (actual && actual.pesoMeta != null) {
+    // En el arranque (sin peso meta) no hay fin de fase que anunciar.
     candidatos.push({ texto: `Fin de la fase «${actual.nombre}»`, fecha: addDays(actual.hasta, 1), tipo: 'fase' });
   }
   if (e.bloque) {
@@ -249,15 +357,29 @@ export function construirRoadmap(e: {
   stepLogs: readonly Pick<StepLog, 'date' | 'steps'>[];
   stepGoal: number;
   hoy: string;
+  /** Para el arranque y los primeros hitos: cuándo se publicó el plan y sus pesos. */
+  planPublishedAt?: string | null;
+  pesos?: readonly Pick<BodyweightLog, 'date' | 'weight'>[];
+  /** kcal de la dieta activa, para «Esta semana» cuando no hay programa. */
+  kcalDieta?: number | null;
+  /** Dominadas y fondos cuentan el peso corporal (ver pesoCorporal.ts). */
+  ctxFuerza?: ContextoPesoCorporal | null;
 }): RoadmapDelAtleta {
-  const camino = e.program ? caminoDeFases(e.program, e.semanas, e.hoy) : [];
-  const donde = dondeEstas({ camino, semanas: e.semanas, evaluacion: e.evaluacion, hoy: e.hoy });
   const bloque = bloqueEnCurso(e.mesociclos, e.hoy);
+  const deFases = e.program ? caminoDeFases(e.program, e.semanas, e.hoy) : [];
+  const arranque = deFases.length === 0;
+  const camino = arranque ? caminoDeArranque({ planPublishedAt: e.planPublishedAt, bloque, hoy: e.hoy }) : deFases;
+  const donde = dondeEstas({ camino, semanas: e.semanas, evaluacion: e.evaluacion, hoy: e.hoy, arranque, pesos: e.pesos });
   const enCurso = e.semanas.find(s => s.enCurso) ?? null;
-  const estaSemana = enCurso ? { kcal: enCurso.kcalPlan, pasos: enCurso.pasosPlan, desde: enCurso.desde, hasta: enCurso.hasta } : null;
+  const fuerza = fuerzaDeLaSemana({ workoutLogs: e.workoutLogs, hoy: e.hoy, ctx: e.ctxFuerza });
+  const lunes = getWeekStart(e.hoy);
+  const estaSemana = enCurso
+    ? { kcal: enCurso.kcalPlan, pasos: enCurso.pasosPlan, fuerza, desde: enCurso.desde, hasta: enCurso.hasta }
+    : camino.length > 0 ? { kcal: e.kcalDieta ?? null, pasos: e.stepGoal, fuerza, desde: lunes, hasta: addDays(lunes, 6) } : null;
   return {
     dondeEstas: donde, camino, bloque, estaSemana,
     proximoHito: proximoHito({ camino, bloque, donde, hoy: e.hoy }),
     hitos: hitosAutomaticos({ ...e, camino }),
+    arranque: arranque && camino.length > 0,
   };
 }

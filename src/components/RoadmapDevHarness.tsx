@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import type { Mesocycle, NutritionProgram, WeeklyChallenge, WorkoutAssignment } from '../types';
+import React, { useMemo, useState } from 'react';
+import type { Mesocycle, NutritionProgram, WeeklyChallenge, WorkoutAssignment, WorkoutLog } from '../types';
 import { addDays, getWeekStart, hoyIsoLocal } from '../utils/trainingWeek';
 import { semanasDelPlan, evaluarPlan, calcularGastoReal } from '../utils/seguimientoPlan';
 import { construirRoadmap } from '../utils/roadmapDelAtleta';
@@ -7,7 +7,9 @@ import RoadmapDelAtletaVista from './roadmap/RoadmapDelAtletaVista';
 import WeeklyChallengeCard from './roadmap/WeeklyChallengeCard';
 
 /* Banco de pruebas del Road map del atleta (29-10) — `/dev/roadmap`.
-   Sin Firestore: el programa, los pesos y el bloque están en memoria. */
+   Sin Firestore: el programa, los pesos y el bloque están en memoria. Enseña
+   las dos cabeceras a elegir (cita / meta) y el arranque sin fases;
+   `?v=cita|meta|arranque` una sola. */
 
 const HOY = hoyIsoLocal();
 const EMAIL = 'dev.atleta@example.com';
@@ -32,10 +34,11 @@ const MESOS: Mesocycle[] = [
   { id: 'm0', athleteId: EMAIL, name: 'Adaptación', startDate: addDays(INICIO, -6 * 7), weeks: 6 } as Mesocycle,
   { id: 'm1', athleteId: EMAIL, name: 'Hipertrofia 1', startDate: addDays(INICIO, 7), weeks: 9 } as Mesocycle,
 ];
-const ASIGNACIONES: WorkoutAssignment[] = Array.from({ length: 6 }, (_, w) => [0, 2, 4].map(d => {
+// Seis semanas cerradas y la actual hasta hoy, todas hechas.
+const ASIGNACIONES: WorkoutAssignment[] = Array.from({ length: 7 }, (_, w) => [0, 2, 4].map(d => {
   const date = addDays(getWeekStart(HOY), -7 * (6 - w) + d);
   return { id: `a_${date}`, athleteId: EMAIL, workoutId: 'w', date, status: 'completed' as const };
-})).flat();
+})).flat().filter(a => a.date <= HOY);
 const RESPUESTAS = Array.from({ length: 5 }, (_, w) => ({ id: `r_${w}`, questionnaireId: 'q', assignmentId: 'a', athleteId: EMAIL, submittedAt: `${addDays(getWeekStart(HOY), -7 * (5 - w) + 4)}T18:00:00.000Z`, answers: [] }));
 const RETO: WeeklyChallenge = {
   id: 'reto', athleteId: EMAIL, isoWeek: '2026-W44', weekStart: getWeekStart(HOY), weekEnd: addDays(getWeekStart(HOY), 6),
@@ -43,19 +46,61 @@ const RETO: WeeklyChallenge = {
   metric: { unit: 'pasos', target: 9000, baseline: 8600 }, status: 'activo', progressValue: 8800, createdAt: '',
 };
 
+const FRASE = 'Llegar a los 40 sin barriga y con energía para mis hijos';
+/** Sesiones registradas: press subiendo 2 kg por semana, para la cifra de fuerza y los primeros hitos. */
+const LOGS: WorkoutLog[] = ASIGNACIONES.map((a, i) => ({
+  id: `l_${a.date}`, athleteId: EMAIL, workoutId: 'w', assignmentId: a.id, date: a.date, completedAt: `${a.date}T19:00:00.000Z`,
+  entries: [{ exerciseId: 'press', sets: [0, 1, 2].map(() => ({ weight: 60 + Math.floor(i / 3) * 2, repsDone: 8, rir: 2 })) }],
+}));
+
 export default function RoadmapDevHarness() {
+  const [vista, setVista] = useState<'todas' | 'cita' | 'meta' | 'arranque'>(() => {
+    const v = new URLSearchParams(window.location.search).get('v');
+    return v === 'cita' || v === 'meta' || v === 'arranque' ? v : 'todas';
+  });
   const roadmap = useMemo(() => {
     const semanas = semanasDelPlan({ program: PROGRAMA, diets: DIETAS, pesos: PESOS, registros: [], pasos: PASOS, pasosBase: 9000, hoy: HOY });
     const evaluacion = evaluarPlan(PROGRAMA, semanas, calcularGastoReal({ pesos: PESOS, registros: [], diets: DIETAS, hasta: HOY }));
-    return construirRoadmap({ program: PROGRAMA, semanas, evaluacion, mesociclos: MESOS, assignments: ASIGNACIONES, workoutLogs: [], respuestas: RESPUESTAS, stepLogs: PASOS, stepGoal: 9000, hoy: HOY });
+    return construirRoadmap({ program: PROGRAMA, semanas, evaluacion, mesociclos: MESOS, assignments: ASIGNACIONES, workoutLogs: LOGS, respuestas: RESPUESTAS, stepLogs: PASOS, stepGoal: 9000, hoy: HOY, planPublishedAt: `${INICIO}T10:00:00.000Z`, pesos: PESOS });
   }, []);
+  // Sin fases del programa: el arranque, montado con el bloque, la dieta y lo registrado.
+  const arranque = useMemo(() => construirRoadmap({
+    program: null, semanas: [], mesociclos: [MESOS[1]], assignments: ASIGNACIONES, workoutLogs: LOGS, respuestas: RESPUESTAS.slice(0, 1), stepLogs: PASOS, stepGoal: 9000, hoy: HOY,
+    planPublishedAt: `${addDays(HOY, -16)}T10:00:00.000Z`, pesos: PESOS, kcalDieta: 2100,
+  }), []);
   const reto = <WeeklyChallengeCard challenge={RETO} progress={{ progressValue: 8800, pct: 98, achieved: false }} />;
+  const ver = (v: 'cita' | 'meta' | 'arranque') => vista === 'todas' || vista === v;
+  const columnas = (['cita', 'meta', 'arranque'] as const).filter(ver).length;
 
   return (
     <div className="min-h-screen bg-bg text-ink p-4">
-      <div className="mx-auto max-w-sm space-y-4">
-        <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">/dev/roadmap — datos de mentira · semana 6 de 20</p>
-        <RoadmapDelAtletaVista roadmap={roadmap} reto={reto} />
+      <div className="mx-auto max-w-6xl space-y-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="font-mono text-caption text-ink-3 uppercase tracking-widest flex-1">/dev/roadmap — datos de mentira · semana 6 de 20</p>
+          {(['todas', 'cita', 'meta', 'arranque'] as const).map(v => (
+            <button key={v} type="button" onClick={() => setVista(v)} className={`font-mono text-caption uppercase ${vista === v ? 'text-accent-ink' : 'text-ink-3'}`}>{v}</button>
+          ))}
+        </div>
+        <div className={`grid gap-6 ${columnas > 1 ? 'md:grid-cols-3' : 'max-w-sm'}`}>
+          {ver('cita') && (
+            <div className="space-y-2">
+              <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">A · cabecera cita</p>
+              <div className="max-w-sm"><RoadmapDelAtletaVista roadmap={roadmap} frase={FRASE} cabecera="cita" reto={reto} /></div>
+            </div>
+          )}
+          {ver('meta') && (
+            <div className="space-y-2">
+              <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">B · cabecera meta</p>
+              <div className="max-w-sm"><RoadmapDelAtletaVista roadmap={roadmap} frase={FRASE} cabecera="meta" reto={reto} /></div>
+            </div>
+          )}
+          {ver('arranque') && (
+            <div className="space-y-2">
+              <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">Sin fases · arranque</p>
+              <div className="max-w-sm"><RoadmapDelAtletaVista roadmap={arranque} frase={FRASE} cabecera="cita" reto={reto} /></div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
