@@ -47,7 +47,7 @@ import { nombreDeSesion } from '../utils/nombresMeso.js';
 import { nombrePropioDeSesion } from '../utils/draftEjercicios.js';
 import { repartoDelMesociclo, tiposDeEntrenamiento } from '../utils/trainingSplits.js';
 import { distribucionDeMeso } from '../utils/distribucionDeMeso.js';
-import { addDays } from '../utils/trainingWeek.js';
+import { isoLocal, addDays } from '../utils/trainingWeek.js';
 
 // ── Lo que hay que poder leer ────────────────────────────────────────────────
 
@@ -102,7 +102,14 @@ export type Operacion =
   | { tipo: 'crearPlantillaMesociclo'; ref: string; plantilla: Omit<MesocycleTemplate, 'id'> }
   | { tipo: 'feedbackCheckin'; checkInId: string; feedback: string }
   | { tipo: 'responderRevision'; responseId: string; respuesta: { texto: string; enviadaEn: string } }
-  | { tipo: 'enviarMensaje'; mensaje: Omit<MensajeCoach, 'id'> & { id: string } };
+  | { tipo: 'enviarMensaje'; mensaje: MensajeCoach };
+
+/** El motivo del asistente, en el tipo del canal de mensajes (types.ts `TipoMensajeCoach`). */
+export function tipoDeMensaje(motivo: MensajeAtletaProposalPayload['motivo']): MensajeCoach['tipo'] {
+  if (motivo === 'semana_nueva') return 'cambio';
+  if (motivo === 'dolor') return 'problema';
+  return 'libre';
+}
 
 /** Colección de Firestore que toca cada operación (para el snapshot de lo creado). */
 export const COLECCION_DE_OPERACION: Record<Operacion['tipo'], string> = {
@@ -619,8 +626,14 @@ export async function aplicarPropuesta(
 
     case 'mensajeAtleta': {
       const { texto, motivo } = p.payload as MensajeAtletaProposalPayload;
-      const id = `${p.athleteId}_${Date.parse(ahora)}`;
-      ops.push({ tipo: 'enviarMensaje', mensaje: { id, athleteId: p.athleteId, texto, motivo, creadoEn: ahora, proposalId: p.id } });
+      const id = `propuesta_${p.id}`;
+      // Nace APROBADO: llegar aquí significa que la política lo aplica sola o
+      // que Dani lo aprobó; «firmado Dani» es lo que el atleta ve (canal 29-10).
+      ops.push({ tipo: 'enviarMensaje', mensaje: {
+        id, athleteId: p.athleteId, tipo: tipoDeMensaje(motivo), texto, estado: 'aprobado', autor: 'asistente',
+        fecha: isoLocal(new Date(ahora)), creadoEn: ahora, firmadoEn: ahora, origen: { coleccion: 'aiProposals', id: p.id },
+        ...(motivo === 'dolor' ? { problema: { estado: 'recibido', actualizadoEn: ahora } } : {}),
+      } });
       return { ok: true, operaciones: ops, snapshotAntes: antes, resultEntityId: id };
     }
 

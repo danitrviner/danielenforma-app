@@ -32,7 +32,7 @@ import {
   leerEjercicios, leerProgramaDeNutricion, leerConfigDeDieta, leerDietas,
   leerRegistrosDeComida, leerRoadmap, leerSesionesDeCardio,
   marcarSesionPerdida, guardarConfigDeDieta, marcarFaseVista, guardarNivelesConseguidos, leerCheckIns,
-  actualizarPeldanos, guardarReto, leerReto, crearAvisoUnaVez,
+  actualizarPeldanos, guardarReto, leerReto, crearAvisoUnaVez, guardarSenales, crearMensajeBorrador,
   leerCuestionariosAsignados, leerRespuestasDeCuestionarios, leerMesociclos,
   leerRutinas, leerRetos, leerExperiencia, guardarHuellaDelLatido, leerOnboarding, leerCuestionariosDelCoach, crearEpisodioUnaVez,
   leerMenusDelAtleta, publicarMenu,
@@ -44,10 +44,11 @@ import { detectarEpisodios } from '../src/autopiloto/detectores.js';
 import { detectarEmergentes } from '../src/autopiloto/emergentes.js';
 import { puedeAnalizarseConIA } from '../src/ai/consentimientoIA.js';
 import { recordatoriosDeRevision } from '../src/utils/recordatoriosRevision.js';
+import { calcularSenales, senalesIguales } from '../src/utils/senalesDelAtleta.js';
 import { planificarLatido, huellaDelLatido, ID_HUELLA_LATIDO } from '../src/utils/latidoDiario.js';
 import { ejecutarRetoSemanal, type AlmacenDeRetos } from '../src/utils/motorRetoSemanal.js';
 import { DEFAULT_LEVEL_LADDER } from '../src/data/defaultLevelLadder.js';
-import { addDays, getWeekStart } from '../src/utils/trainingWeek.js';
+import { addDays, diasEntreFechas, getWeekStart } from '../src/utils/trainingWeek.js';
 
 export const config = { maxDuration: 300 };
 
@@ -216,6 +217,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             case 'aviso':
               await crearAvisoUnaVez(db, accion.dedupeKey, accion.notificacion);
               break;
+            case 'mensaje_borrador':
+              await crearMensajeBorrador(db, accion.mensaje);
+              break;
           }
         }
       }
@@ -259,7 +263,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const [workouts, mesocycles, history, experienceLevel] = await Promise.all([
               leerRutinas(db, ids), leerMesociclos(db, email), leerRetos(db, email), leerExperiencia(db, email),
             ]);
-            return { workouts, mesocycles, history, experienceLevel, nivelForzado: roadmap?.challengeConfig?.nivel };
+            // Días sin registrar (señales de la noche anterior): tras una
+            // semana de silencio el reto sale en suave (29-10).
+            const silencioDias = perfil.senales?.ultimoRegistro ? diasEntreFechas(perfil.senales.ultimoRegistro, hoy) : null;
+            return { workouts, mesocycles, history, experienceLevel, nivelForzado: roadmap?.challengeConfig?.nivel, silencioDias };
           },
         },
       );
@@ -329,6 +336,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             await publicarMenu(db, plan);
           }
           hecho.push(`menú semana ${menu.semanaPrograma ?? '?'} publicado`);
+        }
+
+        // ── 6. Señales de acompañamiento (28-10) ───────────────────────────
+        // Lo que la bandeja del coach necesita para ver quién se está
+        // apagando, calculado aquí con lo que ya se ha leído y guardado en el
+        // perfil solo si cambia. `respuestas` lleva 21 días: de sobra para la
+        // ventana de 14 y para la última respuesta reciente; una más antigua
+        // ya cuenta como «sin contestar» igual.
+        const senales = calcularSenales(
+          { assignments, workoutLogs, bodyweightLogs, stepLogs, dietLogs: registrosDeComida, respuestas, cuestionarios },
+          hoy,
+        );
+        if (!senalesIguales(perfil.senales, senales)) {
+          if (!enSeco) await guardarSenales(db, perfil.userId, senales);
+          hecho.push(`señales: último registro ${senales.ultimoRegistro ?? 'nunca'}, ${senales.perdidas14d} perdidas en 14 días`);
         }
       } catch (err) {
         hecho.push(`recordatorio de revisión: error (${(err as Error)?.message ?? err})`);

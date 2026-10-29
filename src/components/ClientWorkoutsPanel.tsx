@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, Mesocycle, WorkoutLog, Exercise, OnboardingData,
-  WorkoutAssignment, Workout,
+  WorkoutAssignment, Workout, RespuestaCoach,
 } from '../types';
-import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile, reprogramarAsignacionesDelMeso } from '../dbService';
+import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile, reprogramarAsignacionesDelMeso, createNotificationDeduped } from '../dbService';
+import { COACH_NOMBRE } from '../utils/coach';
 import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMesociclo';
-import { hoyIsoLocal } from '../utils/trainingWeek';
+import { hoyIsoLocal, getWeekStart, addDays } from '../utils/trainingWeek';
+import { crearMensajeCoach } from '../db/mensajesCoach';
+import { textoBienvenida } from '../utils/primeraSemana';
 import { nombreDeMeso } from '../utils/nombresMeso';
 import { mesoQueVeElAtleta } from '../utils/bloqueDelAtleta';
 import { adherenciaDeMesociclo } from '../utils/adherence';
@@ -75,6 +78,43 @@ export default function ClientWorkoutsPanel({
   // Las notas del atleta pueden ser muchas: se pueden esconder. Abiertas por
   // defecto, que es donde se ve lo que está sin leer.
   const [notasExpandidas, setNotasExpandidas] = useState(true);
+  /* Responder a una nota del atleta (28-10-2026). La respuesta se guarda en
+     el propio registro del entreno, junto a la nota, y le llega al atleta
+     como notificación; la vuelve a ver la próxima vez que hace el ejercicio. */
+  const [respondiendo, setRespondiendo] = useState<string | null>(null);
+  const [respuestaTexto, setRespuestaTexto] = useState('');
+  const [enviandoRespuesta, setEnviandoRespuesta] = useState(false);
+  const enviarRespuesta = async (logId: string, exerciseId: string | null, contexto: string) => {
+    const texto = respuestaTexto.trim();
+    const log = athleteLogs.find(l => l.id === logId);
+    if (!texto || !log) return;
+    const reply: RespuestaCoach = { text: texto, at: new Date().toISOString() };
+    const cambio: Partial<WorkoutLog> = exerciseId == null
+      ? { noteReply: reply, noteCoachSeen: true }
+      : { entries: log.entries.map(e => (e.exerciseId === exerciseId ? { ...e, noteReply: reply, noteCoachSeen: true } : e)) };
+    setEnviandoRespuesta(true);
+    try {
+      await updateWorkoutLog(logId, cambio);
+      setAthleteLogs(prev => prev.map(l => (l.id === logId ? { ...l, ...cambio } : l)));
+      await createNotificationDeduped(`notif_nota_${logId}_${exerciseId ?? 'sesion'}_${Date.now()}`, {
+        recipientEmail: athlete.email,
+        type: 'note_reply',
+        title: `${COACH_NOMBRE} ha respondido a tu nota`,
+        body: `${contexto}: ${texto}`,
+        link: 'training',
+        createdAt: reply.at,
+        read: false,
+      });
+      setRespondiendo(null);
+      setRespuestaTexto('');
+      showToast(`Respuesta enviada a ${athlete.displayName}.`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo enviar la respuesta. Inténtalo otra vez.', 'error');
+    } finally {
+      setEnviandoRespuesta(false);
+    }
+  };
   // Las de hace más de una semana que ya están vistas quedan recogidas.
   const [notasAntiguasAbiertas, setNotasAntiguasAbiertas] = useState(false);
 
@@ -89,7 +129,16 @@ export default function ClientWorkoutsPanel({
     try {
       await updateUserProfile(athlete.userId, { planPublishedAt: new Date().toISOString() });
       queryClient.invalidateQueries({ queryKey: ['userProfiles'] });
-      showToast(`Plan publicado. ${athlete.displayName} ya puede verlo.`, 'success');
+      // La bienvenida (29-10) queda en BORRADOR en «Mensajes a {nombre}»: el
+      // atleta no la ve hasta que Dani la firma. Días por semana: los de la
+      // semana que viene en sus asignaciones, si ya están.
+      const lunes = getWeekStart(hoyIsoLocal());
+      const diasPorSemana = new Set(assignments.filter(a => a.date >= lunes && a.date <= addDays(lunes, 6)).map(a => a.date)).size || null;
+      crearMensajeCoach({
+        id: `bienvenida_${athlete.email.toLowerCase()}`, athleteId: athlete.email, tipo: 'implantacion', autor: 'asistente', estado: 'borrador',
+        texto: textoBienvenida({ nombre: athlete.displayName || '', diasPorSemana }), fecha: hoyIsoLocal(),
+      }).then(() => queryClient.invalidateQueries({ queryKey: ['mensajesCoach'] })).catch(console.error);
+      showToast(`Plan publicado. ${athlete.displayName} ya puede verlo. Tienes su bienvenida por firmar en Revisión.`, 'success');
     } catch (err) {
       console.error('No se pudo publicar el plan:', err);
       showToast('No se pudo publicar el plan. Inténtalo otra vez.');
@@ -297,12 +346,13 @@ export default function ClientWorkoutsPanel({
 
         const renderSesion = (log: typeof logsWithNotes[number]) => {
           const wo = getWorkout(log.workoutId);
-          const notes: { key: string; ctx: string; unread: boolean; text: string; onSeen: () => void }[] = [];
+          const notes: { key: string; ctx: string; unread: boolean; text: string; onSeen: () => void; reply?: RespuestaCoach; exerciseId: string | null }[] = [];
           if (log.note) {
             notes.push({
               key: `${log.id}-w`, ctx: 'ENTRENO COMPLETO',
               unread: !log.noteCoachSeen, text: log.note,
               onSeen: () => markLogSeen(log.id),
+              reply: log.noteReply, exerciseId: null,
             });
           }
           log.entries.filter(e => e.note).forEach(e => {
@@ -311,6 +361,7 @@ export default function ClientWorkoutsPanel({
               ctx: getExercise(e.exerciseId)?.name || e.exerciseId,
               unread: !e.noteCoachSeen, text: e.note!,
               onSeen: () => markEntrySeen(log.id, e.exerciseId),
+              reply: e.noteReply, exerciseId: e.exerciseId,
             });
           });
           return (
@@ -325,11 +376,13 @@ export default function ClientWorkoutsPanel({
                 {notes.map(n => (
                   <div
                     key={n.key}
-                    {...(n.unread ? pulsable(n.onSeen, 'Marcar la nota como vista') : {})}
                     className={`rounded-surface border p-3.5 transition-colors ${
-                      n.unread ? 'bg-accent-bg border-accent-line cursor-pointer' : 'bg-raised border-hairline'
+                      n.unread ? 'bg-accent-bg border-accent-line' : 'bg-raised border-hairline'
                     }`}
                   >
+                    {/* Solo la nota se pulsa para marcarla vista; la respuesta va
+                        aparte para que escribir no la dispare. */}
+                    <div {...(n.unread ? pulsable(n.onSeen, 'Marcar la nota como vista') : {})} className={n.unread ? 'cursor-pointer' : ''}>
                     <div className="flex items-center gap-2">
                       {n.unread && <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse-dot flex-shrink-0" />}
                       <span className={`font-mono text-caption uppercase tracking-[.07em] flex-1 truncate ${n.unread ? 'text-accent-ink' : 'text-ink-3'}`}>
@@ -337,6 +390,49 @@ export default function ClientWorkoutsPanel({
                       </span>
                     </div>
                     <p className="mt-2 text-body-s text-ink leading-relaxed">{n.text}</p>
+                    </div>
+                    <div>
+                      {n.reply && respondiendo !== n.key && (
+                        <div className="mt-3 rounded-control border-l-2 border-success/60 bg-success/8 px-3 py-2">
+                          <p className="font-mono text-caption uppercase text-success">
+                            Tu respuesta · {new Date(n.reply.at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                          </p>
+                          <p className="mt-0.5 text-body-s text-ink leading-relaxed">{n.reply.text}</p>
+                        </div>
+                      )}
+                      {respondiendo === n.key ? (
+                        <div className="mt-3 space-y-2">
+                          <textarea
+                            autoFocus
+                            rows={2}
+                            value={respuestaTexto}
+                            onChange={e => setRespuestaTexto(e.target.value)}
+                            placeholder={`Contesta a ${athlete.displayName.split(' ')[0]}…`}
+                            aria-label={`Respuesta a la nota de ${n.ctx.toLowerCase()}`}
+                            className="w-full resize-none rounded-control border border-control-line bg-field p-3 text-body-s text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
+                          />
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="s" onClick={() => { setRespondiendo(null); setRespuestaTexto(''); }}>Cancelar</Button>
+                            <Button
+                              size="s" icon="send" loading={enviandoRespuesta} loadingLabel="Enviando"
+                              disabled={!respuestaTexto.trim()}
+                              onClick={() => { void enviarRespuesta(log.id, n.exerciseId, n.ctx === 'ENTRENO COMPLETO' ? 'Tu entreno' : n.ctx); }}
+                            >
+                              Enviar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { setRespondiendo(n.key); setRespuestaTexto(n.reply?.text ?? ''); }}
+                          className="mt-2.5 flex items-center gap-1.5 font-sans text-label font-bold text-accent-ink hover:underline"
+                        >
+                          <Icon name="chat" size="s" />
+                          {n.reply ? 'Cambiar respuesta' : 'Responder'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

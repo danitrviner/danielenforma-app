@@ -24,6 +24,8 @@ export type NotificationType =
   // la nota se ve sola en el Inicio del atleta ese día, la notificación es
   // para cuando quiere que se entere ya.
   | 'coach_day_note'
+  // El coach ha contestado a una nota que el atleta dejó en un entreno (28-10-2026).
+  | 'note_reply'
   // Recordatorio que el COACH se puso a sí mismo sobre un paso del montaje o
   // una tarea suelta (`CoachClientTask.dueDate`). No hay servidor que lo
   // dispare: se crea al abrir la consola de clientes y ver que la fecha ya
@@ -40,7 +42,10 @@ export type NotificationType =
   // 5 de agujetas: no espera a su día de revisión.
   | 'revision_alerta'
   // El coach ha contestado la revisión del atleta (texto, audio o vídeo).
-  | 'revision_respondida';
+  | 'revision_respondida'
+  // Un mensaje del coach en su canal (29-10): cambio explicado, acuse de un
+  // problema, hito, línea suelta. Ver `MensajeCoach`.
+  | 'coach_mensaje';
 
 export interface AppNotification {
   id: string;                   // deterministic dedup key
@@ -220,6 +225,12 @@ export interface UserProfile {
   anonimizado?: boolean;
   anonimizadoEn?: string; // ISO
 
+  /** Señales de acompañamiento que calcula el latido diario (28-10-2026).
+   *  Las escribe SOLO el servidor con el Admin SDK (está en la lista bloqueada
+   *  del `allow update` de user_profiles); la bandeja del coach las lee sin
+   *  pagar el historial de cada atleta. Ver utils/senalesDelAtleta.ts. */
+  senales?: SenalesDelAtleta;
+
   // ── Publicación del plan (T7.b, 2026-08-18) ────────────────────────────────
   // Antes la puerta de la sala de espera era `hasPlan` (asignaciones > 0), una
   // deducción: en cuanto el coach asignaba un mesociclo, el atleta veía su
@@ -228,11 +239,86 @@ export interface UserProfile {
   // atleta" puede pulsarse, y lo que arranca el tour — pero lo que abre la
   // sala de espera ahora es esto, una decisión explícita del coach.
   planPublishedAt?: string; // ISO, el día en que el coach le mostró su primer plan
+  /** Día (YYYY-MM-DD) en que el coach se compromete a tener el plan (29-10):
+   *  la sala de espera cuenta hacia esa fecha en vez de contar los días que
+   *  lleva esperando. Lo decide el coach; bloqueado al atleta en las reglas. */
+  planPrometidoPara?: string;
 
   // ISO timestamp de la última vez que el atleta abrió la app (escrito por su
   // propio cliente en cada arranque de sesión, ver App.tsx loadUserSession).
   // Solo para mostrarlo en la tarjeta del coach — no gatea nada.
   lastLoginAt?: string;
+}
+
+/**
+ * Lo que la bandeja del día necesita saber de un atleta sin leer sus logs:
+ * cuándo registró algo por última vez, cuántas sesiones ha perdido en dos
+ * semanas y cuándo contestó la última revisión. Lo calcula el latido cada
+ * noche (api/latido-diario.ts) con los datos que ya lee para lo demás.
+ */
+export interface SenalesDelAtleta {
+  /** Día (YYYY-MM-DD, zona del coach) en que se calcularon. */
+  calculadoEn: string;
+  /** Último día con algo registrado: entreno, peso, pasos, comida o cuestionario. */
+  ultimoRegistro: string | null;
+  /** Días distintos con registro en los últimos 14. */
+  registros14d: number;
+  /** Sesiones dadas por perdidas en los últimos 14 días. */
+  perdidas14d: number;
+  /** Última respuesta a un cuestionario (día). */
+  ultimaRespuesta: string | null;
+  tieneCuestionarios: boolean;
+}
+
+/** Constancia de que el coach escribió a un atleta fuera de la app (WhatsApp)
+ *  por una señal de la bandeja. Ver src/db/contactos.ts. */
+export interface Contacto {
+  id: string;             // `${email}_${fecha}_${motivo}`
+  athleteId: string;      // email en minúsculas
+  fecha: string;          // YYYY-MM-DD
+  motivo: string;         // MotivoContacto (utils/plantillasWhatsApp.ts)
+  canal: 'whatsapp';
+  createdAt: string;      // ISO
+}
+
+// ─── MENSAJES DEL COACH (29-10-2026) ─────────────────────────────────────────
+// El único canal por el que el atleta lee algo «de Dani» que no sea la
+// respuesta a su revisión: un cambio explicado, el acuse de un problema, un
+// hito, la bienvenida, una línea suelta. Es la misma pieza que el diseño del
+// autopiloto (§6): lo que decida la máquina llega aquí como BORRADOR y solo
+// se enseña cuando Dani lo firma (`estado: 'aprobado'`). Lo que no está
+// firmado no existe para el atleta (firestore.rules).
+
+export type TipoMensajeCoach =
+  | 'cambio'        // «He bajado la dieta a 2.600 kcal: …»
+  | 'problema'      // acuse de una molestia o un texto libre, con estado
+  | 'hito'          // primer mes, récord, peso objetivo a la vista
+  | 'implantacion'  // bienvenida, «he leído tu alta»
+  | 'libre';        // lo que Dani quiera decirle
+
+export type EstadoProblema = 'recibido' | 'en_curso' | 'hecho';
+
+export interface MensajeCoach {
+  id: string;
+  athleteId: string;        // email
+  tipo: TipoMensajeCoach;
+  texto: string;
+  /** El porqué, en una frase, cuando es un cambio. */
+  porque?: string;
+  /** Solo `aprobado` llega al atleta. `borrador` lo deja la máquina (latido,
+   *  asistente) o el propio coach para terminarlo luego. */
+  estado: 'borrador' | 'aprobado';
+  autor: 'coach' | 'asistente' | 'latido' | 'app';
+  /** Día al que pertenece (YYYY-MM-DD): ordena la tarjeta del atleta. */
+  fecha: string;
+  creadoEn: string;         // ISO
+  firmadoEn?: string;       // ISO, cuando pasa a aprobado
+  mediaUrl?: string;
+  mediaKind?: 'audio' | 'video';
+  /** De dónde salió: un cambio de `cambiosAtleta`, una respuesta de cuestionario… */
+  origen?: { coleccion: string; id: string };
+  /** Solo en `tipo: 'problema'`. */
+  problema?: { estado: EstadoProblema; actualizadoEn: string; detalle?: string };
 }
 
 // Estado comercial del cliente. Deliberadamente separado de `role`, que es un
@@ -757,11 +843,20 @@ export interface WorkoutSetLog {
   segmentoDe?: number;
 }
 
+/** Respuesta del coach a una nota del atleta (28-10-2026). */
+export interface RespuestaCoach {
+  text: string;
+  at: string; // ISO
+}
+
 export interface WorkoutEntryLog {
   exerciseId: string;
   sets: WorkoutSetLog[];
   note?: string;         // athlete's note on this specific exercise
   noteCoachSeen?: boolean;
+  /** Lo que el coach contestó a `note`. El atleta lo ve la próxima vez que
+   *  hace el ejercicio (tarjeta de la sesión) y le llega como notificación. */
+  noteReply?: RespuestaCoach;
 }
 
 export interface WorkoutLog {
@@ -775,6 +870,8 @@ export interface WorkoutLog {
   entries: WorkoutEntryLog[];
   note?: string;         // athlete's note on the workout as a whole
   noteCoachSeen?: boolean;
+  /** Respuesta del coach a la nota del entreno completo. */
+  noteReply?: RespuestaCoach;
   /** Instante en que se ABRIÓ el player por primera vez (ISO), no en que se
    *  guardó. Ausente en logs antiguos y en los que perdieron el borrador de
    *  inicio (`utils/sesionEnCurso.ts`) antes de terminar la sesión. */
@@ -965,6 +1062,31 @@ export interface QuestionnairePack {
   createdAt: string;
 }
 
+/** Los tres bloques fijos de la respuesta a la revisión (Dani, 28-10). */
+export interface BloquesRespuesta {
+  comoHaIdo: string;
+  queCambia: string;
+  queEspero: string;
+}
+
+/**
+ * Respuesta del coach a una revisión (27-10, ampliada 29-10).
+ * `texto` sigue siendo lo que se enseña y se copia; `bloques` es la misma
+ * respuesta partida en tres, para pintarla con sus títulos. `canal: 'whatsapp'`
+ * significa «te he escrito por WhatsApp»: sin texto en la app, pero el atleta
+ * ve que hubo respuesta y la latencia se mide igual.
+ */
+export interface RespuestaCoachRevision {
+  texto: string;
+  mediaUrl?: string;
+  mediaKind?: 'audio' | 'video';
+  enviadaEn: string;
+  bloques?: BloquesRespuesta;
+  canal?: 'app' | 'whatsapp';
+  /** De dónde salió el texto antes de que el coach lo firmara. */
+  borrador?: 'asistente' | 'coach';
+}
+
 export interface QuestionnaireResponse {
   id: string;
   questionnaireId: string;
@@ -984,7 +1106,7 @@ export interface QuestionnaireResponse {
   reviewedAt?: string;
   /** Lo que el coach le contesta sobre esta revisión (texto y, si quiere, un
    *  audio o vídeo). Al guardarla se marca también `reviewedAt`. */
-  respuestaCoach?: { texto: string; mediaUrl?: string; mediaKind?: 'audio' | 'video'; enviadaEn: string };
+  respuestaCoach?: RespuestaCoachRevision;
 }
 
 /**
@@ -3026,23 +3148,14 @@ export interface RespuestaRevisionProposalPayload {
   submittedAt?: string;
 }
 
-/** Mensaje del coach al atleta (colección `mensajesCoach`). Firma siempre Dani. */
+/** Un mensaje del coach al atleta propuesto por el asistente. Al aplicarse se
+ *  escribe en `mensajesCoach` (ver `MensajeCoach`, el canal de 29-10) como
+ *  `aprobado` y firmado: la política o Dani ya lo han decidido. */
 export interface MensajeAtletaProposalPayload {
   texto: string;
-  /** Por qué se escribe: para agrupar en la bandeja y en la línea de tiempo. */
+  /** Por qué se escribe: para agrupar en la bandeja y en la línea de tiempo; se traduce a `TipoMensajeCoach`. */
   motivo: 'semana_nueva' | 'perdidas' | 'peso_sin_registrar' | 'dolor' | 'viaje' | 'otro';
   semana?: number;
-}
-
-export interface MensajeCoach {
-  id: string;
-  athleteId: string;      // email
-  texto: string;
-  motivo: MensajeAtletaProposalPayload['motivo'];
-  creadoEn: string;       // ISO
-  leidoEn?: string;       // ISO, cuando el atleta lo abre
-  /** De qué propuesta salió, para la línea de tiempo del coach. */
-  proposalId?: string;
 }
 
 export type AiProposalPayload =

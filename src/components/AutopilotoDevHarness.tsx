@@ -2,7 +2,7 @@
    las pantallas del autopiloto con datos de ejemplo en memoria. Hasta el
    29-10-2026 enseñaba tres variantes de cada una; Dani eligió (Política
    semáforo, Hecho hoy cronología, Línea de tiempo tarjetas, Calidad lista,
-   Mensajes burbujas, Muro legal de un documento) y las otras se retiraron.
+   Muro legal de un documento) y las otras se retiraron.
    Guardar, deshacer, juzgar o marcar leído cambian el estado local; nada toca
    Firestore.
 
@@ -10,20 +10,21 @@
      2 · Hecho hoy (Inicio del coach)
      3 · Lo que ha hecho el asistente (Revisión)
      4 · Calidad (Propuestas › Calidad)
-     5 · Mensajes del coach (Inicio del atleta)
-     6 · Muro legal unificado */
+     5 · Muro legal unificado
+   (El canal de mensajes del atleta es «Lo último de Dani», de la rama de
+   acompañamiento ya en main; el autopiloto escribe ahí.) */
 import React, { useMemo, useState } from 'react';
-import type { AiProposal, MensajeCoach, UserProfile } from '../types';
+import type { AiProposal, UserProfile } from '../types';
 import { POLITICA_POR_DEFECTO, type EstadisticaDeTipo, type PoliticaAutopiloto as Politica, type TipoDecision } from '../autopiloto/politica';
 import type { Episodio } from '../autopiloto/episodios';
 import { construirLineaDeTiempo } from '../autopiloto/lineaDeTiempo';
 import { muestraDeCalidad, resumenCalidad, type Veredicto } from '../autopiloto/calidad';
+import { compararSombra, informeDeSombra } from '../autopiloto/sombra';
 import { hoyIsoLocal, addDays } from '../utils/trainingWeek';
 import PoliticaVista from './autopiloto/PoliticaVista';
 import HechoHoyVista from './autopiloto/HechoHoyVista';
 import LineaDeTiempoVista from './autopiloto/LineaDeTiempoVista';
 import CalidadVista from './autopiloto/CalidadVista';
-import MensajesCoachVista from './autopiloto/MensajesCoachVista';
 import MuroLegalUnificado from './MuroLegalUnificado';
 
 const AHORA = Date.now();
@@ -106,12 +107,29 @@ const AUTOMATICAS: AiProposal[] = [
   prop('c7', 'lucia@x.com', { aplicadaEn: sem(5), kind: 'latido', summary: 'Menú semana 3 publicado', calidad: { veredicto: 'bien', en: sem(6) } }),
 ];
 
-/* 5 · Mensajes del coach a Ana ----------------------------------------------- */
-const MENSAJES: MensajeCoach[] = [
-  { id: 'm1', athleteId: 'ana@x.com', motivo: 'semana_nueva', creadoEn: dia(0, '07:10'), texto: 'Ana, esta semana entramos en la 4: subimos a 4 series en press banca y jalón. Si en alguna te quedas sin reserva (RIR 0), para ahí y me lo apuntas en el cuestionario.\n\nEl menú ya está publicado; he cambiado dos cenas porque me dijiste que el salmón te cansa.' },
-  { id: 'm2', athleteId: 'ana@x.com', motivo: 'perdidas', creadoEn: dia(4, '19:30'), texto: 'He visto que se te han quedado dos sesiones esta semana. ¿Ha sido por horario o por otra cosa? Si el jueves no te cuadra, lo movemos al sábado sin problema.' },
-  { id: 'm3', athleteId: 'ana@x.com', motivo: 'peso_sin_registrar', creadoEn: dia(9, '08:00'), texto: 'Llevas diez días sin pesarte. No pasa nada, pero sin ese dato voy a ciegas con las calorías: pésate dos o tres mañanas seguidas cuando puedas.', leidoEn: dia(9, '12:00') },
+/* 1b · Sombra: dos semanas de decisiones sin escribir frente a lo que hizo Dani */
+const sombra = (id: string, email: string, diasAtras: number, p: Partial<AiProposal>) => prop(id, email, { status: 'sombra', politica: 'sombra', aplicadaEn: undefined, createdAt: dia(diasAtras), snapshotAntes: undefined, ...p });
+const deDani = (id: string, email: string, diasAtras: number, p: Partial<AiProposal>) => prop(id, email, { status: 'approved', politica: 'proponer', aplicadaEn: undefined, reviewedAt: dia(diasAtras, '19:00'), snapshotAntes: undefined, ...p });
+const dietaDe = (kcal: number) => ({ name: 'Déficit', objetivo: { kcal, p: 150, hc: 100, g: 60 }, meals: [] }) as never;
+const SOMBRAS: AiProposal[] = [
+  sombra('z1', 'ana@x.com', 14, { kind: 'weeklyChallenge', summary: 'Reto: 8.000 pasos 4 días', cambios: ['Reto: pasos 8.000 × 4'] }),
+  sombra('z2', 'ana@x.com', 7, { kind: 'weeklyChallenge', summary: 'Reto: 4 de 4 sesiones', cambios: ['Reto: sesiones 4 × 4'] }),
+  sombra('z3', 'javi@x.com', 13, { kind: 'diet', summary: '−100 kcal: dos semanas sin bajar', payload: dietaDe(2200), baseEntityId: 'd1', cambios: ['Objetivo 2.300 → 2.200 kcal'] }),
+  sombra('z4', 'lucia@x.com', 12, { kind: 'weekPlan', summary: 'Progresión S3: +1 serie pecho', cambios: ['Press banca 3 → 4 series'] }),
+  sombra('z5', 'marcos@x.com', 9, { kind: 'latido', summary: 'Menú semana 5 publicado', cambios: ['Menú: 7 días, dieta Mantenimiento'] }),
+  sombra('z6', 'javi@x.com', 2, { kind: 'latido', summary: 'Menú semana 7 publicado', cambios: ['Menú: 7 días, dieta Déficit 2'] }),
+  sombra('z7', 'ana@x.com', 10, { kind: 'respuestaRevision', summary: 'Respuesta a su revisión', payload: { responseId: 'r_ana', texto: 'x' } as never, paraAtleta: 'Buena semana, Ana.' }),
 ];
+const REFERENCIA_DANI = {
+  propuestas: [
+    deDani('y1', 'ana@x.com', 13, { kind: 'weeklyChallenge', summary: 'Reto: 8.000 pasos 4 días', cambios: ['Reto: pasos 8.000 × 4'] }),
+    deDani('y3', 'javi@x.com', 12, { kind: 'diet', summary: 'Dieta Déficit 2.500', payload: dietaDe(2500), baseEntityId: 'd1' }),
+    deDani('y5', 'marcos@x.com', 8, { kind: 'latido', summary: 'Menú semana 5 (Dani)', cambios: ['Menú: 7 días, dieta Mantenimiento'] }),
+  ],
+  cambios: [{ id: 'c1', athleteId: 'lucia@x.com', area: 'entreno' as const, objeto: 'meso:m1', titulo: 'Mesociclo #2', lineas: ['Press banca 3 → 4 series', 'Jalón RIR 2 → 1'], at: dia(11, '20:00'), autor: 'coach' }],
+  respuestas: [{ id: 'r_ana', respuestaCoach: { texto: 'Genial, Ana. Sigue así.', enviadaEn: dia(9, '09:00') } } as never],
+};
+const INFORME_SOMBRA = informeDeSombra(compararSombra(SOMBRAS, REFERENCIA_DANI, new Date().toISOString()));
 
 const PERFIL_DEV = {
   userId: 'dev', email: 'dev@example.com', displayName: 'Dev Atleta', role: 'client', avatarUrl: '', level: 0, currentStreak: 0, maxStreak: 0,
@@ -132,13 +150,11 @@ export default function AutopilotoDevHarness() {
   const [msg, setMsg] = useState<string | null>(null);
   const [recientes, setRecientes] = useState(RECIENTES);
   const [automaticas, setAutomaticas] = useState(AUTOMATICAS);
-  const [mensajes, setMensajes] = useState(MENSAJES);
   const guardar = (nueva: Politica) => { setPolitica(nueva); setMsg('Guardado (solo en memoria).'); };
   const deshacer = async (p: AiProposal) => { setRecientes(r => r.map(x => x.id === p.id ? { ...x, status: 'deshecha', deshechaEn: new Date().toISOString() } : x)); };
   const juzgar = async (p: AiProposal, veredicto: Veredicto, nota: string) => {
     setAutomaticas(l => l.map(x => x.id === p.id ? { ...x, calidad: { veredicto, en: new Date().toISOString(), ...(nota ? { nota } : {}) } } : x));
   };
-  const leido = (m: MensajeCoach) => setMensajes(l => l.map(x => x.id === m.id ? { ...x, leidoEn: new Date().toISOString() } : x));
 
   const linea = useMemo(() => construirLineaDeTiempo(EPISODIOS_ANA, PROPUESTAS_ANA, { inicioPlan: INICIO, mesociclos: [MESO_REAL as never], dietas: [] }), []);
   const calidad = useMemo(() => ({ ...muestraDeCalidad(automaticas, HOY), resumen: resumenCalidad(automaticas) }), [automaticas]);
@@ -152,7 +168,7 @@ export default function AutopilotoDevHarness() {
       </header>
 
       <Seccion n={1} titulo="Política (Perfil › Ajustes › Asistente)" ancho="max-w-[42rem]">
-        <PoliticaVista politica={politica} stats={STATS} guardando={false} msg={msg} gastoMesUsd={17.4} onGuardar={guardar} />
+        <PoliticaVista politica={politica} stats={STATS} guardando={false} msg={msg} gastoMesUsd={17.4} sombra={INFORME_SOMBRA} onGuardar={guardar} />
       </Seccion>
 
       <Seccion n={2} titulo="Hecho hoy (Inicio del coach)" ancho="max-w-[42rem]">
@@ -167,11 +183,7 @@ export default function AutopilotoDevHarness() {
         <CalidadVista semana={calidad.semana} muestra={calidad.muestra} total={calidad.total} resumen={calidad.resumen} nombreDe={nombreDe} juzgandoId={null} error={null} onVeredicto={juzgar} onIrAlAtleta={() => undefined} />
       </Seccion>
 
-      <Seccion n={5} titulo="Mensajes del coach (Inicio del atleta · Ana)" ancho="max-w-[26rem]">
-        <MensajesCoachVista mensajes={mensajes} firma="Dani" onLeido={leido} />
-      </Seccion>
-
-      <Seccion n={6} titulo="Muro legal unificado (primer login)" ancho="max-w-lg">
+      <Seccion n={5} titulo="Muro legal unificado (primer login)" ancho="max-w-lg">
         <MuroLegalUnificado profile={PERFIL_DEV} enMarco
           guardar={async nuevas => { console.log('guardaría', nuevas); setMsg('Muro: guardaría (solo consola).'); return nuevas; }}
           onCompletado={legal => console.log('onCompletado', legal)} onSalir={() => console.log('onSalir')} />

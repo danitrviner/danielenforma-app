@@ -55,7 +55,7 @@ const MAX_ANTIGUEDAD_LOGIN_MS = 10 * 60 * 1000;
 export const POR_ID_EMAIL = [
   'onboarding', 'gimnasios', 'roadmaps', 'nutritionPrograms', 'athleteDietConfigs',
   'athleteNutritionConfigs', 'recipeFavorites', 'academyAccess', 'academyProgress',
-  'athleteCardioProfile', 'invites', 'alimentosPersonales', 'athleteRecipeRules',
+  'athleteCardioProfile', 'invites', 'alimentosPersonales', 'athleteRecipeRules', 'decisionesPlan',
 ];
 
 // Colecciones con un campo que apunta al atleta. Se prueban los tres nombres
@@ -69,8 +69,9 @@ export const POR_CAMPO = [
   'notifications', 'tasks', 'coachNotes', 'coachClientTasks', 'athleteStatus',
   'coachReports', 'cardioAssignments', 'cardioSessions', 'cardioWeeklyGoals', 'cardioAplazos', 'revisionProgreso',
   'hrTests', 'hrvReadings', 'aiChats', 'aiProposals', 'coachDayNotes', 'cambiosAtleta', 'lecturasEtiqueta',
+  'contactos', 'mensajesCoach',
   // El autopiloto: cada episodio lleva el email del atleta y su historial.
-  'episodios', 'mensajesCoach',
+  'episodios',
 ];
 
 const CAMPOS_PROPIETARIO = ['userId', 'athleteId', 'email'];

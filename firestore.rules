@@ -170,8 +170,43 @@ service cloud.firestore {
                             .hasAny(['planStartDate', 'planDurationMonths', 'role', 'setupSummary',
                                      'currentStreak', 'maxStreak', 'estadoCrm',
                                      'fechaBaja', 'motivoBaja', 'motivoBajaDetalle', 'origen',
-                                     'planPublishedAt', 'archivadoCrm', 'diaRevision', 'pausaRevisiones']));
+                                     'planPublishedAt', 'archivadoCrm', 'diaRevision', 'pausaRevisiones',
+                                     'senales', 'planPrometidoPara']));
       allow delete: if isCoach();
+    }
+
+    // ── contactos (28-10-2026) ───────────────────────────────────────────────
+    // «Ya le he escrito»: el coach deja constancia de que contactó a un atleta
+    // fuera de la app (WhatsApp) por una señal de la bandeja. Solo el coach lo
+    // escribe y lo lee; el atleta no tiene nada que ver aquí (lo que ve él es
+    // el mensaje en su WhatsApp). docId `${email}_${fecha}_${motivo}`.
+    match /contactos/{docId} {
+      allow read, write: if isCoach();
+    }
+
+    // ── mensajesCoach (29-10-2026) ───────────────────────────────────────────
+    // Lo que el atleta lee «de Dani» fuera de la respuesta a su revisión. El
+    // coach lo escribe y lo lee todo; el atleta solo lee LOS SUYOS y solo los
+    // `aprobado` (un borrador del latido o del asistente no existe para él
+    // hasta que Dani lo firma: es la regla «nada firmado sin que lo vea»).
+    // El atleta puede CREAR un acuse de problema sobre sí mismo (`tipo:
+    // 'problema'`, `autor: 'app'`, `estado: 'aprobado'`): es el «recibido» que
+    // escribe su propia app al marcar una molestia, con texto neutro y sin
+    // firma de nadie. No puede editar ni borrar nada.
+    match /mensajesCoach/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null
+                      && request.auth.token.email_verified == true
+                      && resource.data.athleteId == request.auth.token.email
+                      && resource.data.estado == 'aprobado');
+      allow create: if isCoach()
+                    || (request.auth != null
+                        && request.auth.token.email_verified == true
+                        && request.resource.data.athleteId == request.auth.token.email
+                        && request.resource.data.tipo == 'problema'
+                        && request.resource.data.autor == 'app'
+                        && request.resource.data.estado == 'aprobado');
+      allow update, delete: if isCoach();
     }
 
     // ── checkins (auto-id; campos: userId=UID, email) ────────────────────────
@@ -734,20 +769,6 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // ── mensajesCoach (athleteId = EMAIL): los textos del coach al atleta ─────
-    // Los escribe el coach (o el servidor, con Admin SDK); el atleta lee los
-    // suyos y solo puede marcar `leidoEn`.
-    match /mensajesCoach/{id} {
-      allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId
-                      && request.auth.token.email_verified == true);
-      allow create, delete: if isCoach();
-      allow update: if isCoach()
-                    || (request.auth != null && request.auth.token.email == resource.data.athleteId
-                        && request.auth.token.email_verified == true
-                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['leidoEn']));
-    }
-
     // ── tasks (athleteId = EMAIL) ────────────────────────────────────────────
     match /tasks/{docId} {
       allow read: if isCoach()
@@ -812,6 +833,12 @@ service cloud.firestore {
 
     // ── coachSettings (instrucciones fijas del coach para la IA — solo-coach) ─
     match /coachSettings/{docId} {
+      allow read, write: if isCoach();
+    }
+
+    // ── decisionesPlan (decisiones del coach semana a semana sobre el plan —
+    //    solo-coach; ver src/db/decisionesPlan.ts) ───────────────────────────
+    match /decisionesPlan/{email} {
       allow read, write: if isCoach();
     }
 

@@ -3,7 +3,13 @@ import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn } from '../types';
-import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles, getBodyweightForAthlete, updateUserProfile, getNutritionProgram, getCardioSessionsSince } from '../dbService';
+import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles, getBodyweightForAthlete, updateUserProfile, getNutritionProgram, getCardioSessionsSince, getResponsesForAthlete } from '../dbService';
+import LoUltimoDeDani from './home/LoUltimoDeDani';
+import PrimeraSemanaCard from './home/PrimeraSemanaCard';
+import LoQueVinisteABuscar from './home/LoQueVinisteABuscar';
+import VueltaCard from './home/VueltaCard';
+import RenovacionCard from './home/RenovacionCard';
+import { faseEnCurso } from '../utils/objetivoDeFase';
 import { formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
@@ -18,7 +24,6 @@ import { objetivoDelDia } from '../utils/objetivoDelDia';
 import PendingTasksPanel from './PendingTasksPanel';
 import SolicitudConsentimientoIA from './SolicitudConsentimientoIA';
 import NovedadesSheet from './NovedadesSheet';
-import MensajesDelCoach from './MensajesDelCoach';
 import { NOVEDADES } from '../data/novedades';
 import { idMasReciente, novedadesPendientes, MAX_EN_VENTANA } from '../utils/novedades';
 import { debePedirseConsentimiento, haSidoAplazado, marcarAplazado } from '../ai/consentimientoIA';
@@ -85,7 +90,10 @@ const MARCO_DEL_DIA: Record<EstadoDeDia, string> = {
   completado: 'border-success/30',
   saltado:    'border-hairline',
   hoy:        'border-accent/50',
-  perdido:    'border-danger/30',
+  // Sin rojo (29-10): una sesión no hecha es un hecho, no una alarma. Al
+  // volver tras unos días, una fila de rojos es lo primero que ve y lo que
+  // le hace cerrar la app.
+  perdido:    'border-hairline opacity-70',
   pendiente:  'border-hairline',
 };
 
@@ -93,7 +101,7 @@ const TEXTO_DEL_DIA: Record<EstadoDeDia, string> = {
   completado: 'text-success',
   saltado:    'text-ink-3',
   hoy:        'text-accent-ink',
-  perdido:    'text-danger',
+  perdido:    'text-ink-3 line-through',
   pendiente:  'text-ink-2',
 };
 
@@ -109,6 +117,13 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
   // "Nota") — cierra el hueco que este archivo documenta más abajo como
   // pendiente por no existir "campo de nota por asignación". Un doc por
   // fetch, no la lista entera: es un dato de un solo día.
+  // La última respuesta del coach a su revisión (29-10). Misma clave que
+  // PendingTasksPanel y CheckInScreen: una sola lectura entre las tres.
+  const { data: respuestasRevision = [] } = useQuery({
+    queryKey: ['responsesForAthlete', profile.email],
+    queryFn: () => getResponsesForAthlete(profile.email),
+  });
+
   const { data: coachDayNote } = useQuery({
     queryKey: ['coachDayNote', profile.email, TODAY_DATE],
     queryFn: () => getCoachDayNote(profile.email, TODAY_DATE),
@@ -215,6 +230,8 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
      para el martes": el plan del día vive en su propio documento desde 09-2026
      (ver DietCompletionLog.meals). `dietaDelDia` cae a la dieta antigua para
      los días de antes del cambio, así que un histórico viejo se sigue leyendo. */
+  // La fase en curso del programa: la meta de peso de «Lo que viniste a buscar».
+  const faseDelPlan = useMemo(() => faseEnCurso(nutritionProgram, TODAY_DATE), [nutritionProgram]); // eslint-disable-line react-hooks/exhaustive-deps -- TODAY_DATE es constante del módulo
   const entrenaHoy = nutritionProgram?.ciclado
     ? assignments.some(a => a.date === TODAY_DATE && a.status !== 'skipped')
     : undefined;
@@ -309,6 +326,9 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         ) : undefined}
       />
 
+      {/* Tras tres días sin registrar nada: vuelta sin culpa (29-10). */}
+      <VueltaCard profile={profile} />
+
       {/* ═══ El reto de la semana ══════════════════════════════════════════
           Lo primero que se ve, y es el único candidato que aguanta ahí:
            · Siempre hay uno — si el coach no asigna, se genera solo.
@@ -324,6 +344,45 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
       ) : reto && (reto.pending
         ? <ChallengePendingCard />
         : <WeeklyChallengeCard challenge={reto.challenge!} progress={reto.progress!} streak={racha} destacado />
+      )}
+
+      {/* ── «Lo último de Dani» (29-10) ───────────────────────────────────────
+          Todo lo que viene de una persona, justo debajo del reto: la respuesta
+          a su revisión, los cambios explicados, el acuse de lo que contó, la
+          nota del día. Siete días; si no hay nada, dice cuándo se abre la
+          próxima revisión. No se finge. */}
+      <LoUltimoDeDani
+        profile={profile}
+        respuestas={respuestasRevision}
+        notaDeHoy={coachDayNote}
+        onNavigate={onNavigate}
+      />
+
+      {/* «Lo que viniste a buscar» (29-10): su frase del alta y el antes → ahora. */}
+      <LoQueVinisteABuscar
+        athleteEmail={profile.email}
+        pesos={pesajes}
+        pesoMeta={faseDelPlan?.fase.targetWeight ?? null}
+        objetivo={faseDelPlan?.objetivo?.tipo ?? null}
+      />
+
+      {/* Los últimos 10 días del plan (tanda 8): esto hemos conseguido, esto viene. */}
+      <RenovacionCard
+        profile={profile}
+        pesos={pesajes}
+        objetivo={faseDelPlan?.objetivo?.tipo ?? null}
+        pesoMeta={faseDelPlan?.fase.targetWeight ?? null}
+      />
+
+      {/* «Tu primera semana» (29-10): los tres primeros pasos, 14 días. */}
+      {!loadingTraining && (
+        <PrimeraSemanaCard
+          profile={profile}
+          assignments={assignments}
+          pesos={pesajes}
+          respuestas={respuestasRevision}
+          onNavigate={onNavigate}
+        />
       )}
 
       {/* ── Peso y pasos: los dos de un vistazo, sin hacer scroll ───────────
@@ -358,26 +417,6 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         />
       )}
 
-      {/* Nota del coach para hoy (Roadmap → Calendario) — encima del entreno
-          del día, solo si hay una escrita para la fecha de hoy. */}
-      {coachDayNote && (
-        <section className="rounded-canvas p-4 border border-accent-line bg-accent/8 flex gap-3">
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control font-mono text-caption font-bold text-accent-ink"
-            style={{ background: 'color-mix(in oklab, var(--color-accent) 16%, transparent)' }}
-          >
-            <Icon name="sticky_note_2" size="s" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-caption font-mono uppercase tracking-wider text-accent-ink">Nota de tu entrenador</p>
-            <p className="text-body-s font-sans text-ink mt-1 leading-relaxed" style={{ textWrap: 'pretty' }}>{coachDayNote.text}</p>
-          </div>
-        </section>
-      )}
-
-      {/* Lo que el coach le dice fuera de la revisión (qué cambia esta
-          semana, una pregunta por sus faltas): el canal único del plan. */}
-      <MensajesDelCoach athleteEmail={profile.email} />
 
       {!loadingTraining && assignments.length === 0 && (
         <PlanInPreparationCard profile={profile} onNavigate={onNavigate} />

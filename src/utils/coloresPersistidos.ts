@@ -11,8 +11,8 @@
 
    · `colorDeTema` traduce los cuatro hex heredados al token equivalente. Los
      documentos ya guardados siguen intactos y aun así cambian de tema al
-     pintarse. Las fases nuevas guardan directamente el `var(...)` (ver
-     data/phasePresets.ts), y entonces esta función los deja pasar tal cual.
+     pintarse. Lo nuevo guarda directamente el `var(...)`, y entonces esta
+     función lo deja pasar tal cual.
 
    · `conAlfa` sustituye al truco de concatenar dos dígitos hex al final
      (`${color}1a`). Ese truco es lo que impedía usar variables CSS aquí:
@@ -21,7 +21,8 @@
      cualquier forma de color.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/** Los cuatro valores que `phasePresets` escribió en la base antes de que
+/** Los cuatro valores que las fases manuales del Road map (borradas el
+ *  29-10-2026) escribieron en la base antes de que
  *  existiera el modo claro, y su token equivalente. Las claves van en
  *  minúsculas: un documento viejo puede traer `#00EEFC`. */
 const HEREDADOS: Record<string, string> = {

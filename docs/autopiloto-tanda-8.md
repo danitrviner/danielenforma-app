@@ -11,7 +11,7 @@ Regla de Dani (29-10): todo lo visual nuevo en 2-3 variantes; él elige al final
 | Hecho hoy | **B · cronología** | `autopiloto/HechoHoyVista.tsx` |
 | Lo que ha hecho el asistente | **C · tarjetas** | `autopiloto/LineaDeTiempoVista.tsx` |
 | Calidad | **B · lista** | `autopiloto/CalidadVista.tsx` |
-| Mensajes del coach | **B · burbujas** | `autopiloto/MensajesCoachVista.tsx` |
+| Mensajes del coach | **B · burbujas** → RETIRADA al fusionar `main` (29-10 noche): el canal del atleta es «Lo último de Dani» (rama de acompañamiento, ya en producción) y el autopiloto escribe ahí | `home/LoUltimoDeDani.tsx` (main) |
 | Muro legal | **A · un documento**, con la casilla del asistente **dentro de Términos de uso** (sin apartado propio) | `MuroLegalUnificado.tsx`, **cableado en App.tsx** |
 
 Las variantes no elegidas se han borrado del código; `/dev/autopiloto` enseña ahora solo las elegidas (captura `tanda8/elegidas-29-10.jpg`). Se quitó la prop `variante` y las constantes `VARIANTE_*_ACTUAL`.
@@ -39,8 +39,8 @@ Las variantes no elegidas se han borrado del código; `/dev/autopiloto` enseña 
 - `CoachProposalsScreen.tsx`: pestañas **Propuestas | Calidad** y chips **pendientes / aplicadas / rechazadas / sombra** (estado en la URL: `?pestana=calidad`, `?filtro=…`, `?propuesta=…` para destacar una). Las no pendientes se enseñan en `PropuestaDecididaCard` (solo lectura: qué pasó, qué cambió, motivo del rechazo, expediente, texto al atleta, veredicto) y las aplicadas con **Deshacer** (confirmación en línea, `planDeDeshacer`).
 - `src/db/ai.ts` → `getAiProposalsPorEstado(estados)` (`in` sobre `status`, sin índice compuesto).
 
-### 4 · Canal del atleta: `mensajesCoach` en Inicio — §6
-- `MensajesDelCoach.tsx` (lógica: leer, marcar `leidoEn` optimista) + `autopiloto/MensajesCoachVista.tsx` (A tarjeta como la nota del día / B burbujas tipo chat / C bandeja). Firma **Dani**; ninguna etiqueta nombra al asistente (test). Solo los de las últimas 3 semanas (`mensajesVigentes`). Montado en `HomeScreen` bajo la nota del coach.
+### 4 · Canal del atleta: `mensajesCoach` — §6 (fusionado con main el 29-10 por la noche)
+La rama de acompañamiento (PRs #31→#42, en producción esa misma noche) creó el mismo canal con un modelo más completo: `MensajeCoach { tipo: cambio|problema|hito|implantacion|libre, estado: borrador|aprobado, autor, fecha, firmadoEn, origen, problema }`, reglas que solo dejan al atleta leer lo `aprobado`, «Lo último de Dani» en Inicio y el panel «Mensajes a X» en Cliente › Revisión. **Ese modelo manda.** Lo que hizo esta tanda (tipo propio, `db/mensajesCoach.ts`, vistas A/B/C en Inicio) se retiró al fusionar; el autopiloto escribe en el canal de main: una propuesta `mensajeAtleta` aplicada (por política o por Dani) crea el mensaje `aprobado`, `autor: 'asistente'`, `firmadoEn`, `origen: aiProposals/<id>` (`aplicarPropuesta.ts › tipoDeMensaje`: semana_nueva → cambio, dolor → problema «recibido», el resto → libre). En sombra no se escribe nada.
 
 ### 5 · Muro legal unificado — D1 (ver arriba: decidida y cableada)
 - `components/MuroLegalUnificado.tsx`: un solo scroll con los dos textos y, bajo cada uno, sus casillas; la del análisis con el asistente va dentro de Términos, separada por una línea, **opcional y desmarcada**, con la línea de transparencia del §6 («tu plan se ajusta cada semana con lo que registras; lo revisa Dani»). Mismas reglas que el muro de dos pasos (nada premarcado, botón apagado hasta leer y marcar, re-medida del scroll, Atrás no lo cierra, salida visible) y una sola escritura con los dos documentos.

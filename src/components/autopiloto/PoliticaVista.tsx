@@ -19,6 +19,7 @@ import {
   ETIQUETA_DECISION, NIVEL_DESTINO, NUNCA_AUTOMATICO, SIEMPRE_HUMANO, evaluarSubida, nivelDe,
   type EstadisticaDeTipo, type NivelAutonomia, type PoliticaAutopiloto as Politica, type TipoDecision,
 } from '../../autopiloto/politica';
+import type { InformeDeSombra, FilaDeInforme } from '../../autopiloto/sombra';
 import { Icon } from '../ui';
 
 export interface PoliticaVistaProps {
@@ -28,6 +29,8 @@ export interface PoliticaVistaProps {
   msg: string | null;
   /** Gasto del mes en curso, si se conoce (solo para pintarlo contra el presupuesto). */
   gastoMesUsd?: number;
+  /** Lo que el modo sombra ha medido: coincidencia con Dani por tipo (sombra.ts). */
+  sombra?: InformeDeSombra;
   onGuardar: (nueva: Politica) => void;
 }
 
@@ -113,9 +116,60 @@ function Mensaje({ msg }: { msg: string | null }) {
   return msg ? <p className="flex items-center gap-2 font-mono text-caption text-data"><Icon name="info" size="s" />{msg}</p> : null;
 }
 
+const RECOMENDACION: Record<FilaDeInforme['recomendacion'], { texto: string; tono: string }> = {
+  subir: { texto: 'listo para subir', tono: 'text-success' },
+  seguir: { texto: 'seguir en sombra', tono: 'text-warning' },
+  pocos_datos: { texto: 'pocos datos', tono: 'text-ink-4' },
+  siempre_humano: { texto: 'siempre tú', tono: 'text-ink-4' },
+};
+const pct = (x: number | null) => (x === null ? '—' : `${Math.round(x * 100)} %`);
+
+/** Lo que la sombra ha medido: por tipo, cuántas decisiones del asistente
+ *  coincidieron con lo que hizo Dani. Es la prueba con la que se decide qué
+ *  tipos salen de sombra. «Subir» aquí pone el tipo en aviso en la tabla. */
+function Sombra({ informe, politica, onGuardar }: { informe: InformeDeSombra; politica: Politica; onGuardar: (p: Politica) => void }) {
+  if (informe.total === 0) {
+    return (
+      <div className="rounded-field border border-dashed border-hairline px-3 py-2.5">
+        <p className="font-mono text-caption uppercase tracking-wider text-ink-3">Sombra</p>
+        <p className="font-sans text-caption text-ink-3 mt-0.5">Todavía no hay decisiones en sombra que comparar. Cuando el asistente lleve una o dos semanas decidiendo, aquí sale cuánto coincide contigo, tipo a tipo.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-field border border-hairline overflow-hidden">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-3 py-2 bg-raised">
+        <p className="font-mono text-caption uppercase tracking-wider text-ink-3">Sombra · coincidencia contigo</p>
+        <p className="font-mono text-caption text-ink-3">
+          {informe.decididas} de {informe.total} comparadas{informe.desde ? ` · ${informe.desde.slice(5)} → ${(informe.hasta ?? informe.desde).slice(5)}` : ''} · global <span className="text-ink">{pct(informe.tasaGlobal)}</span>
+        </p>
+      </div>
+      <ul className="divide-y divide-hairline">
+        {informe.filas.map(f => {
+          const r = RECOMENDACION[f.recomendacion];
+          return (
+            <li key={f.tipo} className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_11rem_7rem] items-center gap-x-3 px-3 py-1.5">
+              <span className="font-sans text-label text-ink truncate" title={f.etiqueta}>{f.etiqueta}</span>
+              <span className="font-mono text-caption text-ink-3 whitespace-nowrap" title="coincide · parecido · distinto · nada · pendiente">
+                <span className="text-success">{f.coincide}✓</span> <span className="text-data">{f.parecido}≈</span> <span className="text-danger">{f.distinto}✗</span> <span className="text-ink-4">{f.nada}∅ {f.pendiente}…</span>
+                <span className="text-ink ml-2">{pct(f.tasa)}</span>
+              </span>
+              <span className={`font-mono text-caption whitespace-nowrap sm:text-right ${r.tono}`}>
+                {f.recomendacion === 'subir' && politica.modo === 'politica' && nivelDe(politica, f.tipo) === 'proponer'
+                  ? <button type="button" onClick={() => onGuardar({ ...politica, nivelPorTipo: { ...politica.nivelPorTipo, [f.tipo]: 'aviso' } })} className="uppercase tracking-wide underline underline-offset-2">↑ a aviso</button>
+                  : r.texto}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 /* Semáforo ------------------------------------------------------------- */
 
-function Vista({ politica, stats, guardando, msg, gastoMesUsd, onGuardar }: PoliticaVistaProps) {
+function Vista({ politica, stats, guardando, msg, gastoMesUsd, sombra, onGuardar }: PoliticaVistaProps) {
   const cambiarNivel = (tipo: TipoDecision, nivel: NivelAutonomia) =>
     onGuardar({ ...politica, nivelPorTipo: { ...politica.nivelPorTipo, [tipo]: nivel } });
   const cuenta = (n: NivelAutonomia) => TIPOS.filter(t => !SIEMPRE_HUMANO.has(t) && nivelDe(politica, t) === n).length;
@@ -136,6 +190,8 @@ function Vista({ politica, stats, guardando, msg, gastoMesUsd, onGuardar }: Poli
       <p className="font-sans text-caption text-ink-2">{MODOS.find(m => m.id === politica.modo)?.texto}</p>
 
       <Presupuesto politica={politica} gastoMesUsd={gastoMesUsd} onGuardar={onGuardar} compacto />
+
+      {sombra && <Sombra informe={sombra} politica={politica} onGuardar={onGuardar} />}
 
       <div className={`${activo ? '' : 'opacity-70'}`}>
         <div className="grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[1fr_5.5rem_5.5rem_5.5rem] items-end gap-x-2 px-3 pb-1">

@@ -58,6 +58,7 @@ export default function ClientReviewsPanel({
 
       {view === 'recibidas' && (
         <ReceivedReviewsPanel
+          athlete={athlete}
           athleteCheckins={athleteCheckins}
           onRefreshCheckIns={onRefreshCheckIns}
           athleteQResponses={athleteQResponses}

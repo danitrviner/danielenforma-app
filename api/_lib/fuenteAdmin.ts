@@ -207,6 +207,11 @@ export function fuenteAdmin(db: Firestore, coachUid: string): FuenteDeDatos {
       const s = await uno('athleteStatus', email);
       const actual: AthleteDossier = normalizarFicha(s.exists ? (s.data() as Record<string, unknown>) : undefined);
       if (nuevos.length === 0) return actual;
+      // En SOMBRA nada llega al atleta ni a su ficha: la propuesta existe solo
+      // para compararla. Sin esto, cada tool que propone dejaba en la ficha viva
+      // un «propuso X» de algo que nunca se aplicó (lo destapó el test de
+      // integración de la tanda 9).
+      if (contexto?.politica === 'sombra') return actual;
       const ficha: AthleteDossier = { ...actual, hechos: [...actual.hechos, ...nuevos].slice(-MAX_HECHOS_FICHA), updatedAt: new Date().toISOString() };
       await col('athleteStatus').doc(email).set(sinIndefinidos(ficha), { merge: true });
       return ficha;

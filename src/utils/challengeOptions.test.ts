@@ -269,9 +269,11 @@ describe('adherencia a la dieta', () => {
   });
 
   it('la adherencia es en kcal: el techo es el 100 % y a quien ya se lo come todo no se le propone (26-10-2026)', () => {
-    const casi = generateChallengeOptions(input({ coachDiets: [diet], completionLogs: completions(90) }));
+    // Nivel explícito: en arranque el reto va en suave (29-10) y aquí se
+    // prueba el techo, no la dificultad.
+    const casi = generateChallengeOptions(input({ coachDiets: [diet], completionLogs: completions(90), nivelForzado: 'constancia' }));
     expect(casi.find(o => o.kind === 'adherencia_dieta')!.metric.target).toBe(95);
-    const todo = generateChallengeOptions(input({ coachDiets: [diet], completionLogs: completions(100) }));
+    const todo = generateChallengeOptions(input({ coachDiets: [diet], completionLogs: completions(100), nivelForzado: 'constancia' }));
     expect(todo.find(o => o.kind === 'adherencia_dieta')).toBeUndefined();
   });
 });
@@ -404,5 +406,14 @@ describe('rotación sobre 4 semanas', () => {
     const antes = base.find(o => o.kind === 'pasos_media')!.score;
     const despues = conMemoria.find(o => o.kind === 'pasos_media')!.score;
     expect(despues).toBe(antes - 18);
+  });
+});
+
+describe('silencio (29-10)', () => {
+  it('con una semana sin registrar el reto vuelve a suave aunque el nivel sea de rendimiento', () => {
+    const conSilencio = generateChallengeOptions(input({ stepLogs: [] as never, nivelForzado: 'rendimiento', silencioDias: 9 }));
+    const sinSilencio = generateChallengeOptions(input({ stepLogs: [] as never, nivelForzado: 'rendimiento', silencioDias: 0 }));
+    expect(conSilencio.every(o => o.difficulty === 'suave')).toBe(true);
+    expect(sinSilencio.some(o => o.difficulty !== 'suave')).toBe(true);
   });
 });

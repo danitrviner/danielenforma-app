@@ -34,21 +34,22 @@ del enlace donde está. Si prefieres pegar HTML entero, aquí está con el mismo
 ```html
 <p>Hola,</p>
 
-<p>Tu entrenador te ha dado de alta en <strong>En Forma</strong>, tu app de entrenamiento
-y nutrición. Antes de entrar, elige tu contraseña:</p>
+<p>Soy Dani. Te he dado de alta en <strong>En Forma</strong>, la app con la que vamos a llevar
+tu entrenamiento y tu comida. Antes de entrar, elige tu contraseña:</p>
 
 <p><a href="%LINK%">Crear mi contraseña</a></p>
 
-<p>Con eso ya puedes entrar en la app y tu entrenador podrá empezar a montarte el plan.</p>
+<p>Qué pasa ahora: entras, rellenas tu alta (diez minutos, contesta sin maquillar) y con eso
+te monto el plan en un par de días. La primera semana te escribo cada día; los viernes te
+pregunto cómo ha ido y los lunes te digo qué cambia.</p>
 
 <p>Si no esperabas este correo, puedes ignorarlo — sin este paso la cuenta no se activa.</p>
 ```
 
 Notas:
 - `%LINK%` es la variable de Firebase que rellena el enlace real; no se toca.
-- No he metido tu nombre (Dani) a pelo en el texto porque el mismo flujo lo puede usar
-  cualquier coach si el día de mañana hay más de uno — "tu entrenador" queda genérico y
-  sigue sonando personal. Si prefieres que diga "Dani te ha dado de alta", dímelo y lo
-  cambio.
+- Desde el 29-10 el correo va firmado por Dani y dice qué pasa esta semana (contacto
+  diario, viernes revisión, lunes respuesta): es exactamente lo que se promete en la venta,
+  y la app lo cumple con la primera semana (docs/acompanamiento-tanda-4.md).
 - El tono sigue el mismo que el resto de la app (wizard de alta, sala de espera del
   coach): directo, cercano, sin jerga corporativa, un emoji suelto en el asunto y no más.

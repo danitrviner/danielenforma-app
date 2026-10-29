@@ -646,33 +646,6 @@ export default function NutritionPeriodizationPanel({
               {/* Phase details */}
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-caption font-mono text-ink-2 uppercase tracking-wider">Semanas:</span>
-                  {/* Con ritmo puesto, la duración la calcula la app: es el sentido
-                      del rediseño (§12-§14). Teclearla a mano ahí contradiría al
-                      objetivo, así que se enseña el resultado, no un campo. */}
-                  {semanasDerivadas[idx] != null ? (
-                    <span className="font-mono text-title-s text-ink px-2 py-2">
-                      {semanasDerivadas[idx]}
-                      <span className="text-caption text-ink-2 ml-1">calculadas</span>
-                    </span>
-                  ) : (
-                    <Stepper value={phase.weeks} min={1} max={24} onChange={v => updatePhase(idx, { weeks: v })} />
-                  )}
-                </div>
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className="text-caption font-mono text-ink-2 uppercase tracking-wider flex-shrink-0">Dieta:</span>
-                  <select
-                    value={phase.dietId}
-                    onChange={e => updatePhase(idx, { dietId: e.target.value })}
-                    className="flex-1 min-w-0 bg-raised border border-control-line text-ink text-title-s font-mono rounded-control px-2 py-2 focus:outline-none focus:border-chart-3/50 transition-colors"
-                  >
-                    <option value="">Sin dieta</option>
-                    {diets.map(d => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-center gap-2">
                   <span className="text-caption font-mono text-ink-2 uppercase tracking-wider flex-shrink-0">Objetivo:</span>
                   <select
                     value={phase.objetivo ?? (phase.phaseType ? OBJETIVO_DE_TIPO_VIEJO[phase.phaseType] : '')}
@@ -696,6 +669,33 @@ export default function NutritionPeriodizationPanel({
                   >
                     {OBJETIVO_OPCIONES.map(o => (
                       <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-caption font-mono text-ink-2 uppercase tracking-wider">Semanas:</span>
+                  {/* Con ritmo puesto, la duración la calcula la app: es el sentido
+                      del rediseño (§12-§14). Teclearla a mano ahí contradiría al
+                      objetivo, así que se enseña el resultado, no un campo. */}
+                  {semanasDerivadas[idx] != null ? (
+                    <span className="font-mono text-title-s text-ink px-2 py-2">
+                      {semanasDerivadas[idx]}
+                      <span className="text-caption text-ink-2 ml-1">calculadas</span>
+                    </span>
+                  ) : (
+                    <Stepper value={phase.weeks} min={1} max={24} onChange={v => updatePhase(idx, { weeks: v })} />
+                  )}
+                </div>
+                <div className="flex items-center gap-2 flex-1 min-w-[14rem]">
+                  <span className="text-caption font-mono text-ink-2 uppercase tracking-wider flex-shrink-0">Dieta:</span>
+                  <select
+                    value={phase.dietId}
+                    onChange={e => updatePhase(idx, { dietId: e.target.value })}
+                    className="flex-1 min-w-0 bg-raised border border-control-line text-ink text-title-s font-mono rounded-control px-2 py-2 focus:outline-none focus:border-chart-3/50 transition-colors"
+                  >
+                    <option value="">Sin dieta</option>
+                    {diets.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
                   </select>
                 </div>

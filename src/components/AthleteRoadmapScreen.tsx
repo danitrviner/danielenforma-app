@@ -1,48 +1,58 @@
 import React, { useEffect, useMemo } from 'react';
-import { colorDeTema } from '../utils/coloresPersistidos';
 import { useQuery } from '@tanstack/react-query';
-import {
-  UserProfile,
-} from '../types';
+import { UserProfile } from '../types';
 import {
   getNutritionProgram, getRoadmap, getBodyweightForAthlete,
   getStepsForAthlete, getWorkoutLogs, getExercises, getDietCompletionLogsForAthlete,
-  getDietsForAthlete, getOnboarding, getAthleteNutritionConfig, getWorkoutAssignmentsForAthlete,
+  getDietsForAthlete, getAthleteNutritionConfig, getWorkoutAssignmentsForAthlete,
   getWeeklyChallengesForAthlete, saveRoadmapLevelProgress, createNotificationDeduped,
-  updateUserProfile,
+  updateUserProfile, getMesocycles, getResponsesForAthlete, getOnboarding,
 } from '../dbService';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
-import PhaseHeroCard from './roadmap/PhaseHeroCard';
 import WeeklyChallengeCard, { ChallengePendingCard } from './roadmap/WeeklyChallengeCard';
-import PhasePathStepper from './roadmap/PhasePathStepper';
-import LevelLadderCard from './roadmap/LevelLadderCard';
-import RecentAchievements, { Achievement } from './roadmap/RecentAchievements';
+import RoadmapDelAtletaVista from './roadmap/RoadmapDelAtletaVista';
 import { useRetoDeLaSemana } from '../hooks/useRetoDeLaSemana';
 import { computeLadderStatus } from '../utils/levelLadder';
-import { computePhaseProgress, currentPhase, PhaseData } from '../utils/planPhase';
 import { DEFAULT_LEVEL_LADDER } from '../data/defaultLevelLadder';
-import { buildPhaseEnergyPlans, buildWeightProjection, ProjectionResult } from '../utils/nutritionPeriodization';
-import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
-import { computePhaseWeightStatus } from '../utils/planNutritionBridge';
-import { markRoadmapVisited } from './PlanInPreparationCard';
-import { Icon, PageHeader, EmptyState } from './ui';
+import { semanasDelPlan, evaluarPlan, calcularGastoReal } from '../utils/seguimientoPlan';
+import { construirRoadmap, type HitoAutomatico } from '../utils/roadmapDelAtleta';
+import { Icon, PageHeader } from './ui';
 import TarjetaIdentidadAtleta from './TarjetaIdentidadAtleta';
+import { COACH_EMAIL } from '../utils/coach';
+import { ventanaPasos } from '../utils/ventanaHistorial';
+import { dietaDelDia } from '../utils/diaDeDieta';
+import { objetivoDeDieta } from '../utils/macrosLegado';
+import { contextoPesoCorporal } from '../utils/pesoCorporal';
+import { lastBodyweight } from '../utils/athleteMetrics';
+import { hoyIsoLocal } from '../utils/trainingWeek';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Road map del atleta (reescrito 29-10-2026)
+
+   Decisión de Dani (28-10): el Road map SALE de los objetivos del plan —las
+   fases del programa de nutrición con su objetivo y su peso meta— y del
+   bloque de entreno. No se monta aparte. Las fases manuales
+   (`roadmap.planPhases`, «Usar plan estándar») y la escalera de niveles
+   desaparecen de esta pantalla; los hitos salen solos (cambio de fase, peso
+   objetivo, fin de bloque, constancia) y los 16 `roadmap.items` viejos ya
+   no se pintan.
+
+   Fuente de verdad: `semanasDelPlan` / `evaluarPlan`, lo mismo que ve Dani
+   en Plan › Objetivo › Seguimiento. Aquí no se calcula nada que él no vea.
+
+   La escalera sigue calculándose y guardándose en silencio: la Academia
+   usa `UserProfile.level` para desbloquear cursos.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const DEFAULT_STEP_GOAL = 8000;
-import { COACH_EMAIL } from '../utils/coach';
-import { ventanaPasos } from '../utils/ventanaHistorial';
-import { hoyIsoLocal } from '../utils/trainingWeek';
 
 interface Props {
   profile: UserProfile;
 }
 
 export default function AthleteRoadmapScreen({ profile }: Props) {
-  // El checklist de "primeros pasos" en Inicio (PlanInPreparationCard) marca
-  // este ítem como hecho también si el atleta llega aquí directo por la nav,
-  // no solo pulsando el ítem desde el checklist.
-  useEffect(() => { markRoadmapVisited(profile.email); }, [profile.email]);
+  const hoy = hoyIsoLocal();
 
   const { data: nutritionProgram = null, isPending: loadingNutritionProgram } = useQuery({
     queryKey: ['nutritionProgram', profile.email],
@@ -56,10 +66,6 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     queryKey: bodyweightForAthleteKey(profile.email),
     queryFn: () => getBodyweightForAthlete(profile.email),
   });
-  /* Los pasos son un documento por día desde el alta y esta pantalla los pedía
-     TODOS en cada apertura. La ventana va en la clave de caché para que las dos
-     pantallas que comparten estos datos —el calendario y el reto de la semana—
-     sigan compartiendo UNA sola lectura. */
   const desdePasos = ventanaPasos();
   const { data: stepLogs = [], isPending: loadingSteps } = useQuery({
     queryKey: ['stepsForAthlete', profile.email, desdePasos],
@@ -81,10 +87,6 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     queryKey: ['dietsForAthlete', profile.email],
     queryFn: () => getDietsForAthlete(profile.email),
   });
-  const { data: onboarding = null, isPending: loadingOnboarding } = useQuery({
-    queryKey: ['onboarding', profile.email],
-    queryFn: () => getOnboarding(profile.email).catch(() => null),
-  });
   const { data: nutConfig, isPending: loadingNutConfig } = useQuery({
     queryKey: ['athleteNutritionConfig', profile.email],
     queryFn: () => getAthleteNutritionConfig(profile.email).catch(() => null),
@@ -97,62 +99,46 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     queryKey: ['weeklyChallengesForAthlete', profile.email],
     queryFn: () => getWeeklyChallengesForAthlete(profile.email),
   });
+  // Mismas claves que Inicio y Perfil › Revisión: no añaden lecturas si ya se abrieron.
+  const { data: mesocycles = [], isPending: loadingMesocycles } = useQuery({
+    queryKey: ['mesocycles', profile.email],
+    queryFn: () => getMesocycles(profile.email),
+  });
+  const { data: respuestas = [], isPending: loadingRespuestas } = useQuery({
+    queryKey: ['responsesForAthlete', profile.email],
+    queryFn: () => getResponsesForAthlete(profile.email),
+  });
+  // Su frase del alta (misma clave que «Lo que viniste a buscar» en Inicio).
+  const { data: onboarding = null } = useQuery({
+    queryKey: ['onboarding', profile.email],
+    queryFn: () => getOnboarding(profile.email).catch(() => null),
+  });
 
   const loading = loadingNutritionProgram || loadingRoadmap || loadingBodyweight
     || loadingSteps || loadingWorkoutLogs || loadingExercises || loadingDietCompletionLogs
-    || loadingDiets || loadingOnboarding || loadingNutConfig || loadingAssignments || loadingChallengeHistory;
+    || loadingDiets || loadingNutConfig || loadingAssignments || loadingChallengeHistory
+    || loadingMesocycles || loadingRespuestas;
 
   const stepGoal = nutConfig?.stepGoal ?? DEFAULT_STEP_GOAL;
-  const kcalPerStep = nutConfig?.kcalPerStep ?? DEFAULT_KCAL_PER_STEP;
 
-  const projection = useMemo<ProjectionResult | null>(() => {
-    if (loading || !nutritionProgram) return null;
-    const today = hoyIsoLocal();
-    return buildWeightProjection({
-      program: nutritionProgram,
-      plans: buildPhaseEnergyPlans(nutritionProgram, diets),
-      diets, onboarding, bodyweightLogs, completionLogs: dietCompletionLogs,
-      stepLogs, stepGoal, kcalPerStep, today,
-    });
-  }, [loading, nutritionProgram, diets, onboarding, bodyweightLogs, dietCompletionLogs, stepLogs, stepGoal, kcalPerStep]);
-
-  /* El reto vive en `useRetoDeLaSemana`, compartido con Inicio: las dos
-     pantallas lo enseñan y duplicar el efecto habría duplicado sus consultas.
-     El hook usa las MISMAS claves de React Query que esta pantalla, así que
-     aquí no añade ni una lectura. */
   const { resultado: challengeResult, racha: challengeStreak } =
     useRetoDeLaSemana(profile.email, assignments, loadingAssignments);
 
-
+  // La escalera, en silencio (ver cabecera).
   const ladderStatus = useMemo(() => {
     if (loading) return null;
     const ladder = roadmap?.levelLadder ?? DEFAULT_LEVEL_LADDER;
-    return computeLadderStatus(ladder, {
-      bodyweightLogs, stepLogs, workoutLogs,
-      exercises, initialWeight: profile.initialWeight,
-      today: hoyIsoLocal(),
-    });
-  }, [loading, roadmap, bodyweightLogs, stepLogs, workoutLogs, exercises, profile.initialWeight]);
+    return computeLadderStatus(ladder, { bodyweightLogs, stepLogs, workoutLogs, exercises, initialWeight: profile.initialWeight, today: hoy });
+  }, [loading, roadmap, bodyweightLogs, stepLogs, workoutLogs, exercises, profile.initialWeight, hoy]);
 
-  // Persiste nuevos niveles alcanzados con un merge parcial del campo
-  // levelLadder: reescribir el roadmap completo desde el snapshot del atleta
-  // podía revertir fases/items que el coach hubiera editado en paralelo.
   useEffect(() => {
     if (!roadmap || !ladderStatus || ladderStatus.newlyAchieved.length === 0) return;
-    const today = hoyIsoLocal();
     const achievedLevelIds = { ...(roadmap.levelLadder?.achievedLevelIds ?? {}) };
-    for (const lvl of ladderStatus.newlyAchieved) achievedLevelIds[lvl.id] = today;
+    for (const lvl of ladderStatus.newlyAchieved) achievedLevelIds[lvl.id] = hoy;
     const baseLadder = roadmap.levelLadder ?? DEFAULT_LEVEL_LADDER;
     saveRoadmapLevelProgress(profile.email, { ...baseLadder, achievedLevelIds }).catch(err =>
       console.warn('saveRoadmapLevelProgress (level up) failed:', err),
     );
-    /* `UserProfile.level` pasa a ser CUÁNTOS PELDAÑOS de la escalera lleva.
-       Antes lo movía un contador de XP que subía viendo lecciones y que nadie
-       leía salvo una tarjeta decorativa — pero la Academia sí lo usa para la
-       regla de desbloqueo «Nivel mínimo», así que en vez de borrarlo se le
-       pone detrás el sistema que significa algo. Un curso pedido a «nivel 3»
-       ahora se abre al llegar al tercer peldaño, no a los 1.200 XP de vídeos
-       (Dani, 10-09-2026). */
     const peldaños = Object.keys(achievedLevelIds).length;
     if (peldaños !== profile.level) {
       updateUserProfile(profile.userId, { level: peldaños }).catch(err =>
@@ -160,9 +146,8 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
       );
     }
     for (const lvl of ladderStatus.newlyAchieved) {
-      const body = `Has alcanzado el nivel ${lvl.name}. ¡Enorme!`;
       createNotificationDeduped(`notif_lvl_${profile.email}_${lvl.id}`, {
-        recipientEmail: profile.email, type: 'level_up', title: 'Nuevo nivel 🏅', body,
+        recipientEmail: profile.email, type: 'level_up', title: 'Nuevo nivel 🏅', body: `Has alcanzado el nivel ${lvl.name}. ¡Enorme!`,
         link: 'roadmap', createdAt: new Date().toISOString(), read: false,
       }).catch(err => console.warn('createNotificationDeduped (level up, athlete) failed:', err));
       createNotificationDeduped(`notif_lvl_${profile.email}_${lvl.id}_coach`, {
@@ -171,53 +156,36 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
         createdAt: new Date().toISOString(), read: false,
       }).catch(err => console.warn('createNotificationDeduped (level up, coach) failed:', err));
     }
-  }, [roadmap, ladderStatus, profile.email, profile.userId, profile.level]);
+  }, [roadmap, ladderStatus, profile.email, profile.userId, profile.level, hoy]);
 
-  const activePhase = useMemo(() => currentPhase(roadmap?.planPhases), [roadmap]);
-  const phaseProgress = useMemo(() => {
-    if (loading || !activePhase) return null;
-    const phaseData: PhaseData = {
-      bodyweightLogs, stepLogs, workoutLogs,
-      exercises, initialWeight: profile.initialWeight,
-      today: hoyIsoLocal(),
-      completionLogs: dietCompletionLogs, coachDiets: diets.filter(d => !d.selfManaged),
-    };
-    return computePhaseProgress(activePhase, phaseData);
-  }, [loading, bodyweightLogs, stepLogs, workoutLogs, exercises, dietCompletionLogs, diets, activePhase, profile.initialWeight]);
+  // El plan, semana a semana: la misma cuenta que Plan › Objetivo.
+  const roadmapDelAtleta = useMemo(() => {
+    if (loading) return null;
+    const coachDiets = diets.filter(d => !d.selfManaged);
+    const semanas = nutritionProgram
+      ? semanasDelPlan({ program: nutritionProgram, diets: coachDiets, pesos: bodyweightLogs, registros: dietCompletionLogs, pasos: stepLogs, pasosBase: stepGoal, hoy })
+      : [];
+    const gasto = calcularGastoReal({ pesos: bodyweightLogs, registros: dietCompletionLogs, diets: coachDiets, hasta: hoy });
+    const evaluacion = nutritionProgram ? evaluarPlan(nutritionProgram, semanas, gasto) : null;
+    // Sin programa, «Esta semana» tira de la dieta del último día registrado (o la primera del coach).
+    const ultimoRegistro = [...dietCompletionLogs].sort((a, b) => a.date.localeCompare(b.date)).at(-1);
+    const dieta = dietaDelDia(ultimoRegistro, coachDiets) ?? coachDiets[0];
+    const kcalDieta = dieta ? objetivoDeDieta(dieta).kcal || null : null;
+    const ctxFuerza = contextoPesoCorporal(exercises, lastBodyweight(bodyweightLogs)?.weight ?? null);
+    return construirRoadmap({
+      program: nutritionProgram, semanas, evaluacion, mesociclos: mesocycles, assignments, workoutLogs, respuestas, stepLogs, stepGoal, hoy,
+      planPublishedAt: profile.planPublishedAt, pesos: bodyweightLogs, kcalDieta, ctxFuerza,
+    });
+  }, [loading, nutritionProgram, diets, bodyweightLogs, dietCompletionLogs, stepLogs, stepGoal, hoy, mesocycles, assignments, workoutLogs, respuestas, exercises, profile.planPublishedAt]);
 
-  const phaseWeightStatus = useMemo(() => {
-    if (!projection || !nutritionProgram || !activePhase?.nutritionPhaseId) return null;
-    return computePhaseWeightStatus(projection, nutritionProgram, activePhase.nutritionPhaseId);
-  }, [projection, nutritionProgram, activePhase]);
+  // Retos conseguidos: los logros que no salen del plan.
+  const logrosExtra: HitoAutomatico[] = useMemo(() =>
+    challengeHistory
+      .filter(ch => ch.status === 'conseguido' && ch.resolvedAt)
+      .map(ch => ({ id: `ch-${ch.id}`, titulo: ch.title, fecha: ch.resolvedAt!.split('T')[0], icon: 'emoji_events', tipo: 'constancia' as const })),
+    [challengeHistory]);
 
-  const achievements: Achievement[] = useMemo(() => {
-    if (loading) return [];
-    const list: Achievement[] = [];
-    for (const ch of challengeHistory) {
-      if (ch.status === 'conseguido' && ch.resolvedAt) {
-        list.push({ id: `ch-${ch.id}`, icon: 'emoji_events', color: 'var(--color-accent-ink)', title: ch.title, date: ch.resolvedAt.split('T')[0] });
-      }
-    }
-    const achievedIds: Record<string, string> = roadmap?.levelLadder?.achievedLevelIds ?? {};
-    const levels = (roadmap?.levelLadder ?? DEFAULT_LEVEL_LADDER).levels;
-    for (const [levelId, date] of Object.entries(achievedIds)) {
-      const lvl = levels.find(l => l.id === levelId);
-      if (lvl) list.push({ id: `lvl-${levelId}`, icon: 'military_tech', color: 'var(--color-data)', title: `Nivel ${lvl.name}`, date });
-    }
-    for (const phase of roadmap?.planPhases ?? []) {
-      if (phase.status === 'completada' && phase.completedAt) {
-        list.push({ id: `ph-${phase.id}`, icon: 'route', color: colorDeTema(phase.color), title: `Fase completada: ${phase.name}`, date: phase.completedAt });
-      }
-    }
-    for (const item of roadmap?.items ?? []) {
-      if (item.status === 'logrado' && item.targetDate) {
-        list.push({ id: `it-${item.id}`, icon: 'star', color: 'var(--color-chart-3)', title: item.title, date: item.targetDate });
-      }
-    }
-    return list;
-  }, [loading, challengeHistory, roadmap]);
-
-  if (loading) {
+  if (loading || !roadmapDelAtleta) {
     return (
       <div className="flex items-center justify-center py-10">
         <Icon name="refresh" size="xl" className="text-accent-ink animate-spin" />
@@ -225,47 +193,14 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     );
   }
 
-  if (!roadmap) {
-    return (
-      <div className="space-y-6">
-        <PageHeader title="Road map" subtitle="Tu progreso y lo que te queda por delante" />
-        <EmptyState
-          icon="map"
-          title="No hay planificación disponible todavía."
-          description="Tu entrenador aún no ha creado tu hoja de ruta — estará disponible aquí en cuanto la configure."
-        />
-      </div>
-    );
-  }
-
-  const phases = roadmap.planPhases ?? [];
+  const reto = challengeResult && (challengeResult.pending
+    ? <ChallengePendingCard />
+    : <WeeklyChallengeCard challenge={challengeResult.challenge!} progress={challengeResult.progress!} streak={challengeStreak} />);
 
   return (
     <div className="pantalla space-y-6">
-      {activePhase && phaseProgress && (
-        <PhaseHeroCard phase={activePhase} progress={phaseProgress} weightStatus={phaseWeightStatus} />
-      )}
-
-      {challengeResult && (challengeResult.pending
-        ? <ChallengePendingCard />
-        : <WeeklyChallengeCard
-            challenge={challengeResult.challenge!}
-            progress={challengeResult.progress!}
-            streak={challengeStreak}
-          />
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {phases.length > 0 && <PhasePathStepper phases={phases} />}
-        {ladderStatus && <LevelLadderCard status={ladderStatus} />}
-      </div>
-
-      <RecentAchievements achievements={achievements} />
-
-      {/* Quién eres, al final: nombre, nivel, XP y meta. Estaba encima de las
-          pestañas del Perfil ocupando la primera pantalla entera antes de
-          poder llegar a nada, y aquí cierra el relato de por dónde vas, detrás
-          de los logros (Dani, 10-09-2026). */}
+      <PageHeader title="Road map" subtitle="Dónde estás, qué viene y qué toca esta semana" />
+      <RoadmapDelAtletaVista roadmap={roadmapDelAtleta} frase={onboarding?.goalFreeText} reto={reto} logrosExtra={logrosExtra} />
       <TarjetaIdentidadAtleta profile={profile} />
     </div>
   );

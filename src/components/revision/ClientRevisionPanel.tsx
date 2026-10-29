@@ -20,6 +20,9 @@ import { hoyIsoLocal } from '../../utils/trainingWeek';
 import { useModoPresentacion } from '../../hooks/useModoPresentacion';
 import { HubTab } from '../ClientHub';
 import RevisionCabecera from './RevisionCabecera';
+import MensajesCoachPanel, { type CierrePorFirmar } from './MensajesCoachPanel';
+import { buildCierreMesociclo } from '../../utils/cierreMesociclo';
+import { bloqueCerradoRecientemente, idDeCierre, textoCierre } from '../../utils/cierreParaAtleta';
 import BodyweightPanel from '../BodyweightPanel';
 import SelectorPeriodoRevision from './SelectorPeriodoRevision';
 import BloquePatrones from './BloquePatrones';
@@ -152,6 +155,15 @@ export default function ClientRevisionPanel({
     queryFn: getVolumeLandmarks,
   });
 
+  // El cierre del bloque que acabó hace poco, como borrador para firmar
+  // (tanda 8): las cifras del motor de cierre y sus frases para el cliente.
+  const cierrePorFirmar = useMemo<CierrePorFirmar | null>(() => {
+    const meso = bloqueCerradoRecientemente(mesocycles, hoy);
+    if (!meso) return null;
+    const c = buildCierreMesociclo({ meso, mesocycles, logs, assignments, exercises, athleteName: athlete.displayName, hoy });
+    return { id: idDeCierre(meso.id), texto: textoCierre(c, meso.name), fecha: hoy, mesoNombre: meso.name || `#${c.numero}` };
+  }, [mesocycles, logs, assignments, exercises, athlete.displayName, hoy]);
+
   const revision = useMemo(
     () => buildRevisionCoach({
       logs, exercises, mesocycles, periodo, landmarks, hoy, responses, questionnaires, checkins,
@@ -269,6 +281,11 @@ export default function ClientRevisionPanel({
         faseNutricional={faseActiva?.name ?? null}
         pesoObjetivo={athlete.targetWeight}
       />
+
+      {/* El canal de mensajes (29-10): lo que hay por firmar, los cambios sin
+          contar y lo que el atleta contó, antes de los números. Oculto al
+          presentar: es trabajo del coach, no parte del vídeo. */}
+      {!presentando && <MensajesCoachPanel athlete={athlete} cierre={cierrePorFirmar} />}
 
       {/* Peso corporal arriba del todo, justo bajo la cabecera: la misma
           gráfica y registro que en Atleta › Cuerpo. */}

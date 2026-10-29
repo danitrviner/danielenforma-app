@@ -99,6 +99,9 @@ export interface ChallengeData {
   mesocycles?: Mesocycle[];
   experienceLevel?: ExperienceLevel;     // del alta
   nivelForzado?: NivelDeRetos;           // roadmap.challengeConfig.nivel
+  /** Días sin registrar nada (user_profiles.senales, 29-10). Con una semana
+   *  o más de silencio el reto vuelve al nivel de arranque: en suave. */
+  silencioDias?: number | null;
 }
 
 export interface AutoChallengeInput extends ChallengeData {
@@ -175,6 +178,9 @@ const CIERRES = [
 
 // ── Generación de opciones ────────────────────────────────────────────────────
 
+/** Días sin registrar a partir de los cuales el reto vuelve a suave. */
+export const DIAS_SILENCIO_RETO_SUAVE = 7;
+
 export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOption[] {
   const { weekStart, weekEnd } = isoWeekBounds(input.today);
   const isoWeek = isoWeekKey(input.today);
@@ -196,7 +202,7 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
   // elegía por palabra clave y el atleta recibía «Mejora tu remo» semanas en
   // las que no tenía remo — fallo con 0, dificultad a la baja y vuelta a los
   // retos de hábito.
-  const nivel = nivelDeRetos({
+  const nivel = (input.silencioDias ?? 0) >= DIAS_SILENCIO_RETO_SUAVE ? 'arranque' : nivelDeRetos({
     workoutLogs: input.workoutLogs, today: input.today,
     experienceLevel: input.experienceLevel, nivelForzado: input.nivelForzado,
   });
@@ -230,7 +236,7 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
     }
   }
 
-  const cargaTuning = difficultyFor('carga_ejercicio', memory);
+  const cargaTuning = difficultyFor('carga_ejercicio', memory, nivel);
 
   // Hitos aún vivos: los que no se han fallado ya MAX_MILESTONE_ATTEMPTS veces.
   // Un hito quemado no desaparece del mundo, simplemente deja de ser "el reto":
@@ -303,7 +309,7 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
     if (candidato) {
       const { exerciseId, best } = candidato;
       const exerciseName = nameById.get(exerciseId) ?? 'tu básico';
-      const tuning = difficultyFor('reps_ejercicio', memory);
+      const tuning = difficultyFor('reps_ejercicio', memory, nivel);
       const incReps = clamp(Math.round(tuning.factor), 1, 2);
       options.push({
         kind: 'reps_ejercicio',
@@ -331,7 +337,7 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
     const from = addDays(weekStart, -28);
     const { avg, days } = avgSteps(input.stepLogs, from, histTo);
     if (days >= 14) {
-      const tuning = difficultyFor('pasos_media', memory);
+      const tuning = difficultyFor('pasos_media', memory, nivel);
       // 5% es el incremento de referencia; el factor lo mueve entre el 2% y el
       // 10%, y además nunca se piden más de 2.500 pasos/día extra de golpe.
       const pct = clamp(0.05 * tuning.factor, 0.02, 0.10);
@@ -348,7 +354,7 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
           : `Mantener el motor del gasto diario · +${Math.round(pct * 100)}%`,
         metric: { unit: 'pasos', target, baseline: Math.round(avg) },
       });
-      const weekTuning = difficultyFor('pasos_total', memory);
+      const weekTuning = difficultyFor('pasos_total', memory, nivel);
       const weekPct = clamp(0.05 * weekTuning.factor, 0.02, 0.10);
       const weekTarget = Math.max(1000, Math.round((avg * 7 * (1 + weekPct)) / 1000) * 1000);
       options.push({
@@ -374,7 +380,7 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
       if (point && point.expectedAdherence != null) {
         const last = lastBodyweight(input.bodyweightLogs);
         const baseline = last?.weight ?? proj.startWeightKg;
-        const tuning = difficultyFor('peso_objetivo', memory);
+        const tuning = difficultyFor('peso_objetivo', memory, nivel);
         const planTarget = Math.round(point.expectedAdherence * 10) / 10;
         // El plan manda, pero si lleva dos semanas sin llegar se le pide el
         // tramo que sí es alcanzable en vez de repetirle un número imposible.
@@ -410,7 +416,7 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
       // Desde 26-10-2026 la adherencia es kcal comidas / objetivo: por encima
       // del 100 % no hay reto que pedir (ya se lo come todo o más).
       if (days >= 7 && avg < 100) {
-        const tuning = difficultyFor('adherencia_dieta', memory);
+        const tuning = difficultyFor('adherencia_dieta', memory, nivel);
         // Antes esto era `max(media, 80)`: al que venía del 55% le plantaba un
         // 80% de golpe (+25 puntos, imposible) y al que venía del 96% le
         // regalaba su propia media. Ahora se sube en tramos de 2 a 10 puntos
@@ -442,7 +448,7 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
       : input.assignments.filter(a => a.date >= weekStart && a.date <= weekEnd);
     const ctx = plan?.contexto;
     if (weekAssignments.length > 0) {
-      const tuning = difficultyFor('entrenos_completados', memory);
+      const tuning = difficultyFor('entrenos_completados', memory, nivel);
       // No se puede "escalar" un entreno: o vas o no vas. Lo que sí se puede es
       // dejar de pedir el pleno a quien lleva dos semanas sin conseguirlo —
       // 3 de 4 es un objetivo, 4 de 4 fallado dos veces es un recordatorio.
@@ -489,7 +495,7 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
     candidatos.sort((a, b) => b.caida - a.caida);
     const peor = candidatos[0];
     if (peor) {
-      const tuning = difficultyFor('series_grupo', memory);
+      const tuning = difficultyFor('series_grupo', memory, nivel);
       const label = MUSCLE_LABELS[peor.group];
       const rezagado = peor.caida >= 0.25;
       // Se pide su media histórica más un empujón; nunca menos de una serie más
@@ -564,7 +570,7 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
     fuentes.sort((a, b) => a.dias - b.dias);
     const peor = fuentes[0];
     const porSemana = peor.dias / 2;
-    const tuning = difficultyFor('racha_registro', memory);
+    const tuning = difficultyFor('racha_registro', memory, nivel);
     const paso = clamp(Math.round(2 * tuning.factor), 1, 3);
     const target = clamp(Math.round(porSemana) + paso, 3, 7);
 

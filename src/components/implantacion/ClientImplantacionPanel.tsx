@@ -20,6 +20,7 @@ import { construirRecorrido, PasoConEstado } from '../../utils/implantacion';
 import { clasificarAviso } from '../../utils/avisosDelCoach';
 import { idDePaso } from '../../utils/recorridoDelPlan';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
+import { preguntasDelAltaParaWhatsApp } from '../../utils/primeraSemana';
 import { isoWeekKey } from '../../utils/challengeOptions';
 import { mensajeDeErrorFirestore } from '../../utils/erroresFirestore';
 import { useToast } from '../../hooks/useToast';
@@ -212,6 +213,7 @@ export default function ClientImplantacionPanel({
   }, [cargando]);
 
   const extras = tareasManuales.filter(t => t.createdBy === 'coach');
+  const preguntasWhatsApp = useMemo(() => preguntasDelAltaParaWhatsApp(athlete.displayName || '', extras), [athlete.displayName, extras]);
   const pasos = recorrido.bloques.flatMap(b => b.pasos);
   const elegido = pasos.find(p => p.paso.numero === activo) ?? null;
 
@@ -461,6 +463,24 @@ export default function ClientImplantacionPanel({
           que el coach se pone él mismo. Van con fecha, y lo vencido sale
           arriba en rojo y en la campana. */}
       <Card title="Tus tareas con este cliente" className="space-y-3">
+        {/* Las preguntas abiertas del alta (material, días reales, lesiones…)
+            que el asistente te dejó: en vez de asumirlas, pregúntaselas por
+            WhatsApp con un texto listo (29-10). */}
+        {preguntasWhatsApp && (
+          <button
+            type="button"
+            onClick={() => {
+              navigator.clipboard.writeText(preguntasWhatsApp).then(
+                () => showToast('Copiado: pégalo en su WhatsApp.', 'success'),
+                () => showToast('No he podido copiar: selecciona el texto a mano.'),
+              );
+            }}
+            className="inline-flex items-center gap-1.5 rounded-control border border-accent-line bg-accent-bg px-3 py-1.5 font-mono text-caption font-bold uppercase text-accent-ink transition-colors hover:bg-accent/15"
+          >
+            <Icon name="chat" size="s" />
+            Preguntárselo por WhatsApp
+          </button>
+        )}
         {extras.length > 0 && (
           <ul className="space-y-1">
             {extras.map(t => {

@@ -9,8 +9,10 @@
    autopiloto/PoliticaVista.tsx (variante «semáforo», elegida el 29-10). */
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getPoliticaAutopiloto, savePoliticaAutopiloto, getAiProposalsRecientes } from '../dbService';
+import { getPoliticaAutopiloto, savePoliticaAutopiloto, getAiProposalsRecientes, getAiProposalsPorEstado, getResponsesForAthlete } from '../dbService';
+import { getCambiosAtleta } from '../db/cambios';
 import { estadisticasPorTipo, tipoDeDecision, type PoliticaAutopiloto as Politica } from '../autopiloto/politica';
+import { compararSombra, informeDeSombra } from '../autopiloto/sombra';
 import PoliticaVista from './autopiloto/PoliticaVista';
 
 export default function PoliticaAutopiloto() {
@@ -26,6 +28,26 @@ export default function PoliticaAutopiloto() {
     return new Map(estadisticasPorTipo(recientes, editadas, p => tipoDeDecision(p)).map(e => [e.tipo, e]));
   }, [recientes]);
 
+  // Sombra: cada decisión del asistente en sombra frente a lo que hizo Dani con
+  // ese atleta en la semana siguiente (sus aprobaciones, sus cambios a mano, sus
+  // respuestas). Solo se leen los atletas que tienen alguna sombra.
+  const { data: sombras = [] } = useQuery({ queryKey: ['aiProposalsPorEstado', 'sombra'], queryFn: () => getAiProposalsPorEstado(['sombra']) });
+  const atletasEnSombra = useMemo(() => [...new Set(sombras.map(p => p.athleteId))].sort(), [sombras]);
+  const { data: referencia } = useQuery({
+    queryKey: ['referenciaSombra', atletasEnSombra],
+    enabled: atletasEnSombra.length > 0,
+    queryFn: async () => {
+      const porAtleta = await Promise.all(atletasEnSombra.map(async email => ({
+        cambios: await getCambiosAtleta(email).catch(() => []),
+        respuestas: await getResponsesForAthlete(email).catch(() => []),
+      })));
+      return { cambios: porAtleta.flatMap(x => x.cambios), respuestas: porAtleta.flatMap(x => x.respuestas) };
+    },
+  });
+  const sombra = useMemo(() => informeDeSombra(compararSombra(sombras, {
+    propuestas: recientes, cambios: referencia?.cambios ?? [], respuestas: referencia?.respuestas ?? [],
+  }, new Date().toISOString())), [sombras, recientes, referencia]);
+
   if (!politica) return null;
 
   const guardar = async (nueva: Politica) => {
@@ -35,5 +57,5 @@ export default function PoliticaAutopiloto() {
     finally { setGuardando(false); }
   };
 
-  return <PoliticaVista politica={politica} stats={stats} guardando={guardando} msg={msg} onGuardar={nueva => void guardar(nueva)} />;
+  return <PoliticaVista politica={politica} stats={stats} guardando={guardando} msg={msg} sombra={sombra} onGuardar={nueva => void guardar(nueva)} />;
 }

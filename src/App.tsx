@@ -120,6 +120,27 @@ const RevisionCoachHarness = import.meta.env.DEV
   ? pantallaDiferida('RevisionCoachDevHarness', () => import('./components/RevisionCoachDevHarness'))
   : null;
 
+// Banco de pruebas de la bandeja del día del coach con el panel de retención
+// (ruta /dev/bandeja). Datos en memoria: no hay sesión de coach en desarrollo.
+const BandejaHarness = import.meta.env.DEV
+  ? pantallaDiferida('BandejaDevHarness', () => import('./components/BandejaDevHarness'))
+  : null;
+// Banco de pruebas del cuadro de respuesta a la revisión (ruta /dev/respuesta).
+const RespuestaHarness = import.meta.env.DEV
+  ? pantallaDiferida('RespuestaDevHarness', () => import('./components/RespuestaDevHarness'))
+  : null;
+// Banco de pruebas del canal de mensajes del coach, los dos lados (ruta /dev/mensajes).
+const MensajesHarness = import.meta.env.DEV
+  ? pantallaDiferida('MensajesDevHarness', () => import('./components/MensajesDevHarness'))
+  : null;
+// Banco de pruebas de la primera semana: sala de espera y lista (ruta /dev/primera-semana).
+const PrimeraSemanaHarness = import.meta.env.DEV
+  ? pantallaDiferida('PrimeraSemanaDevHarness', () => import('./components/PrimeraSemanaDevHarness'))
+  : null;
+// Banco de pruebas del Road map del atleta (ruta /dev/roadmap).
+const RoadmapHarness = import.meta.env.DEV
+  ? pantallaDiferida('RoadmapDevHarness', () => import('./components/RoadmapDevHarness'))
+  : null;
 // Banco de pruebas de Cliente › Revisiones › Asignadas (ruta /dev/asignados),
 // lado COACH: tampoco hay sesión de coach en este repo.
 const AsignadosHarness = import.meta.env.DEV
@@ -814,6 +835,46 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <RevisionCoachHarness />
+      </Suspense>
+    );
+  }
+
+  if (BandejaHarness && location.pathname === '/dev/bandeja') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <BandejaHarness />
+      </Suspense>
+    );
+  }
+
+  if (RespuestaHarness && location.pathname === '/dev/respuesta') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <RespuestaHarness />
+      </Suspense>
+    );
+  }
+
+  if (MensajesHarness && location.pathname === '/dev/mensajes') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <MensajesHarness />
+      </Suspense>
+    );
+  }
+
+  if (PrimeraSemanaHarness && location.pathname === '/dev/primera-semana') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <PrimeraSemanaHarness />
+      </Suspense>
+    );
+  }
+
+  if (RoadmapHarness && location.pathname === '/dev/roadmap') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <RoadmapHarness />
       </Suspense>
     );
   }

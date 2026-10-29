@@ -225,5 +225,4 @@ export type { NuevaClasificacion } from './db/exerciseChanges';
 
 // Autopiloto (28-10-2026)
 export { getPoliticaAutopiloto, savePoliticaAutopiloto } from './db/coachSettings';
-export { enviarMensajeCoach, getMensajesCoach, marcarMensajeLeido } from './db/mensajesCoach';
 export { getEpisodiosDeAtleta } from './db/episodios';
