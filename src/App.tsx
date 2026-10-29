@@ -177,6 +177,9 @@ const PlantillaHarness = import.meta.env.DEV
 const NutricionHarness = import.meta.env.DEV
   ? pantallaDiferida('NutricionDevHarness', () => import('./components/NutricionDevHarness'))
   : null;
+const PlanSemanaHarness = import.meta.env.DEV
+  ? pantallaDiferida('PlanSemanaDevHarness', () => import('./components/PlanSemanaDevHarness'))
+  : null;
 
 // Banco de pruebas de «El atleta ve ahora» + estado del bloque (ruta /dev/bloque-atleta).
 const BloqueAtletaHarness = import.meta.env.DEV
@@ -883,6 +886,13 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <PlantillaHarness />
+      </Suspense>
+    );
+  }
+  if (PlanSemanaHarness && location.pathname === '/dev/plan-semana') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <PlanSemanaHarness />
       </Suspense>
     );
   }

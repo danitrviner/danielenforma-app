@@ -1556,6 +1556,35 @@ export interface DietCompletionLog {
   updatedAt?: string;
 }
 
+/* ── Plan de la semana (cocina en tandas, 30-10-2026) ──────────────────────
+   Quien cocina de golpe no lleva un diario: apunta lo que va a comer esa
+   semana —los táperes de la tanda, lo de cada día, lo suelto— y la app le
+   suma las macros contra el objetivo de los siete días. Se da por hecho que lo
+   cumple. Doc id = `${athleteId}_${lunes}`. Ver utils/planSemanal.ts. */
+export type GrupoDelPlan = 'tanda' | 'cadaDia' | 'suelto';
+
+export interface PlatoDelPlan {
+  id: string;
+  nombre: string;
+  origen: { tipo: 'receta'; id: string } | { tipo: 'alimento'; id: string };
+  /** Gramos de una ración (alimentos). Las recetas van por raciones de la receta. */
+  gramos?: number;
+  /** kcal y gramos de UNA ración, congelados al apuntarla. */
+  macros: Macros;
+  /** Cuántas veces se come en la semana (táperes, días…). */
+  veces: number;
+  grupo: GrupoDelPlan;
+}
+
+export interface PlanSemanal {
+  id: string;
+  athleteId: string;  // email
+  /** Lunes de la semana (YYYY-MM-DD). */
+  semana: string;
+  platos: PlatoDelPlan[];
+  updatedAt?: string;
+}
+
 export interface NutritionPhase {
   id: string;
   name: string;

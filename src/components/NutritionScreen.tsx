@@ -36,9 +36,10 @@ import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import FotoDeReceta from './FotoDeReceta';
 import { Skeleton } from './ui';
-import { EmptyState, Sheet, Icon, Button, Dialog, ListRow, Input } from './ui';
+import { EmptyState, Sheet, Icon, Button, Dialog, ListRow, Input, SegmentedControl } from './ui';
 import MealItemSwipeRow from './nutrition/MealItemSwipeRow';
 import { SemanaDelDiario, TarjetaDelDia, EtiquetaMacro } from './nutrition/DiaDeNutricion';
+import MiSemana from './nutrition/MiSemana';
 import AnadirAlimentoCalorias, { type FilaAlimento, type PestanaAnadir, type SeccionFilas, type CombinacionFila } from './nutrition/calorias/AnadirAlimentoCalorias';
 import { combinacionesDeSiempre } from '../utils/combinacionesDeSiempre';
 import { alimentosGeneralesPorGrupo, type AlimentoGeneral } from '../utils/alimentosGenerales';
@@ -343,6 +344,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     queryFn: () => getWorkoutAssignmentsForAthlete({ uid: profile.userId, email: profile.email }),
     enabled: !!program?.ciclado,
   });
+  const [vistaTandas, setVistaTandas] = useState<'semana' | 'dia'>('semana');
+  const entrenaEn = useCallback(
+    (fecha: string) => (program?.ciclado && asignacionesEntreno
+      ? asignacionesEntreno.some(a => a.date === fecha && a.status !== 'skipped') : undefined),
+    [program, asignacionesEntreno],
+  );
   const entrenaEseDia = program?.ciclado && asignacionesEntreno
     ? asignacionesEntreno.some(a => a.date === viewDate && a.status !== 'skipped')
     : undefined;
@@ -2182,8 +2189,30 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const kcalDeLineasComida = (meal: DietMeal, idxs: number[]) =>
     resumenDelDia([{ ...meal, items: idxs.map(i => meal.items[i]) }], idxs.map((_, k) => `${meal.id}_${k}`)).kcal;
 
+  /* Quien cocina en tandas no lleva un diario: planifica la semana y se da por
+     hecho que la cumple (Dani, 30-10-2026; utils/planSemanal.ts). El diario
+     sigue a un toque, por si un día quiere apuntar algo suelto. */
+  const cocinaEnTandas = nutConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred ?? false;
+  const selectorDeVista = cocinaEnTandas && (
+    <SegmentedControl
+      label="Ver la semana o el día"
+      value={vistaTandas}
+      onChange={v => setVistaTandas(v as 'semana' | 'dia')}
+      options={[{ value: 'semana', label: 'Mi semana' }, { value: 'dia', label: 'Día a día' }]}
+    />
+  );
+  if (cocinaEnTandas && vistaTandas === 'semana') {
+    return (
+      <div className="pantalla pantalla-b w-full space-y-6">
+        {selectorDeVista}
+        <MiSemana email={profile.email} hoy={hoyFecha} diets={allDietsList} config={dietConfigRaw} program={program} entrenaEn={entrenaEn} />
+      </div>
+    );
+  }
+
   return (
     <div className="pantalla pantalla-b w-full space-y-6">
+      {selectorDeVista}
       {/* Sin cabecera propia: la barra de pestañas de Nutrición ya dice en qué
           pantalla estás, y repetirlo debajo con letra de titular se comía la
           primera pantalla entera del móvil (Dani, 10-09-2026). */}
