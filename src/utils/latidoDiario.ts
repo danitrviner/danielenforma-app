@@ -1,5 +1,5 @@
 import {
-  AppNotification, AthleteDietConfig, BodyweightLog, Exercise, LevelLadder,
+  AppNotification, AthleteDietConfig, BodyweightLog, Exercise, LevelLadder, MensajeCoach,
   NutritionProgram, Roadmap, StepLog, UserProfile, WorkoutAssignment, WorkoutLog,
 } from '../types.js';
 import { addDays } from './trainingWeek.js';
@@ -43,7 +43,10 @@ export type AccionDelLatido =
   | { tipo: 'marcar_fase_vista'; athleteEmail: string; phaseId: string }
   | { tipo: 'guardar_niveles'; athleteEmail: string; achievedLevelIds: Record<string, string> }
   | { tipo: 'actualizar_peldanos'; userId: string; peldanos: number }
-  | { tipo: 'aviso'; dedupeKey: string; notificacion: Omit<AppNotification, 'id'> };
+  | { tipo: 'aviso'; dedupeKey: string; notificacion: Omit<AppNotification, 'id'> }
+  /** Un mensaje al atleta que la máquina DEJA EN BORRADOR para que el coach lo
+   *  firme (29-10): lo automático no se cuenta con su nombre sin que lo vea. */
+  | { tipo: 'mensaje_borrador'; mensaje: Omit<MensajeCoach, 'creadoEn'> };
 
 export interface FotoDelAtleta {
   profile: UserProfile;
@@ -133,6 +136,16 @@ export function planificarLatido(
           title: `Fase de nutrición cambiada (${foto.profile.displayName})`,
           body: `${foto.profile.displayName}: ${cuerpo}`,
           link: 'clients', createdAt: ahora, read: false,
+        },
+      });
+      // El borrador para que Dani se lo cuente con su nombre (29-10). Id
+      // determinista por fase: la noche siguiente no lo duplica.
+      acciones.push({
+        tipo: 'mensaje_borrador',
+        mensaje: {
+          id: `fase_${email}_${fase.id}`, athleteId: email, tipo: 'cambio', autor: 'latido', estado: 'borrador',
+          texto: `Desde esta semana tu plan de comida pasa a la fase «${fase.name}».`,
+          fecha: hoy, origen: { coleccion: 'nutritionPrograms', id: fase.id },
         },
       });
       resumen.push(`fase de nutrición → ${fase.name}`);

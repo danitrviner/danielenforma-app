@@ -91,7 +91,10 @@ describe('planificarLatido · fase de nutrición', () => {
   it('activa la dieta de la fase que toca y avisa a los dos', () => {
     // 16-09 cae en la segunda fase (empieza el 15).
     const r = planificarLatido(foto({ nutritionProgram: programa }), OPCIONES);
-    expect(tipos(r)).toEqual(['activar_dieta', 'marcar_fase_vista', 'aviso', 'aviso']);
+    expect(tipos(r)).toEqual(['activar_dieta', 'marcar_fase_vista', 'aviso', 'aviso', 'mensaje_borrador']);
+    // El borrador para que el coach se lo cuente con su nombre (29-10): nunca aprobado de salida.
+    const borrador = r.acciones.find(a => a.tipo === 'mensaje_borrador') as Extract<typeof r.acciones[number], { tipo: 'mensaje_borrador' }>;
+    expect(borrador.mensaje).toMatchObject({ id: 'fase_ana@x.com_f2', estado: 'borrador', autor: 'latido', tipo: 'cambio' });
     const activar = r.acciones[0];
     expect(activar).toMatchObject({ activeDietIds: ['dieta_mant'] });
     const avisos = r.acciones.filter(a => a.tipo === 'aviso');
@@ -111,7 +114,7 @@ describe('planificarLatido · fase de nutrición', () => {
   it('con la dieta puesta pero la fase sin ver, avisa sin reescribir la dieta', () => {
     const config = { athleteId: 'ana@x.com', activeDietIds: ['dieta_mant'] } as AthleteDietConfig;
     const r = planificarLatido(foto({ nutritionProgram: programa, dietConfig: config }), OPCIONES);
-    expect(tipos(r)).toEqual(['marcar_fase_vista', 'aviso', 'aviso']);
+    expect(tipos(r)).toEqual(['marcar_fase_vista', 'aviso', 'aviso', 'mensaje_borrador']);
   });
 
   it('fuera del programa no hay fase y no se toca nada', () => {

@@ -84,6 +84,8 @@ export interface EntradaBandeja {
   respuestas?: QuestionnaireResponse[];
   /** Contactos recientes del coach (db/contactos.ts): callan una señal unos días. */
   contactos?: Contacto[];
+  /** Borradores de mensaje por firmar, por email (db/mensajesCoach.ts, 29-10). */
+  borradoresPorEmail?: Map<string, number>;
   hoy: string;
 }
 
@@ -125,6 +127,7 @@ export function construirBandejaDelDia(entrada: EntradaBandeja): SenalDelDia[] {
   const propuestas = entrada.propuestasPorEmail ?? new Map<string, number>();
   const respuestas = entrada.respuestas ?? [];
   const contactos = entrada.contactos ?? [];
+  const borradores = entrada.borradoresPorEmail ?? new Map<string, number>();
   const senales: SenalDelDia[] = [];
 
   const checkinsPorEmail = new Map<string, WeightCheckIn[]>();
@@ -169,6 +172,14 @@ export function construirBandejaDelDia(entrada: EntradaBandeja): SenalDelDia[] {
     if (nPropuestas > 0) {
       añadir('propuestas', 'hoy', 'propuesta',
         `${nPropuestas} ${nPropuestas === 1 ? 'propuesta del asistente' : 'propuestas del asistente'} sin revisar`, 'revision');
+    }
+    // Mensajes que dejó la máquina en borrador (29-10): el atleta no los ve
+    // hasta que Dani los firma, así que cada día que pasan aquí es un cambio
+    // que ocurrió sin que nadie se lo contara.
+    const nBorradores = borradores.get(email.toLowerCase()) ?? 0;
+    if (nBorradores > 0) {
+      añadir('borradores', 'hoy', 'revision',
+        `${nBorradores} ${nBorradores === 1 ? 'mensaje por firmar' : 'mensajes por firmar'}`, 'revision');
     }
     // ── Lo que no avisa por su cuenta ────────────────────────────────────
     // Un contacto reciente del coach por ese motivo calla la señal: ya le ha

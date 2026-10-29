@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
 import { getCrmSuscripciones, getPendingAiProposals, getMesocyclesForAthletes } from '../dbService';
 import { getContactosDesde, registrarContacto } from '../db/contactos';
+import { getBorradoresPorFirmar } from '../db/mensajesCoach';
 import {
   construirBandejaDelDia, contarPorUrgencia, SenalDelDia, UrgenciaSenal, CategoriaSenal,
 } from '../utils/bandejaDelDia';
@@ -145,6 +146,14 @@ export default function HomeCoachScreen({ athletes, coachId, checkins, assignmen
     queryKey: ['contactos', desdeContactos],
     queryFn: () => getContactosDesde(desdeContactos),
   });
+  // Borradores de mensaje que dejó la máquina (latido) y Dani no ha firmado
+  // (29-10): una consulta, agrupada por atleta para la bandeja.
+  const { data: borradores = [] } = useQuery({ queryKey: ['mensajesCoach', 'borradores'], queryFn: getBorradoresPorFirmar });
+  const borradoresPorEmail = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const b of borradores) m.set(b.athleteId.toLowerCase(), (m.get(b.athleteId.toLowerCase()) ?? 0) + 1);
+    return m;
+  }, [borradores]);
   const queryClient = useQueryClient();
   const marcarContacto = useMutation({
     mutationFn: (s: SenalDelDia) => registrarContacto({
@@ -196,12 +205,13 @@ export default function HomeCoachScreen({ athletes, coachId, checkins, assignmen
       propuestasPorEmail,
       respuestas,
       contactos,
+      borradoresPorEmail,
       hoy: hoyIso,
     // «Antes de que se te pase» (urgencia `pronto`) se retiró de la pantalla:
     // el coach no la usa. Se filtra aquí para que tampoco cuente en los chips
     // ni dispare el estado vacío con señales que no se pintan.
     }).filter(s => s.urgencia !== 'pronto');
-  }, [loadingAssignments, athletes, checkins, assignmentsByEmail, mesociclos, suscripciones, propuestasPendientes, respuestas, contactos, hoyIso]);
+  }, [loadingAssignments, athletes, checkins, assignmentsByEmail, mesociclos, suscripciones, propuestasPendientes, respuestas, contactos, borradoresPorEmail, hoyIso]);
 
   const visibles = filtro === 'todas' ? senales : senales.filter(s => s.categoria === filtro);
   // Sobre `visibles`, no sobre `senales`: con un filtro de categoría activo, la

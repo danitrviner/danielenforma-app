@@ -16,6 +16,9 @@ import { useRevisionDeLaSemana } from '../hooks/useRevisionDeLaSemana';
 import { ajustesRevisionDe } from '../utils/cicloRevision';
 import { useDatosSemanaCuestionario } from '../hooks/useDatosSemanaCuestionario';
 import { alertasDeRespuesta } from '../utils/alertasRevision';
+import { acuseDeProblema } from '../utils/mensajesCoach';
+import { crearMensajeCoach } from '../db/mensajesCoach';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 import { resolveQuestions } from '../utils/questionnaireResolve';
 import { useToast } from '../hooks/useToast';
 import { Badge, Button, EmptyState, Icon, Skeleton } from './ui';
@@ -290,6 +293,18 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         createdAt: new Date().toISOString(),
         read: false,
       }).catch(console.error);
+      // El acuse de recibo (29-10): lo escribe la propia app, sin firma, para
+      // que lo que contó no caiga en un pozo. Dani lo pasa a «en ello» o
+      // «hecho» desde su ficha, y eso sí va con su nombre.
+      const hoy = hoyIsoLocal();
+      crearMensajeCoach({
+        id: `problema_${r.id}`, athleteId: profile.email, tipo: 'problema', autor: 'app', estado: 'aprobado',
+        texto: acuseDeProblema(alertas), fecha: hoy,
+        origen: { coleccion: 'questionnaireResponses', id: r.id },
+        problema: { estado: 'recibido', actualizadoEn: new Date().toISOString() },
+      })
+        .then(() => queryClient.invalidateQueries({ queryKey: ['mensajesCoach', profile.email] }))
+        .catch(console.error);
     }
   };
 

@@ -338,3 +338,12 @@ describe('las señales de acompañamiento (28-10)', () => {
     expect(conSiguiente).toBeUndefined();
   });
 });
+
+describe('los mensajes por firmar (29-10)', () => {
+  it('un borrador del latido es una señal para hoy hacia la pestaña de revisión', () => {
+    const s = construirBandejaDelDia(entrada({ borradoresPorEmail: new Map([['ana@x.com', 2]]) }))
+      .find(x => x.id.endsWith('borradores'));
+    expect(s).toMatchObject({ urgencia: 'hoy', categoria: 'revision', texto: '2 mensajes por firmar' });
+    expect(s!.destino).toMatch(/\/revision$/);
+  });
+});

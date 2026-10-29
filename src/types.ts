@@ -42,7 +42,10 @@ export type NotificationType =
   // 5 de agujetas: no espera a su día de revisión.
   | 'revision_alerta'
   // El coach ha contestado la revisión del atleta (texto, audio o vídeo).
-  | 'revision_respondida';
+  | 'revision_respondida'
+  // Un mensaje del coach en su canal (29-10): cambio explicado, acuse de un
+  // problema, hito, línea suelta. Ver `MensajeCoach`.
+  | 'coach_mensaje';
 
 export interface AppNotification {
   id: string;                   // deterministic dedup key
@@ -272,6 +275,46 @@ export interface Contacto {
   motivo: string;         // MotivoContacto (utils/plantillasWhatsApp.ts)
   canal: 'whatsapp';
   createdAt: string;      // ISO
+}
+
+// ─── MENSAJES DEL COACH (29-10-2026) ─────────────────────────────────────────
+// El único canal por el que el atleta lee algo «de Dani» que no sea la
+// respuesta a su revisión: un cambio explicado, el acuse de un problema, un
+// hito, la bienvenida, una línea suelta. Es la misma pieza que el diseño del
+// autopiloto (§6): lo que decida la máquina llega aquí como BORRADOR y solo
+// se enseña cuando Dani lo firma (`estado: 'aprobado'`). Lo que no está
+// firmado no existe para el atleta (firestore.rules).
+
+export type TipoMensajeCoach =
+  | 'cambio'        // «He bajado la dieta a 2.600 kcal: …»
+  | 'problema'      // acuse de una molestia o un texto libre, con estado
+  | 'hito'          // primer mes, récord, peso objetivo a la vista
+  | 'implantacion'  // bienvenida, «he leído tu alta»
+  | 'libre';        // lo que Dani quiera decirle
+
+export type EstadoProblema = 'recibido' | 'en_curso' | 'hecho';
+
+export interface MensajeCoach {
+  id: string;
+  athleteId: string;        // email
+  tipo: TipoMensajeCoach;
+  texto: string;
+  /** El porqué, en una frase, cuando es un cambio. */
+  porque?: string;
+  /** Solo `aprobado` llega al atleta. `borrador` lo deja la máquina (latido,
+   *  asistente) o el propio coach para terminarlo luego. */
+  estado: 'borrador' | 'aprobado';
+  autor: 'coach' | 'asistente' | 'latido' | 'app';
+  /** Día al que pertenece (YYYY-MM-DD): ordena la tarjeta del atleta. */
+  fecha: string;
+  creadoEn: string;         // ISO
+  firmadoEn?: string;       // ISO, cuando pasa a aprobado
+  mediaUrl?: string;
+  mediaKind?: 'audio' | 'video';
+  /** De dónde salió: un cambio de `cambiosAtleta`, una respuesta de cuestionario… */
+  origen?: { coleccion: string; id: string };
+  /** Solo en `tipo: 'problema'`. */
+  problema?: { estado: EstadoProblema; actualizadoEn: string; detalle?: string };
 }
 
 // Estado comercial del cliente. Deliberadamente separado de `role`, que es un

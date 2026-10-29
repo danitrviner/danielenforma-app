@@ -32,7 +32,7 @@ import {
   leerEjercicios, leerProgramaDeNutricion, leerConfigDeDieta, leerDietas,
   leerRegistrosDeComida, leerRoadmap, leerSesionesDeCardio,
   marcarSesionPerdida, guardarConfigDeDieta, marcarFaseVista, guardarNivelesConseguidos,
-  actualizarPeldanos, guardarReto, leerReto, crearAvisoUnaVez, guardarSenales,
+  actualizarPeldanos, guardarReto, leerReto, crearAvisoUnaVez, guardarSenales, crearMensajeBorrador,
   leerCuestionariosAsignados, leerRespuestasDeCuestionarios, leerMesociclos,
   leerRutinas, leerRetos, leerExperiencia,
 } from './_lib/db-admin.js';
@@ -191,6 +191,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               break;
             case 'aviso':
               await crearAvisoUnaVez(db, accion.dedupeKey, accion.notificacion);
+              break;
+            case 'mensaje_borrador':
+              await crearMensajeBorrador(db, accion.mensaje);
               break;
           }
         }
