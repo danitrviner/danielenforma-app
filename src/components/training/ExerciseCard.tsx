@@ -244,6 +244,23 @@ export default React.memo(function ExerciseCard({
 
       {/* Carga sugerida (doble progresión): solo cuando toca subir. La tabla
           ya viene con ese peso; esto dice por qué, para que no parezca un error. */}
+      {/* Respuesta del coach a la nota que dejó la última vez (28-10-2026). */}
+      {prevEntry?.note && prevEntry.noteReply && doneSets === 0 && (
+        <div className="mx-4 mt-2 rounded-control border border-hairline bg-raised px-3 py-2.5 space-y-2">
+          <p className="font-sans text-caption text-ink-3">
+            <span className="font-bold text-ink-2">Tu nota de la última vez:</span> «{prevEntry.note}»
+          </p>
+          <div className="flex items-start gap-2.5">
+            <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-success/20 font-sans text-label font-bold text-success" aria-hidden="true">
+              {COACH_NOMBRE.charAt(0)}
+            </span>
+            <div className="min-w-0">
+              <p className="font-sans text-caption font-bold text-success">{COACH_NOMBRE} te ha contestado</p>
+              <p className="font-sans text-caption text-ink">{prevEntry.noteReply.text}</p>
+            </div>
+          </div>
+        </div>
+      )}
       {sugerencia.resumen && doneSets === 0 && (
         <ConsejoDelCoach texto={sugerencia.resumen} />
       )}

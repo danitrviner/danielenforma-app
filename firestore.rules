@@ -798,6 +798,12 @@ service cloud.firestore {
       allow read, write: if isCoach();
     }
 
+    // ── decisionesPlan (decisiones del coach semana a semana sobre el plan —
+    //    solo-coach; ver src/db/decisionesPlan.ts) ───────────────────────────
+    match /decisionesPlan/{email} {
+      allow read, write: if isCoach();
+    }
+
     // ── athleteStatus (nota de estado por atleta en el ClientHub — solo-coach) ─
     match /athleteStatus/{docId} {
       allow read, write: if isCoach();

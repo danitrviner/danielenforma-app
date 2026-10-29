@@ -24,6 +24,8 @@ export type NotificationType =
   // la nota se ve sola en el Inicio del atleta ese día, la notificación es
   // para cuando quiere que se entere ya.
   | 'coach_day_note'
+  // El coach ha contestado a una nota que el atleta dejó en un entreno (28-10-2026).
+  | 'note_reply'
   // Recordatorio que el COACH se puso a sí mismo sobre un paso del montaje o
   // una tarea suelta (`CoachClientTask.dueDate`). No hay servidor que lo
   // dispare: se crea al abrir la consola de clientes y ver que la fecha ya
@@ -794,11 +796,20 @@ export interface WorkoutSetLog {
   segmentoDe?: number;
 }
 
+/** Respuesta del coach a una nota del atleta (28-10-2026). */
+export interface RespuestaCoach {
+  text: string;
+  at: string; // ISO
+}
+
 export interface WorkoutEntryLog {
   exerciseId: string;
   sets: WorkoutSetLog[];
   note?: string;         // athlete's note on this specific exercise
   noteCoachSeen?: boolean;
+  /** Lo que el coach contestó a `note`. El atleta lo ve la próxima vez que
+   *  hace el ejercicio (tarjeta de la sesión) y le llega como notificación. */
+  noteReply?: RespuestaCoach;
 }
 
 export interface WorkoutLog {
@@ -812,6 +823,8 @@ export interface WorkoutLog {
   entries: WorkoutEntryLog[];
   note?: string;         // athlete's note on the workout as a whole
   noteCoachSeen?: boolean;
+  /** Respuesta del coach a la nota del entreno completo. */
+  noteReply?: RespuestaCoach;
   /** Instante en que se ABRIÓ el player por primera vez (ISO), no en que se
    *  guardó. Ausente en logs antiguos y en los que perdieron el borrador de
    *  inicio (`utils/sesionEnCurso.ts`) antes de terminar la sesión. */
