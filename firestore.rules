@@ -560,6 +560,24 @@ service cloud.firestore {
                             || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
     }
 
+    // ── planesSemanales (docId = `${athleteId}_${lunes}`; athleteId = EMAIL) ──
+    // Plan de la semana de quien cocina en tandas (utils/planSemanal.ts). Lo
+    // escribe el atleta; el coach lo lee y puede corregirlo. Mismo patrón que
+    // dietCompletionLogs.
+    match /planesSemanales/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && (resource == null
+                      || (request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true)));
+      allow create: if request.auth != null
+                    && request.resource.data.athleteId == request.auth.token.email
+                    && request.auth.token.email_verified == true;
+      allow update: if isCoach()
+                    || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                        && request.resource.data.athleteId == resource.data.athleteId
+                        && request.auth.token.email_verified == true);
+      allow delete: if isCoach();
+    }
+
     // ── revisionProgreso (docId = `${athleteId}_${viernes}`; athleteId = EMAIL) ──
     // Borrador de la revisión semanal (K-02): lo que el atleta lleva respondido,
     // para retomarlo en otro dispositivo. No son respuestas (esas siguen en

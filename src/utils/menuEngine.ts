@@ -897,13 +897,17 @@ function finalizeDay(
   conditions?: readonly number[],
   balanceSemanaKcal = 0,
   extras: ExtrasDelCatalogo | null = null,
+  /** Comidas de tanda (batch): su ración es la misma toda la semana, así que
+   *  ni se les sube la ración ni llevan extras. Lo que falte lo cubren las demás. */
+  fijas?: readonly boolean[],
 ): MenuDay {
   const puesto = sumarMacros(...meals.map(macrosDeLaComida));
   const restanteDelDia = sinNegativos(restarMacros(target, puesto));
   const cero = () => ({ p: 0, hc: 0, g: 0 });
 
   // Paso 1: qué comidas pueden absorber cada macro con su propio plato.
-  const escalables: IngredienteEscalable[][] = meals.map(meal => {
+  const escalables: IngredienteEscalable[][] = meals.map((meal, i) => {
+    if (fijas?.[i]) return [];
     const receta = recetasPorId?.get(meal.recipeId) ?? null;
     return receta && admitePalancas(receta) ? ingredientesEscalables(receta.ingredientsText, foods, mode) : [];
   });
@@ -922,7 +926,7 @@ function finalizeDay(
 
   // Paso 2: lo que sigue faltando al día, entre las comidas cortas.
   const sobrante = sinNegativos(restarMacros(restanteDelDia, conKcal(sumarMacros(...absorbido.map(conKcal)))));
-  const huecos = meals.map((meal, i) => (targets[i] ? huecoDeComida(meal, targets[i]) : { ...VACIO }));
+  const huecos = meals.map((meal, i) => (targets[i] && !fijas?.[i] ? huecoDeComida(meal, targets[i]) : { ...VACIO }));
   const paraExtras = meals.map(cero);
   for (const m of MACROS) {
     const pesos = huecos.map(h => h[m]);
@@ -1077,9 +1081,21 @@ function media(vs: Macros[]): Macros {
   return escalarMacros(sumarMacros(...vs), 1 / vs.length);
 }
 
+/** Franja que se cocina en la tanda: la que se lleva en táper, la comida y la cena. */
+export function esFranjaDeTanda(slot: MealSlotSpec): boolean {
+  return !!slot.needsTupper || slot.slot === 3 || slot.slot === 5;
+}
+
 // Batch cooking: UNA receta por franja para toda la semana (elegida contra la
-// media de los objetivos de esa franja), re-escalada cada día. Si un día no
-// llega con ella, ese día lleva otra para esa franja.
+// media de los objetivos de esa franja).
+//
+// Las franjas de tanda (`esFranjaDeTanda`) llevan además la MISMA ración todos
+// los días: se cocina el domingo y se reparte en táperes iguales, así que no
+// tiene sentido que el martes pida 180 g y el miércoles 140 g (Dani,
+// 29-10-2026). Lo que el día pida de más o de menos lo absorben las demás
+// comidas, que se reescalan cada día contra lo que les queda, y la semana
+// cuadra en el diario por cupo semanal (utils/cupoSemanal.ts). Si la receta no
+// encaja con la media, esa franja vuelve a ajustarse día a día.
 function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
   const { schedule, diets, slots, pools, foods, prefs } = args;
   const mode = args.mode ?? 'OMNIVORO';
@@ -1091,14 +1107,20 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
   const idsDeLaTanda = new Set(scheduledDiets.map(d => d.id));
   const dietaDeLaTanda = idsDeLaTanda.size === 1 ? [...idsDeLaTanda][0] : null;
 
+  const repTargets = slots.map((_, i) => media(scheduledDiets.map(d => slotTargets(objetivoDeDieta(d), slots)[i])));
   const usedAcrossSlots = new Set<string>();
   const slotRecipe: (Recipe | null)[] = slots.map((slot, i) => {
-    const repTarget = media(scheduledDiets.map(d => slotTargets(objetivoDeDieta(d), slots)[i]));
-    const ranked = rankCandidates(pools[slot.slot] ?? [], repTarget, prefs, usedAcrossSlots, { needsTupper: slot.needsTupper, batch: true, mode, dias: diasDeLaTanda, dietId: dietaDeLaTanda });
+    const ranked = rankCandidates(pools[slot.slot] ?? [], repTargets[i], prefs, usedAcrossSlots, { needsTupper: slot.needsTupper, batch: true, mode, dias: diasDeLaTanda, dietId: dietaDeLaTanda });
     const pick = ranked[0]?.recipe ?? null;
     if (pick) usedAcrossSlots.add(pick.id);
     return pick;
   });
+  const racionFija = slots.map((slot, i) => {
+    const r = slotRecipe[i];
+    return r && esFranjaDeTanda(slot) ? bestScaleFit(r, repTargets[i], mode) : null;
+  });
+  const fijas = racionFija.map(f => f != null);
+  const flexibles = slots.filter((_, i) => !fijas[i]);
 
   let balanceSemana = 0;
   return WEEK_DAYS.map(day => {
@@ -1106,8 +1128,21 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
     const diet = dietId ? dietsById.get(dietId) ?? null : null;
     if (!diet) return diaVacio(day);
     const target = objetivoDeDieta(diet);
-    const targets = slotTargets(target, slots);
+    const delDia = slotTargets(target, slots);
+
+    // Primero lo fijo; lo que queda del día, entre las franjas que se ajustan.
+    const fijasDelDia: (MenuMeal | null)[] = slots.map((slot, i) => {
+      const fit = racionFija[i];
+      return fit ? buildMeal(`${day}_m${i + 1}`, slot, slotRecipe[i]!, fit.scale, fit.macros, fit.ajuste, prefs.cambios?.sustituciones) : null;
+    });
+    const puestoFijo = sumarMacros(...fijasDelDia.filter((m): m is MenuMeal => m != null).map(macrosDeLaComida));
+    const paraFlexibles = flexibles.length > 0 ? slotTargets(sinNegativos(restarMacros(target, puestoFijo)), flexibles) : [];
+    let k = 0;
+    const targets = slots.map((_, i) => (fijas[i] ? macrosDeLaComida(fijasDelDia[i]!) : (fijas.some(Boolean) ? paraFlexibles[k++] : delDia[i])));
+
     const meals: MenuMeal[] = slots.map((slot, i) => {
+      const fija = fijasDelDia[i];
+      if (fija) return fija;
       const id = `${day}_m${i + 1}`;
       const fixed = slotRecipe[i];
       if (fixed) {
@@ -1118,7 +1153,7 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
       const pick = ranked[0];
       return pick ? buildMeal(id, slot, pick.recipe, pick.scale, pick.macros, pick.ajuste, prefs.cambios?.sustituciones) : emptyMeal(id, slot);
     });
-    const generado = finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools), prefs.conditions, balanceSemana, prepararExtras(args.catalogo, prefs));
+    const generado = finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools), prefs.conditions, balanceSemana, prepararExtras(args.catalogo, prefs), fijas);
     balanceSemana += desviacionDelDia(generado);
     return generado;
   });

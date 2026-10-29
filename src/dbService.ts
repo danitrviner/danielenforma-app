@@ -84,6 +84,9 @@ export {
   getCoachDayNote, getCoachDayNotesForAthlete, saveCoachDayNote, deleteCoachDayNote,
 } from './db/coachDayNotes';
 
+// ─── PLAN DE LA SEMANA (cocina en tandas) ─────────────────────────────────────
+export { getPlanSemanal, savePlanSemanal, planSemanalId } from './db/planSemanal';
+
 // ─── CLIENT INVITES (coach-only, doc id = email) ──────────────────────────────
 // Movido a src/db/invites.ts (2026-07-18) — reexportado aquí para que ningún
 // import existente (`from '../dbService'`) tenga que cambiar.

@@ -371,6 +371,42 @@ describe('generateWeek batch cooking', () => {
   });
 });
 
+describe('batch cooking: ración fija de táper (29-10-2026)', () => {
+  const slots: MealSlotSpec[] = [
+    { slot: 1, name: 'Desayuno', pct: 30 },
+    { slot: 3, name: 'Comida', pct: 70 },
+  ];
+  const pools = {
+    1: [recipe({ id: 'des', name: 'Tostadas', exchanges: { HC: 2, PROT: 1, GRASA: 1 } })],
+    3: [recipe({ id: 'arroz', name: 'Arroz con pollo', exchanges: { HC: 4, PROT: 4, GRASA: 2 }, tupper: true })],
+  };
+  const dietAlto = diet({ id: 'dAlto', budget: { HC: 8, PROT: 6, GRASA: 3, MIX_HC: 0, MIX_GRASA: 0 } });
+  const dietBajo = diet({ id: 'dBajo', budget: { HC: 5, PROT: 6, GRASA: 3, MIX_HC: 0, MIX_GRASA: 0 } });
+  const schedule = { mon: 'dAlto', tue: 'dBajo', wed: 'dAlto' } as const;
+  const semana = () => generateWeek({ schedule, diets: [dietAlto, dietBajo], slots, pools, foods: [], prefs: basePrefs, batch: true });
+
+  it('la comida de tanda lleva la misma receta y la misma ración todos los días', () => {
+    const dias = semana().filter(d => d.meals.length > 0);
+    const comidas = dias.map(d => d.meals.find(m => m.slot === 3)!);
+    expect(new Set(comidas.map(m => m.recipeId))).toEqual(new Set(['arroz']));
+    expect(new Set(comidas.map(m => m.scale)).size).toBe(1);
+  });
+
+  it('la comida de tanda no lleva extras ni ración de más', () => {
+    for (const d of semana().filter(x => x.meals.length > 0)) {
+      const comida = d.meals.find(m => m.slot === 3)!;
+      expect(comida.complements).toHaveLength(0);
+      expect(comida.racionesExtra ?? []).toHaveLength(0);
+    }
+  });
+
+  it('lo que cambia de un día a otro lo absorbe el desayuno', () => {
+    const dias = semana();
+    const des = (day: string) => dias.find(d => d.day === day)!.meals.find(m => m.slot === 1)!;
+    expect(des('mon').scale).toBeGreaterThan(des('tue').scale);
+  });
+});
+
 describe('batch cooking y tupper', () => {
   const slots = [{ slot: 1, name: 'Comida', pct: 100 }];
   const d = diet({ id: 'd1', budget: { HC: 4, PROT: 4, GRASA: 2, MIX_HC: 0, MIX_GRASA: 0 } });

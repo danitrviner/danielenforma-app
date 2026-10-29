@@ -81,7 +81,9 @@ function sembrar(qc: QueryClient) {
   const fijo = (key: readonly unknown[], data: unknown) => qc.setQueryData(key, data);
   fijo(['dietsForAthlete', EMAIL], [DIETA]);
   fijo(['athleteDietConfig', EMAIL], { athleteId: EMAIL, activeDietIds: [DIETA.id] } as AthleteDietConfig);
-  fijo(['athleteNutritionConfig', EMAIL], { athleteId: EMAIL, enabledModes: ['OMNIVORO'] });
+  // `?batch=1`: cocina en tandas → Nutrición abre en «Mi semana».
+  const batch = new URLSearchParams(window.location.search).has('batch');
+  fijo(['athleteNutritionConfig', EMAIL], { athleteId: EMAIL, enabledModes: ['OMNIVORO'], ...(batch ? { batchCookingPreferred: true } : {}) });
   fijo(['nutritionProgram', EMAIL], null);
   fijo(['foodItems'], FOOD_ITEMS);
   fijo(['alimentosPersonales', EMAIL], PROPIOS);
