@@ -33,6 +33,8 @@ import { fotoDeReceta } from '../utils/fotoDeReceta';
 import { escalarRecetaEntera } from '../utils/escalarRecetaEntera';
 import { recetaAjustada } from '../utils/ajusteDeReceta';
 import { senalesDeCambios } from '../utils/gustosDelAtleta';
+import { etiquetasHechoCon } from '../utils/hechoCon';
+import HechoCon from './nutrition/HechoCon';
 import { useToast } from '../hooks/useToast';
 import { useDiaActual } from '../hooks/useDiaActual';
 import { registrarComidaDelMenu, quitarComidaDelMenu, type DiaDelPlan } from '../utils/registroDesdeElMenu';
@@ -791,6 +793,9 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
           movieron a Perfil > Preferencias — no tenía sentido tenerlos aquí,
           en la pantalla de "ya está hecho", cuando no cambian el menú
           publicado hasta la próxima generación del coach. */}
+      {/* Lo que el menú ha tenido en cuenta de él, nombrado (tanda 9). */}
+      <HechoCon etiquetas={etiquetasHechoCon({ onboarding, config: nutritionConfig, favoritos: favorites, menus: menu ? [menu] : [] })} />
+
       <div className="bg-surface border border-hairline rounded-surface p-4 flex items-center justify-between gap-3">
         <p className="font-sans text-caption text-ink-2">
           Tipos de comida, variedad y batch cooking se editan ahora en tu perfil.

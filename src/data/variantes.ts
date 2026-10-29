@@ -27,6 +27,8 @@ export const VARIANTES = {
   vuelta: 'banda' as 'banda' | 'linea',
   /** «Tu plan termina pronto» (últimos 10 días). */
   renovacion: 'tarjeta' as 'tarjeta' | 'linea',
+  /** «Hecho con lo que me dijiste» en el menú. */
+  hechoCon: 'linea' as 'linea' | 'chips',
   /** Road map del atleta. */
   roadmap: 'camino' as 'camino' | 'mapa' | 'compacta',
 };
