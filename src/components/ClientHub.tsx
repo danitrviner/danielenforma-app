@@ -54,7 +54,7 @@ const ClientBodyPanel = pantallaDiferida('ClientBodyPanel', () => import('./Clie
 const ReportsPanel = pantallaDiferida('ReportsPanel', () => import('./ReportsPanel'));
 const ClientDietsPanel = pantallaDiferida('ClientDietsPanel', () => import('./ClientDietsPanel'));
 const SeguimientoPlanPanel = pantallaDiferida('SeguimientoPlanPanel', () => import('./plan/SeguimientoPlanPanel'));
-const NutritionPeriodizationPanel = pantallaDiferida('NutritionPeriodizationPanel', () => import('./NutritionPeriodizationPanel'));
+const HojaDePeriodizacion = pantallaDiferida('HojaDePeriodizacion', () => import('./plan/HojaDePeriodizacion'));
 const ClientWorkoutsPanel = pantallaDiferida('ClientWorkoutsPanel', () => import('./ClientWorkoutsPanel'));
 const ClientCardioPanel = pantallaDiferida('ClientCardioPanel', () => import('./ClientCardioPanel'));
 const ClientReviewsPanel = pantallaDiferida('ClientReviewsPanel', () => import('./ClientReviewsPanel'));
@@ -777,10 +777,9 @@ export default function ClientHub({
           />
           {activeTab === 'objetivo' && <SeguimientoPlanPanel athlete={athlete} />}
           {activeTab === 'fases' && (
-            <NutritionPeriodizationPanel
+            <HojaDePeriodizacion
               athleteEmail={athlete.email}
               athleteName={athlete.displayName}
-              targetWeightKg={athlete.targetWeight}
               diets={athleteDiets}
               onboarding={onboardingData}
               currentWeightKg={bodyweightLogs.length > 0 ? bodyweightLogs[bodyweightLogs.length - 1].weight : onboardingData?.weightKg}

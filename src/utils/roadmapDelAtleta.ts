@@ -52,7 +52,24 @@ export interface FaseDelCamino {
   hasta: string;
   pesoMeta: number | null;
   estado: 'pasada' | 'actual' | 'futura';
+  /** Para qué es la fase, con las palabras del coach (hoja de periodización). */
+  paraQue: string | null;
+  cardio: { sesiones: number; zona?: string; minutos?: number } | null;
 }
+
+/** Una semana de la fase en curso, para la tira «semana a semana» del atleta. */
+export interface SemanaDeFase {
+  n: number;
+  semana: number;
+  real: number | null;
+  esperado: number | null;
+  estado: 'en-plan' | 'por-encima' | 'por-debajo' | null;
+  enCurso: boolean;
+  futura: boolean;
+}
+
+/** El siguiente cambio programado que le afecta: escalón de kcal, de pasos o cambio de fase. */
+export interface ProximoCambio { semana: number; fecha: string; texto: string }
 
 export interface DondeEstas {
   fase: FaseDelCamino;
@@ -98,9 +115,14 @@ export interface RoadmapDelAtleta {
   dondeEstas: DondeEstas | null;
   camino: FaseDelCamino[];
   bloque: BloqueDelCamino | null;
-  estaSemana: { kcal: number | null; pasos: number | null; fuerza: FuerzaDeLaSemana | null; desde: string; hasta: string } | null;
+  estaSemana: { kcal: number | null; pasos: number | null; cardio: FaseDelCamino['cardio']; fuerza: FuerzaDeLaSemana | null; desde: string; hasta: string } | null;
   proximoHito: ProximoHito | null;
   hitos: HitoAutomatico[];
+  /** Las semanas de la fase en curso, con su peso real y el esperado. */
+  semanasDeFase: SemanaDeFase[];
+  /** Todos los bloques de entreno (pasados, en curso, futuros), para pintarlos en el camino. */
+  bloques: (BloqueDelCamino & { estado: 'pasada' | 'actual' | 'futura' })[];
+  proximoCambio: ProximoCambio | null;
   /** Sin fases del programa: el camino es la fase de arranque. */
   arranque: boolean;
 }
@@ -127,6 +149,7 @@ export function caminoDeFases(program: NutritionProgram, semanas: SemanaDelPlan[
     out.push({
       idx, nombre: fase.name, objetivo, objetivoTexto: objetivoTexto(objetivo, pesoMeta, hasta), semanas: suyas.length,
       desde, hasta, pesoMeta, estado: hasta < hoy ? 'pasada' : desde > hoy ? 'futura' : 'actual',
+      paraQue: fase.paraQue?.trim() || null, cardio: fase.cardio ?? null,
     });
   });
   return out;
@@ -149,6 +172,7 @@ export function caminoDeArranque(e: { planPublishedAt?: string | null; bloque: B
   return [{
     idx: 0, nombre: 'Tu arranque', objetivo: null, objetivoTexto: 'Coger el ritmo: entrenar, pesarte y registrar lo que comes',
     semanas: Math.max(1, Math.ceil((diasEntreFechas(desde, hasta) + 1) / 7)), desde, hasta, pesoMeta: null, estado: 'actual',
+    paraQue: null, cardio: null,
   }];
 }
 
@@ -203,6 +227,48 @@ export function bloqueEnCurso(mesociclos: readonly Mesocycle[], hoy: string): Bl
     semana: Math.floor(diasEntreFechas(m.startDate, hoy) / 7) + 1, semanas: m.weeks,
     desde: m.startDate, hasta: addDays(m.startDate, m.weeks * 7 - 1),
   };
+}
+
+/** Todos los bloques de entreno con su estado, en orden. */
+export function bloquesDelCamino(mesociclos: readonly Mesocycle[], hoy: string): RoadmapDelAtleta['bloques'] {
+  return [...mesociclos].filter(m => !!m.startDate).sort((a, b) => a.startDate.localeCompare(b.startDate)).map(m => {
+    const hasta = addDays(m.startDate, m.weeks * 7 - 1);
+    return {
+      id: m.id, nombre: m.name || 'Bloque de entreno', semanas: m.weeks, desde: m.startDate, hasta,
+      semana: Math.min(m.weeks, Math.max(1, Math.floor(diasEntreFechas(m.startDate, hoy) / 7) + 1)),
+      estado: hasta < hoy ? 'pasada' : m.startDate > hoy ? 'futura' : 'actual',
+    };
+  });
+}
+
+/** Las semanas de la fase en curso para la tira del atleta. */
+export function semanasDeLaFase(semanas: SemanaDelPlan[], faseIdx: number): SemanaDeFase[] {
+  return semanas.filter(s => s.faseIdx === faseIdx).map((s, i) => ({ n: i + 1, semana: s.semana, real: s.real, esperado: s.esperado, estado: s.estado, enCurso: s.enCurso, futura: s.futura }));
+}
+
+/**
+ * El siguiente cambio programado después de esta semana: kcal (escalón),
+ * pasos o cambio de fase, lo primero que llegue. `kcalSemana` y
+ * `pasosSemana` van indexados por semana del programa (1-based).
+ */
+export function proximoCambio(e: { semanas: SemanaDelPlan[]; camino: FaseDelCamino[]; kcalSemana?: (number | null)[]; pasosSemana?: (number | null)[]; hoy: string }): ProximoCambio | null {
+  const actual = e.semanas.find(s => s.enCurso);
+  if (!actual) return null;
+  for (let s = actual.semana + 1; s <= e.semanas.length; s++) {
+    const fila = e.semanas[s - 1];
+    const antes = e.semanas[s - 2];
+    const partes: string[] = [];
+    if (fila.faseIdx !== antes.faseIdx) {
+      const f = e.camino.find(c => c.idx === fila.faseIdx);
+      if (f) partes.push(`empiezas «${f.nombre}»`);
+    }
+    const k0 = e.kcalSemana?.[s - 1], k1 = e.kcalSemana?.[s];
+    if (k0 != null && k1 != null && Math.abs(k1 - k0) >= 50) partes.push(`${k1 < k0 ? 'bajas' : 'subes'} a ${String(Math.round(k1)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')} kcal`);
+    const p0 = e.pasosSemana?.[s - 1], p1 = e.pasosSemana?.[s];
+    if (p0 != null && p1 != null && p1 !== p0) partes.push(`${p1 > p0 ? 'subes' : 'bajas'} a ${String(p1).replace(/\B(?=(\d{3})+(?!\d))/g, '.')} pasos`);
+    if (partes.length) return { semana: s, fecha: fila.desde, texto: `En la S${s} ${partes.join(' y ')}.` };
+  }
+  return null;
 }
 
 /** Semanas (lunes) terminadas antes de hoy, de la más antigua a la más reciente, hasta `n` atrás. */
@@ -364,6 +430,9 @@ export function construirRoadmap(e: {
   kcalDieta?: number | null;
   /** Dominadas y fondos cuentan el peso corporal (ver pesoCorporal.ts). */
   ctxFuerza?: ContextoPesoCorporal | null;
+  /** kcal y pasos de cada semana del programa (índice = semana), para el próximo cambio. */
+  kcalSemana?: (number | null)[];
+  pasosSemana?: (number | null)[];
 }): RoadmapDelAtleta {
   const bloque = bloqueEnCurso(e.mesociclos, e.hoy);
   const deFases = e.program ? caminoDeFases(e.program, e.semanas, e.hoy) : [];
@@ -373,13 +442,21 @@ export function construirRoadmap(e: {
   const enCurso = e.semanas.find(s => s.enCurso) ?? null;
   const fuerza = fuerzaDeLaSemana({ workoutLogs: e.workoutLogs, hoy: e.hoy, ctx: e.ctxFuerza });
   const lunes = getWeekStart(e.hoy);
+  const faseActual = camino.find(f => f.estado === 'actual') ?? null;
   const estaSemana = enCurso
-    ? { kcal: enCurso.kcalPlan, pasos: enCurso.pasosPlan, fuerza, desde: enCurso.desde, hasta: enCurso.hasta }
-    : camino.length > 0 ? { kcal: e.kcalDieta ?? null, pasos: e.stepGoal, fuerza, desde: lunes, hasta: addDays(lunes, 6) } : null;
+    ? { kcal: enCurso.kcalPlan, pasos: enCurso.pasosPlan, cardio: faseActual?.cardio ?? null, fuerza, desde: enCurso.desde, hasta: enCurso.hasta }
+    : camino.length > 0 ? { kcal: e.kcalDieta ?? null, pasos: e.stepGoal, cardio: null, fuerza, desde: lunes, hasta: addDays(lunes, 6) } : null;
   return {
     dondeEstas: donde, camino, bloque, estaSemana,
     proximoHito: proximoHito({ camino, bloque, donde, hoy: e.hoy }),
     hitos: hitosAutomaticos({ ...e, camino }),
+    semanasDeFase: arranque || !faseActual ? [] : semanasDeLaFase(e.semanas, faseActual.idx),
+    bloques: bloquesDelCamino(e.mesociclos, e.hoy),
+    proximoCambio: arranque ? null : proximoCambio({
+      semanas: e.semanas, camino, hoy: e.hoy,
+      kcalSemana: e.kcalSemana ?? [null, ...e.semanas.map(s => s.kcalPlan)],
+      pasosSemana: e.pasosSemana ?? [null, ...e.semanas.map(s => s.pasosPlan)],
+    }),
     arranque: arranque && camino.length > 0,
   };
 }

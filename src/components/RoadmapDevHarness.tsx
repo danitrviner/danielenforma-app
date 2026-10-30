@@ -17,8 +17,8 @@ const INICIO = addDays(getWeekStart(HOY), -5 * 7); // semana 6 del plan
 const PROGRAMA = {
   athleteId: EMAIL, startDate: INICIO,
   phases: [
-    { id: 'f1', name: 'Déficit', weeks: 4, dietId: 'd1', objetivo: 'deficit', targetWeight: 82.5, targetKcal: 2100, stepGoal: 9000 },
-    { id: 'f2', name: 'Déficit 2', weeks: 6, dietId: 'd2', objetivo: 'deficit', targetWeight: 79, targetKcal: 2000, stepGoal: 9000 },
+    { id: 'f1', name: 'Déficit', weeks: 4, dietId: 'd1', objetivo: 'deficit', targetWeight: 82.5, targetKcal: 2100, stepGoal: 9000, paraQue: 'Arrancar la pérdida sin pasar hambre' },
+    { id: 'f2', name: 'Déficit 2', weeks: 6, dietId: 'd2', objetivo: 'deficit', targetWeight: 79, targetKcal: 2000, stepGoal: 9000, paraQue: 'Quitar grasa guardando el músculo', cardio: { sesiones: 2, zona: 'zona 2', minutos: 30 } },
     { id: 'f3', name: 'Mantenimiento', weeks: 2, dietId: 'd3', objetivo: 'mantenimiento', targetKcal: 2500, stepGoal: 9000 },
     { id: 'f4', name: 'Volumen', weeks: 8, dietId: 'd4', objetivo: 'volumen', targetWeight: 82, targetKcal: 2900, stepGoal: 8000 },
   ],
@@ -32,6 +32,7 @@ const PASOS = PESOS.map(p => ({ id: `s_${p.date}`, athleteId: EMAIL, date: p.dat
 const MESOS: Mesocycle[] = [
   { id: 'm0', athleteId: EMAIL, name: 'Adaptación', startDate: addDays(INICIO, -6 * 7), weeks: 6 } as Mesocycle,
   { id: 'm1', athleteId: EMAIL, name: 'Hipertrofia 1', startDate: addDays(INICIO, 7), weeks: 9 } as Mesocycle,
+  { id: 'm2', athleteId: EMAIL, name: 'Hipertrofia 2', startDate: addDays(INICIO, 7 + 9 * 7), weeks: 8 } as Mesocycle,
 ];
 // Seis semanas cerradas y la actual hasta hoy, todas hechas.
 const ASIGNACIONES: WorkoutAssignment[] = Array.from({ length: 7 }, (_, w) => [0, 2, 4].map(d => {

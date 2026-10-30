@@ -70,7 +70,7 @@ cottage
 create
 cyclone
 dashboard
-database
+dashboard_customize
 delete
 delete_forever
 description
@@ -133,6 +133,7 @@ home
 hourglass_top
 icecream
 image
+inbox
 info
 input
 insights
@@ -271,6 +272,7 @@ takeout_dining
 target
 task_alt
 thumb_down
+thumb_up
 timelapse
 timeline
 title

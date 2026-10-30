@@ -173,3 +173,30 @@ describe('hitos del arranque y fuerza de la semana', () => {
     expect(fuerzaDeLaSemana({ workoutLogs: logs.slice(0, 4), hoy: HOY })).toBeNull();
   });
 });
+
+describe('semanas de la fase, bloques y próximo cambio (hoja de periodización, 30-10)', () => {
+  const meso = (id: string, name: string, desde: string, weeks: number) => ({ id, athleteId: 'a@x.com', name, startDate: desde, weeks } as Mesocycle);
+  const base = { program: PROGRAMA, semanas: semanas(), mesociclos: [], assignments: [], workoutLogs: [], respuestas: [], stepLogs: [], stepGoal: 9000, hoy: HOY };
+
+  it('la tira lleva las semanas de la fase en curso con real, esperado y estado', () => {
+    const r = construirRoadmap(base);
+    expect(r.semanasDeFase.map(s => [s.n, s.semana, s.enCurso, s.futura])).toEqual([[1, 5, false, false], [2, 6, true, false], [3, 7, false, true], [4, 8, false, true], [5, 9, false, true], [6, 10, false, true]]);
+    expect(r.semanasDeFase[0]).toMatchObject({ real: 82.4, estado: 'en-plan' });
+    expect(r.semanasDeFase[2].real).toBeNull();
+  });
+
+  it('los bloques de entreno salen todos, con su estado y su semana', () => {
+    const r = construirRoadmap({ ...base, mesociclos: [meso('m1', 'Adaptación', '2026-08-03', 6), meso('m2', 'Hipertrofia 1', '2026-09-14', 9), meso('m3', 'Hipertrofia 2', '2026-11-16', 8)] });
+    expect(r.bloques.map(b => [b.nombre, b.estado, b.semana])).toEqual([['Adaptación', 'pasada', 6], ['Hipertrofia 1', 'actual', 7], ['Hipertrofia 2', 'futura', 1]]);
+  });
+
+  it('el próximo cambio: escalón de kcal, de pasos o cambio de fase, lo primero que llegue', () => {
+    const kcal = [null, ...semanas().map(s => s.kcalPlan)]; kcal[9] = 2000;
+    const r = construirRoadmap({ ...base, kcalSemana: kcal });
+    expect(r.proximoCambio).toMatchObject({ semana: 9, texto: 'En la S9 bajas a 2.000 kcal.' });
+    const pasos = [null, ...semanas().map(s => s.pasosPlan)]; pasos[8] = 11000;
+    expect(construirRoadmap({ ...base, pasosSemana: pasos }).proximoCambio).toMatchObject({ semana: 8, texto: 'En la S8 subes a 11.000 pasos.' });
+    // Sin escalones: el siguiente cambio es la fase de mantenimiento, en la S11.
+    expect(construirRoadmap(base).proximoCambio).toMatchObject({ semana: 11, texto: 'En la S11 empiezas «Mantenimiento».' });
+  });
+});

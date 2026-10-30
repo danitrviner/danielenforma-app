@@ -1,5 +1,5 @@
 import { db, doc, getDoc, setDoc, deleteDoc } from '../firebase';
-import { CoachInstructions, CoachQuickReplies, MuscleGroup } from '../types';
+import { CoachInstructions, CoachQuickReplies, MuscleGroup, PlantillaPeriodizacion } from '../types';
 import { DOCTRINA_DEFAULTS, type DoctrinaKind } from '../ai/doctrina';
 import { VOLUME_LANDMARKS_DEFAULT, isValidLandmarksTable, type VolumeLandmark } from '../data/volumeLandmarks';
 import { forceLocalOnly, setLocalBypassMode, esFalloDePermisos } from './core';
@@ -291,6 +291,38 @@ export async function savePoliticaAutopiloto(politica: PoliticaAutopiloto): Prom
     await setDoc(doc(db, 'coachSettings', AUTOPILOTO_DOC_ID), data);
   } catch (err) {
     console.warn('savePoliticaAutopiloto Firestore failed, kept local:', err);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
+  }
+}
+
+// ── Plantillas de periodización (30-10-2026) ────────────────────────────────
+// Las del coach, editables; sin documento se usan las de utils/hojaDePeriodizacion.
+const PLANTILLAS_DOC = 'plantillasPeriodizacion';
+const PLANTILLAS_LOCAL_KEY = 'enforma_plantillas_periodizacion';
+
+export async function getPlantillasPeriodizacion(): Promise<PlantillaPeriodizacion[] | null> {
+  const local = localStorage.getItem(PLANTILLAS_LOCAL_KEY);
+  if (forceLocalOnly) return local ? JSON.parse(local) as PlantillaPeriodizacion[] : null;
+  try {
+    const snap = await getDoc(doc(db, 'coachSettings', PLANTILLAS_DOC));
+    const lista = snap.exists() ? (snap.data().plantillas as PlantillaPeriodizacion[] | undefined) ?? null : null;
+    if (lista) escribirLocal(PLANTILLAS_LOCAL_KEY, JSON.stringify(lista));
+    return lista;
+  } catch (err) {
+    console.warn('getPlantillasPeriodizacion Firestore failed, using local:', err);
+    setLocalBypassMode(true, err);
+    return local ? JSON.parse(local) as PlantillaPeriodizacion[] : null;
+  }
+}
+
+export async function savePlantillasPeriodizacion(plantillas: PlantillaPeriodizacion[]): Promise<void> {
+  escribirLocal(PLANTILLAS_LOCAL_KEY, JSON.stringify(plantillas));
+  if (forceLocalOnly) return;
+  try {
+    await setDoc(doc(db, 'coachSettings', PLANTILLAS_DOC), { plantillas, updatedAt: new Date().toISOString() });
+  } catch (err) {
+    console.warn('savePlantillasPeriodizacion Firestore failed, kept local:', err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
   }
