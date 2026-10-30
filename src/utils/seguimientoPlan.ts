@@ -101,7 +101,8 @@ export function semanasDelPlan(p: {
       const hasta = addDays(desde, 6);
       const futura = desde > hoy;
       const enCurso = desde <= hoy && hoy <= hasta;
-      const kcalPlan = kcalSemana[semana] ?? kcalFase;
+      // Una dieta sin cupo da 0: entonces manda el objetivo de la fase.
+      const kcalPlan = kcalSemana[semana] || kcalFase;
       const plan = ref != null && objetivo
         ? planDeFase({ ref, objetivo, pesoObjetivo: fase.targetWeight, semanas: fase.weeks, desde: inicioFase, fecha: addDays(desde, 3) })
         : null;
