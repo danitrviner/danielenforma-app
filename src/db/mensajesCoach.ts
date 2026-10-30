@@ -1,4 +1,4 @@
-import { db, collection, doc, setDoc, updateDoc, getDocs, query, where } from '../firebase';
+import { db, collection, doc, setDoc, updateDoc, deleteDoc, getDocs, query, where } from '../firebase';
 import type { EstadoProblema, MensajeCoach } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { reportarError } from '../monitorizacion';
@@ -106,6 +106,26 @@ export async function actualizarMensajeCoach(id: string, cambios: Partial<Pick<M
     local();
   } catch (err) {
     console.warn('actualizarMensajeCoach Firestore failed:', err);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
+    local();
+  }
+}
+
+/** Descartar un borrador: queda como 'descartado' para que la máquina no lo vuelva a proponer. */
+export async function descartarMensajeCoach(id: string): Promise<void> {
+  await actualizarMensajeCoach(id, { estado: 'descartado' });
+}
+
+/** Borrar un mensaje ya enviado (30-10, Dani): desaparece también para el atleta. */
+export async function borrarMensajeCoach(id: string): Promise<void> {
+  const local = () => guardarLocal(leerLocal().filter(m => m.id !== id));
+  if (forceLocalOnly) { local(); return; }
+  try {
+    await deleteDoc(doc(db, 'mensajesCoach', id));
+    local();
+  } catch (err) {
+    console.warn('borrarMensajeCoach Firestore failed:', err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
     local();
