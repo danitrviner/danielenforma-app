@@ -110,11 +110,11 @@ function datosBase() {
 
 async function ejecutar(db: unknown, query: Record<string, string> = {}) {
   vi.resetModules();
-  vi.doMock('./_lib/auth.js', () => ({
+  vi.doMock('../_lib/auth.js', () => ({
     COACH_EMAIL: 'coach@x.com',
     getAdminDb: async () => db,
   }));
-  const handler = (await import('./latido-diario')).default;
+  const handler = (await import('../latido-diario')).default;
   const { res, r } = respuestaFalsa();
   await handler(peticion(query), res);
   return r;

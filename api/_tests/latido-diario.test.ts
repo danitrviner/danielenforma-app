@@ -26,7 +26,7 @@ beforeEach(() => { vi.resetModules(); delete process.env.CRON_SECRET; });
 afterEach(() => { delete process.env.CRON_SECRET; });
 
 async function handler() {
-  return (await import('./latido-diario')).default;
+  return (await import('../latido-diario')).default;
 }
 
 describe('api/latido-diario · quién puede dispararlo', () => {

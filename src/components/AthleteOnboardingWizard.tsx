@@ -1456,7 +1456,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete, onNombre 
             pantalla, y el código acababa fusionando las dos listas — la prueba
             de que era la misma pregunta hecha dos veces. */}
         {step === 14 && (
-          <StepShell title="Qué te gusta y qué no" subtitle="Marca por grupos. Lo que pongas en «no quiero» no aparecerá en tu menú; lo que pongas en favoritos saldrá más a menudo.">
+          <StepShell title="Qué te gusta y qué no" subtitle="Marca por grupos. Lo que pongas en «no quiero» no aparecerá nunca en tu menú; los favoritos saldrán más a menudo; y lo que dejes sin marcar también puede salir. Por eso, si hay algo que no comes normalmente, márcalo como «no quiero» (solo lo dejas sin marcar si quieres empezar a incluirlo).">
             <FoodPreferencesPanel
               athleteEmail={profile.email}
               initialLiked={prefLiked}
@@ -1489,7 +1489,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete, onNombre 
             guardaban y no las leía nadie. Retiradas el 2026-09-05 — una pregunta
             obligatoria que no cambia el plan es peor que no preguntar. */}
         {step === 16 && (
-          <StepShell title="Cómo quieres tu menú" subtitle="Cuánta variedad aguantas. No hay respuesta buena: repetir es más cómodo y más barato, variar se hace más llevadero a la larga.">
+          <StepShell title="Cómo quieres tu menú" subtitle="Cuánta variedad aguantas. Al empezar recomendamos poca variedad (1 o 2): repetir es más cómodo, más barato y hace más fácil seguir el plan. Más adelante, si quieres, vas ampliando.">
             <div>
               <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">El menú en general</p>
               <div className="flex gap-2">
@@ -1502,32 +1502,41 @@ export default function AthleteOnboardingWizard({ profile, onComplete, onNombre 
 
             <div>
               <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">
-                Tipos de plato que quieres ver MÁS <span className="normal-case text-ink-3">(opcional)</span>
+                Tipos de plato <span className="normal-case text-ink-3">(opcional)</span>
               </p>
-              <p className="text-body-s text-ink-2 mb-2">Formatos de plato, no alimentos. Marca los que te apetezcan.</p>
-              <div className="flex flex-wrap gap-2">
-                {DISH_TYPES.map(d => (
-                  <Chip key={d.id} selected={preferredDishTypes.includes(d.id)}
-                    onClick={() => {
-                      setPreferredDishTypes(prev => alternar(prev, d.id));
-                      setExcludedDishTypes(prev => prev.filter(x => x !== d.id));
-                    }}>{d.label}</Chip>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">
-                Y los que prefieres EVITAR <span className="normal-case text-ink-3">(opcional)</span>
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {DISH_TYPES.map(d => (
-                  <Chip key={d.id} selected={excludedDishTypes.includes(d.id)}
-                    onClick={() => {
-                      setExcludedDishTypes(prev => alternar(prev, d.id));
-                      setPreferredDishTypes(prev => prev.filter(x => x !== d.id));
-                    }}>{d.label}</Chip>
-                ))}
+              <p className="text-body-s text-ink-2 mb-2">Formatos de plato, no alimentos. Pulsa el pulgar para evitarlos y la estrella para verlos más.</p>
+              <div className="rounded-card border border-hairline divide-y divide-hairline overflow-hidden">
+                {DISH_TYPES.map(d => {
+                  const fav = preferredDishTypes.includes(d.id);
+                  const no = excludedDishTypes.includes(d.id);
+                  return (
+                    <div key={d.id} className={`flex items-center gap-3 px-4 py-3 transition-colors ${fav ? 'bg-warning/5' : no ? 'bg-danger/5' : 'bg-surface'}`}>
+                      <span className={`flex-1 font-mono text-label ${fav ? 'text-ink' : no ? 'text-ink-3' : 'text-ink-2'}`}>{d.label}</span>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <button type="button" title="Prefiero evitarlo" aria-pressed={no}
+                          onClick={() => {
+                            setExcludedDishTypes(prev => alternar(prev, d.id));
+                            setPreferredDishTypes(prev => prev.filter(x => x !== d.id));
+                          }}
+                          className={`w-11 h-11 rounded-control flex items-center justify-center transition-[color,background-color,border-color,opacity,transform,box-shadow] active:scale-90 ${
+                            no ? 'bg-danger/20 border border-danger/50 text-danger' : 'bg-raised border border-hairline text-ink-3 hover:text-danger hover:border-danger/30'
+                          }`}>
+                          <span className="material-symbols-outlined text-body-s">thumb_down</span>
+                        </button>
+                        <button type="button" title="Quiero verlo más" aria-pressed={fav}
+                          onClick={() => {
+                            setPreferredDishTypes(prev => alternar(prev, d.id));
+                            setExcludedDishTypes(prev => prev.filter(x => x !== d.id));
+                          }}
+                          className={`w-11 h-11 rounded-control flex items-center justify-center transition-[color,background-color,border-color,opacity,transform,box-shadow] active:scale-90 ${
+                            fav ? 'bg-warning/20 border border-warning/50 text-warning' : 'bg-raised border border-hairline text-ink-3 hover:text-warning hover:border-warning/30'
+                          }`}>
+                          <span className="material-symbols-outlined text-body-s" style={{ fontVariationSettings: fav ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </StepShell>

@@ -15,19 +15,11 @@ import { mesoQueVeElAtleta } from '../utils/bloqueDelAtleta';
 import { adherenciaDeMesociclo } from '../utils/adherence';
 import { formatearDuracion } from '../utils/duracionSesion';
 import { useToast } from '../hooks/useToast';
-import MesocycleDashboard from './MesocycleDashboard';
-import LoadHistoryPanel from './LoadHistoryPanel';
 import MesocycleManager from './MesocycleManager';
 import { Badge, BadgeTone, Sheet, Button, Icon, Input, Select, SegmentedControl } from './ui';
 import { pulsable } from '../utils/a11y';
 
 import { useConfirm } from '../hooks/useConfirm';
-type SubView = 'info' | 'programacion';
-const SUBVIEW_KEY = 'enforma_coach_workouts_subview';
-const readSubView = (): SubView => {
-  try { return localStorage.getItem(SUBVIEW_KEY) === 'info' ? 'info' : 'programacion'; }
-  catch { return 'programacion'; }
-};
 
 const STATUS_LABEL: Record<WorkoutAssignment['status'], string> = {
   pending:   'Pendiente',
@@ -64,12 +56,6 @@ export default function ClientWorkoutsPanel({
   const { showToast } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
   const queryClient = useQueryClient();
-
-  const [subView, setSubView] = useState<SubView>(readSubView);
-  const changeSubView = (v: string) => {
-    setSubView(v as SubView);
-    try { localStorage.setItem(SUBVIEW_KEY, v); } catch { /* noop */ }
-  };
 
   const getExercise = (id: string) => exercises.find(e => e.id === id);
 
@@ -271,28 +257,6 @@ export default function ClientWorkoutsPanel({
         </div>
       )}
 
-      <SegmentedControl
-        label="Vista de entrenamientos"
-        options={[{ value: 'programacion', label: 'Programación' }, { value: 'info', label: 'Información' }]}
-        value={subView}
-        onChange={changeSubView}
-      />
-
-      {subView === 'info' ? (
-        <>
-          {/* Periodización de entrenamiento — visión analítica */}
-          <div>
-            <h2 className="font-sans font-bold text-title-m tracking-tight text-ink uppercase flex items-center gap-2">
-              <span className="material-symbols-outlined text-accent-ink" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
-              Periodización de entrenamiento
-            </h2>
-            <p className="font-sans text-label text-ink-2 mt-1">Cómo va el ciclo actual antes de tocar la programación.</p>
-          </div>
-          <MesocycleDashboard mesocycles={mesocycles} athleteEmail={athlete.email} />
-          <LoadHistoryPanel logs={athleteLogs} exercises={exercises} athleteId={athlete.email} />
-        </>
-      ) : (
-      <>
       {/* Notas del atleta — agrupadas por sesión (mockup Fase 3, pantalla 06):
           cada log de entreno es una sesión, y dentro de ella la nota del
           entreno completo y las notas por ejercicio son "notas" individuales,
@@ -625,12 +589,11 @@ export default function ClientWorkoutsPanel({
         athleteLevel={onboardingData?.experienceLevel}
         athleteHatedExercises={onboardingData?.hatedExercises ?? []}
         athleteInjuries={onboardingData?.injuries ?? ''}
+        athleteOnboarding={onboardingData}
         athleteName={athlete.displayName}
         athleteLogs={athleteLogs}
         athleteAssignments={assignments}
       />
-      </>
-      )}
 
       {/* ── Assign modal ──────────────────────────────────────────────────── */}
       {showAssignModal && (

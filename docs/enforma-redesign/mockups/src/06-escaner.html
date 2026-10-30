@@ -1,0 +1,54 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><title>06 Escáner</title>
+<style>
+.cam{position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,#5b5246 0,#2a2622 55%,#141210 100%)}
+.box{position:absolute;left:50px;right:50px;top:260px;height:170px;border-radius:22px;border:3px solid #E3B341;box-shadow:0 0 0 2000px rgba(0,0,0,.45)}
+.laser{position:absolute;left:62px;right:62px;top:344px;height:2px;background:#E3B341;box-shadow:0 0 12px #E3B341}
+.bars{position:absolute;left:110px;right:110px;top:300px;height:90px;background:repeating-linear-gradient(90deg,#f4f2ed 0 3px,transparent 3px 6px,#f4f2ed 6px 7px,transparent 7px 11px);opacity:.85;border-radius:4px}
+.nut td{font-size:14px;padding:7px 0;border-bottom:1px solid var(--hairline)} .nut td.r{text-align:right;font-family:"IBM Plex Mono";font-weight:600}
+</style></head><body>
+<div class="sheetpage">
+  <div><div class="cap">Propuesta · leyendo</div>
+  <div class="frame"><div class="phone" style="background:#141210">
+    <div class="cam"></div><div class="bars"></div><div class="box"></div><div class="laser"></div>
+    <div style="position:absolute;top:54px;left:16px;right:16px" class="row between"><span class="iconbtn" style="background:rgba(0,0,0,.45);color:#fff"><span class="ms">close</span></span><span style="color:#fff;font-weight:700">Escanear producto</span><span class="iconbtn" style="background:rgba(0,0,0,.45);color:#fff"><span class="ms">flashlight_on</span></span></div>
+    <div style="position:absolute;top:452px;left:0;right:0;text-align:center;color:#F5F5F4;font-size:16px;font-weight:600">Encuadra el código de barras</div>
+    <div style="position:absolute;bottom:40px;left:16px;right:16px">
+      <div class="btn" style="width:100%;background:rgba(245,245,244,.14);color:#fff;border:1px solid rgba(245,245,244,.3)"><span class="ms">keyboard</span>Escribir el código</div>
+      <div style="text-align:center;margin-top:14px;color:rgba(245,245,244,.82);font-size:14px">¿No funciona la cámara? <b style="color:#E3B341">Buscar por nombre</b></div>
+    </div>
+  </div></div></div>
+  <div><div class="cap">Producto encontrado</div>
+  <div class="frame"><div class="phone">
+    <div class="cam" style="opacity:.9"></div>
+    <div class="sheet" style="top:150px">
+      <div class="grab"></div>
+      <div class="row" style="gap:12px"><div style="width:64px;height:64px;border-radius:14px;background:var(--inset);display:grid;place-items:center"><span class="ms" style="font-size:30px;color:var(--ink-3)">nutrition</span></div><div style="flex:1"><div class="h-m">Yogur griego natural</div><div class="body-s">Hacendado · 4 × 125 g</div><div class="row" style="gap:6px;margin-top:4px"><span class="pill" style="background:var(--inset);color:var(--ink-2)">OFF</span><span class="caption mono">8480000123457</span></div></div></div>
+      <table class="nut" style="margin-top:14px"><tr><td style="color:var(--ink-3)" colspan="2">Por envase (125 g)</td></tr><tr><td>Energía</td><td class="r">153 kcal</td></tr><tr><td>Proteínas</td><td class="r">4,4 g</td></tr><tr><td>Hidratos</td><td class="r">5,0 g</td></tr><tr><td>Grasas</td><td class="r">12,5 g</td></tr></table>
+      <div class="label" style="margin-top:14px">Cantidad</div>
+      <div class="row" style="margin-top:6px;gap:8px"><span class="chip">½ envase</span><span class="chip on">1 envase · 125 g</span><span class="chip">Otro</span></div>
+      <div class="label" style="margin-top:14px">Comida</div>
+      <div class="seg" style="margin-top:6px"><div>Desayuno</div><div>Comida</div><div class="on">Merienda</div><div>Cena</div></div>
+      <div class="btn btn-primary" style="width:100%;margin-top:16px">Añadir · 153 kcal</div>
+    </div>
+  </div></div></div>
+  <div><div class="cap">No encontrado / incompleto</div>
+  <div class="frame"><div class="phone">
+    <div class="cam" style="opacity:.9"></div>
+    <div class="sheet" style="top:260px">
+      <div class="grab"></div>
+      <span class="ms" style="font-size:36px;color:var(--warning)">help</span>
+      <div class="h-m" style="margin-top:6px">No tenemos este producto</div>
+      <div class="body-s" style="margin-top:6px">Código <span class="mono">8410000123456</span>. Puedes crearlo con su etiqueta: lo calcularemos y quedará en <b>tus alimentos</b>.</div>
+      <div class="card pad" style="margin-top:14px;background:var(--raised)"><div class="row" style="gap:10px"><span class="ms" style="color:var(--data)">photo_camera</span><div style="flex:1"><div class="h-s">Foto de la tabla nutricional</div><div class="caption">Rellenas 4 números: kcal, P, HC y G por 100 g</div></div></div></div>
+      <div class="btn btn-primary" style="width:100%;margin-top:14px">Crear alimento</div>
+      <div class="btn btn-ghost" style="width:100%;margin-top:10px">Buscar por nombre</div>
+      <div class="caption" style="margin-top:12px;text-align:center">Nunca rellenamos valores que el producto no declara.</div>
+    </div>
+  </div></div></div>
+  <div class="note"><h3>Viabilidad técnica</h3><ul>
+    <li><b>Safari iOS no soporta <span class="mono">BarcodeDetector</span></b> por defecto (2026). En web hace falta un lector WebAssembly (ZXing); en la app nativa, plugin Capacitor de ML Kit.</li>
+    <li>Hoy no hay ningún plugin de cámara ni de códigos; el texto de permiso de cámara de iOS habría que ampliarlo.</li>
+    <li>Fuente: Open Food Facts (ODbL: atribución + compartir igual; 15 lecturas/min por IP) → caché propia por código.</li>
+    <li>«Crear alimento» reutiliza <span class="mono">CrearAlimentoSheet</span> (ya existe).</li>
+  </ul></div>
+</div></body></html>

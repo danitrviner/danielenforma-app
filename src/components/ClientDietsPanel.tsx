@@ -18,6 +18,7 @@ import { getDietsForAthlete, deleteWeeklyMenu, getWeeklyMenusForAthlete, getNutr
 import { appendDossierFacts } from '../db/dossier';
 import { recogerBorradorDeDieta } from '../ai/borradorDieta';
 import NutritionPlansScreen from './NutritionPlansScreen';
+import RespuestasDelAlta from './RespuestasDelAlta';
 import WeeklyMenuEditor from './WeeklyMenuEditor';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import MicronutrientesPanel from './MicronutrientesPanel';
@@ -170,6 +171,8 @@ export default function ClientDietsPanel({
 
   return menuEditor !== undefined ? (
     /* ── Weekly menu editor (recipe-first generator) ── */
+    <div className="space-y-4">
+    <RespuestasDelAlta onboarding={onboardingData} tema="nutricion" />
     <WeeklyMenuEditor
       athleteEmail={athlete.email}
       coachId={coachId}
@@ -181,8 +184,11 @@ export default function ClientDietsPanel({
       onSaved={() => { setMenuEditor(undefined); reloadWeeklyMenus(); }}
       onCancel={() => { setMenuEditor(undefined); reloadWeeklyMenus(); }}
     />
+    </div>
   ) : dietEditorDiet !== undefined ? (
     /* ── Diet editor (embedded NutritionPlansScreen) ── */
+    <div className="space-y-4">
+    <RespuestasDelAlta onboarding={onboardingData} tema="nutricion" />
     <NutritionPlansScreen
       coachId={coachId}
       athleteEmail={athlete.email}
@@ -216,6 +222,7 @@ export default function ClientDietsPanel({
       }}
       onCancelled={() => { setPropuestaAbierta(null); setDietEditorDiet(undefined); }}
     />
+    </div>
   ) : (
     /* ── Diet list + config ── */
     <div className="pantalla space-y-6">
@@ -250,6 +257,8 @@ export default function ClientDietsPanel({
           {nutritionProgram ? 'Editar en Objetivo' : 'Crear en Objetivo'}
         </Button>
       </div>
+
+      <RespuestasDelAlta onboarding={onboardingData} tema="nutricion" />
 
       {subView === 'programacion' && (
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">

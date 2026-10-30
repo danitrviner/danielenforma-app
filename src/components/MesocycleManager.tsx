@@ -30,6 +30,8 @@ import ExercisePickerSheet from './ExercisePickerSheet';
 import { useFichaDeEjercicio } from './useFichaDeEjercicio';
 import ExerciseVideoPlayer from './ExerciseVideoPlayer';
 import { MesocycleTemplate } from '../types';
+import type { OnboardingData } from '../types';
+import RespuestasDelAlta from './RespuestasDelAlta';
 import { offsetsDeSesiones, formateaFrecuencia, vueltasDelCiclo, resolveExerciseForWeek, resolverEjercicioDelMeso, mesocycleWeekNumber } from '../utils/progression';
 import {
   quitarCambiosDeSemana, semanasConCambios, origenDeCambios, diferencias, compararSemanas,
@@ -55,6 +57,10 @@ import {
   camposDeCalendario,
 } from '../utils/reordenarMeso';
 import OrdenDelCiclo from './mesociclo/OrdenDelCiclo';
+import DistribucionSemana from './mesociclo/DistribucionSemana';
+import { choquesPorSesion, empezarArrastre, leerArrastre, minutosEstimados, traeGrupo, type GrupoArrastrado } from './mesociclo/arrastreDistribucion';
+import { iemEstimado, iemPorSerieDeGrupo, type IemPorSerie } from '../utils/cdg/iemEstimado';
+import { useMotorCdg } from '../hooks/useMotorCdg';
 import CalculadoraRepartoSheet from './mesociclo/CalculadoraRepartoSheet';
 import { etapaDesdeMeso, mesoDesdeEtapa } from '../utils/plantillaMeso';
 import { distribucionDeMeso } from '../utils/distribucionDeMeso';
@@ -77,7 +83,7 @@ import { catalogoParaGrupo, conNombreDeSesion, idsDelDraft, nombrePropioDeSesion
 import DraftEjercicios from './mesociclo/DraftEjercicios';
 import EstadoDelBloque, { LoQueVeElAtleta, chipDeEstado } from './mesociclo/EstadoDelBloque';
 import { estadoDelMeso, sesionesQueEstorban, pendientesDesde, vistaDelAtleta, type SesionesQueEstorban } from '../utils/bloqueDelAtleta';
-import { Avatar, Skeleton, Badge } from './ui';
+import { Avatar, Skeleton, Badge, SegmentedControl } from './ui';
 import { EmptyState, Dialog, Input, Icon, Tabs, TabItem, Sheet, Pager, Select, Button } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -180,14 +186,14 @@ function PrioritySelector({ value, onChange }: {
 // the coach can nudge series, remove a group, move one to another day, or add a group
 // that the algorithm didn't place, all without recalculating from scratch.
 //
-// Cada asignación es una "fila-chip": nombre + series editables, con un botón de mover
-// que despliega los días destino inline (en vez del <select> nativo de antes) y uno de
-// quitar. El total del día se lee grande y en mono, coloreado por zona — igual criterio
-// que el heatmap de la tabla de volumen — y un aviso ámbar aparece cuando se pasa de 12.
+// Cada asignación es una fila: asa para arrastrar (dentro del día ordena; a otra
+// tarjeta, la mueve de día — 29-10, sustituye al botón ⇄), series con − / + y
+// quitar. La cabecera dice series, duración e IEM estimados, y una barra de
+// volumen; el semáforo ámbar de antes comparaba el día entero con 9–12 series
+// (un rango de grupo) y marcaba como excesiva cualquier sesión normal.
 const DayCard: React.FC<{
   day: DayPlan;
   dayIdx: number;
-  daysPerWeek: number;
   /**
    * En qué día del ciclo (0-based) cae cada sesión. Sin esto, una tarjeta se
    * numeraría por su posición en la lista de SESIONES ("Día 3" = la 3ª sesión
@@ -198,12 +204,19 @@ const DayCard: React.FC<{
   offsets: number[];
   onSeriesChange: (aIdx: number, series: number) => void;
   onRemove: (aIdx: number) => void;
-  onMove: (aIdx: number, targetDayIdx: number) => void;
+  /** Arrastrar un grupo a otra posición del día. */
+  onReorder: (desde: number, hasta: number) => void;
+  /** Llega un grupo arrastrado desde OTRO día. */
+  onRecibir: (desde: GrupoArrastrado) => void;
   onAddGroup: (group: MuscleGroup) => void;
   /** Nombre puesto por el coach, si lo hay; manda sobre el del reparto. */
   nombrePropio?: string;
   onRename: (nombre: string) => void;
-}> = ({ day, dayIdx, daysPerWeek, offsets, onSeriesChange, onRemove, onMove, onAddGroup, nombrePropio, onRename }) => {
+  /** Grupos de este día que también se entrenan el día de al lado (y cuál). */
+  choques: Map<MuscleGroup, number>;
+  /** IEM estimado por serie de cada grupo (ver utils/cdg/iemEstimado). */
+  iemPorSerie: IemPorSerie | null;
+}> = ({ day, dayIdx, offsets, onSeriesChange, onRemove, onReorder, onRecibir, onAddGroup, nombrePropio, onRename, choques, iemPorSerie }) => {
   const [renombrando, setRenombrando] = useState(false);
   const [borrador, setBorrador] = useState('');
   const etiquetaDelReparto = day.dayType ?? '';
@@ -213,18 +226,37 @@ const DayCard: React.FC<{
     onRename(limpio === etiquetaDelReparto ? '' : limpio);
     setRenombrando(false);
   };
-  const [moveOpenIdx, setMoveOpenIdx] = useState<number | null>(null);
-  const total   = day.totalSeries;
-  const optimal = total >= 9 && total <= 12;
-  const over    = total > 12;
-  const totalColor = optimal ? 'var(--color-success)' : over ? 'var(--color-warning)' : 'var(--color-ink-2)';
+  // Arrastre: qué fila de ESTE día se arrastra, sobre cuál cae, y si la tarjeta
+  // está recibiendo un grupo de otro día.
+  const [arrastrando, setArrastrando] = useState<number | null>(null);
+  const [encima, setEncima] = useState<number | null>(null);
+  const [recibiendo, setRecibiendo] = useState(false);
+  const limpiar = () => { setArrastrando(null); setEncima(null); setRecibiendo(false); };
+  const soltar = (e: React.DragEvent, posicion: number | null) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const g = leerArrastre(e);
+    limpiar();
+    if (!g) return;
+    if (g.dia === dayIdx) { if (posicion !== null) onReorder(g.idx, posicion); }
+    else onRecibir(g);
+  };
+
+  const total = day.totalSeries;
   const placedGroups = new Set(day.assignments.map(a => a.group));
-  const otherDays = Array.from({ length: daysPerWeek }, (_, i) => i).filter(i => i !== dayIdx);
   const availableGroups = MUSCLE_GROUPS.filter(g => !placedGroups.has(g));
   const diaCalendario = (sesion: number) => (offsets[sesion] ?? sesion) + 1;
+  const iem = iemPorSerie ? iemEstimado(day.assignments, iemPorSerie) : null;
 
   return (
-    <div className="bg-surface border border-hairline rounded-surface p-4 flex-1 min-w-[220px] max-w-[300px] flex flex-col gap-3">
+    <div
+      onDragOver={e => { if (!traeGrupo(e)) return; e.preventDefault(); if (arrastrando === null) setRecibiendo(true); }}
+      onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setRecibiendo(false); }}
+      onDrop={e => soltar(e, null)}
+      className={`border rounded-surface p-4 flex-1 min-w-[240px] max-w-[300px] flex flex-col gap-2.5 transition-colors ${
+        recibiendo ? 'border-dashed border-accent bg-accent/6' : 'bg-surface border-hairline'
+      }`}
+    >
       <div className="flex items-center gap-2">
         <span className="font-mono text-caption text-ink-2 uppercase tracking-wider flex-shrink-0">
           Día {diaCalendario(dayIdx)}
@@ -257,52 +289,95 @@ const DayCard: React.FC<{
             <Icon name="edit" size="s" className="flex-shrink-0 text-ink-3 group-hover:text-accent-ink" />
           </button>
         )}
-        <span className="font-mono text-title-m font-bold tabular-nums" style={{ color: totalColor }}>{total}</span>
+        <span className="font-mono text-title-m font-bold tabular-nums text-ink">{total}</span>
         <span className="font-mono text-caption text-ink-3">series</span>
       </div>
+      {total > 0 && (
+        <>
+          <div className="-mt-1.5 flex items-center justify-between gap-2 font-mono text-caption text-ink-3">
+            <span title="Estimación: series × 2,5 min contando el descanso">
+              ~{minutosEstimados(total)} min
+              {iem && iem.iem > 0 && (
+                <span title="IEM estimado con lo que da cada serie de ese grupo en tus rutinas; el real sale al generar">
+                  {' · '}~IEM {Math.round(iem.iem)}{iem.incompleto ? '+' : ''}
+                </span>
+              )}
+            </span>
+            <span>{day.assignments.length} grupo{day.assignments.length === 1 ? '' : 's'}</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-raised overflow-hidden" aria-hidden>
+            <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(100, (total / 26) * 100)}%` }} />
+          </div>
+        </>
+      )}
 
       <div className="space-y-1.5 min-h-[44px]">
         {day.assignments.length === 0 ? (
-          <p className="text-caption text-ink-3 font-mono italic py-2">Descanso</p>
+          <p className="text-caption text-ink-3 font-mono italic py-2">{recibiendo ? 'Suelta aquí' : 'Descanso'}</p>
         ) : (
-          day.assignments.map((a, i) => (
-            <div key={i}>
-              <div className="flex items-center gap-1.5 bg-inset border border-hairline rounded-control px-2 py-1.5">
-                <span className="text-label text-ink font-sans font-semibold truncate flex-1 min-w-0">{MUSCLE_LABELS[a.group]}</span>
-                <input
-                  type="number" min={0} max={25}
-                  value={a.series}
-                  onChange={e => onSeriesChange(i, parseInt(e.target.value) || 0)}
-                  className="w-9 bg-transparent border-none p-0 text-center text-ink font-mono text-title-s font-bold focus:outline-none focus:ring-0"
-                />
-                {otherDays.length > 0 && (
-                  <button
-                    onClick={() => setMoveOpenIdx(moveOpenIdx === i ? null : i)}
-                    title="Mover a otro día"
-                    className={`flex-shrink-0 transition-colors ${moveOpenIdx === i ? 'text-accent-ink' : 'text-ink-3 hover:text-accent-ink'}`}
+          day.assignments.map((a, i) => {
+            const otroDia = choques.get(a.group);
+            return (
+              <div
+                key={`${a.group}-${i}`}
+                onDragOver={e => { if (!traeGrupo(e)) return; e.preventDefault(); if (arrastrando !== null) setEncima(i); }}
+                onDrop={e => soltar(e, i)}
+              >
+                <div
+                  className={`flex items-center gap-1.5 bg-inset border rounded-control pl-1 pr-2 py-1 transition-colors ${
+                    arrastrando === i ? 'opacity-40 border-hairline'
+                      : encima === i && arrastrando !== null ? 'border-accent'
+                      : otroDia ? 'border-warning/50' : 'border-hairline'
+                  }`}
+                >
+                  {/* Asa: dentro del día ordena (es el orden de la sesión); a
+                      otra tarjeta, mueve el grupo de día. Solo el asa arrastra,
+                      para no pelearse con el campo de series. */}
+                  <span
+                    draggable
+                    onDragStart={e => { setArrastrando(i); empezarArrastre(e, { dia: dayIdx, idx: i }, e.currentTarget.parentElement); }}
+                    onDragEnd={limpiar}
+                    title="Arrastra para ordenar o para llevarlo a otro día"
+                    aria-label={`Arrastrar ${MUSCLE_LABELS[a.group]}`}
+                    className="flex h-6 w-4 flex-shrink-0 cursor-grab items-center justify-center text-ink-3 hover:text-accent-ink active:cursor-grabbing"
                   >
-                    <Icon name="swap_horiz" size="s" />
-                  </button>
-                )}
-                <button onClick={() => onRemove(i)} className="text-ink-3 hover:text-danger transition-colors flex-shrink-0">
-                  <Icon name="close" size="s" />
-                </button>
-              </div>
-              {moveOpenIdx === i && (
-                <div className="flex flex-wrap gap-1.5 mt-1.5 pl-1 animate-fade-up">
-                  {otherDays.map(d => (
+                    <Icon name="drag_indicator" size="s" />
+                  </span>
+                  <span className="text-label text-ink font-sans font-semibold truncate flex-1 min-w-0">{MUSCLE_LABELS[a.group]}</span>
+                  <span className="flex items-center rounded-control border border-hairline flex-shrink-0">
                     <button
-                      key={d}
-                      onClick={() => { onMove(i, d); setMoveOpenIdx(null); }}
-                      className="px-2.5 py-1 rounded-full font-mono text-caption font-bold text-accent-ink bg-accent/12 border border-accent-line hover:bg-accent/20 transition-colors"
-                    >
-                      Día {diaCalendario(d)}
-                    </button>
-                  ))}
+                      type="button"
+                      onClick={() => onSeriesChange(i, Math.max(0, a.series - 1))}
+                      aria-label={`Quitar una serie de ${MUSCLE_LABELS[a.group]}`}
+                      className="h-6 w-5 text-ink-2 hover:text-ink font-mono text-label font-bold"
+                    >−</button>
+                    <input
+                      type="number" min={0} max={25}
+                      value={a.series}
+                      onChange={e => onSeriesChange(i, Math.min(25, Math.max(0, parseInt(e.target.value) || 0)))}
+                      aria-label={`Series de ${MUSCLE_LABELS[a.group]}`}
+                      className="w-6 bg-transparent border-none p-0 text-center text-ink font-mono text-label font-bold focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onSeriesChange(i, Math.min(25, a.series + 1))}
+                      aria-label={`Añadir una serie de ${MUSCLE_LABELS[a.group]}`}
+                      className="h-6 w-5 text-ink-2 hover:text-ink font-mono text-label font-bold"
+                    >+</button>
+                  </span>
+                  <button onClick={() => onRemove(i)} aria-label={`Quitar ${MUSCLE_LABELS[a.group]}`} className="text-ink-3 hover:text-danger transition-colors flex-shrink-0">
+                    <Icon name="close" size="s" />
+                  </button>
                 </div>
-              )}
-            </div>
-          ))
+                {otroDia && (
+                  <p className="mt-0.5 ml-1.5 flex items-center gap-1 font-mono text-caption text-warning">
+                    <Icon name="warning" size="s" />
+                    también el día {otroDia} · seguidos
+                  </p>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 
@@ -619,7 +694,7 @@ function MesoExercisesTabs({
   // pantalla enseña los ejercicios tal y como tocan esa semana, y lo que se
   // toque se guarda como cambio desde esa semana (o solo esa).
   const [semana, setSemana] = useState(0);
-  const { abrirFicha, hojas: hojasDeFicha } = useFichaDeEjercicio(coachId);
+  const { abrirFicha, hojas: hojasDeFicha } = useFichaDeEjercicio(coachId, meso.athleteId || undefined);
   const { agujetas: agujetasCdg } = useAgujetasCdg(meso.athleteId);
   const [alcance, setAlcance] = useState<Alcance>('desde');
   const [comparar, setComparar] = useState<{ a: number; b: number } | null>(null);
@@ -1749,6 +1824,8 @@ interface MesocycleManagerProps {
   athleteHatedExercises?: string[];
   /** Del alta, texto libre: lesiones. El generador evita lo que se nombre ahí. */
   athleteInjuries?: string;
+  /** El alta entera, solo para enseñar sus respuestas en un desplegable (RespuestasDelAlta). */
+  athleteOnboarding?: OnboardingData | null;
   athleteName?: string;       // solo para el borrador de texto del cierre de mesociclo
   // Logs y asignaciones del atleta, si quien monta esta pantalla YA los tiene
   // cargados (ClientHub los pasa por props a todo el panel). Se aceptan para no
@@ -1768,7 +1845,7 @@ interface MesocycleManagerProps {
 
 export default function MesocycleManager({
   coachId, athleteEmail, athleteEquipment = [], athleteLevel, athleteName,
-  athleteHatedExercises = [], athleteInjuries = '',
+  athleteHatedExercises = [], athleteInjuries = '', athleteOnboarding,
   athleteLogs, athleteAssignments, plantilla,
 }: MesocycleManagerProps) {
   const modoPlantilla = !!plantilla;
@@ -1858,6 +1935,27 @@ export default function MesocycleManager({
     queryKey: ['workouts'],
     queryFn: getWorkouts,
   });
+  // Distribución: por días (tarjetas) o semana (grupo × día), 29-10.
+  const [vistaDistribucion, setVistaDistribucion] = useState<'dias' | 'semana'>(() => {
+    try { return localStorage.getItem('enforma_vista_distribucion') === 'semana' ? 'semana' : 'dias'; } catch { return 'dias'; }
+  });
+  const cambiarVistaDistribucion = (v: string) => {
+    setVistaDistribucion(v === 'semana' ? 'semana' : 'dias');
+    try { localStorage.setItem('enforma_vista_distribucion', v); } catch { /* sin almacenamiento */ }
+  };
+  // IEM estimado por serie de cada grupo, sacado de las rutinas del coach (ver
+  // utils/cdg/iemEstimado). Sin catálogo CDG, null y la Distribución no lo enseña.
+  const { motor: motorCdg } = useMotorCdg();
+  const iemPorSerie = useMemo(() => {
+    if (!motorCdg || allWorkouts.length === 0) return null;
+    const porId = new Map(allExercises.map(e => [e.id, e]));
+    return iemPorSerieDeGrupo({
+      motor: motorCdg,
+      nombreCdgDe: id => porId.get(id)?.cdgNombre,
+      grupoDe: id => porId.get(id)?.muscleGroup,
+      rutinas: allWorkouts,
+    });
+  }, [motorCdg, allWorkouts, allExercises]);
   const mesoWorkouts = useMemo(
     () => editing?.id ? allWorkouts.filter(w => w.mesocycleId === editing.id) : [],
     [allWorkouts, editing?.id]
@@ -2106,6 +2204,17 @@ export default function MesocycleManager({
     ));
   }
 
+  /** Lleva el grupo de la posición `desde` a la `hasta` dentro de su día. */
+  function reorderAssignment(dayIdx: number, desde: number, hasta: number) {
+    updateDistribution(days => days.map((d, i) => {
+      if (i !== dayIdx || desde === hasta || hasta < 0 || hasta >= d.assignments.length) return d;
+      const assignments = [...d.assignments];
+      const [movido] = assignments.splice(desde, 1);
+      assignments.splice(hasta, 0, movido);
+      return { ...d, assignments, ordenPropio: true };
+    }));
+  }
+
   function moveAssignment(dayIdx: number, aIdx: number, targetDayIdx: number) {
     if (targetDayIdx === dayIdx) return;
     updateDistribution(days => {
@@ -2125,10 +2234,10 @@ export default function MesocycleManager({
     });
   }
 
-  function addGroupToDay(dayIdx: number, group: MuscleGroup) {
+  function addGroupToDay(dayIdx: number, group: MuscleGroup, series = 3) {
     updateDistribution(days => days.map((d, i) => {
       if (i !== dayIdx || d.assignments.some(a => a.group === group)) return d;
-      return { ...d, assignments: [...d.assignments, { group, series: 3 }] };
+      return { ...d, assignments: [...d.assignments, { group, series }] };
     }));
   }
 
@@ -2264,8 +2373,10 @@ export default function MesocycleManager({
 
         // Orden de la guía del IH: lo prioritario primero; en pierna, analíticos
         // antes que multiarticulares; en el resto, alternar empuje y tracción.
+        // Salvo que el coach haya ordenado los grupos del día a mano: entonces
+        // manda su orden, que es el de `day.assignments`.
         const porIdEj = new Map(exercises.map(e => [e.id, e]));
-        const ordenados = ordenarSesion(
+        const ordenados = day.ordenPropio ? dayExs : ordenarSesion(
           dayExs.map(pe => ({ ...pe, secundarios: porIdEj.get(pe.exerciseId)?.secondaryMuscleGroups?.length ?? 0 })),
           editing!.groups,
         ).map(({ secundarios: _s, ...pe }, i) => ({ ...pe, order: i }));
@@ -2618,15 +2729,12 @@ export default function MesocycleManager({
   }
 
   // Reordenar dentro del día — el `order` se reescribe a partir de la posición
-  // real en el array, que es lo que después se guarda en el Workout.
-  function movePEx(dayIdx: number, exIdx: number, delta: -1 | 1) {
+  // real en el array, que es lo que después se guarda en el Workout. `orden`
+  // son las posiciones antiguas en el orden nuevo (arrastre de la vista previa).
+  function ordenarPEx(dayIdx: number, orden: number[]) {
     setPreviewDays(prev => prev.map((d, di) => {
-      if (di !== dayIdx) return d;
-      const destino = exIdx + delta;
-      if (destino < 0 || destino >= d.exercises.length) return d;
-      const exercises = [...d.exercises];
-      [exercises[exIdx], exercises[destino]] = [exercises[destino], exercises[exIdx]];
-      return { ...d, exercises: exercises.map((e, i) => ({ ...e, order: i })) };
+      if (di !== dayIdx || orden.length !== d.exercises.length) return d;
+      return { ...d, exercises: orden.map((o, i) => ({ ...d.exercises[o], order: i })) };
     }));
   }
 
@@ -2645,7 +2753,12 @@ export default function MesocycleManager({
         restSeconds: 90,
         order: d.exercises.length,
       };
-      return { ...d, exercises: [...d.exercises, newEx] };
+      // Detrás del último de su grupo, para que caiga en su bloque de la vista
+      // previa; si el grupo no está en el día, al final.
+      const ultimo = d.exercises.map(e => e.muscleGroup).lastIndexOf(newEx.muscleGroup);
+      const exercises = [...d.exercises];
+      exercises.splice(ultimo >= 0 ? ultimo + 1 : exercises.length, 0, newEx);
+      return { ...d, exercises: exercises.map((e, i) => ({ ...e, order: i })) };
     }));
   }
 
@@ -3291,6 +3404,8 @@ export default function MesocycleManager({
           {editing ? (
             <div className="flex-1 min-w-0 space-y-4">
 
+              {!modoPlantilla && <RespuestasDelAlta onboarding={athleteOnboarding} tema="entreno" />}
+
               {/* Mesocycle header */}
               <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
                 <div className="flex items-center justify-between">
@@ -3838,31 +3953,64 @@ export default function MesocycleManager({
                       {/* Weekly grid */}
                       {editing.distribution ? (
                         <div className="space-y-3">
-                          <div className="flex flex-wrap gap-3 text-caption font-mono">
-                            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-control inline-block bg-[color-mix(in_oklab,var(--color-success)_40%,transparent)]"></span><span className="text-ink-2">9–12 series</span></span>
-                            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-control inline-block bg-[color-mix(in_oklab,var(--color-warning)_40%,transparent)]"></span><span className="text-ink-2">&gt;12 series</span></span>
-                            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-control inline-block bg-raised"></span><span className="text-ink-2">&lt;9 series</span></span>
-                          </div>
-
-                          <div className="flex flex-wrap gap-3">
-                            {editing.distribution.days.map((day, i) => (
-                              <DayCard
-                                key={i}
-                                day={day}
-                                dayIdx={i}
-                                daysPerWeek={editing.daysPerWeek}
-                                offsets={offsetsCiclo}
-                                onSeriesChange={(aIdx, series) => updateAssignmentSeries(i, aIdx, series)}
-                                onRemove={aIdx => removeAssignment(i, aIdx)}
-                                onMove={(aIdx, targetDayIdx) => moveAssignment(i, aIdx, targetDayIdx)}
-                                onAddGroup={group => addGroupToDay(i, group)}
-                                nombrePropio={nombrePropioDeSesion(editing.nombresSesion, i)}
-                                onRename={nombre => actualizarMeso({
-                                  nombresSesion: conNombreDeSesion(editing.nombresSesion, i, nombre, editing.daysPerWeek),
-                                })}
-                              />
-                            ))}
-                          </div>
+                          {(() => {
+                            const dias = editing.distribution!.days;
+                            const choques = gruposEnDiasSeguidos(dias, { offsets: offsetsCiclo, cicloDias });
+                            const choquesDeSesion = choquesPorSesion(choques, offsetsCiclo, dias.length);
+                            return (
+                              <>
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                  <SegmentedControl
+                                    label="Vista de la distribución"
+                                    className="w-[220px] flex-shrink-0 whitespace-nowrap"
+                                    value={vistaDistribucion}
+                                    onChange={cambiarVistaDistribucion}
+                                    options={[{ value: 'dias', label: 'Por días' }, { value: 'semana', label: 'Semana' }]}
+                                  />
+                                  <span className="font-mono text-caption text-ink-3">
+                                    {vistaDistribucion === 'dias' ? 'Arrastra ⋮⋮ para ordenar o cambiar de día' : 'Pulsa una celda para cambiarla; arrástrala para moverla de día'}
+                                    {iemPorSerie && ' · IEM estimado con tus rutinas'}
+                                  </span>
+                                </div>
+                                {vistaDistribucion === 'semana' ? (
+                                  <DistribucionSemana
+                                    days={dias}
+                                    offsets={offsetsCiclo}
+                                    nombres={dias.map((d, i) => nombrePropioDeSesion(editing.nombresSesion, i) ?? d.dayType ?? '')}
+                                    cicloDias={cicloDias}
+                                    choques={choques}
+                                    iemPorSerie={iemPorSerie}
+                                    onSeriesChange={updateAssignmentSeries}
+                                    onRemove={removeAssignment}
+                                    onAdd={addGroupToDay}
+                                    onMove={moveAssignment}
+                                  />
+                                ) : (
+                                  <div className="flex flex-wrap gap-3">
+                                    {dias.map((day, i) => (
+                                      <DayCard
+                                        key={i}
+                                        day={day}
+                                        dayIdx={i}
+                                        offsets={offsetsCiclo}
+                                        onSeriesChange={(aIdx, series) => updateAssignmentSeries(i, aIdx, series)}
+                                        onRemove={aIdx => removeAssignment(i, aIdx)}
+                                        onReorder={(desde, hasta) => reorderAssignment(i, desde, hasta)}
+                                        onRecibir={desde => moveAssignment(desde.dia, desde.idx, i)}
+                                        onAddGroup={group => addGroupToDay(i, group)}
+                                        nombrePropio={nombrePropioDeSesion(editing.nombresSesion, i)}
+                                        onRename={nombre => actualizarMeso({
+                                          nombresSesion: conNombreDeSesion(editing.nombresSesion, i, nombre, editing.daysPerWeek),
+                                        })}
+                                        choques={choquesDeSesion[i]}
+                                        iemPorSerie={iemPorSerie}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
 
                           {/* Frecuencia semanal — la otra variable del reparto, junto
                               al volumen: cuántas veces por semana se toca cada grupo.
@@ -3975,13 +4123,13 @@ export default function MesocycleManager({
                       offsets={offsetsCiclo}
                       catalogo={allExercises}
                       onSets={(dayIdx, exIdx, sets) => updatePExPatch(dayIdx, exIdx, { sets })}
-                      onMove={movePEx}
+                      onReordenar={ordenarPEx}
                       onRemove={removePEx}
                       onReplace={(dayIdx, exIdx) => setExercisePicker({
                         context: 'preview', dayIdx, exIdx,
                         group: previewDays[dayIdx]?.exercises[exIdx]?.muscleGroup,
                       })}
-                      onAdd={dayIdx => setExercisePicker({ context: 'preview', dayIdx, exIdx: null })}
+                      onAdd={(dayIdx, group) => setExercisePicker({ context: 'preview', dayIdx, exIdx: null, group })}
                       onBack={() => { setGenPhase('idle'); setPreviewDays([]); }}
                       onAssign={() => conCambioDeBloque(handleAssign)}
                       assignLabel={modoPlantilla ? 'Guardar en la plantilla' : undefined}

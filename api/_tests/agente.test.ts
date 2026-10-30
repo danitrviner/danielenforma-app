@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { AiContentBlock } from '../src/types';
+import type { AiContentBlock } from '../../src/types';
 
 /* El bucle de agente del servidor, ronda a ronda, sin red y sin Firestore:
    el «modelo» es un guion de respuestas y la fuente de datos de las tools un
@@ -18,14 +18,14 @@ const fuente = vi.hoisted(() => ({
   isLocalBypassActive: () => false,
 }));
 
-vi.mock('../src/ai/tools/lectores.js', () => ({
+vi.mock('../../src/ai/tools/lectores.js', () => ({
   getClientBrief: vi.fn(async () => 'BRIEF DE ANA'),
   getRevisionEngine: vi.fn(async () => JSON.stringify({ titulares: [] })),
 }));
 
-import { ejecutarRonda, type ClienteModelo } from './_lib/agente';
-import { usarFuenteDeDatos, type FuenteDeDatos } from '../src/ai/tools/datos';
-import { nuevoEpisodio, type Episodio } from '../src/autopiloto/episodios';
+import { ejecutarRonda, type ClienteModelo } from '../_lib/agente';
+import { usarFuenteDeDatos, type FuenteDeDatos } from '../../src/ai/tools/datos';
+import { nuevoEpisodio, type Episodio } from '../../src/autopiloto/episodios';
 
 usarFuenteDeDatos(fuente as unknown as FuenteDeDatos);
 

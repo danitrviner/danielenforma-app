@@ -94,7 +94,7 @@ export { inviteClient, getPendingInvites, markInviteJoined, cancelInvite } from 
 // ─── RECIPES ─────────────────────────────────────────────────────────────────
 // Movido a src/db/recipes.ts (2026-07-18) — reexportado aquí para que ningún
 // import existente (`from '../dbService'`) tenga que cambiar.
-export { getRecipes, getRecipeById, queryRecetas, cargarIndiceRecetas, createRecipe, updateRecipe, deleteRecipe, getRecipeFavorites, saveRecipeFavorites, getReglasDeReceta, saveReglasDeReceta, getAccesoGlobalARecetas, saveAccesoGlobalARecetas, queryRecetasForGenerator, OWNER_RECETARIO_TODOS } from './db/recipes';
+export { getRecipes, getRecipeById, queryRecetas, cargarIndiceRecetas, cargarIndiceCompleto, getLimpiezaRecetario, marcarRecetas, sinRetiradas, getRecetasCompletas, createRecipe, updateRecipe, deleteRecipe, getRecipeFavorites, saveRecipeFavorites, getReglasDeReceta, saveReglasDeReceta, getAccesoGlobalARecetas, saveAccesoGlobalARecetas, queryRecetasForGenerator, OWNER_RECETARIO_TODOS } from './db/recipes';
 export type { RecetasCursor, RecetasFilters } from './db/recipes';
 
 // ─── PROGRESS PHOTOS + ASIGNACIONES DE FOTO ───────────────────────────────────

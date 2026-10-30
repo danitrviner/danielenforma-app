@@ -2356,6 +2356,9 @@ export interface DayPlan {
   assignments: DayAssignment[];
   totalSeries: number;
   dayType?: string; // etiqueta del reparto elegido (p.ej. "Torso", "Push") — solo visual
+  /** El coach ordenó los grupos de este día a mano (29-10): al generar, la
+   *  sesión sale en ESE orden y no en el de la guía del IH (`ordenarSesion`). */
+  ordenPropio?: boolean;
 }
 
 export interface WeekDistribution {

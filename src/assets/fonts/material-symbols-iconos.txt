@@ -57,6 +57,7 @@ chevron_left
 chevron_right
 chips
 circle
+cleaning_services
 close
 cloud_off
 cloud_sync
@@ -126,6 +127,7 @@ grocery
 group
 groups
 health_and_safety
+height
 help
 history
 history_edu
@@ -139,6 +141,7 @@ input
 insights
 inventory_2
 ios
+join_inner
 kebab_dining
 keyboard_arrow_down
 keyboard_arrow_up
@@ -173,6 +176,7 @@ monitor_weight
 monitoring
 mood
 more_vert
+move
 network_check
 notes
 notifications

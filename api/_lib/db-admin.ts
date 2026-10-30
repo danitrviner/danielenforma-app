@@ -53,7 +53,7 @@ function conId<T>(d: { id: string; data(): unknown }): T {
 export async function leerAtletasActivos(db: Firestore): Promise<UserProfile[]> {
   const snap = await db.collection('user_profiles').where('role', '==', 'client').get();
   const perfiles = snap.docs.map(d => conId<UserProfile>(d)).filter(p => !!p.email);
-  return atletasActivos(perfiles).filter(p => p.archivadoCrm !== true);
+  return atletasActivos(perfiles);
 }
 
 export async function leerAsignaciones(

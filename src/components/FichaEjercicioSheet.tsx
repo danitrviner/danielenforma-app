@@ -1,8 +1,11 @@
 import React, { useMemo } from 'react';
-import type { Exercise } from '../types';
+import { useQuery } from '@tanstack/react-query';
+import type { Exercise, MuscleGroup } from '../types';
+import { getEstadoCatalogo } from '../dbService';
+import { gimnasioQueryKey } from '../features/gimnasio/MiGimnasioPanel';
 import { useMotorCdg } from '../hooks/useMotorCdg';
 import { fichaPorSerie, SERIE_DE_REFERENCIA } from '../utils/cdg/fichaEjercicio';
-import { MUSCLE_LABELS } from '../types';
+import { MUSCLE_LABELS, MARCA_LABELS } from '../types';
 import { Sheet, PanelLateral, useAnchoMinimo } from './ui';
 import ClasificacionEnFicha from './ClasificacionEnFicha';
 
@@ -23,6 +26,8 @@ interface Props {
   coachId?: string;
   /** Tras guardar una clasificación nueva, el ejercicio actualizado. */
   onGuardado?: (nuevo: Exercise) => void;
+  /** Dentro de un mesociclo: el atleta, para enseñar las máquinas que tiene. */
+  athleteEmail?: string;
   /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip). */
   key?: React.Key;
 }
@@ -39,7 +44,7 @@ function Tarjeta({ titulo, valor, detalle }: { titulo: string; valor: string; de
   );
 }
 
-export default function FichaEjercicioSheet({ ejercicio, onClose, coachId, onGuardado }: Props) {
+export default function FichaEjercicioSheet({ ejercicio, onClose, coachId, onGuardado, athleteEmail }: Props) {
   const escritorio = useAnchoMinimo(1024);
   const { motor, cargando, noSubido, error } = useMotorCdg();
   const ficha = useMemo(() => (motor ? fichaPorSerie(motor, ejercicio.cdgNombre) : null), [motor, ejercicio.cdgNombre]);
@@ -118,10 +123,83 @@ export default function FichaEjercicioSheet({ ejercicio, onClose, coachId, onGua
             </p>
           )}
         </div>
+
+        {athleteEmail && <MaquinasDelAtleta athleteEmail={athleteEmail} grupo={ejercicio.muscleGroup} />}
       </div>
   );
 
   return escritorio
     ? <PanelLateral open onClose={onClose} title="Ficha del ejercicio">{contenido}</PanelLateral>
     : <Sheet open onClose={onClose} title="Ficha del ejercicio">{contenido}</Sheet>;
+}
+
+/* Máquinas del gimnasio del atleta para el grupo del ejercicio (29-10): lo que
+   el coach mira al decidir si este ejercicio le vale o hay que cambiarlo. Las
+   máquinas propias no tienen grupo, así que van aparte y enteras. Comparte la
+   caché con «Equipamiento» del Hub: si ya se abrió, no hay lectura nueva. */
+function MaquinasDelAtleta({ athleteEmail, grupo }: { athleteEmail: string; grupo?: MuscleGroup }) {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: gimnasioQueryKey(athleteEmail),
+    queryFn: () => getEstadoCatalogo(athleteEmail),
+  });
+
+  const { delGrupo, propias, revisadas } = useMemo(() => {
+    if (!data) return { delGrupo: [], propias: [], revisadas: 0 };
+    const tiene = new Set(data.gimnasio.maquinas.filter(d => d.tengo).map(d => d.maquinaId));
+    return {
+      delGrupo: data.catalogo
+        .filter(m => tiene.has(m.id) && m.categoria === grupo)
+        .sort((a, b) => a.nombreMostrado.localeCompare(b.nombreMostrado)),
+      propias: data.gimnasio.maquinasPropias,
+      revisadas: data.gimnasio.progresoCatalogo.revisadas,
+    };
+  }, [data, grupo]);
+
+  return (
+    <div className="pt-3 border-t border-hairline space-y-2">
+      <p className="font-sans text-label text-ink-2">
+        Máquinas de su gimnasio{grupo ? ` · ${MUSCLE_LABELS[grupo]}` : ''}
+      </p>
+      {isLoading ? (
+        <p className="font-sans text-body-s text-ink-3">Cargando su gimnasio…</p>
+      ) : isError ? (
+        <p className="font-sans text-body-s text-danger">No se pudo leer su gimnasio.</p>
+      ) : revisadas === 0 && propias.length === 0 ? (
+        <p className="font-sans text-body-s text-ink-3">Aún no ha marcado qué máquinas tiene.</p>
+      ) : (
+        <>
+          {!grupo ? (
+            <p className="font-sans text-body-s text-ink-3">El ejercicio no tiene grupo principal: no se puede filtrar.</p>
+          ) : delGrupo.length === 0 ? (
+            <p className="font-sans text-body-s text-warning">No tiene ninguna máquina de {MUSCLE_LABELS[grupo].toLowerCase()}: tira de peso libre o polea.</p>
+          ) : (
+            <ul className="grid grid-cols-2 gap-2">
+              {delGrupo.map(m => (
+                <li key={m.id} className="flex items-center gap-2 rounded-control bg-raised p-1.5 min-w-0">
+                  <img src={m.fotoUrl} alt="" className="h-10 w-10 flex-shrink-0 rounded-control object-cover bg-inset" loading="lazy" />
+                  <span className="min-w-0">
+                    <span className="block font-sans text-body-s font-bold text-ink leading-tight line-clamp-2">{m.nombreMostrado}</span>
+                    <span className="block font-mono text-caption text-ink-3 truncate">{MARCA_LABELS[m.marca] ?? m.marca}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {propias.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="font-mono text-caption text-ink-3 uppercase tracking-wider">Propias · {propias.length}</p>
+              <ul className="grid grid-cols-2 gap-2">
+                {propias.map(p => (
+                  <li key={p.id} className="flex items-center gap-2 rounded-control bg-raised p-1.5 min-w-0">
+                    <img src={p.fotoUrl} alt="" className="h-10 w-10 flex-shrink-0 rounded-control object-cover bg-inset" loading="lazy" />
+                    <span className="min-w-0 font-sans text-body-s font-bold text-ink leading-tight line-clamp-2">{p.nombre}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
 }

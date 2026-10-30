@@ -20,6 +20,7 @@ import { slotsFromOnboarding } from '../utils/menuEngine';
 import { listaDeMenuVigente, filtrarPorLista, modoRecetarioVigente, MIN_RECETAS_DE_LISTA, type ModoRecetario } from '../utils/accesoARecetas';
 import {
   conFiltro, filtroVacio, idDePaquete, TODAS_LAS_DIETAS, type FiltroDeRecetas, type PaqueteDeRecetas, type SeleccionDeRecetas,
+  llevaAlimento,
 } from '../utils/seleccionDeRecetas';
 import { recetasOcultas } from '../utils/reglasDeReceta';
 import { Icon, Select, Sheet, Skeleton } from './ui';
@@ -243,7 +244,10 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
     dietType: dietTypeVigente(nutritionConfig?.dietType, onboarding?.dietType),
     excludedDishTypes: (nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as DishType[],
     dislikedRecipeIds: favoritos?.dislikedIds ?? [],
-  }), [indice, onboarding, nutritionConfig, favoritos]);
+    // Lo que dijo en el alta que no le gusta, fuera del todo (Dani, 29-10): si
+    // la receta lo lleva, no se enseña ni entra en su plan. Mismo criterio que
+    // el panel del generador.
+  }).filter(r => !(onboarding?.dislikedFoods ?? []).some(a => llevaAlimento(r, a))), [indice, onboarding, nutritionConfig, favoritos]);
   const poolIds = useMemo(() => new Set(pool.map(r => r.id)), [pool]);
   const fueraPorAlta = indice.filter(esPlatoDelRecetario).length - pool.length;
 
@@ -268,6 +272,9 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
   const [verFiltros, setVerFiltros] = useState(false);
   const [visiblesDisp, setVisiblesDisp] = useState(POR_PAGINA);
   const [buscaPlan, setBuscaPlan] = useState('');
+  // Comida pulsada en el recuento de su plan (29-10): filtra su plan Y las
+  // disponibles a esa comida, para ver qué desayunos tiene y cuáles podría tener.
+  const [franjaPlan, setFranjaPlan] = useState<number | null>(null);
   const [visiblesPlan, setVisiblesPlan] = useState(POR_PAGINA);
   const [verAlta, setVerAlta] = useState(false);
   const cambiarFiltro = (parcial: Partial<FiltroDeLista>) => { setFiltro(f => ({ ...f, ...parcial })); setVisiblesDisp(POR_PAGINA); };
@@ -298,13 +305,14 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
   const recuento = franjas.map(slot => ({ slot, total: enPlan.filter(r => (r.intakeTypes ?? []).includes(slot)).length }));
   const grupos = useMemo(() => {
     const q = buscaPlan.trim();
-    const lista = (q ? filtrarLista(enPlan, { ...FILTRO_VACIO, texto: q }) : enPlan)
+    const base = franjaPlan == null ? enPlan : enPlan.filter(r => (r.intakeTypes ?? []).includes(franjaPlan));
+    const lista = (q ? filtrarLista(base, { ...FILTRO_VACIO, texto: q }) : base)
       .slice().sort((a, b) => (recsSet.has(b.id) ? 1 : 0) - (recsSet.has(a.id) ? 1 : 0) || a.name.localeCompare(b.name, 'es'));
     const visibles = lista.slice(0, visiblesPlan);
     const porFranja = new Map<number | 'otras', Recipe[]>();
     for (const r of visibles) {
       // Cada receta se enseña una vez, en la primera de sus comidas que use el atleta.
-      const k = franjas.find(s => (r.intakeTypes ?? []).includes(s)) ?? 'otras';
+      const k = franjaPlan ?? franjas.find(s => (r.intakeTypes ?? []).includes(s)) ?? 'otras';
       porFranja.set(k, [...(porFranja.get(k) ?? []), r]);
     }
     return {
@@ -313,7 +321,7 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
         clave: String(k), titulo: k === 'otras' ? 'Otras comidas' : NOMBRE_FRANJA[k] ?? `Comida ${k}`, recetas: porFranja.get(k)!,
       })),
     };
-  }, [enPlan, buscaPlan, visiblesPlan, recsSet, franjas]);
+  }, [enPlan, buscaPlan, visiblesPlan, recsSet, franjas, franjaPlan]);
   const hayFiltrosPorDieta = !filtroVacio(doc?.seleccion?.general) || Object.values(doc?.seleccion?.porDieta ?? {}).some(f => !filtroVacio(f));
 
   // ── Mover ──────────────────────────────────────────────────────────────────
@@ -757,13 +765,24 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
             <div className="grid gap-1.5 grid-cols-[repeat(auto-fit,minmax(88px,1fr))]">
               {recuento.map(({ slot, total }) => {
                 const pocas = total < MIN_RECETAS_DE_LISTA;
+                const activa = franjaPlan === slot;
                 return (
-                  <div key={slot} className={`rounded-control px-2.5 py-1.5 ${pocas ? 'bg-warning/10' : 'bg-raised'}`}
-                    title={pocas ? `Con menos de ${MIN_RECETAS_DE_LISTA}, esa comida tira de todo lo disponible` : undefined}>
-                    <p className="font-mono text-caption text-ink-2">{NOMBRE_FRANJA[slot] ?? `Comida ${slot}`}</p>
+                  <button key={slot} type="button" aria-pressed={activa}
+                    onClick={() => {
+                      const nueva = activa ? null : slot;
+                      setFranjaPlan(nueva);
+                      setFranja(nueva);
+                      setVisiblesPlan(POR_PAGINA);
+                      setVisiblesDisp(POR_PAGINA);
+                    }}
+                    className={`rounded-control px-2.5 py-1.5 text-left border transition-colors ${
+                      activa ? 'border-accent bg-accent/12' : `border-transparent hover:border-strong ${pocas ? 'bg-warning/10' : 'bg-raised'}`
+                    }`}
+                    title={activa ? 'Pulsa otra vez para ver todas las comidas' : `Ver solo ${(NOMBRE_FRANJA[slot] ?? `comida ${slot}`).toLowerCase()}: su plan y las disponibles`}>
+                    <p className={`font-mono text-caption ${activa ? 'text-accent-ink' : 'text-ink-2'}`}>{NOMBRE_FRANJA[slot] ?? `Comida ${slot}`}</p>
                     <p className={`font-sans text-label font-bold ${pocas ? 'text-warning' : 'text-ink'}`}>{total}</p>
                     {pocas && <p className="font-mono text-caption text-warning">Pocas: usará todas</p>}
-                  </div>
+                  </button>
                 );
               })}
             </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { partirPorArchivado, motivoNoBorrable } from './archivado';
+import { partirPorArchivado, tieneCuentaActiva } from './archivado';
 import type { Cliente } from '../types';
 
 const cliente = (over: Partial<Cliente> = {}): Cliente => ({
@@ -26,16 +26,16 @@ describe('partirPorArchivado', () => {
   });
 });
 
-describe('motivoNoBorrable', () => {
-  it('un contacto sin cuenta se puede borrar', () => {
-    expect(motivoNoBorrable(cliente())).toBeNull();
+describe('tieneCuentaActiva', () => {
+  it('un contacto sin cuenta no tiene acceso que quitar', () => {
+    expect(tieneCuentaActiva(cliente())).toBe(false);
   });
 
-  it('una cuenta viva NO se borra desde el CRM', () => {
-    expect(motivoNoBorrable(cliente({ fuente: 'perfil', userId: 'uid1' }))).toMatch(/cuenta activa/i);
+  it('una cuenta viva sí: archivarla o borrarla le quita el acceso', () => {
+    expect(tieneCuentaActiva(cliente({ fuente: 'perfil', userId: 'uid1', email: 'a@b.com' }))).toBe(true);
   });
 
-  it('un perfil ya anonimizado («borrado_xxxx») SÍ se puede quitar de en medio', () => {
-    expect(motivoNoBorrable(cliente({ fuente: 'perfil', userId: 'uid1', anonimizado: true }))).toBeNull();
+  it('un perfil ya anonimizado («borrado_xxxx») no tiene nada que bloquear', () => {
+    expect(tieneCuentaActiva(cliente({ fuente: 'perfil', userId: 'uid1', email: 'borrado@anonimo.local', anonimizado: true }))).toBe(false);
   });
 });

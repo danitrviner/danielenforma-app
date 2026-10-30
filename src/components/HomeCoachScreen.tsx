@@ -89,12 +89,14 @@ interface Props {
   checkins: WeightCheckIn[];
   assignmentsByEmail: Map<string, WorkoutAssignment[]>;
   loadingAssignments: boolean;
+  /** Correos archivados en el CRM, en minúsculas (ver `EntradaBandeja.archivados`). */
+  archivados?: Set<string>;
 }
 
 /** Ventana de contactos que se bajan: los que todavía callan una señal y los que mide el panel. */
 const DIAS_DE_CONTACTOS = 28;
 
-export default function HomeCoachScreen({ athletes, coachId, checkins, assignmentsByEmail, loadingAssignments }: Props) {
+export default function HomeCoachScreen({ athletes, coachId, checkins, assignmentsByEmail, loadingAssignments, archivados }: Props) {
   // Menús semanales que se generan solos al cambiar la dieta de la semana
   // (ver services/menuSemanalAutomatico.ts). Una vez al día, en segundo plano.
   useEffect(() => {
@@ -215,12 +217,13 @@ export default function HomeCoachScreen({ athletes, coachId, checkins, assignmen
       contactos,
       borradoresPorEmail,
       programasPorEmail,
+      archivados,
       hoy: hoyIso,
     // «Antes de que se te pase» (urgencia `pronto`) se retiró de la pantalla:
     // el coach no la usa. Se filtra aquí para que tampoco cuente en los chips
     // ni dispare el estado vacío con señales que no se pintan.
     }).filter(s => s.urgencia !== 'pronto');
-  }, [loadingAssignments, athletes, checkins, assignmentsByEmail, mesociclos, suscripciones, propuestasPendientes, respuestas, contactos, borradoresPorEmail, programasPorEmail, hoyIso]);
+  }, [loadingAssignments, athletes, checkins, assignmentsByEmail, mesociclos, suscripciones, propuestasPendientes, respuestas, contactos, borradoresPorEmail, programasPorEmail, hoyIso, archivados]);
 
   const visibles = filtro === 'todas' ? senales : senales.filter(s => s.categoria === filtro);
   // Sobre `visibles`, no sobre `senales`: con un filtro de categoría activo, la

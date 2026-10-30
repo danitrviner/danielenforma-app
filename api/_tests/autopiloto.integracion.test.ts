@@ -123,10 +123,10 @@ const episodio = (id: string, e: Doc = {}): Doc => ({
 
 async function ejecutar(db: unknown, modelo: ReturnType<typeof modeloGuionado>, query: Record<string, string> = {}) {
   vi.resetModules();
-  vi.doMock('./_lib/auth.js', () => ({ COACH_EMAIL: 'coach@x.com', getAdminDb: async () => db }));
+  vi.doMock('../_lib/auth.js', () => ({ COACH_EMAIL: 'coach@x.com', getAdminDb: async () => db }));
   vi.doMock('@anthropic-ai/sdk', () => ({ default: modelo.Anthropic }));
   vi.doMock('firebase-admin/firestore', () => ({ FieldValue: { increment: (x: number) => ({ __inc: x }) } }));
-  const handler = (await import('./autopiloto')).default;
+  const handler = (await import('../autopiloto')).default;
   const { res, r } = respuestaFalsa();
   await handler(peticion(query), res);
   return r;
