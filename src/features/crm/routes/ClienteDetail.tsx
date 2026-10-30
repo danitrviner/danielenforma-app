@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useCliente } from '../hooks/useClientes';
 import { useArchivarCliente, useEliminarCliente } from '../hooks/useClienteMutations';
-import { motivoNoBorrable } from '../lib/archivado';
+import { tieneCuentaActiva } from '../lib/archivado';
 import { useToast } from '../../../hooks/useToast';
 import { ClienteConCobros } from '../../../db/crm';
 import { useSuscripcionesDe, useRegistrarCobro } from '../hooks/useSuscripciones';
@@ -84,24 +84,37 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
   // botón destacado. No se duplica adherencia/KPIs de entreno aquí — eso es
   // de ClientHub, no de esta ficha de facturación (decisión con Dani, F3.13d).
   const estadoSuscripcion = estadoSuscripcionCliente(suscripciones);
-  const bloqueoBorrado = motivoNoBorrable(cliente);
+  const conCuenta = tieneCuentaActiva(cliente);
 
   const onArchivar = async () => {
+    if (conCuenta && !cliente.archivado && !await confirm(
+      `¿Archivar a «${cliente.nombre}»? Dejará de salir en tus listas y perderá el acceso a la app `
+      + 'hasta que lo desarchives. Sus datos se conservan.'
+    )) return;
     try {
       await archivar.mutateAsync({ cliente, archivar: !cliente.archivado });
-      showToast(cliente.archivado ? 'Vuelve a tus listas' : 'Archivado — ya no sale en tus listas', 'success');
+      showToast(
+        cliente.archivado
+          ? `Vuelve a tus listas${conCuenta ? ' y recupera el acceso' : ''}`
+          : `Archivado — ya no sale en tus listas${conCuenta ? ' ni puede entrar a la app' : ''}`,
+        'success',
+      );
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'No se ha podido archivar', 'error');
     }
   };
 
   const onEliminar = async () => {
-    if (bloqueoBorrado) { showToast(bloqueoBorrado, 'info'); return; }
     if (!await confirm(
-      `¿Borrar «${cliente.nombre}» para siempre? `
-      + 'Se borra también todo su rastro en el CRM: servicios, cobros pendientes, '
-      + 'suscripciones y reuniones. Esto no se puede deshacer. '
-      + 'Si solo quieres quitarlo de en medio, archívalo.'
+      conCuenta
+        ? `¿Borrar «${cliente.nombre}» para siempre? Pierde el acceso a la app y se borran sus entrenos, `
+          + 'check-ins, fotos, dietas y todo su rastro en el CRM. Los servicios y cobros se '
+          + 'conservan sin su nombre. Esto no se puede deshacer. '
+          + 'Si solo quieres quitarlo de en medio, archívalo.'
+        : `¿Borrar «${cliente.nombre}» para siempre? `
+          + 'Se borra también todo su rastro en el CRM: servicios, cobros pendientes, '
+          + 'suscripciones y reuniones. Esto no se puede deshacer. '
+          + 'Si solo quieres quitarlo de en medio, archívalo.'
     )) return;
     try {
       await eliminar.mutateAsync(cliente);
@@ -169,19 +182,15 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             <Icon name={cliente.archivado ? 'unarchive' : 'archive'} size="s" />
             {cliente.archivado ? 'Desarchivar' : 'Archivar'}
           </button>
-          {/* Borrar solo donde no deja huérfano a nadie: contactos sin cuenta y
-              perfiles ya anonimizados. Ver `motivoNoBorrable`. */}
-          {!bloqueoBorrado && (
-            <button
-              type="button"
-              onClick={onEliminar}
-              disabled={eliminar.isPending}
-              className="flex items-center gap-1 px-3 py-2 rounded-control bg-danger/12 text-danger font-sans font-bold text-caption hover:bg-danger/20 disabled:opacity-40 transition-colors"
-            >
-              <Icon name="delete" size="s" />
-              {eliminar.isPending ? 'Borrando…' : 'Borrar'}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onEliminar}
+            disabled={eliminar.isPending}
+            className="flex items-center gap-1 px-3 py-2 rounded-control bg-danger/12 text-danger font-sans font-bold text-caption hover:bg-danger/20 disabled:opacity-40 transition-colors"
+          >
+            <Icon name="delete" size="s" />
+            {eliminar.isPending ? 'Borrando…' : 'Borrar'}
+          </button>
           {/* Puente con la app de entrenamiento: solo tiene sentido si la
               persona tiene cuenta. Un contacto importado no tiene ClientHub. */}
           {cliente.userId ? (
@@ -215,7 +224,9 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
           <p className="font-sans text-caption text-warning">
             {cliente.anonimizado
               ? 'Cuenta borrada por la propia persona. Se conserva anonimizada para no reescribir el histórico del negocio.'
-              : 'Archivado: no sale en tus listas ni en los contadores del CRM hasta que lo desarchives.'}
+              : conCuenta
+                ? 'Archivado: no sale en tus listas ni en los contadores del CRM y no puede entrar a la app hasta que lo desarchives.'
+                : 'Archivado: no sale en tus listas ni en los contadores del CRM hasta que lo desarchives.'}
           </p>
         </div>
       )}

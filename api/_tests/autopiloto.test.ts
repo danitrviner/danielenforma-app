@@ -22,7 +22,7 @@ const SECRETO = 'un-secreto-largo-de-verdad';
 beforeEach(() => { vi.resetModules(); delete process.env.CRON_SECRET; delete process.env.ANTHROPIC_API_KEY; delete process.env.FIREBASE_SERVICE_ACCOUNT; });
 afterEach(() => { delete process.env.CRON_SECRET; delete process.env.ANTHROPIC_API_KEY; });
 
-const handler = async () => (await import('./autopiloto')).default;
+const handler = async () => (await import('../autopiloto')).default;
 
 describe('api/autopiloto · quién puede dispararlo', () => {
   it('sin CRON_SECRET no se ejecuta', async () => {

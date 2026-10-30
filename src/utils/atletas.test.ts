@@ -45,3 +45,11 @@ describe('atletasActivos', () => {
     expect(atletasActivos([])).toEqual([]);
   });
 });
+
+describe('atletasActivos con archivados del CRM', () => {
+  it('deja fuera a quien el coach archivó, aunque siga activo comercialmente', () => {
+    const activo = perfil({ email: 'activo@x.com', estadoCrm: 'activo' });
+    const archivado = perfil({ email: 'archivado@x.com', estadoCrm: 'activo', archivadoCrm: true });
+    expect(atletasActivos([activo, archivado]).map(p => p.email)).toEqual(['activo@x.com']);
+  });
+});

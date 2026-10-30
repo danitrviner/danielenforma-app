@@ -1,0 +1,58 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><title>13 Progresiones</title>
+<style>
+.pg td{font-size:14px;padding:8px 10px;vertical-align:top}.pg th{text-align:center}.pg th:first-child{text-align:left}
+.cell{border-radius:12px;background:var(--raised);border:1px solid var(--hairline);padding:7px 9px;font-family:"IBM Plex Mono";font-size:14px;font-weight:600;line-height:1.35}
+.cell small{display:block;font-size:12px;font-weight:500;color:var(--ink-3)}
+.cell.prop{border:1.5px dashed var(--accent);background:#FFFBF0}
+.cell .why{font-family:"Plus Jakarta Sans";font-size:12px;font-weight:600;color:var(--accent-ink)}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--hairline);font-size:14px}
+.radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--strong);flex:none;margin-top:2px}.radio.on{border:6px solid var(--ink)}
+</style></head><body>
+<div class="sheetpage" style="flex-direction:column;gap:20px">
+<div class="row" style="gap:30px;align-items:flex-start">
+  <div><div class="cap">Actual · Planificar progresión (/dev/progresion)</div><img src="../actual/coach-progresion.png" style="width:760px;border-radius:14px;box-shadow:0 10px 30px -12px rgba(0,0,0,.3)"></div>
+  <div class="note" style="width:520px"><h3>Qué se conserva / qué se va</h3><ul>
+    <li><b>Se conserva:</b> «RIR semana a semana», «Subir series», «Repeticiones semana a semana», y la tabla ejercicios × semanas con plan vs real.</li>
+    <li><b>Se retira:</b> «Descanso entre series» y «Series de alta intensidad» de la hoja «Progresiones en un clic», y la propia hoja que aplica a <b>todo el bloque</b> (<span class="mono">MesocycleManager.tsx:1248</span>). El descanso y las técnicas siguen editables por ejercicio.</li>
+    <li><b>Nuevo:</b> objetivo de IEM por ejercicio/zona, el motor propone y el coach aprueba casilla a casilla.</li>
+  </ul></div>
+</div>
+<div><div class="cap">Propuesta · progresión por objetivo de IEM</div>
+<div class="desk" style="min-height:820px">
+  <div class="main">
+    <div class="row between"><div><div class="caption">Javier Vergara › Mesociclo 1 › Ejercicios</div><div class="h-l" style="margin-top:4px">Planificar progresión</div></div><div class="row" style="gap:8px"><div class="btn btn-ghost" style="height:44px">Cancelar</div><div class="btn btn-primary" style="height:44px"><span class="ms">check</span>Aplicar 7 cambios</div></div></div>
+    <div class="row" style="gap:20px;margin-top:16px;align-items:flex-start">
+      <div class="card" style="flex:1;overflow:hidden">
+        <table class="pg">
+          <tr><th style="width:220px">Ejercicio</th><th>Base</th><th>S1</th><th>S2</th><th style="background:var(--accent-bg)">S3 · hoy</th><th>S4</th><th>S5</th><th>S6 <span class="pill" style="background:#E6EDFB;color:var(--info)">Desc.</span></th></tr>
+          <tr><td><div class="h-s">Press banca</div><div class="caption">Pecho · objetivo IEM +20 %</div></td>
+            <td><div class="cell">3×6-8<small>RIR 2 · IEM 84</small></div></td><td><div class="cell">3×6-8<small>RIR 2 · 84</small></div></td><td><div class="cell">3×6-8<small>RIR 1 · 92</small></div></td><td style="background:var(--accent-bg)"><div class="cell">4×6-8<small>RIR 1 · 98</small></div></td>
+            <td><div class="cell prop">4×6-8<small>RIR 1 · 98</small><span class="why">= mantiene</span></div></td><td><div class="cell prop">4×6-8<small>RIR 0-1 · 101</small><span class="why">↓ RIR</span></div></td><td><div class="cell">2×6-8<small>RIR 3 · 41</small></div></td></tr>
+          <tr><td><div class="h-s">Aperturas pec deck</div><div class="caption">Pecho · objetivo IEM +30 %</div></td>
+            <td><div class="cell">2×10-12<small>RIR 2 · 52</small></div></td><td><div class="cell">2×10-12<small>RIR 2 · 52</small></div></td><td><div class="cell">3×10-12<small>RIR 2 · 78</small></div></td><td style="background:var(--accent-bg)"><div class="cell">3×10-12<small>RIR 1 · 83</small></div></td>
+            <td><div class="cell prop">3×10-12<small>RIR 1 · 83</small><span class="why">= mantiene</span></div></td><td><div class="cell prop">3×10-12 + drop S3<small>RIR 0 · 96</small><span class="why">+ técnica</span></div></td><td><div class="cell">2×10-12<small>RIR 3 · 26</small></div></td></tr>
+          <tr><td><div class="h-s">Elevaciones laterales</div><div class="caption">Delt. lateral · objetivo IEM +40 %</div></td>
+            <td><div class="cell">3×12-15<small>RIR 2 · 39</small></div></td><td><div class="cell">3×12-15<small>RIR 2 · 39</small></div></td><td><div class="cell">3×12-15<small>RIR 1 · 41</small></div></td><td style="background:var(--accent-bg)"><div class="cell">3×12-15<small>RIR 1 · 41</small></div></td>
+            <td><div class="cell prop">4×12-15<small>RIR 1 · 50</small><span class="why">+1 serie</span></div></td><td><div class="cell prop">5×12-15<small>RIR 1 · 57</small><span class="why">+1 serie</span></div></td><td><div class="cell">2×12-15<small>RIR 3 · 18</small></div></td></tr>
+          <tr><td><div class="h-s">Sentadilla hack</div><div class="caption">Cuádriceps · <b style="color:var(--ink-3)">excluido</b></div></td>
+            <td colspan="7"><div class="caption" style="padding:8px 0">Grupo no seleccionado: el motor no propone cambios aunque haya margen.</div></td></tr>
+        </table>
+        <div class="row" style="gap:10px;padding:12px 14px;border-top:1px solid var(--hairline);font-size:14px"><span class="ms" style="color:var(--accent-ink)">lightbulb</span><span><b>Por qué:</b> agujetas medias 2/5 y contexto favorable (sueño 7 h, estrés 5) → modo <b>dinámico · medio (20 %)</b> permite subir. En Pecho se prioriza bajar RIR antes que añadir series porque ya está en 4 series.</span></div>
+      </div>
+      <div class="card pad" style="width:340px;flex:none">
+        <div class="label">Reglas de esta progresión</div>
+        <div class="h-s" style="margin-top:12px">Grupos incluidos</div>
+        <div class="f-row" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"><span class="chip on">Pecho</span><span class="chip on">Delt. lateral</span><span class="chip">Espalda</span><span class="chip">Cuádriceps</span><span class="chip">Isquios</span></div>
+        <div class="h-s" style="margin-top:16px">Modo</div>
+        <div class="opt"><span class="radio"></span><div><b>Estático</b><div class="caption">Aplica lo programado, ignora el contexto</div></div></div>
+        <div class="opt"><span class="radio on"></span><div><b>Dinámico</b><div class="caption">Ajusta cada 7 días con agujetas, sueño, estrés, motivación y rendimiento</div></div></div>
+        <div class="h-s" style="margin-top:12px">Velocidad</div>
+        <div class="seg" style="margin-top:8px"><div>Suave 10 %</div><div class="on">Medio 20 %</div><div>Agresivo 30 %</div></div>
+        <div class="h-s" style="margin-top:16px">Palancas permitidas</div>
+        <div class="body-s" style="margin-top:6px;line-height:1.9">☑ Añadir series (máx. +1/sem)<br>☑ Bajar RIR (mín. 0)<br>☑ Técnicas de intensidad (solo aislamiento)<br>☐ Cambiar ejercicio</div>
+        <div class="card pad" style="margin-top:14px;background:var(--raised);box-shadow:none"><div class="caption"><b style="color:var(--warning)">Pendiente de validar:</b> umbrales de contexto (estrés ≥ 7, sueño &lt; 6 h, motivación ≤ 4) vienen de la rama IH, no del Excel.</div></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+</div></body></html>

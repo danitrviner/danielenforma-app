@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Icon from './Icon';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -25,11 +26,14 @@ type Props = {
   meta: string;
   urgent?: boolean;
   onClick?: () => void;
+  /** Ruta de la app. Con ella la fila es un enlace de verdad: ⌘+clic, clic
+   *  central y «Abrir en pestaña nueva» funcionan (29-10). Gana a `onClick`. */
+  to?: string;
   className?: string;
   key?: React.Key;
 };
 
-export default function ActionRow({ initials, title, meta, urgent = true, onClick, className = '' }: Props) {
+export default function ActionRow({ initials, title, meta, urgent = true, onClick, to, className = '' }: Props) {
   const cuerpo = (
     <>
       <span className="relative flex-none">
@@ -59,6 +63,16 @@ export default function ActionRow({ initials, title, meta, urgent = true, onClic
     </>
   );
 
+  if (to) {
+    return (
+      <Link
+        to={to}
+        className={`flex w-full items-center gap-3 px-4 py-3 text-left fila-pulsable hover:bg-raised ${className}`}
+      >
+        {cuerpo}
+      </Link>
+    );
+  }
   if (onClick) {
     return (
       <button

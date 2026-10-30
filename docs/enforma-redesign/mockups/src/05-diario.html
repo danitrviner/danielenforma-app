@@ -1,0 +1,102 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><title>05 Diario</title>
+<style>
+.wk{display:flex;justify-content:space-between;padding:0 4px}
+.wk div{text-align:center;font-size:13px;font-weight:700;color:var(--ink-3)}
+.wk i{display:block;width:30px;height:30px;border-radius:50%;border:2px solid var(--strong);margin-top:6px}
+.wk .d i{background:var(--success);border-color:var(--success)}
+.wk .t{color:var(--ink)}.wk .t i{border:2px dashed var(--ink)}
+.mrow{display:flex;align-items:center;gap:10px;padding:14px 16px}
+.mrow .nm{flex:1;font-size:17px;font-weight:700}
+.mrow .kc{font-family:"IBM Plex Mono";font-weight:600;font-size:15px;color:var(--ink-2)}
+.reg{height:38px;padding:0 16px;border-radius:99px;background:var(--accent-bg);color:var(--accent-ink);font-weight:800;font-size:15px;display:flex;align-items:center}
+.f{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--hairline)}
+.f .n{flex:1;font-size:15px}.f .s{font-size:13px;color:var(--ink-3)}
+.big{position:absolute;right:16px;bottom:100px;width:60px;height:60px;border-radius:20px;background:var(--accent);color:var(--ink);display:grid;place-items:center;box-shadow:0 10px 24px -6px rgba(27,25,22,.4)}
+.tb2{display:flex;gap:22px;padding:0 4px;border-bottom:1px solid var(--hairline)}
+.tb2 div{padding:10px 0;font-size:15px;font-weight:600;color:var(--ink-2);margin-bottom:-1px;border-bottom:3px solid transparent}.tb2 .on{color:var(--ink);font-weight:800;border-color:var(--accent)}
+.big2{display:flex;gap:10px}.big2>div{flex:1;background:var(--surface);border:1px solid var(--hairline);border-radius:16px;padding:14px 8px;text-align:center;font-size:14px;font-weight:700;color:var(--accent-ink)}
+.big2 .ms{display:block;margin:0 auto 6px;font-size:26px}
+.res{display:flex;gap:10px;align-items:center;padding:12px 16px;background:var(--surface);border:1px solid var(--hairline);border-radius:16px;margin-top:8px}
+.src{font-family:"IBM Plex Mono";font-size:11.5px;font-weight:600;padding:2px 6px;border-radius:5px;background:var(--inset);color:var(--ink-2)}
+.nt{display:flex;align-items:center;padding:13px 16px;border-top:1px solid var(--hairline);font-size:16px}
+.nt .a{flex:1}.nt .b{width:64px;text-align:right;font-family:"IBM Plex Mono";font-weight:600;font-size:15px}
+.ph{font-family:"IBM Plex Mono";font-size:12px;font-weight:600;text-transform:uppercase;color:var(--ink-3)}
+</style></head><body>
+<div class="sheetpage">
+  <div><div class="cap">Actual</div><div class="frame" style="width:406px;height:860px;background:#F4F2ED;display:grid;place-items:center;text-align:center;padding:40px"><div><span class="ms" style="font-size:40px;color:#6E675E">block</span><p class="body-s" style="margin-top:12px">No existe. Hoy el atleta añade alimentos del banco <b>en intercambios</b> dentro de «Intercambios» (<span class="mono">NutritionScreen.tsx:772</span>): sin gramos, sin marcas y sin código de barras.</p></div></div></div>
+
+  <div><div class="cap">Propuesta · Diario (hoy)</div>
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span></div>
+    <div class="appbar"><span class="wordmark">Nutrición</span></div>
+    <div class="scroll" style="padding-top:12px">
+      <div class="seg" style="padding:3px"><div>Menú</div><div>Intercambios</div><div class="on">Diario</div><div>Recetas</div></div>
+      <div class="row between" style="margin-top:14px"><div class="h-m">Hoy, jueves 22</div><span class="ms" style="color:var(--ink-3)">calendar_month</span></div>
+      <div class="wk" style="margin-top:10px"><div class="d">L<i></i></div><div class="d">M<i></i></div><div class="d">X<i></i></div><div class="t">J<i></i></div><div>V<i></i></div><div>S<i></i></div><div>D<i></i></div></div>
+      <div class="card pad" style="margin-top:14px">
+        <div class="label">Calorías · objetivo de tu coach</div>
+        <div class="row between" style="align-items:flex-end;margin-top:6px"><div><span class="num" style="font-size:30px">1.344</span><span style="color:var(--ink-3);font-size:15px"> / 2.400</span></div><div style="text-align:right"><span class="num" style="font-size:22px;color:var(--accent-ink)">1.056</span><span style="font-size:14px;color:var(--ink-3)"> restan</span></div></div>
+        <div class="bar" style="margin-top:10px;height:10px"><i style="width:56%;background:var(--ink)"></i></div>
+        <div class="row" style="margin-top:14px;gap:14px;align-items:flex-start">
+          <div style="flex:1"><div style="font-size:13px;font-weight:700">Proteínas</div><div class="num" style="font-size:17px;margin-top:2px">118<span style="color:var(--ink-3);font-size:13px"> /170 g</span></div><div class="bar" style="height:6px;margin-top:6px"><i style="width:69%;background:var(--macro-prot)"></i></div></div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700">Hidratos</div><div class="num" style="font-size:17px;margin-top:2px">161<span style="color:var(--ink-3);font-size:13px"> /270 g</span></div><div class="bar" style="height:6px;margin-top:6px"><i style="width:60%;background:var(--macro-hc)"></i></div></div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700">Grasas</div><div class="num" style="font-size:17px;margin-top:2px">44<span style="color:var(--ink-3);font-size:13px"> /70 g</span></div><div class="bar" style="height:6px;margin-top:6px"><i style="width:63%;background:var(--macro-grasa)"></i></div></div>
+        </div>
+      </div>
+      <div class="row between" style="margin:16px 4px 8px"><div class="h-m">Comidas</div><span style="font-size:14px;font-weight:700;color:var(--accent-ink)">Ver nutrientes</span></div>
+      <div class="card" style="overflow:hidden">
+        <div class="mrow"><span class="nm">Desayuno</span><span class="kc">498 kcal</span><span class="ms" style="color:var(--ink-3)">more_horiz</span></div>
+        <div class="f"><div class="n">Copos de avena<div class="s">60 g</div></div><span class="kc" style="font-size:14px">225</span></div>
+        <div class="f"><div class="n">Yogur griego natural<div class="s">Hacendado · 125 g</div></div><span class="kc" style="font-size:14px">153</span></div>
+      </div>
+      <div class="card" style="margin-top:10px"><div class="mrow"><span class="nm">Comida</span><span class="kc">846 kcal</span><span class="ms" style="color:var(--ink-3)">more_horiz</span></div><div class="f"><div class="n">Arroz con tomate y pollo<div class="s">Receta · 1,4 raciones</div></div><span class="kc" style="font-size:14px">846</span></div></div>
+      <div class="card" style="margin-top:10px"><div class="mrow"><span class="nm">Merienda</span><span class="reg">Regístralo</span></div></div>
+    </div>
+    <div class="tabbar"><div class="tab"><span class="ms">today</span>Hoy</div><div class="tab"><span class="ms">fitness_center</span>Rutinas</div><div class="tab"><div class="fab"><span class="ms" style="font-size:30px">add</span></div></div><div class="tab on"><span class="ms fill">restaurant</span>Nutrición</div><div class="tab"><span class="ms">person</span>Perfil</div></div>
+  </div></div></div>
+
+  <div><div class="cap">Propuesta · Añadir a «Merienda»</div>
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span></div>
+    <div class="appbar"><span class="iconbtn"><span class="ms">close</span></span><span style="flex:1;text-align:center;font-weight:800;color:var(--accent-ink);font-size:17px">Merienda <span class="ms" style="font-size:20px">arrow_drop_down</span></span><span style="width:40px"></span></div>
+    <div class="scroll" style="padding-top:14px">
+      <div class="row" style="height:50px;border-radius:99px;background:var(--surface);border:1.5px solid var(--strong);padding:0 16px;gap:8px"><span class="ms">search</span><span style="font-size:16px;color:var(--ink-3)">Buscar alimento</span></div>
+      <div class="tb2" style="margin-top:14px"><div class="on">Todo</div><div>Mis comidas</div><div>Mis recetas</div><div>Mis alimentos</div></div>
+      <div class="big2" style="margin-top:14px"><div><span class="ms">barcode_scanner</span>Escanear código</div><div><span class="ms">bolt</span>Añadido rápido</div></div>
+      <div class="row between" style="margin:18px 2px 4px"><div class="h-m">Recientes</div><span class="ms" style="color:var(--ink-3)">tune</span></div>
+      <div class="res"><div style="flex:1"><div style="font-size:16px;font-weight:600">Garbanzos cocidos (bote)</div><div class="row" style="gap:6px;margin-top:3px"><span class="src">OFF</span><span style="font-size:13px;color:var(--ink-3)">Hacendado · 400 g · 360 kcal</span></div></div><span class="ms" style="color:var(--accent-ink);font-size:30px">add_circle</span></div>
+      <div class="res"><div style="flex:1"><div style="font-size:16px;font-weight:600">Pan tostada integral</div><div class="row" style="gap:6px;margin-top:3px"><span class="src">OFF</span><span style="font-size:13px;color:var(--ink-3)">Mercadona · 1 tostada · 46 kcal</span></div></div><span class="ms" style="color:var(--accent-ink);font-size:30px">add_circle</span></div>
+      <div class="res"><div style="flex:1"><div style="font-size:16px;font-weight:600">Arroz blanco</div><div class="row" style="gap:6px;margin-top:3px"><span class="src">EN FORMA</span><span style="font-size:13px;color:var(--ink-3)">100 g · 360 kcal (seco)</span></div></div><span class="ms" style="color:var(--accent-ink);font-size:30px">add_circle</span></div>
+      <div class="res"><div style="flex:1"><div style="font-size:16px;font-weight:600">Yogur griego</div><div class="row" style="gap:6px;margin-top:3px"><span class="src">MÍO</span><span style="font-size:13px;color:var(--ink-3)">125 g · 161 kcal</span></div></div><span class="ms" style="color:var(--accent-ink);font-size:30px">add_circle</span></div>
+      <div class="res" style="background:#FBF3E6"><div style="flex:1"><div style="font-size:16px;font-weight:600">Pan de centeno</div><div style="font-size:13px;color:var(--warning);margin-top:3px;font-weight:600">Faltan grasas en la etiqueta · revisar</div></div><span class="ms" style="color:var(--ink-4);font-size:28px">info</span></div>
+    </div>
+  </div></div></div>
+
+  <div><div class="cap">Propuesta · Nutrientes de la semana</div>
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span></div>
+    <div class="appbar"><span class="iconbtn"><span class="ms">arrow_back</span></span><span style="flex:1;text-align:center;font-weight:800;font-size:17px">Nutrientes</span><span style="width:40px"></span></div>
+    <div style="padding:10px 16px 0"><div class="tb2"><div>Calorías</div><div class="on">Nutrientes</div><div>Macros</div></div></div>
+    <div class="row between" style="padding:12px 16px"><span class="ms">chevron_left</span><div style="text-align:center"><div class="caption">Vista de semana</div><div style="font-size:17px;font-weight:700">Últimos 7 días</div></div><span class="ms">chevron_right</span></div>
+    <div class="nt" style="border-top:1px solid var(--hairline);background:var(--inset)"><span class="a ph">Nutriente</span><span class="b ph">Media</span><span class="b ph">Objet.</span><span class="b ph">Dif.</span></div>
+    <div style="background:var(--surface)">
+      <div class="nt" style="border-top:0"><span class="a" style="font-weight:700">Proteínas</span><span class="b">161</span><span class="b">170</span><span class="b" style="color:var(--warning)">−9</span></div>
+      <div class="nt"><span class="a" style="font-weight:700">Hidratos</span><span class="b">258</span><span class="b">270</span><span class="b" style="color:var(--warning)">−12</span></div>
+      <div class="nt"><span class="a" style="font-weight:700">Fibra</span><span class="b">31</span><span class="b">38</span><span class="b" style="color:var(--warning)">−7</span></div>
+      <div class="nt"><span class="a">Azúcar</span><span class="b">64</span><span class="b">101</span><span class="b" style="color:var(--success)">OK</span></div>
+      <div class="nt"><span class="a" style="font-weight:700">Grasas</span><span class="b">72</span><span class="b">70</span><span class="b" style="color:var(--success)">OK</span></div>
+      <div class="nt"><span class="a">Saturadas</span><span class="b">21</span><span class="b">30</span><span class="b" style="color:var(--success)">OK</span></div>
+      <div class="nt"><span class="a">Sodio</span><span class="b">—</span><span class="b">2300</span><span class="b" style="color:var(--ink-4)">s/d</span></div>
+    </div>
+    <div class="scroll" style="padding-top:12px"><div class="caption">«s/d» = sin dato: algunos productos no declaran ese nutriente. No se rellena con estimaciones.</div></div>
+  </div></div></div>
+
+  <div class="note"><h3>Qué he tomado de tus referencias</h3><ul>
+    <li><b>Hoy:</b> semana con círculos, calorías «restan» y macros en una tarjeta; comidas con botón <b>Regístralo</b>.</li>
+    <li><b>Buscar:</b> pestañas Todo · Mis comidas · Mis recetas · Mis alimentos, <b>Escanear código</b> y <b>Añadido rápido</b> como acciones grandes, lista de recientes.</li>
+    <li><b>Nutrientes:</b> tabla Media · Objetivo · Diferencia.</li>
+    <li>Lo que <b>no</b> copio: publicidad ni el azul; seguimos con crema y oro. Letra de filas a 16-17 px.</li>
+    <li>El atleta usa <b>Intercambios y Diario a la vez</b>; ambos leen el mismo objetivo del coach.</li>
+    <li>Cada alimento indica su fuente (EN FORMA, OFF, MÍO).</li>
+  </ul></div>
+</div></body></html>

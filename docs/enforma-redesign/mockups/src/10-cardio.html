@@ -1,0 +1,56 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><title>10 Cardio</title>
+<style>.tipo{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.tipo div{height:76px;border-radius:16px;background:var(--surface);border:1.5px solid var(--hairline);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:14px;font-weight:600}.tipo .on{border-color:var(--ink);background:var(--ink);color:#fff}</style>
+</head><body>
+<div class="sheetpage">
+  <div><div class="cap">Actual · sesión en vivo (banco /dev/cardio-live)</div><div class="frame" style="width:406px;height:860px;overflow:hidden"><img src="../actual/cardio-live.png" style="width:390px;display:block"></div></div>
+  <div><div class="cap">Propuesta · sin cardio pautado</div>
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span></div>
+    <div class="appbar"><span class="iconbtn"><span class="ms">arrow_back</span></span><span style="font-weight:700">Cardio</span></div>
+    <div class="scroll" style="padding-top:16px">
+      <div class="card pad" style="background:var(--raised)"><div class="row" style="gap:10px"><span class="ms" style="color:var(--ink-3)">event_available</span><div class="body-s">Hoy <b style="color:var(--ink)">no tienes cardio pautado</b>. Puedes hacer una sesión libre: contará en tu historial.</div></div></div>
+      <div class="h-m" style="margin-top:18px">Sesión libre</div>
+      <div class="tipo" style="margin-top:10px">
+        <div class="on"><span class="ms">directions_walk</span>Caminar</div><div><span class="ms">directions_bike</span>Bici</div><div><span class="ms">directions_run</span>Correr</div>
+        <div><span class="ms">rowing</span>Remo</div><div><span class="ms">stairs</span>Escalera</div><div><span class="ms">more_horiz</span>Otro</div>
+      </div>
+      <div class="card pad" style="margin-top:14px">
+        <div class="row between"><div class="row" style="gap:10px"><span class="ms" style="color:var(--data)">bluetooth</span><div><div class="h-s">Pulsómetro</div><div class="caption">Solo en la app instalada</div></div></div><span class="pill" style="background:var(--inset);color:var(--ink-2)">Opcional</span></div>
+      </div>
+      <div class="btn btn-primary" style="width:100%;margin-top:16px"><span class="ms fill">play_arrow</span>Empezar ahora</div>
+      <div class="btn btn-line" style="width:100%;margin-top:10px"><span class="ms">edit_note</span>Ya lo hice · apuntarlo</div>
+      <div class="caption" style="margin-top:14px;text-align:center">Se guarda la duración y, si hay pulsómetro, la frecuencia cardíaca. Sin pulsómetro no mostramos FC.</div>
+    </div>
+  </div></div></div>
+  <div><div class="cap">Propuesta · con cardio pautado</div>
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span></div>
+    <div class="appbar"><span class="iconbtn"><span class="ms">arrow_back</span></span><span style="font-weight:700">Cardio</span></div>
+    <div class="scroll" style="padding-top:16px">
+      <div class="card pad">
+        <div class="label" style="color:var(--accent-ink)">Pautado hoy</div>
+        <div class="h-l" style="margin-top:6px">Zona 2 · 40 min</div>
+        <div class="body-s" style="margin-top:4px">Bici o caminata inclinada · FC 128–140</div>
+        <div class="btn btn-primary" style="width:100%;margin-top:14px"><span class="ms fill">play_arrow</span>Empezar</div>
+        <div class="row" style="margin-top:10px;gap:8px"><div class="btn btn-ghost" style="flex:1;height:46px;font-size:15px"><span class="ms" style="font-size:20px">check</span>Ya lo hice</div><div class="btn btn-ghost" style="flex:1;height:46px;font-size:15px"><span class="ms" style="font-size:20px">redo</span>Mover a mañana</div></div>
+      </div>
+      <div class="card pad" style="margin-top:12px;border-color:rgba(11,107,71,.3);background:#F1F8F4"><div class="row" style="gap:10px"><span class="ms fill" style="color:var(--success)">event_repeat</span><div class="body-s"><b style="color:var(--ink)">Movido a mañana, jueves 23.</b> Tu coach lo verá en el calendario. <b style="color:var(--accent-ink)">Deshacer</b></div></div></div>
+      <div class="label" style="margin-top:18px">Esta semana</div>
+      <div class="row" style="gap:6px;margin-top:8px">
+        <div style="flex:1;text-align:center"><div class="caption">L</div><div style="height:36px;border-radius:10px;background:var(--success);margin-top:4px"></div></div>
+        <div style="flex:1;text-align:center"><div class="caption">M</div><div style="height:36px;border-radius:10px;background:var(--inset);margin-top:4px"></div></div>
+        <div style="flex:1;text-align:center"><div class="caption" style="color:var(--ink);font-weight:800">X</div><div style="height:36px;border-radius:10px;border:2px dashed var(--accent);margin-top:4px"></div></div>
+        <div style="flex:1;text-align:center"><div class="caption">J</div><div style="height:36px;border-radius:10px;background:var(--accent-bg);margin-top:4px"></div></div>
+        <div style="flex:1;text-align:center"><div class="caption">V</div><div style="height:36px;border-radius:10px;background:var(--inset);margin-top:4px"></div></div>
+        <div style="flex:1;text-align:center"><div class="caption">S</div><div style="height:36px;border-radius:10px;background:var(--accent-bg);margin-top:4px"></div></div>
+        <div style="flex:1;text-align:center"><div class="caption">D</div><div style="height:36px;border-radius:10px;background:var(--inset);margin-top:4px"></div></div>
+      </div>
+    </div>
+  </div></div></div>
+  <div class="note"><h3>Qué se arregla</h3><ul>
+    <li>Sin pauta <b>y sin zonas</b> hoy no aparece ningún botón útil (<span class="mono">CardioScreen.tsx:244</span>). Propuesta: siempre «Empezar ahora» + «Ya lo hice».</li>
+    <li>«Mover a mañana» hoy solo escribe en el navegador (<span class="mono">cardioSkipToday.ts</span>): no reprograma ni lo ve el coach. Propuesta: mover la asignación de verdad, con deshacer.</li>
+    <li>En web no hay sesión en vivo con pulsómetro (BLE solo nativo). Sesión libre web = cronómetro + RPE al terminar.</li>
+    <li>No se registran distancia ni ritmo hoy; no se prometen.</li>
+  </ul></div>
+</div></body></html>

@@ -15,7 +15,8 @@ import {
 } from '../../../dbService';
 import { normalizarDni, normalizarPrefijo, normalizarNumero } from '../lib/identidad';
 import { crmKeys } from '../lib/crmQueries';
-import { motivoNoBorrable } from '../lib/archivado';
+import { tieneCuentaActiva } from '../lib/archivado';
+import { gestionarAccesoCliente } from '../../../db/accesoCliente';
 import type { Cliente, CrmContacto, EstadoCrm, MotivoBaja } from '../types';
 
 export interface DatosPersonales {
@@ -125,8 +126,10 @@ export function useCrearContacto() {
 }
 
 /**
- * Archivar / desarchivar. Es baja LÓGICA de la vista del coach: el documento
- * no se toca más allá de un flag, y el cliente vuelve entero al desarchivar.
+ * Archivar / desarchivar. Es baja LÓGICA: el documento no se toca más allá de
+ * un flag y el cliente vuelve entero al desarchivar. Si tiene cuenta en la app,
+ * archivarlo además le QUITA EL ACCESO (usuario desactivado y sesiones
+ * revocadas en el servidor); desarchivarlo se lo devuelve.
  * No confundir con `estadoCrm: 'baja'`, que es un hecho de negocio (con su
  * fecha y su motivo) y sigue contando para el churn.
  *
@@ -140,6 +143,12 @@ export function useArchivarCliente() {
 
   return useMutation({
     mutationFn: async ({ cliente, archivar }: { cliente: Cliente; archivar: boolean }) => {
+      // Primero el acceso, después la marca: si el servidor falla, el cliente
+      // sigue como estaba (ni archivado ni bloqueado) y el coach lo ve. Al
+      // revés, quedaría archivado en el CRM con la puerta abierta.
+      if (tieneCuentaActiva(cliente)) {
+        await gestionarAccesoCliente(cliente.email!, archivar ? 'bloquear' : 'desbloquear');
+      }
       // Mismo encaminado que `useGuardarCliente`: perfil primero (es el que
       // manda en un cliente fusionado), contacto si no lo hay.
       if (cliente.fuente === 'perfil' && cliente.userId) {
@@ -160,17 +169,24 @@ export function useArchivarCliente() {
 }
 
 /**
- * Borrado DEFINITIVO de un contacto sin cuenta o de un perfil ya anonimizado,
- * con todo su rastro comercial. Lanza `ClienteConCobros` si tiene cobros ya
- * cobrados — eso se archiva, no se borra.
+ * Borrado DEFINITIVO. Sin cuenta (o con el perfil anonimizado de una ya
+ * borrada): borra el contacto con todo su rastro comercial y lanza
+ * `ClienteConCobros` si tiene cobros ya cobrados — eso se archiva, no se borra.
+ * Con cuenta: lo borra el servidor entero y conserva servicios y cobros
+ * anonimizados.
  */
 export function useEliminarCliente() {
   const qc = useQueryClient();
 
   return useMutation({
     mutationFn: async (cliente: Cliente) => {
-      const bloqueo = motivoNoBorrable(cliente);
-      if (bloqueo) throw new Error(bloqueo);
+      // Con cuenta: lo borra el servidor entero (datos, ficheros y acceso) y
+      // deja los servicios y cobros anonimizados, igual que «Eliminar mi
+      // cuenta». No hay bloqueo por cobros: no se pierden, se anonimizan.
+      if (tieneCuentaActiva(cliente)) {
+        await gestionarAccesoCliente(cliente.email!, 'eliminar', cliente.userId);
+        return 0;
+      }
       return eliminarClienteDelCrm({
         clientId: cliente.id,
         contactoId: cliente.contactoId,

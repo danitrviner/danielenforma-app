@@ -29,7 +29,7 @@ import { Icon } from './components/ui';
 import { OPEN_AI_PANEL_EVENT } from './ai/events';
 import { limpiarDatosDeSesion } from './utils/cierreDeSesion';
 import { iniciarBotonAtras, fijarManejadorDeRuta, salirDeLaApp } from './services/botonAtras';
-import { useHuecoInferiorVisible, ALTURA_MINIMA_TECLADO } from './utils/anclajeViewport';
+import { useMedidaViewport, useCampoDeTextoEnfocado, ALTURA_MINIMA_TECLADO } from './utils/anclajeViewport';
 import { pulsable } from './utils/a11y';
 import { Avatar } from './components/ui';
 
@@ -184,6 +184,11 @@ const PlanSemanaHarness = import.meta.env.DEV
 // Banco de pruebas de «El atleta ve ahora» + estado del bloque (ruta /dev/bloque-atleta).
 const BloqueAtletaHarness = import.meta.env.DEV
   ? pantallaDiferida('BloqueAtletaDevHarness', () => import('./components/mesociclo/BloqueAtletaDevHarness'))
+  : null;
+
+// Banco de pruebas de la vista previa de rutinas agrupada (ruta /dev/vista-previa).
+const VistaPreviaHarness = import.meta.env.DEV
+  ? pantallaDiferida('VistaPreviaDevHarness', () => import('./components/training/VistaPreviaDevHarness'))
   : null;
 
 // Banco de pruebas de «Orden del ciclo» (Mesociclo › Distribución, ruta /dev/orden-ciclo).
@@ -442,8 +447,9 @@ function AppContent() {
   };
 
   // Barra inferior de móvil: ver utils/anclajeViewport.ts y el <nav> de abajo.
-  const huecoInferior = useHuecoInferiorVisible();
-  const tecladoAbierto = huecoInferior > ALTURA_MINIMA_TECLADO;
+  const { hueco: huecoInferior, ampliada: paginaAmpliada } = useMedidaViewport();
+  const campoEnfocado = useCampoDeTextoEnfocado();
+  const tecladoAbierto = campoEnfocado || huecoInferior > ALTURA_MINIMA_TECLADO;
 
   // Comprueba si el atleta ya hizo el onboarding guiado. El coach nunca se gatea.
   useEffect(() => {
@@ -477,9 +483,24 @@ function AppContent() {
       .catch(() => { if (!cancelled) setGimnasioGate('done'); }); // ante error, no bloquear la app
     return () => { cancelled = true; };
   }, [profile, onboardingGate]);
+  // El coach archivó a este cliente desde el CRM: ya no tiene acceso. El corte
+  // de verdad lo hace el servidor (api/gestionar-acceso.ts desactiva el usuario
+  // de Auth y revoca sus sesiones); esto cubre la ventana en que su token aún
+  // vale y le da un mensaje claro en vez de un error de permisos.
+  const cerrarSiAccesoRevocado = async (p: UserProfile): Promise<boolean> => {
+    if (esCoach(p) || p.archivadoCrm !== true) return false;
+    setProfile(null);
+    setCurrentUser(null);
+    setCheckins([]);
+    showToast('Tu acceso a la app está desactivado. Escribe a Dani.', 'error');
+    try { await signOut(auth); } catch (err) { console.warn('signOut por acceso revocado falló:', err); }
+    return true;
+  };
+
   const loadUserSession = async (user: any) => {
     const userProfile = await getOrCreateUserProfile(user.uid, user.email || 'atleta@enforma.com', user.displayName || '');
     const coachRole = esCoach(userProfile);
+    if (await cerrarSiAccesoRevocado(userProfile)) return;
     setProfile(userProfile);
     // Si ya hay una URL válida para este rol (ej. F5 en /training), se
     // respeta — es lo que hace que el refresh recupere la pantalla exacta.
@@ -741,6 +762,7 @@ function AppContent() {
     if (currentUser) {
       try {
         const userProfile = await getOrCreateUserProfile(currentUser.uid, currentUser.email || 'atleta@enforma.com', currentUser.displayName || '');
+        if (await cerrarSiAccesoRevocado(userProfile)) return;
         setProfile(userProfile);
         const coachRole = esCoach(userProfile);
         const checks = await getCheckIns(coachRole ? undefined : currentUser.uid);
@@ -907,6 +929,13 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <BloqueAtletaHarness />
+      </Suspense>
+    );
+  }
+  if (VistaPreviaHarness && location.pathname === '/dev/vista-previa') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <VistaPreviaHarness />
       </Suspense>
     );
   }
@@ -1403,7 +1432,9 @@ function AppContent() {
           página ampliada ya no coincide con lo que se ve — y la barra
           aparecía flotando a media pantalla, arrastrándose con el scroll.
           Ver utils/anclajeViewport.ts. Con el teclado se esconde en vez de
-          recolocarse: encima de las teclas taparía el campo que se rellena. */}
+          recolocarse: encima de las teclas taparía el campo que se rellena.
+          Solo se recoloca con la página ampliada: sin zoom, el rebote del
+          scroll y la barra de Safari la hacían subir sola. */}
       <nav
         ref={navTabsRef}
         aria-hidden={tecladoAbierto || undefined}
@@ -1413,7 +1444,7 @@ function AppContent() {
         }
         style={{
           paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
-          transform: !tecladoAbierto && huecoInferior > 0 ? `translateY(-${huecoInferior}px)` : undefined,
+          transform: !tecladoAbierto && paginaAmpliada && huecoInferior > 0 ? `translateY(-${huecoInferior}px)` : undefined,
         }}
       >
         {mobileTabs.map((tab) => {
