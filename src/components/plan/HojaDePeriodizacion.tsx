@@ -26,10 +26,11 @@ import { Icon, Button, EmptyState, Skeleton } from '../ui';
 /* ═══════════════════════════════════════════════════════════════════════════
    Plan › Objetivo › Plan — la hoja de periodización (30-10-2026)
 
-   Versión «hoja de control» que eligió Dani entre tres: una fila por fase
-   con todo lo que fija (objetivo, ritmo, semanas, macros por kg, pasos,
-   cardio, escalones, dieta) y lo que sale solo (peso al final, kcal,
-   gramos, déficit); una fila de detalle desplegable con el resto; la barra
+   Versión «hoja de control» que eligió Dani entre tres. Las fases, desde el
+   30-10 una tarjeta por fase (variante A, «la ecuación»): lo que fija
+   (objetivo, ritmo, semanas, kcal, macros por kg, pasos, dieta) agrupado
+   por para qué sirve, y la cuenta a la vista: mantenimiento + pasos − lo que
+   come = déficit → kg. Escalones, para qué y cardio en el detalle; la barra
    de semanas de siempre (ciclado, reglas, mínimos, comidas libres,
    suplementos) y la tabla de las N semanas con kcal y pasos tocables.
    Nada se guarda hasta «Guardar y publicar». Motor: utils/hojaDePeriodizacion.ts.
@@ -52,8 +53,8 @@ const fechaCorta = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateStri
 const num = (v: string) => { const n = Number(v.replace(',', '.')); return Number.isFinite(n) ? n : null; };
 
 const CELDA = 'w-full bg-raised border border-control-line text-ink font-mono text-label rounded-control px-1.5 py-1 text-right focus:outline-none focus:border-accent';
-const CELDA_RO = 'font-mono text-label text-ink-2 text-right px-1.5';
 const CELDA_S = CELDA.replace('w-full ', '');
+const CAMPO = 'w-full bg-raised border border-control-line text-ink font-mono text-body font-semibold rounded-field px-3 py-2 focus:outline-none focus:border-accent';
 
 export default function HojaDePeriodizacion({ athleteEmail, athleteName, diets, onboarding, currentWeightKg, stepGoal, kcalPerStep, onDietsChanged }: Props) {
   const queryClient = useQueryClient();
@@ -210,103 +211,158 @@ export default function HojaDePeriodizacion({ athleteEmail, athleteName, diets, 
             <Button size="s" onClick={guardar} loading={saving} disabled={!dirty || form.phases.length === 0 || pesoInicio == null}>Guardar y publicar</Button>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <Dato etiqueta="Mantenimiento" valor={mantenimiento != null ? miles(mantenimiento) : '—'} nota="estimado (Mifflin + actividad)" />
-          <Dato etiqueta="Pasos → kcal" valor={`+${miles(pasosKcal(form.phases[0]?.pasos))}`} nota={`${miles(form.phases[0]?.pasos ?? stepGoal)} × ${kcalPerStep}`} />
-          <Dato etiqueta="Proteína mín." valor="" nota="g/kg · doctrina §7" editable={<input className={`${CELDA} w-16 text-left font-sans text-title-s font-bold`} defaultValue={String(proteinaMin).replace('.', ',')} onBlur={e => { const n = num(e.target.value); if (n) setForm({ ...form, proteinaMinGKg: n }); }} />} />
+        {/* Mantenimiento y pasos ya no van aquí: bajan a cada fase, que es donde cuentan (la cuenta de «Fases de comida»). */}
+        <div className="grid grid-cols-2 gap-2">
+          <Dato etiqueta="Proteína mín." valor="" nota="se aplica a todas las fases" editable={<><input aria-label="Proteína mínima en g/kg" className={`${CELDA_S} w-16 text-left font-sans text-title-s font-bold`} defaultValue={String(proteinaMin).replace('.', ',')} onBlur={e => { const n = num(e.target.value); if (n) setForm({ ...form, proteinaMinGKg: n }); }} /><span className="font-mono text-caption text-ink-3">g/kg</span></>} />
           <Dato etiqueta="Acelerada" valor={`≤ ${ACELERADA.maxSemanas} sem`} nota={`proteína ${ACELERADA.proteinaGKg[0]}-${ACELERADA.proteinaGKg[1]} g/kg · luego salida`} />
         </div>
         {pesoInicio == null && <p className="font-sans text-caption text-warning">Sin peso del atleta no se puede calcular nada: que registre un peso o ponlo en su alta.</p>}
       </section>
 
-      {/* ── Fases de comida ── */}
-      <section className="bg-surface border border-hairline rounded-surface p-4 space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <p className="font-sans text-title-s font-bold text-ink flex items-center gap-2"><Icon name="nutrition" size="m" className="text-accent-ink" />Fases de comida</p>
-          <p className="font-mono text-caption text-ink-3">cada casilla con borde se edita · lo demás sale solo · ▸ abre el detalle</p>
+      {/* ── Fases de comida: una tarjeta por fase con la cuenta a la vista ── */}
+      <section className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <p className="font-sans text-title-s font-bold text-ink flex items-center gap-2 whitespace-nowrap"><Icon name="nutrition" size="m" className="text-accent-ink" />Fases de comida</p>
+          <p className="font-mono text-caption text-ink-3">las casillas con borde se tocan · lo demás sale solo</p>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] border-collapse font-mono text-label">
-            <thead><tr className="text-caption uppercase tracking-wider text-ink-3">
-              {['', 'Fase', 'Objetivo', 'Sem', 'Ritmo %/sem', 'Peso', 'kcal inicio', 'Déficit/día', 'P · G g/kg', 'Pasos', 'Escalones', 'Dieta', ''].map((h, i) => (
-                <th key={i} className={`border-b border-hairline px-1.5 py-1.5 font-medium ${i <= 2 ? 'text-left' : 'text-right'}`}>{h}</th>
-              ))}
-            </tr></thead>
-            <tbody>
-              {form.phases.map((f, idx) => {
-                const c = cadena[idx];
-                const m = macrosDe(f, idx);
-                const deficit = mantenimiento != null && f.targetKcal != null ? f.targetKcal - mantenimiento - pasosKcal(f.pasos) : null;
-                const esc = escalonesDeFase(form, diets, idx, stepGoal);
-                const dieta = diets.find(d => d.id === f.dietId);
-                const aviso = avisoAcelerada(f);
-                const abiertaEsta = abierta === f.id;
-                const inicio = semanaInicialDeFase(form, idx);
-                const enCurso = semanaHoy >= inicio && semanaHoy < inicio + f.weeks;
-                return (
-                  <React.Fragment key={f.id}>
-                    <tr className={`border-b border-hairline ${enCurso ? 'bg-accent-bg/30' : ''}`}>
-                      <td className="px-1 py-1.5"><button type="button" aria-label={abiertaEsta ? 'Cerrar detalle' : 'Abrir detalle'} onClick={() => setAbierta(abiertaEsta ? null : f.id)} className="text-ink-3 hover:text-ink"><Icon name={abiertaEsta ? 'expand_more' : 'chevron_right'} size="s" /></button></td>
-                      <td className="px-1.5 py-1.5"><input className={`${CELDA} text-left w-40 font-sans font-bold`} value={f.name} onChange={e => setFase(idx, { name: e.target.value })} /></td>
-                      <td className="px-1.5 py-1.5">
-                        <select value={f.objetivo ?? ''} onChange={e => { const o = (e.target.value || undefined) as ObjetivoCorporalTipo | undefined; setFase(idx, { objetivo: o, phaseType: o ? phaseTypeDeObjetivo(o) : undefined, ritmoPctSem: ritmoPorDefecto(o), modo: 'ritmo' }); }} className={`${CELDA} text-left w-40`}>
-                          <option value="">—</option>
-                          {OBJETIVOS_ORDEN.map(o => <option key={o} value={o}>{OBJETIVO_LABEL[o]}</option>)}
-                        </select>
-                      </td>
-                      <td className="px-1.5 py-1.5"><input className={`${CELDA} w-12`} inputMode="numeric" value={f.weeks} onChange={e => { const n = num(e.target.value); if (n != null) setFase(idx, { weeks: Math.max(1, Math.round(n)) }); }} /></td>
-                      <td className="px-1.5 py-1.5">
-                        <input className={`${CELDA} w-16`} value={(f.ritmoPctSem ?? 0).toLocaleString('es-ES')} onChange={e => { const n = num(e.target.value); if (n != null) setFase(idx, { ritmoPctSem: n, modo: 'ritmo' }); }} />
-                        <div className="flex gap-1 justify-end mt-0.5">
-                          {(['suave', 'normal', 'rapido'] as const).map(k => (
-                            <button key={k} type="button" onClick={() => setFase(idx, { ritmoPctSem: RITMOS[k] * (f.objetivo === 'volumen' || f.objetivo === 'salida_deficit' ? 1 : -1), modo: 'ritmo' })} className="font-mono text-[10px] uppercase text-ink-3 hover:text-accent-ink">{k}</button>
-                          ))}
-                        </div>
-                      </td>
-                      <td className={CELDA_RO}>{c ? <><span className="text-ink-3">{kg(c.pesoInicio)} →</span> <b className="text-ink">{kg(c.pesoFinal)}</b><div className="text-caption text-ink-3">{c.ritmoKgSem != null ? `${c.ritmoKgSem > 0 ? '+' : ''}${c.ritmoKgSem.toLocaleString('es-ES')} kg/sem` : ''}</div></> : '—'}</td>
-                      <td className="px-1.5 py-1.5">
-                        <input className={`${CELDA} w-16`} inputMode="numeric" value={f.targetKcal ?? ''} placeholder={dieta ? String(resolvePhaseTargetKcal(f, dieta).kcal ?? '') : ''} onChange={e => setFase(idx, { targetKcal: num(e.target.value) ?? undefined })} />
-                        {kcalInicioSugerida(idx) != null && kcalInicioSugerida(idx) !== f.targetKcal && (
-                          <button type="button" onClick={() => setFase(idx, { targetKcal: kcalInicioSugerida(idx)! })} className="block ml-auto mt-0.5 font-mono text-[10px] uppercase text-accent-ink">sugerir {miles(kcalInicioSugerida(idx))}</button>
-                        )}
-                      </td>
-                      <td className={`${CELDA_RO} ${deficit != null && deficit < 0 ? 'text-accent-ink' : ''}`}>{deficit != null ? `${deficit > 0 ? '+' : ''}${miles(deficit)}` : '—'}</td>
-                      <td className="px-1.5 py-1.5">
-                        <div className="flex gap-1 justify-end items-center">
-                          <input className={`${CELDA} w-11 ${f.proteinaGKg != null && f.proteinaGKg < proteinaMin ? 'border-warning text-warning' : ''}`} value={f.proteinaGKg?.toLocaleString('es-ES') ?? ''} onChange={e => setFase(idx, { proteinaGKg: num(e.target.value) ?? undefined })} />
-                          <span className="text-ink-3">·</span>
-                          <input className={`${CELDA} w-11`} value={f.grasaGKg?.toLocaleString('es-ES') ?? ''} onChange={e => setFase(idx, { grasaGKg: num(e.target.value) ?? undefined })} />
-                        </div>
-                        {m && <div className="text-caption text-ink-3 text-right mt-0.5 whitespace-nowrap">{m.p} · {m.g} · HC {m.hc} g</div>}
-                      </td>
-                      <td className="px-1.5 py-1.5"><input className={`${CELDA} w-16`} inputMode="numeric" value={f.pasos ?? ''} placeholder={String(stepGoal)} onChange={e => setFase(idx, { pasos: num(e.target.value) ?? undefined })} /></td>
-                      <td className={CELDA_RO}>{f.escalon ? `${esc.length} · ${esc.filter(x => x.confirmado).length} ✓` : <span className="text-ink-3">—</span>}</td>
-                      <td className="px-1.5 py-1.5">
-                        <select value={f.dietId} onChange={e => setFase(idx, { dietId: e.target.value })} className={`${CELDA} text-left w-32`}>
-                          <option value="">{m ? 'crear con sus macros' : 'sin dieta'}</option>
-                          {diets.filter(d => !d.selfManaged && !d.menuTemplate).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                        </select>
-                      </td>
-                      <td className="px-1 py-1.5 text-right whitespace-nowrap">
-                        <button type="button" aria-label="Subir" disabled={idx === 0} onClick={() => setForm(mover(form, idx, -1))} className="text-ink-3 hover:text-ink disabled:opacity-30"><Icon name="arrow_upward" size="s" /></button>
-                        <button type="button" aria-label="Bajar" disabled={idx === form.phases.length - 1} onClick={() => setForm(mover(form, idx, 1))} className="text-ink-3 hover:text-ink disabled:opacity-30"><Icon name="arrow_downward" size="s" /></button>
-                        <button type="button" aria-label="Borrar fase" onClick={() => setForm({ ...form, phases: form.phases.filter((_, i) => i !== idx) })} className="text-ink-3 hover:text-danger ml-1"><Icon name="delete" size="s" /></button>
-                      </td>
-                    </tr>
-                    {(aviso || abiertaEsta) && (
-                      <tr className="border-b border-hairline bg-raised/60">
-                        <td colSpan={13} className="px-3 py-3">
-                          {aviso && <p className="font-sans text-caption text-warning mb-2">{aviso}</p>}
-                          {abiertaEsta && <DetalleFase f={f} idx={idx} form={form} cadena={c} macros={m} escalones={esc} setFase={setFase} dieta={dieta} />}
-                        </td>
-                      </tr>
+        {form.phases.map((f, idx) => {
+          const c = cadena[idx];
+          const m = macrosDe(f, idx);
+          const dieta = diets.find(d => d.id === f.dietId);
+          // La dieta enlazada pone las kcal si la fase no fija las suyas: la cuenta tiene que salir igual.
+          const kcalFase = f.targetKcal ?? (dieta ? resolvePhaseTargetKcal(f, dieta).kcal ?? null : null);
+          const pasosFase = pasosKcal(f.pasos);
+          const balance = mantenimiento != null && kcalFase != null ? kcalFase - mantenimiento - pasosFase : null;
+          const esc = escalonesDeFase(form, diets, idx, stepGoal);
+          const aviso = avisoAcelerada(f);
+          const abiertaEsta = abierta === f.id;
+          const inicio = semanaInicialDeFase(form, idx);
+          const enCurso = semanaHoy >= inicio && semanaHoy < inicio + f.weeks;
+          const hasta = addDays(computePhaseStartDate(form, idx), f.weeks * 7 - 1);
+          // Fases fijadas por peso final (las de antes de la hoja) no traen %: se deduce del ritmo en kg para no enseñar un 0 falso.
+          const ritmoPct = f.ritmoPctSem ?? (c?.ritmoKgSem != null && c.pesoInicio ? Math.round(c.ritmoKgSem / c.pesoInicio * 10000) / 100 : null);
+          const signo = f.objetivo === 'volumen' || f.objetivo === 'salida_deficit' ? 1 : -1;
+          const sugerida = kcalInicioSugerida(idx);
+          const pocaProteina = f.proteinaGKg != null && f.proteinaGKg < proteinaMin;
+          return (
+            <div key={f.id} className={`rounded-field border p-3 sm:p-4 space-y-4 ${enCurso ? 'border-accent-line' : 'border-hairline'}`}>
+              <div className="flex flex-wrap items-center gap-2">
+                <Icon name="nutrition" size="m" className="text-accent-ink shrink-0" />
+                <input aria-label="Nombre de la fase" className="min-w-[9rem] flex-1 bg-transparent border-b border-transparent hover:border-control-line focus:border-accent font-sans text-title-s font-bold text-ink focus:outline-none" value={f.name} onChange={e => setFase(idx, { name: e.target.value })} />
+                {enCurso && <span className="shrink-0 rounded-chip bg-accent text-on-accent font-mono text-caption font-bold uppercase px-2 py-0.5">En curso · S{semanaHoy}</span>}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button type="button" aria-label="Subir" disabled={idx === 0} onClick={() => setForm(mover(form, idx, -1))} className="p-1 text-ink-3 hover:text-ink disabled:opacity-30"><Icon name="arrow_upward" size="s" /></button>
+                  <button type="button" aria-label="Bajar" disabled={idx === form.phases.length - 1} onClick={() => setForm(mover(form, idx, 1))} className="p-1 text-ink-3 hover:text-ink disabled:opacity-30"><Icon name="arrow_downward" size="s" /></button>
+                  <button type="button" aria-label="Borrar fase" onClick={() => setForm({ ...form, phases: form.phases.filter((_, i) => i !== idx) })} className="p-1 text-ink-3 hover:text-danger"><Icon name="delete" size="s" /></button>
+                </div>
+              </div>
+
+              {/* Hacia dónde y en cuánto */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <Campo etiqueta="Objetivo">
+                  <select aria-label="Objetivo" value={f.objetivo ?? ''} onChange={e => { const o = (e.target.value || undefined) as ObjetivoCorporalTipo | undefined; setFase(idx, { objetivo: o, phaseType: o ? phaseTypeDeObjetivo(o) : undefined, ritmoPctSem: ritmoPorDefecto(o), modo: 'ritmo' }); }} className={`${CAMPO} font-sans font-bold`}>
+                    <option value="">—</option>
+                    {OBJETIVOS_ORDEN.map(o => <option key={o} value={o}>{OBJETIVO_LABEL[o]}</option>)}
+                  </select>
+                </Campo>
+                <Campo etiqueta="Semanas">
+                  <ConUnidad unidad={`S${inicio}–S${inicio + f.weeks - 1}`}><input aria-label="Semanas" className={CAMPO} inputMode="numeric" value={f.weeks} onChange={e => { const n = num(e.target.value); if (n != null) setFase(idx, { weeks: Math.max(1, Math.round(n)) }); }} /></ConUnidad>
+                </Campo>
+                <Campo etiqueta="Ritmo" className="col-span-2 sm:col-span-1">
+                  <ConUnidad unidad="%/sem"><input aria-label="Ritmo en % por semana" className={CAMPO} value={ritmoPct?.toLocaleString('es-ES') ?? ''} placeholder="0" onChange={e => { const n = num(e.target.value); if (n != null) setFase(idx, { ritmoPctSem: n, modo: 'ritmo' }); }} /></ConUnidad>
+                  <div className="flex gap-1">
+                    {(['suave', 'normal', 'rapido'] as const).map(k => (
+                      <button key={k} type="button" onClick={() => setFase(idx, { ritmoPctSem: RITMOS[k] * signo, modo: 'ritmo' })} className={`rounded-chip border px-2 py-0.5 font-mono text-caption font-bold uppercase ${ritmoPct === RITMOS[k] * signo ? 'bg-accent border-accent text-on-accent' : 'border-strong text-ink-2 hover:text-ink'}`}>{k === 'rapido' ? 'rápido' : k}</button>
+                    ))}
+                  </div>
+                </Campo>
+              </div>
+
+              <div className="border-t border-hairline" />
+
+              {/* La cuenta: gasta (mantenimiento + pasos) − come = déficit → kg */}
+              <div className="space-y-2">
+                <p className="font-mono text-caption uppercase tracking-widest text-ink-3">Cuánto come y qué le da · kcal al día</p>
+                <div className="grid grid-cols-2 sm:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-x-1.5 gap-y-2 items-stretch">
+                  <Termino etiqueta="Mantenimiento" valor={mantenimiento != null ? miles(mantenimiento) : '—'} nota="Mifflin + actividad" />
+                  <Operador>+</Operador>
+                  <Termino etiqueta="Pasos" valor={miles(pasosFase)} nota={`${miles(f.pasos ?? stepGoal)} × ${kcalPerStep.toLocaleString('es-ES')}`} />
+                  <Operador>−</Operador>
+                  <div className="rounded-field border border-control-line focus-within:border-accent bg-raised px-2.5 py-2 min-w-0">
+                    <p className="font-mono text-caption uppercase tracking-wide text-ink-3">Come ✎</p>
+                    <input aria-label="kcal al día al inicio de la fase" className="w-full bg-transparent font-sans text-title-m font-bold text-ink focus:outline-none" inputMode="numeric" value={f.targetKcal ?? ''} placeholder={kcalFase != null ? String(kcalFase) : '—'} onChange={e => setFase(idx, { targetKcal: num(e.target.value) ?? undefined })} />
+                    {sugerida != null && sugerida !== f.targetKcal
+                      ? <button type="button" onClick={() => setFase(idx, { targetKcal: sugerida })} className="font-mono text-caption text-accent-ink hover:underline whitespace-nowrap">sugerir {miles(sugerida)}</button>
+                      : <p className="font-mono text-caption text-ink-3">al inicio de la fase</p>}
+                  </div>
+                  <Operador>=</Operador>
+                  <div className="rounded-field border border-accent-line bg-accent-bg px-2.5 py-2 min-w-0">
+                    <p className="font-mono text-caption uppercase tracking-wide text-ink-3">{balance != null && balance > 0 ? 'Superávit' : 'Déficit'}</p>
+                    <p className="font-sans text-title-m font-bold text-accent-ink">{balance != null ? `${balance > 0 ? '+' : balance < 0 ? '−' : ''}${miles(Math.abs(balance))}` : '—'}</p>
+                    <p className="font-mono text-caption text-ink-3">kcal al día</p>
+                  </div>
+                </div>
+                {c && (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-field bg-inset px-3 py-2.5 font-sans text-label font-semibold text-ink">
+                    <Icon name={c.ritmoKgSem == null || c.ritmoKgSem === 0 ? 'trending_flat' : c.ritmoKgSem < 0 ? 'trending_down' : 'trending_up'} size="m" className="text-accent-ink" />
+                    {c.ritmoKgSem != null && <span>{c.ritmoKgSem > 0 ? '+' : c.ritmoKgSem < 0 ? '−' : ''}{Math.abs(c.ritmoKgSem).toLocaleString('es-ES')} kg/sem</span>}
+                    <span>{kg(c.pesoInicio)} → <b>{kg(c.pesoFinal)} kg</b> el {fechaCorta(hasta)}</span>
+                    {enCurso && (
+                      <span className="flex items-center gap-2 flex-1 min-w-[8rem]">
+                        <span className="relative h-1.5 flex-1 rounded-full bg-track overflow-hidden"><span className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: `${Math.round((semanaHoy - inicio + 1) / f.weeks * 100)}%` }} /></span>
+                        <span className="font-mono text-caption text-ink-3">{semanaHoy - inicio + 1}/{f.weeks}</span>
+                      </span>
                     )}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-hairline" />
+
+              {/* Macros por kg; los hidratos son lo que queda */}
+              <div className="space-y-2">
+                <p className="font-mono text-caption uppercase tracking-widest text-ink-3">Macros por kg · los hidratos son el resto</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <Campo etiqueta="Proteína">
+                    <ConUnidad unidad="g/kg"><input aria-label="Proteína en g/kg" className={`${CAMPO} ${pocaProteina ? 'border-warning text-warning' : ''}`} value={f.proteinaGKg?.toLocaleString('es-ES') ?? ''} onChange={e => setFase(idx, { proteinaGKg: num(e.target.value) ?? undefined })} /></ConUnidad>
+                    {m && <span className={`font-mono text-caption ${pocaProteina ? 'text-warning' : 'text-success'}`}>{m.p} g · {pocaProteina ? `por debajo de ${proteinaMin.toLocaleString('es-ES')}` : `≥ ${proteinaMin.toLocaleString('es-ES')} ✓`}</span>}
+                  </Campo>
+                  <Campo etiqueta="Grasa">
+                    <ConUnidad unidad="g/kg"><input aria-label="Grasa en g/kg" className={CAMPO} value={f.grasaGKg?.toLocaleString('es-ES') ?? ''} onChange={e => setFase(idx, { grasaGKg: num(e.target.value) ?? undefined })} /></ConUnidad>
+                    {m && <span className="font-mono text-caption text-ink-3">{m.g} g</span>}
+                  </Campo>
+                  <Campo etiqueta="Hidratos">
+                    <p className="rounded-field border border-dashed border-control-line px-3 py-2 font-mono text-body font-semibold text-accent-ink">{m ? `${m.hc} g` : '—'}</p>
+                    <span className="font-mono text-caption text-ink-3">sale solo</span>
+                  </Campo>
+                </div>
+              </div>
+
+              <div className="border-t border-hairline" />
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <Campo etiqueta="Pasos al día">
+                  <input aria-label="Pasos al día" className={CAMPO} inputMode="numeric" value={f.pasos ?? ''} placeholder={String(stepGoal)} onChange={e => setFase(idx, { pasos: num(e.target.value) ?? undefined })} />
+                </Campo>
+                <Campo etiqueta="Escalones">
+                  <button type="button" onClick={() => setAbierta(f.id)} className={`${CAMPO} text-left font-sans font-bold ${f.escalon ? '' : 'text-ink-3'}`}>{f.escalon ? `${esc.length} · ${esc.filter(x => x.confirmado).length} ✓` : '+ Añadir'}</button>
+                </Campo>
+                <Campo etiqueta="Dieta" className="col-span-2 sm:col-span-1">
+                  <select aria-label="Dieta" value={f.dietId} onChange={e => setFase(idx, { dietId: e.target.value })} className={`${CAMPO} font-sans font-bold`}>
+                    <option value="">{m ? 'crear con sus macros' : 'sin dieta'}</option>
+                    {diets.filter(d => !d.selfManaged && !d.menuTemplate).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
+                </Campo>
+              </div>
+
+              {aviso && <p className="font-sans text-caption text-warning">{aviso}</p>}
+              <button type="button" onClick={() => setAbierta(abiertaEsta ? null : f.id)} className="flex items-center gap-1 font-mono text-caption text-ink-3 hover:text-ink">
+                <Icon name={abiertaEsta ? 'expand_more' : 'chevron_right'} size="s" />Escalones, para qué es la fase y cardio
+              </button>
+              {abiertaEsta && <div className="rounded-field bg-raised/60 p-3"><DetalleFase f={f} idx={idx} form={form} cadena={c} macros={m} escalones={esc} setFase={setFase} dieta={dieta} /></div>}
+            </div>
+          );
+        })}
       </section>
 
       {/* ── Lo de siempre semana a semana: ciclado, reglas, mínimos, comidas libres, suplementos ── */}
@@ -370,6 +426,39 @@ function Dato({ etiqueta, valor, nota, editable }: { etiqueta: string; valor: st
       {nota && <p className="font-mono text-caption text-ink-3 truncate">{nota}</p>}
     </div>
   );
+}
+
+function Campo({ etiqueta, className = '', children }: { etiqueta: string; className?: string; children: React.ReactNode }) {
+  return (
+    <div className={`flex flex-col gap-1 min-w-0 ${className}`}>
+      <p className="font-mono text-caption uppercase tracking-widest text-ink-3">{etiqueta}</p>
+      {children}
+    </div>
+  );
+}
+
+function ConUnidad({ unidad, children }: { unidad: string; children: React.ReactNode }) {
+  return (
+    <div className="relative">
+      {children}
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-caption text-ink-3">{unidad}</span>
+    </div>
+  );
+}
+
+function Termino({ etiqueta, valor, nota }: { etiqueta: string; valor: string; nota: string }) {
+  return (
+    <div className="rounded-field border border-hairline bg-raised px-2.5 py-2 min-w-0">
+      <p className="font-mono text-caption uppercase tracking-wide text-ink-3 truncate">{etiqueta}</p>
+      <p className="font-sans text-title-m font-bold text-ink">{valor}</p>
+      <p className="font-mono text-caption text-ink-3">{nota}</p>
+    </div>
+  );
+}
+
+// En móvil la cuenta va en rejilla de 2 y los signos sobran.
+function Operador({ children }: { children: React.ReactNode }) {
+  return <span aria-hidden="true" className="hidden sm:flex items-center font-mono text-title-s text-ink-3">{children}</span>;
 }
 
 function DetalleFase({ f, idx, form, cadena, macros, escalones, setFase, dieta }: {
