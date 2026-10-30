@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { CoachDayNote, QuestionnaireResponse, UserProfile } from '../../types';
 import { getMensajesAprobados } from '../../db/mensajesCoach';
-import { loUltimoDeDani, estadoDeRevision, type ItemDeDani } from '../../utils/mensajesCoach';
+import { loUltimoDeDani, estadoDeRevision, mostrarAvisoRevision, type ItemDeDani } from '../../utils/mensajesCoach';
 import { COACH_NOMBRE } from '../../utils/coach';
 import { addDays, hoyIsoLocal } from '../../utils/trainingWeek';
 import { Icon } from '../ui';
@@ -13,7 +13,7 @@ import { Icon } from '../ui';
    Todo lo que viene de una persona, en un sitio: la respuesta a su
    revisión, un cambio explicado con su porqué, el acuse de lo que contó
    (con su estado), un hito, la nota del día. Se enseña solo lo más reciente
-   de los últimos siete días, sin fecha, y «y N más esta semana» lleva a
+   de los últimos dos días, sin fecha, y «y N más esta semana» lleva a
    Revisión (versión elegida por Dani el 29-10). Si no hay nada, no se
    finge: dice cuándo se abre la próxima revisión y nada más.
 
@@ -21,7 +21,8 @@ import { Icon } from '../ui';
    no, y se distingue a la vista. Es la regla de honestidad del plan.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-export const DIAS_LO_ULTIMO = 7;
+/** Lo que viene de Dani se queda dos días en Inicio (30-10: «que lo vea un par de veces»); después sigue en Revisión. */
+export const DIAS_LO_ULTIMO = 2;
 
 const ESTADO_PROBLEMA = {
   recibido: { texto: 'Recibido', tono: 'text-ink-3 bg-raised' },
@@ -51,6 +52,9 @@ export default function LoUltimoDeDani({ profile, respuestas, notaDeHoy, onNavig
     queryFn: () => getMensajesAprobados(profile.email, desde),
   });
   const items = loUltimoDeDani({ mensajes, respuestas, notaDeHoy, hoy, dias: DIAS_LO_ULTIMO });
+  // Sin nada de Dani no se pinta nada (30-10), salvo que el coach haya activado
+  // el aviso de revisión para este atleta y estemos en los dos primeros días.
+  if (items.length === 0 && !mostrarAvisoRevision(hoy, profile.diaRevision, profile.avisoRevisionEnInicio)) return null;
 
   return (
     <section className="rounded-canvas border border-accent-line bg-surface p-4 space-y-3" aria-label={`Lo último de ${COACH_NOMBRE}`}>
