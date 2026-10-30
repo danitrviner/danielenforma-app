@@ -156,6 +156,10 @@ export interface UserProfile {
    *  (ver `diasDelCiclo` en utils/questionnaireSchedule.ts). Lo elige el
    *  coach: bloqueado en las reglas para el atleta. */
   diaRevision?: number;
+  /** Inicio › «Lo último de Dani»: cuando no hay mensajes, avisar de que la
+   *  revisión está abierta los dos primeros días de la ventana (30-10, Dani:
+   *  apagado por defecto, se activa por atleta; que lo vea un par de veces). */
+  avisoRevisionEnInicio?: boolean;
   /** Vacaciones o pausa (YYYY-MM-DD, ambos inclusive): los ciclos que se abren
    *  dentro no se piden ni cuentan como no respondidos. */
   pausaRevisiones?: { desde: string; hasta: string };

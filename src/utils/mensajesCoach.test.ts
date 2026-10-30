@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { traducirCambio, cambiosSinContar, loUltimoDeDani, proximaRevision, acuseDeProblema, estadoDeRevision } from './mensajesCoach';
+import { traducirCambio, cambiosSinContar, loUltimoDeDani, proximaRevision, acuseDeProblema, estadoDeRevision, mostrarAvisoRevision } from './mensajesCoach';
 import type { CambioAtleta } from './cambiosAtleta';
 import type { MensajeCoach, QuestionnaireResponse } from '../types';
 
@@ -92,5 +92,15 @@ describe('estadoDeRevision (revisión el lunes: se abre el viernes, hasta el lun
   it('con revisión el martes (2): abre el sábado y dura hasta el martes', () => {
     expect(estadoDeRevision('2026-10-31', 2, [])).toEqual({ tipo: 'abierta', hasta: '2026-11-03' });
     expect(estadoDeRevision('2026-10-30', 2, [])).toEqual({ tipo: 'cerrada', seAbre: '2026-10-31' });
+  });
+});
+
+describe('mostrarAvisoRevision: apagado por defecto, y solo los dos primeros días de la ventana', () => {
+  it('apagado: nunca', () => { expect(mostrarAvisoRevision('2026-10-30', undefined, undefined)).toBe(false); });
+  it('activado: viernes y sábado sí; domingo y lunes ya no', () => {
+    expect(mostrarAvisoRevision('2026-10-30', undefined, true)).toBe(true);
+    expect(mostrarAvisoRevision('2026-10-31', undefined, true)).toBe(true);
+    expect(mostrarAvisoRevision('2026-11-01', undefined, true)).toBe(false);
+    expect(mostrarAvisoRevision('2026-10-29', undefined, true)).toBe(false);
   });
 });

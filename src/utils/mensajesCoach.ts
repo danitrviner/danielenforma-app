@@ -126,6 +126,16 @@ export type EstadoRevision =
   | { tipo: 'enviada'; revision: string }
   | { tipo: 'cerrada'; seAbre: string };
 
+/** Días de la ventana en que se enseña el aviso de revisión abierta (que lo vea un par de veces). */
+export const DIAS_AVISO_REVISION = 2;
+
+/** Si toca enseñar el aviso de revisión en Inicio: activado por el coach, ventana abierta y dentro de sus dos primeros días. */
+export function mostrarAvisoRevision(hoy: string, diaRevision: number | null | undefined, activado: boolean | undefined): boolean {
+  if (!activado) return false;
+  const apertura = aperturaDelCiclo(hoy, diaRevision);
+  return hoy >= apertura && hoy < addDays(apertura, DIAS_AVISO_REVISION);
+}
+
 export function estadoDeRevision(hoy: string, diaRevision: number | null | undefined, respuestas: readonly Pick<QuestionnaireResponse, 'submittedAt'>[]): EstadoRevision {
   const apertura = aperturaDelCiclo(hoy, diaRevision);
   const revision = addDays(apertura, 3);

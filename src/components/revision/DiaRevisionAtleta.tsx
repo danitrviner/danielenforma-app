@@ -24,7 +24,7 @@ const FECHA_CLS = 'bg-raised border border-hairline rounded-control px-2 py-1 te
 interface Props {
   athlete: UserProfile;
   /** Para que el resto del panel recalcule fechas con el día nuevo. */
-  onCambio?: (cambios: Pick<UserProfile, 'diaRevision' | 'pausaRevisiones'>) => void;
+  onCambio?: (cambios: Partial<Pick<UserProfile, 'diaRevision' | 'pausaRevisiones' | 'avisoRevisionEnInicio'>>) => void;
   /** Suelto en su propia tarjeta (Hoy › Revisión) en vez de como franja de
    *  cabecera de otra: sin la raya de abajo. */
   suelto?: boolean;
@@ -38,7 +38,8 @@ export default function DiaRevisionAtleta({ athlete, onCambio, suelto = false }:
   const [editandoPausa, setEditandoPausa] = useState(false);
   const [borrador, setBorrador] = useState({ desde: '', hasta: '' });
 
-  const guardar = async (cambios: Pick<UserProfile, 'diaRevision' | 'pausaRevisiones'>, deshacer: () => void) => {
+  const [aviso, setAviso] = useState(!!athlete.avisoRevisionEnInicio);
+  const guardar = async (cambios: Partial<Pick<UserProfile, 'diaRevision' | 'pausaRevisiones' | 'avisoRevisionEnInicio'>>, deshacer: () => void) => {
     try {
       await updateUserProfile(athlete.userId, cambios);
       onCambio?.(cambios);
@@ -90,6 +91,11 @@ export default function DiaRevisionAtleta({ athlete, onCambio, suelto = false }:
         </label>
       </span>
       <span className="text-ink-4">se le abre el {DIAS[apertura]} · caduca el {DIAS[caducidad]}</span>
+      {/* Aviso en su Inicio los dos primeros días de la ventana (30-10): apagado por defecto. */}
+      <label className="inline-flex items-center gap-1.5 cursor-pointer text-ink-4 hover:text-ink">
+        <input type="checkbox" checked={aviso} onChange={e => { const v = e.target.checked; setAviso(v); void guardar({ avisoRevisionEnInicio: v }, () => setAviso(!v)); }} className="accent-[var(--color-accent)]" />
+        Avisarle en Inicio cuando se abre
+      </label>
 
       <span className="ml-auto inline-flex items-center gap-2">
         {editandoPausa ? (
