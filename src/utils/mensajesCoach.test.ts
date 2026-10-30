@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { traducirCambio, cambiosSinContar, loUltimoDeDani, proximaRevision, acuseDeProblema } from './mensajesCoach';
+import { traducirCambio, cambiosSinContar, loUltimoDeDani, proximaRevision, acuseDeProblema, estadoDeRevision } from './mensajesCoach';
 import type { CambioAtleta } from './cambiosAtleta';
 import type { MensajeCoach, QuestionnaireResponse } from '../types';
 
@@ -76,5 +76,21 @@ describe('acuseDeProblema', () => {
       .toBe('Recibido: rodilla derecha en sentadilla. Lo lee Dani en tu revisión y te dice qué cambia.');
     expect(acuseDeProblema([{ tipo: 'molestia', texto: 'Ha marcado una molestia o lesión' }]))
       .toMatch(/^Recibido: la molestia que has marcado\./);
+  });
+});
+
+describe('estadoDeRevision (revisión el lunes: se abre el viernes, hasta el lunes)', () => {
+  it('viernes sin mandar: abierta hasta el lunes', () => {
+    expect(estadoDeRevision('2026-10-30', undefined, [])).toEqual({ tipo: 'abierta', hasta: '2026-11-02' });
+  });
+  it('domingo ya mandada: enviada, Dani la mira el lunes', () => {
+    expect(estadoDeRevision('2026-11-01', undefined, [{ submittedAt: '2026-10-31T18:00:00.000Z' }])).toEqual({ tipo: 'enviada', revision: '2026-11-02' });
+  });
+  it('miércoles: cerrada, se abre el viernes siguiente', () => {
+    expect(estadoDeRevision('2026-10-28', undefined, [])).toEqual({ tipo: 'cerrada', seAbre: '2026-10-30' });
+  });
+  it('con revisión el martes (2): abre el sábado y dura hasta el martes', () => {
+    expect(estadoDeRevision('2026-10-31', 2, [])).toEqual({ tipo: 'abierta', hasta: '2026-11-03' });
+    expect(estadoDeRevision('2026-10-30', 2, [])).toEqual({ tipo: 'cerrada', seAbre: '2026-10-31' });
   });
 });

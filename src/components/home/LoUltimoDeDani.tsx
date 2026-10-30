@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { CoachDayNote, QuestionnaireResponse, UserProfile } from '../../types';
 import { getMensajesAprobados } from '../../db/mensajesCoach';
-import { loUltimoDeDani, proximaRevision, type ItemDeDani } from '../../utils/mensajesCoach';
+import { loUltimoDeDani, estadoDeRevision, type ItemDeDani } from '../../utils/mensajesCoach';
 import { COACH_NOMBRE } from '../../utils/coach';
 import { addDays, hoyIsoLocal } from '../../utils/trainingWeek';
 import { Icon } from '../ui';
@@ -62,10 +62,7 @@ export default function LoUltimoDeDani({ profile, respuestas, notaDeHoy, onNavig
       </div>
 
       {items.length === 0 ? (
-        <p className="font-sans text-body-s text-ink-2">
-          Nada nuevo esta semana. Tu próxima revisión se abre el{' '}
-          <span className="font-semibold text-ink">{fechaCorta(proximaRevision(hoy, profile.diaRevision))}</span>.
-        </p>
+        <SinNada estado={estadoDeRevision(hoy, profile.diaRevision, respuestas)} onNavigate={onNavigate} />
       ) : (
         <>
           <ul><Item item={items[0]} onNavigate={onNavigate} /></ul>
@@ -77,6 +74,27 @@ export default function LoUltimoDeDani({ profile, respuestas, notaDeHoy, onNavig
         </>
       )}
     </section>
+  );
+}
+
+/* Sin nada de Dani esta semana: lo que toca con la revisión. Abierta = la puede
+   rellenar hasta su día de revisión (se abre tres días antes); enviada = Dani la
+   mira ese día; cerrada = cuándo se abre la siguiente. */
+function SinNada({ estado, onNavigate }: { estado: ReturnType<typeof estadoDeRevision>; onNavigate: Props['onNavigate'] }) {
+  if (estado.tipo === 'abierta') {
+    return (
+      <button type="button" onClick={() => onNavigate('checkin')} className="w-full text-left font-sans text-body-s text-ink-2 rounded-control -mx-1 px-1 transition-colors hover:bg-raised">
+        Nada nuevo esta semana. <span className="font-semibold text-ink">Tu revisión está abierta</span>: tienes hasta el {fechaCorta(estado.hasta)} para mandarla.
+      </button>
+    );
+  }
+  if (estado.tipo === 'enviada') {
+    return <p className="font-sans text-body-s text-ink-2">Revisión enviada. {COACH_NOMBRE} la mira el <span className="font-semibold text-ink">{fechaCorta(estado.revision)}</span> y te contesta aquí.</p>;
+  }
+  return (
+    <p className="font-sans text-body-s text-ink-2">
+      Nada nuevo esta semana. Tu próxima revisión se abre el <span className="font-semibold text-ink">{fechaCorta(estado.seAbre)}</span>.
+    </p>
   );
 }
 

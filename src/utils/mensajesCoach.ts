@@ -115,6 +115,27 @@ export function proximaRevision(hoy: string, diaRevision?: number | null): strin
   return apertura > hoy ? apertura : addDays(apertura, 7);
 }
 
+/**
+ * En qué punto está la revisión de esta semana (30-10, Dani): la revisión se
+ * abre tres días antes del día de revisión y se puede rellenar hasta ese
+ * mismo día. Si hoy cae dentro y no la ha mandado, está ABIERTA; si la ha
+ * mandado, Dani la mira el día de revisión; si no, se abre el próximo ciclo.
+ */
+export type EstadoRevision =
+  | { tipo: 'abierta'; hasta: string }
+  | { tipo: 'enviada'; revision: string }
+  | { tipo: 'cerrada'; seAbre: string };
+
+export function estadoDeRevision(hoy: string, diaRevision: number | null | undefined, respuestas: readonly Pick<QuestionnaireResponse, 'submittedAt'>[]): EstadoRevision {
+  const apertura = aperturaDelCiclo(hoy, diaRevision);
+  const revision = addDays(apertura, 3);
+  if (hoy >= apertura && hoy <= revision) {
+    const enviada = respuestas.some(r => { const d = r.submittedAt.slice(0, 10); return d >= apertura && d <= revision; });
+    return enviada ? { tipo: 'enviada', revision } : { tipo: 'abierta', hasta: revision };
+  }
+  return { tipo: 'cerrada', seAbre: proximaRevision(hoy, diaRevision) };
+}
+
 /** Texto neutro del acuse de recibo que escribe la propia app. Sin firma. */
 export function acuseDeProblema(alertas: AlertaRevision[]): string {
   const molestia = alertas.find(a => a.tipo === 'molestia');
