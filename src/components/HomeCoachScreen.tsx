@@ -14,6 +14,7 @@ import ColaWhatsAppCard from './coach/ColaWhatsAppCard';
 import { crearMensajeCoach } from '../db/mensajesCoach';
 import { plantillaWhatsApp } from '../utils/plantillasWhatsApp';
 import { useRespuestasDeLaBandeja } from '../hooks/useRevisionesSinLeer';
+import { useConfirm } from '../hooks/useConfirm';
 import { addDays, hoyIsoLocal } from '../utils/trainingWeek';
 import { revisarMenusAutomaticos } from '../services/menuSemanalAutomatico';
 import { auth } from '../firebase';
@@ -156,6 +157,7 @@ export default function HomeCoachScreen({ athletes, coachId, checkins, assignmen
   });
   const programasPorEmail = useMemo(() => new Map(programas.map(p => [p.athleteId.toLowerCase(), p])), [programas]);
   const queryClient = useQueryClient();
+  const { confirm, ConfirmDialog } = useConfirm();
   const marcarContacto = useMutation({
     mutationFn: async (s: SenalDelDia) => {
       await registrarContacto({ athleteId: s.athleteEmail, fecha: hoyIso, motivo: s.contacto!.motivo, canal: 'whatsapp' });
@@ -266,6 +268,7 @@ export default function HomeCoachScreen({ athletes, coachId, checkins, assignmen
 
   return (
     <section className="space-y-4">
+      <ConfirmDialog />
       {/* Lo que la máquina (o tú) aplicó en las últimas 24 h, con deshacer.
           Va antes que las señales porque es lo que ya pasó sin que lo pidieras. */}
       <HechoHoy athletes={athletes} />
@@ -278,7 +281,11 @@ export default function HomeCoachScreen({ athletes, coachId, checkins, assignmen
         textoDe={textoDe}
         onCopiar={s => void copiar(s)}
         onAbrir={abrirChat}
-        onMandado={s => marcarContacto.mutate(s)}
+        onMandado={async s => {
+          // Un clic publica un mensaje firmado y calla la señal tres días (30-10: 18
+          // atletas marcados de golpe sin querer). Se pide confirmación una a una.
+          if (await confirm(`¿Marcar a ${s.athleteName} como escrito por WhatsApp? Se apunta el contacto y ${s.athleteName.split(' ')[0]} verá en su Inicio «Te he escrito por WhatsApp: mira el móvil y contéstame por ahí».`)) marcarContacto.mutate(s);
+        }}
         copiadoId={copiado}
         ocupado={marcarContacto.isPending}
       />

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { EstadoProblema, MensajeCoach, TipoMensajeCoach, UserProfile } from '../../types';
-import { getMensajesDeAtleta, crearMensajeCoach, firmarMensajeCoach, cambiarEstadoProblema } from '../../db/mensajesCoach';
+import { getMensajesDeAtleta, crearMensajeCoach, firmarMensajeCoach, cambiarEstadoProblema, descartarMensajeCoach, borrarMensajeCoach, actualizarMensajeCoach } from '../../db/mensajesCoach';
 import { getCambiosAtleta } from '../../db/cambios';
 import { createNotificationDeduped, uploadRespuestaCoachMedia } from '../../dbService';
 import { cambiosSinContar, traducirCambio } from '../../utils/mensajesCoach';
@@ -57,7 +57,7 @@ export default function MensajesCoachPanel({ athlete, cierre = null }: { athlete
   }, [mensajes, cierrePendiente, email]);
   const sinContar = useMemo(() => cambiosSinContar(cambios, mensajes, hoy), [cambios, mensajes, hoy]);
   const problemas = useMemo(() => mensajes.filter(m => m.tipo === 'problema' && m.problema?.estado !== 'hecho').sort((a, b) => b.fecha.localeCompare(a.fecha)), [mensajes]);
-  const enviados = useMemo(() => mensajes.filter(m => m.estado === 'aprobado' && m.autor === 'coach').sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 5), [mensajes]);
+  const enviados = useMemo(() => mensajes.filter(m => m.estado === 'aprobado' && m.autor === 'coach').sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 10), [mensajes]);
 
   const refrescar = () => {
     void queryClient.invalidateQueries({ queryKey: claveMensajesCoach(email) });
@@ -101,6 +101,27 @@ export default function MensajesCoachPanel({ athlete, cierre = null }: { athlete
     onSuccess: refrescar,
     onError: err => showToast(mensajeDeErrorFirestore(err, 'cambiar el estado')),
   });
+  // Descartar un borrador (30-10, Dani: «tengo 3 mensajes pendientes y no los
+  // puedo cancelar»). El del cierre es local: se guarda como descartado para
+  // que no vuelva a aparecer.
+  const descartar = useMutation({
+    mutationFn: async (m: MensajeCoach) => {
+      if (m.creadoEn === '') await crearMensajeCoach({ id: m.id, athleteId: email, tipo: m.tipo, autor: m.autor, estado: 'descartado', texto: m.texto, fecha: m.fecha });
+      else await descartarMensajeCoach(m.id);
+    },
+    onSuccess: () => { refrescar(); showToast('Descartado.', 'success'); },
+    onError: err => showToast(mensajeDeErrorFirestore(err, 'descartar el mensaje')),
+  });
+  const editar = useMutation({
+    mutationFn: (e: { id: string; texto: string; porque?: string }) => actualizarMensajeCoach(e.id, { texto: e.texto, porque: e.porque }),
+    onSuccess: () => { refrescar(); showToast('Guardado.', 'success'); },
+    onError: err => showToast(mensajeDeErrorFirestore(err, 'editar el mensaje')),
+  });
+  const borrar = useMutation({
+    mutationFn: (id: string) => borrarMensajeCoach(id),
+    onSuccess: () => { refrescar(); showToast('Borrado: ya no lo ve.', 'success'); },
+    onError: err => showToast(mensajeDeErrorFirestore(err, 'borrar el mensaje')),
+  });
   const libre = useMutation({
     mutationFn: async (e: { texto: string; tipo: TipoMensajeCoach; archivo?: File | null }) => {
       let mediaUrl: string | undefined, mediaKind: 'audio' | 'video' | undefined;
@@ -131,7 +152,7 @@ export default function MensajesCoachPanel({ athlete, cierre = null }: { athlete
 
       {borradores.length > 0 && (
         <Bloque titulo="Por firmar" nota="Lo escribió la máquina o lo dejaste a medias: él no lo ve hasta que lo firmes.">
-          {borradores.map(m => <Borrador key={m.id} m={m} onFirmar={(texto, porque) => firmar.mutate({ id: m.id, texto, porque })} ocupado={firmar.isPending} />)}
+          {borradores.map(m => <Borrador key={m.id} m={m} onFirmar={(texto, porque) => firmar.mutate({ id: m.id, texto, porque })} onDescartar={() => descartar.mutate(m)} ocupado={firmar.isPending || descartar.isPending} />)}
         </Bloque>
       )}
 
@@ -178,14 +199,8 @@ export default function MensajesCoachPanel({ athlete, cierre = null }: { athlete
       </div>
 
       {enviados.length > 0 && (
-        <Bloque titulo="Enviados">
-          {enviados.map(m => (
-            <div key={m.id} className="py-2 first:pt-0 last:pb-0">
-              <p className="font-mono text-caption text-ink-3">{m.fecha} · {m.tipo}</p>
-              <p className="font-sans text-label text-ink whitespace-pre-wrap">{m.texto}</p>
-              {m.porque && <p className="font-sans text-caption text-ink-2">Por qué: {m.porque}</p>}
-            </div>
-          ))}
+        <Bloque titulo="Enviados" nota="Lo que ya ve con tu nombre. Se puede corregir o borrar.">
+          {enviados.map(m => <Enviado key={m.id} m={m} onEditar={(texto, porque) => editar.mutate({ id: m.id, texto, porque })} onBorrar={() => borrar.mutate(m.id)} ocupado={editar.isPending || borrar.isPending} />)}
         </Bloque>
       )}
     </section>
@@ -202,7 +217,50 @@ function Bloque({ titulo, nota, children }: { titulo: string; nota?: string; chi
   );
 }
 
-function Borrador({ m, onFirmar, ocupado }: { m: MensajeCoach; onFirmar: (texto: string, porque?: string) => void; ocupado: boolean; key?: React.Key }) {
+function Enviado({ m, onEditar, onBorrar, ocupado }: { m: MensajeCoach; onEditar: (texto: string, porque?: string) => void; onBorrar: () => void; ocupado: boolean; key?: React.Key }) {
+  const [editando, setEditando] = useState(false);
+  const [texto, setTexto] = useState(m.texto);
+  const [porque, setPorque] = useState(m.porque ?? '');
+  const [confirmando, setConfirmando] = useState(false);
+  return (
+    <div className="py-2 first:pt-0 last:pb-0 space-y-1.5">
+      <div className="flex items-center gap-2">
+        <p className="font-mono text-caption text-ink-3 flex-1">{m.fecha} · {m.tipo}{m.mediaKind ? ` · ${m.mediaKind}` : ''}</p>
+        {!editando && !confirmando && (
+          <>
+            <button type="button" onClick={() => setEditando(true)} className="font-mono text-caption uppercase text-ink-3 hover:text-ink">Editar</button>
+            <button type="button" onClick={() => setConfirmando(true)} className="font-mono text-caption uppercase text-ink-3 hover:text-danger">Borrar</button>
+          </>
+        )}
+      </div>
+      {confirmando ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-control border border-danger/40 bg-danger/5 p-2">
+          <p className="font-sans text-caption text-ink flex-1">¿Borrarlo? Desaparece también de su Inicio.</p>
+          <Button size="s" variant="ghost" onClick={() => setConfirmando(false)}>No</Button>
+          <Button size="s" variant="danger" disabled={ocupado} onClick={() => { setConfirmando(false); onBorrar(); }}>Sí, borrar</Button>
+        </div>
+      ) : editando ? (
+        <>
+          <textarea value={texto} onChange={e => setTexto(e.target.value)} rows={2} aria-label="Texto del mensaje"
+            className="w-full bg-raised border border-hairline rounded-control p-2.5 text-label text-ink focus:ring-1 focus:ring-accent focus:outline-none resize-y font-sans" />
+          <input value={porque} onChange={e => setPorque(e.target.value)} placeholder="Por qué (opcional)" aria-label="Por qué"
+            className="w-full bg-raised border border-hairline rounded-control p-2.5 text-label text-ink focus:ring-1 focus:ring-accent focus:outline-none font-sans" />
+          <div className="flex justify-end gap-2">
+            <Button size="s" variant="ghost" onClick={() => { setEditando(false); setTexto(m.texto); setPorque(m.porque ?? ''); }}>Cancelar</Button>
+            <Button size="s" disabled={!texto.trim() || ocupado} onClick={() => { setEditando(false); onEditar(texto.trim(), porque.trim() || undefined); }}>Guardar</Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="font-sans text-label text-ink whitespace-pre-wrap">{m.texto}</p>
+          {m.porque && <p className="font-sans text-caption text-ink-2">Por qué: {m.porque}</p>}
+        </>
+      )}
+    </div>
+  );
+}
+
+function Borrador({ m, onFirmar, onDescartar, ocupado }: { m: MensajeCoach; onFirmar: (texto: string, porque?: string) => void; onDescartar: () => void; ocupado: boolean; key?: React.Key }) {
   const [texto, setTexto] = useState(m.texto);
   const [porque, setPorque] = useState(m.porque ?? '');
   return (
@@ -212,7 +270,8 @@ function Borrador({ m, onFirmar, ocupado }: { m: MensajeCoach; onFirmar: (texto:
         className="w-full bg-raised border border-hairline rounded-control p-2.5 text-label text-ink focus:ring-1 focus:ring-accent focus:outline-none resize-y font-sans" />
       <input value={porque} onChange={e => setPorque(e.target.value)} placeholder="Por qué (opcional)"
         className="w-full bg-raised border border-hairline rounded-control p-2.5 text-label text-ink focus:ring-1 focus:ring-accent focus:outline-none font-sans" />
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button size="s" variant="ghost" disabled={ocupado} onClick={onDescartar}>Descartar</Button>
         <Button size="s" iconTrailing="send" disabled={!texto.trim() || ocupado} onClick={() => onFirmar(texto.trim(), porque.trim() || undefined)}>Firmar y enviar</Button>
       </div>
     </div>

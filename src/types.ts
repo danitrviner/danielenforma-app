@@ -307,7 +307,9 @@ export interface MensajeCoach {
   porque?: string;
   /** Solo `aprobado` llega al atleta. `borrador` lo deja la máquina (latido,
    *  asistente) o el propio coach para terminarlo luego. */
-  estado: 'borrador' | 'aprobado';
+  /** 'descartado' (30-10): un borrador que Dani no quiso firmar. Se guarda
+   *  para que el latido no lo vuelva a proponer; el atleta nunca lo ve. */
+  estado: 'borrador' | 'aprobado' | 'descartado';
   autor: 'coach' | 'asistente' | 'latido' | 'app';
   /** Día al que pertenece (YYYY-MM-DD): ordena la tarjeta del atleta. */
   fecha: string;
