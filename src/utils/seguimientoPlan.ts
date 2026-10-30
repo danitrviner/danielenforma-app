@@ -5,7 +5,7 @@ import { objetivoDeFase } from './objetivoDeFase.js';
 import { planDeFase } from './historialObjetivos.js';
 import { pesoRepresentativo } from './verificacionObjetivo.js';
 import { resolvePhaseTargetKcal } from './nutritionPeriodization.js';
-import { objetivoDePasos } from './semanasNutricion.js';
+import { objetivoDePasos, kcalPorSemana } from './semanasNutricion.js';
 import { kcalDelDia as kcalRegistradasDelDia, calcularGastoReal, DIAS_MINIMOS_SEMANA, type GastoReal } from './gastoReal.js';
 import { ritmoReal } from './ritmoDePeso.js';
 import { proponerAjuste } from './ajusteDePeriodizacion.js';
@@ -84,6 +84,8 @@ export function semanasDelPlan(p: {
   const out: SemanaDelPlan[] = [];
   let semana = 0;
   let refSiguiente: number | null = null;
+  // kcal de cada semana con lo programado (escalones, ajustes): es lo que come de verdad.
+  const kcalSemana = kcalPorSemana(program, diets);
 
   program.phases.forEach((fase, faseIdx) => {
     const inicioFase = computePhaseStartDate(program, faseIdx);
@@ -91,7 +93,7 @@ export function semanasDelPlan(p: {
     const pesosInicio = p.pesos.filter(w => w.date >= inicioFase && w.date <= addDays(inicioFase, 6)).map(w => w.weight);
     const ref = pesosInicio.length ? pesoRepresentativo(pesosInicio) : refSiguiente;
     const diet = diets.find(d => d.id === fase.dietId);
-    const kcalPlan = resolvePhaseTargetKcal(fase, diet).kcal;
+    const kcalFase = resolvePhaseTargetKcal(fase, diet).kcal;
 
     for (let i = 0; i < fase.weeks; i++) {
       semana++;
@@ -99,6 +101,8 @@ export function semanasDelPlan(p: {
       const hasta = addDays(desde, 6);
       const futura = desde > hoy;
       const enCurso = desde <= hoy && hoy <= hasta;
+      // Una dieta sin cupo da 0: entonces manda el objetivo de la fase.
+      const kcalPlan = kcalSemana[semana] || kcalFase;
       const plan = ref != null && objetivo
         ? planDeFase({ ref, objetivo, pesoObjetivo: fase.targetWeight, semanas: fase.weeks, desde: inicioFase, fecha: addDays(desde, 3) })
         : null;

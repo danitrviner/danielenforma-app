@@ -6,7 +6,6 @@ import { getAthleteNutritionConfig } from '../dbService';
 import NutritionScreen from './NutritionScreen';
 import MyMenuScreen from './MyMenuScreen';
 import RecipesScreen from './RecipesScreen';
-import NutritionPerformanceDashboard from './NutritionPerformanceDashboard';
 import FuentesCientificasSheet, { EnlaceFuentes } from './FuentesCientificasSheet';
 import { Icon, Tabs } from './ui';
 
@@ -18,13 +17,12 @@ interface NutritionHubScreenProps {
 // objeto (Diet) — se fusionan en "Mi plan" (NutritionScreen ahora absorbe la
 // gestión de dietas). "Tus verduras habituales" se movió a Perfil >
 // Preferencias, junto con el resto de config de menú de MyMenuScreen.
-type NutritionTab = 'mi-plan' | 'mi-menu' | 'recetas' | 'periodizacion';
+type NutritionTab = 'mi-plan' | 'mi-menu' | 'recetas';
 
 const TABS: { id: NutritionTab; label: string; icon: string }[] = [
   { id: 'mi-menu',       label: 'Mi Menú',        icon: 'menu_book' },
   { id: 'mi-plan',       label: 'Diario',         icon: 'restaurant' },
   { id: 'recetas',       label: 'Recetas',        icon: 'skillet' },
-  { id: 'periodizacion', label: 'Periodización',  icon: 'monitoring' },
 ];
 
 export default function NutritionHubScreen({ profile }: NutritionHubScreenProps) {
@@ -82,9 +80,6 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
       )}
       {activeSubTab === 'mi-menu'      && <MyMenuScreen profile={profile} onAddToPlan={handleAddToIntercambios} />}
       {activeSubTab === 'recetas'      && <RecipesScreen profile={profile} onAddToIntercambios={handleAddToIntercambios} />}
-      {activeSubTab === 'periodizacion' && (
-        <NutritionPerformanceDashboard athleteEmail={profile.email} targetWeightKg={profile.targetWeight} />
-      )}
       </div>
 
       <EnlaceFuentes onClick={() => setShowFuentes(true)} />

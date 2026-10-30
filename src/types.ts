@@ -1620,7 +1620,38 @@ export interface NutritionPhase {
    * funcionando. Sin él, se deduce — ver utils/objetivoDeFase.ts.
    */
   objetivo?: ObjetivoCorporalTipo;
+  /**
+   * Hoja de periodización (30-10-2026, Dani): qué fija el coach.
+   *  · 'ritmo': fija ritmo (`ritmoPctSem`) y `weeks`; `targetWeight` SALE
+   *    SOLO y se guarda calculado para que el resto del motor no cambie.
+   *  · 'peso' (o ausente): lo de antes, peso objetivo + ritmo → semanas.
+   */
+  modo?: 'ritmo' | 'peso';
+  /** Ritmo en % del peso por semana, con signo (−0,55 = bajar). Se guarda
+   *  también su equivalente en `targetRateKgWeek`. */
+  ritmoPctSem?: number;
+  /** Macros por kg de peso; los hidratos son el resto hasta `targetKcal`. */
+  proteinaGKg?: number;
+  grasaGKg?: number;
+  /** Pasos/día al empezar la fase (se escribe en `pasosPorSemana` al guardar). */
+  pasos?: number;
+  /** Cardio pautado de la fase, solo informativo para el atleta. */
+  cardio?: { sesiones: number; zona?: string; minutos?: number };
+  /** Escalones: cada N semanas, ±kcal (y ±pasos). Los propone la hoja y los
+   *  confirma el coach; al confirmarlos se escriben en `cambiosSemana` y
+   *  `pasosPorSemana`, que es lo que lee el día del atleta. */
+  escalon?: { cadaSemanas: number; kcal: number; pasos?: number };
+  /** Para qué es esta fase, con las palabras del coach; el atleta lo lee en su Road map. */
+  paraQue?: string;
 }
+
+/** Plantilla de periodización del coach (coachSettings/plantillasPeriodizacion). */
+export interface PlantillaPeriodizacion {
+  id: string;
+  nombre: string;
+  fases: PlantillaFase[];
+}
+export type PlantillaFase = Pick<NutritionPhase, 'name' | 'objetivo' | 'weeks' | 'ritmoPctSem' | 'proteinaGKg' | 'grasaGKg' | 'pasos' | 'cardio' | 'escalon' | 'paraQue'>;
 
 // Mismos 3 tipos que usa el color de fase de nutrición del Roadmap → Calendario.
 export type NutritionPhaseType = 'deficit' | 'mantenimiento' | 'superavit';

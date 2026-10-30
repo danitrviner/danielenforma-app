@@ -1,5 +1,5 @@
 import React from 'react';
-import type { RoadmapDelAtleta, FaseDelCamino, HitoAutomatico } from '../../utils/roadmapDelAtleta';
+import type { RoadmapDelAtleta, FaseDelCamino, HitoAutomatico, SemanaDeFase } from '../../utils/roadmapDelAtleta';
 import { COACH_NOMBRE } from '../../utils/coach';
 import { Icon } from '../ui';
 
@@ -124,12 +124,58 @@ function EstaSemana({ roadmap }: { roadmap: RoadmapDelAtleta }) {
     : f.records > 0 ? `${miles(f.tonelaje)} kg movidos`
     : f.deltaPct != null ? `${f.deltaPct > 0 ? '+' : ''}${f.deltaPct} % vs la pasada`
     : `${f.sesiones} ${f.sesiones === 1 ? 'sesión' : 'sesiones'}`;
+  const c = s.cardio;
   return (
-    <div className="grid grid-cols-2 gap-2">
-      <Dato etiqueta="Comida" valor={s.kcal != null ? `${miles(s.kcal)}` : '—'} unidad="kcal/día" />
-      <Dato etiqueta="Pasos" valor={s.pasos != null ? miles(s.pasos) : '—'} unidad="al día" />
-      <Dato etiqueta="Entreno" valor={roadmap.bloque ? `${roadmap.bloque.semana}/${roadmap.bloque.semanas}` : '—'} unidad={roadmap.bloque ? roadmap.bloque.nombre : 'sin bloque'} />
-      <Dato etiqueta="Fuerza" valor={fuerzaValor} unidad={fuerzaUnidad} />
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-2">
+        <Dato etiqueta="Comida" valor={s.kcal != null ? `${miles(s.kcal)}` : '—'} unidad="kcal/día" />
+        <Dato etiqueta="Pasos" valor={s.pasos != null ? miles(s.pasos) : '—'} unidad="al día" />
+        <Dato etiqueta="Cardio" valor={c && c.sesiones > 0 ? `${c.sesiones}×` : '—'} unidad={c && c.sesiones > 0 ? [c.zona, c.minutos ? `${c.minutos}′` : null].filter(Boolean).join(' · ') || 'a la semana' : 'sin cardio pautado'} />
+        <Dato etiqueta="Entreno" valor={roadmap.bloque ? `${roadmap.bloque.semana}/${roadmap.bloque.semanas}` : '—'} unidad={roadmap.bloque ? roadmap.bloque.nombre : 'sin bloque'} />
+      </div>
+      {f && (
+        <p className="flex items-center gap-2 font-sans text-caption text-ink-2">
+          <Icon name="trending_up" size="s" className="text-accent-ink" />
+          <span>Fuerza esta semana: <span className="text-ink font-semibold">{fuerzaValor}</span> · {fuerzaUnidad}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* Las semanas de la fase en curso: verde si cayó en su franja, ámbar si no;
+   las que vienen, con el peso esperado. Sin rojo (regla del 28-10). */
+function SemanaASemana({ semanas }: { semanas: SemanaDeFase[] }) {
+  if (semanas.length === 0) return null;
+  return (
+    <div>
+      <p className="font-mono text-caption uppercase tracking-widest text-ink-3 mb-1.5">Semana a semana · esta fase</p>
+      <div className="grid grid-cols-6 gap-1">
+        {semanas.map(s => {
+          const valor = s.real ?? s.esperado;
+          const tono = s.futura || s.real == null ? 'border-hairline bg-raised' : s.estado === 'en-plan' || s.estado === 'por-debajo' ? 'border-success/40 bg-success/10' : 'border-warning/40 bg-warning/10';
+          return (
+            <div key={s.n} className={`rounded-control border px-0.5 py-1 text-center ${tono} ${s.enCurso ? 'ring-2 ring-accent' : ''}`}>
+              <p className="font-mono text-[10px] text-ink-3">S{s.n}</p>
+              <p className={`font-mono text-caption font-semibold ${s.futura || s.real == null ? 'text-ink-3' : 'text-ink'}`}>{valor != null ? kg(valor) : '—'}</p>
+              <p className="font-mono text-[9px] text-ink-3">{s.futura || s.real == null ? 'esp.' : ''}</p>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-1 font-mono text-[10px] text-ink-3">verde = en la franja de esa semana · gris = peso esperado</p>
+    </div>
+  );
+}
+
+function ProximoCambio({ roadmap }: { roadmap: RoadmapDelAtleta }) {
+  const c = roadmap.proximoCambio;
+  if (!c) return null;
+  return (
+    <div className="flex items-center gap-2 rounded-field border border-hairline bg-raised px-3 py-2">
+      <Icon name="flag" size="s" className="text-accent-ink" />
+      <p className="font-sans text-body-s text-ink flex-1">{c.texto} Ya lo tienes programado.</p>
+      <span className="font-mono text-caption text-ink-3">{fechaCorta(c.fecha)}</span>
     </div>
   );
 }
@@ -174,6 +220,27 @@ function Logros({ logros }: { logros: HitoAutomatico[] }) {
   );
 }
 
+/* El entreno dentro del camino: el bloque en curso y lo que viene, sin
+   montarlo aquí (sale de los mesociclos de Entrenamientos). */
+function PasoEntreno({ roadmap }: { roadmap: RoadmapDelAtleta }) {
+  const actual = roadmap.bloques.find(b => b.estado === 'actual');
+  const siguientes = roadmap.bloques.filter(b => b.estado === 'futura').slice(0, 2);
+  if (!actual && siguientes.length === 0) return null;
+  const cadena = [actual, ...siguientes].filter((b): b is NonNullable<typeof b> => !!b).map(b => b.nombre).join(' → ');
+  return (
+    <div className="mt-3 flex items-start gap-2 rounded-field border border-hairline bg-raised px-3 py-2" style={{ borderColor: 'color-mix(in oklab, var(--color-data) 40%, transparent)' }}>
+      <Icon name="fitness_center" size="s" className="shrink-0 mt-0.5" style={{ color: 'var(--color-data)' }} />
+      <div className="min-w-0">
+        <p className="font-sans text-body-s font-bold text-ink">{cadena}</p>
+        <p className="font-mono text-caption text-ink-2">
+          {actual ? `vas por la semana ${actual.semana} de ${actual.semanas}` : 'sin bloque en curso'}
+          {siguientes[0] ? ` · después ${siguientes[0].nombre} (${siguientes[0].semanas} sem, ${fechaCorta(siguientes[0].desde)})` : ''}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /* ── El camino ──────────────────────────────────────────────────────────── */
 
 function Camino({ roadmap, frase, reto, logros }: { roadmap: RoadmapDelAtleta; frase: string | null; reto?: React.ReactNode; logros: HitoAutomatico[] }) {
@@ -206,14 +273,18 @@ function Camino({ roadmap, frase, reto, logros }: { roadmap: RoadmapDelAtleta; f
                     <span className="font-mono text-caption text-ink-3">{f.semanas} sem · {fechaCorta(f.desde)}–{fechaCorta(f.hasta)}</span>
                   </div>
                   <p className={`font-sans text-caption ${actual ? 'text-accent-ink' : 'text-ink-3'}`}>{f.objetivoTexto}</p>
+                  {f.paraQue && <p className={`font-sans text-caption ${actual ? 'text-ink-2' : 'text-ink-3'}`}>{f.paraQue}</p>}
                   {actual && d && (
                     <div className="mt-3 space-y-3 rounded-field border border-accent-line bg-accent-bg/40 p-3">
                       <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">Estás aquí · semana {d.semanaDeFase} de {f.semanas}</p>
                       <PesoYFranja roadmap={roadmap} />
                       <EstaSemana roadmap={roadmap} />
+                      <SemanaASemana semanas={roadmap.semanasDeFase} />
+                      <ProximoCambio roadmap={roadmap} />
                       <ProximoHito roadmap={roadmap} />
                     </div>
                   )}
+                  {actual && <PasoEntreno roadmap={roadmap} />}
                 </div>
               </div>
             );

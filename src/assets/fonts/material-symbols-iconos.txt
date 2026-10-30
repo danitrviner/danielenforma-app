@@ -71,6 +71,7 @@ cottage
 create
 cyclone
 dashboard
+dashboard_customize
 delete
 delete_forever
 description

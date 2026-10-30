@@ -141,6 +141,10 @@ const PrimeraSemanaHarness = import.meta.env.DEV
 const RoadmapHarness = import.meta.env.DEV
   ? pantallaDiferida('RoadmapDevHarness', () => import('./components/RoadmapDevHarness'))
   : null;
+// Banco de pruebas de la hoja de periodización del coach (ruta /dev/hoja).
+const HojaHarness = import.meta.env.DEV
+  ? pantallaDiferida('HojaDevHarness', () => import('./components/plan/HojaDevHarness'))
+  : null;
 // Banco de pruebas de Cliente › Revisiones › Asignadas (ruta /dev/asignados),
 // lado COACH: tampoco hay sesión de coach en este repo.
 const AsignadosHarness = import.meta.env.DEV
@@ -900,6 +904,14 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <RoadmapHarness />
+      </Suspense>
+    );
+  }
+
+  if (HojaHarness && location.pathname === '/dev/hoja') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <HojaHarness />
       </Suspense>
     );
   }
