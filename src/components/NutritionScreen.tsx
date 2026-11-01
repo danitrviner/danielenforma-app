@@ -7,6 +7,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom';
 import { diaCerrado } from '../utils/nutricionDeHoy';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
+import { resolveSlots } from '../utils/mealDistribution';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RecetaPendiente, MenuCompletionLog, DietCompletionLog, Macros } from '../types';
 import { macrosDeIntercambios, objetivoDelRegistro, intercambiosDeMacros, macrosDeLineas, objetivoDeDieta } from '../utils/macrosLegado';
@@ -2886,6 +2887,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       {/* Recipe picker sheet */}
       {recipePickerMealId && (() => {
         const targetMeal = selectedDiet?.meals.find(m => m.id === recipePickerMealId);
+        // La franja de esa comida: «encajan» solo las recetas marcadas para ella, no cualquiera con sus macros.
+        const franjaObjetivo = targetMeal && selectedDiet ? resolveSlots(selectedDiet.meals)[selectedDiet.meals.indexOf(targetMeal)] : null;
         return (
           <Sheet
             open
@@ -2969,8 +2972,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     onElegir={r => handleApplyRecipe(r)}
                     verbo="Usar"
                     cupo={ambitoCupo === 'comida' && targetMeal
-                      ? { titulo: `Encajan en ${mealLabel(targetMeal.name, (selectedDiet?.meals.indexOf(targetMeal) ?? 0) + 1).toLowerCase()}`, cupo: cupoDisponible }
-                      : { titulo: 'Caben en lo que te queda hoy', cupo: cupoDisponible, criterio: 'caber' }}
+                      ? { titulo: `Encajan en ${mealLabel(targetMeal.name, (selectedDiet?.meals.indexOf(targetMeal) ?? 0) + 1).toLowerCase()}`, cupo: cupoDisponible, franja: franjaObjetivo }
+                      : { titulo: 'Caben en lo que te queda hoy', cupo: cupoDisponible, criterio: 'caber', franja: franjaObjetivo }}
                   />
                 )}
               </div>

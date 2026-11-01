@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { DietCompletionLog, Recipe } from '../types';
 import {
-  coleccionPorId, resumirColecciones, recetasDeColeccion, recetasConLoQueTienes, recetasMasHechas, encajaEnCupo,
+  coleccionPorId, resumirColecciones, recetasDeColeccion, recetasConLoQueTienes, recetasMasHechas, encajaEnCupo, esDeLaFranja,
   FILAS_DESCUBRIR, cupoDeLaProximaComida,
 } from './coleccionesRecetario';
 
@@ -131,6 +131,20 @@ describe('encajaEnCupo', () => {
   });
 });
 
+describe('esDeLaFranja', () => {
+  const hamburguesa = receta('h', 'Hamburguesa de ternera', { intakeTypes: [3, 5] });
+  it('una hamburguesa de comida/cena no es de desayuno aunque cuadren las macros', () => {
+    expect(esDeLaFranja(hamburguesa, 1)).toBe(false);
+    expect(esDeLaFranja(hamburguesa, 5)).toBe(true);
+  });
+  it('sin comidas marcadas no entra en ninguna; sin franja vale cualquiera', () => {
+    const sinMarcar = receta('s', 'Sin marcar', {});
+    expect(esDeLaFranja(sinMarcar, 1)).toBe(false);
+    expect(esDeLaFranja(sinMarcar, null)).toBe(true);
+    expect(esDeLaFranja(hamburguesa, undefined)).toBe(true);
+  });
+});
+
 describe('cupoDeLaProximaComida', () => {
   const porSlot = (ms: { slot?: number }[]) => ms.map(m => m.slot ?? 3);
   const meals = [
@@ -140,7 +154,10 @@ describe('cupoDeLaProximaComida', () => {
   ];
   const dia = { kcal: 2400, p: 150, hc: 270, g: 78 };
   it('a media mañana toca la comida, con el día a partes iguales', () => {
-    expect(cupoDeLaProximaComida(meals, dia, porSlot, 11)).toEqual({ titulo: 'Encajan en tu comida', cupo: { kcal: 800, p: 50, hc: 90, g: 26 } });
+    expect(cupoDeLaProximaComida(meals, dia, porSlot, 11)).toEqual({ titulo: 'Encajan en tu comida', cupo: { kcal: 800, p: 50, hc: 90, g: 26 }, franja: 3 });
+  });
+  it('a primera hora toca el desayuno y dice su franja', () => {
+    expect(cupoDeLaProximaComida(meals, dia, porSlot, 8)).toMatchObject({ titulo: 'Encajan en tu desayuno', franja: 1 });
   });
   it('se salta las comidas libres', () => {
     const otras = [{ name: 'Comida', slot: 3, libre: true }, meals[2]];
