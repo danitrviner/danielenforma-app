@@ -2174,6 +2174,9 @@ export interface MenuComplement {
   /** Nombre de la medida casera («unidad», «yogur», «rebanada»). */
   unidad?: string;
   macros?: Macros;
+  /** Fruta que el coach pide en esa ingesta («plato + fruta», «solo fruta»,
+   *  11-2026): no es un extra para cuadrar, así que reajustar el día la conserva. */
+  obligatoria?: boolean;
 }
 
 /** Más ración de algo que la receta YA lleva: "+60g de arroz" en el arroz con
@@ -2240,6 +2243,8 @@ export interface MenuMeal {
   // de avena). Approximate equivalence, so exch/kcal are left unchanged; the viewer
   // renders `to` in place of `from`. See utils/ingredientSubstitutions.
   ingredientSwaps?: { from: string; to: string }[];
+  /** Ingesta de «solo fruta» (11-2026): sin receta, la fruta va en `complements`. */
+  soloFruta?: boolean;
 }
 
 export interface MenuDay {

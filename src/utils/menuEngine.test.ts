@@ -980,3 +980,60 @@ describe('extras del catálogo en piezas exactas (Dani, 28-10-2026)', () => {
     expect(acotada.complements[0].macros!.hc).toBeLessThanOrEqual((meal.objetivoMacros!.hc - macrosDelPlato(meal).hc) + 3);
   });
 });
+
+describe('fruta por ingesta: «plato + fruta» y «solo fruta» (Dani, 11-2026)', () => {
+  const PLATANO = { id: 'platano-listo', nombre: 'Plátano', estado: 'listo' as const, porCien: { kcal: 89, p: 1.1, hc: 22.8, g: 0.3 }, unidad: { nombre: 'unidad', gramos: 100 } };
+  const MANZANA = { id: 'manzana-lista', nombre: 'Manzana', estado: 'listo' as const, porCien: { kcal: 52, p: 0.3, hc: 13.8, g: 0.2 }, unidad: { nombre: 'unidad', gramos: 150 } };
+  const YOGUR = { id: 'yogur-prot', nombre: 'Yogur alto en proteínas', estado: 'listo' as const, porCien: { kcal: 57, p: 10, hc: 4, g: 0.2 }, unidad: { nombre: 'yogur', gramos: 120 } };
+  const catalogo = [PLATANO, MANZANA, YOGUR];
+  const FRUTAS = new Set([PLATANO.id, MANZANA.id]);
+  const plato = (id: string) => recipe({ id, name: id, exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+  const pools = { 1: [plato('desayuno')], 2: [plato('media')], 3: [plato('comida')] };
+  const dieta = diet({ budget: { HC: 8, PROT: 5, GRASA: 2, MIX_HC: 0, MIX_GRASA: 0 } });
+  const slots: MealSlotSpec[] = [
+    { slot: 1, name: 'Desayuno', pct: 35 },
+    { slot: 2, name: 'Media mañana', pct: 15, fruta: 'solo' },
+    { slot: 3, name: 'Comida', pct: 50, fruta: 'mas' },
+  ];
+
+  it('la media mañana de solo fruta no lleva receta, solo piezas de fruta', () => {
+    const day = generateDay({ day: 'mon', diet: dieta, slots, pools, foods: [], prefs: basePrefs, usedIds: new Set(), catalogo });
+    const media = day.meals[1];
+    expect(media.soloFruta).toBe(true);
+    expect(media.recipeId).toBe('');
+    expect(media.complements.length).toBeGreaterThan(0);
+    expect(media.complements.every(c => FRUTAS.has(c.alimentoId!) && c.obligatoria)).toBe(true);
+  });
+
+  it('la comida lleva su plato y una pieza de fruta obligatoria', () => {
+    const day = generateDay({ day: 'mon', diet: dieta, slots, pools, foods: [], prefs: basePrefs, usedIds: new Set(), catalogo });
+    const comida = day.meals[2];
+    expect(comida.recipeId).toBe('comida');
+    expect(comida.complements.filter(c => c.obligatoria && FRUTAS.has(c.alimentoId!))).toHaveLength(1);
+  });
+
+  it('reajustar el día conserva la fruta obligatoria y la ingesta de solo fruta', () => {
+    const day = generateDay({ day: 'mon', diet: dieta, slots, pools, foods: [], prefs: basePrefs, usedIds: new Set(), catalogo });
+    const otra = reajustarDia({ dia: day, diet: dieta, slots, foods: [], catalogo });
+    expect(otra.meals[1].complements).toEqual(day.meals[1].complements);
+    expect(otra.meals[2].complements.filter(c => c.obligatoria)).toEqual(day.meals[2].complements.filter(c => c.obligatoria));
+  });
+
+  it('sin catálogo, la fruta sale del banco de intercambios', () => {
+    const foods = [
+      { id: 'manzana', mode: 'OMNIVORO' as const, category: 'HC' as const, label: '1 intercambio = 1 manzana' },
+      { id: 'pan', mode: 'OMNIVORO' as const, category: 'HC' as const, label: '1 intercambio = 30g pan' },
+    ];
+    const day = generateDay({ day: 'mon', diet: dieta, slots, pools, foods, prefs: basePrefs, usedIds: new Set() });
+    expect(day.meals[1].complements.length).toBeGreaterThan(0);
+    expect(day.meals[1].complements.every(c => /manzana/.test(c.foodLabel))).toBe(true);
+  });
+
+  it('en batch cooking se respeta igual', () => {
+    const week = generateWeek({ schedule: { mon: 'd1', tue: 'd1' }, diets: [dieta], slots, pools, foods: [], prefs: basePrefs, batch: true, catalogo });
+    for (const d of week.filter(x => x.meals.length > 0)) {
+      expect(d.meals[1].soloFruta).toBe(true);
+      expect(d.meals[2].complements.some(c => c.obligatoria)).toBe(true);
+    }
+  });
+});
