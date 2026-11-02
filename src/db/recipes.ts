@@ -185,6 +185,10 @@ export interface LimpiezaRecetario {
   retiradas?: Record<string, string>;
   /** id → fecha ISO en que se revisó y se decidió mantener. */
   mantenidas?: Record<string, string>;
+  /** id → comidas (1 desayuno … 5 cena) para las que el coach quiere esa receta,
+   *  en lugar de las que trae el recetario (11-2026). Manda en todo: recetario,
+   *  generador de menús y «Encajan en tu…». */
+  comidas?: Record<string, number[]>;
   updatedAt?: string;
 }
 export type EstadoDeLimpieza = 'retirada' | 'mantenida' | 'sin_revisar';
@@ -208,6 +212,21 @@ export function sinRetiradas(recetas: Recipe[], limpieza: LimpiezaRecetario): Re
   return Object.keys(fuera).length ? recetas.filter(r => !(r.id in fuera)) : recetas;
 }
 
+/** Pone las comidas que ha elegido el coach. Puro, para poder probarlo sin Firestore. */
+export function conComidasDelCoach(recetas: Recipe[], limpieza: LimpiezaRecetario): Recipe[] {
+  const comidas = limpieza.comidas ?? {};
+  if (Object.keys(comidas).length === 0) return recetas;
+  return recetas.map(r => (comidas[r.id] ? { ...r, intakeTypes: [...comidas[r.id]] } : r));
+}
+
+/** Cambia para qué comidas vale una receta del recetario. */
+export async function cambiarComidasDeReceta(id: string, comidas: number[]): Promise<void> {
+  if (forceLocalOnly) return;
+  const ahora = new Date().toISOString();
+  await setDoc(refLimpieza(), { updatedAt: ahora, comidas: { [id]: [...comidas].sort((a, b) => a - b) } }, { merge: true });
+  olvidarIndiceVigente();
+}
+
 let indiceVigentePromesa: Promise<Recipe[]> | null = null;
 /** Si la lectura de la limpieza se atasca, no se deja al atleta sin recetario. */
 const ESPERA_LIMPIEZA_MS = 4000;
@@ -222,7 +241,7 @@ export function cargarIndiceRecetas(): Promise<Recipe[]> {
     ]),
   ]).then(([recetas, limpieza]) => {
     if (recetas.length === 0) indiceVigentePromesa = null;  // que el siguiente intento vuelva a probar
-    return sinRetiradas(recetas, limpieza);
+    return conComidasDelCoach(sinRetiradas(recetas, limpieza), limpieza);
   });
   return indiceVigentePromesa;
 }

@@ -2,7 +2,10 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
 import LimpiarRecetario from './recetario/LimpiarRecetario';
-import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryRecetas, cargarIndiceRecetas, getRecipeById } from '../dbService';
+import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryRecetas, cargarIndiceRecetas, getRecipeById, cambiarComidasDeReceta, getAccesoGlobalARecetas, saveAccesoGlobalARecetas } from '../dbService';
+import { accesoGlobalKey } from '../hooks/useReglasDeReceta';
+import { idDePaquete, type PaqueteDeRecetas } from '../utils/seleccionDeRecetas';
+import { useToast } from '../hooks/useToast';
 import type { RecetasCursor } from '../dbService';
 import { CAT_BASICAS, encajaCategoria, FILTROS_RAPIDAS, type FiltroRapidas } from '../db/recetasHidratacion';
 import { GRUPOS_DE_RECETA } from '../utils/grupoDeReceta';
@@ -155,6 +158,45 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
   // Limpiador del recetario (29-10). Al cerrarlo se relee: lo retirado ya no sale.
   const [limpiando, setLimpiando] = useState(false);
   const [vueltaDeLimpieza, setVueltaDeLimpieza] = useState(0);
+  /* Comidas y paquetes de la receta abierta (11-2026): el coach decide para qué
+     comidas vale (manda sobre lo que trae el recetario) y la mete en sus paquetes. */
+  const { showToast } = useToast();
+  const { data: accesoGlobal } = useQuery({ queryKey: accesoGlobalKey, queryFn: getAccesoGlobalARecetas });
+  const paquetes = accesoGlobal?.paquetes ?? [];
+  const [guardandoReceta, setGuardandoReceta] = useState(false);
+  const cambiarComida = async (r: Recipe, franja: number) => {
+    const actuales = r.intakeTypes ?? [];
+    const nuevas = actuales.includes(franja) ? actuales.filter(x => x !== franja) : [...actuales, franja].sort((a, b) => a - b);
+    // Sin ninguna, el generador la trataría como válida para todas (recipeMatchesSlot).
+    if (nuevas.length === 0) { showToast('Deja al menos una comida. Para quitarla de todo, retírala con «Limpiar recetario».'); return; }
+    setGuardandoReceta(true);
+    try {
+      await cambiarComidasDeReceta(r.id, nuevas);
+      const conNuevas = (x: Recipe) => (x.id === r.id ? { ...x, intakeTypes: nuevas } : x);
+      setRecetaAbierta(prev => (prev ? conNuevas(prev) : prev));
+      setRecetasRecipes(prev => prev.map(conNuevas));
+      setIndiceRecetas(prev => prev.map(conNuevas));
+    } catch { showToast('No se pudo guardar. Inténtalo otra vez.'); }
+    finally { setGuardandoReceta(false); }
+  };
+  const guardarPaquetes = async (lista: PaqueteDeRecetas[]) => {
+    setGuardandoReceta(true);
+    try {
+      await saveAccesoGlobalARecetas({ paquetes: lista });
+      queryClient.setQueryData(accesoGlobalKey, (prev: object | undefined) => ({ ...prev, paquetes: lista }));
+    } catch { showToast('No se pudo guardar el paquete. Inténtalo otra vez.'); }
+    finally { setGuardandoReceta(false); }
+  };
+  const alternarPaquete = (r: Recipe, p: PaqueteDeRecetas) => guardarPaquetes(paquetes.map(x => x.id !== p.id ? x : {
+    ...x, recipeIds: x.recipeIds.includes(r.id) ? x.recipeIds.filter(id => id !== r.id) : [...x.recipeIds, r.id],
+  }));
+  const [nombrePaquete, setNombrePaquete] = useState('');
+  const crearPaquete = async (r: Recipe) => {
+    const nombre = nombrePaquete.trim();
+    if (!nombre) return;
+    await guardarPaquetes([...paquetes, { id: idDePaquete(nombre, paquetes), nombre, recipeIds: [r.id] }]);
+    setNombrePaquete('');
+  };
   const cerrarLimpieza = () => {
     setLimpiando(false);
     setVueltaDeLimpieza(v => v + 1);
@@ -172,7 +214,8 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
     // Se suma, no se sustituye: 367 recetas del índice tienen en Firestore un
     // documento con solo macros (vincularTodas, merge sobre ids que no estaban)
     // y sin nombre; sustituir rompía el diálogo al leer `name` (11-2026).
-    if (completa) setRecetaAbierta(prev => (prev?.id === r.id ? { ...prev, ...completa } : prev));
+    // Las comidas, las del índice: llevan ya las que haya elegido el coach.
+    if (completa) setRecetaAbierta(prev => (prev?.id === r.id ? { ...prev, ...completa, intakeTypes: prev.intakeTypes } : prev));
   }, []);
   const [recetasCursor, setRecetasCursor]       = useState<RecetasCursor | null>(null);
   const [recetasHasMore, setRecetasHasMore]     = useState(false);
@@ -524,6 +567,33 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 recetaAbierta.categoria,
               ].filter(Boolean).join(' · ')}
             </p>
+
+            <div className="space-y-2">
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider">Para qué comidas</p>
+              <div className="flex flex-wrap gap-1.5">
+                {Object.entries(INTAKE_LABELS).map(([k, label]) => (
+                  <Chip key={k} selected={(recetaAbierta.intakeTypes ?? []).includes(Number(k))} disabled={guardandoReceta}
+                    onClick={() => cambiarComida(recetaAbierta, Number(k))}>{label}</Chip>
+                ))}
+              </div>
+              <p className="font-sans text-caption text-ink-3">Manda en el recetario, en los menús y en «Encajan en tu…».</p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider">Paquetes</p>
+              {paquetes.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {paquetes.map(p => (
+                    <Chip key={p.id} selected={p.recipeIds.includes(recetaAbierta.id)} disabled={guardandoReceta}
+                      onClick={() => alternarPaquete(recetaAbierta, p)}>{p.nombre} · {p.recipeIds.length}</Chip>
+                  ))}
+                </div>
+              )}
+              <form className="flex gap-2" onSubmit={e => { e.preventDefault(); crearPaquete(recetaAbierta); }}>
+                <Input aria-label="Nombre del paquete nuevo" placeholder="Paquete nuevo (p. ej. Desayunos rápidos)" value={nombrePaquete} onChange={v => setNombrePaquete(v)} className="flex-1" />
+                <Button type="submit" size="s" variant="ghost" disabled={!nombrePaquete.trim() || guardandoReceta}>Crear con esta</Button>
+              </form>
+            </div>
 
             {(recetaAbierta.ingredientsText ?? []).length > 0 && (
               <div>
