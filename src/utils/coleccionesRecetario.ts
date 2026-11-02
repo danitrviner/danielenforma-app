@@ -350,6 +350,15 @@ export function encajaEnCupo(r: Recipe, hueco: Macros): boolean {
   return encajaEnLoQueQueda(r, hueco);
 }
 
+/**
+ * ¿Es receta de esa comida (1 desayuno … 5 cena)? Sin franja, cualquiera vale.
+ * Las macros solas no bastan (11-2026): una hamburguesa de ternera con las kcal
+ * del desayuno salía en «Encajan en tu desayuno». Sin comidas marcadas no entra.
+ */
+export function esDeLaFranja(r: Recipe, franja?: number | null): boolean {
+  return franja == null || (r.intakeTypes ?? []).includes(franja);
+}
+
 // ── La próxima comida del día ─────────────────────────────────────────────────
 
 const NOMBRE_DE_FRANJA: Record<number, string> = { 1: 'desayuno', 2: 'media mañana', 3: 'comida', 4: 'merienda', 5: 'cena' };
@@ -377,7 +386,7 @@ export function cupoDeLaProximaComida(
   objetivoDia: Macros | null | undefined,
   resolverFranjas: (m: { name: string; slot?: number }[]) => number[],
   hora: number,
-): { titulo: string; cupo: Macros } | null {
+): { titulo: string; cupo: Macros; franja: number } | null {
   if (!meals?.length || !objetivoDia || objetivoDia.kcal <= 0) return null;
   const franjas = resolverFranjas([...meals]);
   const ahora = franjaDeLaHora(hora);
@@ -390,5 +399,6 @@ export function cupoDeLaProximaComida(
   return {
     titulo: `Encajan en tu ${NOMBRE_DE_FRANJA[siguiente.franja] ?? 'próxima comida'}`,
     cupo: escalarMacros(objetivoDia, 1 / meals.filter(m => !m.libre).length),
+    franja: siguiente.franja,
   };
 }

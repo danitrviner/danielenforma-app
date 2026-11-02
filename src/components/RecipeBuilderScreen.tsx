@@ -169,7 +169,10 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
     setRecetaAbierta(r);
     if (r.stepsText) return;
     const completa = await getRecipeById(r.id).catch(() => null);
-    if (completa) setRecetaAbierta(prev => (prev?.id === r.id ? completa : prev));
+    // Se suma, no se sustituye: 367 recetas del índice tienen en Firestore un
+    // documento con solo macros (vincularTodas, merge sobre ids que no estaban)
+    // y sin nombre; sustituir rompía el diálogo al leer `name` (11-2026).
+    if (completa) setRecetaAbierta(prev => (prev?.id === r.id ? { ...prev, ...completa } : prev));
   }, []);
   const [recetasCursor, setRecetasCursor]       = useState<RecetasCursor | null>(null);
   const [recetasHasMore, setRecetasHasMore]     = useState(false);

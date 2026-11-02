@@ -6,7 +6,7 @@ import { fotoDeReceta } from '../utils/fotoDeReceta';
 import { coincideBusqueda } from '../utils/busqueda';
 import { cabeEnLoQueQueda } from '../utils/macrosDeReceta';
 import {
-  FILAS_DESCUBRIR, NEVERA, coleccionPorId, encajaEnCupo, fichaDe, recetasConLoQueTienes, recetasDeColeccion,
+  FILAS_DESCUBRIR, NEVERA, coleccionPorId, encajaEnCupo, esDeLaFranja, fichaDe, recetasConLoQueTienes, recetasDeColeccion,
   resumirColecciones, type Coleccion, type FilaDescubrir, type ResumenDeColeccion,
 } from '../utils/coleccionesRecetario';
 
@@ -53,7 +53,8 @@ interface Props {
    *  «Encajan…» y la marca en cada tarjeta. `llenar` (por defecto) = la receta
    *  llena ESE hueco, con el margen de utils/macrosDeReceta.ts; `caber` = cabe
    *  en lo que queda, que es lo que tiene sentido contra el día entero. */
-  cupo?: { titulo: string; cupo: Macros; criterio?: 'llenar' | 'caber' } | null;
+  /** `franja` (1 desayuno … 5 cena): solo encajan las recetas de esa comida. */
+  cupo?: { titulo: string; cupo: Macros; criterio?: 'llenar' | 'caber'; franja?: number | null } | null;
   /** Filas propias del atleta que van arriba del todo (las del coach, las que más hace…). */
   filasPersonales?: FilaPersonal[];
   /** Para avisar —sin esconderla— de una receta que tarda más de lo que el atleta dijo tener. */
@@ -272,8 +273,9 @@ export default function RecetarioDescubrir({
   const resumen = useMemo(() => resumirColecciones(pool, tieneFoto), [pool]);
   const encaja = useMemo(() => {
     if (!cupo) return () => false;
-    const c = cupo.cupo;
-    return cupo.criterio === 'caber' ? (r: Recipe) => cabeEnLoQueQueda(r, c) : (r: Recipe) => encajaEnCupo(r, c);
+    const { cupo: c, franja } = cupo;
+    const porMacros = cupo.criterio === 'caber' ? (r: Recipe) => cabeEnLoQueQueda(r, c) : (r: Recipe) => encajaEnCupo(r, c);
+    return (r: Recipe) => esDeLaFranja(r, franja) && porMacros(r);
   }, [cupo]);
   const encajan = useMemo(() => (cupo ? pool.filter(encaja) : []), [pool, cupo, encaja]);
   const conLoQueTienes = useMemo(() => recetasConLoQueTienes(pool, nevera), [pool, nevera]);
