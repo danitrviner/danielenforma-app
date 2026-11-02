@@ -217,7 +217,7 @@ if (FIRESTORE) {
   const sa = process.env.GOOGLE_APPLICATION_CREDENTIALS;
   if (!sa) { console.error('Falta GOOGLE_APPLICATION_CREDENTIALS.'); process.exit(1); }
   const db = abrirDb(JSON.parse(readFileSync(resolve(sa), 'utf8')));
-  // Solo lo que cambia al vincular: macros, kcal, peso, intercambios y vínculo.
+  // La receta mapeada entera (macros, kcal, peso, intercambios y vínculo incluidos).
   // TODAS las recetas, tal y como quedan en los JSON (idempotente): las sin
   // vínculo lo borran del documento, porque pueden haberlo perdido en un pase
   // anterior y Firestore aún lo tendría.
@@ -230,8 +230,11 @@ if (FIRESTORE) {
     for (const r of subir.slice(i, i + 400)) {
       const d = mapRecipe(r);
       if (!r.vinculo) sinVinculo++;
+      // La receta entera, no solo lo que cambia: con merge sobre un id que aún
+      // no estaba en Firestore se creaban documentos con solo macros y sin
+      // nombre (367 el 26-10, reparadas el 02-11), y abrirlos rompía la app.
       lote.set(db.collection('recipes').doc(r.id), {
-        macros: d.macros, kcal: d.kcal, weight: d.weight, exchanges: d.exchanges,
+        ...d,
         vinculo: r.vinculo ? d.vinculo : FieldValue.delete(),
       }, { merge: true });
     }
