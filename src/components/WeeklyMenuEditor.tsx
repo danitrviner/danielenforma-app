@@ -759,7 +759,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
                                 src={meal.recipeImage}
                                 alt={meal.recipeName}
                                 className="w-full h-full object-cover"
-                                fallback={<div className="w-full h-full flex items-center justify-center"><Icon name="skillet" size="l" className="text-ink-3" /></div>}
+                                fallback={<div className="w-full h-full flex items-center justify-center"><Icon name={meal.soloFruta ? 'nutrition' : 'skillet'} size="l" className="text-ink-3" /></div>}
                               />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -768,7 +768,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
                                 {meal.scale !== 1 && <span className="font-mono text-caption text-accent-ink">×{meal.scale}</span>}
                               </div>
                               <p className="font-sans font-bold text-body-s text-ink leading-tight truncate">{meal.recipeName}</p>
-                              <p className="font-mono text-caption text-ink-2 ">{fmtMacros(macrosDelPlato(meal))} · {meal.kcal} kcal</p>
+                              <p className="font-mono text-caption text-ink-2 ">{meal.soloFruta ? 'Solo fruta' : fmtMacros(macrosDelPlato(meal))} · {meal.kcal} kcal</p>
                               {meal.complements.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mt-2">
                                   {meal.complements.map((c, ci) => (
@@ -786,15 +786,17 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
                               className="flex items-center gap-1 text-caption font-mono text-data hover:text-ink transition-colors"
                             >
                               <Icon name="swap_horiz" size="s" />
-                              Cambiar receta
+                              {meal.soloFruta ? 'Poner un plato' : 'Cambiar receta'}
                             </button>
-                            <button
-                              onClick={() => handleRegenerateMeal(day.day, mealIdx)}
-                              className="flex items-center gap-1 text-caption font-mono text-ink-2 hover:text-ink transition-colors"
-                            >
-                              <Icon name="refresh" size="s" />
-                              Regenerar comida
-                            </button>
+                            {!meal.soloFruta && (
+                              <button
+                                onClick={() => handleRegenerateMeal(day.day, mealIdx)}
+                                className="flex items-center gap-1 text-caption font-mono text-ink-2 hover:text-ink transition-colors"
+                              >
+                                <Icon name="refresh" size="s" />
+                                Regenerar comida
+                              </button>
+                            )}
                           </div>
 
                           {pickerFor?.day === day.day && pickerFor.mealId === meal.id && (

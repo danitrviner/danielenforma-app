@@ -145,6 +145,10 @@ const RoadmapHarness = import.meta.env.DEV
 const HojaHarness = import.meta.env.DEV
   ? pantallaDiferida('HojaDevHarness', () => import('./components/plan/HojaDevHarness'))
   : null;
+// Banco de pruebas del creador de menús y de Biblioteca › Recetas (ruta /dev/menus).
+const MenusHarness = import.meta.env.DEV
+  ? pantallaDiferida('MenusYRecetasDevHarness', () => import('./components/MenusYRecetasDevHarness'))
+  : null;
 // Banco de pruebas de Cliente › Revisiones › Asignadas (ruta /dev/asignados),
 // lado COACH: tampoco hay sesión de coach en este repo.
 const AsignadosHarness = import.meta.env.DEV
@@ -904,6 +908,14 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <RoadmapHarness />
+      </Suspense>
+    );
+  }
+
+  if (MenusHarness && location.pathname === '/dev/menus') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <MenusHarness />
       </Suspense>
     );
   }
