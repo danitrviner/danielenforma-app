@@ -190,7 +190,12 @@ export interface MealSlotSpec {
   name: string;
   pct: number;    // % of the day's budget for this slot
   needsTupper?: boolean;
+  /** Lo que pide el coach en esa ingesta (11-2026): «mas» = plato + una pieza
+   *  de fruta obligatoria; «solo» = solo fruta, sin receta. */
+  fruta?: FrutaEnIngesta;
 }
+
+export type FrutaEnIngesta = 'mas' | 'solo';
 
 export interface GeneratorPrefs {
   allergies: string[];
@@ -852,6 +857,65 @@ function emptyMeal(id: string, slot: MealSlotSpec): MenuMeal {
   };
 }
 
+// ─── Fruta obligatoria por ingesta (11-2026) ─────────────────────────────────
+
+/** Para el banco de intercambios, cuando no hay catálogo por 100 g. */
+const ES_FRUTA = /manzana|pera\b|pl[aá]tano|mandarina|kiwi|naranja|fruta|fresa|melocot[oó]n|uva|pi[ñn]a|sand[ií]a|mel[oó]n|ar[aá]ndano|cereza|mango|papaya|ciruela|albaricoque|higo|frambuesa|nectarina/i;
+/** Hidratos de la pieza de postre que se le reserva al plato en «plato + fruta». */
+const HC_FRUTA_DE_POSTRE = 20;
+/** Piezas distintas como mucho en una ingesta de «solo fruta». */
+const MAX_FRUTAS_SOLO = 3;
+
+/** Fruta para tapar `hueco`, en hasta `cuantas` piezas distintas. Con catálogo
+ *  en piezas exactas; sin él, en raciones del banco. Vacío si no hay fruta que quepa. */
+export function frutaParaComida(
+  hueco: Macros, cuantas: number, extras: ExtrasDelCatalogo | null,
+  foods: MealItem[], mode: DietMode, conditions?: readonly number[],
+): MenuComplement[] {
+  const frutas = extras?.candidatos.filter(c => c.familia === 'fruta') ?? [];
+  if (frutas.length === 0) {
+    const delBanco = foods.filter(f => ES_FRUTA.test(f.label));
+    return fillComplements(hueco, delBanco, mode, conditions).slice(0, cuantas).map(c => ({ ...c, obligatoria: true }));
+  }
+  const out: MenuComplement[] = [];
+  const usadas = new Set<string>();
+  let resto = sinNegativos(hueco);
+  for (let n = 0; n < cuantas; n++) {
+    const [c] = elegirExtras(resto, frutas.filter(f => !usadas.has(f.a.id)), 1);
+    if (!c) break;
+    out.push({ ...c, obligatoria: true });
+    usadas.add(c.alimentoId!);
+    resto = sinNegativos(restarMacros(resto, c.macros!));
+  }
+  return out;
+}
+
+/** La pieza de postre de «plato + fruta»: lo que quepa hasta ~20 g de hidratos. */
+function postreDeFruta(objetivo: Macros, extras: ExtrasDelCatalogo | null, foods: MealItem[], mode: DietMode, conditions?: readonly number[]): MenuComplement[] {
+  const hueco = conKcal({ p: objetivo.p, hc: Math.min(objetivo.hc, HC_FRUTA_DE_POSTRE), g: objetivo.g });
+  return frutaParaComida(hueco, 1, extras, foods, mode, conditions);
+}
+
+/** Lo que le queda al plato después de la fruta obligatoria. */
+export function sinLaFruta(objetivo: Macros, fruta: MenuComplement[]): Macros {
+  return fruta.length > 0 ? conKcal(sinNegativos(restarMacros(objetivo, macrosDeAcompanamientos(fruta)))) : objetivo;
+}
+
+/** Ingesta de «solo fruta»: sin receta, la fruta como acompañamiento. */
+function comidaDeFruta(id: string, slot: MealSlotSpec, fruta: MenuComplement[]): MenuMeal {
+  const meal: MenuMeal = { ...emptyMeal(id, slot), recipeName: 'Fruta', soloFruta: true, complements: fruta };
+  meal.kcal = kcalDeLaComida(meal);
+  return meal;
+}
+
+/** Plato elegido con su fruta obligatoria de postre al lado. */
+function conPostre(meal: MenuMeal, postre: MenuComplement[]): MenuMeal {
+  if (postre.length === 0) return meal;
+  meal.complements = [...postre, ...meal.complements];
+  meal.kcal = kcalDeLaComida(meal);
+  return meal;
+}
+
 function buildMeal(
   id: string, slot: MealSlotSpec, recipe: Recipe, scale: number, macros: Macros, ajuste?: AjusteDeReceta,
   sustituciones?: SenalesDeCambios['sustituciones'],
@@ -1004,10 +1068,11 @@ export function reajustarDia(args: ReajustarDiaArgs): MenuDay {
     ...m,
     macros: macrosDelPlato(m),
     racionesExtra: undefined,
-    complements: [],
+    // La fruta que pidió el coach se queda; los extras de cuadrar se rehacen.
+    complements: (m.complements ?? []).filter(c => c.obligatoria),
   }));
   const extras = prepararExtras(args.catalogo, args.prefs ?? { liked: [], disliked: [], allergies: [], conditions });
-  return finalizeDay(dia.day, diet, target, targets, meals, foods, mode, recetasPorId, conditions, 0, extras);
+  return finalizeDay(dia.day, diet, target, targets, meals, foods, mode, recetasPorId, conditions, 0, extras, meals.map(m => !!m.soloFruta));
 }
 
 export interface GenerateDayArgs {
@@ -1042,23 +1107,33 @@ export function generateDay(args: GenerateDayArgs): MenuDay {
   // Franja a franja, recalculando lo que QUEDA del día: el pico que deja una
   // comida (la escala va de 0,25 en 0,25) lo absorbe la siguiente en vez de
   // sumarse. Nunca por debajo de cero.
+  const extras = prepararExtras(args.catalogo, prefs);
   let restante: Macros = { ...target };
   const meals: MenuMeal[] = slots.map((slot, i) => {
     const disponible = sinNegativos(restante);
     const objetivoFranja = slotTargets(conKcal(disponible), slots.slice(i))[0] ?? targets[i];
-    const ranked = rankCandidates(pools[slot.slot] ?? [], objetivoFranja, prefs, usedIds, {
+    const id = `${day}_m${i + 1}`;
+    if (slot.fruta === 'solo') {
+      const meal = comidaDeFruta(id, slot, frutaParaComida(objetivoFranja, MAX_FRUTAS_SOLO, extras, foods, mode, prefs.conditions));
+      restante = restarMacros(restante, macrosDeLaComida(meal));
+      return meal;
+    }
+    const postre = slot.fruta === 'mas' ? postreDeFruta(objetivoFranja, extras, foods, mode, prefs.conditions) : [];
+    const ranked = rankCandidates(pools[slot.slot] ?? [], sinLaFruta(objetivoFranja, postre), prefs, usedIds, {
       needsTupper: slot.needsTupper, mode, usedDishTypes: dishTypes, dias: [day], dietId: diet.id,
     });
     const pick = ranked[0];
-    const id = `${day}_m${i + 1}`;
-    if (!pick) return emptyMeal(id, slot);
+    restante = restarMacros(restante, macrosDeAcompanamientos(postre));
+    if (!pick) return conPostre(emptyMeal(id, slot), postre);
     usedIds.add(pick.recipe.id);
     bumpDishType(dishTypes, dishType(pick.recipe));
     restante = restarMacros(restante, pick.macros);
-    return buildMeal(id, slot, pick.recipe, pick.scale, pick.macros, pick.ajuste, prefs.cambios?.sustituciones);
+    return conPostre(buildMeal(id, slot, pick.recipe, pick.scale, pick.macros, pick.ajuste, prefs.cambios?.sustituciones), postre);
   });
 
-  return finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools), prefs.conditions, args.balanceSemana ?? 0, prepararExtras(args.catalogo, prefs));
+  // La ingesta de solo fruta no lleva ración extra ni más acompañamientos.
+  const cerradas = slots.map(sl => sl.fruta === 'solo');
+  return finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools), prefs.conditions, args.balanceSemana ?? 0, extras, cerradas);
 }
 
 // ─── Semana ──────────────────────────────────────────────────────────────────
@@ -1110,6 +1185,7 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
   const repTargets = slots.map((_, i) => media(scheduledDiets.map(d => slotTargets(objetivoDeDieta(d), slots)[i])));
   const usedAcrossSlots = new Set<string>();
   const slotRecipe: (Recipe | null)[] = slots.map((slot, i) => {
+    if (slot.fruta === 'solo') return null;
     const ranked = rankCandidates(pools[slot.slot] ?? [], repTargets[i], prefs, usedAcrossSlots, { needsTupper: slot.needsTupper, batch: true, mode, dias: diasDeLaTanda, dietId: dietaDeLaTanda });
     const pick = ranked[0]?.recipe ?? null;
     if (pick) usedAcrossSlots.add(pick.id);
@@ -1121,6 +1197,9 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
   });
   const fijas = racionFija.map(f => f != null);
   const flexibles = slots.filter((_, i) => !fijas[i]);
+  const extras = prepararExtras(args.catalogo, prefs);
+  // Ni ración ni extras: las de tanda (misma ración toda la semana) y las de solo fruta.
+  const cerradas = slots.map((sl, i) => fijas[i] || sl.fruta === 'solo');
 
   let balanceSemana = 0;
   return WEEK_DAYS.map(day => {
@@ -1141,19 +1220,23 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
     const targets = slots.map((_, i) => (fijas[i] ? macrosDeLaComida(fijasDelDia[i]!) : (fijas.some(Boolean) ? paraFlexibles[k++] : delDia[i])));
 
     const meals: MenuMeal[] = slots.map((slot, i) => {
-      const fija = fijasDelDia[i];
-      if (fija) return fija;
       const id = `${day}_m${i + 1}`;
+      if (slot.fruta === 'solo') return comidaDeFruta(id, slot, frutaParaComida(targets[i], MAX_FRUTAS_SOLO, extras, foods, mode, prefs.conditions));
+      // La de tanda lleva su ración de siempre; la fruta de postre va aparte.
+      const postre = slot.fruta === 'mas' ? postreDeFruta(targets[i], extras, foods, mode, prefs.conditions) : [];
+      const fija = fijasDelDia[i];
+      if (fija) return conPostre(fija, postre);
+      const paraElPlato = sinLaFruta(targets[i], postre);
       const fixed = slotRecipe[i];
       if (fixed) {
-        const fit = bestScaleFit(fixed, targets[i], mode);
-        if (fit) return buildMeal(id, slot, fixed, fit.scale, fit.macros, fit.ajuste, prefs.cambios?.sustituciones);
+        const fit = bestScaleFit(fixed, paraElPlato, mode);
+        if (fit) return conPostre(buildMeal(id, slot, fixed, fit.scale, fit.macros, fit.ajuste, prefs.cambios?.sustituciones), postre);
       }
-      const ranked = rankCandidates(pools[slot.slot] ?? [], targets[i], prefs, new Set(), { needsTupper: slot.needsTupper, batch: true, mode, dias: [day], dietId: diet.id });
+      const ranked = rankCandidates(pools[slot.slot] ?? [], paraElPlato, prefs, new Set(), { needsTupper: slot.needsTupper, batch: true, mode, dias: [day], dietId: diet.id });
       const pick = ranked[0];
-      return pick ? buildMeal(id, slot, pick.recipe, pick.scale, pick.macros, pick.ajuste, prefs.cambios?.sustituciones) : emptyMeal(id, slot);
+      return conPostre(pick ? buildMeal(id, slot, pick.recipe, pick.scale, pick.macros, pick.ajuste, prefs.cambios?.sustituciones) : emptyMeal(id, slot), postre);
     });
-    const generado = finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools), prefs.conditions, balanceSemana, prepararExtras(args.catalogo, prefs), fijas);
+    const generado = finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools), prefs.conditions, balanceSemana, extras, cerradas);
     balanceSemana += desviacionDelDia(generado);
     return generado;
   });

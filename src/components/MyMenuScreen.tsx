@@ -642,7 +642,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                     src={meal.recipeImage}
                     alt={meal.recipeName}
                     className="absolute inset-0 w-full h-full object-cover"
-                    fallback={<div className="absolute inset-0 flex items-center justify-center"><Icon name="skillet" size="xl" className="text-ink-3" /></div>}
+                    fallback={<div className="absolute inset-0 flex items-center justify-center"><Icon name={meal.soloFruta ? 'nutrition' : 'skillet'} size="xl" className="text-ink-3" /></div>}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-veil/85 via-veil/15 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-3 text-left">

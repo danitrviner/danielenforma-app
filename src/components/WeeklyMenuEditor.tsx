@@ -14,7 +14,8 @@ import { hoyIsoLocal } from '../utils/trainingWeek';
 import {
   slotsFromOnboarding, generateWeek, generateDay, isDayWithinTolerance,
   dayGlobalDeviation, rankCandidates, slotTargets, recipeMatchesSlot,
-  buildBatchPlan, reajustarDia, MealSlotSpec, GeneratorPrefs, MenuCandidate, filtroDuro,
+  buildBatchPlan, reajustarDia, MealSlotSpec, GeneratorPrefs, MenuCandidate, filtroDuro, sinLaFruta,
+  type FrutaEnIngesta,
 } from '../utils/menuEngine';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
@@ -66,13 +67,20 @@ function exchDe(m: Macros) {
   return { HC: v.HC, PROT: v.PROT, GRASA: v.GRASA };
 }
 
+/** Lo que puede llevar cada ingesta del menú (MealSlotSpec.fruta). */
+const OPCIONES_FRUTA: { valor: FrutaEnIngesta | null; texto: string; icono: string }[] = [
+  { valor: null, texto: 'Plato', icono: 'restaurant' },
+  { valor: 'mas', texto: 'Plato + fruta', icono: 'nutrition' },
+  { valor: 'solo', texto: 'Solo fruta', icono: 'nutrition' },
+];
+
 function devBadge(day: MenuDay): { label: string; cls: string } {
   if (day.meals.length === 0) return { label: 'Libre', cls: 'text-ink-3 bg-raised border-hairline' };
   // Una comida sin receta significa que NINGÚN plato del recetario llega a ese
   // objetivo, ni multiplicado por cuatro. No es un error a tapar: es la señal de
   // que hace falta una receta más alta en calorías para esa franja, y por eso se
   // enseña antes que la desviación (Dani, 2026-09-05).
-  const sinReceta = day.meals.filter(m => !m.recipeId).length;
+  const sinReceta = day.meals.filter(m => !m.recipeId && !m.soloFruta).length;
   if (sinReceta > 0) {
     return {
       label: sinReceta === 1 ? 'Falta 1 receta' : `Faltan ${sinReceta} recetas`,
@@ -318,12 +326,14 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     const menuDay = menu.days.find(d => d.day === day);
     if (!menuDay) return;
     const slot = slots[mealIdx];
-    if (!slot) return;
+    if (!slot || menuDay.meals[mealIdx]?.soloFruta) return; // la de solo fruta no tiene receta que cambiar
     const pool = await ensurePool(slot.slot);
     const targets = slotTargets(objetivoDelDiaDeMenu(menuDay), slots);
     const usedIds = new Set<string>(menuDay.meals.filter((_, i) => i !== mealIdx).map(m => m.recipeId));
     usedIds.add(menuDay.meals[mealIdx]?.recipeId ?? ''); // force a different pick than the current one
-    const ranked = rankCandidates(pool, targets[mealIdx], prefs, usedIds, { needsTupper: slot.needsTupper, dias: [day], dietId: menuDay.dietId });
+    // La fruta obligatoria de esa comida se queda y el plato nuevo se elige para lo que deja.
+    const fruta = (menuDay.meals[mealIdx]?.complements ?? []).filter(c => c.obligatoria);
+    const ranked = rankCandidates(pool, sinLaFruta(targets[mealIdx], fruta), prefs, usedIds, { needsTupper: slot.needsTupper, dias: [day], dietId: menuDay.dietId });
     const pick = ranked[0];
     if (!pick) return;
     const nextMeals = [...menuDay.meals];
@@ -331,7 +341,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       ...nextMeals[mealIdx],
       recipeId: pick.recipe.id, recipeName: pick.recipe.name,
       recipeImage: fotoDeReceta(pick.recipe),
-      scale: pick.scale, macros: pick.macros, exch: exchDe(pick.macros), complements: [],
+      scale: pick.scale, macros: pick.macros, exch: exchDe(pick.macros), complements: fruta,
       ajuste: pick.ajuste,
       // Las raciones extra eran de la receta ANTERIOR ("+45g de arroz" con un
       // plato que ya no lleva arroz), y las kcal se quedaban con las del plato
@@ -382,7 +392,8 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       const pool = await ensurePool(slot.slot);
       const targets = slotTargets(objetivoDelDiaDeMenu(menuDay), slots);
       const usedIds = new Set<string>(menuDay.meals.map(m => m.recipeId));
-      const ranked = rankCandidates(pool, targets[mealIdx], prefs, usedIds, { needsTupper: slot.needsTupper, dias: [day], dietId: menuDay.dietId });
+      const fruta = (menuDay.meals[mealIdx]?.complements ?? []).filter(c => c.obligatoria);
+      const ranked = rankCandidates(pool, sinLaFruta(targets[mealIdx], fruta), prefs, usedIds, { needsTupper: slot.needsTupper, dias: [day], dietId: menuDay.dietId });
       setPickerCandidates(ranked.slice(0, 12));
     }
     setPickerLoading(false);
@@ -396,7 +407,10 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       ...nextMeals[mealIdx],
       recipeId: c.recipe.id, recipeName: c.recipe.name,
       recipeImage: fotoDeReceta(c.recipe),
-      scale: c.scale, macros: c.macros, exch: exchDe(c.macros), complements: [],
+      scale: c.scale, macros: c.macros, exch: exchDe(c.macros),
+      // Elegir un plato a mano en una de «solo fruta» la convierte en comida normal.
+      complements: nextMeals[mealIdx].soloFruta ? [] : (nextMeals[mealIdx].complements ?? []).filter(x => x.obligatoria),
+      soloFruta: undefined,
       ajuste: c.ajuste,
       racionesExtra: undefined,
       kcal: Math.round(c.macros.kcal),
@@ -502,15 +516,31 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
           </div>
           <div className="space-y-2">
             {slots.map((sl, i) => (
-              <div key={i} className="flex items-center gap-3 bg-surface border border-hairline rounded-surface px-4 py-3">
-                <span className="font-sans text-label text-ink w-32 flex-shrink-0 truncate">{sl.name}</span>
-                <ProgressBar value={sl.pct} label={`${sl.name}, ${sl.pct}%`} className="flex-1" />
-                <input id="weeklymenueditor-ingestas-de-la-anamnesis-ajustable"
-                  type="number" min={0} max={100} value={sl.pct}
-                  onChange={e => { slotsTocados.current = true; setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s)); }}
-                  className="w-16 text-right bg-raised border border-control-line rounded-control px-2 py-1 text-title-s text-ink font-mono focus:outline-none focus:border-accent/50"
-                />
-                <span className="font-mono text-ink-3 text-label">%</span>
+              <div key={i} className="bg-surface border border-hairline rounded-surface px-4 py-3 space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="font-sans text-label text-ink w-32 flex-shrink-0 truncate">{sl.name}</span>
+                  <ProgressBar value={sl.pct} label={`${sl.name}, ${sl.pct}%`} className="flex-1" />
+                  <input id={i === 0 ? 'weeklymenueditor-ingestas-de-la-anamnesis-ajustable' : undefined}
+                    aria-label={`Porcentaje del día para ${sl.name}`}
+                    type="number" min={0} max={100} value={sl.pct}
+                    onChange={e => { slotsTocados.current = true; setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s)); }}
+                    className="w-16 text-right bg-raised border border-control-line rounded-control px-2 py-1 text-title-s text-ink font-mono focus:outline-none focus:border-accent/50"
+                  />
+                  <span className="font-mono text-ink-3 text-label">%</span>
+                </div>
+                {/* Qué lleva esa ingesta: plato, plato + fruta obligatoria o solo fruta (Dani, 11-2026). */}
+                <div role="radiogroup" aria-label={`Qué lleva ${sl.name}`} className="flex flex-wrap gap-1.5">
+                  {OPCIONES_FRUTA.map(o => {
+                    const activa = (sl.fruta ?? null) === o.valor;
+                    return (
+                      <button key={o.texto} type="button" role="radio" aria-checked={activa}
+                        onClick={() => { slotsTocados.current = true; setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, fruta: o.valor ?? undefined } : s)); }}
+                        className={`flex items-center gap-1 rounded-chip border px-2.5 py-1 font-sans text-caption font-bold ${activa ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`}>
+                        <Icon name={o.icono} size="s" />{o.texto}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             ))}
           </div>
