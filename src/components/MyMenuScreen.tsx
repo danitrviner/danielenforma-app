@@ -162,7 +162,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
 
   const recetasOcultas = useReglasDeReceta(profile.email);
   const listaMenu = useListaDeMenu(profile.email);
-  const { seleccion, paquetes } = useSeleccionDeRecetas(profile.email);
+  const { seleccion, paquetes, favoritasDelCoach } = useSeleccionDeRecetas(profile.email);
   const prefs: GeneratorPrefs = useMemo(() => ({
     allergies: onboarding?.allergies ?? [],
     conditions: athleteConditions(onboarding),
@@ -183,9 +183,10 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     listaMenu,
     seleccion,
     paquetes,
+    favoritasDelCoach,
     // Lo que ya ha cambiado en este menú pesa al proponerle alternativas.
     cambios: menu ? senalesDeCambios([menu]) : undefined,
-  }), [onboarding, nutritionConfig, favorites, recetasOcultas, listaMenu, seleccion, paquetes]);
+  }), [onboarding, nutritionConfig, favorites, recetasOcultas, listaMenu, seleccion, paquetes, favoritasDelCoach]);
 
   const swapFiltradas = useMemo(() => {
     const q = normalizeStr(swapQuery.trim());

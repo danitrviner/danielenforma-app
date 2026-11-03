@@ -2,11 +2,12 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
 import LimpiarRecetario from './recetario/LimpiarRecetario';
-import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryRecetas, cargarIndiceRecetas, getRecipeById, cambiarComidasDeReceta, getAccesoGlobalARecetas, saveAccesoGlobalARecetas } from '../dbService';
+import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, cargarIndiceRecetas, getRecipeById, cambiarComidasDeReceta, getAccesoGlobalARecetas, saveAccesoGlobalARecetas } from '../dbService';
 import { accesoGlobalKey } from '../hooks/useReglasDeReceta';
 import { idDePaquete, type PaqueteDeRecetas } from '../utils/seleccionDeRecetas';
+import { listaDeMenuVigente, MIN_RECETAS_DE_LISTA, type AccesoGlobalARecetas } from '../utils/accesoARecetas';
 import { useToast } from '../hooks/useToast';
-import type { RecetasCursor } from '../dbService';
+import { useConfirm } from '../hooks/useConfirm';
 import { CAT_BASICAS, encajaCategoria, FILTROS_RAPIDAS, type FiltroRapidas } from '../db/recetasHidratacion';
 import { GRUPOS_DE_RECETA } from '../utils/grupoDeReceta';
 import { roundQuarter } from '../utils/exchangeHelpers';
@@ -24,6 +25,17 @@ const RECIPE_CATEGORIES = ['Alta proteína', 'Rápida', 'Pre-entreno', 'Recupera
 /** Tope de tarjetas que pinta el buscador del catálogo. Quien busca algo
  *  concreto lo encuentra igual; quien escribe una letra ve una muestra. */
 const TOPE_RESULTADOS_BUSQUEDA = 200;
+/** Tarjetas por tanda al navegar sin buscar. */
+const POR_PAGINA = 48;
+
+/** Qué parte del recetario se ve según el menú automático (11-2026). */
+type VistaMenu = 'todas' | 'favoritas' | 'menu' | 'fuera';
+const VISTAS_MENU: { value: VistaMenu; label: string }[] = [
+  { value: 'todas', label: 'Todas' },
+  { value: 'favoritas', label: 'Favoritas' },
+  { value: 'menu', label: 'En el menú' },
+  { value: 'fuera', label: 'Fuera del menú' },
+];
 
 // Categories/intake types as stored on imported imported recipes (see scripts/importRecetas.mjs) —
 // mirrors the athlete-facing browser in RecipesScreen.tsx.
@@ -36,16 +48,26 @@ const INTAKE_LABELS: Record<number, string> = {
   1: 'Desayuno', 2: 'Media mañana', 3: 'Comida', 4: 'Merienda', 5: 'Cena',
 };
 
-function RecetaCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Recipe) => void; key?: React.Key }) {
+interface RecetaCardProps {
+  recipe: Recipe;
+  onOpen: (r: Recipe) => void;
+  favorita: boolean;
+  enMenu: boolean;
+  onFavorita: (r: Recipe) => void;
+  key?: React.Key;
+}
+
+function RecetaCard({ recipe, onOpen, favorita, enMenu, onFavorita }: RecetaCardProps) {
   const photo = fotoDeReceta(recipe);
   return (
-    // Antes era un <article> sin más: el coach veía el catálogo pero no podía
-    // abrir ninguna receta para leer sus ingredientes ni su preparación.
+    <div className="relative">
+    {/* Antes era un <article> sin más: el coach veía el catálogo pero no podía
+        abrir ninguna receta para leer sus ingredientes ni su preparación. */}
     <button
       type="button"
       onClick={() => onOpen(recipe)}
       aria-label={`Ver ${recipe.name}`}
-      className="relative rounded-surface overflow-hidden bg-raised border border-hairline hover:border-accent/40 transition-colors aspect-[4/5] flex flex-col justify-end text-left">
+      className="relative w-full rounded-surface overflow-hidden bg-raised border border-hairline hover:border-accent/40 transition-colors aspect-[4/5] flex flex-col justify-end text-left">
       {photo
         ? <FotoDeReceta src={photo} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-70" fallback={null} />
         : <div className="absolute inset-0 bg-gradient-to-br from-raised to-bg flex items-center justify-center">
@@ -58,8 +80,24 @@ function RecetaCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Recipe) =>
           {recipe.kcal} kcal
         </div>
       ) : null}
-      <p className="relative z-10 p-3 text-label text-on-veil font-sans font-bold leading-tight">{recipe.name}</p>
+      <p className="relative z-10 p-3 text-label text-on-veil font-sans font-bold leading-tight">
+        {enMenu && <span className="block font-mono text-caption font-normal text-on-veil-2 mb-1">En el menú</span>}
+        {recipe.name}
+      </p>
     </button>
+    {/* Fuera del botón de la tarjeta: un botón dentro de otro no es válido. */}
+    <button
+      type="button"
+      onClick={() => onFavorita(recipe)}
+      aria-pressed={favorita}
+      aria-label={favorita ? `Quitar ${recipe.name} de favoritas` : `Marcar ${recipe.name} como favorita`}
+      className="absolute top-1 right-1 z-20 w-11 h-11 flex items-center justify-center rounded-full"
+    >
+      <span className="w-8 h-8 flex items-center justify-center rounded-full bg-veil/60 backdrop-blur-sm">
+        <Icon name="star" size="s" filled={favorita} className={favorita ? 'text-accent-ink' : 'text-on-veil-2'} />
+      </span>
+    </button>
+    </div>
   );
 }
 
@@ -147,17 +185,16 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
   const [recetasIntake, setRecetasIntake]       = useState<number | null>(null);
   const [recetasSearch, setRecetasSearch]       = useState('');
   const recetasSearchDebounced = useDebouncedValue(recetasSearch, 200);
-  const [recetasRecipes, setRecetasRecipes]     = useState<Recipe[]>([]);
-  /* El catálogo ENTERO para buscar. `recetasRecipes` es solo la página que se
-     está viendo (48), y el buscador miraba únicamente esa: escribir el nombre
-     de una receta que existe entre las 8.850 contestaba que no hay nada, salvo
-     que hubiera caído por casualidad en las páginas ya cargadas. El lado del
-     atleta se arregló el 07-09-2026; esta pantalla se quedó fuera. */
+  /* El catálogo ENTERO: filtros, buscador y menú automático miran sobre él.
+     Antes se paginaba aparte y el buscador solo veía la página cargada:
+     escribir el nombre de una receta que existe contestaba que no hay nada. */
   const [indiceRecetas, setIndiceRecetas]       = useState<Recipe[]>([]);
-  useEffect(() => { cargarIndiceRecetas().then(setIndiceRecetas).catch(() => {}); }, []);
+  const [indiceCargado, setIndiceCargado]       = useState(false);
+  useEffect(() => {
+    cargarIndiceRecetas().then(setIndiceRecetas).catch(() => {}).finally(() => setIndiceCargado(true));
+  }, []);
   // Limpiador del recetario (29-10). Al cerrarlo se relee: lo retirado ya no sale.
   const [limpiando, setLimpiando] = useState(false);
-  const [vueltaDeLimpieza, setVueltaDeLimpieza] = useState(0);
   /* Comidas y paquetes de la receta abierta (11-2026): el coach decide para qué
      comidas vale (manda sobre lo que trae el recetario) y la mete en sus paquetes. */
   const { showToast } = useToast();
@@ -174,19 +211,21 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
       await cambiarComidasDeReceta(r.id, nuevas);
       const conNuevas = (x: Recipe) => (x.id === r.id ? { ...x, intakeTypes: nuevas } : x);
       setRecetaAbierta(prev => (prev ? conNuevas(prev) : prev));
-      setRecetasRecipes(prev => prev.map(conNuevas));
       setIndiceRecetas(prev => prev.map(conNuevas));
     } catch { showToast('No se pudo guardar. Inténtalo otra vez.'); }
     finally { setGuardandoReceta(false); }
   };
-  const guardarPaquetes = async (lista: PaqueteDeRecetas[]) => {
+  /** Guarda un trozo de `recipeAccess/global` (paquetes, lista del menú, favoritas). */
+  const guardarGlobal = async (cambio: AccesoGlobalARecetas, error: string): Promise<boolean> => {
     setGuardandoReceta(true);
     try {
-      await saveAccesoGlobalARecetas({ paquetes: lista });
-      queryClient.setQueryData(accesoGlobalKey, (prev: object | undefined) => ({ ...prev, paquetes: lista }));
-    } catch { showToast('No se pudo guardar el paquete. Inténtalo otra vez.'); }
+      await saveAccesoGlobalARecetas(cambio);
+      queryClient.setQueryData(accesoGlobalKey, (prev: object | undefined) => ({ ...prev, ...cambio }));
+      return true;
+    } catch { showToast(error); return false; }
     finally { setGuardandoReceta(false); }
   };
+  const guardarPaquetes = (lista: PaqueteDeRecetas[]) => guardarGlobal({ paquetes: lista }, 'No se pudo guardar el paquete. Inténtalo otra vez.');
   const alternarPaquete = (r: Recipe, p: PaqueteDeRecetas) => guardarPaquetes(paquetes.map(x => x.id !== p.id ? x : {
     ...x, recipeIds: x.recipeIds.includes(r.id) ? x.recipeIds.filter(id => id !== r.id) : [...x.recipeIds, r.id],
   }));
@@ -199,7 +238,6 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
   };
   const cerrarLimpieza = () => {
     setLimpiando(false);
-    setVueltaDeLimpieza(v => v + 1);
     cargarIndiceRecetas().then(setIndiceRecetas).catch(() => {});
   };
   /* La receta abierta. El índice empaquetado NO trae la preparación ni los
@@ -217,54 +255,79 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
     // Las comidas, las del índice: llevan ya las que haya elegido el coach.
     if (completa) setRecetaAbierta(prev => (prev?.id === r.id ? { ...prev, ...completa, intakeTypes: prev.intakeTypes } : prev));
   }, []);
-  const [recetasCursor, setRecetasCursor]       = useState<RecetasCursor | null>(null);
-  const [recetasHasMore, setRecetasHasMore]     = useState(false);
-  const [recetasLoading, setRecetasLoading]     = useState(true);
-  const [recetasLoadingMore, setRecetasLoadingMore] = useState(false);
-
-  const loadRecetas = useCallback(async (
-    cat: string, intake: number | null, rapidas: FiltroRapidas, cursor: RecetasCursor | null, append: boolean,
-  ) => {
-    const filters = { categoria: cat === 'Todas' ? undefined : cat, intakeType: intake ?? undefined, rapidas };
-    const result = await queryRecetas(filters, cursor);
-    setRecetasRecipes(prev => append ? [...prev, ...result.recipes] : result.recipes);
-    setRecetasCursor(result.cursor);
-    setRecetasHasMore(result.hasMore);
-  }, []);
-
-  useEffect(() => {
-    setRecetasLoading(true);
-    loadRecetas(recetasCat, recetasIntake, recetasRapidas, null, false).finally(() => setRecetasLoading(false));
-  }, [recetasCat, recetasIntake, recetasRapidas, loadRecetas, vueltaDeLimpieza]);
-
-  const handleRecetasLoadMore = async () => {
-    setRecetasLoadingMore(true);
-    await loadRecetas(recetasCat, recetasIntake, recetasRapidas, recetasCursor, true);
-    setRecetasLoadingMore(false);
-  };
-
   /** El nombre normalizado de cada receta, una sola vez y no en cada tecla. */
   const indiceBuscable = useMemo(
     () => indiceRecetas.map(r => ({ receta: r, nombre: normalizarTexto(r.name) })),
     [indiceRecetas],
   );
 
-  const filteredRecetas = useMemo(() => {
+  /* Menú automático (11-2026). Antes era otra pestaña, «Menú», con su propio
+     buscador; ahora se organiza aquí con los filtros del recetario: con qué
+     recetas trabaja el generador y cuáles son las favoritas, que adelanta para
+     todos los atletas. Quien tenga lista propia (su ficha › Dietas) no cambia. */
+  const { confirm, ConfirmDialog } = useConfirm();
+  const listaMenu = listaDeMenuVigente(undefined, accesoGlobal?.listaMenu);
+  const idsDelMenu = useMemo(
+    () => new Set<string>(listaMenu === 'rapidas' ? indiceRecetas.filter(r => r.basica === true).map(r => r.id) : listaMenu),
+    [listaMenu, indiceRecetas],
+  );
+  const favoritas = useMemo(() => new Set(accesoGlobal?.favoritas ?? []), [accesoGlobal?.favoritas]);
+  const [vistaMenu, setVistaMenu] = useState<VistaMenu>('todas');
+  const [recetasVisibles, setRecetasVisibles] = useState(POR_PAGINA);
+  useEffect(() => { setRecetasVisibles(POR_PAGINA); }, [recetasCat, recetasRapidas, recetasIntake, vistaMenu, recetasSearchDebounced]);
+
+  /** Todas las que pasan los filtros, sin tope: con ellas se mete o se saca del menú de golpe. */
+  const coincidencias = useMemo(() => {
     const termino = recetasSearchDebounced.trim();
-    if (!termino) return recetasRecipes;
-    // Con búsqueda se mira el catálogo entero, con los mismos filtros de
-    // categoría y momento que aplica la paginación. Tope de resultados para no
-    // pintar miles de tarjetas si el término es de una letra.
-    const encontradas: Recipe[] = [];
+    const out: Recipe[] = [];
     for (const { receta, nombre } of indiceBuscable) {
       if (!encajaCategoria(receta, recetasCat, recetasRapidas)) continue;
       if (recetasIntake != null && !(receta.intakeTypes ?? []).includes(recetasIntake)) continue;
-      if (!coincideBusqueda(nombre, termino)) continue;
-      encontradas.push(receta);
-      if (encontradas.length >= TOPE_RESULTADOS_BUSQUEDA) break;
+      if (vistaMenu === 'favoritas' && !favoritas.has(receta.id)) continue;
+      if (vistaMenu === 'menu' && !idsDelMenu.has(receta.id)) continue;
+      if (vistaMenu === 'fuera' && idsDelMenu.has(receta.id)) continue;
+      if (termino && !coincideBusqueda(nombre, termino)) continue;
+      out.push(receta);
     }
-    return encontradas;
-  }, [recetasRecipes, indiceBuscable, recetasCat, recetasRapidas, recetasIntake, recetasSearchDebounced]);
+    return out;
+  }, [indiceBuscable, recetasCat, recetasRapidas, recetasIntake, vistaMenu, favoritas, idsDelMenu, recetasSearchDebounced]);
+
+  // Con búsqueda, tope de resultados para no pintar miles de tarjetas si el
+  // término es de una letra; sin ella, por tandas.
+  const filteredRecetas = recetasSearch
+    ? coincidencias.slice(0, TOPE_RESULTADOS_BUSQUEDA)
+    : coincidencias.slice(0, recetasVisibles);
+  const hayFiltro = recetasCat !== 'Todas' || recetasIntake != null || vistaMenu !== 'todas' || !!recetasSearchDebounced.trim();
+
+  const aviso = 'Los atletas que no tengan lista propia usarán esta lista desde ahora; los que la tengan no cambian.';
+  /** Guarda la lista del menú. Vacía = vuelve a las Rápidas. */
+  const guardarLista = (ids: Set<string>) =>
+    guardarGlobal({ listaMenu: [...ids] }, 'No se pudo guardar el menú. Inténtalo otra vez.');
+  const cambiarMenu = async (recetas: Recipe[], meter: boolean) => {
+    const nueva = new Set<string>(idsDelMenu);
+    for (const r of recetas) { if (meter) nueva.add(r.id); else nueva.delete(r.id); }
+    if (nueva.size === 0) { showToast('El menú no puede quedarse sin recetas. Para volver a las Rápidas, usa «Volver a las Rápidas».'); return; }
+    const varias = recetas.length > 1;
+    const deRapidas = listaMenu === 'rapidas';
+    if (varias || deRapidas) {
+      const que = varias
+        ? `¿${meter ? 'Meter' : 'Sacar'} ${recetas.length.toLocaleString('es-ES')} recetas ${meter ? 'en el' : 'del'} menú? Quedará con ${nueva.size.toLocaleString('es-ES')}.`
+        : `¿${meter ? 'Meter' : 'Sacar'} «${recetas[0].name.trim()}» ${meter ? 'en el' : 'del'} menú?`;
+      const desdeRapidas = deRapidas ? ` Hasta ahora el menú usa las Rápidas; pasará a ser tu lista, con ellas de partida.` : '';
+      if (!(await confirm(`${que}${desdeRapidas} ${aviso}`))) return;
+    }
+    await guardarLista(nueva);
+  };
+  const volverARapidas = async () => {
+    if (await confirm(`¿Volver a las Rápidas? Se pierde tu lista del menú. ${aviso}`)) {
+      await guardarGlobal({ listaMenu: [] }, 'No se pudo guardar el menú. Inténtalo otra vez.');
+    }
+  };
+  const alternarFavorita = (r: Recipe) => {
+    const lista = favoritas.has(r.id) ? [...favoritas].filter(id => id !== r.id) : [...favoritas, r.id];
+    return guardarGlobal({ favoritas: lista }, 'No se pudo guardar la favorita. Inténtalo otra vez.');
+  };
+  const enMenuVisibles = coincidencias.filter(r => idsDelMenu.has(r.id)).length;
 
 
   const filteredFoods = useMemo(() =>
@@ -462,7 +525,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
         <h2 className="font-sans font-bold text-body-s text-ink uppercase tracking-wider flex items-center gap-2">
           <Icon name="library_books" size="m" className="text-data" />
           Recetario
-          <span className="font-sans text-caption text-ink-2 normal-case font-normal">{indiceRecetas.length ? indiceRecetas.length.toLocaleString('es-ES') : '8.850'} recetas · solo lectura</span>
+          <span className="font-sans text-caption text-ink-2 normal-case font-normal">{indiceRecetas.length ? indiceRecetas.length.toLocaleString('es-ES') : '8.850'} recetas</span>
           <button
             type="button"
             onClick={() => setLimpiando(true)}
@@ -472,6 +535,39 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             Limpiar recetario
           </button>
         </h2>
+
+        {/* ── Menú automático: antes era la pestaña «Menú» ── */}
+        <div className="bg-raised border border-hairline rounded-surface p-4 space-y-3">
+          <div className="flex flex-wrap items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+                <Icon name="checklist" size="m" className="text-accent-ink" />
+                Menú automático
+              </h3>
+              <p className="font-sans text-label text-ink-2 mt-1">
+                Trabaja con {listaMenu === 'rapidas'
+                  ? <>las <strong className="text-ink">Rápidas</strong> ({idsDelMenu.size.toLocaleString('es-ES')})</>
+                  : <><strong className="text-ink">tu lista</strong> de {idsDelMenu.size.toLocaleString('es-ES')} recetas</>}
+                {' '}y saca más tus <strong className="text-ink">{favoritas.size.toLocaleString('es-ES')} favoritas</strong> (★, entran aunque no estén en la lista).
+                {' '}Filtra abajo y mete o saca recetas del menú. Los atletas con lista propia (su ficha › Dietas) no cambian.
+              </p>
+            </div>
+            {listaMenu !== 'rapidas' && (
+              <Button variant="ghost" size="s" onClick={volverARapidas} disabled={guardandoReceta}>Volver a las Rápidas</Button>
+            )}
+          </div>
+          {listaMenu !== 'rapidas' && idsDelMenu.size < MIN_RECETAS_DE_LISTA && (
+            <p role="status" className="font-sans text-label text-warning">
+              Con menos de {MIN_RECETAS_DE_LISTA} recetas el generador ignora la lista y usa todo el recetario, para no dejar menús vacíos.
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {VISTAS_MENU.map(v => (
+              <Chip key={v.value} selected={vistaMenu === v.value} icon={v.value === 'favoritas' ? 'star' : undefined}
+                onClick={() => setVistaMenu(v.value)}>{v.label}</Chip>
+            ))}
+          </div>
+        </div>
 
         <div className="w-full overflow-x-auto hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
           <div className="flex gap-2 w-max">
@@ -511,34 +607,49 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
           placeholder="Buscar en las 8.850 recetas…"
         />
 
-        {recetasLoading ? (
+        {!indiceCargado ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Skeleton className="h-32 w-full rounded-surface" />
             <Skeleton className="h-32 w-full rounded-surface" />
             <Skeleton className="h-32 w-full rounded-surface" />
           </div>
         ) : filteredRecetas.length === 0 ? (
-          <EmptyState icon="search_off" title={recetasSearch ? `Ninguna receta coincide con «${recetasSearch}».` : 'Sin recetas para estos filtros.'} />
+          <EmptyState icon="search_off" title={recetasSearch ? `Ninguna receta coincide con «${recetasSearch}».` : vistaMenu === 'favoritas' ? 'Aún no hay favoritas aquí. Toca la ★ de una receta.' : 'Sin recetas para estos filtros.'} />
         ) : (
           <div className="space-y-3">
-            <p className="font-sans text-caption text-ink-2 uppercase">
-              {recetasSearch
-                ? `${filteredRecetas.length} resultado${filteredRecetas.length !== 1 ? 's' : ''}${filteredRecetas.length >= TOPE_RESULTADOS_BUSQUEDA ? '+ (afina la búsqueda)' : ''}`
-                : `${recetasRecipes.length} receta${recetasRecipes.length !== 1 ? 's' : ''} cargada${recetasRecipes.length !== 1 ? 's' : ''}${recetasHasMore ? ' · hay más' : ''}`
-              }
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {filteredRecetas.map(r => <RecetaCard key={r.id} recipe={r} onOpen={abrirReceta} />)}
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-sans text-caption text-ink-2 uppercase">
+                {coincidencias.length.toLocaleString('es-ES')} receta{coincidencias.length !== 1 ? 's' : ''}
+                {hayFiltro ? ` · ${enMenuVisibles.toLocaleString('es-ES')} en el menú` : ''}
+                {recetasSearch && coincidencias.length > TOPE_RESULTADOS_BUSQUEDA ? ` · se ven ${TOPE_RESULTADOS_BUSQUEDA} (afina la búsqueda)` : ''}
+              </p>
+              {/* Organizar el menú desde los filtros: todas las que pasan, no solo las que se ven. */}
+              {hayFiltro && (
+                <span className="ml-auto flex flex-wrap gap-2">
+                  {coincidencias.length > enMenuVisibles && (
+                    <Button variant="secondary" size="s" icon="add" disabled={guardandoReceta}
+                      onClick={() => cambiarMenu(coincidencias.filter(r => !idsDelMenu.has(r.id)), true)}>
+                      Meter {(coincidencias.length - enMenuVisibles).toLocaleString('es-ES')} en el menú
+                    </Button>
+                  )}
+                  {enMenuVisibles > 0 && (
+                    <Button variant="ghost" size="s" icon="remove" disabled={guardandoReceta}
+                      onClick={() => cambiarMenu(coincidencias.filter(r => idsDelMenu.has(r.id)), false)}>
+                      Sacar {enMenuVisibles.toLocaleString('es-ES')} del menú
+                    </Button>
+                  )}
+                </span>
+              )}
             </div>
-            {recetasHasMore && !recetasSearch && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {filteredRecetas.map(r => (
+                <RecetaCard key={r.id} recipe={r} onOpen={abrirReceta}
+                  favorita={favoritas.has(r.id)} enMenu={idsDelMenu.has(r.id)} onFavorita={alternarFavorita} />
+              ))}
+            </div>
+            {!recetasSearch && coincidencias.length > recetasVisibles && (
               <div className="flex justify-center pt-2">
-                <Button
-                  variant="secondary"
-                  icon="expand_more"
-                  onClick={handleRecetasLoadMore}
-                  loading={recetasLoadingMore}
-                  loadingLabel="Cargando…"
-                >
+                <Button variant="secondary" icon="expand_more" onClick={() => setRecetasVisibles(v => v + POR_PAGINA)}>
                   Cargar más recetas
                 </Button>
               </div>
@@ -567,6 +678,17 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 recetaAbierta.categoria,
               ].filter(Boolean).join(' · ')}
             </p>
+
+            <div className="space-y-2">
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider">Menú automático</p>
+              <div className="flex flex-wrap gap-1.5">
+                <Chip icon="star" selected={favoritas.has(recetaAbierta.id)} disabled={guardandoReceta}
+                  onClick={() => alternarFavorita(recetaAbierta)}>Favorita</Chip>
+                <Chip selected={idsDelMenu.has(recetaAbierta.id)} disabled={guardandoReceta}
+                  onClick={() => cambiarMenu([recetaAbierta], !idsDelMenu.has(recetaAbierta.id))}>En el menú</Chip>
+              </div>
+              <p className="font-sans text-caption text-ink-3">Las favoritas salen más en los menús de todos los atletas.</p>
+            </div>
 
             <div className="space-y-2">
               <p className="font-sans text-caption text-ink-2 uppercase tracking-wider">Para qué comidas</p>
@@ -860,6 +982,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
         </Dialog>
       )}
       {limpiando && <LimpiarRecetario onCerrar={cerrarLimpieza} />}
+      <ConfirmDialog />
     </div>
   );
 }

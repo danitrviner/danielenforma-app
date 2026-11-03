@@ -129,3 +129,19 @@ export function grupoDeReceta(r: Partial<Pick<Recipe, 'name' | 'categoria'>>): G
   cache.set(r, g);
   return g;
 }
+
+/** Bocadillos dentro de «Tostadas y bocadillos»: las tostadas, el pan o los
+ *  bagels sí son de desayuno. */
+const BOCADILLOS = ['bocadillo', 'bocata', 'montadito', 'pepito', 'perrito'];
+
+/**
+ * ¿Es un bocadillo o un wrap (wraps, tacos, burritos…)? Dani los quiere fuera
+ * de los desayunos (11-2026): el recetario los traía marcados para desayuno.
+ */
+export function esBocadilloOWrap(r: Partial<Pick<Recipe, 'name' | 'categoria'>>): boolean {
+  const g = grupoDeReceta(r);
+  if (g === 'Wraps, tacos y burritos') return true;
+  if (g !== 'Tostadas y bocadillos') return false;
+  const principal = ` ${quitarTildes(r.name ?? '').split('/')[0]} `;
+  return primeraPosicion(principal, BOCADILLOS) !== null;
+}

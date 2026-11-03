@@ -1,5 +1,5 @@
 import { useReglasDeReceta, useListaDeMenu, useSeleccionDeRecetas } from '../hooks/useReglasDeReceta';
-import { quiereAlgunaDieta } from '../utils/seleccionDeRecetas';
+import { tambienEnLaMuestra } from '../utils/seleccionDeRecetas';
 import { recetaPermitida, type AmbitoDeRegla } from '../utils/reglasDeReceta';
 import SelloHecho from './ui/SelloHecho';
 import { useDireccionDeFecha } from './ui/internal/useDireccionDeFecha';
@@ -753,7 +753,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // recetario) no miraban nada de esto.
   const recetasOcultas = useReglasDeReceta(profile.email);
   const listaMenu = useListaDeMenu(profile.email);
-  const { seleccion, paquetes } = useSeleccionDeRecetas(profile.email);
+  const { seleccion, paquetes, favoritasDelCoach } = useSeleccionDeRecetas(profile.email);
   const swapPrefs: AlternativePrefs = useMemo(() => ({
     allergies:         onboarding?.allergies ?? [],
     conditions:        athleteConditions(onboarding),
@@ -771,7 +771,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     listaMenu,
     seleccion,
     paquetes,
-  }), [onboarding, nutConfig, recipeFavorites, recetasOcultas, listaMenu, seleccion, paquetes]);
+    favoritasDelCoach,
+  }), [onboarding, nutConfig, recipeFavorites, recetasOcultas, listaMenu, seleccion, paquetes, favoritasDelCoach]);
 
   // Un tipo de plato excluido es una decisión explícita del atleta en sus
   // preferencias, igual de firme que una alergia: faltaba aquí, así que los
@@ -1507,7 +1508,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     // puñado): el recetario entero quedaba fuera del "Cambiar comida". Ahora se
     // trae el bloque del recetario correspondiente al momento del día.
     const recetario = slot != null
-      ? await queryRecetasForGenerator(slot, 300, listaMenu, quiereAlgunaDieta(seleccion, paquetes), filtroDuro({ ...swapPrefs, allergies: swapPrefs.allergies ?? [], seleccion })).catch(() => [] as Recipe[])
+      ? await queryRecetasForGenerator(slot, 300, listaMenu, tambienEnLaMuestra(seleccion, paquetes, favoritasDelCoach), filtroDuro({ ...swapPrefs, allergies: swapPrefs.allergies ?? [], seleccion })).catch(() => [] as Recipe[])
       : [];
     setSwapPool([...recetario, ...recipes]);
     setSwapLoading(false);

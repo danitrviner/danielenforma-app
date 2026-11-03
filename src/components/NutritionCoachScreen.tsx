@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import FoodLibraryScreen from './FoodLibraryScreen';
 import NutritionPlansScreen from './NutritionPlansScreen';
 import RecipeBuilderScreen from './RecipeBuilderScreen';
-import ListaDelMenuPanel from './ListaDelMenuPanel';
 import FuentesCientificasSheet, { EnlaceFuentes } from './FuentesCientificasSheet';
 import { Tabs } from './ui';
 
-type Tab = 'tipos' | 'alimentos' | 'recetas' | 'menu';
+type Tab = 'tipos' | 'alimentos' | 'recetas';
 
 interface Props {
   coachId: string;
@@ -20,7 +19,6 @@ export default function NutritionCoachScreen({ coachId }: Props) {
     { id: 'tipos',     label: 'Dietas',    icon: 'nutrition' },
     { id: 'alimentos', label: 'Alimentos', icon: 'set_meal' },
     { id: 'recetas',   label: 'Recetas',   icon: 'skillet' },
-    { id: 'menu',      label: 'Menú',      icon: 'checklist' },
   ];
 
   return (
@@ -31,8 +29,8 @@ export default function NutritionCoachScreen({ coachId }: Props) {
 
       {activeTab === 'tipos'     && <NutritionPlansScreen coachId={coachId} />}
       {activeTab === 'alimentos' && <FoodLibraryScreen coachId={coachId} />}
+      {/* El menú automático vive dentro de Recetas (11-2026): antes era su propia pestaña. */}
       {activeTab === 'recetas'   && <RecipeBuilderScreen coachId={coachId} />}
-      {activeTab === 'menu'      && <ListaDelMenuPanel />}
 
       {/* 1.4.1 de Apple: el lado del coach enseña los mismos cálculos, así que
           lleva el mismo acceso a las citas que el del atleta. */}

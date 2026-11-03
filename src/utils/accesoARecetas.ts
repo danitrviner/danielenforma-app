@@ -28,6 +28,9 @@ export interface AccesoGlobalARecetas {
   listaMenu?: string[];
   /** Paquetes de recetas del coach, para usar con cualquier atleta (seleccionDeRecetas.ts). */
   paquetes?: PaqueteDeRecetas[];
+  /** Favoritas del coach (Biblioteca › Recetas, 11-2026): el generador las
+   *  adelanta para todos los atletas y entran aunque no estén en la lista. */
+  favoritas?: string[];
   updatedAt?: string;
 }
 
@@ -54,15 +57,17 @@ export function modoRecetarioVigente(modo: ModoRecetario | undefined): ModoRecet
 }
 
 /**
- * Deja en el pool solo las recetas de la lista. Si la lista no existe, o
- * dejaría menos de `MIN_RECETAS_DE_LISTA`, devuelve el pool tal cual.
+ * Deja en el pool solo las recetas de la lista (y las de `siempre`: las
+ * favoritas del coach). Si la lista no existe, o dejaría menos de
+ * `MIN_RECETAS_DE_LISTA`, devuelve el pool tal cual.
  */
 export function filtrarPorLista<T extends { id: string; basica?: boolean }>(
-  pool: T[], lista: ListaDeMenu | undefined,
+  pool: T[], lista: ListaDeMenu | undefined, siempre: readonly string[] = [],
 ): T[] {
   if (!lista || lista.length === 0) return pool;
   const ids = lista === 'rapidas' ? null : new Set(lista);
-  const dentro = pool.filter(r => (ids ? ids.has(r.id) : r.basica === true));
+  const fijas = new Set(siempre);
+  const dentro = pool.filter(r => fijas.has(r.id) || (ids ? ids.has(r.id) : r.basica === true));
   return dentro.length >= MIN_RECETAS_DE_LISTA ? dentro : pool;
 }
 
@@ -76,4 +81,9 @@ export function entraEnRecetario(
 ): boolean {
   if (modo !== 'recomendadas' || recomendadas.length === 0) return true;
   return recomendadas.includes(recipeId);
+}
+
+/** ¿Está esta receta en la lista del menú? Con las Rápidas, las `basica`. */
+export function estaEnLaLista(r: { id: string; basica?: boolean }, lista: ListaDeMenu): boolean {
+  return lista === 'rapidas' ? r.basica === true : lista.includes(r.id);
 }

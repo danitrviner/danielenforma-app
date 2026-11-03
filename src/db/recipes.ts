@@ -7,6 +7,7 @@ import { OWNER_RECETARIO, OWNER_RECETARIO_TODOS, hidratarEntradaIndice, encajaCa
 import { escribirLocal } from '../utils/almacenLocal';
 import { registrarCambio } from './cambios';
 import { resumirReglasDeReceta } from '../utils/cambiosAtleta';
+import { esBocadilloOWrap } from '../utils/grupoDeReceta';
 
 export { OWNER_RECETARIO, OWNER_RECETARIO_TODOS };
 export { CAT_BASICAS, encajaCategoria, FILTROS_RAPIDAS } from './recetasHidratacion';
@@ -212,6 +213,20 @@ export function sinRetiradas(recetas: Recipe[], limpieza: LimpiezaRecetario): Re
   return Object.keys(fuera).length ? recetas.filter(r => !(r.id in fuera)) : recetas;
 }
 
+const DESAYUNO = 1;
+
+/** Bocadillos y wraps fuera de los desayunos (Dani, 11-2026). Va antes de
+ *  `conComidasDelCoach`: si el coach le vuelve a poner desayuno a uno, manda él. */
+export function sinBocadillosEnDesayuno(recetas: Recipe[]): Recipe[] {
+  return recetas.map(r => {
+    const it = r.intakeTypes ?? [];
+    if (!it.includes(DESAYUNO) || !esBocadilloOWrap(r)) return r;
+    const resto = it.filter(x => x !== DESAYUNO);
+    // Sin ninguna comida valdría para todas (recipeMatchesSlot): a media mañana y merienda.
+    return { ...r, intakeTypes: resto.length ? resto : [2, 4] };
+  });
+}
+
 /** Pone las comidas que ha elegido el coach. Puro, para poder probarlo sin Firestore. */
 export function conComidasDelCoach(recetas: Recipe[], limpieza: LimpiezaRecetario): Recipe[] {
   const comidas = limpieza.comidas ?? {};
@@ -241,7 +256,7 @@ export function cargarIndiceRecetas(): Promise<Recipe[]> {
     ]),
   ]).then(([recetas, limpieza]) => {
     if (recetas.length === 0) indiceVigentePromesa = null;  // que el siguiente intento vuelva a probar
-    return conComidasDelCoach(sinRetiradas(recetas, limpieza), limpieza);
+    return conComidasDelCoach(sinBocadillosEnDesayuno(sinRetiradas(recetas, limpieza)), limpieza);
   });
   return indiceVigentePromesa;
 }
