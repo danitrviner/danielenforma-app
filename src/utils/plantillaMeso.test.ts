@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { MUSCLE_ORDER, type Mesocycle, type MuscleGroup, type MuscleGroupConfig } from '../types';
-import { etapaDesdeMeso, mesoDesdeEtapa, LUNES_DE_PLANTILLA } from './plantillaMeso';
+import { etapaDesdeMeso, mesoDesdeEtapa, plantillaDesdeMeso, LUNES_DE_PLANTILLA } from './plantillaMeso';
 import { buildSnapshot } from './repartoDesactualizado';
 
 const grupos = Object.fromEntries(MUSCLE_ORDER.map(g => [g, { series: g === 'pecho' ? 12 : 0, priority: 'media' }])) as Record<MuscleGroup, MuscleGroupConfig>;
@@ -61,5 +61,52 @@ describe('meso → etapa → meso', () => {
     const etapa = etapaDesdeMeso({ ...MESO, distribution: { ...MESO.distribution!, snapshot: buildSnapshot(MESO) } },
       { id: 'st', revisiones: { reviewCadenceWeeks: 2, reviewType: 'revision' } });
     expect(etapa.reviewCadenceWeeks).toBe(2);
+  });
+});
+
+describe('mesociclo del atleta → plantilla de biblioteca', () => {
+  const DEL_ATLETA: Mesocycle = {
+    ...MESO,
+    programId: 'prog_1', programOrder: 0,
+    eventosSemana: { '3': { tipo: 'vacaciones' } },
+    vuelveDeParon: true,
+    draft: { pecho: ['banca'] },
+    cdgActitud: 'agresivo',
+  };
+  const DIAS = [{ id: 'd1', name: 'Empuje', exercises: [{
+    exerciseId: 'banca', order: 0, sets: 3, reps: '6-8', rir: 2, restSeconds: 120,
+    weeklyProgression: [{ atWeek: 3, addSets: 1, setRir: 1 }],
+  }] }];
+
+  it('copia el plan y el nombre, y nada del atleta', () => {
+    const tpl = plantillaDesdeMeso(DEL_ATLETA, { ownerId: 'coachUid', etapaId: 'st1', dias: DIAS });
+    expect(tpl.ownerId).toBe('coachUid');
+    expect(tpl.name).toBe('Fuerza invierno');
+    expect(tpl.stages).toHaveLength(1);
+    const etapa = tpl.stages[0];
+    expect(etapa.days).toEqual(DIAS);
+    expect(etapa.days).not.toBe(DIAS);
+    expect(etapa.days![0].exercises[0].weeklyProgression).toEqual([{ atWeek: 3, addSets: 1, setRir: 1 }]);
+    expect(etapa.weeks).toBe(6);
+    expect(etapa.reparto?.nombre).toBe('PPL');
+    expect(etapa.semanasTest).toEqual([5]);
+    const texto = JSON.stringify(tpl);
+    for (const delAtleta of ['atleta@enforma.com', '2026-10-19', 'prog_1', 'vacaciones', 'agresivo', 'vuelveDeParon', 'draft']) {
+      expect(texto).not.toContain(delAtleta);
+    }
+  });
+
+  it('el nombre que pone el coach manda; vacío, el del mesociclo o «Meso #N»', () => {
+    expect(plantillaDesdeMeso(MESO, { ownerId: 'c', etapaId: 's', nombre: '  PPL 3 días ' }).name).toBe('PPL 3 días');
+    expect(plantillaDesdeMeso({ ...MESO, name: undefined }, { ownerId: 'c', etapaId: 's', nombre: ' ' }).name).toBe('Meso #3');
+  });
+
+  it('aplicada a otro atleta, le llega el mismo plan', () => {
+    const tpl = plantillaDesdeMeso(DEL_ATLETA, { ownerId: 'c', etapaId: 's', dias: DIAS });
+    const meso = mesoDesdeEtapa(tpl.stages[0], { id: 'm2', athleteId: 'otro@enforma.com', number: 1, startDate: '2026-11-09' });
+    expect(meso.athleteId).toBe('otro@enforma.com');
+    expect(meso.days).toEqual(DIAS);
+    expect(meso.eventosSemana).toBeUndefined();
+    expect(meso.cdgActitud).toBeUndefined();
   });
 });
