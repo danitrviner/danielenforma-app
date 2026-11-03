@@ -2,7 +2,9 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
 import LimpiarRecetario from './recetario/LimpiarRecetario';
-import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, cargarIndiceRecetas, getRecipeById, cambiarComidasDeReceta, getAccesoGlobalARecetas, saveAccesoGlobalARecetas } from '../dbService';
+import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, cargarIndiceRecetas, getRecipeById, cambiarComidasDeReceta, getAccesoGlobalARecetas, saveAccesoGlobalARecetas, getLimpiezaRecetario, guardarComidasPorTipo } from '../dbService';
+import TablaDeComidas from './recetario/TablaDeComidas';
+import { tablaVigente, tipoParaComidas, type TablaDeComidas as Tabla, type TipoParaComidas } from '../utils/comidasPorTipo';
 import { accesoGlobalKey } from '../hooks/useReglasDeReceta';
 import { idDePaquete, type PaqueteDeRecetas } from '../utils/seleccionDeRecetas';
 import { listaDeMenuVigente, MIN_RECETAS_DE_LISTA, type AccesoGlobalARecetas } from '../utils/accesoARecetas';
@@ -13,7 +15,7 @@ import { GRUPOS_DE_RECETA } from '../utils/grupoDeReceta';
 import { roundQuarter } from '../utils/exchangeHelpers';
 import { macrosDeIntercambios } from '../utils/macrosLegado';
 import { parseBaseGrams } from '../utils/conversionNutricional';
-import { Skeleton, Icon } from './ui';
+import { Skeleton, Icon, Collapsible } from './ui';
 import { EmptyState, Badge, Chip, Dialog, Button, Input } from './ui';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import FotoDeReceta from './FotoDeReceta';
@@ -148,7 +150,11 @@ const EMPTY_FORM: FormState = {
   name: '', photoUrl: '', categories: [], ingredients: [], extras: [], steps: [],
 };
 
-interface Props { coachId: string; }
+interface Props {
+  coachId: string;
+  /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip). */
+  key?: React.Key;
+}
 
 // La clave lleva el dueño: la caché de recetas es por persona desde que cada
 // uno solo ve las suyas (ver getRecipes) — sin el uid, coach y atleta que
@@ -199,7 +205,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
      comidas vale (manda sobre lo que trae el recetario) y la mete en sus paquetes. */
   const { showToast } = useToast();
   const { data: accesoGlobal } = useQuery({ queryKey: accesoGlobalKey, queryFn: getAccesoGlobalARecetas });
-  const paquetes = accesoGlobal?.paquetes ?? [];
+  const paquetes = useMemo(() => accesoGlobal?.paquetes ?? [], [accesoGlobal?.paquetes]);
   const [guardandoReceta, setGuardandoReceta] = useState(false);
   const cambiarComida = async (r: Recipe, franja: number) => {
     const actuales = r.intakeTypes ?? [];
@@ -236,6 +242,27 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
     await guardarPaquetes([...paquetes, { id: idDePaquete(nombre, paquetes), nombre, recipeIds: [r.id] }]);
     setNombrePaquete('');
   };
+  /* Qué tipo de plato va en cada comida (11-2026): se guarda en la limpieza y
+     se aplica al cargar el índice, así que tras guardar se relee. */
+  const { data: limpieza } = useQuery({ queryKey: ['recipeAccess', 'limpieza'], queryFn: getLimpiezaRecetario, staleTime: 5 * 60_000 });
+  const tabla = useMemo(() => tablaVigente(limpieza?.porTipo), [limpieza?.porTipo]);
+  const [guardandoTabla, setGuardandoTabla] = useState(false);
+  const guardarTabla = async (nueva: Tabla) => {
+    setGuardandoTabla(true);
+    try {
+      await guardarComidasPorTipo(nueva);
+      queryClient.setQueryData(['recipeAccess', 'limpieza'], (prev: object | undefined) => ({ ...prev, porTipo: nueva }));
+      setIndiceRecetas(await cargarIndiceRecetas());
+      showToast('Guardado: los menús nuevos ya lo tienen en cuenta.', 'success');
+    } catch { showToast('No se pudo guardar la tabla. Inténtalo otra vez.'); }
+    finally { setGuardandoTabla(false); }
+  };
+  const recuentosPorTipo = useMemo(() => {
+    const m: Partial<Record<TipoParaComidas, number>> = {};
+    for (const r of indiceRecetas) { const t = tipoParaComidas(r); m[t] = (m[t] ?? 0) + 1; }
+    return m;
+  }, [indiceRecetas]);
+
   const cerrarLimpieza = () => {
     setLimpiando(false);
     cargarIndiceRecetas().then(setIndiceRecetas).catch(() => {});
@@ -273,8 +300,14 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
   );
   const favoritas = useMemo(() => new Set(accesoGlobal?.favoritas ?? []), [accesoGlobal?.favoritas]);
   const [vistaMenu, setVistaMenu] = useState<VistaMenu>('todas');
+  /** Paquete que se está mirando (sus recetas, con el resto de filtros encima). */
+  const [paqueteVista, setPaqueteVista] = useState<string | null>(null);
+  const idsDelPaquete = useMemo(
+    () => (paqueteVista ? new Set(paquetes.find(p => p.id === paqueteVista)?.recipeIds ?? []) : null),
+    [paqueteVista, paquetes],
+  );
   const [recetasVisibles, setRecetasVisibles] = useState(POR_PAGINA);
-  useEffect(() => { setRecetasVisibles(POR_PAGINA); }, [recetasCat, recetasRapidas, recetasIntake, vistaMenu, recetasSearchDebounced]);
+  useEffect(() => { setRecetasVisibles(POR_PAGINA); }, [recetasCat, recetasRapidas, recetasIntake, vistaMenu, paqueteVista, recetasSearchDebounced]);
 
   /** Todas las que pasan los filtros, sin tope: con ellas se mete o se saca del menú de golpe. */
   const coincidencias = useMemo(() => {
@@ -286,20 +319,36 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
       if (vistaMenu === 'favoritas' && !favoritas.has(receta.id)) continue;
       if (vistaMenu === 'menu' && !idsDelMenu.has(receta.id)) continue;
       if (vistaMenu === 'fuera' && idsDelMenu.has(receta.id)) continue;
+      if (idsDelPaquete && !idsDelPaquete.has(receta.id)) continue;
       if (termino && !coincideBusqueda(nombre, termino)) continue;
       out.push(receta);
     }
     return out;
-  }, [indiceBuscable, recetasCat, recetasRapidas, recetasIntake, vistaMenu, favoritas, idsDelMenu, recetasSearchDebounced]);
+  }, [indiceBuscable, recetasCat, recetasRapidas, recetasIntake, vistaMenu, favoritas, idsDelMenu, idsDelPaquete, recetasSearchDebounced]);
 
   // Con búsqueda, tope de resultados para no pintar miles de tarjetas si el
   // término es de una letra; sin ella, por tandas.
   const filteredRecetas = recetasSearch
     ? coincidencias.slice(0, TOPE_RESULTADOS_BUSQUEDA)
     : coincidencias.slice(0, recetasVisibles);
-  const hayFiltro = recetasCat !== 'Todas' || recetasIntake != null || vistaMenu !== 'todas' || !!recetasSearchDebounced.trim();
+  const hayFiltro = recetasCat !== 'Todas' || recetasIntake != null || vistaMenu !== 'todas' || !!paqueteVista || !!recetasSearchDebounced.trim();
 
-  const aviso = 'Los atletas que no tengan lista propia usarán esta lista desde ahora; los que la tengan no cambian.';
+  /* Paquetes desde los filtros (11-2026): filtras, «Guardar como paquete», y
+     luego se asigna al atleta desde su generador de menús. */
+  const [nombrePaqueteFiltro, setNombrePaqueteFiltro] = useState<string | null>(null);
+  const guardarFiltroComoPaquete = async () => {
+    const nombre = (nombrePaqueteFiltro ?? '').trim();
+    if (!nombre) return;
+    const ok = await guardarPaquetes([...paquetes, { id: idDePaquete(nombre, paquetes), nombre, recipeIds: coincidencias.map(r => r.id) }]);
+    if (ok) { setNombrePaqueteFiltro(null); showToast(`Paquete «${nombre}» creado con ${coincidencias.length.toLocaleString('es-ES')} recetas.`, 'success'); }
+  };
+  const borrarPaquete = async (id: string) => {
+    const p = paquetes.find(x => x.id === id);
+    if (!p || !(await confirm(`¿Borrar el paquete «${p.nombre}»? Los atletas que lo tengan asignado dejarán de usarlo.`))) return;
+    if (await guardarPaquetes(paquetes.filter(x => x.id !== id))) setPaqueteVista(null);
+  };
+
+  const aviso = 'Les llega a todos los atletas; a los que tengan plan propio se les respeta lo que les añadiste o quitaste.';
   /** Guarda la lista del menú. Vacía = vuelve a las Rápidas. */
   const guardarLista = (ids: Set<string>) =>
     guardarGlobal({ listaMenu: [...ids] }, 'No se pudo guardar el menú. Inténtalo otra vez.');
@@ -549,7 +598,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   ? <>las <strong className="text-ink">Rápidas</strong> ({idsDelMenu.size.toLocaleString('es-ES')})</>
                   : <><strong className="text-ink">tu lista</strong> de {idsDelMenu.size.toLocaleString('es-ES')} recetas</>}
                 {' '}y saca más tus <strong className="text-ink">{favoritas.size.toLocaleString('es-ES')} favoritas</strong> (★, entran aunque no estén en la lista).
-                {' '}Filtra abajo y mete o saca recetas del menú. Los atletas con lista propia (su ficha › Dietas) no cambian.
+                {' '}Filtra abajo y mete o saca recetas del menú. Llega a todos los atletas; a los que tengan plan propio se les respeta lo que les añadiste o quitaste.
               </p>
             </div>
             {listaMenu !== 'rapidas' && (
@@ -567,7 +616,39 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 onClick={() => setVistaMenu(v.value)}>{v.label}</Chip>
             ))}
           </div>
+          <div className="space-y-2 pt-2 border-t border-hairline">
+            <p className="font-mono text-caption uppercase text-ink-2">
+              Paquetes · se asignan a cada atleta desde su generador de menús
+            </p>
+            {paquetes.length === 0 ? (
+              <p className="font-sans text-caption text-ink-3">Aún no hay paquetes. Filtra abajo y pulsa «Guardar como paquete».</p>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                {paquetes.map(p => (
+                  <Chip key={p.id} icon="inventory_2" selected={paqueteVista === p.id}
+                    onClick={() => setPaqueteVista(v => (v === p.id ? null : p.id))}>{p.nombre} · {p.recipeIds.length}</Chip>
+                ))}
+                {paqueteVista && (
+                  <Button variant="ghost" size="s" icon="delete" disabled={guardandoReceta} onClick={() => borrarPaquete(paqueteVista)}>Borrar paquete</Button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
+
+        <Collapsible
+          className="bg-raised border border-hairline rounded-surface px-4 py-2"
+          trigger={(
+            <span className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+              <Icon name="restaurant" size="m" className="text-accent-ink" />
+              Qué va en cada comida
+            </span>
+          )}
+        >
+          <div className="pb-3">
+            <TablaDeComidas valor={tabla} recuentos={recuentosPorTipo} guardando={guardandoTabla} onGuardar={guardarTabla} />
+          </div>
+        </Collapsible>
 
         <div className="w-full overflow-x-auto hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
           <div className="flex gap-2 w-max">
@@ -636,6 +717,12 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                     <Button variant="ghost" size="s" icon="remove" disabled={guardandoReceta}
                       onClick={() => cambiarMenu(coincidencias.filter(r => idsDelMenu.has(r.id)), false)}>
                       Sacar {enMenuVisibles.toLocaleString('es-ES')} del menú
+                    </Button>
+                  )}
+                  {!paqueteVista && (
+                    <Button variant="ghost" size="s" icon="inventory_2" disabled={guardandoReceta}
+                      onClick={() => setNombrePaqueteFiltro('')}>
+                      Guardar como paquete
                     </Button>
                   )}
                 </span>
@@ -979,6 +1066,20 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
           <p className="font-sans text-caption text-ink-2">
             «{recipes.find(r => r.id === confirmDelete)?.name}»
           </p>
+        </Dialog>
+      )}
+      {nombrePaqueteFiltro !== null && (
+        <Dialog open onClose={() => setNombrePaqueteFiltro(null)} title="Guardar como paquete" size="s"
+          footer={(
+            <>
+              <Button variant="secondary" onClick={() => setNombrePaqueteFiltro(null)} className="flex-1">Cancelar</Button>
+              <Button onClick={guardarFiltroComoPaquete} disabled={!nombrePaqueteFiltro.trim() || guardandoReceta} loading={guardandoReceta} className="flex-1">Guardar</Button>
+            </>
+          )}>
+          <form className="space-y-2" onSubmit={e => { e.preventDefault(); guardarFiltroComoPaquete(); }}>
+            <Input label="Nombre" value={nombrePaqueteFiltro} onChange={setNombrePaqueteFiltro} placeholder="P. ej. Desayunos sencillos" />
+            <p className="font-sans text-caption text-ink-2">Con las {coincidencias.length.toLocaleString('es-ES')} recetas que pasan los filtros.</p>
+          </form>
         </Dialog>
       )}
       {limpiando && <LimpiarRecetario onCerrar={cerrarLimpieza} />}

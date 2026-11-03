@@ -256,6 +256,9 @@ export function resumirReglasDeReceta(
     const texto = (xs: string[]) => (xs.length ? `${xs.length} recetas` : 'la general');
     l.push(`Lista del menú: ${flecha(texto(listaA), texto(listaD))}`);
   }
+  // Plan como cambios sobre la plantilla (11-2026).
+  l.push(...difLista(antes?.ajustesMenu?.mas ?? [], despues.ajustesMenu?.mas ?? [], 'Añadidas a su plan', nombreDe));
+  l.push(...difLista(antes?.ajustesMenu?.menos ?? [], despues.ajustesMenu?.menos ?? [], 'Quitadas de su plan', nombreDe));
   const recA = antes?.recetario ?? 'todas';
   const recD = despues.recetario ?? 'todas';
   if (recA !== recD) l.push(`Recetario: ${flecha(ETIQUETA_RECETARIO[recA], ETIQUETA_RECETARIO[recD])}`);

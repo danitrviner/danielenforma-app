@@ -59,7 +59,7 @@ export function useListaDeMenu(email: string | undefined): ListaDeMenu {
     queryFn: getAccesoGlobalARecetas,
     staleTime: 5 * 60_000,
   });
-  return listaDeMenuVigente(reglas?.listaMenu, global?.listaMenu);
+  return listaDeMenuVigente(reglas?.listaMenu, global?.listaMenu, reglas?.ajustesMenu);
 }
 
 const SIN_PAQUETES: PaqueteDeRecetas[] = [];

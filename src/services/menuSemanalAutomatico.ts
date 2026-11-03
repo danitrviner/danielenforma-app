@@ -69,10 +69,11 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
     preferredDishTypes: (nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],
     excludedDishTypes: (nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as DishType[],
     recetasOcultas: reglas.reglas,
-    listaMenu: listaDeMenuVigente(reglas.listaMenu, acceso.listaMenu),
+    listaMenu: listaDeMenuVigente(reglas.listaMenu, acceso.listaMenu, reglas.ajustesMenu),
     seleccion: reglas.seleccion,
     paquetes: acceso.paquetes ?? [],
     favoritasDelCoach: acceso.favoritas ?? [],
+    azar: Math.random,
     // Lo que ha cambiado en sus menús anteriores: recetas que quita, alimentos que sustituye.
     cambios: senalesDeCambios(todosLosMenus),
   };

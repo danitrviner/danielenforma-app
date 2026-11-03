@@ -28,6 +28,7 @@ import { DISH_TYPES, DishType } from '../utils/dishTypes';
 import { Icon, Button, Input, ProgressBar, Select } from './ui';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import FotoDeReceta from './FotoDeReceta';
+import PaquetesDelGenerador from './PaquetesDelGenerador';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WEEK_DAY_FULL: Record<WeekDay, string> = {
@@ -207,6 +208,8 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     seleccion,
     paquetes,
     favoritasDelCoach,
+    // Cada «Generar» sale distinto (entre las recetas que cuadran bien).
+    azar: Math.random,
     cambios,
   }), [onboarding, nutritionConfig, variety, favorites, preferredDish, excludedDish, recetasOcultas, listaMenu, seleccion, paquetes, favoritasDelCoach, cambios]);
 
@@ -459,6 +462,8 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
             <p className="text-ink-2 text-label font-sans">Las recetas son la base — con las kcal y macros pautados para cada día</p>
           </div>
         </div>
+
+        <PaquetesDelGenerador athleteEmail={athleteEmail} />
 
         {scheduledCount === 0 ? (
           <div className="bg-warning/10 border border-warning/20 rounded-surface p-4 flex items-start gap-2">

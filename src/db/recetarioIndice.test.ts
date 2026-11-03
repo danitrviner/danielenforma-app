@@ -14,6 +14,13 @@ import { queryRecetas, queryRecetasForGenerator, cargarIndiceRecetas } from './r
  * mismo resultado que daba la consulta de Firestore, porque toda la pantalla
  * depende de eso y ya no hay servidor que corrija un fallo de recorte. */
 
+// La tabla tipo de plato × comida (comidasPorTipo) cambiaría las comidas de
+// estos platos de ejemplo; aquí se prueba la paginación y el recorte, no eso.
+vi.mock('../utils/comidasPorTipo', async orig => ({
+  ...(await orig<typeof import('../utils/comidasPorTipo')>()),
+  conComidasPorTipo: <T,>(recetas: T[]) => recetas,
+}));
+
 const receta = (id: string, name: string, extra: Record<string, unknown> = {}) => ({
   id, name, intakeTypes: [1], ingredientsText: [], ...extra,
 });
