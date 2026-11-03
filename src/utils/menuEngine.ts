@@ -132,6 +132,9 @@ const MIN_RECETAS_PARA_EXCLUIR = 5;
 
 // ── Preferencias, en kcal de error equivalentes ──
 const BONO_FAVORITA = 300;
+/** Favorita del coach (Biblioteca › Recetas): para todos los atletas, algo
+ *  menos que una del propio atleta. Se suman si es de los dos. */
+const BONO_FAVORITA_COACH = 200;
 const BONO_TIPO_PREFERIDO = 150;
 const CASTIGO_NO_GUSTA = 200;
 const BONO_GUSTA = 50;
@@ -211,6 +214,8 @@ export interface GeneratorPrefs {
   quiereRapidas?: boolean;
   variety: number; // 1 (monotone) - 5 (max variety)
   favoriteRecipeIds?: string[];  // strong bonus — surface these much more
+  /** Favoritas del coach (`recipeAccess/global.favoritas`): bono para todos. */
+  favoritasDelCoach?: string[];
   dislikedRecipeIds?: string[];  // hard-excluded ("no me gusta")
   preferredDishTypes?: DishType[]; // strong bonus for these dish types
   excludedDishTypes?: DishType[];  // hard-excluded dish types
@@ -601,6 +606,7 @@ export function rankCandidates(
   const mode = opts.mode ?? 'OMNIVORO';
   const disliked = new Set(prefs.dislikedRecipeIds ?? []);
   const favorites = new Set(prefs.favoriteRecipeIds ?? []);
+  const delCoach = new Set(prefs.favoritasDelCoach ?? []);
   const excludedDish = new Set(prefs.excludedDishTypes ?? []);
   const preferredDish = new Set(prefs.preferredDishTypes ?? []);
   const evitadas = prefs.cambios?.evitadas ?? {};
@@ -646,6 +652,7 @@ export function rankCandidates(
     let score = fit.score;
     const dt = dishType(recipe);
     if (favorites.has(recipe.id)) score -= BONO_FAVORITA;
+    if (delCoach.has(recipe.id)) score -= BONO_FAVORITA_COACH;
     if (preferredDish.has(dt)) score -= BONO_TIPO_PREFERIDO;
     score -= BONO_POR_GUSTO_DE_TIPO * (gustoDeTipo.get(dt) ?? 0);
     score += CASTIGO_CAMBIADA * Math.min(MAX_VECES_CAMBIADA, evitadas[recipe.id] ?? 0);

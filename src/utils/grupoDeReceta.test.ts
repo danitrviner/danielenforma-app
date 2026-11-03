@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { grupoDeReceta } from './grupoDeReceta';
+import { grupoDeReceta, esBocadilloOWrap } from './grupoDeReceta';
 
 const g = (name: string, categoria = 'Platos salados / principales') => grupoDeReceta({ name, categoria });
 
@@ -45,5 +45,21 @@ describe('grupo de una receta', () => {
   it('sin palabra clave cae a su categoría de origen', () => {
     expect(g('Mug cake', 'Desayuno y dulces')).toBe('Dulces y postres');
     expect(g('Agua', 'Bebidas')).toBe('Bebidas');
+  });
+});
+
+describe('bocadillos y wraps (fuera de los desayunos)', () => {
+  const b = (name: string) => esBocadilloOWrap({ name, categoria: 'Platos salados / principales' });
+  it('bocadillos, montaditos y wraps sí', () => {
+    expect(b('Bocadillo de atún (P), lechuga y tomate')).toBe(true);
+    expect(b('Montadito de lomo')).toBe(true);
+    expect(b('Wrap de pechuga de pavo (P), queso de untar y rúcula')).toBe(true);
+    expect(b('Burrito de ternera y alubias')).toBe(true);
+  });
+  it('tostadas, pan y bagels no: esos sí son de desayuno', () => {
+    expect(b('Pan tostado integral con aguacate y semillas de calabaza')).toBe(false);
+    expect(b('Tostada de aguacate y huevo')).toBe(false);
+    expect(b('Bagel de salmón ahumado, queso de untar y rúcula')).toBe(false);
+    expect(b('Avena con plátano')).toBe(false);
   });
 });

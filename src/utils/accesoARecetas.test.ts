@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  listaDeMenuVigente, modoRecetarioVigente, filtrarPorLista, entraEnRecetario, MIN_RECETAS_DE_LISTA,
+  listaDeMenuVigente, modoRecetarioVigente, filtrarPorLista, entraEnRecetario, MIN_RECETAS_DE_LISTA, estaEnLaLista,
 } from './accesoARecetas';
 
 const pool = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `r${i}` }));
@@ -57,5 +57,17 @@ describe('recetario', () => {
   it('sin recomendadas no esconde nada', () => {
     expect(entraEnRecetario('b', 'recomendadas', [])).toBe(true);
     expect(entraEnRecetario('b', 'todas', ['a'])).toBe(true);
+  });
+});
+
+describe('favoritas del coach con la lista', () => {
+  it('entran aunque no estén en la lista', () => {
+    const lista = ['r0', 'r1', 'r2', 'r3', 'r4'];
+    expect(filtrarPorLista(pool(10), lista, ['r9']).map(r => r.id)).toEqual([...lista, 'r9']);
+  });
+  it('con las Rápidas, «en la lista» son las básicas', () => {
+    expect(estaEnLaLista({ id: 'a', basica: true }, 'rapidas')).toBe(true);
+    expect(estaEnLaLista({ id: 'a' }, 'rapidas')).toBe(false);
+    expect(estaEnLaLista({ id: 'a' }, ['a'])).toBe(true);
   });
 });

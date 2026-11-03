@@ -63,12 +63,14 @@ export function useListaDeMenu(email: string | undefined): ListaDeMenu {
 }
 
 const SIN_PAQUETES: PaqueteDeRecetas[] = [];
+const SIN_FAVORITAS: string[] = [];
 
 /**
- * Filtros del coach por dieta y sus paquetes (seleccionDeRecetas.ts). Comparte
+ * Filtros del coach por dieta, sus paquetes (seleccionDeRecetas.ts) y sus
+ * favoritas (Biblioteca › Recetas). Comparte
  * las dos lecturas de `useListaDeMenu`: no cuesta ninguna más.
  */
-export function useSeleccionDeRecetas(email: string | undefined): { seleccion?: SeleccionDeRecetas; paquetes: PaqueteDeRecetas[] } {
+export function useSeleccionDeRecetas(email: string | undefined): { seleccion?: SeleccionDeRecetas; paquetes: PaqueteDeRecetas[]; favoritasDelCoach: string[] } {
   const { data: reglas } = useQuery({
     queryKey: reglasDeRecetaKey(email ?? ''),
     queryFn: () => getReglasDeReceta(email!),
@@ -82,7 +84,8 @@ export function useSeleccionDeRecetas(email: string | undefined): { seleccion?: 
   });
   const seleccion = reglas?.seleccion;
   const paquetes = global?.paquetes ?? SIN_PAQUETES;
-  return useMemo(() => ({ seleccion, paquetes }), [seleccion, paquetes]);
+  const favoritasDelCoach = global?.favoritas ?? SIN_FAVORITAS;
+  return useMemo(() => ({ seleccion, paquetes, favoritasDelCoach }), [seleccion, paquetes, favoritasDelCoach]);
 }
 
 /** Qué navega el atleta en el recetario: todas, o solo las que le recomienda el coach. */

@@ -554,6 +554,21 @@ describe('recipe favorites / dislikes / dish-type prefs', () => {
     expect(ranked[0].recipe.id).toBe('tostada');
   });
 
+  it('adelanta las favoritas del coach (Biblioteca › Recetas)', () => {
+    for (const fav of ['batido', 'tostada']) {
+      const ranked = rankCandidates([batido, tostada], mx(target), { ...basePrefs, favoritasDelCoach: [fav] }, new Set());
+      expect(ranked[0].recipe.id).toBe(fav);
+    }
+  });
+
+  it('una favorita del coach entra aunque no esté en la lista del menú', () => {
+    const otras = [1, 2, 3, 4, 5].map(i => recipe({ id: `l${i}`, name: `Lista ${i}`, exchanges: { HC: 2, PROT: 2, GRASA: 1 } }));
+    const prefs = { ...basePrefs, listaMenu: otras.map(r => r.id), favoritasDelCoach: ['tostada'] };
+    const ids = rankCandidates([...otras, batido, tostada], mx(target), prefs, new Set()).map(c => c.recipe.id);
+    expect(ids).toContain('tostada');
+    expect(ids).not.toContain('batido');
+  });
+
   it('penalizes repeating a dish type already used', () => {
     const usedDishTypes = new Map([['batido' as const, 1]]);
     const ranked = rankCandidates([batido, tostada], mx(target), basePrefs, new Set(), { usedDishTypes });

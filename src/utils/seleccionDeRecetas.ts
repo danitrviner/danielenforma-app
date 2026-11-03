@@ -145,6 +145,8 @@ export interface ConSeleccion {
   listaMenu?: ListaDeMenu;
   seleccion?: SeleccionDeRecetas;
   paquetes?: PaqueteDeRecetas[];
+  /** Favoritas del coach: entran con la lista aunque no estén en ella. */
+  favoritasDelCoach?: string[];
 }
 
 /**
@@ -166,7 +168,7 @@ export function aplicarSeleccion<T extends Recipe>(
     const dentro = pool.filter(compilarFiltro(filtro, prefs.paquetes, conTiempo));
     if (dentro.length >= MIN_RECETAS_DE_LISTA) return { pool: dentro, conTiempo };
   }
-  return { pool: filtrarPorLista(pool, prefs.listaMenu), conTiempo };
+  return { pool: filtrarPorLista(pool, prefs.listaMenu, prefs.favoritasDelCoach), conTiempo };
 }
 
 /**
@@ -182,6 +184,19 @@ export function quiereAlgunaDieta(
   if (filtros.length === 0) return undefined;
   const pasan = filtros.map(f => compilarFiltro(f, paquetes, false));
   return r => pasan.some(p => p(r));
+}
+
+/**
+ * Lo que se suma a la muestra de una comida: lo que quiere alguna dieta y las
+ * favoritas del coach, que si no podían quedarse fuera de las 300 al azar.
+ */
+export function tambienEnLaMuestra(
+  sel: SeleccionDeRecetas | undefined, paquetes: readonly PaqueteDeRecetas[] = [], favoritas: readonly string[] = [],
+): ((r: Recipe) => boolean) | undefined {
+  const dieta = quiereAlgunaDieta(sel, paquetes);
+  if (favoritas.length === 0) return dieta;
+  const fav = new Set(favoritas);
+  return r => fav.has(r.id) || (dieta?.(r) ?? false);
 }
 
 /** Suma lo de una plantilla a un filtro: los «solo» se encienden y las listas se juntan. */

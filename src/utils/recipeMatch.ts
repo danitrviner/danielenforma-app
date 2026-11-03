@@ -81,6 +81,8 @@ export interface AlternativePrefs {
   likedFoods?: string[];
   /** Señal blanda: prima sus recetas favoritas. */
   favoriteRecipeIds?: string[];
+  /** Señal blanda: prima las favoritas del coach (Biblioteca › Recetas). */
+  favoritasDelCoach?: string[];
   /** Señal blanda: prima los tipos de plato que prefiere. */
   preferredDishTypes?: DishType[];
   /** Señal blanda: prima las Rápidas (pidió recetas de supervivencia). */
@@ -183,6 +185,7 @@ export function findRecipeAlternatives(
 
   const disliked = new Set(prefs.dislikedRecipeIds ?? []);
   const favorites = new Set(prefs.favoriteRecipeIds ?? []);
+  const delCoach = new Set(prefs.favoritasDelCoach ?? []);
   const excludedDish = new Set(prefs.excludedDishTypes ?? []);
   const preferredDish = new Set(prefs.preferredDishTypes ?? []);
   const allergies = prefs.allergies ?? [];
@@ -226,6 +229,7 @@ export function findRecipeAlternatives(
     let score = (kcalDrift / 100) * 4
       + Math.abs(m.p - sourceM.p) / 25 + Math.abs(m.hc - sourceM.hc) / 25 + Math.abs(m.g - sourceM.g) / 11;
     if (favorites.has(r.id)) score -= 3;
+    if (delCoach.has(r.id)) score -= 2;
     if (preferredDish.has(dt)) score -= 1.5;
     if (prefs.quiereRapidas && !conTiempo && r.basica) score -= 1.5;
     if ((prefs.likedFoods ?? []).some(f => ingredientMatch(r, f))) score -= 0.5;

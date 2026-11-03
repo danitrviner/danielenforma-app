@@ -1,5 +1,5 @@
 import { useReglasDeReceta, useListaDeMenu, useSeleccionDeRecetas } from '../hooks/useReglasDeReceta';
-import { quiereAlgunaDieta } from '../utils/seleccionDeRecetas';
+import { tambienEnLaMuestra } from '../utils/seleccionDeRecetas';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -186,7 +186,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
 
   const recetasOcultas = useReglasDeReceta(athleteEmail);
   const listaMenu = useListaDeMenu(athleteEmail);
-  const { seleccion, paquetes } = useSeleccionDeRecetas(athleteEmail);
+  const { seleccion, paquetes, favoritasDelCoach } = useSeleccionDeRecetas(athleteEmail);
   const prefs: GeneratorPrefs = useMemo(() => ({
     allergies: onboarding?.allergies ?? [],
     conditions: athleteConditions(onboarding),
@@ -206,8 +206,9 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     listaMenu,
     seleccion,
     paquetes,
+    favoritasDelCoach,
     cambios,
-  }), [onboarding, nutritionConfig, variety, favorites, preferredDish, excludedDish, recetasOcultas, listaMenu, seleccion, paquetes, cambios]);
+  }), [onboarding, nutritionConfig, variety, favorites, preferredDish, excludedDish, recetasOcultas, listaMenu, seleccion, paquetes, favoritasDelCoach, cambios]);
 
   function cycleDishType(id: string) {
     if (preferredDish.includes(id)) { setPreferredDish(p => p.filter(x => x !== id)); setExcludedDish(e => [...e, id]); }
@@ -270,7 +271,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   async function ensurePool(slot: number): Promise<Recipe[]> {
     const cached = pools[slot];
     if (cached) return cached;
-    const [recetas, builder] = await Promise.all([queryRecetasForGenerator(slot, 300, listaMenu, quiereAlgunaDieta(seleccion, paquetes), filtroDuro(prefs)), ensureBuilderRecipes()]);
+    const [recetas, builder] = await Promise.all([queryRecetasForGenerator(slot, 300, listaMenu, tambienEnLaMuestra(seleccion, paquetes, favoritasDelCoach), filtroDuro(prefs)), ensureBuilderRecipes()]);
     const combined = [...recetas, ...builder.filter(r => recipeMatchesSlot(r, slot))];
     setPools(prev => ({ ...prev, [slot]: combined }));
     return combined;

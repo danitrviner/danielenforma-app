@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Recipe } from '../types';
 import {
   aplicarSeleccion, compilarFiltro, conDiasConTiempo, conFiltro, esDiaConTiempo, filtroDeDieta, filtroVacio,
-  idDePaquete, llevaAlimento, quiereAlgunaDieta, resumenDeFiltro, sumarFiltro, TODAS_LAS_DIETAS,
+  idDePaquete, llevaAlimento, quiereAlgunaDieta, tambienEnLaMuestra, resumenDeFiltro, sumarFiltro, TODAS_LAS_DIETAS,
   type PaqueteDeRecetas, type SeleccionDeRecetas,
 } from './seleccionDeRecetas';
 import { rankCandidates, type GeneratorPrefs } from './menuEngine';
@@ -187,5 +187,14 @@ describe('el generador respeta la selección por dieta', () => {
     const origen = receta('origen', { basica: true });
     const alt = findRecipeAlternatives(origen, pool, { prefs, dietId: 'descanso', dias: ['mon'], diversify: false, limit: 50 });
     expect(new Set(alt.map(a => a.recipe.id[0]))).toEqual(new Set(['g']));
+  });
+});
+
+describe('tambienEnLaMuestra', () => {
+  it('suma las favoritas del coach a lo que quiere alguna dieta', () => {
+    expect(tambienEnLaMuestra(undefined, [], [])).toBeUndefined();
+    const t = tambienEnLaMuestra(undefined, [], ['fav'])!;
+    expect(t({ id: 'fav' } as Recipe)).toBe(true);
+    expect(t({ id: 'otra' } as Recipe)).toBe(false);
   });
 });
