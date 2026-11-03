@@ -1,5 +1,5 @@
 import type { WeekDay } from '../types.js';
-import type { ModoRecetario } from './accesoARecetas.js';
+import type { AjustesDeLista, ModoRecetario } from './accesoARecetas.js';
 import type { SeleccionDeRecetas } from './seleccionDeRecetas.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -40,6 +40,10 @@ export interface ReglasDeReceta {
   /** Recetas con las que el generador trabaja para ESTE atleta (10-2026, N-03).
    *  Gana a la lista global; ausente = la global, o todas. Ver accesoARecetas.ts. */
   listaMenu?: string[];
+  /** Su plan como CAMBIOS sobre la plantilla del coach (11-2026): lo que se le
+   *  añade y lo que se le quita. Así lo que el coach cambia en su lista le sigue
+   *  llegando. `listaMenu` (la lista entera, de antes) gana si existe. */
+  ajustesMenu?: AjustesDeLista;
   /** Qué navega el atleta en el recetario. Ausente = todas. */
   recetario?: ModoRecetario;
   /** Qué recetas usa el generador con cada dieta (10-2026). Ver seleccionDeRecetas.ts. */

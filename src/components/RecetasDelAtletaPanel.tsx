@@ -17,7 +17,7 @@ import {
 } from '../utils/poolDelAtleta';
 import { etiquetaDeTiempo, minutosDeReceta, superaElTiempo } from '../utils/tiempoDeReceta';
 import { slotsFromOnboarding } from '../utils/menuEngine';
-import { listaDeMenuVigente, filtrarPorLista, modoRecetarioVigente, MIN_RECETAS_DE_LISTA, type ModoRecetario } from '../utils/accesoARecetas';
+import { listaDeMenuVigente, filtrarPorLista, modoRecetarioVigente, aplicarAjustes, ajustesEntre, MIN_RECETAS_DE_LISTA, type ModoRecetario } from '../utils/accesoARecetas';
 import {
   conFiltro, filtroVacio, idDePaquete, TODAS_LAS_DIETAS, type FiltroDeRecetas, type PaqueteDeRecetas, type SeleccionDeRecetas,
   llevaAlimento,
@@ -206,7 +206,10 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
   const paquetes = global?.paquetes ?? SIN_PAQUETES;
   const recsGuardadas = doc?.recomendadas ?? SIN_IDS;
   const reglas = useMemo(() => doc?.reglas ?? [], [doc]);
-  const propia = (doc?.listaMenu?.length ?? 0) > 0;
+  /** Lista entera de antes (sigue mandando si existe). */
+  const listaEntera = (doc?.listaMenu?.length ?? 0) > 0;
+  const conAjustes = (doc?.ajustesMenu?.mas?.length ?? 0) + (doc?.ajustesMenu?.menos?.length ?? 0) > 0;
+  const propia = listaEntera || conAjustes;
 
   // La plantilla: lo que tiene un atleta sin plan propio (la lista global, o las Rápidas).
   const plantilla = useMemo(() => {
@@ -214,8 +217,8 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
     return new Set(v === 'rapidas' ? filtrarPorLista(indice, 'rapidas').map(r => r.id) : v);
   }, [global, indice]);
   const planGuardado = useMemo(
-    () => (propia ? new Set(doc!.listaMenu) : plantilla),
-    [propia, doc, plantilla],
+    () => (listaEntera ? new Set(doc!.listaMenu) : conAjustes ? new Set(aplicarAjustes([...plantilla], doc!.ajustesMenu)) : plantilla),
+    [listaEntera, conAjustes, doc, plantilla],
   );
 
   // Borrador: `null` = sin tocar (manda lo guardado).
@@ -384,8 +387,13 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
   });
 
   const aplicar = () => {
-    // Igual que la plantilla = sin plan propio: así le llegan los cambios de la plantilla.
-    const listaMenu = mismoConjunto(plan, plantilla) ? [] : [...plan];
+    // Se guarda como cambios sobre la plantilla, para que lo que cambies en ella
+    // le siga llegando (11-2026). Igual que la plantilla = sin cambios. Con las
+    // Rápidas de plantilla (no hay lista global) se guarda entera, como antes.
+    const sinCambios = mismoConjunto(plan, plantilla);
+    const hayGlobal = (global?.listaMenu?.length ?? 0) > 0;
+    const listaMenu = sinCambios || hayGlobal ? [] : [...plan];
+    const ajustesMenu = sinCambios || !hayGlobal ? { mas: [], menos: [] } : ajustesEntre(plantilla, plan);
     // Recomendar una receta escondida la vuelve a permitir (ver conRecomendada);
     // solo con las que se recomiendan ahora, no con las de antes.
     const nuevas = new Set(recs.filter(id => !recsGuardadas.includes(id)));
@@ -393,6 +401,7 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
     guardar.mutate({
       athleteId: athleteEmail,
       listaMenu,
+      ajustesMenu,
       recomendadas: recs,
       ...(reglasLimpias.length !== reglas.length ? { reglas: reglasLimpias } : {}),
     });
@@ -494,7 +503,9 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
           </div>
         ) : (
           <span className="font-mono text-caption text-ink-3 py-3">
-            {propia ? 'Plan propio' : 'Sigue la plantilla'} · sin cambios pendientes
+            {listaEntera ? 'Plan propio (lista entera)'
+              : conAjustes ? `Tu plantilla · ${doc?.ajustesMenu?.mas?.length ?? 0} añadidas, ${doc?.ajustesMenu?.menos?.length ?? 0} quitadas`
+              : 'Sigue la plantilla'} · sin cambios pendientes
           </span>
         )}
       </div>

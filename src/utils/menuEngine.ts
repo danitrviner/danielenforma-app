@@ -135,6 +135,10 @@ const BONO_FAVORITA = 300;
 /** Favorita del coach (Biblioteca › Recetas): para todos los atletas, algo
  *  menos que una del propio atleta. Se suman si es de los dos. */
 const BONO_FAVORITA_COACH = 200;
+/** Azar entre las recetas que cuadran bien (Dani, 11-2026: «siempre me sale la
+ *  misma»). Sin él gana siempre la que mejor clava las kcal. Menos que una
+ *  favorita, para que las preferencias sigan pesando. */
+const AZAR_EN_BANDA = 200;
 const BONO_TIPO_PREFERIDO = 150;
 const CASTIGO_NO_GUSTA = 200;
 const BONO_GUSTA = 50;
@@ -216,6 +220,9 @@ export interface GeneratorPrefs {
   favoriteRecipeIds?: string[];  // strong bonus — surface these much more
   /** Favoritas del coach (`recipeAccess/global.favoritas`): bono para todos. */
   favoritasDelCoach?: string[];
+  /** Fuente de azar (p. ej. `Math.random`) para que cada «Generar» salga
+   *  distinto. Sin ella el orden es fijo (tests, cambios de comida). */
+  azar?: () => number;
   dislikedRecipeIds?: string[];  // hard-excluded ("no me gusta")
   preferredDishTypes?: DishType[]; // strong bonus for these dish types
   excludedDishTypes?: DishType[];  // hard-excluded dish types
@@ -667,6 +674,7 @@ export function rankCandidates(
     const dishReuse = opts.usedDishTypes?.get(dt) ?? 0;
     if (dishReuse > 0) score += CASTIGO_TIPO_REPETIDO * dishReuse;
     if (fit.score > limite) score += FUERA_DE_BANDA;
+    else if (prefs.azar) score += AZAR_EN_BANDA * prefs.azar();
     scored.push({ recipe, scale: fit.scale, macros: fit.macros, score, ...(fit.ajuste ? { ajuste: fit.ajuste } : {}) });
   }
   return scored.sort((a, b) => a.score - b.score);

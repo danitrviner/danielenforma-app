@@ -38,17 +38,43 @@ export interface AccesoGlobalARecetas {
  *  opciones es peor que un menú con más variedad de la pedida. */
 export const MIN_RECETAS_DE_LISTA = 5;
 
+/** El plan de un atleta como cambios sobre la plantilla (11-2026). */
+export interface AjustesDeLista {
+  mas?: string[];
+  menos?: string[];
+}
+
 /**
- * Lista que manda para un atleta: la suya si existe, si no la global, si no las
- * Rápidas. Una lista vacía cuenta como «no hay lista»: dejar al atleta sin
- * ninguna receta no es una decisión, es un descuido.
+ * Lista que manda para un atleta: la suya entera si existe (las de antes), si
+ * no la global con sus ajustes (lo añadido y lo quitado), si no las Rápidas.
+ * Una lista vacía cuenta como «no hay lista»: dejar al atleta sin ninguna
+ * receta no es una decisión, es un descuido. Sobre las Rápidas no hay ajustes:
+ * con ellas de plantilla, el plan propio se guarda entero.
  */
 export function listaDeMenuVigente(
-  personal: string[] | undefined, global: string[] | undefined,
+  personal: string[] | undefined, global: string[] | undefined, ajustes?: AjustesDeLista,
 ): ListaDeMenu {
   if (personal && personal.length > 0) return personal;
-  if (global && global.length > 0) return global;
+  if (global && global.length > 0) return aplicarAjustes(global, ajustes);
   return 'rapidas';
+}
+
+/** La plantilla con lo añadido y sin lo quitado. */
+export function aplicarAjustes(base: string[], ajustes?: AjustesDeLista): string[] {
+  if (!ajustes?.mas?.length && !ajustes?.menos?.length) return base;
+  const fuera = new Set(ajustes.menos ?? []);
+  const out = base.filter(id => !fuera.has(id));
+  const ya = new Set(out);
+  for (const id of ajustes.mas ?? []) if (!ya.has(id)) { out.push(id); ya.add(id); }
+  return out.length > 0 ? out : base;
+}
+
+/** Lo que cambia un plan respecto a la plantilla. */
+export function ajustesEntre(plantilla: ReadonlySet<string>, plan: ReadonlySet<string>): Required<AjustesDeLista> {
+  return {
+    mas: [...plan].filter(id => !plantilla.has(id)),
+    menos: [...plantilla].filter(id => !plan.has(id)),
+  };
 }
 
 /** Modo del recetario del atleta. Sin dato, todas. */

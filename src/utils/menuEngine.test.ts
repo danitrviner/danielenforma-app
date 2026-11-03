@@ -569,6 +569,17 @@ describe('recipe favorites / dislikes / dish-type prefs', () => {
     expect(ids).not.toContain('batido');
   });
 
+  it('con azar, las que cuadran bien se turnan; sin azar el orden es fijo', () => {
+    const iguales = [1, 2, 3, 4, 5, 6].map(i => recipe({ id: `t${i}`, name: `Tostada ${i}`, exchanges: { HC: 2, PROT: 2, GRASA: 1 } }));
+    const primeras = new Set<string>();
+    let semilla = 1;
+    const azar = () => { semilla = (semilla * 16807) % 2147483647; return semilla / 2147483647; };
+    for (let i = 0; i < 20; i++) primeras.add(rankCandidates(iguales, mx(target), { ...basePrefs, azar }, new Set())[0].recipe.id);
+    expect(primeras.size).toBeGreaterThan(2);
+    const fijo = () => rankCandidates(iguales, mx(target), basePrefs, new Set())[0].recipe.id;
+    expect(fijo()).toBe(fijo());
+  });
+
   it('penalizes repeating a dish type already used', () => {
     const usedDishTypes = new Map([['batido' as const, 1]]);
     const ranked = rankCandidates([batido, tostada], mx(target), basePrefs, new Set(), { usedDishTypes });

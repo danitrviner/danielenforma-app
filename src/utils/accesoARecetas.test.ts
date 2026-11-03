@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  listaDeMenuVigente, modoRecetarioVigente, filtrarPorLista, entraEnRecetario, MIN_RECETAS_DE_LISTA, estaEnLaLista,
+  listaDeMenuVigente, modoRecetarioVigente, filtrarPorLista, entraEnRecetario, MIN_RECETAS_DE_LISTA, estaEnLaLista, aplicarAjustes, ajustesEntre,
 } from './accesoARecetas';
 
 const pool = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `r${i}` }));
@@ -69,5 +69,24 @@ describe('favoritas del coach con la lista', () => {
     expect(estaEnLaLista({ id: 'a', basica: true }, 'rapidas')).toBe(true);
     expect(estaEnLaLista({ id: 'a' }, 'rapidas')).toBe(false);
     expect(estaEnLaLista({ id: 'a' }, ['a'])).toBe(true);
+  });
+});
+
+describe('plan del atleta como cambios sobre la plantilla', () => {
+  it('lo que cambia el coach en su lista le sigue llegando', () => {
+    const ajustes = { mas: ['x'], menos: ['b'] };
+    expect(listaDeMenuVigente(undefined, ['a', 'b', 'c'], ajustes)).toEqual(['a', 'c', 'x']);
+    // El coach añade «d» a su lista: al atleta le llega sin tocar su plan.
+    expect(listaDeMenuVigente(undefined, ['a', 'b', 'c', 'd'], ajustes)).toEqual(['a', 'c', 'd', 'x']);
+  });
+  it('la lista entera de antes sigue ganando; sobre las Rápidas no hay ajustes', () => {
+    expect(listaDeMenuVigente(['z'], ['a'], { mas: ['x'] })).toEqual(['z']);
+    expect(listaDeMenuVigente(undefined, undefined, { mas: ['x'] })).toBe('rapidas');
+  });
+  it('quitarlo todo no deja al atleta sin recetas', () => {
+    expect(aplicarAjustes(['a'], { menos: ['a'] })).toEqual(['a']);
+  });
+  it('ajustesEntre saca lo añadido y lo quitado', () => {
+    expect(ajustesEntre(new Set(['a', 'b']), new Set(['b', 'c']))).toEqual({ mas: ['c'], menos: ['a'] });
   });
 });

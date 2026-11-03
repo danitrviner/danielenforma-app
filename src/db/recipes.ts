@@ -7,7 +7,7 @@ import { OWNER_RECETARIO, OWNER_RECETARIO_TODOS, hidratarEntradaIndice, encajaCa
 import { escribirLocal } from '../utils/almacenLocal';
 import { registrarCambio } from './cambios';
 import { resumirReglasDeReceta } from '../utils/cambiosAtleta';
-import { esBocadilloOWrap } from '../utils/grupoDeReceta';
+import { conComidasPorTipo, type TablaDeComidas } from '../utils/comidasPorTipo';
 
 export { OWNER_RECETARIO, OWNER_RECETARIO_TODOS };
 export { CAT_BASICAS, encajaCategoria, FILTROS_RAPIDAS } from './recetasHidratacion';
@@ -190,6 +190,9 @@ export interface LimpiezaRecetario {
    *  en lugar de las que trae el recetario (11-2026). Manda en todo: recetario,
    *  generador de menús y «Encajan en tu…». */
   comidas?: Record<string, number[]>;
+  /** Qué tipo de plato va en cada comida (utils/comidasPorTipo.ts), la tabla
+   *  entera. Ausente = lo recomendado. `comidas` manda sobre esto. */
+  porTipo?: TablaDeComidas;
   updatedAt?: string;
 }
 export type EstadoDeLimpieza = 'retirada' | 'mantenida' | 'sin_revisar';
@@ -213,20 +216,6 @@ export function sinRetiradas(recetas: Recipe[], limpieza: LimpiezaRecetario): Re
   return Object.keys(fuera).length ? recetas.filter(r => !(r.id in fuera)) : recetas;
 }
 
-const DESAYUNO = 1;
-
-/** Bocadillos y wraps fuera de los desayunos (Dani, 11-2026). Va antes de
- *  `conComidasDelCoach`: si el coach le vuelve a poner desayuno a uno, manda él. */
-export function sinBocadillosEnDesayuno(recetas: Recipe[]): Recipe[] {
-  return recetas.map(r => {
-    const it = r.intakeTypes ?? [];
-    if (!it.includes(DESAYUNO) || !esBocadilloOWrap(r)) return r;
-    const resto = it.filter(x => x !== DESAYUNO);
-    // Sin ninguna comida valdría para todas (recipeMatchesSlot): a media mañana y merienda.
-    return { ...r, intakeTypes: resto.length ? resto : [2, 4] };
-  });
-}
-
 /** Pone las comidas que ha elegido el coach. Puro, para poder probarlo sin Firestore. */
 export function conComidasDelCoach(recetas: Recipe[], limpieza: LimpiezaRecetario): Recipe[] {
   const comidas = limpieza.comidas ?? {};
@@ -239,6 +228,18 @@ export async function cambiarComidasDeReceta(id: string, comidas: number[]): Pro
   if (forceLocalOnly) return;
   const ahora = new Date().toISOString();
   await setDoc(refLimpieza(), { updatedAt: ahora, comidas: { [id]: [...comidas].sort((a, b) => a - b) } }, { merge: true });
+  olvidarIndiceVigente();
+}
+
+/** Guarda la tabla tipo de plato × comida entera (se sustituye, no se mezcla). */
+export async function guardarComidasPorTipo(tabla: TablaDeComidas): Promise<void> {
+  if (forceLocalOnly) return;
+  await updateDoc(refLimpieza(), { porTipo: tabla, updatedAt: new Date().toISOString() })
+    .catch(async err => {
+      // El documento aún no existe: se crea.
+      if ((err as { code?: string })?.code !== 'not-found') throw err;
+      await setDoc(refLimpieza(), { porTipo: tabla, updatedAt: new Date().toISOString() });
+    });
   olvidarIndiceVigente();
 }
 
@@ -256,7 +257,8 @@ export function cargarIndiceRecetas(): Promise<Recipe[]> {
     ]),
   ]).then(([recetas, limpieza]) => {
     if (recetas.length === 0) indiceVigentePromesa = null;  // que el siguiente intento vuelva a probar
-    return conComidasDelCoach(sinBocadillosEnDesayuno(sinRetiradas(recetas, limpieza)), limpieza);
+    // Primero el tipo de plato; lo que el coach marque en una receta, encima.
+    return conComidasDelCoach(conComidasPorTipo(sinRetiradas(recetas, limpieza), limpieza.porTipo), limpieza);
   });
   return indiceVigentePromesa;
 }
@@ -395,7 +397,7 @@ export async function getReglasDeReceta(athleteEmail: string): Promise<ReglasDeR
    recomendadas (y al revés), porque `setDoc` reemplaza el documento entero.
    Los arrays que sí se mandan se sustituyen enteros, que es lo que se quiere. */
 export async function saveReglasDeReceta(
-  reglas: Pick<ReglasDeReceta, 'athleteId'> & Partial<Pick<ReglasDeReceta, 'reglas' | 'recomendadas' | 'listaMenu' | 'recetario' | 'seleccion'>>,
+  reglas: Pick<ReglasDeReceta, 'athleteId'> & Partial<Pick<ReglasDeReceta, 'reglas' | 'recomendadas' | 'listaMenu' | 'ajustesMenu' | 'recetario' | 'seleccion'>>,
   /** Para que el historial diga «Pollo al curry» y no «receta»; opcional. */
   nombreDe?: (id: string) => string | undefined,
 ): Promise<void> {
