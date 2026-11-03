@@ -1,4 +1,4 @@
-import type { Mesocycle, TemplateDay, TemplateStage } from '../types.js';
+import type { Mesocycle, MesocycleTemplate, TemplateDay, TemplateStage } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Mesociclo ↔ etapa de plantilla
@@ -50,6 +50,25 @@ export function etapaDesdeMeso(
     if (meso[k] !== undefined) (etapa as unknown as Record<string, unknown>)[k] = copia(meso[k]);
   }
   return etapa;
+}
+
+/**
+ * Plantilla de biblioteca a partir del mesociclo de un atleta («Guardar como
+ * plantilla»). Se queda con el plan (días, ejercicios, series, reps, RIR,
+ * progresión…) y nada del atleta: ni id, ni fechas, ni eventos, ni el draft, ni
+ * los ajustes de CDG que dependen de él. `nombre` vacío = el del mesociclo.
+ */
+export function plantillaDesdeMeso(
+  meso: Mesocycle,
+  opciones: { ownerId: string; nombre?: string; etapaId: string; dias?: TemplateDay[] },
+): Omit<MesocycleTemplate, 'id'> {
+  const etapa = etapaDesdeMeso(meso, { id: opciones.etapaId, dias: opciones.dias });
+  return {
+    ownerId: opciones.ownerId,
+    name: opciones.nombre?.trim() || meso.name?.trim() || `Meso #${meso.number}`,
+    description: 'Guardada desde un mesociclo, con sus cambios semana a semana.',
+    stages: [etapa],
+  };
 }
 
 /**

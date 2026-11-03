@@ -62,7 +62,7 @@ import { choquesPorSesion, empezarArrastre, leerArrastre, minutosEstimados, trae
 import { iemEstimado, iemPorSerieDeGrupo, type IemPorSerie } from '../utils/cdg/iemEstimado';
 import { useMotorCdg } from '../hooks/useMotorCdg';
 import CalculadoraRepartoSheet from './mesociclo/CalculadoraRepartoSheet';
-import { etapaDesdeMeso, mesoDesdeEtapa } from '../utils/plantillaMeso';
+import { mesoDesdeEtapa, plantillaDesdeMeso } from '../utils/plantillaMeso';
 import { distribucionDeMeso } from '../utils/distribucionDeMeso';
 import { ordenarSesion } from '../utils/ordenSesion';
 import type { OpcionDeReparto } from '../utils/calculadoraReparto';
@@ -1865,6 +1865,9 @@ export default function MesocycleManager({
   const [templates, setTemplates]                   = useState<MesocycleTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates]     = useState(false);
   const [applyingTemplate, setApplyingTemplate]     = useState(false);
+  // «Guardar como plantilla»: null = diálogo cerrado; si no, el nombre que se escribe.
+  const [nombrePlantilla, setNombrePlantilla]       = useState<string | null>(null);
+  const [guardandoPlantilla, setGuardandoPlantilla] = useState(false);
 
   // T11.a: un único picker para las dos pantallas que cambian un ejercicio —
   // la vista previa del generador y "Ejercicios programados" (mesociclo ya
@@ -2097,24 +2100,29 @@ export default function MesocycleManager({
   }, [queryClient, selectedEmail, onGuardarPlantilla]);
 
   // El bloque tal cual, con sus cambios por semana, descargas y test, como
-  // plantilla reutilizable con otros clientes.
+  // plantilla reutilizable con otros clientes. Sin nada del atleta: ver
+  // plantillaDesdeMeso. Sin sesiones creadas aún, viaja el plan igual.
   const guardarComoPlantilla = async () => {
-    if (!editing || mesoGroupsForTabs.length === 0) return;
+    if (!editing || nombrePlantilla === null || guardandoPlantilla) return;
+    setGuardandoPlantilla(true);
     try {
-      await createMesocycleTemplate({
+      const creada = await createMesocycleTemplate(plantillaDesdeMeso(editing, {
         ownerId: coachId,
-        name: `${editing.objective?.trim() || nombreDeMeso(editing)} · ${editing.weeks} semanas`,
-        description: 'Guardada desde un mesociclo, con sus cambios semana a semana.',
-        // El plan entero (reparto, ciclo, distribución…), no solo volumen y días.
-        stages: [etapaDesdeMeso(editing, {
-          id: `st_${Date.now()}`,
-          dias: mesoGroupsForTabs.map((g, i) => ({ id: `d${i + 1}`, name: g.name, exercises: g.exercises })),
-        })],
-      });
+        nombre: nombrePlantilla,
+        etapaId: `st_${Date.now()}`,
+        dias: mesoGroupsForTabs.length > 0
+          ? mesoGroupsForTabs.map((g, i) => ({ id: `d${i + 1}`, name: g.name, exercises: g.exercises }))
+          : undefined,
+      }));
       setTemplates([]);
-      showToast('Plantilla guardada en tu biblioteca de mesociclos', 'success');
+      // Biblioteca › Entrenamiento la lee con esta clave: que salga ya, sin recargar.
+      queryClient.setQueryData<MesocycleTemplate[]>(['mesocycleTemplates', coachId], prev => prev ? [...prev, creada] : prev);
+      setNombrePlantilla(null);
+      showToast(`«${creada.name}» guardada en tu biblioteca de mesociclos`, 'success');
     } catch {
       showToast('No se pudo guardar la plantilla.', 'error');
+    } finally {
+      setGuardandoPlantilla(false);
     }
   };
 
@@ -3275,6 +3283,20 @@ export default function MesocycleManager({
   return (
     <div className="pantalla space-y-6">
       <ConfirmDialog />
+      <Dialog open={nombrePlantilla !== null} onClose={() => setNombrePlantilla(null)} size="s" title="Guardar como plantilla"
+        footer={<>
+          <Button variant="ghost" onClick={() => setNombrePlantilla(null)}>Cancelar</Button>
+          <Button icon="check" loading={guardandoPlantilla} onClick={() => { void guardarComoPlantilla(); }}>Guardar plantilla</Button>
+        </>}>
+        <form className="space-y-3" onSubmit={e => { e.preventDefault(); void guardarComoPlantilla(); }}>
+          <Input label="Nombre de la plantilla" value={nombrePlantilla ?? ''}
+            onChange={v => setNombrePlantilla(v.slice(0, 60))} />
+          <p className="font-sans text-caption text-ink-2">
+            Se copian los días, ejercicios, series, reps, RIR y la progresión. Las fechas y los registros del atleta no.
+            La tendrás en Biblioteca › Entrenamiento para asignarla a otro cliente.
+          </p>
+        </form>
+      </Dialog>
       <Dialog open={!!cambioDeBloque} onClose={() => cambioDeBloque?.cancelar()} size="s" title="Cambio de bloque"
         footer={cambioDeBloque && <>
           <Button variant="ghost" onClick={cambioDeBloque.cancelar}>Cancelar</Button>
@@ -3410,6 +3432,13 @@ export default function MesocycleManager({
               <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="font-sans font-bold text-ink text-title-s truncate">{modoPlantilla ? (editing.name || 'Mesociclo de la plantilla') : nombreDeMeso(editing)}</h2>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                  {!modoPlantilla && (
+                    <Button size="s" variant="ghost" icon="library_books" onClick={() => setNombrePlantilla(nombreDeMeso(editing))}
+                      disabled={loadingMesoWorkouts}>
+                      Guardar como plantilla
+                    </Button>
+                  )}
                   <span className={`font-sans text-label uppercase tracking-wider transition-colors ${
                     saveState === 'saved'  ? 'text-success' :
                     saveState === 'error'  ? 'text-danger' :
@@ -3424,6 +3453,7 @@ export default function MesocycleManager({
                       </span>
                     )}
                   </span>
+                  </div>
                 </div>
 
                 {!modoPlantilla && (
@@ -4214,7 +4244,7 @@ export default function MesocycleManager({
                   cicloDias={cicloDias}
                   logs={athleteLogs ?? (logsPending ? undefined : logsQuery)}
                   onWriteDay={(g, exs) => { void writeMesoWorkoutExercises(g, exs); }}
-                  onGuardarPlantilla={modoPlantilla ? undefined : () => { void guardarComoPlantilla(); }}
+                  onGuardarPlantilla={modoPlantilla ? undefined : () => setNombrePlantilla(nombreDeMeso(editing))}
                   revisiones={revisionesDelMeso}
                   onGoToDistribution={() => setEditorTab('distribution')}
                   libraryWorkouts={allWorkouts.filter(w => !w.mesocycleId)}
