@@ -64,6 +64,8 @@ export interface EntradaObjetivo {
   fecha: string;
   /** Si ese día tiene sesión de entreno (para el ciclado de hidratos). `undefined` = no se sabe. */
   entrena?: boolean;
+  /** Días con entreno de esa semana del programa (días altos y bajos por fase). */
+  entrenosSemana?: number;
 }
 
 /** Gramos de cada macro a partir de los intercambios del cupo. */
@@ -75,7 +77,7 @@ export function gramosDeIntercambios(i: { HC: number; PROT: number; GRASA: numbe
   };
 }
 
-export function objetivoDelDia({ diets, config, program, fecha, entrena }: EntradaObjetivo): ObjetivoDelDia {
+export function objetivoDelDia({ diets, config, program, fecha, entrena, entrenosSemana }: EntradaObjetivo): ObjetivoDelDia {
   const propias = diets.filter(d => !d.selfManaged && !d.isDraft);
   const porId = (id: string | null | undefined) => (id ? propias.find(d => d.id === id) : undefined);
 
@@ -99,7 +101,7 @@ export function objetivoDelDia({ diets, config, program, fecha, entrena }: Entra
     }
   }
 
-  const dieta = base ? dietaDeLaSemana(base, program, fecha, entrena) : null;
+  const dieta = base ? dietaDeLaSemana(base, program, fecha, entrena, entrenosSemana) : null;
   const intercambios = dieta ? macrosDeCupo(dieta.budget) : null;
   const kcal = dieta ? kcalDeDieta(dieta) : null;
 

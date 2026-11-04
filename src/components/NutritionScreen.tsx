@@ -4,6 +4,7 @@ import { recetaPermitida, type AmbitoDeRegla } from '../utils/reglasDeReceta';
 import SelloHecho from './ui/SelloHecho';
 import { useDireccionDeFecha } from './ui/internal/useDireccionDeFecha';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { usaCiclado, entrenosDeLaSemana } from '../utils/semanasNutricion';
 import { useSearchParams } from 'react-router-dom';
 import { diaCerrado } from '../utils/nutricionDeHoy';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
@@ -343,21 +344,20 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const { data: asignacionesEntreno } = useQuery({
     queryKey: ['workoutAssignmentsForAthlete', profile.userId],
     queryFn: () => getWorkoutAssignmentsForAthlete({ uid: profile.userId, email: profile.email }),
-    enabled: !!program?.ciclado,
+    enabled: usaCiclado(program),
   });
   const [vistaTandas, setVistaTandas] = useState<'semana' | 'dia'>('semana');
   const entrenaEn = useCallback(
-    (fecha: string) => (program?.ciclado && asignacionesEntreno
+    (fecha: string) => (usaCiclado(program) && asignacionesEntreno
       ? asignacionesEntreno.some(a => a.date === fecha && a.status !== 'skipped') : undefined),
     [program, asignacionesEntreno],
   );
-  const entrenaEseDia = program?.ciclado && asignacionesEntreno
-    ? asignacionesEntreno.some(a => a.date === viewDate && a.status !== 'skipped')
-    : undefined;
+  const entrenaEseDia = entrenaEn(viewDate);
+  const entrenosEsaSemana = program ? entrenosDeLaSemana(program, viewDate, entrenaEn) : undefined;
   // Una sola respuesta a «qué le toca hoy», la misma que usa Inicio (utils/objetivoDelDia.ts).
   const objetivoHoy = useMemo(
-    () => objetivoDelDia({ diets: allDietsList, config: dietConfigRaw ?? null, program, fecha: viewDate, entrena: entrenaEseDia }),
-    [allDietsList, dietConfigRaw, viewDate, program, entrenaEseDia],
+    () => objetivoDelDia({ diets: allDietsList, config: dietConfigRaw ?? null, program, fecha: viewDate, entrena: entrenaEseDia, entrenosSemana: entrenosEsaSemana }),
+    [allDietsList, dietConfigRaw, viewDate, program, entrenaEseDia, entrenosEsaSemana],
   );
   const dietaPautada = objetivoHoy.dieta;
   const cupoPautado = dietaPautada?.budget ?? null;

@@ -12,7 +12,7 @@ import { phaseTypeDeObjetivo } from '../../utils/objetivoDeFase';
 import { resolvePhaseTargetKcal } from '../../utils/nutritionPeriodization';
 import { semanasDelPlan } from '../../utils/seguimientoPlan';
 import { computePhaseStartDate } from '../../utils/fasesNutricion';
-import { programarAjuste, ajusteEnGramos, semanaDelPrograma } from '../../utils/semanasNutricion';
+import { programarAjuste, ajusteEnGramos, semanaDelPrograma, diaAltoYBajo } from '../../utils/semanasNutricion';
 import {
   encadenarFases, fasesParaGuardar, kcalParaElRitmo, macrosPorKg, dietaDesdeMacros, avisoAcelerada, escalonesDeFase,
   confirmarTodosLosEscalones, filasSemanaASemana, fasesDesdePlantilla, plantillaDesdeFases, PLANTILLAS_POR_DEFECTO, ritmoPorDefecto,
@@ -21,7 +21,7 @@ import {
 import { addDays, hoyIsoLocal } from '../../utils/trainingWeek';
 import { mensajeDeErrorFirestore } from '../../utils/erroresFirestore';
 import NutritionPeriodizationPanel from '../NutritionPeriodizationPanel';
-import { Icon, Button, EmptyState, Skeleton } from '../ui';
+import { Icon, Button, EmptyState, Skeleton, Chip } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Plan › Objetivo › Plan — la hoja de periodización (30-10-2026)
@@ -355,6 +355,8 @@ export default function HojaDePeriodizacion({ athleteEmail, athleteName, diets, 
                 </Campo>
               </div>
 
+              <DiasAltosYBajos f={f} kcalFase={kcalFase} onCambio={ciclado => setFase(idx, { ciclado })} />
+
               {aviso && <p className="font-sans text-caption text-warning">{aviso}</p>}
               <button type="button" onClick={() => setAbierta(abiertaEsta ? null : f.id)} className="flex items-center gap-1 font-mono text-caption text-ink-3 hover:text-ink">
                 <Icon name={abiertaEsta ? 'expand_more' : 'chevron_right'} size="s" />Escalones, para qué es la fase y cardio
@@ -433,6 +435,49 @@ function Campo({ etiqueta, className = '', children }: { etiqueta: string; class
     <div className={`flex flex-col gap-1 min-w-0 ${className}`}>
       <p className="font-mono text-caption uppercase tracking-widest text-ink-3">{etiqueta}</p>
       {children}
+    </div>
+  );
+}
+
+/**
+ * Días altos y bajos de hidratos de una fase (11-2026): un número, los gramos
+ * de más el día que entrena; el día bajo sale solo para que la media de la
+ * semana siga siendo la de la fase (semanasNutricion.ts › diaAltoYBajo).
+ */
+function DiasAltosYBajos({ f, kcalFase, onCambio }: {
+  f: NutritionPhase; kcalFase: number | null; onCambio: (c: NutritionPhase['ciclado']) => void;
+}) {
+  const c = f.ciclado;
+  const d = c ? diaAltoYBajo(c.altoG, c.diasEntreno) : null;
+  const kcalDe = (g: number) => (kcalFase != null ? miles(kcalFase + g * 4) : '—');
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="font-mono text-caption uppercase tracking-wide text-ink-3 flex-1">Días altos y bajos de hidratos</p>
+        <Chip selected={!!c} onClick={() => onCambio(c ? undefined : { altoG: 50, diasEntreno: 4 })}>{c ? 'Activado' : 'Activar'}</Chip>
+      </div>
+      {c && (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Campo etiqueta="Día de entreno, hidratos de más">
+              <ConUnidad unidad="g"><Numero aria-label="Hidratos de más el día de entreno" className={CAMPO} inputMode="numeric" valor={c.altoG} onValor={n => { if (n != null) onCambio({ ...c, altoG: Math.max(0, Math.round(n)) }); }} /></ConUnidad>
+            </Campo>
+            <Campo etiqueta="Entrena (previsto)">
+              <ConUnidad unidad="días/sem"><Numero aria-label="Días de entreno por semana" className={CAMPO} inputMode="numeric" valor={c.diasEntreno} onValor={n => { if (n != null) onCambio({ ...c, diasEntreno: Math.min(6, Math.max(1, Math.round(n))) }); }} /></ConUnidad>
+            </Campo>
+          </div>
+          {d ? (
+            <p className="font-mono text-caption text-ink-2">
+              Alto <span className="text-ink font-bold">{kcalDe(d.altoG)}</span> kcal (+{d.altoG} g)
+              {' · '}Bajo <span className="text-ink font-bold">{kcalDe(d.bajoG)}</span> kcal ({d.bajoG} g)
+              {' · '}media {kcalFase != null ? miles(kcalFase) : '—'} ✓
+            </p>
+          ) : (
+            <p className="font-sans text-caption text-warning">Pon gramos y de 1 a 6 días de entreno.</p>
+          )}
+          <p className="font-sans text-caption text-ink-3">Cada semana se cuenta con sus entrenos reales del mesociclo: si entrena menos o más, el día bajo se recalcula y la media no cambia.</p>
+        </>
+      )}
     </div>
   );
 }

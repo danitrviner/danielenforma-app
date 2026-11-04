@@ -1,5 +1,6 @@
 import { useCuentaAlMontar } from '../hooks/useCuentaAlMontar';
 import React, { useMemo, useState } from 'react';
+import { usaCiclado, entrenosDeLaSemana } from '../utils/semanasNutricion';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn } from '../types';
@@ -232,10 +233,10 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
      los días de antes del cambio, así que un histórico viejo se sigue leyendo. */
   // La fase en curso del programa: la meta de peso de «Lo que viniste a buscar».
   const faseDelPlan = useMemo(() => faseEnCurso(nutritionProgram, TODAY_DATE), [nutritionProgram]); // eslint-disable-line react-hooks/exhaustive-deps -- TODAY_DATE es constante del módulo
-  const entrenaHoy = nutritionProgram?.ciclado
-    ? assignments.some(a => a.date === TODAY_DATE && a.status !== 'skipped')
-    : undefined;
-  const dietaPautada = objetivoDelDia({ diets, config: dietConfig, program: nutritionProgram, fecha: TODAY_DATE, entrena: entrenaHoy }).dieta;
+  const entrenaEn = (fecha: string) => (usaCiclado(nutritionProgram) ? assignments.some(a => a.date === fecha && a.status !== 'skipped') : undefined);
+  const entrenaHoy = entrenaEn(TODAY_DATE);
+  const entrenosSemana = nutritionProgram ? entrenosDeLaSemana(nutritionProgram, TODAY_DATE, entrenaEn) : undefined;
+  const dietaPautada = objetivoDelDia({ diets, config: dietConfig, program: nutritionProgram, fecha: TODAY_DATE, entrena: entrenaHoy, entrenosSemana }).dieta;
   const todaysDiet = dietaDelDia(completionLog ?? null, diets) ?? dietaPautada;
   /* Las comidas y el objetivo, sembrados igual que en Nutrición
      (NutritionScreen, efecto de `cargadoPara`): un día sin registro arranca
