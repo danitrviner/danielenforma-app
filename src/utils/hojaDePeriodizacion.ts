@@ -270,6 +270,6 @@ export function fasesDesdePlantilla(plantilla: PlantillaPeriodizacion, ahora = D
 
 /** Lo que guarda una plantilla de unas fases (sin ids ni dietas). */
 export function plantillaDesdeFases(nombre: string, fases: readonly NutritionPhase[], id = `pl_${Date.now()}`): PlantillaPeriodizacion {
-  const campos: (keyof PlantillaFase)[] = ['name', 'objetivo', 'weeks', 'ritmoPctSem', 'proteinaGKg', 'grasaGKg', 'pasos', 'cardio', 'escalon', 'paraQue'];
+  const campos: (keyof PlantillaFase)[] = ['name', 'objetivo', 'weeks', 'ritmoPctSem', 'proteinaGKg', 'grasaGKg', 'pasos', 'cardio', 'escalon', 'ciclado', 'paraQue'];
   return { id, nombre, fases: fases.map(f => Object.fromEntries(campos.filter(k => f[k] != null).map(k => [k, f[k]])) as PlantillaFase) };
 }

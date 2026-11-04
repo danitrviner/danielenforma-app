@@ -7,6 +7,7 @@ import { GRAMS_PER_EXCHANGE } from './nutritionConstants.js';
 import { addToPlaced } from './exchangeHelpers.js';
 import { objetivoDeDieta } from './macrosLegado.js';
 import { macrosDesdeGramos } from './macros.js';
+import { addDays } from './trainingWeek.js';
 import type { FoodCategory } from '../types.js';
 
 /* La periodización nutricional semana a semana. Las fases dicen QUÉ dieta toca
@@ -75,7 +76,46 @@ export function ajusteEnGramos(cat: MacroAjustable, gramos: number, slot?: numbe
 }
 
 /** Gramos de hidratos del ciclado ese día (o 0). */
-export function gramosDelCiclado(program: Pick<NutritionProgram, 'ciclado'>, semana: number, entrena: boolean | undefined): number {
+/**
+ * Gramos de hidratos del día alto y del bajo para que la media de la semana no
+ * cambie: con N días de entreno, el bajo resta altoG·N/(7−N). Sin entrenos, o
+ * entrenando los siete días, no hay ciclado posible.
+ */
+export function diaAltoYBajo(altoG: number, diasEntreno: number): { altoG: number; bajoG: number } | null {
+  const n = Math.round(diasEntreno);
+  if (!altoG || n <= 0 || n >= 7) return null;
+  return { altoG, bajoG: -Math.round((altoG * n) / (7 - n)) };
+}
+
+/** ¿Cicla hidratos por entreno en algún momento? (para pedir las sesiones solo entonces). */
+export function usaCiclado(program: Pick<NutritionProgram, 'ciclado' | 'phases'> | null | undefined): boolean {
+  return !!program?.ciclado || !!program?.phases?.some(f => f.ciclado?.altoG);
+}
+
+/** Días con entreno dentro de la semana del programa que contiene `fecha`. */
+export function entrenosDeLaSemana(program: Pick<NutritionProgram, 'startDate'>, fecha: string, entrena: (fecha: string) => boolean | undefined): number | undefined {
+  const s = semanaDelPrograma(program, fecha);
+  let n = 0;
+  for (let i = 0; i < 7; i++) {
+    const r = entrena(addDays(program.startDate, (s - 1) * 7 + i));
+    if (r === undefined) return undefined;
+    if (r) n++;
+  }
+  return n;
+}
+
+export function gramosDelCiclado(
+  program: Pick<NutritionProgram, 'ciclado'> & Partial<Pick<NutritionProgram, 'phases'>>, semana: number, entrena: boolean | undefined,
+  /** Entrenos reales de esa semana; sin el dato, los previstos de la fase. */
+  entrenosSemana?: number,
+): number {
+  // El de la fase manda en sus semanas (11-2026).
+  const fase = program.phases ? faseDeLaSemana({ phases: program.phases }, semana)?.fase : undefined;
+  if (fase?.ciclado?.altoG) {
+    if (entrena === undefined) return 0;
+    const d = diaAltoYBajo(fase.ciclado.altoG, entrenosSemana ?? fase.ciclado.diasEntreno);
+    return d ? (entrena ? d.altoG : d.bajoG) : 0;
+  }
   const c = program.ciclado;
   if (!c || entrena === undefined || semana < c.desde || (c.hasta !== undefined && semana > c.hasta)) return 0;
   return entrena ? (c.entrenoG ?? c.entreno * GRAMS_PER_EXCHANGE.HC) : (c.descansoG ?? c.descanso * GRAMS_PER_EXCHANGE.HC);
@@ -179,13 +219,13 @@ export function diaDeLaSemana(fecha: string): WeekDay {
 
 /** La dieta que toca `fecha` con todo lo programado para esa semana.
  *  `entrena`: si ese día tiene sesión asignada (para el ciclado de hidratos). */
-export function dietaDeLaSemana(diet: Diet, program: NutritionProgram | null | undefined, fecha: string, entrena?: boolean): Diet {
+export function dietaDeLaSemana(diet: Diet, program: NutritionProgram | null | undefined, fecha: string, entrena?: boolean, entrenosSemana?: number): Diet {
   if (!program) return diet;
   const s = semanaDelPrograma(program, fecha);
   const ajustes = ajustesDeLaSemana(program, s);
   const mantenimiento = (program.semanasMantenimiento ?? []).includes(s);
   const libres = libresDelDia(program, s, diaDeLaSemana(fecha));
-  const hcDelDiaG = gramosDelCiclado(program, s, entrena);
+  const hcDelDiaG = gramosDelCiclado(program, s, entrena, entrenosSemana);
   if (ajustes.length === 0 && !mantenimiento && libres.length === 0 && hcDelDiaG === 0) return diet;
   return aplicarAjustes(diet, ajustes, { mantenimiento, mantenimientoG: gramosDeMantenimiento(program), libres, hcDelDiaG });
 }

@@ -12,7 +12,7 @@ import { phaseTypeDeObjetivo } from '../../utils/objetivoDeFase';
 import { resolvePhaseTargetKcal } from '../../utils/nutritionPeriodization';
 import { semanasDelPlan } from '../../utils/seguimientoPlan';
 import { computePhaseStartDate } from '../../utils/fasesNutricion';
-import { programarAjuste, ajusteEnGramos, semanaDelPrograma } from '../../utils/semanasNutricion';
+import { programarAjuste, ajusteEnGramos, semanaDelPrograma, diaAltoYBajo } from '../../utils/semanasNutricion';
 import {
   encadenarFases, fasesParaGuardar, kcalParaElRitmo, macrosPorKg, dietaDesdeMacros, avisoAcelerada, escalonesDeFase,
   confirmarTodosLosEscalones, filasSemanaASemana, fasesDesdePlantilla, plantillaDesdeFases, PLANTILLAS_POR_DEFECTO, ritmoPorDefecto,
@@ -21,7 +21,7 @@ import {
 import { addDays, hoyIsoLocal } from '../../utils/trainingWeek';
 import { mensajeDeErrorFirestore } from '../../utils/erroresFirestore';
 import NutritionPeriodizationPanel from '../NutritionPeriodizationPanel';
-import { Icon, Button, EmptyState, Skeleton } from '../ui';
+import { Icon, Button, EmptyState, Skeleton, Chip } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Plan › Objetivo › Plan — la hoja de periodización (30-10-2026)
@@ -266,10 +266,10 @@ export default function HojaDePeriodizacion({ athleteEmail, athleteName, diets, 
                   </select>
                 </Campo>
                 <Campo etiqueta="Semanas">
-                  <ConUnidad unidad={`S${inicio}–S${inicio + f.weeks - 1}`}><input aria-label="Semanas" className={CAMPO} inputMode="numeric" value={f.weeks} onChange={e => { const n = num(e.target.value); if (n != null) setFase(idx, { weeks: Math.max(1, Math.round(n)) }); }} /></ConUnidad>
+                  <ConUnidad unidad={`S${inicio}–S${inicio + f.weeks - 1}`}><Numero aria-label="Semanas" className={CAMPO} inputMode="numeric" valor={f.weeks} onValor={n => { if (n != null) setFase(idx, { weeks: Math.max(1, Math.round(n)) }); }} /></ConUnidad>
                 </Campo>
                 <Campo etiqueta="Ritmo" className="col-span-2 sm:col-span-1">
-                  <ConUnidad unidad="%/sem"><input aria-label="Ritmo en % por semana" className={CAMPO} value={ritmoPct?.toLocaleString('es-ES') ?? ''} placeholder="0" onChange={e => { const n = num(e.target.value); if (n != null) setFase(idx, { ritmoPctSem: n, modo: 'ritmo' }); }} /></ConUnidad>
+                  <ConUnidad unidad="%/sem"><Numero aria-label="Ritmo en % por semana" className={CAMPO} valor={ritmoPct} placeholder="0" onValor={n => { if (n != null) setFase(idx, { ritmoPctSem: n, modo: 'ritmo' }); }} /></ConUnidad>
                   <div className="flex gap-1">
                     {(['suave', 'normal', 'rapido'] as const).map(k => (
                       <button key={k} type="button" onClick={() => setFase(idx, { ritmoPctSem: RITMOS[k] * signo, modo: 'ritmo' })} className={`rounded-chip border px-2 py-0.5 font-mono text-caption font-bold uppercase ${ritmoPct === RITMOS[k] * signo ? 'bg-accent border-accent text-on-accent' : 'border-strong text-ink-2 hover:text-ink'}`}>{k === 'rapido' ? 'rápido' : k}</button>
@@ -290,7 +290,7 @@ export default function HojaDePeriodizacion({ athleteEmail, athleteName, diets, 
                   <Operador>−</Operador>
                   <div className="rounded-field border border-control-line focus-within:border-accent bg-raised px-2.5 py-2 min-w-0">
                     <p className="font-mono text-caption uppercase tracking-wide text-ink-3">Come ✎</p>
-                    <input aria-label="kcal al día al inicio de la fase" className="w-full bg-transparent font-sans text-title-m font-bold text-ink focus:outline-none" inputMode="numeric" value={f.targetKcal ?? ''} placeholder={kcalFase != null ? String(kcalFase) : '—'} onChange={e => setFase(idx, { targetKcal: num(e.target.value) ?? undefined })} />
+                    <Numero aria-label="kcal al día al inicio de la fase" className="w-full bg-transparent font-sans text-title-m font-bold text-ink focus:outline-none" inputMode="numeric" valor={f.targetKcal} placeholder={kcalFase != null ? String(kcalFase) : '—'} onValor={n => setFase(idx, { targetKcal: n ?? undefined })} />
                     {sugerida != null && sugerida !== f.targetKcal
                       ? <button type="button" onClick={() => setFase(idx, { targetKcal: sugerida })} className="font-mono text-caption text-accent-ink hover:underline whitespace-nowrap">sugerir {miles(sugerida)}</button>
                       : <p className="font-mono text-caption text-ink-3">al inicio de la fase</p>}
@@ -324,11 +324,11 @@ export default function HojaDePeriodizacion({ athleteEmail, athleteName, diets, 
                 <p className="font-mono text-caption uppercase tracking-widest text-ink-3">Macros por kg · los hidratos son el resto</p>
                 <div className="grid grid-cols-3 gap-3">
                   <Campo etiqueta="Proteína">
-                    <ConUnidad unidad="g/kg"><input aria-label="Proteína en g/kg" className={`${CAMPO} ${pocaProteina ? 'border-warning text-warning' : ''}`} value={f.proteinaGKg?.toLocaleString('es-ES') ?? ''} onChange={e => setFase(idx, { proteinaGKg: num(e.target.value) ?? undefined })} /></ConUnidad>
+                    <ConUnidad unidad="g/kg"><Numero aria-label="Proteína en g/kg" className={`${CAMPO} ${pocaProteina ? 'border-warning text-warning' : ''}`} valor={f.proteinaGKg} onValor={n => setFase(idx, { proteinaGKg: n ?? undefined })} /></ConUnidad>
                     {m && <span className={`font-mono text-caption ${pocaProteina ? 'text-warning' : 'text-success'}`}>{m.p} g · {pocaProteina ? `por debajo de ${proteinaMin.toLocaleString('es-ES')}` : `≥ ${proteinaMin.toLocaleString('es-ES')} ✓`}</span>}
                   </Campo>
                   <Campo etiqueta="Grasa">
-                    <ConUnidad unidad="g/kg"><input aria-label="Grasa en g/kg" className={CAMPO} value={f.grasaGKg?.toLocaleString('es-ES') ?? ''} onChange={e => setFase(idx, { grasaGKg: num(e.target.value) ?? undefined })} /></ConUnidad>
+                    <ConUnidad unidad="g/kg"><Numero aria-label="Grasa en g/kg" className={CAMPO} valor={f.grasaGKg} onValor={n => setFase(idx, { grasaGKg: n ?? undefined })} /></ConUnidad>
                     {m && <span className="font-mono text-caption text-ink-3">{m.g} g</span>}
                   </Campo>
                   <Campo etiqueta="Hidratos">
@@ -342,7 +342,7 @@ export default function HojaDePeriodizacion({ athleteEmail, athleteName, diets, 
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <Campo etiqueta="Pasos al día">
-                  <input aria-label="Pasos al día" className={CAMPO} inputMode="numeric" value={f.pasos ?? ''} placeholder={String(stepGoal)} onChange={e => setFase(idx, { pasos: num(e.target.value) ?? undefined })} />
+                  <Numero aria-label="Pasos al día" className={CAMPO} inputMode="numeric" valor={f.pasos} placeholder={String(stepGoal)} onValor={n => setFase(idx, { pasos: n ?? undefined })} />
                 </Campo>
                 <Campo etiqueta="Escalones">
                   <button type="button" onClick={() => setAbierta(f.id)} className={`${CAMPO} text-left font-sans font-bold ${f.escalon ? '' : 'text-ink-3'}`}>{f.escalon ? `${esc.length} · ${esc.filter(x => x.confirmado).length} ✓` : '+ Añadir'}</button>
@@ -354,6 +354,8 @@ export default function HojaDePeriodizacion({ athleteEmail, athleteName, diets, 
                   </select>
                 </Campo>
               </div>
+
+              <DiasAltosYBajos f={f} kcalFase={kcalFase} onCambio={ciclado => setFase(idx, { ciclado })} />
 
               {aviso && <p className="font-sans text-caption text-warning">{aviso}</p>}
               <button type="button" onClick={() => setAbierta(abiertaEsta ? null : f.id)} className="flex items-center gap-1 font-mono text-caption text-ink-3 hover:text-ink">
@@ -437,6 +439,71 @@ function Campo({ etiqueta, className = '', children }: { etiqueta: string; class
   );
 }
 
+/**
+ * Días altos y bajos de hidratos de una fase (11-2026): un número, los gramos
+ * de más el día que entrena; el día bajo sale solo para que la media de la
+ * semana siga siendo la de la fase (semanasNutricion.ts › diaAltoYBajo).
+ */
+function DiasAltosYBajos({ f, kcalFase, onCambio }: {
+  f: NutritionPhase; kcalFase: number | null; onCambio: (c: NutritionPhase['ciclado']) => void;
+}) {
+  const c = f.ciclado;
+  const d = c ? diaAltoYBajo(c.altoG, c.diasEntreno) : null;
+  const kcalDe = (g: number) => (kcalFase != null ? miles(kcalFase + g * 4) : '—');
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="font-mono text-caption uppercase tracking-wide text-ink-3 flex-1">Días altos y bajos de hidratos</p>
+        <Chip selected={!!c} onClick={() => onCambio(c ? undefined : { altoG: 50, diasEntreno: 4 })}>{c ? 'Activado' : 'Activar'}</Chip>
+      </div>
+      {c && (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Campo etiqueta="Día de entreno, hidratos de más">
+              <ConUnidad unidad="g"><Numero aria-label="Hidratos de más el día de entreno" className={CAMPO} inputMode="numeric" valor={c.altoG} onValor={n => { if (n != null) onCambio({ ...c, altoG: Math.max(0, Math.round(n)) }); }} /></ConUnidad>
+            </Campo>
+            <Campo etiqueta="Entrena (previsto)">
+              <ConUnidad unidad="días/sem"><Numero aria-label="Días de entreno por semana" className={CAMPO} inputMode="numeric" valor={c.diasEntreno} onValor={n => { if (n != null) onCambio({ ...c, diasEntreno: Math.min(6, Math.max(1, Math.round(n))) }); }} /></ConUnidad>
+            </Campo>
+          </div>
+          {d ? (
+            <p className="font-mono text-caption text-ink-2">
+              Alto <span className="text-ink font-bold">{kcalDe(d.altoG)}</span> kcal (+{d.altoG} g)
+              {' · '}Bajo <span className="text-ink font-bold">{kcalDe(d.bajoG)}</span> kcal ({d.bajoG} g)
+              {' · '}media {kcalFase != null ? miles(kcalFase) : '—'} ✓
+            </p>
+          ) : (
+            <p className="font-sans text-caption text-warning">Pon gramos y de 1 a 6 días de entreno.</p>
+          )}
+          <p className="font-sans text-caption text-ink-3">Cada semana se cuenta con sus entrenos reales del mesociclo: si entrena menos o más, el día bajo se recalcula y la media no cambia.</p>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Campo de número que deja escribir libremente: guarda el texto mientras se
+ * teclea («1,» o vacío) y solo lo rehace desde el valor al salir. Antes el
+ * valor se formateaba en cada tecla y se comía la coma y el borrado.
+ */
+function Numero({ valor, onValor, ...resto }: { valor: number | null | undefined; onValor: (n: number | null) => void } & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'>) {
+  const formato = (v: number | null | undefined) => (v == null ? '' : v.toLocaleString('es-ES', { maximumFractionDigits: 2, useGrouping: false }));
+  const [texto, setTexto] = useState(formato(valor));
+  const [escribiendo, setEscribiendo] = useState(false);
+  useEffect(() => { if (!escribiendo) setTexto(formato(valor)); }, [valor, escribiendo]);
+  return (
+    <input
+      inputMode="decimal"
+      {...resto}
+      value={texto}
+      onFocus={e => { setEscribiendo(true); resto.onFocus?.(e); }}
+      onBlur={e => { setEscribiendo(false); resto.onBlur?.(e); }}
+      onChange={e => { setTexto(e.target.value); onValor(e.target.value.trim() === '' ? null : num(e.target.value)); }}
+    />
+  );
+}
+
 function ConUnidad({ unidad, children }: { unidad: string; children: React.ReactNode }) {
   return (
     <div className="relative">
@@ -480,9 +547,9 @@ function DetalleFase({ f, idx, form, cadena, macros, escalones, setFase, dieta }
       <div className="space-y-2">
         <p className="font-mono text-caption uppercase tracking-widest text-ink-3">Escalones · cada N semanas</p>
         <div className="flex flex-wrap items-center gap-2 font-mono text-label text-ink-2">
-          cada <input className={`${CELDA_S} w-10`} inputMode="numeric" value={f.escalon?.cadaSemanas ?? ''} placeholder="—" onChange={e => { const n = num(e.target.value); setFase(idx, { escalon: n ? { ...(f.escalon ?? { kcal: 0 }), cadaSemanas: Math.max(1, Math.round(n)) } : undefined }); }} /> sem
-          <input className={`${CELDA_S} w-14`} inputMode="numeric" value={f.escalon?.kcal ?? ''} placeholder="±kcal" onChange={e => setFase(idx, { escalon: { ...(f.escalon ?? { cadaSemanas: 3 }), kcal: num(e.target.value) ?? 0 } })} /> kcal
-          <input className={`${CELDA_S} w-14`} inputMode="numeric" value={f.escalon?.pasos ?? ''} placeholder="±pasos" onChange={e => setFase(idx, { escalon: { ...(f.escalon ?? { cadaSemanas: 3, kcal: 0 }), pasos: num(e.target.value) ?? undefined } })} /> pasos
+          cada <Numero className={`${CELDA_S} w-10`} inputMode="numeric" valor={f.escalon?.cadaSemanas} placeholder="—" onValor={n => { setFase(idx, { escalon: n ? { ...(f.escalon ?? { kcal: 0 }), cadaSemanas: Math.max(1, Math.round(n)) } : undefined }); }} /> sem
+          <Numero className={`${CELDA_S} w-14`} inputMode="numeric" valor={f.escalon?.kcal} placeholder="±kcal" onValor={n => setFase(idx, { escalon: { ...(f.escalon ?? { cadaSemanas: 3 }), kcal: n ?? 0 } })} /> kcal
+          <Numero className={`${CELDA_S} w-14`} inputMode="numeric" valor={f.escalon?.pasos} placeholder="±pasos" onValor={n => setFase(idx, { escalon: { ...(f.escalon ?? { cadaSemanas: 3, kcal: 0 }), pasos: n ?? undefined } })} /> pasos
         </div>
         {f.escalon && (
           <ul className="space-y-1">
@@ -499,8 +566,8 @@ function DetalleFase({ f, idx, form, cadena, macros, escalones, setFase, dieta }
         <p className="font-mono text-caption uppercase tracking-widest text-ink-3">Para el atleta</p>
         <input className={`${CELDA} text-left font-sans`} placeholder="Para qué es esta fase, con tus palabras (lo lee en su Road map)" value={f.paraQue ?? ''} onChange={e => setFase(idx, { paraQue: e.target.value })} />
         <div className="flex flex-wrap items-center gap-2 font-mono text-label text-ink-2">Cardio
-          <input className={`${CELDA_S} w-10`} inputMode="numeric" value={f.cardio?.sesiones ?? ''} placeholder="0" onChange={e => setFase(idx, { cardio: { ...(f.cardio ?? { sesiones: 0 }), sesiones: num(e.target.value) ?? 0 } })} /> ×
-          <input className={`${CELDA_S} w-12`} inputMode="numeric" value={f.cardio?.minutos ?? ''} placeholder="min" onChange={e => setFase(idx, { cardio: { ...(f.cardio ?? { sesiones: 0 }), minutos: num(e.target.value) ?? undefined } })} /> min
+          <Numero className={`${CELDA_S} w-10`} inputMode="numeric" valor={f.cardio?.sesiones} placeholder="0" onValor={n => setFase(idx, { cardio: { ...(f.cardio ?? { sesiones: 0 }), sesiones: n ?? 0 } })} /> ×
+          <Numero className={`${CELDA_S} w-12`} inputMode="numeric" valor={f.cardio?.minutos} placeholder="min" onValor={n => setFase(idx, { cardio: { ...(f.cardio ?? { sesiones: 0 }), minutos: n ?? undefined } })} /> min
           <input className={`${CELDA_S} w-28 text-left`} placeholder="zona 2" value={f.cardio?.zona ?? ''} onChange={e => setFase(idx, { cardio: { ...(f.cardio ?? { sesiones: 0 }), zona: e.target.value || undefined } })} />
         </div>
         <p className="font-sans text-caption text-ink-3">Ciclado entreno/descanso, reglas por peso, mínimos, comidas libres y suplementos: en «Semanas de la periodización», debajo, una vez publicado.</p>

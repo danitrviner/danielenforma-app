@@ -1647,6 +1647,12 @@ export interface NutritionPhase {
    *  confirma el coach; al confirmarlos se escriben en `cambiosSemana` y
    *  `pasosPorSemana`, que es lo que lee el día del atleta. */
   escalon?: { cadaSemanas: number; kcal: number; pasos?: number };
+  /** Días altos y bajos de hidratos (11-2026): el día que entrena come `altoG`
+   *  g de hidratos más y el día de descanso los que hagan falta menos para que
+   *  la MEDIA de la semana siga siendo la de la fase. Se cuenta con los entrenos
+   *  reales de cada semana; `diasEntreno` es lo previsto (vista previa y reserva).
+   *  Gana al `ciclado` del programa en las semanas de esta fase. */
+  ciclado?: { altoG: number; diasEntreno: number };
   /** Para qué es esta fase, con las palabras del coach; el atleta lo lee en su Road map. */
   paraQue?: string;
 }
@@ -1657,7 +1663,7 @@ export interface PlantillaPeriodizacion {
   nombre: string;
   fases: PlantillaFase[];
 }
-export type PlantillaFase = Pick<NutritionPhase, 'name' | 'objetivo' | 'weeks' | 'ritmoPctSem' | 'proteinaGKg' | 'grasaGKg' | 'pasos' | 'cardio' | 'escalon' | 'paraQue'>;
+export type PlantillaFase = Pick<NutritionPhase, 'name' | 'objetivo' | 'weeks' | 'ritmoPctSem' | 'proteinaGKg' | 'grasaGKg' | 'pasos' | 'cardio' | 'escalon' | 'ciclado' | 'paraQue'>;
 
 // Mismos 3 tipos que usa el color de fase de nutrición del Roadmap → Calendario.
 export type NutritionPhaseType = 'deficit' | 'mantenimiento' | 'superavit';

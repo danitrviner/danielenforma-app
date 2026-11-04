@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { entrenosDeLaSemana } from '../../utils/semanasNutricion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AthleteDietConfig, Diet, NutritionProgram, PlanSemanal, PlatoDelPlan } from '../../types';
 import { getPlanSemanal, savePlanSemanal, getCatalogoAlimentos, cargarIndiceRecetas } from '../../dbService';
@@ -48,7 +49,7 @@ export default function MiSemana({ email, hoy, diets, config, program, entrenaEn
   const { objetivo, dias } = useMemo(() => objetivoDeLaSemana(
     Array.from({ length: 7 }, (_, i) => {
       const fecha = addDays(lunes, i);
-      const o = objetivoDelDia({ diets, config, program, fecha, entrena: entrenaEn?.(fecha) });
+      const o = objetivoDelDia({ diets, config, program, fecha, entrena: entrenaEn?.(fecha), entrenosSemana: program && entrenaEn ? entrenosDeLaSemana(program, fecha, entrenaEn) : undefined });
       return o.dieta ? objetivoDeDieta(o.dieta) : null;
     }),
   ), [lunes, diets, config, program, entrenaEn]);
