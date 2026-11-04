@@ -6,7 +6,7 @@ import {
 } from '../dbService';
 import { generateWeek, slotsFromOnboarding, recipeMatchesSlot, filtroDuro, type GeneratorPrefs } from '../utils/menuEngine';
 import { listaDeMenuVigente } from '../utils/accesoARecetas';
-import { tambienEnLaMuestra } from '../utils/seleccionDeRecetas';
+import { recetasFijasDelMenu, tambienEnLaMuestra } from '../utils/seleccionDeRecetas';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import { senalesDeCambios } from '../utils/gustosDelAtleta';
@@ -77,7 +77,7 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
     // Lo que ha cambiado en sus menús anteriores: recetas que quita, alimentos que sustituye.
     cambios: senalesDeCambios(todosLosMenus),
   };
-  const tambien = tambienEnLaMuestra(prefs.seleccion, prefs.paquetes, prefs.favoritasDelCoach);
+  const tambien = tambienEnLaMuestra(prefs.seleccion, prefs.paquetes, recetasFijasDelMenu(prefs));
   const pools: Record<number, Recipe[]> = {};
   for (const slot of Array.from(new Set<number>(slots.map(s => s.slot)))) {
     const recetas = await queryRecetasForGenerator(slot, 300, prefs.listaMenu, tambien, filtroDuro(prefs));
