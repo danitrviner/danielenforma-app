@@ -1,4 +1,5 @@
 import { useReglasDeReceta } from '../hooks/useReglasDeReceta';
+import { useToast } from '../hooks/useToast';
 import { recetaPermitida } from '../utils/reglasDeReceta';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { objetivoDeDieta } from '../utils/macrosLegado';
@@ -576,6 +577,7 @@ interface Props {
 
 export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // Coach/athlete recipes — shared cache keys with RecipeBuilderScreen/NutritionScreen
   // ('recipes'), WeeklyMenuEditor/MyMenuScreen ('recipeFavorites'), and
@@ -817,8 +819,12 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     };
     queryClient.setQueryData(['recipeFavorites', profile.email], nextFavs);
     setSavingFav(true);
-    try { await saveRecipeFavorites(nextFavs); } finally { setSavingFav(false); }
-  }, [favoritosSet, favorites.recipeIds, favorites.dislikedIds, profile.email, queryClient]);
+    try {
+      await saveRecipeFavorites(nextFavs);
+      // Las favoritas entran siempre en sus menús (seleccionDeRecetas.recetasFijasDelMenu).
+      showToast(isFav ? 'Quitada de favoritas: ya no se fuerza en tus menús' : 'En favoritas: saldrá en tus próximos menús', 'success');
+    } finally { setSavingFav(false); }
+  }, [favoritosSet, favorites.recipeIds, favorites.dislikedIds, profile.email, queryClient, showToast]);
 
   const toggleDislike = useCallback(async (recipeId: string) => {
     const wasDisliked = (favorites.dislikedIds ?? []).includes(recipeId);

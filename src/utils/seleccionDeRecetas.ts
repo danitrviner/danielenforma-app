@@ -147,6 +147,15 @@ export interface ConSeleccion {
   paquetes?: PaqueteDeRecetas[];
   /** Favoritas del coach: entran con la lista aunque no estén en ella. */
   favoritasDelCoach?: string[];
+  /** Favoritas del atleta (corazón del recetario): igual que las del coach,
+   *  entran aunque no estén en la lista ni en los paquetes (Dani, 04-11-2026). */
+  favoriteRecipeIds?: string[];
+}
+
+/** Las que entran siempre en el menú: favoritas del coach y del atleta. Los
+ *  filtros duros (alergias, salud, para qué comida vale) se siguen aplicando. */
+export function recetasFijasDelMenu(prefs: Pick<ConSeleccion, 'favoritasDelCoach' | 'favoriteRecipeIds'>): string[] {
+  return [...new Set([...(prefs.favoritasDelCoach ?? []), ...(prefs.favoriteRecipeIds ?? [])])];
 }
 
 /**
@@ -163,12 +172,15 @@ export function aplicarSeleccion<T extends Recipe>(
 ): { pool: T[]; conTiempo: boolean } {
   if (ctx.ambito === 'recetario') return { pool, conTiempo: false };
   const conTiempo = esDiaConTiempo(prefs.seleccion, ctx.dias);
+  const fijas = recetasFijasDelMenu(prefs);
   const filtro = filtroDeDieta(prefs.seleccion, ctx.dietId);
   if (filtro) {
-    const dentro = pool.filter(compilarFiltro(filtro, prefs.paquetes, conTiempo));
+    const pasa = compilarFiltro(filtro, prefs.paquetes, conTiempo);
+    const fijo = new Set(fijas);
+    const dentro = pool.filter(r => fijo.has(r.id) || pasa(r));
     if (dentro.length >= MIN_RECETAS_DE_LISTA) return { pool: dentro, conTiempo };
   }
-  return { pool: filtrarPorLista(pool, prefs.listaMenu, prefs.favoritasDelCoach), conTiempo };
+  return { pool: filtrarPorLista(pool, prefs.listaMenu, fijas), conTiempo };
 }
 
 /**

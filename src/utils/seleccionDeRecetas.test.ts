@@ -115,6 +115,12 @@ describe('aplicarSeleccion', () => {
     const r = aplicarSeleccion(pool, { seleccion: { general: { rapidas: true } } }, { ambito: 'recetario' });
     expect(r.pool).toHaveLength(12);
   });
+  it('la favorita del atleta entra aunque no pase el filtro ni esté en la lista', () => {
+    const conFiltro = aplicarSeleccion(pool, { seleccion: { general: { rapidas: true } }, favoriteRecipeIds: ['l0'] }, {});
+    expect(conFiltro.pool.map(x => x.id)).toContain('l0');
+    const conLista = aplicarSeleccion(pool, { listaMenu: rapidas.map(x => x.id), favoriteRecipeIds: ['l3'] }, {});
+    expect(conLista.pool.map(x => x.id)).toContain('l3');
+  });
 });
 
 describe('quiereAlgunaDieta', () => {
