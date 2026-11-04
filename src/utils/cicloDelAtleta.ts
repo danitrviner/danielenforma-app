@@ -157,7 +157,16 @@ export function bloquesDelCiclo(
  */
 export function bloqueActual(bloques: BloqueDelCiclo[], hoy: string): BloqueDelCiclo | null {
   if (bloques.length === 0) return null;
-  return bloques.find(b => b.inicio <= hoy && hoy <= b.fin)
+  /* Dos bloques pueden contener hoy: la última semana del viejo y la primera
+     del nuevo (04-11, Javi: hizo el lunes la última del REHAB y el Meso 2
+     empezaba ese lunes). Gana el que aún tiene sesiones por hacer y, si los
+     dos las tienen, el que empezó más tarde. Antes ganaba el primero por id. */
+  const conHoy = bloques.filter(b => b.inicio <= hoy && hoy <= b.fin);
+  const porHacer = (b: BloqueDelCiclo) => b.dias.some(d => d.estado === 'pendiente' || d.estado === 'hoy');
+  const elegido = conHoy.length > 1
+    ? [...conHoy].sort((a, b) => Number(porHacer(b)) - Number(porHacer(a)) || b.primeraFecha.localeCompare(a.primeraFecha))[0]
+    : conHoy[0];
+  return elegido
     ?? bloques.find(b => b.fin >= hoy)
     ?? bloques[bloques.length - 1];
 }

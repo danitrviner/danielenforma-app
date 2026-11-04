@@ -100,3 +100,22 @@ describe('estadoDeSesion', () => {
     expect(estadoDeSesion(asig(1, 0), '2026-09-01')).toBe('perdido');
   });
 });
+
+describe('bloqueActual · dos bloques en la misma semana (04-11, Javi)', () => {
+  const viejo: Mesocycle = { ...MESO, id: 'a-viejo', startDate: '2026-09-07', cycleDays: 7, daysPerWeek: 4, weeks: 10 };
+  const nuevo: Mesocycle = { ...MESO, id: 'z-nuevo', startDate: '2026-11-02', cycleDays: 7, daysPerWeek: 4, weeks: 12 };
+  const a = (id: string, meso: string, date: string, status: WorkoutAssignment['status'] = 'pending'): WorkoutAssignment =>
+    ({ id, workoutId: 'w0', athleteId: 'atleta@enforma.com', date, status, mesocycleId: meso });
+
+  it('gana el que aún tiene sesiones por hacer, no el primero por id', () => {
+    const asignaciones = [a('v', 'a-viejo', '2026-11-02', 'completed'), a('n1', 'z-nuevo', '2026-11-05'), a('n2', 'z-nuevo', '2026-11-06')];
+    const bloque = bloqueActual(bloquesDelCiclo(asignaciones, WORKOUTS, [viejo, nuevo], '2026-11-04'), '2026-11-04');
+    expect(bloque?.clave.startsWith('meso:z-nuevo')).toBe(true);
+  });
+
+  it('si los dos tienen sesiones por hacer, el que empezó más tarde', () => {
+    const asignaciones = [a('v', 'a-viejo', '2026-11-03'), a('n1', 'z-nuevo', '2026-11-05')];
+    const bloque = bloqueActual(bloquesDelCiclo(asignaciones, WORKOUTS, [viejo, nuevo], '2026-11-02'), '2026-11-02');
+    expect(bloque?.clave.startsWith('meso:z-nuevo')).toBe(true);
+  });
+});

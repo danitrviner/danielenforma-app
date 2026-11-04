@@ -97,6 +97,7 @@ export default function BloqueAtletaDevHarness() {
             workouts={WORKOUTS}
             onQuitar={async g => { setQuitadas(prev => new Set([...prev, ...g.asignaciones.map(a => a.id)])); }}
             fechasMovidas={escenario === 'fechas' ? { onMover: () => setEscenario('limpio'), trabajando: false } : undefined}
+            activarYa={{ onActivar: () => setEscenario('limpio'), trabajando: false }}
           />
         </div>
       </div>
