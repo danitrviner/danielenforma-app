@@ -10,7 +10,6 @@ import {
 } from '../utils/bandejaDelDia';
 import { calcularPanelRetencion } from '../utils/panelRetencion';
 import PanelRetencionCard from './coach/PanelRetencionCard';
-import ColaWhatsAppCard from './coach/ColaWhatsAppCard';
 import { crearMensajeCoach } from '../db/mensajesCoach';
 import { plantillaWhatsApp } from '../utils/plantillasWhatsApp';
 import { useRespuestasDeLaBandeja } from '../hooks/useRevisionesSinLeer';
@@ -157,7 +156,7 @@ export default function HomeCoachScreen({ athletes, coachId, checkins, assignmen
   });
   const programasPorEmail = useMemo(() => new Map(programas.map(p => [p.athleteId.toLowerCase(), p])), [programas]);
   const queryClient = useQueryClient();
-  const { confirm, ConfirmDialog } = useConfirm();
+  const { ConfirmDialog } = useConfirm();
   const marcarContacto = useMutation({
     mutationFn: async (s: SenalDelDia) => {
       await registrarContacto({ athleteId: s.athleteEmail, fecha: hoyIso, motivo: s.contacto!.motivo, canal: 'whatsapp' });
@@ -275,20 +274,6 @@ export default function HomeCoachScreen({ athletes, coachId, checkins, assignmen
 
       {panelCard}
 
-      {/* La cola de WhatsApp del día (tanda 7): todo lo que hay que mandar, junto. */}
-      <ColaWhatsAppCard
-        senales={senales}
-        textoDe={textoDe}
-        onCopiar={s => void copiar(s)}
-        onAbrir={abrirChat}
-        onMandado={async s => {
-          // Un clic publica un mensaje firmado y calla la señal tres días (30-10: 18
-          // atletas marcados de golpe sin querer). Se pide confirmación una a una.
-          if (await confirm(`¿Marcar a ${s.athleteName} como escrito por WhatsApp? Se apunta el contacto y ${s.athleteName.split(' ')[0]} verá en su Inicio «Te he escrito por WhatsApp: mira el móvil y contéstame por ahí».`)) marcarContacto.mutate(s);
-        }}
-        copiadoId={copiado}
-        ocupado={marcarContacto.isPending}
-      />
       {/* Las propuestas del asistente, en la pantalla por la que se entra.
           Su pantalla vive en /propuestas y en la barra lateral de PC, pero en
           el móvil la barra de abajo está llena (cuatro destinos al límite de
