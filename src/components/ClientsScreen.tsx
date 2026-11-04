@@ -466,33 +466,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       </header>
 
 
-      {/* Invitaciones pendientes: se oculta sola cuando no hay ninguna. El
-          buscador que iba aquí vive ahora dentro de «Todos los atletas»,
-          junto a la lista que filtra (29-10). */}
-      <InvitacionesPendientesPanel />
-
-      {!loadingAthletes && (
-        <HomeCoachScreen
-          athletes={athletes}
-          coachId={coachId}
-          checkins={checkins}
-          assignmentsByEmail={allAssignments}
-          loadingAssignments={loadingAssignments}
-          archivados={emailsArchivados}
-        />
-      )}
-
-      {/* Pendientes: notas del atleta sin leer + to-do privado del coach, en una sola tarjeta */}
-      <CoachNotesPanel
-        athletes={athletes}
-        athletesWithPendingNotes={enrichedAthletes}
-        onOpenAthleteNotes={userId => {
-          const athlete = enrichedAthletes.find(a => a.userId === userId);
-          if (athlete) openAthleteHub(athlete, 'entrenamientos');
-        }}
-      />
-
-      {/* "Todos los atletas" — 1:1 con `OFICIAL - Home Coach.dc.html`:
+      {/* Arriba del todo (Dani, 11-2026). "Todos los atletas" — 1:1 con `OFICIAL - Home Coach.dc.html`:
           desplegable con fila simple (avatar, nombre, último acceso · última
           revisión, o el aviso urgente si lo tiene) e "Invitar atleta" junto a
           la cabecera. La parrilla rica de antes (badges de plan, racha,
@@ -598,6 +572,33 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           )
         )}
       </div>
+
+      {/* Invitaciones pendientes: se oculta sola cuando no hay ninguna. El
+          buscador que iba aquí vive ahora dentro de «Todos los atletas»,
+          junto a la lista que filtra (29-10). */}
+      <InvitacionesPendientesPanel />
+
+      {!loadingAthletes && (
+        <HomeCoachScreen
+          athletes={athletes}
+          coachId={coachId}
+          checkins={checkins}
+          assignmentsByEmail={allAssignments}
+          loadingAssignments={loadingAssignments}
+          archivados={emailsArchivados}
+        />
+      )}
+
+      {/* Pendientes: notas del atleta sin leer + to-do privado del coach, en una sola tarjeta */}
+      <CoachNotesPanel
+        athletes={athletes}
+        athletesWithPendingNotes={enrichedAthletes}
+        onOpenAthleteNotes={userId => {
+          const athlete = enrichedAthletes.find(a => a.userId === userId);
+          if (athlete) openAthleteHub(athlete, 'entrenamientos');
+        }}
+      />
+
 
       {inviteOpen && <InvitarAtletaModal onCerrar={() => setInviteOpen(false)} />}
 
