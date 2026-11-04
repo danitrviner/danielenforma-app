@@ -135,7 +135,7 @@ function FilaDeEstorbo({ g, workouts, onQuitar }: {
   );
 }
 
-export default function EstadoDelBloque({ meso, mesos, assignments, hoy, workouts = [], onQuitar, fechasMovidas }: {
+export default function EstadoDelBloque({ meso, mesos, assignments, hoy, workouts = [], onQuitar, fechasMovidas, activarYa }: {
   meso: Mesocycle;
   mesos: Mesocycle[];
   assignments: WorkoutAssignment[];
@@ -145,6 +145,8 @@ export default function EstadoDelBloque({ meso, mesos, assignments, hoy, workout
   onQuitar?: (g: SesionesQueEstorban) => Promise<void>;
   /** Se cambiaron fecha de inicio o semanas y sus sesiones siguen en los días de antes. */
   fechasMovidas?: { onMover: () => void; trabajando: boolean };
+  /** Que el atleta vea este bloque desde hoy (empieza hoy y se quitan los que se cruzan). */
+  activarYa?: { onActivar: () => void; trabajando: boolean };
 }) {
   const vista = vistaDelAtleta(assignments, mesos, hoy, workouts);
   const estado = estadoDelMeso(meso, assignments, mesos, hoy);
@@ -159,6 +161,19 @@ export default function EstadoDelBloque({ meso, mesos, assignments, hoy, workout
         <Badge tone={chip.tono}>{chip.texto}</Badge>
         <p className="font-sans text-caption text-ink-2">{explicacion(estado, meso, vista)}</p>
       </div>
+
+      {activarYa && (estado.tipo === 'programado' || (estado.tipo === 'en_curso' && !estado.visible)) && (
+        <div className="flex items-center gap-3 flex-wrap rounded-surface border border-accent-line bg-accent/10 px-4 py-3">
+          <Icon name="play_circle" size="s" className="text-accent-ink flex-shrink-0" />
+          <p className="font-sans text-label text-ink flex-1 min-w-[12rem]">
+            ¿Quieres que lo vea ya? {estado.tipo === 'programado' ? 'El bloque empezará hoy y sus sesiones se mueven a partir de hoy.' : 'Sus sesiones se reprograman desde hoy.'}
+            {' '}Lo ya entrenado no se toca; si se le cruza otro bloque, te pregunta antes de quitarlo.
+          </p>
+          <Button size="s" icon="play_arrow" disabled={activarYa.trabajando} onClick={activarYa.onActivar}>
+            {activarYa.trabajando ? 'Activando…' : 'Activar ya'}
+          </Button>
+        </div>
+      )}
 
       <LoQueVeElAtleta assignments={assignments} mesos={mesos} hoy={hoy} workouts={workouts} />
 

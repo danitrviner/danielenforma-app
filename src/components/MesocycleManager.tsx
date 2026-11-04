@@ -2648,6 +2648,19 @@ export default function MesocycleManager({
   // no se mueven solas (solo el calendario de días lo hace), así que se avisa.
   const [fechasMovidas, setFechasMovidas] = useState(false);
   const [moviendoFechas, setMoviendoFechas] = useState(false);
+  /* «Activar ya» (04-11): que el atleta vea este bloque desde hoy. Si empezaba
+     más adelante, primero empieza hoy; luego se reprograma como «Mover sus
+     sesiones», que pregunta antes de quitar lo de otro bloque. */
+  const [activarTrasFecha, setActivarTrasFecha] = useState(false);
+  const activarYa = () => {
+    if (!editing) return;
+    if (editing.startDate > hoy) { updateField('startDate', hoy); setActivarTrasFecha(true); return; }
+    moverSesiones();
+  };
+  useEffect(() => {
+    if (activarTrasFecha && editing?.startDate === hoy) { setActivarTrasFecha(false); moverSesiones(); }
+  }, [activarTrasFecha, editing?.startDate]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const moverSesiones = () => {
     setMoviendoFechas(true);
     conCambioDeBloque(handleAsignarMesociclo, ok => {
@@ -3465,6 +3478,7 @@ export default function MesocycleManager({
                     workouts={allWorkouts}
                     onQuitar={quitarSesiones}
                     fechasMovidas={fechasMovidas ? { onMover: moverSesiones, trabajando: moviendoFechas } : undefined}
+                    activarYa={{ onActivar: activarYa, trabajando: moviendoFechas }}
                   />
                 )}
 
