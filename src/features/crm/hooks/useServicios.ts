@@ -37,6 +37,8 @@ export interface NuevoServicio {
    * en vez de quedarse eternamente en «pendiente de cobro».
    */
   yaCobrado?: boolean;
+  /** Servicio que este renueva; se marca `renovado` en el mismo lote. */
+  renuevaA?: string;
 }
 
 export function useServicios() {
@@ -86,7 +88,7 @@ export function useCrearServicio() {
     mutationFn: async ({ cliente, datos, coachEmail }: {
       cliente: Cliente; datos: NuevoServicio; coachEmail: string;
     }) => {
-      const { generarPago, cuotas, primerCobro, yaCobrado, ...resto } = datos;
+      const { generarPago, cuotas, primerCobro, yaCobrado, renuevaA, ...resto } = datos;
       return createCrmServicioConPago(
         {
           ...resto,
@@ -94,7 +96,7 @@ export function useCrearServicio() {
           clientNombre: cliente.nombre,
           createdBy: coachEmail,
         },
-        { generarPago, cuotas, primerCobro, yaCobrado }
+        { generarPago, cuotas, primerCobro, yaCobrado, renuevaA }
       );
     },
     onSuccess: (_res, vars) => {

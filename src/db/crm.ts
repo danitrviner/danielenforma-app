@@ -288,7 +288,11 @@ export async function getCrmServiciosByCliente(clientId: string): Promise<CrmSer
  */
 export async function createCrmServicioConPago(
   data: Omit<CrmServicio, 'id' | 'createdAt' | 'updatedAt'>,
-  opciones: { generarPago: boolean; cuotas?: number; primerCobro?: string; yaCobrado?: boolean }
+  opciones: {
+    generarPago: boolean; cuotas?: number; primerCobro?: string; yaCobrado?: boolean;
+    /** Id del servicio que este renueva: se marca `renovado` en el mismo lote. */
+    renuevaA?: string;
+  }
 ): Promise<{ servicio: CrmServicio; pagos: CrmPago[] }> {
   await authReady;
   const ts = ahora();
@@ -361,6 +365,13 @@ export async function createCrmServicioConPago(
   for (const pago of pagos) {
     const { id: pagoId, ...pagoDoc } = pago;
     lote.set(doc(db, COL_PAGOS, pagoId), stripUndefined(pagoDoc));
+  }
+  /* Marcar «renovado» sin crear la renovación dejaba la tasa de renovación
+     contenta y el cash a cero: el dinero solo existe en `crmPagos` (Gonzalo,
+     12-10-2026). Por eso el contrato viejo se marca en el MISMO lote que el
+     nuevo y su cobro — o las dos cosas, o ninguna. */
+  if (opciones.renuevaA) {
+    lote.update(doc(db, COL_SERVICIOS, opciones.renuevaA), { resultadoRenovacion: 'renovado', updatedAt: ts });
   }
   await conTimeout('Crear servicio', lote.commit());
 

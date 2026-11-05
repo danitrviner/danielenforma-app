@@ -9,6 +9,7 @@ import DataTable, { Columna } from './DataTable';
 import EmptyState from './EmptyState';
 import MetricCard from './MetricCard';
 import SuscripcionesBlock from './SuscripcionesBlock';
+import NuevoServicioModal from './NuevoServicioModal';
 import type { Cliente, CrmServicio, MotivoBaja, ResultadoRenovacion } from '../types';
 
 // Los mismos seis motivos de la baja (decididos con Dani): sin motivo, el
@@ -46,6 +47,7 @@ export default function RenovacionesTab({ cliente, coachEmail }: { cliente: Clie
   const { data: suscripciones = [] } = useSuscripcionesDe(cliente.id);
   const actualizar = useActualizarServicio(cliente.id);
   const [mes, setMes] = useState(() => mesDe(hoyISO()));
+  const [renovando, setRenovando] = useState<CrmServicio | null>(null);
 
   const hoy = hoyISO();
 
@@ -130,7 +132,13 @@ export default function RenovacionesTab({ cliente, coachEmail }: { cliente: Clie
                 <button
                   key={v}
                   type="button"
-                  onClick={e => { e.stopPropagation(); void marcar(s, v); }}
+                  onClick={e => {
+                    e.stopPropagation();
+                    // «Renovado» abre la renovación con su cobro: sin él el
+                    // cash no se entera (Gonzalo, 12-10-2026).
+                    if (v === 'renovado') setRenovando(s);
+                    else void marcar(s, v);
+                  }}
                   className="font-mono text-caption text-ink-3 hover:text-accent-ink underline underline-offset-2 transition-colors"
                 >{RESULTADO[v].label.toLowerCase()}</button>
               ))}
@@ -180,6 +188,15 @@ export default function RenovacionesTab({ cliente, coachEmail }: { cliente: Clie
           />
         }
       />
+
+      {renovando && (
+        <NuevoServicioModal
+          cliente={cliente}
+          coachEmail={coachEmail}
+          renovacionDe={renovando}
+          onCerrar={() => setRenovando(null)}
+        />
+      )}
 
       {/* Las suscripciones de antes. No se crean nuevas —una suscripción es un
           servicio con renovación automática— pero las que hay se siguen viendo
