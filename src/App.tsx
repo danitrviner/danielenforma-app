@@ -485,7 +485,10 @@ function AppContent() {
     getGimnasio(profile.email)
       .then(g => {
         if (cancelled) return;
-        const tocado = !!g && (g.progresoCatalogo.completado || g.progresoCatalogo.pendienteRecordatorio || g.maquinas.length > 0);
+        // Con decisiones a medias (cerró la app a mitad) tampoco cuenta como
+        // terminado: el swipe retoma por donde iba. Solo se da por resuelto si
+        // lo completó o lo omitió a propósito.
+        const tocado = !!g && (g.progresoCatalogo.completado || g.progresoCatalogo.pendienteRecordatorio);
         setGimnasioGate(tocado ? 'done' : 'missing');
       })
       .catch(() => { if (!cancelled) setGimnasioGate('done'); }); // ante error, no bloquear la app
