@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Mesocycle, MuscleGroup, MUSCLE_ORDER, MUSCLE_LABELS, MUSCLE_LABELS_SHORT } from '../../types';
 import { Sheet, Button, Icon } from '../ui';
 import {
-  calcularRepartos, evaluarRepartoActual, frecuenciaPorDefecto, FRECUENCIA_MAXIMA, type OpcionDeReparto,
+  calcularRepartos, elegirCiclo, evaluarRepartoActual, CICLO_MINIMO, CICLO_MAXIMO, frecuenciaPorDefecto, FRECUENCIA_MAXIMA, type OpcionDeReparto,
 } from '../../utils/calculadoraReparto';
 import { offsetsDelMesociclo, cicloDiasDeMeso } from '../../utils/asignacionMesociclo';
 import { SERIES_POR_DIA_TOPE, SERIES_POR_SESION } from '../../utils/volumeSuggestion';
@@ -26,6 +26,7 @@ function diaSemana(fecha: string): number {
 }
 
 const fmt = (n: number) => n.toLocaleString('es-ES');
+
 
 interface Props {
   editing: Mesocycle;
@@ -174,13 +175,24 @@ export default function CalculadoraRepartoSheet({ editing, onClose, onUsar }: Pr
       g, editing.reparto?.frecuencias?.[g] ?? frecuenciaPorDefecto(editing.groups[g]?.series ?? 0),
     ])) as Record<MuscleGroup, number>);
   const [maxSesion, setMaxSesion] = useState(SERIES_POR_DIA_TOPE);
+  // Días máximos del microciclo (null = automático: 7, o 14 con «y media»).
+  // Precargado con el ciclo del reparto calculado que ya tenga el mesociclo.
+  const [cicloMaximo, setCicloMaximo] = useState<number | null>(() =>
+    editing.reparto?.frecuencias ? cicloDiasDeMeso(editing) : null);
+  const ciclo = useMemo(
+    () => elegirCiclo({ diasSemana: dias, inicioSemana, frecuencias, ...(cicloMaximo ? { cicloMaximo } : {}) }),
+    [dias, inicioSemana, frecuencias, cicloMaximo],
+  );
   const [maxGrupo, setMaxGrupo] = useState(SERIES_POR_SESION);
 
   const resultado = useMemo(
     () => (paso === 2
-      ? calcularRepartos({ diasSemana: dias, inicioSemana, frecuencias, grupos: editing.groups, maxSeriesSesion: maxSesion, maxSeriesGrupoSesion: maxGrupo })
+      ? calcularRepartos({
+          diasSemana: dias, inicioSemana, frecuencias, grupos: editing.groups, maxSeriesSesion: maxSesion, maxSeriesGrupoSesion: maxGrupo,
+          ...(cicloMaximo ? { cicloMaximo } : {}),
+        })
       : null),
-    [paso, dias, inicioSemana, frecuencias, editing.groups, maxSesion, maxGrupo],
+    [paso, dias, inicioSemana, frecuencias, editing.groups, maxSesion, maxGrupo, cicloMaximo],
   );
   // Lo que el mesociclo ya tiene, medido contra las frecuencias pedidas ahora.
   const actual = useMemo(
@@ -191,7 +203,6 @@ export default function CalculadoraRepartoSheet({ editing, onClose, onUsar }: Pr
     ? resultado.opciones.reduce((a, b) => (b.coste < a.coste ? b : a)).id
     : null;
 
-  const hayMedias = MUSCLE_ORDER.some(g => frecuencias[g] > 0 && !Number.isInteger(frecuencias[g]));
   const toggleDia = (d: number) => setDias(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d].sort((a, b) => a - b));
 
   return (
@@ -229,10 +240,37 @@ export default function CalculadoraRepartoSheet({ editing, onClose, onUsar }: Pr
             </div>
             <p className="font-sans text-caption text-ink-3">
               {dias.length} {dias.length === 1 ? 'día' : 'días'} por semana.{' '}
-              {hayMedias
-                ? 'Hay frecuencias «y media»: el ciclo será de 14 días (semana A y B) con estos mismos días.'
-                : 'Todas las frecuencias son enteras: ciclo semanal.'}
+              {ciclo.cicloDias % 7 !== 0
+                ? `Microciclo de ${ciclo.cicloDias} días con ${ciclo.offsets.length} sesiones repartidas: los días de la semana van rotando.`
+                : ciclo.cicloDias === 7
+                  ? 'Ciclo semanal.'
+                  : `Ciclo de ${ciclo.cicloDias} días con estos mismos días cada semana.`}
             </p>
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <span className="font-mono text-caption text-ink-2 uppercase tracking-wider block">Días máximos del microciclo</span>
+              <span className="font-sans text-caption text-ink-3">
+                {cicloMaximo
+                  ? `Busca el ciclo de hasta ${cicloMaximo} días en el que mejor cuadran las frecuencias.`
+                  : 'Automático: 7 días, o 14 si hay frecuencias «y media».'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {cicloMaximo !== null && (
+                <button type="button" onClick={() => setCicloMaximo(null)} className="font-sans text-caption text-ink-3 hover:text-ink underline">Auto</button>
+              )}
+              <Paso
+                valor={cicloMaximo ?? ciclo.cicloDias}
+                onCambio={setCicloMaximo}
+                min={CICLO_MINIMO}
+                max={CICLO_MAXIMO}
+                paso={1}
+                etiqueta="días máximos del microciclo"
+                formato={v => (cicloMaximo ? `${v} d` : 'Auto')}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

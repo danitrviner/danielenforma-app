@@ -1,4 +1,7 @@
-import type { Mesocycle, MesocycleTemplate, TemplateDay, TemplateStage } from '../types.js';
+import type { Mesocycle, MesocycleTemplate, TemplateDay, TemplateStage, Workout } from '../types.js';
+import { nombreDeSesion } from './nombresMeso.js';
+import { nombrePropioDeSesion } from './draftEjercicios.js';
+import { distribucionDeMeso } from './distribucionDeMeso.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Mesociclo ↔ etapa de plantilla
@@ -97,6 +100,53 @@ export function mesoDesdeEtapa(
   if (dias) meso.days = dias;
   for (const k of CAMPOS_DE_PLAN) {
     if (etapa[k] !== undefined) (meso as unknown as Record<string, unknown>)[k] = copia(etapa[k]);
+  }
+  return meso;
+}
+
+/**
+ * Las rutinas (una por sesión del ciclo) de un mesociclo que viene de una
+ * plantilla con sus ejercicios ya hechos. Sin esto, al aplicar o importar una
+ * plantilla el mesociclo traía el plan pero la pestaña Ejercicios salía vacía
+ * —«Ir a Distribución para generarlas»—, como si nadie lo hubiera diseñado.
+ *
+ * Solo crea las rutinas: NO las asigna al calendario del atleta. Eso sigue
+ * siendo «Asignar mesociclo», cuando el coach lo decida.
+ *
+ * Vacío si la plantilla no traía ejercicios (entonces sí hay que generarlas).
+ */
+export function rutinasDeMesoDePlantilla(
+  meso: Mesocycle,
+  opciones: { ownerId: string; athleteName?: string },
+): Omit<Workout, 'id'>[] {
+  const dias = meso.days ?? [];
+  if (!dias.some(d => d.exercises.length > 0)) return [];
+  return dias.slice(0, meso.daysPerWeek).map((dia, i) => ({
+    ownerId: opciones.ownerId,
+    name: nombreDeSesion({
+      tipo: nombrePropioDeSesion(meso.nombresSesion, i) ?? dia.name,
+      dayIdx: i, athleteName: opciones.athleteName, meso,
+    }),
+    mesocycleId: meso.id,
+    dayIndex: i,
+    exercises: dia.exercises.map(e => structuredClone(e)),
+  }));
+}
+
+/**
+ * `mesoDesdeEtapa` para el mesociclo de un ATLETA (aplicar la plantilla en el
+ * gestor o importarla desde el calendario). Además del traspaso, si la etapa
+ * trae los ejercicios hechos pero se guardó sin distribución —plantillas
+ * anteriores al 16-10—, la calcula: la plantilla está terminada y la pestaña
+ * Distribución no debe pedir que se haga otra vez.
+ */
+export function mesoDeAtletaDesdeEtapa(
+  etapa: TemplateStage,
+  base: Parameters<typeof mesoDesdeEtapa>[1],
+): Mesocycle {
+  const meso = mesoDesdeEtapa(etapa, base);
+  if (!meso.distribution && meso.days?.some(d => d.exercises.length > 0)) {
+    meso.distribution = distribucionDeMeso(meso);
   }
   return meso;
 }

@@ -49,6 +49,68 @@ export interface EntradaCalculadora {
   maxSeriesSesion?: number;
   /** Tope de series de un grupo en una misma sesión. */
   maxSeriesGrupoSesion?: number;
+  /**
+   * Días MÁXIMOS que puede durar el microciclo, puesto por el coach. Sin valor
+   * = automático: 7 si todas las frecuencias son enteras, 14 si hay alguna
+   * «y media». Con valor, se elige la duración ≤ tope en la que mejor cuadran
+   * las frecuencias (ver `elegirCiclo`).
+   */
+  cicloMaximo?: number;
+}
+
+/** Tope del microciclo que se puede poner en la calculadora. */
+export const CICLO_MINIMO = 3;
+export const CICLO_MAXIMO = 28;
+
+export interface CicloElegido {
+  cicloDias: number;
+  /** Día del ciclo (0-based) de cada sesión. */
+  offsets: number[];
+}
+
+/**
+ * Duración del microciclo y en qué días caen las sesiones.
+ *
+ * - Sin tope: 7 días (o 14 con frecuencias «y media»), con los días de la
+ *   semana marcados.
+ * - Con tope: se prueban todas las duraciones hasta el tope y se queda la que
+ *   deja las frecuencias más exactas; a igualdad, la que es semanas enteras
+ *   (los días marcados se repiten igual) y luego la más corta. En un ciclo que
+ *   no es de semanas enteras las sesiones son las mismas por semana que días
+ *   marcados, repartidas por igual, y van rotando de día de la semana.
+ */
+export function elegirCiclo(e: Pick<EntradaCalculadora, 'diasSemana' | 'inicioSemana' | 'frecuencias' | 'cicloMaximo'>): CicloElegido {
+  const dias = [...new Set(e.diasSemana)].filter(d => d >= 0 && d <= 6);
+  const inicio = e.inicioSemana ?? 0;
+  const frec = MUSCLE_ORDER.map(g => e.frecuencias[g] ?? 0).filter(f => f > 0);
+  const deSemana = (L: number) => Array.from({ length: L }, (_, d) => d).filter(d => dias.includes((inicio + d) % 7));
+  const repartidas = (L: number) => {
+    const S = Math.max(1, Math.min(L, Math.round(dias.length * L / 7)));
+    return Array.from({ length: S }, (_, i) => Math.floor((i * L) / S));
+  };
+
+  if (!e.cicloMaximo) {
+    const L = frec.some(f => !Number.isInteger(f)) ? 14 : 7;
+    return { cicloDias: L, offsets: deSemana(L) };
+  }
+  const tope = Math.min(CICLO_MAXIMO, Math.max(CICLO_MINIMO, Math.round(e.cicloMaximo)));
+  let mejor: { L: number; error: number; semanal: boolean } | null = null;
+  for (let L = CICLO_MINIMO; L <= tope; L++) {
+    const S = L % 7 === 0 ? deSemana(L).length : repartidas(L).length;
+    let error = 0;
+    for (const f of frec) {
+      const exactas = f * L / 7;
+      const veces = Math.min(S, Math.max(1, Math.round(exactas)));
+      error += Math.abs(veces - exactas) * 7 / L; // en veces por semana
+    }
+    error = Math.round(error * 1000) / 1000;
+    const semanal = L % 7 === 0;
+    if (!mejor || error < mejor.error || (error === mejor.error && semanal && !mejor.semanal)) {
+      mejor = { L, error, semanal };
+    }
+  }
+  const L = mejor!.L;
+  return { cicloDias: L, offsets: L % 7 === 0 ? deSemana(L) : repartidas(L) };
 }
 
 export interface SesionCalculada {
@@ -377,13 +439,10 @@ export function calcularRepartos(e: EntradaCalculadora): ResultadoCalculadora {
   const avisos: string[] = [];
   const dias = [...new Set(e.diasSemana)].filter(d => d >= 0 && d <= 6).sort((a, b) => a - b);
   const frec = MUSCLE_ORDER.filter(g => (e.frecuencias[g] ?? 0) > 0);
-  const media = frec.some(g => !Number.isInteger(e.frecuencias[g]!));
-  const cicloDias = media ? 14 : 7;
+  const { cicloDias, offsets } = elegirCiclo(e);
   if (dias.length === 0) return { opciones: [], avisos: ['Marca al menos un día de entrenamiento.'], cicloDias };
   if (frec.length === 0) return { opciones: [], avisos: ['Pon frecuencia a algún grupo.'], cicloDias };
 
-  const inicio = e.inicioSemana ?? 0;
-  const offsets = Array.from({ length: cicloDias }, (_, d) => d).filter(d => dias.includes((inicio + d) % 7));
   const S = offsets.length;
   const maxSesion = e.maxSeriesSesion ?? SERIES_POR_DIA_TOPE;
   const maxGrupo = e.maxSeriesGrupoSesion ?? SERIES_POR_SESION;
@@ -391,7 +450,7 @@ export function calcularRepartos(e: EntradaCalculadora): ResultadoCalculadora {
   const veces: Partial<Record<MuscleGroup, number>> = {};
   const seriesPorVez: Partial<Record<MuscleGroup, number>> = {};
   for (const g of frec) {
-    const pedidas = Math.round(e.frecuencias[g]! * cicloDias / 7);
+    const pedidas = Math.max(1, Math.round(e.frecuencias[g]! * cicloDias / 7));
     const n = Math.min(pedidas, S);
     if (n < pedidas) {
       avisos.push(`${MUSCLE_LABELS[g]}: pides ${pedidas} veces cada ${cicloDias} días y solo hay ${S} sesiones; se queda en ${n}.`);
@@ -400,7 +459,7 @@ export function calcularRepartos(e: EntradaCalculadora): ResultadoCalculadora {
     const series = (e.grupos[g]?.series ?? 0) * cicloDias / 7;
     seriesPorVez[g] = n > 0 ? series / n : 0;
     if (series > 0 && seriesPorVez[g]! > maxGrupo + 0.5) {
-      const necesaria = Math.ceil(series / maxGrupo) * 7 / cicloDias;
+      const necesaria = Math.ceil((Math.ceil(series / maxGrupo) * 7 / cicloDias) * 2) / 2;
       avisos.push(`${MUSCLE_LABELS[g]}: ${Math.round(seriesPorVez[g]!)} series por sesión (tope ${maxGrupo}). Súbele la frecuencia a ${necesaria.toLocaleString('es-ES')}× o baja su volumen.`);
     }
     if ((e.grupos[g]?.series ?? 0) <= 0) {
