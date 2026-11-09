@@ -9,7 +9,7 @@ import {
 import {
   getMesocycles, createMesocycle, updateMesocycle, deleteMesocycle,
   getAllUserProfilesOrThrow, getExercises, getWorkouts, updateWorkoutStrict,
-  createWorkoutStrict,
+  createWorkoutStrict, getWorkoutsByMesocycleIdStrict,
   deleteWorkoutsByMesocycleIdStrict, reprogramarAsignacionesDelMeso,
   getUserProfileByEmail, migratePrimaryFocusToMuscleGroup,
   getMesocycleTemplates, createTask, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds, createMesocycleTemplate,
@@ -63,7 +63,7 @@ import { iemEstimado, iemPorSerieDeGrupo, type IemPorSerie } from '../utils/cdg/
 import { useMotorCdg } from '../hooks/useMotorCdg';
 import CalculadoraRepartoSheet from './mesociclo/CalculadoraRepartoSheet';
 import { mesoDeAtletaDesdeEtapa, plantillaDesdeMeso, rutinasDeMesoDePlantilla } from '../utils/plantillaMeso';
-import { distribucionDeMeso } from '../utils/distribucionDeMeso';
+import { distribucionDeMeso, distribucionDesdeDias } from '../utils/distribucionDeMeso';
 import { ordenarSesion } from '../utils/ordenSesion';
 import type { OpcionDeReparto } from '../utils/calculadoraReparto';
 import { zoneLabel, heatmapBg, heatmapText, VOLUME_ZONE_LEGEND } from '../utils/volumeZones';
@@ -2099,6 +2099,62 @@ export default function MesocycleManager({
     }, 800);
   }, [queryClient, selectedEmail, onGuardarPlantilla]);
 
+  /* Bloque de plantilla a medio hacer: trae los ejercicios (`days`) pero no sus
+     rutinas, o no su distribución. Pasaba con todo lo aplicado antes del 09-11
+     y con las plantillas guardadas sin distribución: Distribución pedía
+     «Distribución automática» y Ejercicios «Ir a Distribución», con una
+     plantilla que ya estaba terminada. Al abrirlo se completa solo, desde sus
+     ejercicios: las rutinas nacen sin asignar al calendario, y la distribución
+     es la de esos ejercicios (si las rutinas faltaban, la que hubiera salía
+     del volumen y no casaba con ellos). Una vez por bloque y sesión. */
+  const completados = useRef(new Set<string>());
+  useEffect(() => {
+    if (modoPlantilla || !editing || loadingMesoWorkouts || !coachId) return;
+    const meso = editing;
+    if (completados.current.has(meso.id) || !meso.days?.some(d => d.exercises.length > 0)) return;
+    const faltanRutinas = mesoWorkouts.length === 0;
+    if (!faltanRutinas && meso.distribution) return;
+    completados.current.add(meso.id);
+    const grupoDe = (id: string) => allExercises.find(e => e.id === id)?.muscleGroup;
+    void (async () => {
+      try {
+        // Releído de Firestore: la caché de rutinas puede ir por detrás y
+        // crear las del bloque dos veces sería peor que no crearlas.
+        const crear = faltanRutinas && (await getWorkoutsByMesocycleIdStrict(meso.id)).length === 0;
+        if (crear) {
+          for (const rutina of rutinasDeMesoDePlantilla(meso, { ownerId: coachId, athleteName })) {
+            await createWorkoutStrict(rutina);
+          }
+          await queryClient.invalidateQueries({ queryKey: ['workouts'] });
+        }
+        if (crear || !meso.distribution) {
+          // Con rutinas ya hechas (quizá retocadas), la distribución sale de
+          // ellas; recién creadas, de los días de la plantilla, que son lo mismo.
+          const fuente = crear ? meso : {
+            ...meso,
+            days: Array.from({ length: meso.daysPerWeek }, (_, i) => {
+              const g = mesoGroupsForTabs.find(x => x.dayIndex === i)
+                ?? (mesoGroupsForTabs.every(x => x.dayIndex == null) ? mesoGroupsForTabs[i] : undefined);
+              return { id: `d${i + 1}`, name: meso.days?.[i]?.name ?? g?.name ?? '', exercises: g?.exercises ?? [] };
+            }),
+          };
+          const distribution = distribucionDesdeDias(fuente, grupoDe);
+          if (distribution) {
+            setEditing(prev => {
+              if (prev?.id !== meso.id) return prev;
+              const updated = { ...prev, distribution };
+              scheduleAutoSave(updated);
+              return updated;
+            });
+          }
+        }
+      } catch (err) {
+        completados.current.delete(meso.id);
+        console.error('[completarBloqueDePlantilla]', err);
+      }
+    })();
+  }, [modoPlantilla, editing, loadingMesoWorkouts, mesoWorkouts.length, mesoGroupsForTabs, coachId, athleteName, allExercises, queryClient, scheduleAutoSave]);
+
   // El bloque tal cual, con sus cambios por semana, descargas y test, como
   // plantilla reutilizable con otros clientes. Sin nada del atleta: ver
   // plantillaDesdeMeso. Sin sesiones creadas aún, viaja el plan igual.
@@ -2979,7 +3035,7 @@ export default function MesocycleManager({
         const { id: _sinId, ...datos } = mesoDeAtletaDesdeEtapa(stage, {
           id: '', athleteId: selectedEmail, number: startNumber + i, startDate: stageStartDate,
           programId, programOrder: i,
-        });
+        }, id => allExercises.find(e => e.id === id)?.muscleGroup);
         const meso = await createMesocycle(datos);
         created.push(meso);
         // Si la plantilla traía los ejercicios hechos, sus rutinas nacen ya

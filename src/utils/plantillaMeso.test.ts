@@ -134,10 +134,25 @@ describe('plantilla aplicada a un atleta: llega terminada', () => {
     expect(meso.distribution).toBeUndefined();
   });
 
-  it('plantilla vieja con ejercicios y sin distribución: se calcula al aplicarla', () => {
-    const etapa = { ...etapaDesdeMeso(MESO, { id: 's', dias: DIAS }), distribution: undefined };
-    const meso = mesoDeAtletaDesdeEtapa(etapa, { id: 'm', athleteId: 'a', number: 1, startDate: '2026-11-09' });
-    expect(meso.distribution?.days.length).toBe(meso.daysPerWeek);
+  it('plantilla vieja con ejercicios y sin distribución: sale de sus ejercicios', () => {
+    const dias = [
+      { id: 'd1', name: 'Torso A', exercises: [
+        { exerciseId: 'banca', order: 0, sets: 3, reps: '8', rir: 2, restSeconds: 90, muscleGroup: 'pecho' as const },
+        { exerciseId: 'aperturas', order: 1, sets: 2, reps: '12', rir: 1, restSeconds: 60, muscleGroup: 'pecho' as const },
+        { exerciseId: 'remo', order: 2, sets: 3, reps: '10', rir: 2, restSeconds: 90 },
+      ] },
+      { id: 'd2', name: 'Pierna A', exercises: [{ exerciseId: 'sentadilla', order: 0, sets: 4, reps: '6', rir: 2, restSeconds: 120, muscleGroup: 'cuadriceps' as const }] },
+    ];
+    const etapa = { ...etapaDesdeMeso({ ...MESO, daysPerWeek: 2 }, { id: 's', dias }), distribution: undefined };
+    const meso = mesoDeAtletaDesdeEtapa(etapa, { id: 'm', athleteId: 'a', number: 1, startDate: '2026-11-09' },
+      id => (id === 'remo' ? 'dorsal' : undefined));
+    const d = meso.distribution!;
+    expect(d.days.map(x => x.assignments)).toEqual([
+      [{ group: 'pecho', series: 5 }, { group: 'dorsal', series: 3 }],
+      [{ group: 'cuadriceps', series: 4 }],
+    ]);
+    expect(d.days.map(x => x.totalSeries)).toEqual([8, 4]);
+    expect(d.days[0].dayType).toBe('Torso A');
   });
 
   it('con distribución guardada, se respeta la de la plantilla', () => {
