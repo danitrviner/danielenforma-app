@@ -938,6 +938,12 @@ export async function deleteWorkoutAssignmentsByMesocycleId(mesocycleId: string)
  * asignación del lunes apuntando a una rutina inexistente, y el atleta abría su
  * entreno del lunes y se encontraba una sesión vacía.
  */
+/** Rutinas de un mesociclo, leídas de Firestore (no de la caché). Lanza si falla. */
+export async function getWorkoutsByMesocycleIdStrict(mesocycleId: string): Promise<Workout[]> {
+  const snap = await getDocs(query(collection(db, 'workouts'), where('mesocycleId', '==', mesocycleId)));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Workout));
+}
+
 export async function deleteWorkoutsByMesocycleIdStrict(
   mesocycleId: string,
   conservar: readonly string[] = [],

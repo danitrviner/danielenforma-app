@@ -1,7 +1,7 @@
-import type { Mesocycle, MesocycleTemplate, TemplateDay, TemplateStage, Workout } from '../types.js';
+import type { Mesocycle, MesocycleTemplate, MuscleGroup, TemplateDay, TemplateStage, Workout } from '../types.js';
 import { nombreDeSesion } from './nombresMeso.js';
 import { nombrePropioDeSesion } from './draftEjercicios.js';
-import { distribucionDeMeso } from './distribucionDeMeso.js';
+import { distribucionDesdeDias } from './distribucionDeMeso.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Mesociclo ↔ etapa de plantilla
@@ -137,16 +137,18 @@ export function rutinasDeMesoDePlantilla(
  * `mesoDesdeEtapa` para el mesociclo de un ATLETA (aplicar la plantilla en el
  * gestor o importarla desde el calendario). Además del traspaso, si la etapa
  * trae los ejercicios hechos pero se guardó sin distribución —plantillas
- * anteriores al 16-10—, la calcula: la plantilla está terminada y la pestaña
+ * anteriores al 16-10—, la saca de esos ejercicios (`distribucionDesdeDias`): la plantilla está terminada y la pestaña
  * Distribución no debe pedir que se haga otra vez.
  */
 export function mesoDeAtletaDesdeEtapa(
   etapa: TemplateStage,
   base: Parameters<typeof mesoDesdeEtapa>[1],
+  grupoDe?: (exerciseId: string) => MuscleGroup | undefined,
 ): Mesocycle {
   const meso = mesoDesdeEtapa(etapa, base);
-  if (!meso.distribution && meso.days?.some(d => d.exercises.length > 0)) {
-    meso.distribution = distribucionDeMeso(meso);
+  if (!meso.distribution) {
+    const distribution = distribucionDesdeDias(meso, grupoDe);
+    if (distribution) meso.distribution = distribution;
   }
   return meso;
 }
