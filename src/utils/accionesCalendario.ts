@@ -15,6 +15,7 @@ import {
 import { addDays } from './trainingWeek.js';
 import { mesocycleWeekNumber, resolverEjercicioDelMeso } from './progression.js';
 import { cicloDiasDeMeso } from './asignacionMesociclo.js';
+import { mesoDeAtletaDesdeEtapa } from './plantillaMeso.js';
 
 function diasEntre(a: string, b: string): number {
   return Math.round((new Date(b + 'T00:00:00').getTime() - new Date(a + 'T00:00:00').getTime()) / 86400000);
@@ -53,21 +54,14 @@ export function planificarPlantillaMeso(
 
   tpl.stages.forEach((stage, i) => {
     const inicioEtapa = cursor;
-    mesociclos.push({
-      athleteId,
-      number: numeroInicial + i,
-      weeks: stage.weeks,
-      startDate: inicioEtapa,
-      objective: stage.name,
-      daysPerWeek: stage.daysPerWeek,
-      groups: { ...stage.groups },
-      ...(stage.days && stage.days.length > 0
-        ? { days: stage.days.map(d => ({ ...d, exercises: d.exercises.map(e => ({ ...e })) })) }
-        : {}),
-      programId,
-      programOrder: i,
-      ...(stage.deloadWeek !== undefined ? { deloadWeek: stage.deloadWeek } : {}),
+    // El plan ENTERO de la etapa (reparto, ciclo, distribución, nombres de
+    // sesión…), con el mismo traspaso que «Aplicar plantilla» del gestor.
+    // Antes se copiaban a mano solo volumen, días y descarga, y el bloque
+    // importado desde el calendario llegaba con la distribución por hacer.
+    const { id: _sinId, ...meso } = mesoDeAtletaDesdeEtapa(stage, {
+      id: '', athleteId, number: numeroInicial + i, startDate: inicioEtapa, programId, programOrder: i,
     });
+    mesociclos.push(meso);
 
     if (stage.reviewCadenceWeeks && stage.reviewCadenceWeeks > 0) {
       const cuantas = Math.max(1, Math.floor(stage.weeks / stage.reviewCadenceWeeks));

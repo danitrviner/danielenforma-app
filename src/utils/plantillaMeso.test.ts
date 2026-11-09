@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { MUSCLE_ORDER, type Mesocycle, type MuscleGroup, type MuscleGroupConfig } from '../types';
-import { etapaDesdeMeso, mesoDesdeEtapa, plantillaDesdeMeso, LUNES_DE_PLANTILLA } from './plantillaMeso';
+import { etapaDesdeMeso, mesoDesdeEtapa, mesoDeAtletaDesdeEtapa, plantillaDesdeMeso, rutinasDeMesoDePlantilla, LUNES_DE_PLANTILLA } from './plantillaMeso';
 import { buildSnapshot } from './repartoDesactualizado';
 
 const grupos = Object.fromEntries(MUSCLE_ORDER.map(g => [g, { series: g === 'pecho' ? 12 : 0, priority: 'media' }])) as Record<MuscleGroup, MuscleGroupConfig>;
@@ -108,5 +108,41 @@ describe('mesociclo del atleta → plantilla de biblioteca', () => {
     expect(meso.days).toEqual(DIAS);
     expect(meso.eventosSemana).toBeUndefined();
     expect(meso.cdgActitud).toBeUndefined();
+  });
+});
+
+describe('plantilla aplicada a un atleta: llega terminada', () => {
+  const DIAS = [{ id: 'd1', name: 'Empuje', exercises: [{
+    exerciseId: 'banca', order: 0, sets: 3, reps: '6-8', rir: 2, restSeconds: 120,
+  }] }];
+  it('las rutinas de los días hechos nacen con su sesión, sin asignar', () => {
+    const tpl = plantillaDesdeMeso(MESO, { ownerId: 'c', etapaId: 's', dias: DIAS });
+    const meso = mesoDeAtletaDesdeEtapa(tpl.stages[0], { id: 'm9', athleteId: 'otro@enforma.com', number: 1, startDate: '2026-11-09' });
+    const rutinas = rutinasDeMesoDePlantilla(meso, { ownerId: 'coachUid', athleteName: 'Ander' });
+    expect(rutinas).toHaveLength(Math.min(DIAS.length, meso.daysPerWeek));
+    expect(rutinas.map(r => r.dayIndex)).toEqual(rutinas.map((_, i) => i));
+    expect(rutinas.every(r => r.mesocycleId === 'm9' && r.ownerId === 'coachUid')).toBe(true);
+    expect(rutinas[0].exercises).toEqual(DIAS[0].exercises);
+    expect(rutinas[0].exercises).not.toBe(DIAS[0].exercises);
+    // El nombre propio de la sesión manda sobre el del día.
+    expect(rutinas[0].name).toBe('Empuje pesado · Ander · Meso #1');
+  });
+
+  it('sin ejercicios en la plantilla no inventa rutinas', () => {
+    const meso = mesoDeAtletaDesdeEtapa({ id: 's', name: 'Vacía', weeks: 4, daysPerWeek: 3, groups: grupos }, { id: 'm', athleteId: 'a', number: 1, startDate: '2026-11-09' });
+    expect(rutinasDeMesoDePlantilla(meso, { ownerId: 'c' })).toEqual([]);
+    expect(meso.distribution).toBeUndefined();
+  });
+
+  it('plantilla vieja con ejercicios y sin distribución: se calcula al aplicarla', () => {
+    const etapa = { ...etapaDesdeMeso(MESO, { id: 's', dias: DIAS }), distribution: undefined };
+    const meso = mesoDeAtletaDesdeEtapa(etapa, { id: 'm', athleteId: 'a', number: 1, startDate: '2026-11-09' });
+    expect(meso.distribution?.days.length).toBe(meso.daysPerWeek);
+  });
+
+  it('con distribución guardada, se respeta la de la plantilla', () => {
+    const tpl = plantillaDesdeMeso(MESO, { ownerId: 'c', etapaId: 's', dias: DIAS });
+    const meso = mesoDeAtletaDesdeEtapa(tpl.stages[0], { id: 'm', athleteId: 'a', number: 1, startDate: '2026-11-09' });
+    expect(meso.distribution).toEqual(MESO.distribution);
   });
 });

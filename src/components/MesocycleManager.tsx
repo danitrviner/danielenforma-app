@@ -62,7 +62,7 @@ import { choquesPorSesion, empezarArrastre, leerArrastre, minutosEstimados, trae
 import { iemEstimado, iemPorSerieDeGrupo, type IemPorSerie } from '../utils/cdg/iemEstimado';
 import { useMotorCdg } from '../hooks/useMotorCdg';
 import CalculadoraRepartoSheet from './mesociclo/CalculadoraRepartoSheet';
-import { mesoDesdeEtapa, plantillaDesdeMeso } from '../utils/plantillaMeso';
+import { mesoDeAtletaDesdeEtapa, plantillaDesdeMeso, rutinasDeMesoDePlantilla } from '../utils/plantillaMeso';
 import { distribucionDeMeso } from '../utils/distribucionDeMeso';
 import { ordenarSesion } from '../utils/ordenSesion';
 import type { OpcionDeReparto } from '../utils/calculadoraReparto';
@@ -2976,12 +2976,17 @@ export default function MesocycleManager({
         const stageStartDate = startDate;
         // Todo el plan de la etapa (reparto, ciclo, distribución…), con el
         // mismo traspaso que usa el editor de plantillas.
-        const { id: _sinId, ...datos } = mesoDesdeEtapa(stage, {
+        const { id: _sinId, ...datos } = mesoDeAtletaDesdeEtapa(stage, {
           id: '', athleteId: selectedEmail, number: startNumber + i, startDate: stageStartDate,
           programId, programOrder: i,
         });
         const meso = await createMesocycle(datos);
         created.push(meso);
+        // Si la plantilla traía los ejercicios hechos, sus rutinas nacen ya
+        // (sin asignar al calendario): la pestaña Ejercicios no sale vacía.
+        for (const rutina of rutinasDeMesoDePlantilla(meso, { ownerId: coachId, athleteName })) {
+          await createWorkoutStrict(rutina);
+        }
 
         // Cadencia de revisiones de la etapa (Bloque H, Pantalla 4) — se crean
         // ya con la plantilla aplicada, el carril "Revisiones" del calendario
@@ -3006,6 +3011,7 @@ export default function MesocycleManager({
         startDate = addDays(startDate, stage.weeks * 7);
       }
       await Promise.all(reviewTasks);
+      await queryClient.invalidateQueries({ queryKey: ['workouts'] });
 
       queryClient.setQueryData<Mesocycle[]>(mesocyclesQueryKey, prev => [...(prev ?? []), ...created]);
       setEditing(created[0]);

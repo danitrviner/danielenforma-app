@@ -47,6 +47,17 @@ describe('planificarPlantillaMeso', () => {
     expect(revisiones[0].athleteId).toBe('a@b.com');
   });
 
+  it('copia el plan entero de la etapa: reparto, ciclo y distribución (antes se perdían)', () => {
+    const distribution = { days: [{ assignments: [], totalSeries: 0, dayType: 'Torso' }], overloadAlert: false, snapshot: { daysPerWeek: 4, groupSeries: {} }, generatedAt: 'x' };
+    const tpl: MesocycleTemplate = { ...TPL, stages: [{ ...TPL.stages[0], cycleDays: 14, splitId: 'ul4', nombresSesion: ['Torso A'], distribution }] };
+    const { mesociclos } = planificarPlantillaMeso(tpl, 'a@b.com', '2026-09-07', 1, 'p');
+    expect(mesociclos[0].distribution).toEqual(distribution);
+    expect(mesociclos[0].cycleDays).toBe(14);
+    expect(mesociclos[0].splitId).toBe('ul4');
+    expect(mesociclos[0].nombresSesion).toEqual(['Torso A']);
+    expect('id' in mesociclos[0]).toBe(false);
+  });
+
   it('finDePlantilla cae el último día, no el primero del siguiente bloque', () => {
     expect(finDePlantilla(TPL, '2026-09-07')).toBe('2026-11-29');
   });

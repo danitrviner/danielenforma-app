@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { MUSCLE_ORDER, type MuscleGroup, type MuscleGroupConfig, type Mesocycle } from '../types';
-import { calcularRepartos, frecuenciaPorDefecto, nombrarSesion, GRUPOS_COMODIN, evaluarRepartoActual } from './calculadoraReparto';
+import { calcularRepartos, elegirCiclo, frecuenciaPorDefecto, nombrarSesion, GRUPOS_COMODIN, evaluarRepartoActual } from './calculadoraReparto';
 import { buildSnapshot } from './repartoDesactualizado';
 import { repartoDelMesociclo, gruposPorSesion, frecuenciaSemanalDeSplit } from './trainingSplits';
 
@@ -174,5 +174,36 @@ describe('evaluarRepartoActual', () => {
     const r = evaluarRepartoActual(meso, { frecuencias: { trapecio: 2 }, grupos: meso.groups })!;
     expect(r.frecuencias.trapecio).toEqual({ objetivo: 2, conseguida: 1 });
     expect(r.frecuencias.dorsal?.conseguida).toBe(1);
+  });
+});
+
+describe('calcularRepartos · días máximos del microciclo', () => {
+  it('frecuencias enteras con tope de 10: se queda en la semana', () => {
+    const c = elegirCiclo({ diasSemana: [0, 2, 4], frecuencias: { pecho: 2, cuadriceps: 1 }, cicloMaximo: 10 });
+    expect(c.cicloDias).toBe(7);
+    expect(c.offsets).toEqual([0, 2, 4]);
+  });
+
+  it('pecho a 1,5× con tope de 10: ciclo de 9 días, 2 veces por vuelta', () => {
+    const r = calcularRepartos({ diasSemana: [0, 2, 4], frecuencias: { pecho: 1.5 }, grupos: grupos({ pecho: 9 }), cicloMaximo: 10 });
+    expect(r.cicloDias).toBe(9);
+    const o = r.opciones[0];
+    expect(o.sesiones).toHaveLength(4);
+    expect(o.sesiones.filter(s => s.grupos.some(g => g.grupo === 'pecho'))).toHaveLength(2);
+    expect(o.reparto.dias).toHaveLength(9);
+  });
+
+  it('con tope de 14 o más, 1,5× sigue siendo la semana A/B de 14 días', () => {
+    expect(elegirCiclo({ diasSemana: [0, 2, 4], frecuencias: { pecho: 1.5 }, cicloMaximo: 20 }).cicloDias).toBe(14);
+  });
+
+  it('nunca pasa del tope', () => {
+    for (const tope of [3, 5, 8, 12, 28]) {
+      expect(elegirCiclo({ diasSemana: [0, 1, 3, 5], frecuencias: { pecho: 1.5, dorsal: 2.5 }, cicloMaximo: tope }).cicloDias).toBeLessThanOrEqual(tope);
+    }
+  });
+
+  it('sin tope sigue siendo automático', () => {
+    expect(calcularRepartos({ diasSemana: [0, 2, 4], frecuencias: { pecho: 1.5 }, grupos: grupos({ pecho: 9 }) }).cicloDias).toBe(14);
   });
 });

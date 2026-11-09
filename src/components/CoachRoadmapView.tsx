@@ -8,9 +8,10 @@ import {
   updateWorkout, updateMesocycle, saveNutritionProgram,
   getCardioSessionsForAthlete, getProgressPhotos, getAssignmentsForAthlete, getQuestionnairesByCoach,
   getCoachDayNotesForAthlete, saveCoachDayNote,
-  getMesocycleTemplates, createMesocycle, getAthleteDietConfig, saveAthleteDietConfig,
+  getMesocycleTemplates, createMesocycle, createWorkoutStrict, getAthleteDietConfig, saveAthleteDietConfig,
   assignQuestionnaire, createNotificationDeduped, getOnboarding,
 } from '../dbService';
+import { rutinasDeMesoDePlantilla } from '../utils/plantillaMeso';
 import { planificarPlantillaMeso, insertarFaseNutricion, alternarRefeeds, FaseNueva } from '../utils/accionesCalendario';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
 import ChallengeManager from './roadmap/ChallengeManager';
@@ -264,7 +265,15 @@ export default function CoachRoadmapView({ athleteEmail, coachId, onGoToClientTa
       tpl, athleteEmail, inicio, mesocycles.length + 1, `prog_${Date.now()}`,
     );
     const creados: Mesocycle[] = [];
-    for (const m of mesociclos) creados.push(await createMesocycle(m));
+    for (const m of mesociclos) {
+      const meso = await createMesocycle(m);
+      creados.push(meso);
+      // Rutinas de la plantilla ya hechas, sin asignar (ver rutinasDeMesoDePlantilla).
+      for (const rutina of rutinasDeMesoDePlantilla(meso, { ownerId: coachId, athleteName: profile?.displayName })) {
+        await createWorkoutStrict(rutina);
+      }
+    }
+    void queryClient.invalidateQueries({ queryKey: ['workouts'] });
     await Promise.all(revisiones.map(r => createTask(r)));
     queryClient.setQueryData<Mesocycle[]>(mesocyclesKey, prev => [...(prev ?? []), ...creados]);
     queryClient.invalidateQueries({ queryKey: tasksKey });
