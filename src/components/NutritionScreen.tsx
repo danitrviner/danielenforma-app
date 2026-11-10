@@ -51,7 +51,7 @@ import { recetaDesglosada, faltanCantidades } from '../utils/recetaDesglosada';
 
 import CrearAlimentoSheet from './nutrition/CrearAlimentoSheet';
 import GramosSheet from './nutrition/GramosSheet';
-import { alimentosUsados, claveDeCatalogo, claveDeProducto, type AlimentoUsado } from '../utils/alimentosFrecuentes';
+import { alimentosUsados, claveDeCatalogo, claveDeProducto, conDiaEnLista, type AlimentoUsado } from '../utils/alimentosFrecuentes';
 import { itemsDeAlimentoPorGramos, sePuedeEnGramos, previsionDeGramos, gramosPorIntercambioDe, gramosSugeridos } from '../utils/gramosDeAlimento';
 import { itemsDeProducto } from '../utils/productoAIntercambios';
 import ProductoOffSheet from './nutrition/ProductoOffSheet';
@@ -1078,7 +1078,16 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       ...(aguaMl !== undefined ? { aguaMl } : {}),
       ...(racionesVegetales !== undefined ? { racionesVegetales } : {}),
     };
-    queryClient.setQueryData(['dietCompletionLog', profile.email, viewDate], { ...log, id: `${profile.email}_${viewDate}` });
+    const conId = { ...log, id: `${profile.email}_${viewDate}` };
+    queryClient.setQueryData(['dietCompletionLog', profile.email, viewDate], conId);
+    /* Los recientes del buscador salen de los registros del último mes, que se
+       piden una vez y se guardan 10 minutos. Sin esto, lo que se acababa de
+       apuntar (un producto escaneado, sobre todo) no salía en «Recientes» hasta
+       que caducaba esa copia: unas veces estaba y otras no. */
+    for (const [clave, lista] of queryClient.getQueriesData<DietCompletionLog[]>({ queryKey: ['dietCompletionLogs', profile.email, 'desde'] })) {
+      if (!lista) continue;
+      queryClient.setQueryData(clave, conDiaEnLista(lista, conId, String(clave[3] ?? ''), hoyIsoLocal()));
+    }
     return saveDietCompletionLog(log)
       .catch(() => showToast('No se pudo guardar el registro del día. Se reintentará al recargar.', 'error'));
   // eslint-disable-next-line react-hooks/exhaustive-deps -- diaKey se deriva de profile.email y viewDate
@@ -1995,7 +2004,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         : undefined;
       if (u.tipo === 'off' && u.codigo) {
         const codigo = u.codigo;
-        return { clave: u.clave, nombre: u.label, detalle, origen: 'Producto', anadido: veces(u.clave), onAbrir: () => setFicha({ tipo: 'off', codigo, nombre: u.label, marca: u.marca, ultimos: u.gramos, mealId }), onAnadir: reanadir };
+        return { clave: u.clave, nombre: u.label, detalle, despensa: true, anadido: veces(u.clave), onAbrir: () => setFicha({ tipo: 'off', codigo, nombre: u.label, marca: u.marca, ultimos: u.gramos, mealId }), onAnadir: reanadir };
       }
       if (u.tipo === 'catalogo') {
         const a = catalogoAlimentos.find(x => claveDeCatalogo(x.id) === u.clave);
@@ -2032,9 +2041,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const filasMios = alimentosPropios.filter(f => coincide(f.label)).map(filaBanco);
 
     const vistos = new Set<string>();
-    const historial = [...usados.recientes, ...usados.frecuentes]
+    // Al buscar se mira en TODO lo apuntado en el mes, no solo en los ~16 de la
+    // lista: si no, un producto escaneado hace unos días no salía por su nombre.
+    const historial = (term ? usados.todos : [...usados.recientes, ...usados.frecuentes])
       .filter(u => { if (vistos.has(u.clave)) return false; vistos.add(u.clave); return true; })
-      .filter(u => coincide(u.label))
+      .filter(u => coincide(u.label) || (!!u.marca && coincide(u.marca)))
       .map(filaUsado).filter((x): x is FilaAlimento => !!x);
 
     /* Al escribir, el buscador mira en TODA la app (Dani, 27-10): ya no hay
@@ -2047,6 +2058,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         return filas.filter(f => { const k = f.nombre.toLowerCase(); if (vistas.has(k)) return false; vistas.add(k); return true; });
       };
       const tuyos = unicos([...historial, ...filasMios]);
+      // Lo que ya ha apuntado alguna vez sale como «Despensa» también aquí.
+      const enDespensa = new Set(usados.todos.flatMap(u => (u.tipo === 'off' && u.codigo ? [u.codigo] : [])));
       const yaTuyos = new Set(tuyos.map(f => f.nombre.toLowerCase()));
       const deCatalogo = alimentosDelCatalogo.map((a): FilaAlimento => ({
         clave: `cat_${a.id}`, nombre: nombreDeAlimento(a), detalle: `${Math.round(a.porCien.kcal)} kcal · 100 g`,
@@ -2060,7 +2073,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           { titulo: 'Alimentos generales', icono: 'category', filas: deGenerales, max: 4 },
           { titulo: 'Mis comidas y recetas', icono: 'menu_book', filas: filasRecetas, max: 3 },
           { titulo: 'Supermercado', icono: 'qr_code_scanner', filas: productosOff.map((e): FilaAlimento => ({
-            clave: `off_${e.c}`, nombre: e.n, detalle: e.b || undefined, origen: 'Producto', anadido: veces(`off_${e.c}`),
+            clave: `off_${e.c}`, nombre: e.n, detalle: e.b || undefined, origen: 'Producto', despensa: enDespensa.has(e.c), anadido: veces(`off_${e.c}`),
             onAbrir: () => setFicha({ tipo: 'off', codigo: e.c, nombre: e.n, marca: e.b || undefined, ultimos: ultimosGramos(claveDeProducto(e.c)), mealId }),
           })), max: 4 },
         ],

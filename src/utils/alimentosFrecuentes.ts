@@ -51,6 +51,11 @@ function claveYTipo(item: DietItem): Pick<AlimentoUsado, 'clave' | 'tipo' | 'cod
 export interface UsadosDelAtleta {
   recientes: AlimentoUsado[];
   frecuentes: AlimentoUsado[];
+  /** Todo lo apuntado en la ventana, lo último primero. Para buscar por nombre:
+   *  un producto escaneado hace unos días ya no cabe en los recientes, y si se
+   *  resolvió con la API en directo tampoco está en la copia local de OFF, así
+   *  que sin esto no había forma de volver a encontrarlo. */
+  todos: AlimentoUsado[];
 }
 
 const LIMITE = 8;
@@ -116,15 +121,23 @@ export function alimentosUsados(logs: DietCompletionLog[]): UsadosDelAtleta {
     }
   }
 
-  const todos = [...porClave.values()];
-  const recientes = [...todos]
-    .sort((a, b) => b.ultimo.localeCompare(a.ultimo) || b.veces - a.veces)
-    .slice(0, LIMITE);
+  const todos = [...porClave.values()]
+    .sort((a, b) => b.ultimo.localeCompare(a.ultimo) || b.veces - a.veces);
+  const recientes = todos.slice(0, LIMITE);
   // Frecuente = lo repetido en 2 o más días distintos... aquí basta con 2 veces.
   const frecuentes = todos
     .filter(a => a.veces >= 2)
     .sort((a, b) => b.veces - a.veces || b.ultimo.localeCompare(a.ultimo))
     .slice(0, LIMITE)
     .filter(a => !recientes.some(r => r.clave === a.clave));
-  return { recientes, frecuentes };
+  return { recientes, frecuentes, todos };
+}
+
+/** La lista de registros de la ventana con el día recién guardado dentro (lo
+ *  sustituye si ya estaba). Fuera de la ventana o en el futuro no se mete: la
+ *  consulta tampoco lo traería. */
+export function conDiaEnLista(lista: DietCompletionLog[], dia: DietCompletionLog, desde: string, hasta: string): DietCompletionLog[] {
+  const sinEse = lista.filter(l => l.date !== dia.date);
+  if (dia.date < desde || dia.date > hasta) return sinEse.length === lista.length ? lista : sinEse;
+  return [...sinEse, dia].sort((a, b) => a.date.localeCompare(b.date));
 }
