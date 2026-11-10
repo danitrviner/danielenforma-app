@@ -276,7 +276,27 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                 <p className="font-sans text-caption text-ink-2">Con un registro más dibujamos tu tendencia.</p>
               </div>
             )}
-            {logs.length > 1 && chartData.length < 2 && (
+            {/* Un solo pesaje en el rango no da para una línea, pero SÍ hay
+                registro: antes salía «Sin registros en este rango» (Fernando,
+                10-11-2026: pesaje del 9-11 y 7D vacío). Se enseña ese pesaje y
+                cuánto cambió desde el anterior, aunque quede fuera del rango. */}
+            {logs.length > 1 && chartData.length === 1 && (() => {
+              const unico = chartData[0];
+              const anterior = [...asc].reverse().find(l => l.date < unico.date);
+              return (
+                <div className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-4 py-3">
+                  <Icon name="monitor_weight" size="m" className="text-accent-ink shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-mono text-body font-bold text-ink tabular-nums">{kg1(unico.value)} kg · {fmtDate(unico.date)}</p>
+                    <p className="font-sans text-caption text-ink-2">
+                      Un pesaje en este rango
+                      {anterior && `: ${conSigno(Math.round((unico.value - anterior.weight) * 10) / 10)} kg desde el ${fmtDate(anterior.date)}`}.
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+            {logs.length > 1 && chartData.length === 0 && (
               <div className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-4 py-3">
                 <Icon name="show_chart" size="m" className="text-accent-ink shrink-0" />
                 <p className="font-sans text-caption text-ink-2">Sin registros en este rango.</p>

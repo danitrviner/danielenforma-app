@@ -32,6 +32,9 @@ export interface FilaAlimento {
   tuyo?: boolean;
   /** Etiqueta de origen al buscar en todo («Receta», «Producto»). */
   origen?: string;
+  /** Un producto de supermercado que el atleta ya ha apuntado: «Despensa», en
+   *  amarillo, en vez del «Producto» gris de los que aún no ha probado. */
+  despensa?: boolean;
   /** Veces añadido mientras esta pantalla está abierta. */
   anadido?: number;
   onAbrir: () => void;
@@ -110,7 +113,8 @@ function Fila({ f }: { f: FilaAlimento; key?: React.Key }) {
         <span className="flex items-center font-sans text-body font-semibold leading-snug text-ink">
           <span className="truncate">{f.nombre}</span>
           {f.tuyo && <span className="ml-1.5 flex-none rounded-[5px] border border-accent-line px-1 font-mono text-[9.5px] font-bold uppercase tracking-wider text-accent-ink">tuyo</span>}
-          {f.origen && <span className="ml-1.5 flex-none rounded-[5px] border border-hairline px-1 font-mono text-[9.5px] font-bold uppercase tracking-wider text-ink-3">{f.origen}</span>}
+          {f.despensa && <span className="ml-1.5 flex-none rounded-[5px] border border-warning/40 bg-warning/14 px-1 font-mono text-[9.5px] font-bold uppercase tracking-wider text-warning">Despensa</span>}
+          {f.origen && !f.despensa && <span className="ml-1.5 flex-none rounded-[5px] border border-hairline px-1 font-mono text-[9.5px] font-bold uppercase tracking-wider text-ink-3">{f.origen}</span>}
         </span>
         <span className="mt-0.5 flex items-center gap-2 font-mono text-caption text-ink-3">
           {f.detalle && <span className="truncate">{f.detalle}</span>}

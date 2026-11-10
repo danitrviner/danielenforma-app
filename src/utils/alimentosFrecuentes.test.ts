@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { alimentosUsados, claveDeCatalogo, claveDeProducto } from './alimentosFrecuentes';
+import { alimentosUsados, claveDeCatalogo, claveDeProducto, conDiaEnLista } from './alimentosFrecuentes';
 import type { DietCompletionLog } from '../types';
 
 const log = (date: string, items: Array<Record<string, unknown>>, hechos?: number[]): DietCompletionLog => ({
@@ -31,7 +31,7 @@ describe('alimentosUsados', () => {
     expect(r.recientes[0].veces).toBe(1);
   });
   it('sin registros devuelve listas vacías', () => {
-    expect(alimentosUsados([])).toEqual({ recientes: [], frecuentes: [] });
+    expect(alimentosUsados([])).toEqual({ recientes: [], frecuentes: [], todos: [] });
   });
 
   it('reconoce productos de supermercado y alimentos del catálogo por 100 g', () => {
@@ -66,5 +66,35 @@ describe('alimentosUsados', () => {
       ]),
     ]);
     expect(r.recientes).toEqual([]);
+  });
+});
+
+describe('producto escaneado en el historial', () => {
+  const nut = { kcal: 90, p: 10, hc: 5, g: 2 };
+  const escaneado = { category: 'PROT', foodLabel: 'Skyr natural', marca: 'Hacendado', quantity: 1, gramos: 150, nutrientes: nut, lineaId: 'l1', origen: { tipo: 'off', codigo: '8480000123456' } };
+
+  it('sigue en «todos» aunque ya no quepa en los recientes', () => {
+    const otros = Array.from({ length: 12 }, (_, i) => ({ category: 'HC', foodLabel: `Alimento ${i}`, quantity: 1 }));
+    const r = alimentosUsados([log('2026-11-01', [escaneado]), log('2026-11-05', otros)]);
+    expect(r.recientes.some(a => a.clave === claveDeProducto('8480000123456'))).toBe(false);
+    const enTodos = r.todos.find(a => a.clave === claveDeProducto('8480000123456'));
+    expect(enTodos).toMatchObject({ tipo: 'off', codigo: '8480000123456', marca: 'Hacendado', gramos: 150 });
+    expect(r.todos[0].ultimo).toBe('2026-11-05');
+  });
+
+  it('el día recién guardado entra en la lista y sale en recientes', () => {
+    const lista = [log('2026-11-01', [{ category: 'HC', foodLabel: 'Pan', quantity: 1 }])];
+    const hoy = log('2026-11-10', [escaneado]);
+    const nueva = conDiaEnLista(lista, hoy, '2026-10-11', '2026-11-10');
+    expect(nueva.map(l => l.date)).toEqual(['2026-11-01', '2026-11-10']);
+    expect(alimentosUsados(nueva).recientes[0].clave).toBe(claveDeProducto('8480000123456'));
+  });
+
+  it('sustituye el día si ya estaba y no mete días fuera de la ventana', () => {
+    const viejo = log('2026-11-10', [{ category: 'HC', foodLabel: 'Pan', quantity: 1 }]);
+    const nuevo = log('2026-11-10', [escaneado]);
+    expect(conDiaEnLista([viejo], nuevo, '2026-10-11', '2026-11-10')).toEqual([nuevo]);
+    expect(conDiaEnLista([viejo], log('2026-09-01', [escaneado]), '2026-10-11', '2026-11-10')).toEqual([viejo]);
+    expect(conDiaEnLista([viejo], log('2026-11-12', [escaneado]), '2026-10-11', '2026-11-10')).toEqual([viejo]);
   });
 });
