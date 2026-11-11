@@ -26,6 +26,7 @@ import { normalizarFicha, MAX_HECHOS_FICHA } from '../../src/utils/fichaViva.js'
 import { VOLUME_LANDMARKS_DEFAULT } from '../../src/data/volumeLandmarks.js';
 import { hoyIsoLocal, addDays } from '../../src/utils/trainingWeek.js';
 import { COACH_EMAIL, getAdminDb } from './auth.js';
+import { unirPropios, CDG_PROPIOS_DOC } from '../../src/utils/cdg/propios.js';
 import { normalizarPolitica, type PoliticaAutopiloto } from '../../src/autopiloto/politica.js';
 
 type Firestore = NonNullable<Awaited<ReturnType<typeof getAdminDb>>>;
@@ -237,9 +238,10 @@ export function fuenteAdmin(db: Firestore, coachUid: string): FuenteDeDatos {
     saveCoachReport: async (report: CoachReport) => { await col('coachReports').doc(report.id).set(sinIndefinidos(report)); },
     updateAiProposal: async (id, updates) => { await col('aiProposals').doc(id).set(sinIndefinidos(updates as Record<string, unknown>), { merge: true }); },
     getCdgCatalogoJson: async () => {
-      const s = await uno('cdgCatalogo', 'v4');
-      const json = s.exists ? (s.data() as { json?: unknown }).json : null;
-      return typeof json === 'string' && json.length > 0 ? json : null;
+      const [s, p] = await Promise.all([uno('cdgCatalogo', 'v4'), uno('cdgCatalogo', CDG_PROPIOS_DOC)]);
+      const jsonDe = (d: typeof s) => { const j = d.exists ? (d.data() as { json?: unknown }).json : null; return typeof j === 'string' && j.length > 0 ? j : null; };
+      const json = jsonDe(s);
+      return json ? unirPropios(json, jsonDe(p)) : null;
     },
     getKnowledgeNotes: () => todos<KnowledgeNote>('knowledgeBase'),
     getVolumeLandmarks: async () => {

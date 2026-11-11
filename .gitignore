@@ -57,3 +57,4 @@ scripts/backups/
 
 # Catálogo CDG (licencia personal, no va al repo)
 scripts/cdg/*.json
+scripts/cdg/*.py
