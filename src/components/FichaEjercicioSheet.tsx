@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Exercise, MuscleGroup } from '../types';
 import { getEstadoCatalogo } from '../dbService';
 import { gimnasioQueryKey } from '../features/gimnasio/MiGimnasioPanel';
-import { useMotorCdg } from '../hooks/useMotorCdg';
+import { useMotorCdg, cdgCatalogoKey, type MotorCdgEstado } from '../hooks/useMotorCdg';
+import { guardarPropioCdg, crearVarianteCdg } from '../db/cdg';
+import MaticesCdg, { type AccionesMatices } from './MaticesCdg';
 import { fichaPorSerie, SERIE_DE_REFERENCIA } from '../utils/cdg/fichaEjercicio';
 import { MUSCLE_LABELS, MARCA_LABELS } from '../types';
 import { Sheet, PanelLateral, useAnchoMinimo } from './ui';
@@ -46,12 +48,51 @@ function Tarjeta({ titulo, valor, detalle }: { titulo: string; valor: string; de
 
 export default function FichaEjercicioSheet({ ejercicio, onClose, coachId, onGuardado, athleteEmail }: Props) {
   const escritorio = useAnchoMinimo(1024);
-  const { motor, cargando, noSubido, error } = useMotorCdg();
+  const estado = useMotorCdg();
+  const queryClient = useQueryClient();
+  // Tras guardar, se vuelve a leer el catálogo (Excel + propios) y la ficha se recalcula.
+  const acciones: AccionesMatices = {
+    guardar: async editado => {
+      await guardarPropioCdg(editado);
+      await queryClient.invalidateQueries({ queryKey: cdgCatalogoKey });
+    },
+    crearVariante: async (base, nombreCorto) => {
+      const cdgNombre = await crearVarianteCdg(base, nombreCorto, ejercicio.id);
+      await queryClient.invalidateQueries({ queryKey: cdgCatalogoKey });
+      const nuevo = { ...ejercicio, cdgNombre };
+      queryClient.setQueryData<Exercise[]>(['exercises'], prev => prev?.map(e => (e.id === nuevo.id ? nuevo : e)));
+      onGuardado?.(nuevo);
+    },
+  };
+  const contenido = (
+    <FichaEjercicioContenido
+      ejercicio={ejercicio} estado={estado} coachId={coachId} onGuardado={onGuardado}
+      athleteEmail={athleteEmail} acciones={coachId ? acciones : undefined}
+    />
+  );
+  return escritorio
+    ? <PanelLateral open onClose={onClose} title="Ficha del ejercicio">{contenido}</PanelLateral>
+    : <Sheet open onClose={onClose} title="Ficha del ejercicio">{contenido}</Sheet>;
+}
+
+/** El cuerpo de la ficha, sin la hoja ni el panel (lo usa también /dev/matices). */
+export function FichaEjercicioContenido({ ejercicio, estado, coachId, onGuardado, athleteEmail, acciones }: {
+  ejercicio: Exercise;
+  estado: MotorCdgEstado;
+  coachId?: string;
+  onGuardado?: (nuevo: Exercise) => void;
+  athleteEmail?: string;
+  /** Sin acciones, los matices son de solo lectura. */
+  acciones?: AccionesMatices;
+  key?: React.Key;
+}) {
+  const { motor, catalogo, cargando, noSubido, error } = estado;
+  const cdg = useMemo(() => catalogo.find(e => e.exercise === ejercicio.cdgNombre), [catalogo, ejercicio.cdgNombre]);
   const ficha = useMemo(() => (motor ? fichaPorSerie(motor, ejercicio.cdgNombre) : null), [motor, ejercicio.cdgNombre]);
   const referencia = `RIR ${SERIE_DE_REFERENCIA.rir} · ${SERIE_DE_REFERENCIA.reps.replace('-', '–')} reps`;
   const maximo = ficha?.musculos[0]?.valor ?? 0;
 
-  const contenido = (
+  return (
       <div className="space-y-4">
         <div>
           <p className="font-sans text-body font-bold text-ink">{ejercicio.name}</p>
@@ -110,6 +151,14 @@ export default function FichaEjercicioSheet({ ejercicio, onClose, coachId, onGua
           </>
         )}
 
+        {cdg && (
+          <div className="pt-3 border-t border-hairline space-y-2">
+            <p className="font-sans text-label text-ink-2">Matices · qué mueve el índice</p>
+            {/* `key`: al guardar o cambiar de vínculo, la edición empieza de cero con los valores nuevos. */}
+            <MaticesCdg key={JSON.stringify(cdg)} ejercicio={cdg} catalogo={catalogo} acciones={acciones} />
+          </div>
+        )}
+
         <div className="pt-3 border-t border-hairline space-y-2">
           <p className="font-sans text-label text-ink-2">Clasificación en En Forma</p>
           {coachId ? (
@@ -127,10 +176,6 @@ export default function FichaEjercicioSheet({ ejercicio, onClose, coachId, onGua
         {athleteEmail && <MaquinasDelAtleta athleteEmail={athleteEmail} grupo={ejercicio.muscleGroup} />}
       </div>
   );
-
-  return escritorio
-    ? <PanelLateral open onClose={onClose} title="Ficha del ejercicio">{contenido}</PanelLateral>
-    : <Sheet open onClose={onClose} title="Ficha del ejercicio">{contenido}</Sheet>;
 }
 
 /* Máquinas del gimnasio del atleta para el grupo del ejercicio (29-10): lo que

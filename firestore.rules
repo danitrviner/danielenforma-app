@@ -248,9 +248,16 @@ service cloud.firestore {
     // Uso personal con licencia del coach: lectura SOLO para el coach y nadie
     // escribe desde el cliente (lo sube scripts/subirCatalogoCdg.mjs con el
     // Admin SDK, que se salta las reglas). El atleta no lo descarga nunca.
+    // 11-11: el coach puede escribir SOLO `propios` (editor de matices); el del
+    // Excel (`v4`) sigue sin escritura desde el cliente.
     match /cdgCatalogo/{docId} {
       allow read: if isCoach();
-      allow write: if false;
+      allow create, update: if isCoach() && docId == 'propios'
+        && request.resource.data.keys().hasOnly(['json', 'ejercicios', 'subidoAt'])
+        && request.resource.data.json is string
+        && request.resource.data.json.size() < 921600
+        && request.resource.data.ejercicios is int;
+      allow delete: if false;
     }
 
     // ── catalogos (docId = nombre del catálogo: "exercises", "foodItems"...) ──
