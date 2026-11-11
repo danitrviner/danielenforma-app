@@ -391,11 +391,29 @@ describe('cdgCatalogo · catálogo CDG con licencia personal del coach', () => {
     await assertFails(getDoc(doc(atleta, 'cdgCatalogo', 'v4')));
   });
 
-  it('nadie escribe desde el cliente, ni el coach', async () => {
+  it('el del Excel (v4) no se escribe desde el cliente, ni el coach', async () => {
     await sembrarCatalogo();
     const coach = env.authenticatedContext('uid-coach', { email: COACH, email_verified: true }).firestore();
     await assertFails(setDoc(doc(coach, 'cdgCatalogo', 'v4'), { json: 'x' }));
     await assertFails(updateDoc(doc(coach, 'cdgCatalogo', 'v4'), { json: 'x' }));
+    await assertFails(setDoc(doc(coach, 'cdgCatalogo', 'otro'), { json: 'x', ejercicios: 0, subidoAt: 'h' }));
+  });
+
+  it('el coach escribe los propios (editor de matices, 11-11) con la forma exacta', async () => {
+    await sembrarCatalogo();
+    const coach = env.authenticatedContext('uid-coach', { email: COACH, email_verified: true }).firestore();
+    const ref = doc(coach, 'cdgCatalogo', 'propios');
+    await assertSucceeds(setDoc(ref, { json: '{}', ejercicios: 1, subidoAt: '2026-11-11' }));
+    await assertSucceeds(setDoc(ref, { json: '{"a":1}', ejercicios: 2, subidoAt: '2026-11-12' }));
+    await assertFails(setDoc(ref, { json: '{}', ejercicios: 1, subidoAt: 'h', extra: true }));
+    await assertFails(setDoc(ref, { json: 5, ejercicios: 1, subidoAt: 'h' }));
+    await assertFails(setDoc(ref, { json: 'x'.repeat(921600), ejercicios: 1, subidoAt: 'h' }));
+  });
+
+  it('un atleta no escribe los propios', async () => {
+    await sembrarCatalogo();
+    const atleta = env.authenticatedContext(uid, { email: ATLETA, email_verified: true }).firestore();
+    await assertFails(setDoc(doc(atleta, 'cdgCatalogo', 'propios'), { json: '{}', ejercicios: 1, subidoAt: 'h' }));
   });
 
   it('sin sesión no se lee', async () => {

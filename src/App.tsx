@@ -204,6 +204,11 @@ const OrdenCicloHarness = import.meta.env.DEV
   ? pantallaDiferida('OrdenCicloDevHarness', () => import('./components/mesociclo/OrdenCicloDevHarness'))
   : null;
 
+// Banco de pruebas de los matices de la ficha del ejercicio (ruta /dev/matices).
+const MaticesHarness = import.meta.env.DEV
+  ? pantallaDiferida('MaticesDevHarness', () => import('./components/MaticesDevHarness'))
+  : null;
+
 // Banco de pruebas del autopiloto: variantes visuales de Política y «Hecho hoy» (ruta /dev/autopiloto).
 const AutopilotoHarness = import.meta.env.DEV
   ? pantallaDiferida('AutopilotoDevHarness', () => import('./components/AutopilotoDevHarness'))
@@ -970,6 +975,13 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <OrdenCicloHarness />
+      </Suspense>
+    );
+  }
+  if (MaticesHarness && location.pathname === '/dev/matices') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <MaticesHarness />
       </Suspense>
     );
   }

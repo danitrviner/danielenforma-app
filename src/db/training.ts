@@ -41,6 +41,8 @@ function saveLocalExercises(exercises: Exercise[]) {
 }
 
 let exercisesCache: Exercise[] | null = null;
+/** Para quien escribe `exercises` con una transacción (p. ej. la variante CDG, db/cdg.ts). */
+export function olvidarCacheEjercicios(): void { exercisesCache = null; }
 
 export async function getExercises(): Promise<Exercise[]> {
   if (forceLocalOnly) return getLocalExercises();

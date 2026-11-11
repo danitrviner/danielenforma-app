@@ -1,5 +1,10 @@
-import { db, doc, getDoc } from '../firebase';
-import { unirPropios, CDG_PROPIOS_DOC, type CdgCatalogoCompacto } from '../utils/cdg';
+import { db, doc, getDoc, runTransaction } from '../firebase';
+import {
+  unirPropios, CDG_PROPIOS_DOC, actualizarPropio, crearVariante,
+  type CdgCatalogoCompacto, type CdgEjercicio,
+} from '../utils/cdg';
+import { marcarCatalogoCambiado } from './catalogoVersionado';
+import { olvidarCacheEjercicios } from './training';
 
 /* Catálogo de la plantilla «Índice de hipertrofia» (CulturaDeGym).
  *
@@ -37,4 +42,48 @@ export function parsearCatalogoCdg (json: string): CdgCatalogoCompacto {
     throw new Error('El catálogo CDG no tiene el formato esperado (exercises/muscles/joints).');
   }
   return c;
+}
+
+/* ─── Editor de matices (11-11) ──────────────────────────────────────────────
+   Solo se escribe `cdgCatalogo/propios` (las reglas no dejan tocar `v4`). El
+   documento es UN string con todos los propios: se lee y se reescribe dentro de
+   una transacción para no pisar un cambio hecho a la vez en otra pestaña. La
+   validación (mismos músculos/articulaciones, nombre único, valores completos,
+   tamaño) es la de utils/cdg/matices.ts, la misma que acepta `unirPropios`. */
+
+const refPropios = () => doc(db, 'cdgCatalogo', CDG_PROPIOS_DOC);
+const refExcel = () => doc(db, 'cdgCatalogo', CDG_CATALOGO_VERSION);
+const docPropios = (r: { json: string; ejercicios: number }) => ({ json: r.json, ejercicios: r.ejercicios, subidoAt: new Date().toISOString() });
+
+/** Guarda los valores editados de un ejercicio propio que ya existe. */
+export async function guardarPropioCdg (editado: CdgEjercicio): Promise<void> {
+  await runTransaction(db, async tx => {
+    const [excel, propios] = [await tx.get(refExcel()), await tx.get(refPropios())];
+    const jsonExcel = jsonDe(excel);
+    if (!jsonExcel) throw new Error('El catálogo CDG no está en Firestore.');
+    tx.set(refPropios(), docPropios(actualizarPropio(jsonDe(propios), jsonExcel, editado)));
+  });
+}
+
+/**
+ * Crea un ejercicio propio copiando los valores de `base` y, si se da
+ * `exerciseId`, vincula ese ejercicio de la biblioteca a la variante
+ * (`exercises/{id}.cdgNombre`). Las dos escrituras van juntas o ninguna.
+ */
+export async function crearVarianteCdg (base: CdgEjercicio, nombreCorto: string, exerciseId?: string): Promise<string> {
+  const nombre = await runTransaction(db, async tx => {
+    const [excel, propios] = [await tx.get(refExcel()), await tx.get(refPropios())];
+    const jsonExcel = jsonDe(excel);
+    if (!jsonExcel) throw new Error('El catálogo CDG no está en Firestore.');
+    const r = crearVariante(jsonDe(propios), jsonExcel, base, nombreCorto, exerciseId);
+    tx.set(refPropios(), docPropios(r));
+    if (exerciseId) tx.update(doc(db, 'exercises', exerciseId), { cdgNombre: r.nombre });
+    return r.nombre;
+  });
+  if (exerciseId) {
+    // Escrito en transacción: hay que invalidar la copia local (ver marcarCatalogoCambiado).
+    olvidarCacheEjercicios();
+    await marcarCatalogoCambiado('exercises', { invalidarLocal: true });
+  }
+  return nombre;
 }
