@@ -1,5 +1,5 @@
 import { db, doc, getDoc } from '../firebase';
-import type { CdgCatalogoCompacto } from '../utils/cdg';
+import { unirPropios, CDG_PROPIOS_DOC, type CdgCatalogoCompacto } from '../utils/cdg';
 
 /* Catálogo de la plantilla «Índice de hipertrofia» (CulturaDeGym).
  *
@@ -15,11 +15,20 @@ import type { CdgCatalogoCompacto } from '../utils/cdg';
  */
 export const CDG_CATALOGO_VERSION = 'v4';
 
-export async function getCdgCatalogoJson (): Promise<string | null> {
-  const snap = await getDoc(doc(db, 'cdgCatalogo', CDG_CATALOGO_VERSION));
+const jsonDe = (snap: { exists: () => boolean; data: () => unknown }): string | null => {
   if (!snap.exists()) return null;
   const json = (snap.data() as { json?: unknown }).json;
   return typeof json === 'string' && json.length > 0 ? json : null;
+};
+
+/** Catálogo del Excel + ejercicios propios (`cdgCatalogo/propios`, ver utils/cdg/propios.ts). */
+export async function getCdgCatalogoJson (): Promise<string | null> {
+  const [catalogo, propios] = await Promise.all([
+    getDoc(doc(db, 'cdgCatalogo', CDG_CATALOGO_VERSION)),
+    getDoc(doc(db, 'cdgCatalogo', CDG_PROPIOS_DOC)),
+  ]);
+  const json = jsonDe(catalogo);
+  return json ? unirPropios(json, jsonDe(propios)) : null;
 }
 
 export function parsearCatalogoCdg (json: string): CdgCatalogoCompacto {
