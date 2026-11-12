@@ -50,7 +50,8 @@ const DIETA: Diet = {
 
 const RECETAS: Recipe[] = [
   {
-    id: 'r_tostada', ownerId: 'dev', name: 'Tostada con aceite y jamón', categories: [], ingredients: [], extras: [], steps: [], kcal: 290,
+    id: 'r_tostada', ownerId: 'dev', name: 'Tostada con aceite y jamón', categories: [], ingredients: [], extras: [], steps: [], kcal: 267, macros: { carb: 27, prot: 15, fat: 11 },
+    stepsText: [{ position: 1, description: 'Tuesta el pan.' }, { position: 2, description: 'Riégalo con el aceite y pon el jamón encima.' }],
     ingredientsText: [{ name: 'Pan integral', quantity: 60 }, { name: 'Aceite de oliva', quantity: 5 }, { name: 'Jamón serrano', quantity: 30 }],
     vinculo: {
       calculadoEn: '2026-10-01',
@@ -62,6 +63,35 @@ const RECETAS: Recipe[] = [
     },
   },
   { id: 'r_bowl', ownerId: 'dev', name: 'Bowl de pollo y arroz', categories: [], ingredients: [], extras: [], steps: [], exchanges: { HC: 3, PROT: 2, GRASA: 1 }, kcal: 600 },
+  {
+    id: 'r_arroz', ownerId: 'dev', name: 'Arroz con pechuga de pollo, huevo cocido, espárragos y tomates cherry', categories: ['Comida'], ingredients: [], extras: [], steps: [],
+    image: 'https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_dHpbVPOS3dSx2ISKXhL7.jpg',
+    kcal: 459, macros: { carb: 47, prot: 37, fat: 15 }, cookingTime: 3, tupper: true, intakeTypes: [3, 5],
+    ingredientsText: [
+      { name: 'Arroz cocido', quantity: 160 }, { name: 'Pechuga de pollo', quantity: 110 }, { name: 'Huevo crudo', quantity: 60 },
+      { name: 'Espárrago triguero', quantity: 80 }, { name: 'Tomates cherry', quantity: 70 }, { name: 'Aceite de oliva', quantity: 5 },
+      { name: 'Sal de mesa', quantity: 1 }, { name: 'Pimienta negra', quantity: 1 },
+    ],
+    stepsText: [
+      { position: 1, description: 'Cuece el huevo 10 minutos, enfríalo y pélalo.' },
+      { position: 2, description: 'Saltea a fuego fuerte con el aceite:', items: [{ position: 1, description: 'La pechuga en dados' }, { position: 2, description: 'Los espárragos troceados' }] },
+      { position: 3, description: 'Añade el arroz y los tomates cherry partidos, y saltea 2 minutos más.' },
+      { position: 4, description: 'Salpimienta y sirve con el huevo cocido en cuartos.' },
+    ],
+  },
+  {
+    id: 'r_pasta', ownerId: 'dev', name: 'Pasta boloñesa con queso', categories: ['Comida'], ingredients: [], extras: [], steps: [],
+    kcal: 780, macros: { carb: 92, prot: 44, fat: 24 }, cookingTime: 4, intakeTypes: [3, 5],
+    ingredientsText: [
+      { name: 'Pasta', quantity: 110 }, { name: 'Carne picada de ternera', quantity: 150 }, { name: 'Tomate triturado', quantity: 150 },
+      { name: 'Queso rallado', quantity: 20 }, { name: 'Aceite de oliva', quantity: 10 },
+    ],
+    stepsText: [
+      { position: 1, description: 'Cuece la pasta en agua con sal el tiempo que marque el paquete.' },
+      { position: 2, description: 'Dora la carne con el aceite, añade el tomate y deja reducir 10 minutos.' },
+      { position: 3, description: 'Mezcla con la pasta y termina con el queso rallado.' },
+    ],
+  },
 ];
 
 const CATALOGO: AlimentoCatalogo[] = [

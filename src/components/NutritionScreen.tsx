@@ -46,6 +46,8 @@ import AnadirAlimentoCalorias, { type FilaAlimento, type PestanaAnadir, type Sec
 import { combinacionesDeSiempre } from '../utils/combinacionesDeSiempre';
 import { alimentosGeneralesPorGrupo, type AlimentoGeneral } from '../utils/alimentosGenerales';
 import FichaAlimentoCalorias, { FichaProductoOff, racionesDe } from './nutrition/calorias/FichaAlimentoCalorias';
+import FichaRecetaCalorias from './nutrition/calorias/FichaRecetaCalorias';
+import { marcaDeCupo, ordenarParaElegir } from '../utils/usarReceta';
 import { lineasDelDiario, type LineaDiario } from '../utils/diarioCalorias';
 import { recetaDesglosada, faltanCantidades } from '../utils/recetaDesglosada';
 
@@ -141,8 +143,10 @@ function SwapCandidateRow({ alt, isFav, onSelect }: {
   );
 }
 
-function RecipePickerRow({ recipe, isFav, enabledModes, onSelect }: {
+function RecipePickerRow({ recipe, isFav, enabledModes, hueco, onSelect }: {
   recipe: Recipe; isFav: boolean; enabledModes: DietMode[]; onSelect: (r: Recipe) => void;
+  /** Lo que queda para la comida: marca si la receta encaja o cuánto se pasa. */
+  hueco?: Macros;
   // El repo no tiene `@types/react`, así que TS no excluye `key` de las props
   // por su cuenta — mismo workaround que `Badge.tsx`.
   key?: React.Key;
@@ -154,6 +158,7 @@ function RecipePickerRow({ recipe, isFav, enabledModes, onSelect }: {
   const exchStr = m.kcal > 0
     ? `${Math.round(m.kcal)} kcal · P ${Math.round(m.p)} · HC ${Math.round(m.hc)} · G ${Math.round(m.g)} g`
     : '—';
+  const marca = hueco ? marcaDeCupo(recipe, hueco) : null;
 
   return (
     <button
@@ -184,9 +189,14 @@ function RecipePickerRow({ recipe, isFav, enabledModes, onSelect }: {
             ))}
           </div>
         )}
-        <span className="font-mono text-caption text-accent-ink/70">{exchStr}</span>
+        <span className="block font-mono text-caption text-accent-ink/70">{exchStr}</span>
+        {marca && (
+          <span className={`mt-1 inline-flex items-center gap-1 rounded-chip px-2 py-0.5 font-sans text-caption font-bold ${marca.tipo === 'encaja' ? 'bg-success/10 text-success' : 'bg-raised text-ink-2'}`}>
+            {marca.tipo === 'encaja' ? 'Encaja' : `+${marca.kcal} kcal · se ajusta`}
+          </span>
+        )}
       </div>
-      <span className="material-symbols-outlined text-ink-2 group-hover:text-accent-ink transition-colors select-none text-title-s flex-shrink-0">add_circle</span>
+      <span className="material-symbols-outlined text-ink-2 group-hover:text-accent-ink transition-colors select-none text-title-s flex-shrink-0">chevron_right</span>
     </button>
   );
 }
@@ -408,14 +418,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // Recipe picker
   const [recipePickerMealId, setRecipePickerMealId] = useState<string | null>(null);
-  /* Al abrir el recetario desde una comida se pregunta primero contra qué cupo
-     hay que cuadrar: el de ESA comida o el que queda del día entero. Son dos
-     respuestas distintas —a media tarde te sobra medio día pero la merienda ya
-     está casi llena— y adivinarlo por el atleta se equivocaba la mitad de las
-     veces. `null` = todavía no ha contestado; la hoja de recetas no se abre
-     hasta que lo haga. */
-  const [preguntaAmbito, setPreguntaAmbito] = useState<string | null>(null);
-  const [ambitoCupo, setAmbitoCupo] = useState<'comida' | 'dia'>('dia');
+  /* La receta que se está mirando antes de apuntarla (11-2026): tocar una
+     receta ya no la vuelca, abre su ficha —qué lleva, cómo se hace y cuánta
+     ración— y se apunta al confirmar. `completa` es null mientras se baja. */
+  const [recetaPorUsar, setRecetaPorUsar] = useState<{ recipe: Recipe; mealId: string; completa: Recipe | null; cargando: boolean } | null>(null);
   const [recipeSearch, setRecipeSearch]             = useState('');
   /* El buscador filtra el catálogo ENTERO (8.850) en cada tecla, así que sin
      debounce se ordena y recorre todo el índice mientras el atleta escribe, en
@@ -684,7 +690,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     queryKey: ['catalogoAlimentos'],
     queryFn: getCatalogoAlimentos,
     staleTime: 60 * 60_000,
-    enabled: usarListaRapida,
+    // También con la ficha de una receta abierta: su desglose sale del catálogo.
+    enabled: usarListaRapida || recetaPorUsar !== null,
   });
   const resumenMacros = useMemo(
     () => resumenDelDia(selectedDiet?.meals, (Object.entries(itemStates) as [string, ItemState][]).filter(([, st]) => st.done).map(([k]) => k)),
@@ -808,10 +815,17 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const vacias = meals.filter(m => !m.items.some((_, k) => itemStates[`${m.id}_${k}`]?.done)).map(m => m.id);
     return Math.max(1, vacias.length + (incluir && !vacias.includes(incluir) ? 1 : 0));
   }, [selectedDiet, itemStates]);
-  const cupoDisponible = useMemo((): Macros => {
-    if (ambitoCupo === 'dia' || !recipePickerMealId) return quedaDelDia;
-    return escalarMacros(quedaDelDia, 1 / comidasPorHacer(recipePickerMealId));
-  }, [ambitoCupo, recipePickerMealId, quedaDelDia, comidasPorHacer]);
+  /* El hueco de una comida: lo que queda del día entre las comidas que faltan.
+     Ya no se pregunta «¿comida o día?» (Dani, 11-2026): se ven todas las
+     recetas, marcadas contra este hueco, y la ración se ajusta en la ficha. */
+  const huecoDeComida = useCallback(
+    (mealId: string): Macros => escalarMacros(quedaDelDia, 1 / comidasPorHacer(mealId)),
+    [quedaDelDia, comidasPorHacer],
+  );
+  const cupoDisponible = useMemo(
+    (): Macros => (recipePickerMealId ? huecoDeComida(recipePickerMealId) : quedaDelDia),
+    [recipePickerMealId, quedaDelDia, huecoDeComida],
+  );
 
   /* 2-3 recetas guardadas que encajan en cada comida que aún está vacía (lo
      que queda del día entre las comidas que faltan), para no tener que abrir
@@ -845,11 +859,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const matchSearch = coincideBusqueda(r.name, recipeSearchDebounced);
       return matchCat && matchSearch && isSafeForAthlete(r);
     });
-    // Solo lo que cabe en el cupo elegido, y de lo que mejor lo aprovecha en
-    // adelante — ofrecer una receta que no entra no ayuda a nadie.
-    return ordenarPorPreferencia(
-      ordenarPorLoQueQueda(filtered, cupoDisponible, recipeSearchDebounced.trim().length === 0));
-  }, [recipes, enabledModes, recipeCatFilter, recipeSearchDebounced, isSafeForAthlete, ordenarPorPreferencia, cupoDisponible]);
+    // Todas, sin esconder ninguna (Dani, 11-2026): favoritas, las que encajan
+    // en la comida y el resto. Si una se pasa, la ración se ajusta en su ficha.
+    return ordenarParaElegir(filtered, cupoDisponible, new Set(recipeFavorites.recipeIds));
+  }, [recipes, enabledModes, recipeCatFilter, recipeSearchDebounced, isSafeForAthlete, recipeFavorites, cupoDisponible]);
 
   /* El recetario para «Usar receta»: lo que el atleta puede comer, con lo que
      mejor llena el hueco elegido delante y sus favoritas y tipos de plato
@@ -1245,14 +1258,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // ── Recipe picker handlers ─────────────────────────────────────────────────
 
-  /** Abrir el recetario desde una comida: primero la pregunta del cupo. */
+  /** Abrir el recetario desde una comida: directo, con todas las recetas. */
   const handleOpenRecipePicker = (mealId: string) => {
-    setPreguntaAmbito(mealId);
-  };
-
-  const abrirRecetarioConAmbito = (mealId: string, ambito: 'comida' | 'dia') => {
-    setPreguntaAmbito(null);
-    setAmbitoCupo(ambito);
     setRecipePickerMealId(mealId);
     setRecipeSearch('');
     setRecipeCatFilter('all');
@@ -1319,8 +1326,23 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     if (!mealIdObjetivo || !selectedDiet) return;
     const meal = selectedDiet.meals.find(m => m.id === mealIdObjetivo);
     if (!meal) return;
+    // No se vuelca: se abre su ficha (el selector se queda debajo para volver).
+    const hayQueBajarla = faltanCantidades(recipe);
+    setRecetaPorUsar({ recipe, mealId: mealIdObjetivo, completa: hayQueBajarla ? null : recipe, cargando: hayQueBajarla });
+    if (!hayQueBajarla) return;
+    void getRecipeById(recipe.id).catch(() => null).then(completa => {
+      setRecetaPorUsar(prev => (prev && prev.recipe.id === recipe.id ? { ...prev, completa: completa ?? recipe, cargando: false } : prev));
+    });
+  };
+
+  /** Confirmar la ficha: se apunta lo que se ve en ella, ya con su ración. */
+  const confirmarRecetaPorUsar = (items: DietItem[]) => {
+    if (!recetaPorUsar) return;
+    const { recipe, mealId } = recetaPorUsar;
+    setRecetaPorUsar(null);
     setRecipePickerMealId(null);
-    void anadirRecetaCalorias(recipe, mealIdObjetivo);
+    if (items.length === 0) { showToast(`No se pudo añadir "${recipe.name}": no trae sus cantidades.`, 'error'); return; }
+    agregarItems(items, recipe.name, `receta_${recipe.id}`, mealId);
   };
 
   /**
@@ -2975,7 +2997,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       {recipes.length === 0 ? 'El coach todavía no ha publicado recetas.' : 'Ninguna receta coincide.'}
                     </div>
                   ) : sortedPickerRecipes.map(recipe => (
-                    <RecipePickerRow key={recipe.id} recipe={recipe} isFav={recipeFavorites.recipeIds.includes(recipe.id)} enabledModes={enabledModes} onSelect={handleApplyRecipe} />
+                    <RecipePickerRow key={recipe.id} recipe={recipe} isFav={recipeFavorites.recipeIds.includes(recipe.id)} enabledModes={enabledModes} hueco={cupoDisponible} onSelect={handleApplyRecipe} />
                   ))
                 ) : (
                   <RecetarioDescubrir
@@ -2985,9 +3007,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     favoritas={favoritasSet}
                     onElegir={r => handleApplyRecipe(r)}
                     verbo="Usar"
-                    cupo={ambitoCupo === 'comida' && targetMeal
+                    cupo={targetMeal
                       ? { titulo: `Encajan en ${mealLabel(targetMeal.name, (selectedDiet?.meals.indexOf(targetMeal) ?? 0) + 1).toLowerCase()}`, cupo: cupoDisponible, franja: franjaObjetivo }
-                      : { titulo: 'Caben en lo que te queda hoy', cupo: cupoDisponible, criterio: 'caber', franja: franjaObjetivo }}
+                      : null}
                   />
                 )}
               </div>
@@ -3404,60 +3426,24 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
 
 
-      {/* ¿Contra qué cupo cuadramos? — a petición de Dani. Se pregunta antes de
-          enseñar recetas porque la respuesta cambia la lista entera. */}
-      {preguntaAmbito && (() => {
-        const meal = selectedDiet?.meals.find(m => m.id === preguntaAmbito);
-        const idx = selectedDiet?.meals.findIndex(m => m.id === preguntaAmbito) ?? 0;
-        const nombreComida = meal ? mealLabel(meal.name, idx + 1) : 'esta comida';
-        // Sin reparto por comidas: «esta comida» es lo que queda del día entre
-        // las comidas que faltan por hacer.
-        const faltan = comidasPorHacer(preguntaAmbito);
-        const kcalComida = Math.round(quedaDelDia.kcal / faltan);
+      {/* Ficha de la receta antes de apuntarla: ingredientes, preparación y ración. */}
+      {recetaPorUsar && (() => {
+        const meal = selectedDiet?.meals.find(m => m.id === recetaPorUsar.mealId);
+        const idx = selectedDiet?.meals.findIndex(m => m.id === recetaPorUsar.mealId) ?? 0;
         return (
-          <Sheet
-            open
-            onClose={() => setPreguntaAmbito(null)}
-            title="¿Qué recetas te enseño?"
-            size="m"
-            footer={<Button variant="ghost" onClick={() => setPreguntaAmbito(null)} fullWidth>Cancelar</Button>}
-          >
-            <div className="space-y-2 pt-2">
-              <p className="font-sans text-body-s text-ink-2 px-1">
-                Solo verás recetas que te quepan en lo que elijas.
-              </p>
-
-              <button
-                onClick={() => abrirRecetarioConAmbito(preguntaAmbito, 'comida')}
-                className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-40 disabled:hover:border-hairline"
-              >
-                <span className="w-9 h-9 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
-                  <Icon name="restaurant" size="s" className="text-accent-ink" />
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block font-sans font-bold text-body-s text-ink">Que cuadre en {nombreComida}</span>
-                  <span className="block font-mono text-caption text-ink-2">
-                    {faltan > 1
-                      ? `Unas ${numEs(kcalComida)} kcal (lo que te queda entre ${faltan} comidas)`
-                      : `Te quedan ${numEs(kcalComida)} kcal`}
-                  </span>
-                </span>
-              </button>
-
-              <button
-                onClick={() => abrirRecetarioConAmbito(preguntaAmbito, 'dia')}
-                className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-[color,background-color,border-color,opacity,transform,box-shadow]"
-              >
-                <span className="w-9 h-9 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
-                  <Icon name="today" size="s" className="text-accent-ink" />
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block font-sans font-bold text-body-s text-ink">Que cuadre en lo que me queda del día</span>
-                  <span className="block font-mono text-caption text-ink-2">Te quedan {numEs(quedaDelDia.kcal)} kcal hoy</span>
-                </span>
-              </button>
-            </div>
-          </Sheet>
+          <FichaRecetaCalorias
+            key={recetaPorUsar.recipe.id}
+            receta={recetaPorUsar.completa}
+            nombre={recetaPorUsar.recipe.name}
+            cargando={recetaPorUsar.cargando}
+            catalogo={catalogoAlimentos}
+            enabledModes={enabledModes}
+            nuevoLineaId={nuevoLineaId}
+            nombreComida={meal ? mealLabel(meal.name, idx + 1) : 'esta comida'}
+            hueco={huecoDeComida(recetaPorUsar.mealId)}
+            onAnadir={confirmarRecetaPorUsar}
+            onClose={() => setRecetaPorUsar(null)}
+          />
         );
       })()}
 
