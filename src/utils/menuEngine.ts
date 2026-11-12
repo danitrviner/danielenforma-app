@@ -1,4 +1,5 @@
 import { type ListaDeMenu } from './accesoARecetas.js';
+import { complementoDeExtraFijo, idsCerrados, tocaElDia, type ExtraFijo, type RecetasDeIngesta } from './ingestaPersonalizada.js';
 import { aplicarSeleccion, type PaqueteDeRecetas, type SeleccionDeRecetas } from './seleccionDeRecetas.js';
 import { recetasOcultas, type AmbitoDeRegla, type ReglaDeReceta } from './reglasDeReceta.js';
 import {
@@ -200,6 +201,10 @@ export interface MealSlotSpec {
   /** Lo que pide el coach en esa ingesta (11-2026): «mas» = plato + una pieza
    *  de fruta obligatoria; «solo» = solo fruta, sin receta. */
   fruta?: FrutaEnIngesta;
+  /** De qué recetas tira esta ingesta (ingestaPersonalizada.ts). Ausente = su lista. */
+  recetas?: RecetasDeIngesta;
+  /** Algo fijo además del plato, los días que diga el coach. */
+  extra?: ExtraFijo;
 }
 
 export type FrutaEnIngesta = 'mas' | 'solo';
@@ -572,6 +577,11 @@ export interface RankOptions {
   // Dish types already placed (per day and/or week) with how many times — used to
   // penalize serving the same *kind* of meal repeatedly (the "always a batido" fix).
   usedDishTypes?: ReadonlyMap<DishType, number>;
+  /** Ingesta con recetas cerradas por el coach (`cerradasDe`): solo estas. Si
+   *  ninguna sirve, se elige como siempre. */
+  soloEstas?: ReadonlySet<string>;
+  /** Veces que ha salido ya cada receta cerrada esta semana: así rotan. */
+  veces?: ReadonlyMap<string, number>;
 }
 
 /**
@@ -597,6 +607,39 @@ export function filtroDuro(prefs: PrefsDeFiltroDuro): (r: Recipe) => boolean {
     !superaElTiempo(r, conTiempoPropio ? undefined : prefs.cookingMaxTime);
 }
 
+/** Una vez servida pesa más que cualquier diferencia de encaje: en una lista
+ *  cerrada manda la rotación. */
+const CASTIGO_POR_VEZ_CERRADA = 1e5;
+
+/** Recetas entre las que elige esa ingesta si el coach la cerró. */
+export function cerradasDe(slot: Pick<MealSlotSpec, 'recetas'>, prefs: Pick<GeneratorPrefs, 'paquetes'>): ReadonlySet<string> | undefined {
+  const ids = idsCerrados(slot.recetas, prefs.paquetes);
+  return ids ? new Set(ids) : undefined;
+}
+
+// Ingesta con recetas cerradas (ingestaPersonalizada.ts): solo esas, y solo se
+// les aplica lo que no es negociable (alergias, salud, tipo de dieta). Ni la
+// lista del menú, ni los gustos, ni el tiempo: las ha elegido el coach. Rotan:
+// gana la que menos veces ha salido y, a igualdad, la que mejor encaja.
+function rankCerradas(pool: Recipe[], target: Macros, prefs: GeneratorPrefs, usedIds: ReadonlySet<string>, opts: RankOptions): MenuCandidate[] {
+  const mode = opts.mode ?? 'OMNIVORO';
+  const vistas = new Set<string>();
+  const out: MenuCandidate[] = [];
+  for (const recipe of pool) {
+    if (!opts.soloEstas!.has(recipe.id) || vistas.has(recipe.id)) continue;
+    vistas.add(recipe.id);
+    if (prefs.allergies.some(f => ingredientMatch(recipe, f))
+      || violatesHealthConditions(recipe, prefs.conditions)
+      || violatesDietType(recipe, prefs.dietType)) continue;
+    const fit = bestScaleFit(recipe, target, mode);
+    if (!fit) continue;
+    const veces = opts.veces?.get(recipe.id) ?? (usedIds.has(recipe.id) ? 1 : 0);
+    const score = fit.score + CASTIGO_POR_VEZ_CERRADA * veces + (prefs.azar ? AZAR_EN_BANDA * prefs.azar() : 0);
+    out.push({ recipe, scale: fit.scale, macros: fit.macros, score, ...(fit.ajuste ? { ajuste: fit.ajuste } : {}) });
+  }
+  return out.sort((a, b) => a.score - b.score);
+}
+
 // Filtros duros (nunca salen): alergias, condiciones de salud, tipo de dieta,
 // tiempo de cocina, recetas «no me gusta», tipos de plato excluidos y los
 // ALIMENTOS «no me gusta» (con reserva si dejaran la franja sin recetas).
@@ -610,6 +653,10 @@ export function rankCandidates(
   usedIds: ReadonlySet<string>,
   opts: RankOptions = {},
 ): MenuCandidate[] {
+  if (opts.soloEstas && opts.soloEstas.size > 0) {
+    const cerradas = rankCerradas(pool, target, prefs, usedIds, opts);
+    if (cerradas.length > 0) return cerradas;
+  }
   const mode = opts.mode ?? 'OMNIVORO';
   const disliked = new Set(prefs.dislikedRecipeIds ?? []);
   const favorites = new Set(prefs.favoriteRecipeIds ?? []);
@@ -911,6 +958,22 @@ function postreDeFruta(objetivo: Macros, extras: ExtrasDelCatalogo | null, foods
   return frutaParaComida(hueco, 1, extras, foods, mode, conditions);
 }
 
+/** El extra fijo del coach para esa ingesta, si toca ese día. */
+export function extraFijoDelDia(slot: Pick<MealSlotSpec, 'extra' | 'fruta'>, day: WeekDay): MenuComplement[] {
+  return slot.extra && slot.fruta !== 'solo' && tocaElDia(slot.extra, day) ? [complementoDeExtraFijo(slot.extra)] : [];
+}
+
+/** Lo que la ingesta lleva sí o sí además del plato: la fruta de postre y el
+ *  extra fijo de ese día. El plato se elige para lo que dejan. */
+function fijosDeLaIngesta(
+  slot: MealSlotSpec, day: WeekDay, objetivo: Macros, extras: ExtrasDelCatalogo | null,
+  foods: MealItem[], mode: DietMode, conditions?: readonly number[],
+): MenuComplement[] {
+  const extra = extraFijoDelDia(slot, day);
+  const fruta = slot.fruta === 'mas' ? postreDeFruta(sinLaFruta(objetivo, extra), extras, foods, mode, conditions) : [];
+  return [...fruta, ...extra];
+}
+
 /** Lo que le queda al plato después de la fruta obligatoria. */
 export function sinLaFruta(objetivo: Macros, fruta: MenuComplement[]): Macros {
   return fruta.length > 0 ? conKcal(sinNegativos(restarMacros(objetivo, macrosDeAcompanamientos(fruta)))) : objetivo;
@@ -1104,6 +1167,8 @@ export interface GenerateDayArgs {
   balanceSemana?: number;
   /** Catálogo por 100 g: con él los extras salen en piezas exactas (28-10-2026). */
   catalogo?: readonly AlimentoCatalogo[];
+  /** Se muta: veces que ha salido cada receta de una ingesta cerrada (rotación). */
+  vecesCerradas?: Map<string, number>;
 }
 
 function bumpDishType(map: Map<DishType, number>, dt: DishType): void {
@@ -1133,14 +1198,17 @@ export function generateDay(args: GenerateDayArgs): MenuDay {
       restante = restarMacros(restante, macrosDeLaComida(meal));
       return meal;
     }
-    const postre = slot.fruta === 'mas' ? postreDeFruta(objetivoFranja, extras, foods, mode, prefs.conditions) : [];
+    const postre = fijosDeLaIngesta(slot, day, objetivoFranja, extras, foods, mode, prefs.conditions);
+    const soloEstas = cerradasDe(slot, prefs);
     const ranked = rankCandidates(pools[slot.slot] ?? [], sinLaFruta(objetivoFranja, postre), prefs, usedIds, {
       needsTupper: slot.needsTupper, mode, usedDishTypes: dishTypes, dias: [day], dietId: diet.id,
+      soloEstas, veces: args.vecesCerradas,
     });
     const pick = ranked[0];
     restante = restarMacros(restante, macrosDeAcompanamientos(postre));
     if (!pick) return conPostre(emptyMeal(id, slot), postre);
     usedIds.add(pick.recipe.id);
+    if (soloEstas?.has(pick.recipe.id)) args.vecesCerradas?.set(pick.recipe.id, (args.vecesCerradas.get(pick.recipe.id) ?? 0) + 1);
     bumpDishType(dishTypes, dishType(pick.recipe));
     restante = restarMacros(restante, pick.macros);
     return conPostre(buildMeal(id, slot, pick.recipe, pick.scale, pick.macros, pick.ajuste, prefs.cambios?.sustituciones), postre);
@@ -1201,7 +1269,7 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
   const usedAcrossSlots = new Set<string>();
   const slotRecipe: (Recipe | null)[] = slots.map((slot, i) => {
     if (slot.fruta === 'solo') return null;
-    const ranked = rankCandidates(pools[slot.slot] ?? [], repTargets[i], prefs, usedAcrossSlots, { needsTupper: slot.needsTupper, batch: true, mode, dias: diasDeLaTanda, dietId: dietaDeLaTanda });
+    const ranked = rankCandidates(pools[slot.slot] ?? [], repTargets[i], prefs, usedAcrossSlots, { needsTupper: slot.needsTupper, batch: true, mode, dias: diasDeLaTanda, dietId: dietaDeLaTanda, soloEstas: cerradasDe(slot, prefs) });
     const pick = ranked[0]?.recipe ?? null;
     if (pick) usedAcrossSlots.add(pick.id);
     return pick;
@@ -1238,7 +1306,7 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
       const id = `${day}_m${i + 1}`;
       if (slot.fruta === 'solo') return comidaDeFruta(id, slot, frutaParaComida(targets[i], MAX_FRUTAS_SOLO, extras, foods, mode, prefs.conditions));
       // La de tanda lleva su ración de siempre; la fruta de postre va aparte.
-      const postre = slot.fruta === 'mas' ? postreDeFruta(targets[i], extras, foods, mode, prefs.conditions) : [];
+      const postre = fijosDeLaIngesta(slot, day, targets[i], extras, foods, mode, prefs.conditions);
       const fija = fijasDelDia[i];
       if (fija) return conPostre(fija, postre);
       const paraElPlato = sinLaFruta(targets[i], postre);
@@ -1247,7 +1315,7 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
         const fit = bestScaleFit(fixed, paraElPlato, mode);
         if (fit) return conPostre(buildMeal(id, slot, fixed, fit.scale, fit.macros, fit.ajuste, prefs.cambios?.sustituciones), postre);
       }
-      const ranked = rankCandidates(pools[slot.slot] ?? [], paraElPlato, prefs, new Set(), { needsTupper: slot.needsTupper, batch: true, mode, dias: [day], dietId: diet.id });
+      const ranked = rankCandidates(pools[slot.slot] ?? [], paraElPlato, prefs, new Set(), { needsTupper: slot.needsTupper, batch: true, mode, dias: [day], dietId: diet.id, soloEstas: cerradasDe(slot, prefs) });
       const pick = ranked[0];
       return conPostre(pick ? buildMeal(id, slot, pick.recipe, pick.scale, pick.macros, pick.ajuste, prefs.cambios?.sustituciones) : emptyMeal(id, slot), postre);
     });
@@ -1272,6 +1340,10 @@ export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
   const perDietTemplate = new Map<string, MenuDay>();
   const globalDishTypes = new Map<DishType, number>();
   const perDietDishTypes = new Map<string, Map<DishType, number>>();
+  const vecesCerradas = new Map<string, number>();
+  // Qué ingestas llevan extra fijo cada día: el postre puede tocar solo algunos.
+  const patronDeFijos = (d: WeekDay) => slots.map(sl => (extraFijoDelDia(sl, d).length > 0 ? '1' : '0')).join('');
+  const cuantosFijos = (d: WeekDay) => slots.filter(sl => extraFijoDelDia(sl, d).length > 0).length;
 
   // El balance de la semana decide si un día lleva acompañamientos.
   let balanceSemana = 0;
@@ -1282,22 +1354,32 @@ export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
     const diet = dietId ? dietsById.get(dietId) ?? null : null;
     if (!diet) return diaVacio(day);
     if (prefs.variety <= 2) {
-      const template = perDietTemplate.get(diet.id);
-      if (template) {
-        return conBalance({ ...template, day, meals: template.meals.map((m, i) => ({ ...m, id: `${day}_m${i + 1}` })) });
+      let template = perDietTemplate.get(diet.id);
+      if (!template) {
+        // La plantilla se hace con el día que más extras fijos lleva: a los
+        // demás se les rellena lo que el extra deja libre; al revés habría que
+        // quitarle plato a un día ya hecho.
+        const modelo = WEEK_DAYS.filter(d => schedule[d] === diet.id).reduce((mejor, d) => (cuantosFijos(d) > cuantosFijos(mejor) ? d : mejor), day);
+        template = generateDay({ day: modelo, diet, slots, pools, foods, prefs, usedIds: new Set(), mode, balanceSemana, catalogo: args.catalogo, vecesCerradas });
+        perDietTemplate.set(diet.id, template);
       }
-      const generated = conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds: new Set(), mode, balanceSemana, catalogo: args.catalogo }));
-      perDietTemplate.set(diet.id, generated);
-      return generated;
+      const clon: MenuDay = { ...template, day, meals: template.meals.map((m, i) => ({ ...m, id: `${day}_m${i + 1}` })) };
+      if (patronDeFijos(day) === patronDeFijos(template.day)) return conBalance(clon);
+      // Mismos platos, pero lo fijo es lo de ESTE día: se vuelve a cuadrar.
+      const conLoDeHoy: MenuDay = {
+        ...clon,
+        meals: clon.meals.map((m, i) => ({ ...m, complements: [...m.complements.filter(c => !c.fijo), ...(slots[i] ? extraFijoDelDia(slots[i], day) : [])] })),
+      };
+      return conBalance(reajustarDia({ dia: conLoDeHoy, diet, slots, foods, mode, recetasPorId: recetasDe(pools), conditions: prefs.conditions, catalogo: args.catalogo, prefs }));
     }
     if (prefs.variety === 3) {
       const usedIds = perDietUsed.get(diet.id) ?? new Set<string>();
       perDietUsed.set(diet.id, usedIds);
       const usedDishTypes = perDietDishTypes.get(diet.id) ?? new Map<DishType, number>();
       perDietDishTypes.set(diet.id, usedDishTypes);
-      return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds, usedDishTypes, mode, balanceSemana, catalogo: args.catalogo }));
+      return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds, usedDishTypes, mode, balanceSemana, catalogo: args.catalogo, vecesCerradas }));
     }
-    return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds: globalUsed, usedDishTypes: globalDishTypes, mode, balanceSemana, catalogo: args.catalogo }));
+    return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds: globalUsed, usedDishTypes: globalDishTypes, mode, balanceSemana, catalogo: args.catalogo, vecesCerradas }));
   });
 }
 
@@ -1356,6 +1438,8 @@ export function findSwapAlternatives(
   count = Infinity,
   mode: DietMode = 'OMNIVORO',
   foods: MealItem[] = [],
+  /** Recetas cerradas de esa ingesta (`cerradasDe`): el atleta solo ve esas. */
+  soloEstas?: ReadonlySet<string>,
 ): SwapCandidate[] {
   const meal = day.meals.find(m => m.id === mealId);
   if (!meal) return [];
@@ -1384,7 +1468,7 @@ export function findSwapAlternatives(
     valor >= 0 ? Math.max(0, valor - Math.max(0, yaHabia)) : Math.max(0, -valor - Math.max(0, -yaHabia));
 
   const graded: SwapCandidate[] = [];
-  for (const c of rankCandidates(pool, objetivoPlato, prefs, usedIds, { mode, dias: [day.day], ambito: 'cambios', dietId: day.dietId })) {
+  for (const c of rankCandidates(pool, objetivoPlato, prefs, usedIds, { mode, dias: [day.day], ambito: 'cambios', dietId: day.dietId, soloEstas })) {
     const hueco = sinNegativos(restarMacros(objetivoDeLaComidaAhora, sumarMacros(c.macros, acompanamientos)));
     const escalables = admitePalancas(c.recipe) ? ingredientesEscalables(c.recipe.ingredientsText, foods, mode) : [];
     const { raciones } = subirRaciones(escalables, hueco);

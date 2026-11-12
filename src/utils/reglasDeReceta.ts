@@ -1,3 +1,4 @@
+import type { IngestasAMedida } from './ingestaPersonalizada.js';
 import type { WeekDay } from '../types.js';
 import type { AjustesDeLista, ModoRecetario } from './accesoARecetas.js';
 import type { SeleccionDeRecetas } from './seleccionDeRecetas.js';
@@ -48,6 +49,9 @@ export interface ReglasDeReceta {
   recetario?: ModoRecetario;
   /** Qué recetas usa el generador con cada dieta (10-2026). Ver seleccionDeRecetas.ts. */
   seleccion?: SeleccionDeRecetas;
+  /** Lo que el coach fija en cada ingesta del menú (11-2026): fruta, recetas
+   *  cerradas y extra fijo. Ver ingestaPersonalizada.ts. */
+  ingestas?: IngestasAMedida;
   updatedAt?: string;
 }
 

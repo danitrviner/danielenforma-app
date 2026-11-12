@@ -4,6 +4,7 @@ import type { PaqueteDeRecetas, SeleccionDeRecetas } from '../utils/seleccionDeR
 import { getReglasDeReceta, getAccesoGlobalARecetas } from '../db/recipes';
 import { listaDeMenuVigente, modoRecetarioVigente, type ListaDeMenu, type ModoRecetario } from '../utils/accesoARecetas';
 import type { ReglaDeReceta } from '../utils/reglasDeReceta';
+import type { IngestasAMedida } from '../utils/ingestaPersonalizada';
 
 const SIN_REGLAS: ReglaDeReceta[] = [];
 const SIN_RECOMENDADAS: string[] = [];
@@ -97,4 +98,19 @@ export function useModoRecetario(email: string | undefined): ModoRecetario {
     staleTime: 5 * 60_000,
   });
   return modoRecetarioVigente(data?.recetario);
+}
+
+/**
+ * Lo que el coach fijó en cada ingesta del menú de este atleta (fruta, recetas
+ * cerradas, extra fijo). Mismo documento que las reglas: no cuesta otra lectura.
+ * `undefined` mientras carga o si no hay nada guardado.
+ */
+export function useIngestasAMedida(email: string | undefined): IngestasAMedida | undefined {
+  const { data } = useQuery({
+    queryKey: reglasDeRecetaKey(email ?? ''),
+    queryFn: () => getReglasDeReceta(email!),
+    enabled: !!email,
+    staleTime: 5 * 60_000,
+  });
+  return data?.ingestas;
 }

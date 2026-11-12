@@ -1,21 +1,22 @@
-import { useReglasDeReceta, useListaDeMenu, useSeleccionDeRecetas } from '../hooks/useReglasDeReceta';
+import { useReglasDeReceta, useListaDeMenu, useSeleccionDeRecetas, useIngestasAMedida, reglasDeRecetaKey } from '../hooks/useReglasDeReceta';
+import { conIngestasAMedida, idsCerrados, ingestasDeSlots } from '../utils/ingestaPersonalizada';
+import { useToast } from '../hooks/useToast';
 import { recetasFijasDelMenu, tambienEnLaMuestra } from '../utils/seleccionDeRecetas';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   OnboardingData, Diet, AthleteDietConfig, AthleteNutritionConfig, Recipe, RecipeFavorites,
   MealItem, WeeklyMenu, MenuDay, WeekDay, FoodCategory, DietMode,
   Macros, MenuMeal,
 } from '../types';
-import { queryRecetasForGenerator, getRecipes, getRecipeById, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites, getNutritionProgram, getWeeklyMenusForAthlete } from '../dbService';
+import { queryRecetasForGenerator, getRecipes, getRecipeById, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites, getNutritionProgram, getWeeklyMenusForAthlete, saveReglasDeReceta } from '../dbService';
 import { senalesDeCambios } from '../utils/gustosDelAtleta';
 import { semanaDelPrograma, totalSemanas, ajustesDeLaSemana, aplicarAjustes, kcalDeDieta, gramosDeMantenimiento } from '../utils/semanasNutricion';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 import {
   slotsFromOnboarding, generateWeek, generateDay, isDayWithinTolerance,
   dayGlobalDeviation, rankCandidates, slotTargets, recipeMatchesSlot,
-  buildBatchPlan, reajustarDia, MealSlotSpec, GeneratorPrefs, MenuCandidate, filtroDuro, sinLaFruta,
-  type FrutaEnIngesta,
+  buildBatchPlan, reajustarDia, MealSlotSpec, GeneratorPrefs, MenuCandidate, filtroDuro, sinLaFruta, cerradasDe,
 } from '../utils/menuEngine';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
@@ -25,10 +26,11 @@ import { esExtraDelCatalogo, textoDeExtra } from '../utils/extrasDelCatalogo';
 import { getCatalogoAlimentos } from '../dbService';
 import { buildShoppingList } from '../utils/menuShoppingList';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
-import { Icon, Button, Input, ProgressBar, Select } from './ui';
+import { Icon, Button, Input, Select } from './ui';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import FotoDeReceta from './FotoDeReceta';
 import PaquetesDelGenerador from './PaquetesDelGenerador';
+import IngestasDelMenu from './IngestasDelMenu';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WEEK_DAY_FULL: Record<WeekDay, string> = {
@@ -68,13 +70,6 @@ function exchDe(m: Macros) {
   return { HC: v.HC, PROT: v.PROT, GRASA: v.GRASA };
 }
 
-/** Lo que puede llevar cada ingesta del menú (MealSlotSpec.fruta). */
-const OPCIONES_FRUTA: { valor: FrutaEnIngesta | null; texto: string; icono: string }[] = [
-  { valor: null, texto: 'Plato', icono: 'restaurant' },
-  { valor: 'mas', texto: 'Plato + fruta', icono: 'nutrition' },
-  { valor: 'solo', texto: 'Solo fruta', icono: 'nutrition' },
-];
-
 function devBadge(day: MenuDay): { label: string; cls: string } {
   if (day.meals.length === 0) return { label: 'Libre', cls: 'text-ink-3 bg-raised border-hairline' };
   // Una comida sin receta significa que NINGÚN plato del recetario llega a ese
@@ -103,8 +98,13 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   // El reparto de partida hace caso a cuándo tiene más hambre el atleta (lo que
   // contestó en su ficha o corrigió en Perfil > Preferencias), igual que ya hacía
   // su dieta de intercambios. Sigue siendo editable a mano aquí abajo.
+  // Lo que el coach dejó fijado en cada ingesta de este atleta (fruta, recetas
+  // cerradas, extra fijo) se vuelve a poner encima del reparto de partida.
+  const ingestasGuardadas = useIngestasAMedida(athleteEmail);
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [slots, setSlots] = useState<MealSlotSpec[]>(
-    () => slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount),
+    () => conIngestasAMedida(slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount), ingestasGuardadas),
   );
   // La semilla de arriba se calcula UNA vez, al montar. La ficha y la config del
   // atleta llegan por consulta, así que si el editor se abre antes de que estén
@@ -114,8 +114,8 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   const slotsTocados = useRef(false);
   useEffect(() => {
     if (slotsTocados.current) return;
-    setSlots(slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount));
-  }, [onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount]);
+    setSlots(conIngestasAMedida(slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount), ingestasGuardadas));
+  }, [onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount, ingestasGuardadas]);
   // El MISMO modo que usa la pantalla del atleta (`MyMenuScreen`). Antes aquí se
   // caía al 'OMNIVORO' por defecto del generador: si el entrenador tenía
   // habilitado otro banco, el menú se generaba con alimentos de un modo y el
@@ -184,6 +184,9 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   const schedule = dietConfig?.weeklySchedule ?? {};
   const scheduledCount = WEEK_DAYS.filter(d => schedule[d]).length;
   const pctSum = slots.reduce((s, sl) => s + sl.pct, 0);
+  // kcal de un día tipo (la primera dieta programada), para la ingesta a medida.
+  const dietaTipo = dietasDeLaSemana.find(d => d.id === WEEK_DAYS.map(x => schedule[x]).find(Boolean));
+  const kcalDelDiaTipo = dietaTipo ? kcalDeDieta(dietaTipo) : null;
 
   const recetasOcultas = useReglasDeReceta(athleteEmail);
   const listaMenu = useListaDeMenu(athleteEmail);
@@ -274,14 +277,32 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   async function ensurePool(slot: number): Promise<Recipe[]> {
     const cached = pools[slot];
     if (cached) return cached;
-    const [recetas, builder] = await Promise.all([queryRecetasForGenerator(slot, 300, listaMenu, tambienEnLaMuestra(seleccion, paquetes, recetasFijasDelMenu(prefs)), filtroDuro(prefs)), ensureBuilderRecipes()]);
+    // Las recetas cerradas de alguna ingesta entran siempre en la muestra: si
+    // no, podían quedarse fuera de las 300 al azar y la ingesta salía de la lista.
+    const cerradas = slots.flatMap(sl => idsCerrados(sl.recetas, paquetes) ?? []);
+    const [recetas, builder] = await Promise.all([queryRecetasForGenerator(slot, 300, listaMenu, tambienEnLaMuestra(seleccion, paquetes, [...recetasFijasDelMenu(prefs), ...cerradas]), filtroDuro(prefs)), ensureBuilderRecipes()]);
     const combined = [...recetas, ...builder.filter(r => recipeMatchesSlot(r, slot))];
     setPools(prev => ({ ...prev, [slot]: combined }));
     return combined;
   }
 
+  /* La ingesta a medida es del atleta, no de este menú: se guarda al generar
+     para que el menú automático y «cambiar comida» la respeten. Si falla, el
+     menú se genera igual y se avisa. */
+  const guardarIngestas = async () => {
+    const ingestas = ingestasDeSlots(slots);
+    if (JSON.stringify(ingestas) === JSON.stringify(ingestasGuardadas ?? {})) return;
+    try {
+      await saveReglasDeReceta({ athleteId: athleteEmail, ingestas });
+      queryClient.setQueryData(reglasDeRecetaKey(athleteEmail), (prev: object | undefined) => ({ ...prev, ingestas }));
+    } catch {
+      showToast('El menú se ha generado, pero no se pudo guardar la configuración de las comidas para los próximos.');
+    }
+  };
+
   const handleGenerate = async () => {
     setStep('generating');
+    void guardarIngestas();
     setGenPhase('Cargando recetas y alimentos…');
     const uniqueSlots = Array.from(new Set<number>(slots.map(s => s.slot)));
     const nextPools: Record<number, Recipe[]> = {};
@@ -337,7 +358,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     usedIds.add(menuDay.meals[mealIdx]?.recipeId ?? ''); // force a different pick than the current one
     // La fruta obligatoria de esa comida se queda y el plato nuevo se elige para lo que deja.
     const fruta = (menuDay.meals[mealIdx]?.complements ?? []).filter(c => c.obligatoria);
-    const ranked = rankCandidates(pool, sinLaFruta(targets[mealIdx], fruta), prefs, usedIds, { needsTupper: slot.needsTupper, dias: [day], dietId: menuDay.dietId });
+    const ranked = rankCandidates(pool, sinLaFruta(targets[mealIdx], fruta), prefs, usedIds, { needsTupper: slot.needsTupper, dias: [day], dietId: menuDay.dietId, soloEstas: cerradasDe(slot, prefs) });
     const pick = ranked[0];
     if (!pick) return;
     const nextMeals = [...menuDay.meals];
@@ -397,7 +418,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       const targets = slotTargets(objetivoDelDiaDeMenu(menuDay), slots);
       const usedIds = new Set<string>(menuDay.meals.map(m => m.recipeId));
       const fruta = (menuDay.meals[mealIdx]?.complements ?? []).filter(c => c.obligatoria);
-      const ranked = rankCandidates(pool, sinLaFruta(targets[mealIdx], fruta), prefs, usedIds, { needsTupper: slot.needsTupper, dias: [day], dietId: menuDay.dietId });
+      const ranked = rankCandidates(pool, sinLaFruta(targets[mealIdx], fruta), prefs, usedIds, { needsTupper: slot.needsTupper, dias: [day], dietId: menuDay.dietId, soloEstas: cerradasDe(slot, prefs) });
       setPickerCandidates(ranked.slice(0, 12));
     }
     setPickerLoading(false);
@@ -515,42 +536,15 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
           </div>
         )}
 
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label htmlFor="weeklymenueditor-ingestas-de-la-anamnesis-ajustable" className="font-sans text-caption text-ink-2 uppercase">Ingestas (de la anamnesis, ajustable)</label>
-            <span className={`font-mono text-caption font-bold ${pctSum === 100 ? 'text-success' : 'text-danger'}`}>Suma: {pctSum}%</span>
-          </div>
-          <div className="space-y-2">
-            {slots.map((sl, i) => (
-              <div key={i} className="bg-surface border border-hairline rounded-surface px-4 py-3 space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="font-sans text-label text-ink w-32 flex-shrink-0 truncate">{sl.name}</span>
-                  <ProgressBar value={sl.pct} label={`${sl.name}, ${sl.pct}%`} className="flex-1" />
-                  <input id={i === 0 ? 'weeklymenueditor-ingestas-de-la-anamnesis-ajustable' : undefined}
-                    aria-label={`Porcentaje del día para ${sl.name}`}
-                    type="number" min={0} max={100} value={sl.pct}
-                    onChange={e => { slotsTocados.current = true; setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s)); }}
-                    className="w-16 text-right bg-raised border border-control-line rounded-control px-2 py-1 text-title-s text-ink font-mono focus:outline-none focus:border-accent/50"
-                  />
-                  <span className="font-mono text-ink-3 text-label">%</span>
-                </div>
-                {/* Qué lleva esa ingesta: plato, plato + fruta obligatoria o solo fruta (Dani, 11-2026). */}
-                <div role="radiogroup" aria-label={`Qué lleva ${sl.name}`} className="flex flex-wrap gap-1.5">
-                  {OPCIONES_FRUTA.map(o => {
-                    const activa = (sl.fruta ?? null) === o.valor;
-                    return (
-                      <button key={o.texto} type="button" role="radio" aria-checked={activa}
-                        onClick={() => { slotsTocados.current = true; setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, fruta: o.valor ?? undefined } : s)); }}
-                        className={`flex items-center gap-1 rounded-chip border px-2.5 py-1 font-sans text-caption font-bold ${activa ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`}>
-                        <Icon name={o.icono} size="s" />{o.texto}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <IngestasDelMenu
+          slots={slots}
+          onChange={next => { slotsTocados.current = true; setSlots(next); }}
+          paquetes={paquetes}
+          catalogo={catalogo}
+          kcalDelDia={kcalDelDiaTipo}
+          diasConDieta={WEEK_DAYS.filter(d => schedule[d])}
+          rotan={!batch && variety > 2}
+        />
 
         {/* Batch cooking — supersedes variety when on */}
         <button

@@ -1,4 +1,5 @@
-import { useReglasDeReceta, useListaDeMenu, useSeleccionDeRecetas } from '../hooks/useReglasDeReceta';
+import { useReglasDeReceta, useListaDeMenu, useSeleccionDeRecetas, useIngestasAMedida } from '../hooks/useReglasDeReceta';
+import { claveDeIngesta, idsCerrados } from '../utils/ingestaPersonalizada';
 import React, { useMemo, useState, useRef } from 'react';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useNavigate } from 'react-router-dom';
@@ -163,6 +164,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
   const recetasOcultas = useReglasDeReceta(profile.email);
   const listaMenu = useListaDeMenu(profile.email);
   const { seleccion, paquetes, favoritasDelCoach } = useSeleccionDeRecetas(profile.email);
+  const ingestasAMedida = useIngestasAMedida(profile.email);
   const prefs: GeneratorPrefs = useMemo(() => ({
     allergies: onboarding?.allergies ?? [],
     conditions: athleteConditions(onboarding),
@@ -448,7 +450,9 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
       // `foodList` y el modo van hasta el final: con ellos, cada alternativa se
       // evalúa con las raciones extra que le tocarían a ELLA, no con el plato
       // pelado (ver `findSwapAlternatives`).
-      setSwapCandidates(findSwapAlternatives(day, meal.id, pool, prefs, Infinity, dietMode, foodList));
+      // Si el coach cerró las recetas de esta comida, solo se ofrecen esas.
+      const cerradas = idsCerrados(ingestasAMedida?.[claveDeIngesta(meal, day.meals.findIndex(m => m.id === meal.id))]?.recetas, paquetes);
+      setSwapCandidates(findSwapAlternatives(day, meal.id, pool, prefs, Infinity, dietMode, foodList, cerradas ? new Set(cerradas) : undefined));
     }
     setSwapLoading(false);
   }
