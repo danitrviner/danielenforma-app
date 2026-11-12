@@ -4,6 +4,7 @@ import {
   getAthleteDietConfig, getAthleteNutritionConfig, getOnboarding, getRecipeFavorites, getReglasDeReceta, getAccesoGlobalARecetas, getRecipes,
   queryRecetasForGenerator, getFoodItems, createNotificationDeduped, getCatalogoAlimentos,
 } from '../dbService';
+import { conIngestasAMedida, idsCerrados } from '../utils/ingestaPersonalizada';
 import { generateWeek, slotsFromOnboarding, recipeMatchesSlot, filtroDuro, type GeneratorPrefs } from '../utils/menuEngine';
 import { listaDeMenuVigente } from '../utils/accesoARecetas';
 import { recetasFijasDelMenu, tambienEnLaMuestra } from '../utils/seleccionDeRecetas';
@@ -54,7 +55,8 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
   const dietas = dietasDelCoach.map(d => aplicarAjustes(d, ajustes, { mantenimiento, mantenimientoG: gramosDeMantenimiento(program) }));
 
   // Mismo reparto, variedad y preferencias que el editor (WeeklyMenuEditor).
-  const slots = slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount);
+  // Con lo que el coach dejó fijado en cada ingesta (fruta, recetas cerradas, extra fijo).
+  const slots = conIngestasAMedida(slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount), reglas.ingestas);
   const prefs: GeneratorPrefs = {
     allergies: onboarding?.allergies ?? [],
     conditions: athleteConditions(onboarding),
@@ -77,7 +79,8 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
     // Lo que ha cambiado en sus menús anteriores: recetas que quita, alimentos que sustituye.
     cambios: senalesDeCambios(todosLosMenus),
   };
-  const tambien = tambienEnLaMuestra(prefs.seleccion, prefs.paquetes, recetasFijasDelMenu(prefs));
+  const cerradas = slots.flatMap(sl => idsCerrados(sl.recetas, prefs.paquetes) ?? []);
+  const tambien = tambienEnLaMuestra(prefs.seleccion, prefs.paquetes, [...recetasFijasDelMenu(prefs), ...cerradas]);
   const pools: Record<number, Recipe[]> = {};
   for (const slot of Array.from(new Set<number>(slots.map(s => s.slot)))) {
     const recetas = await queryRecetasForGenerator(slot, 300, prefs.listaMenu, tambien, filtroDuro(prefs));

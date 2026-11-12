@@ -282,5 +282,19 @@ export function resumirReglasDeReceta(
     const texto = (d: typeof diasA) => (d.length ? etiquetaDeDias(d) : 'ninguno');
     l.push(`Días con tiempo para cocinar: ${flecha(texto(diasA), texto(diasD))}`);
   }
+  // Ingesta a medida (11-2026): fruta, recetas cerradas y extra fijo por comida.
+  const ingA = antes?.ingestas ?? {};
+  const ingD = despues.ingestas ?? {};
+  if (JSON.stringify(ingA) !== JSON.stringify(ingD)) {
+    const cuenta = (x: typeof ingA) => {
+      const v = Object.values(x);
+      const cerradas = v.filter(i => i.recetas).length;
+      const extras = v.filter(i => i.extra).length;
+      const partes = [cerradas ? `${cerradas} con recetas cerradas` : '', extras ? `${extras} con extra fijo` : ''].filter(Boolean);
+      return partes.length ? partes.join(', ') : 'sin nada fijado';
+    };
+    const a = cuenta(ingA), d = cuenta(ingD);
+    l.push(a === d ? 'Comidas a medida del menú: cambiadas' : `Comidas a medida del menú: ${flecha(a, d)}`);
+  }
   return l;
 }

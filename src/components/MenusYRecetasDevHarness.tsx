@@ -24,8 +24,8 @@ const ALTA = {
   athleteId: EMAIL, mealCount: 4, sex: 'male', weightKg: 82,
   meals: [
     { intakeType: 1, name: 'Desayuno', needsTupper: false },
-    { intakeType: 2, name: 'Media mañana', needsTupper: false },
     { intakeType: 3, name: 'Comida', needsTupper: true },
+    { intakeType: 4, name: 'Merienda', needsTupper: false },
     { intakeType: 5, name: 'Cena', needsTupper: false },
   ],
 } as unknown as OnboardingData;
@@ -35,14 +35,26 @@ const PROGRAMACION: AthleteDietConfig = {
 };
 const fruta = (id: string, nombre: string, kcal: number, hc: number, gramos: number) =>
   ({ id, nombre, estado: 'listo' as const, porCien: { kcal, p: 0.8, hc, g: 0.3 }, unidad: { nombre: 'unidad', gramos } });
-const CATALOGO = [fruta('platano', 'Plátano', 89, 22.8, 100), fruta('manzana', 'Manzana', 52, 13.8, 150), fruta('naranja', 'Naranja', 47, 11.8, 180)];
+const alimento = (id: string, nombre: string, kcal: number, p: number, hc: number, g: number, unidad?: { nombre: string; gramos: number }) =>
+  ({ id, nombre, estado: 'listo' as const, porCien: { kcal, p, hc, g }, ...(unidad ? { unidad } : {}) });
+const CATALOGO = [
+  fruta('platano', 'Plátano', 89, 22.8, 100), fruta('manzana', 'Manzana', 52, 13.8, 150), fruta('naranja', 'Naranja', 47, 11.8, 180),
+  // Caprichos y postres para probar el «extra fijo» de la ingesta a medida.
+  alimento('choco85', 'Chocolate negro 85 %', 600, 9, 20, 50, { nombre: 'onza', gramos: 10 }),
+  alimento('helado', 'Helado de vainilla', 207, 3.5, 24, 11, { nombre: 'bola', gramos: 60 }),
+  alimento('galleta', 'Galleta María', 440, 7, 74, 12, { nombre: 'galleta', gramos: 6 }),
+  alimento('natillas', 'Natillas de vainilla', 120, 3.2, 17, 4, { nombre: 'tarrina', gramos: 125 }),
+  alimento('yogurgriego', 'Yogur griego natural', 115, 4, 4, 9.5, { nombre: 'yogur', gramos: 125 }),
+  alimento('miel', 'Miel', 304, 0.3, 82, 0),
+  alimento('crema', 'Crema de cacahuete', 600, 25, 12, 50),
+];
 
 export default function MenusYRecetasDevHarness() {
   const [vista, setVista] = useState<'menu' | 'recetas'>('menu');
   const client = useMemo(() => {
     const c = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false }, mutations: { retry: false } } });
     c.setQueryData(['catalogoAlimentos'], CATALOGO);
-    c.setQueryData(['recipeAccess', 'global'], { paquetes: [{ id: 'desayunos', nombre: 'Desayunos rápidos', recipeIds: [] }] });
+    c.setQueryData(['recipeAccess', 'global'], { paquetes: [{ id: 'desayunos', nombre: 'Desayunos rápidos', recipeIds: [] }, { id: 'meriendas', nombre: 'Meriendas dulces', recipeIds: [] }] });
     return c;
   }, []);
   return (

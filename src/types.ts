@@ -2183,6 +2183,9 @@ export interface MenuComplement {
   /** Fruta que el coach pide en esa ingesta («plato + fruta», «solo fruta»,
    *  11-2026): no es un extra para cuadrar, así que reajustar el día la conserva. */
   obligatoria?: boolean;
+  /** Extra fijo que el coach programó en esa ingesta (ingestaPersonalizada.ts):
+   *  va siempre con `obligatoria`, y así se distingue de la fruta. */
+  fijo?: boolean;
 }
 
 /** Más ración de algo que la receta YA lleva: "+60g de arroz" en el arroz con
