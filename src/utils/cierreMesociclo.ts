@@ -7,6 +7,7 @@ import { buildMovementPatternReport, PatternPerf } from './movementPatterns.js';
 import { addDays, hoyIsoLocal, diasEntreFechas } from './trainingWeek.js';
 import { adherenciaDeMesociclo } from './adherence.js';
 import { seriesRealizadasPorGrupo } from './programacion.js';
+import { buildProgresionDelBloque, ProgresionDelBloque, ProgresionEjercicio } from './progresionDelBloque.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CIERRE DE MESOCICLO — qué pasó de verdad en el bloque que acaba de terminar.
@@ -65,7 +66,8 @@ export interface CierreMesociclo {
   informe: TrainingReport;
   /** Variación de 1RM/tonelaje por patrón de movimiento — bloque "Rendimiento" del protocolo de mediciones. */
   patrones: PatternPerf[];
-  /** Índice de Estímulo Acumulado por grupo — sustituye al tonelaje bruto, no distorsionado por el rango de reps. */
+  /** Progresión DENTRO del bloque (semana 1 → final) — responde aunque no haya mesociclo anterior. */
+  progresion: ProgresionDelBloque;
   /** Frases para el coach, ya masticadas. */
   titulares: string[];
   /** Borrador copiable para mandarle al cliente. El coach lo edita antes. */
@@ -81,6 +83,12 @@ function num(n: number): string {
   return n.toLocaleString('es-ES', { maximumFractionDigits: 1 });
 }
 
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+function fechaCorta(iso: string): string {
+  const [, m, d] = iso.split('-').map(Number);
+  return `${d} de ${MESES[m - 1]}`;
+}
+
 function conSigno(n: number): string {
   return n > 0 ? `+${num(n)}` : num(n);
 }
@@ -93,6 +101,8 @@ export function buildCierreMesociclo(params: {
   exercises: Exercise[];
   athleteName?: string;
   hoy?: string;
+  /** Peso del atleta: suma a las series de dominadas, fondos… */
+  pesoCorporalKg?: number | null;
 }): CierreMesociclo {
   const { meso, mesocycles, logs, assignments, exercises } = params;
   const hoy = params.hoy ?? hoyIsoLocal();
@@ -119,6 +129,17 @@ export function buildCierreMesociclo(params: {
     comparison,
   }).patterns;
 
+  // Tonelaje contra el bloque anterior, POR SEMANA: los bloques no duran lo
+  // mismo, y comparar el total de 6 semanas con uno de 1 daba «+512 %».
+  const tonelajeVsAnteriorPct = (() => {
+    const prev = informe.tonnage.previous;
+    if (!anterior || prev == null || prev <= 0) return null;
+    const semanasActual = Math.max(1, Math.min(meso.weeks, Math.ceil((diasEntreFechas(inicio, hoy < fin ? hoy : fin) + 1) / 7)));
+    const porSemana = informe.tonnage.current / semanasActual;
+    const porSemanaPrev = prev / Math.max(1, anterior.weeks);
+    return Math.round(((porSemana - porSemanaPrev) / porSemanaPrev) * 1000) / 10;
+  })();
+
   // ── Adherencia ──────────────────────────────────────────────────────────
   const asigMeso = assignments.filter(a => a.mesocycleId === meso.id);
   const completadas = asigMeso.filter(a => a.status === 'completed').length;
@@ -129,6 +150,26 @@ export function buildCierreMesociclo(params: {
   const semanasVividas = enCurso ? Math.max(1, Math.ceil((diasEntreFechas(inicio, hoy) + 1) / 7)) : meso.weeks;
   const semanasProgramadas = Math.min(meso.weeks, semanasVividas);
   const registradas = new Set(logsMeso.map(l => l.date)).size;
+
+  // ── Progresión dentro del bloque ────────────────────────────────────────
+  // Las semanas de descarga solo se pueden traducir a semanas de 7 días
+  // cuando el microciclo ES la semana; con ciclos de otra longitud no se
+  // excluyen (el «final» ya toma la mejor de las dos últimas semanas).
+  const cicloSemanal = !meso.cycleDays || meso.cycleDays === 7;
+  const semanasDescarga = cicloSemanal
+    ? [...new Set([...(meso.semanasDescarga ?? []), ...(meso.deloadWeek ? [meso.deloadWeek] : [])])]
+    : [];
+  const progresion = buildProgresionDelBloque({
+    logs: logsMeso, exercises, inicio, fin, semanas: meso.weeks, semanasDescarga,
+    assignments: asigMeso, pesoCorporalKg: params.pesoCorporalKg, hoy,
+  });
+  const res = progresion.resumen;
+  const destacados = progresion.ejercicios.filter(e => e.estado === 'mejora').slice(0, 3);
+  const flojos = progresion.ejercicios
+    .filter(e => e.estado === 'baja' || (e.estado === 'estable' && e.semanasConDatos >= 3))
+    .sort((a, b) => (a.deltaPct ?? 0) - (b.deltaPct ?? 0));
+  const mejorPatron = progresion.porPatron.find(p => (p.deltaMedioPct ?? 0) >= 2);
+  const fraseEj = (e: ProgresionEjercicio) => `${e.nombre} ${e.lectura} (${conSigno(e.deltaPct!)}%)`;
 
   // ── Volumen programado vs realizado ─────────────────────────────────────
   const realizadasPorGrupo = seriesRealizadasPorGrupo(logsMeso, exercises);
@@ -158,6 +199,21 @@ export function buildCierreMesociclo(params: {
   const titulares: string[] = [];
   const adherenciaPct = adherenciaDeMesociclo(assignments, meso.id);
 
+  // 1. Fuerza dentro del bloque — lo primero que pregunta el cliente.
+  if (res.comparables > 0 && res.medianaPct != null) {
+    titulares.push(
+      `Mejora en ${res.mejoran} de ${res.comparables} ejercicios del inicio al final del bloque` +
+      ` (mediana ${conSigno(res.medianaPct)}% de 1RM estimado).`
+    );
+  }
+  if (destacados.length > 0) {
+    titulares.push(`Lo mejor: ${destacados.map(fraseEj).join('; ')}.`);
+  }
+  if (mejorPatron) {
+    titulares.push(`Donde más progresa: ${mejorPatron.label.toLowerCase()} (${conSigno(mejorPatron.deltaMedioPct!)}% de media${mejorPatron.mejor ? `, tirando de ${mejorPatron.mejor.nombre}` : ''}).`);
+  }
+
+  // 2. Lo hizo — adherencia y volumen.
   if (adherenciaPct !== null) {
     titulares.push(`Completó ${completadas} de ${asigMeso.length} sesiones programadas (${adherenciaPct}%).`);
   } else if (registradas > 0) {
@@ -169,6 +225,20 @@ export function buildCierreMesociclo(params: {
     titulares.push(`Hizo el ${pctVolumen}% del volumen programado (${totalRealizadas} de ${totalProgramadas} series).`);
   }
 
+  // 3. Carga de trabajo y esfuerzo semana a semana.
+  if (res.tonelajeSemanal?.deltaPct != null && Math.abs(res.tonelajeSemanal.deltaPct) >= 3) {
+    const t = res.tonelajeSemanal;
+    titulares.push(
+      `Mueve ${t.deltaPct! > 0 ? 'más' : 'menos'} kg por semana que al empezar: ${num(Math.round(t.inicio))} → ${num(Math.round(t.final))} kg (${conSigno(t.deltaPct!)}%).`
+    );
+  }
+  if (res.rir && Math.abs(res.rir.final - res.rir.inicio) >= 0.5) {
+    titulares.push(res.rir.final < res.rir.inicio
+      ? `Entrena más cerca del fallo: RIR medio ${num(res.rir.inicio)} → ${num(res.rir.final)}.`
+      : `Entrena más lejos del fallo: RIR medio ${num(res.rir.inicio)} → ${num(res.rir.final)}. Revisar si es buscado.`);
+  }
+
+  // 4. Contra el bloque anterior, cuando lo hay.
   const prs = informe.perExercise.filter(e => e.isPR);
   if (prs.length > 0) {
     const top = prs.slice(0, 3).map(e => {
@@ -181,19 +251,25 @@ export function buildCierreMesociclo(params: {
   }
 
   const comparacion = anterior ? `Meso #${anterior.number}` : 'sin mesociclo previo';
-  if (informe.tonnage.deltaPct != null) {
-    const d = informe.tonnage.deltaPct;
+  if (tonelajeVsAnteriorPct != null) {
+    const d = tonelajeVsAnteriorPct;
     titulares.push(
-      `Tonelaje total ${d >= 0 ? 'sube' : 'baja'} un ${conSigno(d)}% vs ${comparacion} (${num(informe.tonnage.current)} kg movidos).`
+      `Kg movidos por semana: ${d >= 0 ? 'suben' : 'bajan'} un ${conSigno(d)}% vs ${comparacion} (${num(informe.tonnage.current)} kg en el bloque).`
     );
   }
 
   const mejorGrupo = [...informe.muscleGroups].filter(g => g.ormDeltaPct != null)
     .sort((a, b) => (b.ormDeltaPct ?? 0) - (a.ormDeltaPct ?? 0))[0];
   if (mejorGrupo && (mejorGrupo.ormDeltaPct ?? 0) > 2) {
-    titulares.push(`${mejorGrupo.label} es donde más ha ganado fuerza (${conSigno(mejorGrupo.ormDeltaPct!)}% de 1RM estimado).`);
+    titulares.push(`${mejorGrupo.label} es donde más ha ganado fuerza vs ${comparacion} (${conSigno(mejorGrupo.ormDeltaPct!)}% de 1RM estimado).`);
   }
 
+  // 5. Lo que hay que corregir en el bloque siguiente.
+  if (flojos.length > 0) {
+    titulares.push(
+      `Se estancan o bajan: ${flojos.slice(0, 4).map(e => `${e.nombre} (${conSigno(e.deltaPct!)}%)`).join(', ')}.`
+    );
+  }
   // Los grupos que se quedaron muy por debajo de lo previsto: es lo que hay
   // que corregir al montar el bloque siguiente, y lo que un vistazo rápido a
   // la tabla no canta.
@@ -205,27 +281,41 @@ export function buildCierreMesociclo(params: {
   }
 
   // ── Borrador para el cliente ────────────────────────────────────────────
-  const frases: string[] = [];
-  frases.push(`${nombre}, cerramos el bloque ${meso.number}${meso.objective ? ` (${meso.objective})` : ''}: ${meso.weeks} semanas del ${inicio} al ${fin}.`);
+  // En líneas, para pegarlo tal cual en WhatsApp.
+  const lineas: string[] = [];
+  lineas.push(`${nombre}, cerramos el bloque ${meso.number}${meso.objective ? ` (${meso.objective})` : ''}: ${meso.weeks} semanas, del ${fechaCorta(inicio)} al ${fechaCorta(fin)}.`);
   if (adherenciaPct !== null) {
-    frases.push(adherenciaPct >= 85
+    lineas.push(adherenciaPct >= 85
       ? `Has completado ${completadas} de ${asigMeso.length} sesiones (${adherenciaPct}%). Ese es el motivo de casi todo lo que viene después.`
       : `Has completado ${completadas} de ${asigMeso.length} sesiones (${adherenciaPct}%). Subir esa cifra es la palanca más grande que tenemos para el bloque siguiente.`);
   }
-  if (informe.tonnage.deltaPct != null) {
-    frases.push(informe.tonnage.deltaPct >= 0
-      ? `Has movido ${num(informe.tonnage.current)} kg en total, un ${conSigno(informe.tonnage.deltaPct)}% más que en el bloque anterior.`
-      : `Has movido ${num(informe.tonnage.current)} kg en total, un ${num(informe.tonnage.deltaPct)}% respecto al bloque anterior — tocaba, el trabajo de este bloque no iba de acumular tonelaje.`);
-  } else if (informe.tonnage.current > 0) {
-    frases.push(`Has movido ${num(informe.tonnage.current)} kg en total durante el bloque.`);
+  if (res.comparables > 0 && res.medianaPct != null) {
+    lineas.push(res.medianaPct >= 2
+      ? `Del principio al final del bloque has mejorado en ${res.mejoran} de ${res.comparables} ejercicios, y de media eres un ${conSigno(res.medianaPct)}% más fuerte.`
+      : `Del principio al final del bloque has mejorado en ${res.mejoran} de ${res.comparables} ejercicios.`);
+  }
+  if (destacados.length > 0) {
+    lineas.push('Lo más destacado:');
+    for (const e of destacados) lineas.push(`· ${e.nombre}: ${e.lectura} (${conSigno(e.deltaPct!)}%)`);
+  }
+  if (mejorPatron) {
+    lineas.push(`Donde más has avanzado es en ${mejorPatron.label.toLowerCase()}.`);
+  }
+  if (res.tonelajeSemanal?.deltaPct != null && res.tonelajeSemanal.deltaPct >= 5) {
+    lineas.push(`Además, ahora mueves un ${conSigno(res.tonelajeSemanal.deltaPct)}% más de kilos por semana que cuando empezamos.`);
+  }
+  if (tonelajeVsAnteriorPct != null) {
+    lineas.push(tonelajeVsAnteriorPct >= 0
+      ? `En total has movido ${num(Math.round(informe.tonnage.current))} kg: por semana, un ${conSigno(tonelajeVsAnteriorPct)}% más que en el bloque anterior.`
+      : `En total has movido ${num(Math.round(informe.tonnage.current))} kg: por semana, un ${num(tonelajeVsAnteriorPct)}% respecto al bloque anterior — tocaba, el trabajo de este bloque no iba de acumular tonelaje.`);
   }
   if (prs.length > 0) {
-    frases.push(`Récords personales en ${prs.slice(0, 3).map(e => e.name).join(', ')}${prs.length > 3 ? ` y ${prs.length - 3} más` : ''}.`);
+    lineas.push(`Récords personales en ${prs.slice(0, 3).map(e => e.name).join(', ')}${prs.length > 3 ? ` y ${prs.length - 3} más` : ''}.`);
   }
-  if (mejorGrupo && (mejorGrupo.ormDeltaPct ?? 0) > 2) {
-    frases.push(`Donde más fuerza has ganado es en ${mejorGrupo.label.toLowerCase()}.`);
+  if (flojos.length > 0) {
+    lineas.push(`${flojos.slice(0, 2).map(e => e.nombre).join(' y ')} ${flojos.length === 1 ? 'se ha quedado' : 'se han quedado'} más parado${flojos.length === 1 ? '' : 's'}: es lo primero que ajusto para el siguiente bloque.`);
   }
-  frases.push('Con esto monto el siguiente bloque.');
+  lineas.push('Con esto monto el siguiente bloque.');
 
   return {
     mesoId: meso.id,
@@ -240,7 +330,8 @@ export function buildCierreMesociclo(params: {
     volumen: { filas, totalProgramadas, totalRealizadas, pct: pctVolumen },
     informe,
     patrones,
+    progresion,
     titulares,
-    resumenParaCliente: frases.join(' '),
+    resumenParaCliente: lineas.join('\n'),
   };
 }

@@ -1167,6 +1167,15 @@ export async function getCierreBloque(email: string, mesocycleId?: string): Prom
       patrones: c.patrones.map(p => ({ patron: p.label, series: p.sets, tonelajeDeltaPct: p.tonnageDeltaPct, ormDeltaPct: p.ormDeltaPct })),
       destacado: c.informe.highlights,
     },
+    progresionEnElBloque: {
+      resumen: c.progresion.resumen,
+      ejercicios: c.progresion.ejercicios.map(e => ({
+        ejercicio: e.nombre, grupo: e.grupoLabel, estado: e.estado, deltaPct: e.deltaPct,
+        inicioAFinal: e.lectura, comoMejora: e.comoMejora || undefined, semanasConDatos: e.semanasConDatos,
+      })),
+      porPatron: c.progresion.porPatron.map(p => ({ patron: p.label, deltaMedioPct: p.deltaMedioPct, mejoran: p.mejoran, ejercicios: p.ejercicios })),
+      semanas: c.progresion.semanas.map(s => ({ semana: s.semana, sesiones: `${s.sesionesHechas}/${s.sesionesProgramadas}`, tonelaje: s.tonelaje, rirMedio: s.rirMedio, indiceFuerza: s.indiceFuerza })),
+    },
     titulares: c.titulares,
     borradorParaElCliente: c.resumenParaCliente,
     note: 'Son los números de Mesociclo › Cierre, los mismos que ve Dani. Úsalos para el veredicto del bloque y para decir qué cambia en el siguiente (volumen por grupo que se cumplió o no, patrones que suben o se estancan). No recalcules nada.',
