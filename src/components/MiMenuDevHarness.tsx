@@ -152,6 +152,12 @@ const CATALOGO: AlimentoCatalogo[] = [
   alimento('nueces', 'Nueces', 654, 15, 7, 65, ['puñado', 20]),
 ];
 
+const PRODUCTOS_DEV: Record<string, unknown> = {
+  '8410000000016': { c: '8410000000016', n: 'Cono de nata y chocolate', b: 'Heladería Dev', q: '4 x 120 ml', k: 300, p: 4, h: 36, g: 15 },
+  '8410000000023': { c: '8410000000023', n: 'Helado de vainilla', b: 'Heladería Dev', q: '500 ml', s: 60, k: 200, p: 3.5, h: 24, g: 10 },
+};
+const c2Producto = (c: string) => PRODUCTOS_DEV[c];
+
 function sembrar(qc: QueryClient) {
   const fijo = (key: readonly unknown[], data: unknown) => qc.setQueryData(key, data);
   fijo(['publishedMenu', EMAIL], MENU);
@@ -173,6 +179,9 @@ function sembrar(qc: QueryClient) {
   const porFranja: Record<number, Recipe[]> = { 1: DESAYUNOS, 2: SNACKS, 3: [...ALTERNATIVAS, ...COMIDAS], 4: [], 5: CENAS };
   for (const slot of [1, 2, 3, 4, 5]) fijo(['recetasDeFranja', slot], porFranja[slot]);
   fijo(['recipes', PERFIL.userId], []);
+  // Dos productos «escaneables» para el capricho por código de barras (escribe
+  // el código a mano en el escáner): un cono de caja de cuatro y una tarrina.
+  for (const c of Object.keys(PRODUCTOS_DEV)) { fijo(['offPorCodigo', c], c2Producto(c)); fijo(['offProducto', c], c2Producto(c)); }
 }
 
 /** `?falla=1`: el guardado del reajuste falla, como cuando Firestore lo rechaza. */
