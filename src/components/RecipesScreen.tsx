@@ -813,6 +813,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   const toggleFavorite = useCallback(async (recipeId: string) => {
     const isFav = favoritosSet.has(recipeId);
     const nextFavs: RecipeFavorites = {
+      ...favorites,
       athleteId: profile.email,
       recipeIds: isFav ? favorites.recipeIds.filter(id => id !== recipeId) : [...favorites.recipeIds, recipeId],
       dislikedIds: (favorites.dislikedIds ?? []).filter(id => id !== recipeId), // favorite & dislike are mutually exclusive
@@ -829,6 +830,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   const toggleDislike = useCallback(async (recipeId: string) => {
     const wasDisliked = (favorites.dislikedIds ?? []).includes(recipeId);
     const nextFavs: RecipeFavorites = {
+      ...favorites,
       athleteId: profile.email,
       recipeIds: favorites.recipeIds.filter(id => id !== recipeId),
       dislikedIds: wasDisliked

@@ -402,6 +402,25 @@ export async function saveAthleteNutritionConfig(config: AthleteNutritionConfig)
  * esa entrada con `merge`: no reescribe la config entera, que también la toca
  * el coach (pasos, modos de dieta…) y podría pisarse con una copia vieja.
  */
+/** Los gustos de plato que confirma el atleta en el arranque (11-2026). Solo
+ *  esos campos y con merge: la pantalla puede tener la configuración vieja en
+ *  caché, y un `setDoc` entero pisaría lo que el coach haya cambiado mientras
+ *  tanto (modos de dieta, pasos, raciones propias). */
+export async function guardarGustosDePlato(
+  athleteEmail: string,
+  gustos: { preferredDishTypes: string[]; excludedDishTypes: string[]; quiereRapidas?: boolean },
+): Promise<void> {
+  const localKey = `enforma_nutri_config_${athleteEmail}`;
+  const campos = stripUndefined({ ...gustos }) as Partial<AthleteNutritionConfig>;
+  try {
+    const raw = localStorage.getItem(localKey);
+    const local: AthleteNutritionConfig = raw ? JSON.parse(raw) as AthleteNutritionConfig : { athleteId: athleteEmail, enabledModes: ['OMNIVORO'] };
+    escribirLocal(localKey, JSON.stringify({ ...local, ...campos }));
+  } catch { /* sin copia local */ }
+  if (forceLocalOnly) return;
+  await setDoc(doc(db, 'athleteNutritionConfigs', athleteEmail), { athleteId: athleteEmail, ...campos }, { merge: true });
+}
+
 export async function guardarRacionPropia(athleteEmail: string, clave: string, gramos: number | null): Promise<void> {
   const localKey = `enforma_nutri_config_${athleteEmail}`;
   try {

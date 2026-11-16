@@ -381,7 +381,7 @@ service cloud.firestore {
 
     // ── weeklyMenus (recipe-first generated menu; athleteId = EMAIL) ─────────
     // Coach owns generation/publishing. The athlete only ever sees the published
-    // menu, and may edit `days`/`swapHistory` on it (free recipe swaps) but
+    // menu, and may edit `days`/`swapHistory`/`reajustes` on it (swaps, portions) but
     // cannot touch `status` or anything else.
     match /weeklyMenus/{docId} {
       allow read: if isCoach()
@@ -396,7 +396,7 @@ service cloud.firestore {
                         && request.auth.token.email_verified == true
                         && resource.data.status == 'published'
                         && request.resource.data.diff(resource.data).affectedKeys()
-                            .hasOnly(['days', 'swapHistory']));
+                            .hasOnly(['days', 'swapHistory', 'reajustes']));
     }
 
     // ── athleteDietConfigs (docId = email) ───────────────────────────────────

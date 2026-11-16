@@ -5,6 +5,7 @@ import { getReglasDeReceta, getAccesoGlobalARecetas } from '../db/recipes';
 import { listaDeMenuVigente, modoRecetarioVigente, type ListaDeMenu, type ModoRecetario } from '../utils/accesoARecetas';
 import type { ReglaDeReceta } from '../utils/reglasDeReceta';
 import type { IngestasAMedida } from '../utils/ingestaPersonalizada';
+import { libertadVigente, type LibertadDelAtleta } from '../utils/libertadDelAtleta';
 
 const SIN_REGLAS: ReglaDeReceta[] = [];
 const SIN_RECOMENDADAS: string[] = [];
@@ -113,4 +114,19 @@ export function useIngestasAMedida(email: string | undefined): IngestasAMedida |
     staleTime: 5 * 60_000,
   });
   return data?.ingestas;
+}
+
+/**
+ * Cuánto puede mover este atleta en su menú (utils/libertadDelAtleta.ts). Lo
+ * pone el coach; mismo documento que las reglas. Mientras carga o si no hay
+ * nada guardado, «Flexible».
+ */
+export function useLibertad(email: string | undefined): LibertadDelAtleta {
+  const { data } = useQuery({
+    queryKey: reglasDeRecetaKey(email ?? ''),
+    queryFn: () => getReglasDeReceta(email!),
+    enabled: !!email,
+    staleTime: 5 * 60_000,
+  });
+  return useMemo(() => libertadVigente(data?.libertad), [data?.libertad]);
 }

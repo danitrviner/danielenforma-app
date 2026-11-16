@@ -8,6 +8,7 @@ import { signOut, auth } from '../firebase';
 import { useToast } from '../hooks/useToast';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import MisCaprichosPanel from './MisCaprichosPanel';
+import { TarjetaDeArranque } from './nutrition/TusGustos';
 import MenuPreferencesPanel from './MenuPreferencesPanel';
 import MiFichaCard from './MiFichaCard';
 import AthleteHighlightsPanel from './AthleteHighlightsPanel';
@@ -412,6 +413,8 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
       case 'preferencias':
         return (
           <div className="space-y-4">
+            {/* 40 platos «sí / no»: se puede repetir cuando quiera. */}
+            <TarjetaDeArranque email={profile.email} />
             {onboarding && (
               <div className="bg-surface border border-hairline p-5 rounded-surface">
                 <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2 mb-4">

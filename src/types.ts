@@ -2,6 +2,7 @@ import type { AceptacionesLegales } from './legal/aceptacion.js';
 import type { DietaryRestrictionCode } from './utils/dietaryRestrictions.js';
 import type { ObjetivoCorporalTipo } from './utils/verificacionObjetivo.js';
 import type { CaprichoDelAtleta } from './utils/caprichos.js';
+import type { ArranqueGuardado } from './utils/arranqueDeGustos.js';
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 
@@ -2158,6 +2159,9 @@ export interface RecipeFavorites {
   athleteId: string; // email
   recipeIds: string[];    // favorites — surface more in the generator/swaps
   dislikedIds?: string[]; // "no me gusta" — hard-excluded from the generator/swaps
+  /** Lo que contestó en el arranque de gustos (40 recetas «sí / no», 11-2026):
+   *  pista suave para el generador, no fuerza ni excluye. Ver arranqueDeGustos.ts. */
+  arranque?: ArranqueGuardado;
 }
 
 // ─── WEEKLY MENUS ─────────────────────────────────────────────────────────────
@@ -2191,6 +2195,9 @@ export interface MenuComplement {
   /** Extra fijo que el coach programó en esa ingesta (ingestaPersonalizada.ts):
    *  va siempre con `obligatoria`, y así se distingue de la fruta. */
   fijo?: boolean;
+  /** Lo añadió el atleta (extra o capricho, 11-2026): no es de cuadrar, así
+   *  que el reajuste del día no lo quita (utils/reajusteDelAtleta.ts). */
+  delAtleta?: boolean;
 }
 
 /** Más ración de algo que la receta YA lleva: "+60g de arroz" en el arroz con
@@ -2214,6 +2221,27 @@ export interface MenuRacionExtra {
 export interface AjusteDeReceta {
   gramos: Array<{ n: number; gramos: number }>;
   cambios: Array<{ n: number; nombre: string; antes: number; despues: number; motivo: string }>;
+}
+
+/** El plato tal cual salió del generador, guardado la primera vez que el
+ *  atleta (o el reajuste de su día) le cambia la ración: de aquí se parte
+ *  siempre, para no acumular redondeos y poder volver a lo pautado. */
+export interface PautadoDeComida {
+  scale: number;
+  macros: Macros;
+  ajuste?: AjusteDeReceta;
+  racionesExtra?: MenuRacionExtra[];
+}
+
+/** Los ingredientes del plato a medida del atleta (11-2026): más patata, menos
+ *  aceite, o lo que cede el plato cuando le cuelga un capricho. Siempre A LA
+ *  RACIÓN PAUTADA, para que la barra de ración siga escalando el plato entero
+ *  sin deshacer la mezcla. Ver `utils/reajusteDelAtleta.ts`. */
+export interface MezclaDelPlato {
+  /** Gramos de CADA ingrediente vinculado, por su posición en la receta. */
+  gramos: Array<{ n: number; gramos: number }>;
+  /** Lo que suma el plato con esa mezcla (sin extras). */
+  macros: Macros;
 }
 
 export interface MenuMeal {
@@ -2259,6 +2287,13 @@ export interface MenuMeal {
   ingredientSwaps?: { from: string; to: string }[];
   /** Ingesta de «solo fruta» (11-2026): sin receta, la fruta va en `complements`. */
   soloFruta?: boolean;
+  /** Ver `PautadoDeComida`. Ausente = nadie ha tocado la ración. */
+  pautado?: PautadoDeComida;
+  /** Ver `MezclaDelPlato`. Ausente = los ingredientes van como en lo pautado. */
+  mezcla?: MezclaDelPlato;
+  /** La ración la eligió el atleta («quiero más desayuno»): el reajuste de las
+   *  demás comidas ya no la mueve. */
+  racionDelAtleta?: boolean;
 }
 
 export interface MenuDay {
@@ -2270,6 +2305,21 @@ export interface MenuDay {
    *  `target`. Leer con `objetivoDelDiaDeMenu`. */
   objetivo?: Macros;
   meals: MenuMeal[];
+}
+
+/** Lo que el atleta mueve en su día (ración de un plato, un extra o capricho):
+ *  para la revisión del coach y para aprender su reparto. */
+export interface MenuReajusteEntry {
+  at: string; // ISO
+  day: WeekDay;
+  mealId: string;
+  tipo: 'racion' | 'extra' | 'ingrediente';
+  /** «Desayuno ×1 → ×1,25» o «Onza de chocolate». */
+  texto: string;
+  /** kcal de más (+) o de menos (−) que deja el día respecto al objetivo. */
+  desvioKcal: number;
+  /** Capricho que eligió él: cuenta para su tope semanal (libertadDelAtleta.ts). */
+  capricho?: boolean;
 }
 
 export interface MenuSwapEntry {
@@ -2295,6 +2345,7 @@ export interface WeeklyMenu {
   days: MenuDay[];
   coachNote?: string;
   swapHistory: MenuSwapEntry[];
+  reajustes?: MenuReajusteEntry[];
   /** Semana de la periodización con cuyos ajustes se generó (si había periodización). */
   semanaPrograma?: number;
 }

@@ -771,6 +771,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     cookingMaxTime:    nutConfig?.cookingMaxTime ?? onboarding?.cookingMaxTime,
     quiereRapidas:     nutConfig?.quiereRapidas ?? onboarding?.quiereRapidas,
     favoriteRecipeIds: recipeFavorites.recipeIds,
+    arranque: recipeFavorites.arranque,
     dislikedRecipeIds: recipeFavorites.dislikedIds ?? [],
     preferredDishTypes: (nutConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],
     excludedDishTypes:  (nutConfig?.excludedDishTypes  ?? onboarding?.excludedDishTypes  ?? []) as DishType[],

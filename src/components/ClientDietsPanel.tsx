@@ -22,6 +22,7 @@ import RespuestasDelAlta from './RespuestasDelAlta';
 import WeeklyMenuEditor from './WeeklyMenuEditor';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import MisCaprichosPanel from './MisCaprichosPanel';
+import LibertadDelMenu from './LibertadDelMenu';
 import MicronutrientesPanel from './MicronutrientesPanel';
 import { EmptyState, SegmentedControl, Dialog, Button } from './ui';
 
@@ -378,6 +379,17 @@ export default function ClientDietsPanel({
               setOnboardingData(prev => prev ? { ...prev, likedFoods: liked, dislikedFoods: disliked } : null)
             }
           />
+        </div>
+      )}
+
+      {/* Cuánto puede mover él en su menú: cambios de plato, ración y caprichos. */}
+      {subView === 'info' && (
+        <div className="bg-surface border border-hairline rounded-surface p-5">
+          <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-accent-ink text-title-s">tune</span>
+            Libertad en su menú
+          </h3>
+          <LibertadDelMenu athleteEmail={athlete.email} />
         </div>
       )}
 

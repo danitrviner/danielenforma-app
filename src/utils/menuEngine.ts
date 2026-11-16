@@ -158,6 +158,11 @@ const MAX_VECES_CAMBIADA = 3;
 const BONO_ELEGIDA = 100;
 const MAX_VECES_ELEGIDA = 2;
 const BONO_POR_GUSTO_DE_TIPO = 75;
+/* Arranque de gustos (40 recetas «sí / no», 11-2026): un «me la comería» pesa
+   como una receta elegida al intercambiar; un «no es para mí», como una
+   quitada. Ni fuerza ni excluye: para eso están favoritas y «no me gusta». */
+const BONO_ARRANQUE_SI = 100;
+const CASTIGO_ARRANQUE_NO = 150;
 
 // ── Comodín (raciones extra y acompañamientos) ──
 /** Tope de acompañamientos de UNA comida. Un plato admite un acompañamiento y
@@ -244,6 +249,8 @@ export interface GeneratorPrefs {
   /** Lo que el atleta ha cambiado en sus menús (`senalesDeCambios`): recetas
    *  que quita, que elige y alimentos que sustituye siempre. */
   cambios?: SenalesDeCambios;
+  /** Lo que contestó en el arranque de gustos (`RecipeFavorites.arranque`). */
+  arranque?: { si: readonly string[]; no: readonly string[] };
 }
 
 // ─── Meal slots from anamnesis ──────────────────────────────────────────────
@@ -667,7 +674,9 @@ export function rankCandidates(
   const elegidas = prefs.cambios?.elegidas ?? {};
   // Se mide sobre la franja entera, con las «no me gusta» aún dentro: son
   // justo las que dicen qué tipos no quiere.
-  const gustoDeTipo = gustoPorTipo(pool, { favoritas: favorites, noGustan: disliked, cambios: prefs.cambios });
+  const arranqueSi = new Set(prefs.arranque?.si ?? []);
+  const arranqueNo = new Set(prefs.arranque?.no ?? []);
+  const gustoDeTipo = gustoPorTipo(pool, { favoritas: favorites, noGustan: disliked, cambios: prefs.cambios, arranque: prefs.arranque });
 
   const ocultasPorElCoach = recetasOcultas(prefs.recetasOcultas, opts.ambito ?? 'menu', opts.dias);
   const { pool: delaLista, conTiempo } = aplicarSeleccion(pool, prefs, { dietId: opts.dietId, dias: opts.dias, ambito: opts.ambito });
@@ -711,6 +720,8 @@ export function rankCandidates(
     score -= BONO_POR_GUSTO_DE_TIPO * (gustoDeTipo.get(dt) ?? 0);
     score += CASTIGO_CAMBIADA * Math.min(MAX_VECES_CAMBIADA, evitadas[recipe.id] ?? 0);
     score -= BONO_ELEGIDA * Math.min(MAX_VECES_ELEGIDA, elegidas[recipe.id] ?? 0);
+    if (arranqueSi.has(recipe.id)) score -= BONO_ARRANQUE_SI;
+    if (arranqueNo.has(recipe.id)) score += CASTIGO_ARRANQUE_NO;
     score += CASTIGO_POR_PASO_DE_ESCALA * Math.round(Math.abs(fit.scale - 1) / 0.25);
     if (prefs.disliked.some(f => ingredientMatch(recipe, f))) score += CASTIGO_NO_GUSTA;
     if (prefs.liked.some(f => ingredientMatch(recipe, f))) score -= BONO_GUSTA;

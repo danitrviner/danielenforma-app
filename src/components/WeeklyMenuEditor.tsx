@@ -203,6 +203,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     quiereRapidas: nutritionConfig?.quiereRapidas ?? onboarding?.quiereRapidas,
     variety,
     favoriteRecipeIds: favorites.recipeIds,
+    arranque: favorites.arranque,
     dislikedRecipeIds: favorites.dislikedIds ?? [],
     preferredDishTypes: preferredDish as DishType[],
     excludedDishTypes: excludedDish as DishType[],
