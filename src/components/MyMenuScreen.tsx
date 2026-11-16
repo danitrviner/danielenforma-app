@@ -44,6 +44,9 @@ import { estructuraDeDia } from './nutrition/dietHelpers';
 import FotoDeReceta from './FotoDeReceta';
 import RacionDelMenu, { ReajusteDelDia } from './nutrition/RacionDelMenu';
 import TarjetaDeComida from './nutrition/TarjetaDeComida';
+import ScannerSheet from './nutrition/ScannerSheet';
+import ProductoEscaneadoSheet from './nutrition/ProductoEscaneadoSheet';
+import { extraDeProducto } from '../utils/caprichoEscaneado';
 import { TarjetaDeArranque } from './nutrition/TusGustos';
 import type { ResultadoDeArranque } from '../utils/arranqueDeGustos';
 import {
@@ -167,6 +170,9 @@ export default function MyMenuScreen({ profile, onAddToPlan, guardarArranque, gu
   // espera de que el atleta vea lo que mueve en el resto del día.
   const [extraPestana, setExtraPestana] = useState<'cuadrar' | 'caprichos'>('cuadrar');
   const [extraPendiente, setExtraPendiente] = useState<MenuComplement | null>(null);
+  /** Capricho por código de barras: la cámara abierta y, después, el código leído. */
+  const [escanerAbierto, setEscanerAbierto] = useState(false);
+  const [codigoEscaneado, setCodigoEscaneado] = useState<string | null>(null);
   // Ración que se está probando en la ficha (aún sin guardar).
   /** El plato de la ficha como lo está dejando el atleta (ración o gramos de
    *  un ingrediente), antes de guardar. */
@@ -562,6 +568,8 @@ export default function MyMenuScreen({ profile, onAddToPlan, guardarArranque, gu
     setExtraQuery('');
     setExtraPestana('cuadrar');
     setExtraPendiente(null);
+    setEscanerAbierto(false);
+    setCodigoEscaneado(null);
   }
 
   /** Escribe los extras de una comida y persiste. Un solo camino para cambiar,
@@ -1143,6 +1151,40 @@ export default function MyMenuScreen({ profile, onAddToPlan, guardarArranque, gu
           </div>
         ) : null;
 
+        /* Capricho escaneado (Dani, 16-11-2026: «lo señalas y, si es un cono, ya
+           está; si es una tarrina, pones cuánta ración»). Entra por el mismo
+           camino que cualquier capricho: cuenta para el tope y, si no cabe,
+           enseña antes lo que cede la comida. */
+        if (escanerAbierto) {
+          return (
+            <ScannerSheet
+              onClose={() => setEscanerAbierto(false)}
+              onCodigo={codigo => { setEscanerAbierto(false); setCodigoEscaneado(codigo); }}
+            />
+          );
+        }
+        if (codigoEscaneado) {
+          return (
+            <ProductoEscaneadoSheet
+              codigo={codigoEscaneado}
+              conAtajos
+              onClose={() => setCodigoEscaneado(null)}
+              onBuscarPorNombre={() => setCodigoEscaneado(null)}
+              onConfirm={(producto, gramos) => {
+                setCodigoEscaneado(null);
+                if (!extrasFor || !day || caprichosQuedan <= 0) return;
+                const capricho = extraDeProducto(producto, gramos);
+                if (cabe(capricho)) {
+                  void guardarReajuste(anadirExtraDelAtleta(day, extrasFor.mealId, capricho, fijasDelDia, limites, ingredientesDelExtra), extrasFor.mealId, 'extra', textoDeExtra(capricho), true);
+                  setExtrasFor(null);
+                  return;
+                }
+                setExtraPendiente(capricho);
+              }}
+            />
+          );
+        }
+
         return (
           <Sheet
             open
@@ -1216,13 +1258,28 @@ export default function MyMenuScreen({ profile, onAddToPlan, guardarArranque, gu
                 <p className="font-mono text-caption text-ink-3 mb-2">
                   {actual ? 'Cámbialo por otro alimento' : enCaprichos ? (Number.isFinite(caprichosQuedan) ? (caprichosQuedan > 0 ? `Te ${caprichosQuedan === 1 ? 'queda' : 'quedan'} ${caprichosQuedan} de ${permisos.caprichosPorSemana} esta semana · entra entero y tu comida se ajusta` : `Ya has usado tus ${permisos.caprichosPorSemana} caprichos de esta semana`) : 'Entra entero; tu comida se ajusta sola') : 'Fruta, lácteos, pan y frutos secos; lo que te gusta, primero'}
                 </p>
-                <input
-                  type="search"
-                  value={extraQuery}
-                  onChange={e => setExtraQuery(e.target.value)}
-                  placeholder={enCaprichos ? 'Buscar un capricho (helado, chocolate…)' : 'Buscar en el catálogo (plátano, yogur, pan…)'}
-                  className="w-full px-3 py-2 bg-bg border border-control-line rounded-control font-sans text-body text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="search"
+                    value={extraQuery}
+                    onChange={e => setExtraQuery(e.target.value)}
+                    placeholder={enCaprichos ? 'Busca o escanea un capricho' : 'Buscar en el catálogo (plátano, yogur, pan…)'}
+                    className="min-w-0 flex-1 px-3 py-2 bg-bg border border-control-line rounded-control font-sans text-body text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
+                  />
+                  {/* Mismo botón que en el Diario: lo que lleva código de barras se apunta escaneándolo. */}
+                  {enCaprichos && (
+                    <button
+                      type="button"
+                      onClick={() => setEscanerAbierto(true)}
+                      disabled={caprichosQuedan <= 0}
+                      aria-label="Escanear código de barras"
+                      title="Escanear código de barras"
+                      className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-control bg-raised border border-hairline text-accent-ink transition-colors hover:text-ink active:scale-95 disabled:opacity-40"
+                    >
+                      <Icon name="qr_code_scanner" size="m" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-1">

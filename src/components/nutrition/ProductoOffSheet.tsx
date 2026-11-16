@@ -4,6 +4,7 @@ import { Sheet, Button, Input, Banner } from '../ui';
 import { resolverProducto, ATRIBUCION_OFF } from '../../services/openFoodFacts';
 import { extrasDeRacion, esIncompleto, motivoDeIncompleto, type EntradaIndiceOff, type OffProducto } from '../../utils/productoOff';
 import { nutrientesDeRacion } from '../../utils/productoAIntercambios';
+import { atajosDeCantidad } from '../../utils/caprichoEscaneado';
 import { MICRO_META, MICRO_KEYS } from '../../data/micronutrients';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -22,12 +23,16 @@ type Props = {
   nota?: string;
   /** Gramos de la última vez que lo apuntó: la ficha abre con ellos en vez de la ración. */
   gramosIniciales?: number;
+  /** Cantidades de un toque (una unidad, la ración, medio envase, entero) y la
+   *  ficha abre con la primera: para apuntar lo que te has comido, no para
+   *  pesarlo (caprichos del menú, 11-2026). */
+  conAtajos?: boolean;
   onConfirm: (producto: OffProducto, gramos: number) => void;
   onClose: () => void;
 };
 
 
-export default function ProductoOffSheet({ entrada, producto: conocido, nota, gramosIniciales, onConfirm, onClose }: Props) {
+export default function ProductoOffSheet({ entrada, producto: conocido, nota, gramosIniciales, conAtajos = false, onConfirm, onClose }: Props) {
   const consulta = useQuery({
     queryKey: ['offProducto', entrada.c],
     queryFn: () => resolverProducto(entrada.c),
@@ -41,7 +46,9 @@ export default function ProductoOffSheet({ entrada, producto: conocido, nota, gr
   // aquí solo llega por una vía inesperada y se explica.
   const producto = registro && !esIncompleto(registro) ? registro : undefined;
   const [texto, setTexto] = useState<string | null>(null);
-  const gramos = parseFloat((texto ?? String(gramosIniciales ?? producto?.s ?? 100)).replace(',', '.'));
+  const atajos = useMemo(() => (conAtajos && producto ? atajosDeCantidad(producto) : []), [conAtajos, producto]);
+  const inicial = String(gramosIniciales ?? atajos[0]?.gramos ?? producto?.s ?? 100);
+  const gramos = parseFloat((texto ?? inicial).replace(',', '.'));
   const valido = Number.isFinite(gramos) && gramos > 0 && gramos <= 5000;
 
   const calculo = useMemo(() => {
@@ -77,9 +84,31 @@ export default function ProductoOffSheet({ entrada, producto: conocido, nota, gr
 
         {producto && (
           <>
+            {atajos.length > 0 && (
+              <div>
+                <p className="font-mono text-caption font-semibold uppercase tracking-[.16em] text-ink-3 mb-2">¿Cuánto te has comido?</p>
+                <div className="flex flex-wrap gap-2">
+                  {atajos.map(a => {
+                    const sel = valido && Math.abs(gramos - a.gramos) < 0.5;
+                    return (
+                      <button
+                        key={a.titulo}
+                        type="button"
+                        onClick={() => setTexto(String(a.gramos))}
+                        aria-pressed={sel}
+                        className={`px-3 py-2 rounded-control border text-left transition-colors ${sel ? 'bg-accent border-accent-press text-on-accent' : 'bg-raised border-strong text-ink-2 hover:text-ink'}`}
+                      >
+                        <span className="block font-sans text-label font-bold">{a.titulo}</span>
+                        <span className="block font-mono text-caption">{a.gramos} {a.medida}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <Input
-              label={producto.s ? `Cantidad (g) · ración: ${producto.s} g` : 'Cantidad (g)'}
-              value={texto ?? String(gramosIniciales ?? producto.s ?? 100)}
+              label={atajos.length > 0 ? 'O escribe la cantidad (g)' : producto.s ? `Cantidad (g) · ración: ${producto.s} g` : 'Cantidad (g)'}
+              value={texto ?? inicial}
               onChange={setTexto}
               inputMode="decimal"
             />
