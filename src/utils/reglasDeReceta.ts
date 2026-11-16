@@ -1,3 +1,4 @@
+import type { LibertadDelAtleta } from './libertadDelAtleta.js';
 import type { IngestasAMedida } from './ingestaPersonalizada.js';
 import type { WeekDay } from '../types.js';
 import type { AjustesDeLista, ModoRecetario } from './accesoARecetas.js';
@@ -34,6 +35,8 @@ export interface ReglaDeReceta {
 export interface ReglasDeReceta {
   athleteId: string;
   reglas: ReglaDeReceta[];
+  /** Cuánto puede mover el atleta en su menú (11-2026). Ver libertadDelAtleta.ts. */
+  libertad?: LibertadDelAtleta;
   /** Recetas que el coach le recomienda (10-2026): una fila arriba de su
    *  recetario, en el orden en que las marcó. Una receta escondida no puede
    *  estar recomendada a la vez (ver `conRecomendada`). */

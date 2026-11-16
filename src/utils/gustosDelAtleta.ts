@@ -95,6 +95,8 @@ export interface FuentesDeGusto {
   favoritas?: Iterable<string>;
   noGustan?: Iterable<string>;
   cambios?: SenalesDeCambios;
+  /** Lo que dijo en el arranque de gustos: ±½ por receta, como un cambio. */
+  arranque?: { si: readonly string[]; no: readonly string[] };
 }
 
 /** Hasta dónde cuenta el gusto por un tipo de plato (en «unidades» de gusto). */
@@ -102,7 +104,8 @@ export const TOPE_GUSTO_POR_TIPO = 2;
 
 /**
  * Cuánto le gusta al atleta cada TIPO de plato, de −2 a +2: +1 por favorita,
- * −1 por «no me gusta», +½ por receta elegida al intercambiar, −½ por quitada.
+ * −1 por «no me gusta», +½ por receta elegida al intercambiar, −½ por quitada,
+ * y ±½ por lo que contestó en el arranque de gustos.
  * Solo cuentan las recetas de `pool`, para que lo que le gusta de desayuno no
  * mueva las cenas. Los tipos sin señal no aparecen.
  */
@@ -111,6 +114,8 @@ export function gustoPorTipo(pool: readonly Recipe[], f: FuentesDeGusto): Map<Di
   const noGustan = new Set(f.noGustan ?? []);
   const evitadas = f.cambios?.evitadas ?? {};
   const elegidas = f.cambios?.elegidas ?? {};
+  const arranqueSi = new Set(f.arranque?.si ?? []);
+  const arranqueNo = new Set(f.arranque?.no ?? []);
   const puntos = new Map<DishType, number>();
   for (const r of pool) {
     let p = 0;
@@ -118,6 +123,8 @@ export function gustoPorTipo(pool: readonly Recipe[], f: FuentesDeGusto): Map<Di
     if (noGustan.has(r.id)) p -= 1;
     p += 0.5 * Math.min(2, elegidas[r.id] ?? 0);
     p -= 0.5 * Math.min(2, evitadas[r.id] ?? 0);
+    if (arranqueSi.has(r.id)) p += 0.5;
+    if (arranqueNo.has(r.id)) p -= 0.5;
     if (p === 0) continue;
     const t = dishType(r);
     puntos.set(t, (puntos.get(t) ?? 0) + p);

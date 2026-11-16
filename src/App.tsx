@@ -185,6 +185,10 @@ const PlantillaHarness = import.meta.env.DEV
 const NutricionHarness = import.meta.env.DEV
   ? pantallaDiferida('NutricionDevHarness', () => import('./components/NutricionDevHarness'))
   : null;
+// Banco de pruebas de «Mi menú» del atleta: ración ajustable y caprichos (ruta /dev/mi-menu).
+const MiMenuHarness = import.meta.env.DEV
+  ? pantallaDiferida('MiMenuDevHarness', () => import('./components/MiMenuDevHarness'))
+  : null;
 const PlanSemanaHarness = import.meta.env.DEV
   ? pantallaDiferida('PlanSemanaDevHarness', () => import('./components/PlanSemanaDevHarness'))
   : null;
@@ -947,6 +951,13 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <PlanSemanaHarness />
+      </Suspense>
+    );
+  }
+  if (MiMenuHarness && location.pathname === '/dev/mi-menu') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <MiMenuHarness />
       </Suspense>
     );
   }

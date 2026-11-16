@@ -1,5 +1,6 @@
 import { db, doc, getDoc, setDoc, updateDoc } from '../firebase';
 import { OnboardingData, OnboardingTemplate } from '../types';
+import type { CaprichoDelAtleta } from '../utils/caprichos';
 import {
   forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos,
   conTimeout, EscrituraEncolada,
@@ -57,6 +58,22 @@ export async function updateOnboardingFoods(
     await updateDoc(doc(db, 'onboarding', email), { likedFoods, dislikedFoods });
   } catch (err) {
     console.warn('updateOnboardingFoods Firestore failed:', err);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
+  }
+}
+
+/** Los caprichos del atleta (`utils/caprichos.ts`). Mismo patrón que
+ *  `updateOnboardingFoods`: copia local primero, luego `updateDoc` parcial. */
+export async function updateOnboardingCaprichos(email: string, caprichos: CaprichoDelAtleta[]): Promise<void> {
+  const all = getLocalOnboardingAll();
+  const existing = all.find(o => o.athleteId === email);
+  if (existing) setLocalOnboardingAll([...all.filter(o => o.athleteId !== email), { ...existing, caprichos }]);
+  if (forceLocalOnly) return;
+  try {
+    await updateDoc(doc(db, 'onboarding', email), { caprichos: stripUndefined(caprichos) });
+  } catch (err) {
+    console.warn('updateOnboardingCaprichos Firestore failed:', err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
   }

@@ -60,7 +60,7 @@ export {
 export {
   getFoodItems, getCatalogoAlimentos, createFoodItem, updateFoodItem, deleteFoodItem, seedFoodItemsIfEmpty,
   getAlimentosPersonales, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal,
-  getAthleteNutritionConfig, saveAthleteNutritionConfig, guardarRacionPropia,
+  getAthleteNutritionConfig, saveAthleteNutritionConfig, guardarRacionPropia, guardarGustosDePlato,
   getDietsForAthlete, createDiet, updateDiet, deleteDiet,
   getWeeklyMenusForAthlete, getPublishedMenu, createWeeklyMenu, updateWeeklyMenu, deleteWeeklyMenu, publishWeeklyMenu,
   getDietCompletionLog, getDietCompletionLogsForAthlete, saveDietCompletionLog,
@@ -134,7 +134,7 @@ export {
 // Movido a src/db/onboarding.ts (2026-07-18) — reexportado aquí para que ningún
 // import existente (`from '../dbService'`) tenga que cambiar.
 export {
-  getOnboarding, updateOnboardingFoods, saveOnboarding, updateOnboarding,
+  getOnboarding, updateOnboardingFoods, updateOnboardingCaprichos, saveOnboarding, updateOnboarding,
   getOnboardingTemplate, saveOnboardingTemplate, fusionarConsentimientoIA,
 } from './db/onboarding';
 

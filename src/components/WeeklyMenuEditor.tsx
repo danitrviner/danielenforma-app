@@ -203,6 +203,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     quiereRapidas: nutritionConfig?.quiereRapidas ?? onboarding?.quiereRapidas,
     variety,
     favoriteRecipeIds: favorites.recipeIds,
+    arranque: favorites.arranque,
     dislikedRecipeIds: favorites.dislikedIds ?? [],
     preferredDishTypes: preferredDish as DishType[],
     excludedDishTypes: excludedDish as DishType[],
@@ -544,6 +545,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
           kcalDelDia={kcalDelDiaTipo}
           diasConDieta={WEEK_DAYS.filter(d => schedule[d])}
           rotan={!batch && variety > 2}
+          caprichosDelAtleta={onboarding?.caprichos ?? []}
         />
 
         {/* Batch cooking — supersedes variety when on */}

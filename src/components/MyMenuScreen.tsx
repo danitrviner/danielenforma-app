@@ -1,4 +1,5 @@
-import { useReglasDeReceta, useListaDeMenu, useSeleccionDeRecetas, useIngestasAMedida } from '../hooks/useReglasDeReceta';
+import { useReglasDeReceta, useListaDeMenu, useSeleccionDeRecetas, useIngestasAMedida, useLibertad } from '../hooks/useReglasDeReceta';
+import { limitesDe, permisosDe } from '../utils/libertadDelAtleta';
 import { claveDeIngesta, idsCerrados } from '../utils/ingestaPersonalizada';
 import React, { useMemo, useState, useRef } from 'react';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
@@ -29,7 +30,7 @@ import { intercambiosDeMacros } from '../utils/macrosLegado';
 import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
 import { DishType } from '../utils/dishTypes';
 import { substitutesFor } from '../utils/ingredientSubstitutions';
-import { Icon, EmptyState, ListRow, Badge, Sheet, Dialog, ScreenSkeleton } from './ui';
+import { Icon, EmptyState, ListRow, Badge, Sheet, Dialog, ScreenSkeleton, Button } from './ui';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import { escalarRecetaEntera } from '../utils/escalarRecetaEntera';
 import { recetaAjustada } from '../utils/ajusteDeReceta';
@@ -41,6 +42,16 @@ import { useDiaActual } from '../hooks/useDiaActual';
 import { registrarComidaDelMenu, quitarComidaDelMenu, type DiaDelPlan } from '../utils/registroDesdeElMenu';
 import { estructuraDeDia } from './nutrition/dietHelpers';
 import FotoDeReceta from './FotoDeReceta';
+import RacionDelMenu, { ReajusteDelDia } from './nutrition/RacionDelMenu';
+import TarjetaDeComida from './nutrition/TarjetaDeComida';
+import { TarjetaDeArranque } from './nutrition/TusGustos';
+import type { ResultadoDeArranque } from '../utils/arranqueDeGustos';
+import {
+  anadirExtraDelAtleta, cambiarPlato, cambiosDeIngredientes, comidasFijas, conComidaElegida, conIngrediente,
+  conRacion, ingredientesDeReceta, ingredientesVariables, mismoPlato, pautadoDe, racionDe, textoDeCambio, textoDeEstado,
+  type IngredienteVariable, type Reajuste,
+} from '../utils/reajusteDelAtleta';
+import { alimentoDelCapricho, caprichosPorGrupo, buscarCaprichos, textoDeRacion } from '../utils/caprichos';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WEEK_DAY_SHORT: Record<WeekDay, string> = { mon: 'L', tue: 'M', wed: 'X', thu: 'J', fri: 'V', sat: 'S', sun: 'D' };
@@ -70,16 +81,6 @@ const SWAP_PAGE = 12;
 // Qué le pasa al día si acepta una alternativa "aproximada". Se dice el macro y
 // la dirección, no un número abstracto: "te deja corto de HC" es accionable,
 // "desviación 1,4" no. Solo se nombra el macro que más se mueve.
-function describeDrift(drift: Macros): string {
-  // Se compara por kcal de cada macro (la grasa pesa más por gramo).
-  const cats: ['p' | 'hc' | 'g', string, number][] = [['hc', 'hidratos', 4], ['p', 'proteína', 4], ['g', 'grasa', 9]];
-  const [cat, label] = cats.reduce((peor, actual) =>
-    Math.abs(drift[actual[0]] * actual[2]) > Math.abs(drift[peor[0]] * peor[2]) ? actual : peor);
-  const v = Math.round(drift[cat]);
-  if (Math.abs(v) < 5) return 'te deja casi igual';
-  return v > 0 ? `te pasa ${v} g de ${label}` : `te deja ${Math.abs(v)} g corto de ${label}`;
-}
-
 interface Props {
   profile: UserProfile;
   /* Mandar una receta del menú a "Mi plan" (el hub la recoge y abre el
@@ -88,9 +89,13 @@ interface Props {
      el atleta que veía su sándwich en el menú no tenía forma de meterlo en el
      plan sin buscarlo a mano ni de que le contara en los macros del día. */
   onAddToPlan?: (pendiente: RecetaPendiente) => void;
+  /** Solo para el banco de pruebas: guardar el arranque de gustos sin Firestore. */
+  guardarArranque?: (r: ResultadoDeArranque) => Promise<void>;
+  /** Solo para el banco de pruebas (sin sesión): sustituye la escritura del reajuste. */
+  guardarMenu?: typeof updateWeeklyMenu;
 }
 
-export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
+export default function MyMenuScreen({ profile, onAddToPlan, guardarArranque, guardarMenu = updateWeeklyMenu }: Props) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -153,9 +158,19 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
   const [swapCandidates, setSwapCandidates] = useState<SwapCandidate[]>([]);
   const [swapQuery, setSwapQuery] = useState('');
   const [swapVisible, setSwapVisible] = useState(SWAP_PAGE);
+  // Alternativa elegida que mueve otras comidas: se enseña antes de cambiar.
+  const [swapPendiente, setSwapPendiente] = useState<SwapCandidate | null>(null);
   // Edición de extras: `idx` null = añadir uno nuevo a esa comida.
   const [extrasFor, setExtrasFor] = useState<{ mealId: string; idx: number | null } | null>(null);
   const [extraQuery, setExtraQuery] = useState('');
+  // Pestaña del panel de extras y el extra que no cabe en la comida, a la
+  // espera de que el atleta vea lo que mueve en el resto del día.
+  const [extraPestana, setExtraPestana] = useState<'cuadrar' | 'caprichos'>('cuadrar');
+  const [extraPendiente, setExtraPendiente] = useState<MenuComplement | null>(null);
+  // Ración que se está probando en la ficha (aún sin guardar).
+  /** El plato de la ficha como lo está dejando el atleta (ración o gramos de
+   *  un ingrediente), antes de guardar. */
+  const [platoDePrueba, setPlatoDePrueba] = useState<MenuMeal | null>(null);
   const [shoppingOpen, setShoppingOpen] = useState(false);
   const [anadiendoId, setAnadiendoId] = useState<string | null>(null);
   const [shoppingLoading, setShoppingLoading] = useState(false);
@@ -165,6 +180,10 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
   const listaMenu = useListaDeMenu(profile.email);
   const { seleccion, paquetes, favoritasDelCoach } = useSeleccionDeRecetas(profile.email);
   const ingestasAMedida = useIngestasAMedida(profile.email);
+  // Lo que el coach le deja mover en su menú (Guiado / Flexible / Libre).
+  const libertad = useLibertad(profile.email);
+  const permisos = useMemo(() => permisosDe(libertad), [libertad]);
+  const limites = useMemo(() => limitesDe(libertad), [libertad]);
   const prefs: GeneratorPrefs = useMemo(() => ({
     allergies: onboarding?.allergies ?? [],
     conditions: athleteConditions(onboarding),
@@ -178,6 +197,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     quiereRapidas: nutritionConfig?.quiereRapidas ?? onboarding?.quiereRapidas,
     variety: nutritionConfig?.menuVariety ?? onboarding?.menuVariety ?? 3,
     favoriteRecipeIds: favorites.recipeIds,
+    arranque: favorites.arranque,
     dislikedRecipeIds: favorites.dislikedIds ?? [],
     preferredDishTypes: (nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],
     excludedDishTypes: (nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as DishType[],
@@ -196,7 +216,11 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     return swapCandidates.filter(c => normalizeStr(c.recipe.name).includes(q));
   }, [swapCandidates, swapQuery]);
   const swapExactas = useMemo(() => swapFiltradas.filter(c => c.fit === 'exacto'), [swapFiltradas]);
-  const swapAproximadas = useMemo(() => swapFiltradas.filter(c => c.fit === 'aproximado'), [swapFiltradas]);
+  // En «Guiado» solo se ofrecen los platos equivalentes.
+  const swapAproximadas = useMemo(
+    () => (permisos.platoConReajuste ? swapFiltradas.filter(c => c.fit === 'aproximado') : []),
+    [swapFiltradas, permisos.platoConReajuste],
+  );
 
   const day: MenuDay | undefined = menu?.days.find(d => d.day === selectedDay);
   const batchPlan = useMemo(() => (menu ? buildBatchPlan(menu.days) : []), [menu]);
@@ -208,12 +232,81 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     () => {
       if (!detailRecipe) return null;
       // Receta base ajustada a esta comida (N-06): sus gramos, no la escala.
-      if (detailMeal?.ajuste) return recetaAjustada(detailRecipe, detailMeal.ajuste.gramos);
-      return escalarRecetaEntera(detailRecipe, detailMeal?.scale ?? 1);
+      // Con lo que está probando: los gramos de la ficha se mueven con la barra
+      // de ración y con los de cada ingrediente.
+      const vista = platoDePrueba ?? detailMeal;
+      if (vista?.ajuste) {
+        // Mezcla del atleta sobre un plato que el generador solo escaló: lo
+        // que no está vinculado (sal, especias) sigue yendo a escala.
+        const base = vista.mezcla && !pautadoDe(vista).ajuste ? escalarRecetaEntera(detailRecipe, vista.scale) : detailRecipe;
+        return recetaAjustada(base, vista.ajuste.gramos);
+      }
+      return escalarRecetaEntera(detailRecipe, vista?.scale ?? 1);
     },
-    [detailRecipe, detailMeal?.scale, detailMeal?.ajuste],
+    [detailRecipe, detailMeal, platoDePrueba],
   );
+  /* Lo que el reajuste del día no puede tocar: lo ya comido (solo se sabe de
+     hoy) y, en un menú de tanda, los táperes de comida y cena. */
+  const fijasDelDia = useMemo(() => {
+    if (!day) return new Set<string>();
+    const hechas = selectedDay === hoyWD ? day.meals.filter(m => doneKeys.has(`${selectedDay}_${m.id}`)).map(m => m.id) : [];
+    const tanda = menu?.batchCooking ? day.meals.filter(m => m.slot === 3 || m.slot === 5).map(m => m.id) : [];
+    return comidasFijas(day, hechas, tanda);
+  }, [day, selectedDay, hoyWD, doneKeys, menu?.batchCooking]);
   const detailSwaps = new Map((detailMeal?.ingredientSwaps ?? []).map(s => [s.from, s.to]));
+
+  /* Lo que se puede mover dentro del plato de la ficha (Dani, 16-11-2026:
+     «estos ingredientes también se deberían poder variar»): los gramos de cada
+     ingrediente, si la receta está vinculada al catálogo, con el mismo tope que
+     la ración. Y cómo queda el día con lo que está probando. */
+  const detalleEnElDia = !!detailMeal && !!day?.meals.some(m => m.id === detailMeal.id);
+  const detalleHecha = !!detailMeal && selectedDay === hoyWD && doneKeys.has(`${selectedDay}_${detailMeal.id}`);
+  const ingredientesDelDetalle = useMemo(() => ingredientesDeReceta(detailRecipe), [detailRecipe]);
+  const variablesDelDetalle = useMemo(
+    () => new Map<number, IngredienteVariable>(
+      detailMeal && detalleEnElDia && !detalleHecha && ingredientesDelDetalle
+        ? ingredientesVariables(platoDePrueba ?? detailMeal, ingredientesDelDetalle, permisos.pasoDeRacion).map(i => [i.n, i])
+        : [],
+    ),
+    [detailMeal, detalleEnElDia, detalleHecha, ingredientesDelDetalle, platoDePrueba, permisos.pasoDeRacion],
+  );
+  const reajusteDePrueba = useMemo(
+    () => (platoDePrueba && day ? conComidaElegida(day, platoDePrueba, fijasDelDia, limites) : null),
+    [platoDePrueba, day, fijasDelDia, limites],
+  );
+
+  function moverIngrediente(v: IngredienteVariable, d: 1 | -1) {
+    if (!detailMeal || !ingredientesDelDetalle) return;
+    const gramos = Math.min(v.max, Math.max(v.min, v.gramos + d * v.paso));
+    if (gramos === v.gramos) return;
+    const sig = conIngrediente(platoDePrueba ?? detailMeal, ingredientesDelDetalle, v.n, gramos);
+    setPlatoDePrueba(mismoPlato(sig, detailMeal) ? null : sig);
+  }
+
+  function guardarPlatoDePrueba() {
+    if (!detailMeal || !platoDePrueba || !reajusteDePrueba) return;
+    const num = (n: number) => String(n).replace('.', ',');
+    const de = racionDe(detailMeal);
+    const a = racionDe(platoDePrueba);
+    const partes: string[] = [];
+    if (de !== a) partes.push(`×${num(de)} → ×${num(a)}`);
+    // Los ingredientes, comparados a la MISMA ración: si no, saldrían todos.
+    const movidos = ingredientesDelDetalle ? cambiosDeIngredientes(conRacion(detailMeal, a), platoDePrueba, ingredientesDelDetalle) : [];
+    partes.push(...movidos.map(c => `${c.nombre.toLowerCase()} ${c.antes} → ${c.despues} g`));
+    setPlatoDePrueba(null);
+    void guardarReajuste(reajusteDePrueba, detailMeal.id, de !== a ? 'racion' : 'ingrediente', `${detailMeal.name}: ${partes.join(' · ')}`);
+  }
+
+  /* La receta de la comida a la que se le está añadiendo un extra: hace falta
+     para que el capricho se descuente de los ingredientes de ESE plato. */
+  const recetaDelExtraId = day?.meals.find(m => m.id === extrasFor?.mealId)?.recipeId || null;
+  const { data: recetaDelExtra = null, isLoading: cargandoRecetaDelExtra } = useQuery({
+    queryKey: ['receta', recetaDelExtraId],
+    queryFn: () => getRecipeById(recetaDelExtraId!),
+    enabled: !!recetaDelExtraId,
+    staleTime: 5 * 60_000,
+  });
+  const ingredientesDelExtra = useMemo(() => ingredientesDeReceta(recetaDelExtra), [recetaDelExtra]);
 
   // Shopping list needs each recipe's full ingredient list — fetched lazily the
   // first time the athlete opens it (menu meals only store name/image).
@@ -364,10 +457,15 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     const peticion = ++peticionDetalleRef.current;
     setDetailOpen(true);
     setDetailMealId(meal.id);
+    setPlatoDePrueba(null);
     setSubForIngredient(null);
     setDetailLoading(true);
     setDetailRecipe(null);
-    const r = await getRecipeById(meal.recipeId);
+    const r = await queryClient.fetchQuery({
+      queryKey: ['receta', meal.recipeId],
+      queryFn: () => getRecipeById(meal.recipeId),
+      staleTime: 5 * 60_000,
+    }).catch(() => null);
     if (peticion !== peticionDetalleRef.current) return;
     setDetailRecipe(r);
     setDetailLoading(false);
@@ -379,6 +477,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     setDetailOpen(false);
     setDetailRecipe(null);
     setDetailMealId(null);
+    setPlatoDePrueba(null);
     setSubForIngredient(null);
   }
 
@@ -432,6 +531,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
 
   async function openSwap(meal: MenuMeal) {
     setSwapFor({ mealId: meal.id, slot: meal.slot });
+    setSwapPendiente(null);
     setSwapLoading(true);
     setSwapCandidates([]);
     setSwapQuery('');
@@ -443,9 +543,9 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
       // de las ~660 alternativas válidas que hay para la comida, la muestra de
       // 300 solo contenía ~40, y de esas se enseñaban 5.
       const [recetas, builder] = await Promise.all([
-        queryRecetasForGenerator(meal.slot, Infinity),
-        getRecipes({ ownerId: profile.userId }),
-      ]);
+        queryClient.fetchQuery({ queryKey: ['recetasDeFranja', meal.slot], queryFn: () => queryRecetasForGenerator(meal.slot, Infinity), staleTime: 5 * 60_000 }),
+        queryClient.fetchQuery({ queryKey: ['recipes', profile.userId], queryFn: () => getRecipes({ ownerId: profile.userId }), staleTime: 5 * 60_000 }),
+      ]).catch(() => [[], []] as [Recipe[], Recipe[]]);
       const pool = [...recetas, ...builder.filter(r => recipeMatchesSlot(r, meal.slot))];
       // `foodList` y el modo van hasta el final: con ellos, cada alternativa se
       // evalúa con las raciones extra que le tocarían a ELLA, no con el plato
@@ -460,6 +560,8 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
   function abrirExtras(meal: MenuMeal, idx: number | null) {
     setExtrasFor({ mealId: meal.id, idx });
     setExtraQuery('');
+    setExtraPestana('cuadrar');
+    setExtraPendiente(null);
   }
 
   /** Escribe los extras de una comida y persiste. Un solo camino para cambiar,
@@ -480,37 +582,83 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     await updateWeeklyMenu(menu.id, { days: nextDays }).catch(() => {});
   }
 
+  /** Escribe el día tal como lo deja un reajuste (ración elegida o extra que
+   *  no cabía) y lo apunta en el historial que ve el coach. */
+  async function guardarReajuste(r: Reajuste, mealId: string, tipo: 'racion' | 'extra' | 'ingrediente', texto: string, capricho = false) {
+    if (!menu) return;
+    const nextDays = menu.days.map(d => d.day === selectedDay ? r.dia : d);
+    const reajustes = [...(menu.reajustes ?? []), { at: new Date().toISOString(), day: selectedDay, mealId, tipo, texto, desvioKcal: r.desvioKcal, ...(capricho ? { capricho: true } : {}) }];
+    queryClient.setQueryData<WeeklyMenu | null>(menuKey, prev => prev ? { ...prev, days: nextDays, reajustes } : prev);
+    setShoppingItems(null);
+    // Si Firestore lo rechaza (permisos), no se calla: el reajuste mueve el día
+    // entero y un «Guardado» que no se guardó deja al atleta comiendo sobre un
+    // día que no existe. Sin red es distinto: `updateWeeklyMenu` lo guarda en el
+    // dispositivo y no lanza, como el resto de la app.
+    try {
+      await guardarMenu(menu.id, { days: nextDays, reajustes });
+      showToast(r.estado === 'cuadra'
+        ? (r.enSuComida
+          ? (r.cambios.length > 0 ? 'Guardado. He ajustado esa comida y el resto del día.' : 'Guardado. He ajustado esa comida.')
+          : r.cambios.length > 0 ? 'Guardado. He ajustado el resto del día.' : 'Guardado.')
+        : `Guardado. ${r.estado === 'pasado' ? 'Hoy te pasas' : 'Hoy te quedas corto'} ${Math.abs(r.desvioKcal)} kcal.`, 'success');
+    } catch {
+      // Solo se deshace si en pantalla sigue ESTE cambio (no uno guardado después).
+      queryClient.setQueryData<WeeklyMenu | null>(menuKey, prev => prev && prev.days === nextDays ? { ...prev, days: menu.days, reajustes: menu.reajustes } : prev);
+      showToast('No se ha podido guardar el cambio. Inténtalo de nuevo.');
+    }
+  }
+
   function extrasDe(mealId: string): MenuComplement[] {
     return day?.meals.find(m => m.id === mealId)?.complements ?? [];
   }
 
-  async function confirmSwap(candidate: SwapCandidate) {
+  /** La comida con el plato de la alternativa. Los ACOMPAÑAMIENTOS se conservan
+   *  (una pieza de fruta sigue valiendo con otro plato), pero las RACIONES EXTRA
+   *  se caen: "+45g de arroz" solo tiene sentido mientras el plato sea el arroz
+   *  con pollo. Por eso la alternativa se busca para cubrir el plato MÁS sus
+   *  raciones extra (ver `findSwapAlternatives`). */
+  function comidaConAlternativa(m: MenuMeal, candidate: SwapCandidate): MenuMeal {
+    return {
+      ...m,
+      recipeId: candidate.recipe.id, recipeName: candidate.recipe.name,
+      recipeImage: fotoDeReceta(candidate.recipe),
+      scale: candidate.scale, macros: candidate.macros,
+      // Binarios viejos: siguen leyendo el plato en intercambios.
+      exch: (({ HC, PROT, GRASA }) => ({ HC, PROT, GRASA }))(intercambiosDeMacros(candidate.macros)),
+      // El ajuste por ingredientes es de la receta ANTERIOR: se cambia por el
+      // de la nueva o se quita.
+      ajuste: candidate.ajuste,
+      racionesExtra: candidate.raciones.length > 0 ? candidate.raciones : undefined,
+      kcal: Math.round(totalConExtras(candidate.macros, m.complements, candidate.raciones).kcal),
+    };
+  }
+
+  /** Cómo queda el día con esa alternativa: si el plato nuevo lo descuadra, el
+   *  resto de comidas se recoloca (utils/reajusteDelAtleta). */
+  function reajusteDeCambio(candidate: SwapCandidate): Reajuste | null {
+    if (!day || !swapFor) return null;
+    const meal = day.meals.find(m => m.id === swapFor.mealId);
+    if (!meal) return null;
+    // «Guiado»: el plato equivalente entra tal cual y las demás comidas no se tocan.
+    const fijas = permisos.platoConReajuste ? fijasDelDia : new Set(day.meals.map(m => m.id));
+    return cambiarPlato(day, meal.id, comidaConAlternativa(meal, candidate), fijas, limites);
+  }
+
+  /** Si el cambio no mueve nada más, se hace sin preguntar; si mueve otras
+   *  comidas o deja el día descuadrado, se enseña antes (Dani, 16-11-2026:
+   *  «debe avisar también»). */
+  function elegirCambio(candidate: SwapCandidate) {
+    const r = reajusteDeCambio(candidate);
+    if (!r) return;
+    if (permisos.platoConReajuste && (r.cambios.length > 0 || r.estado !== 'cuadra')) { setSwapPendiente(candidate); return; }
+    void confirmSwap(candidate, r);
+  }
+
+  async function confirmSwap(candidate: SwapCandidate, r: Reajuste) {
     if (!menu || !day || !swapFor) return;
     const meal = day.meals.find(m => m.id === swapFor.mealId);
     if (!meal) return;
-
-    // Los ACOMPAÑAMIENTOS se conservan (una pieza de fruta sigue valiendo con
-    // otro plato), pero las RACIONES EXTRA se caen: "+45g de arroz" solo tiene
-    // sentido mientras el plato sea el arroz con pollo, y la receta nueva puede
-    // no llevar arroz. Por eso la alternativa se busca para cubrir el plato MÁS
-    // sus raciones extra (ver `findSwapAlternatives`).
-    const nextMeals = day.meals.map(m => m.id === meal.id
-      ? {
-        ...m,
-        recipeId: candidate.recipe.id, recipeName: candidate.recipe.name,
-        recipeImage: fotoDeReceta(candidate.recipe),
-        scale: candidate.scale, macros: candidate.macros,
-        // Binarios viejos: siguen leyendo el plato en intercambios.
-        exch: (({ HC, PROT, GRASA }) => ({ HC, PROT, GRASA }))(intercambiosDeMacros(candidate.macros)),
-        // El ajuste por ingredientes es de la receta ANTERIOR: se cambia por el
-        // de la nueva o se quita.
-        ajuste: candidate.ajuste,
-        racionesExtra: candidate.raciones.length > 0 ? candidate.raciones : undefined,
-        kcal: Math.round(totalConExtras(candidate.macros, m.complements, candidate.raciones).kcal),
-      }
-      : m);
-    const nextDay: MenuDay = { ...day, meals: nextMeals };
-    const nextDays = menu.days.map(d => d.day === selectedDay ? nextDay : d);
+    const nextDays = menu.days.map(d => d.day === selectedDay ? r.dia : d);
     const swapEntry = {
       at: new Date().toISOString(), day: selectedDay, mealId: meal.id,
       fromRecipeId: meal.recipeId, fromRecipeName: meal.recipeName,
@@ -519,7 +667,12 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     const nextMenu: WeeklyMenu = { ...menu, days: nextDays, swapHistory: [...menu.swapHistory, swapEntry] };
     queryClient.setQueryData(menuKey, nextMenu);
     setSwapFor(null);
+    setSwapPendiente(null);
     setShoppingItems(null); // cached list is now stale
+    showToast(r.cambios.length > 0
+      ? 'Cambiada. He ajustado el resto del día.'
+      : r.estado === 'cuadra' ? 'Cambiada. El resto del día no cambia.'
+        : `Cambiada. ${r.estado === 'pasado' ? 'Hoy te pasas' : 'Hoy te quedas corto'} ${Math.abs(r.desvioKcal)} kcal.`, 'success');
     await updateWeeklyMenu(menu.id, { days: nextDays, swapHistory: nextMenu.swapHistory }).catch(() => {});
   }
 
@@ -529,18 +682,23 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
 
   if (!menu) {
     return (
-      <div className="bg-surface border border-hairline rounded-surface">
-        <EmptyState
-          icon="restaurant_menu"
-          title="Todavía no tienes un menú semanal"
-          description="Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando el Diario."
-        />
+      <div className="space-y-4">
+        {/* Antes del primer menú es cuando más sirve saber qué le gusta. */}
+        <TarjetaDeArranque email={profile.email} enMiMenu guardar={guardarArranque} />
+        <div className="bg-surface border border-hairline rounded-surface">
+          <EmptyState
+            icon="restaurant_menu"
+            title="Todavía no tienes un menú semanal"
+            description="Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando el Diario."
+          />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="pantalla space-y-6">
+      <TarjetaDeArranque email={profile.email} enMiMenu guardar={guardarArranque} />
       {/* Week strip */}
       <div className="grid grid-cols-7 gap-2">
         {WEEK_DAYS.map(d => {
@@ -635,132 +793,20 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
             const done = doneKeys.has(`${selectedDay}_${meal.id}`);
             return (
             <React.Fragment key={meal.id}>
-              <div className={`bg-surface border rounded-surface overflow-hidden transition-[color,background-color,border-color,opacity,transform,box-shadow] ${done ? 'border-success/30' : 'border-hairline'}`}>
-                {/* Foto a sangre, mismo patrón que RecetaCard en la Biblioteca de
-                    recetas — antes era una miniatura de 64px, demasiado pequeña
-                    para verse bien (queja real de Dani). */}
-                <button
-                  onClick={() => openDetail(meal)}
-                  className="relative block w-full aspect-[21/9] bg-raised"
-                >
-                  <FotoDeReceta
-                    src={meal.recipeImage}
-                    alt={meal.recipeName}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    fallback={<div className="absolute inset-0 flex items-center justify-center"><Icon name={meal.soloFruta ? 'nutrition' : 'skillet'} size="xl" className="text-ink-3" /></div>}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-veil/85 via-veil/15 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
-                    <span className="font-sans text-caption text-on-veil-2 uppercase tracking-wider">
-                      {meal.name}{meal.scale !== 1 ? ` · ×${meal.scale}` : ''}
-                    </span>
-                    <p className={`font-sans font-bold text-title-s leading-tight ${done ? 'text-on-veil-2 line-through' : 'text-on-veil'}`}>
-                      {meal.recipeName}
-                    </p>
-                  </div>
-                  {done && (
-                    <span className="absolute top-2 right-2 w-8 h-8 rounded-full bg-success flex items-center justify-center">
-                      <Icon name="check" size="m" className="text-on-fill" />
-                    </span>
-                  )}
-                </button>
-
-                <div className="p-3 flex gap-3">
-                  <button
-                    onClick={() => toggleDone(meal.id)}
-                    className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors self-start ${done ? 'bg-success border-success' : 'border-hairline hover:border-ink-2'}`}
-                    title={done ? 'Marcar como no hecha' : 'Marcar como hecha'}
-                  >
-                    {done && <Icon name="check" size="m" className="text-on-fill" />}
-                  </button>
-
-                  <div className="flex-1 min-w-0">
-                    <p className="font-mono text-caption text-ink-2">{fmtMacros(macrosDelPlato(meal))} · {meal.kcal} kcal</p>
-                    {/* Más ración de algo que el plato YA lleva. Va antes que los
-                        acompañamientos y con otro aspecto, porque no es algo que
-                        se añade al lado: es el mismo plato, servido más grande. */}
-                    {(meal.racionesExtra?.length ?? 0) > 0 && (
-                      <div className="flex flex-wrap items-center gap-1 mt-2">
-                        {meal.racionesExtra!.map((r, ri) => (
-                          <span
-                            key={ri}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-accent/10 border border-accent/25"
-                          >
-                            <Icon name="add" size="s" className="text-accent-ink" />
-                            <span className="font-mono text-caption text-accent-ink">
-                              {r.gramos}g de {r.nombre}
-                            </span>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Los acompañamientos van como filas aparte, debajo de la
-                        tarjeta (ver más abajo). Aquí solo se añade uno nuevo. */}
-                    <div className="flex flex-wrap items-center gap-1 mt-2">
-                      <button
-                        onClick={() => abrirExtras(meal, null)}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-hairline text-caption font-mono text-ink-3 hover:text-ink hover:border-accent/40 transition-colors"
-                      >
-                        <Icon name="add" size="s" />
-                        Extra
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-3 mt-2">
-                      <button
-                        onClick={() => openSwap(meal)}
-                        className="flex items-center gap-1 text-caption font-mono text-info hover:text-ink transition-colors"
-                      >
-                        <Icon name="swap_horiz" size="s" />
-                        Intercambiar
-                      </button>
-                      {meal.recipeId && onAddToPlan && selectedDay !== hoyWD && (
-                        <button
-                          onClick={() => anadirAlPlan(meal)}
-                          disabled={anadiendoId === meal.id}
-                          title="Registrar esta comida en tu plan del día"
-                          className="flex items-center gap-1 text-caption font-mono text-accent-ink hover:text-ink transition-colors disabled:opacity-50"
-                        >
-                          <Icon name="restaurant" size="s" />
-                          {anadiendoId === meal.id ? 'Añadiendo…' : 'Añadir a mi plan'}
-                        </button>
-                      )}
-                      {meal.recipeId && (
-                        <>
-                          <button
-                            onClick={() => toggleFavorite(meal.recipeId)}
-                            title={isFav(meal.recipeId) ? 'Quitar de favoritas' : 'Me encanta — quiero que salga más'}
-                            className="flex items-center transition-colors"
-                            style={{ color: isFav(meal.recipeId) ? 'var(--color-accent-ink)' : 'var(--color-ink-3)' }}
-                          >
-                            <Icon name="favorite" size="m" filled={isFav(meal.recipeId)} />
-                          </button>
-                          <button
-                            onClick={() => toggleDislike(meal.recipeId, meal)}
-                            title={isDisliked(meal.recipeId) ? 'Quitar el "no me gusta"' : 'No me gusta — que no vuelva a salir'}
-                            className="flex items-center transition-colors"
-                            style={{ color: isDisliked(meal.recipeId) ? 'var(--color-danger)' : 'var(--color-ink-3)' }}
-                          >
-                            <Icon name="thumb_down" size="m" filled={isDisliked(meal.recipeId)} />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                    {/* Marcar aquí ya suma en «Mi plan» (ver `toggleDone` →
-                        `sincronizarConElPlan`). Se dice en la propia fila
-                        porque el fallo que esto arregla era justo ese: la
-                        atleta veía la comida verde y tachada, se iba al plan y
-                        no había cambiado ni una caloría. */}
-                    {done && meal.recipeId && (
-                      <p className="mt-2 font-mono text-caption text-success">
-                        {selectedDay === hoyWD
-                          ? 'Sumada a tu plan del día.'
-                          : 'Marcada. Para que cuente en los macros, añádela a tu plan.'}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <TarjetaDeComida
+                meal={meal}
+                done={done}
+                esHoy={selectedDay === hoyWD}
+                favorita={!!meal.recipeId && isFav(meal.recipeId)}
+                noMeGusta={!!meal.recipeId && isDisliked(meal.recipeId)}
+                alPlan={onAddToPlan && selectedDay !== hoyWD ? { anadiendo: anadiendoId === meal.id, onAnadir: () => anadirAlPlan(meal) } : null}
+                onAbrir={() => openDetail(meal)}
+                onHecha={() => toggleDone(meal.id)}
+                onExtra={() => abrirExtras(meal, null)}
+                onCambiar={() => openSwap(meal)}
+                onFavorita={() => toggleFavorite(meal.recipeId)}
+                onNoMeGusta={() => toggleDislike(meal.recipeId, meal)}
+              />
               {/* Los extras (fruta, pan, yogur) van como si fueran comidas más,
                   cada uno en su fila y con otro color, para que el atleta no se
                   los salte (Dani, 27-10-2026: «plátano y frutas deshidratadas y
@@ -824,7 +870,26 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
           size="m"
         >
           <div className="space-y-2 pt-2">
-            {swapLoading ? (
+            {swapPendiente && day ? (() => {
+              const r = reajusteDeCambio(swapPendiente);
+              if (!r) return null;
+              return (
+                <div className="space-y-3">
+                  <div className="p-3 bg-raised border border-hairline rounded-control">
+                    <p className="font-sans text-body-s text-ink truncate">{swapPendiente.recipe.name}</p>
+                    <p className="font-mono text-caption text-ink-2">{Math.round(swapPendiente.macros.kcal)} kcal · {fmtMacros(swapPendiente.macros)}</p>
+                  </div>
+                  <p className="font-sans text-caption text-ink-2 px-1">
+                    {r.cambios.length > 0 ? 'Este plato no es igual que el que tenías. El resto del día se recoloca:' : 'Este plato no es igual que el que tenías y hoy ya no hay dónde compensarlo:'}
+                  </p>
+                  <ReajusteDelDia dia={day} reajuste={r} mealId={swapFor.mealId} fijas={fijasDelDia} />
+                  <div className="flex items-center gap-2">
+                    <Button size="s" variant="primary" onClick={() => void confirmSwap(swapPendiente, r)}>Cambiar</Button>
+                    <Button size="s" variant="ghost" onClick={() => setSwapPendiente(null)}>Volver</Button>
+                  </div>
+                </div>
+              );
+            })() : swapLoading ? (
               <p className="font-sans text-label text-ink-3 text-center py-6">Buscando alternativas que mantengan tus puntos…</p>
             ) : swapCandidates.length === 0 ? (
               <p className="font-sans text-label text-ink-3 text-center py-6">No hay alternativas disponibles ahora mismo para este hueco.</p>
@@ -849,14 +914,19 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
 
                 {[
                   { titulo: 'Cuadran con tus puntos', lista: swapExactas },
-                  { titulo: 'Se acercan (te dejan algo desajustado)', lista: swapAproximadas },
+                  { titulo: 'Se acercan', lista: swapAproximadas },
                 ].map(({ titulo, lista }) => lista.length === 0 ? null : (
                   <div key={titulo} className="space-y-2">
                     <p className="font-sans text-caption text-ink-2 uppercase tracking-wider pt-2">{titulo}</p>
-                    {lista.slice(0, swapVisible).map(c => (
+                    {lista.slice(0, swapVisible).map(c => {
+                      // La etiqueta sale del reajuste REAL, no de `fit`: un plato
+                      // que cuadra con los puntos puede mover igualmente el día.
+                      const r = reajusteDeCambio(c);
+                      const mantiene = !r || (r.cambios.length === 0 && r.estado === 'cuadra');
+                      return (
                       <button
                         key={c.recipe.id}
-                        onClick={() => confirmSwap(c)}
+                        onClick={() => elegirCambio(c)}
                         className="w-full flex items-center gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                       >
                         <div className="w-10 h-10 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
@@ -866,11 +936,12 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                           <p className="font-sans text-body-s text-ink truncate">{c.recipe.name}</p>
                           <p className="font-mono text-caption text-ink-2">
                             {Math.round(c.macros.kcal)} kcal · {fmtMacros(c.macros)}
-                            {c.fit === 'exacto' ? ' · mantiene tu día' : ` · ${describeDrift(c.drift)}`}
+                            {mantiene ? ' · mantiene tu día' : permisos.platoConReajuste ? ' · ajusta el resto del día' : ''}
                           </p>
                         </div>
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 ))}
 
@@ -912,7 +983,8 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
         const siguienteCantidad = (delta: 1 | -1): MenuComplement | null => {
           if (!actual || !alimentoActual || !actual.gramos) return null;
           const g = gramosVecinos(alimentoActual, actual.gramos, delta);
-          return g == null ? null : extraDeCatalogo(alimentoActual, g);
+          // Sigue siendo suyo: si no, el reajuste del día lo trataría como un extra de cuadrar y podría quitárselo.
+          return g == null ? null : { ...extraDeCatalogo(alimentoActual, g), ...(actual.delAtleta ? { delAtleta: true } : {}) };
         };
         const masCatalogo = siguienteCantidad(1);
         const menosCatalogo = siguienteCantidad(-1);
@@ -924,10 +996,35 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
         /* Sin buscar: lo que puede ser extra (fruta, lácteo, pan, frutos secos),
          * con lo que le gusta delante. Buscando: el catálogo entero. Un
          * alimento que no cabe ni en su cantidad mínima no se ofrece. */
-        const candidatos = q
-          ? buscarEnCatalogo(catalogoAlimentos, q, 40)
-          : alimentosParaExtras(catalogoAlimentos, { liked: prefs.liked, disliked: prefs.disliked, allergies: prefs.allergies, conditions: prefs.conditions, dietType: prefs.dietType }).map(c => c.a);
-        const lista = candidatos.filter(a => cabe(extraDeCatalogo(a, gramosPosibles(a)[0])));
+        /* Caprichos que elige él: según su nivel, ninguno (los pone el coach),
+         * unos pocos por semana o sin tope. Cuentan los ya metidos en este menú. */
+        const caprichosUsados = (menu?.reajustes ?? []).filter(e => e.capricho).length;
+        const caprichosQuedan = Math.max(0, permisos.caprichosPorSemana - caprichosUsados);
+        const hayCaprichos = permisos.caprichosPorSemana > 0;
+        const enCaprichos = !actual && hayCaprichos && extraPestana === 'caprichos';
+        const candidatos = enCaprichos
+          ? (q ? buscarCaprichos(q, catalogoAlimentos, 40) : [])
+          : q
+            ? buscarEnCatalogo(catalogoAlimentos, q, 40)
+            : alimentosParaExtras(catalogoAlimentos, { liked: prefs.liked, disliked: prefs.disliked, allergies: prefs.allergies, conditions: prefs.conditions, dietType: prefs.dietType }).map(c => c.a);
+        const cabeAlgo = (a: AlimentoCatalogo) => cabe(extraDeCatalogo(a, gramosPosibles(a)[0]));
+        /* Cambiando un extra que ya está, solo lo que cabe en su comida. Al
+         * añadir uno nuevo se ofrece todo: lo que no cabe entra igual y lo
+         * compensa el resto del día (utils/reajusteDelAtleta). */
+        const lista = actual || !hayCaprichos ? candidatos.filter(cabeAlgo) : candidatos;
+        /* Caprichos sin buscar: primero los que apuntó él en su perfil y
+         * después la lista del coach por grupos. La lista no lleva alérgenos:
+         * con alergias o intolerancias solo salen los suyos. */
+        const conRestricciones = prefs.allergies.length > 0 || (prefs.conditions?.length ?? 0) > 0;
+        const noLeGusta = (a: AlimentoCatalogo) => prefs.disliked.some(d => !!normalizeStr(d) && normalizeStr(a.nombre).includes(normalizeStr(d)));
+        const propios = (onboarding?.caprichos ?? []).map(alimentoDelCapricho).filter((a): a is AlimentoCatalogo => !!a);
+        const grupos: { titulo: string | null; items: AlimentoCatalogo[] }[] = enCaprichos && !q
+          ? [
+            { titulo: 'Los tuyos', items: propios },
+            ...(conRestricciones ? [] : caprichosPorGrupo().map(gr => ({ titulo: gr.titulo, items: gr.caprichos.filter(c => !noLeGusta(c)) as AlimentoCatalogo[] }))),
+          ].filter(gr => gr.items.length > 0)
+          : [{ titulo: null, items: lista.slice(0, 60) }];
+        const hayAlgo = grupos.some(gr => gr.items.length > 0);
 
         function cambiarCantidad(delta: 1 | -1) {
           if (extrasFor?.idx == null || !actual) return;
@@ -954,7 +1051,26 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
           const posibles = gramosPosibles(a);
           const preferida = a.unidad ? a.unidad.gramos : posibles[0];
           const quepan = posibles.filter(g => g <= preferida && cabe(extraDeCatalogo(a, g)));
-          const nuevo = extraDeCatalogo(a, quepan.length > 0 ? quepan[quepan.length - 1] : posibles[0]);
+          // No cabe (o es un capricho, que se come entero): antes de añadirlo
+          // se le enseña lo que mueve en el resto del día.
+          const enteroCabe = cabe(extraDeCatalogo(a, preferida));
+          if (enCaprichos) {
+            if (caprichosQuedan <= 0 || !day) return;
+            const capricho = extraDeCatalogo(a, preferida);
+            // Cabe en su comida: entra sin preguntar, pero cuenta para su tope.
+            if (enteroCabe) {
+              void guardarReajuste(anadirExtraDelAtleta(day, extrasFor.mealId, capricho, fijasDelDia, limites, ingredientesDelExtra), extrasFor.mealId, 'extra', textoDeExtra(capricho), true);
+              setExtrasFor(null);
+              return;
+            }
+            setExtraPendiente(capricho);
+            return;
+          }
+          if (extrasFor.idx == null && quepan.length === 0) {
+            setExtraPendiente(extraDeCatalogo(a, preferida));
+            return;
+          }
+          const nuevo = { ...extraDeCatalogo(a, quepan.length > 0 ? quepan[quepan.length - 1] : posibles[0]), ...(extrasFor.idx == null || extras[extrasFor.idx]?.delAtleta ? { delAtleta: true } : {}) };
           const siguiente = extrasFor.idx != null
             ? extras.map((c, i) => i === extrasFor.idx ? nuevo : c)
             : [...extras, nuevo];
@@ -964,6 +1080,69 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
 
         const textoActual = actual ? (esDelCatalogo ? textoDeExtra(actual) : `${itemWeightLabel(actual.foodLabel, actual.quantity)} ${foodNameWithoutGrams(actual.foodLabel)}`) : '';
 
+        // Hasta tener la receta no se calcula: con ella el capricho sale de los
+        // ingredientes del plato, y lo que se enseña es lo que se guarda.
+        const reajustePendiente = extraPendiente && comidaDelExtra && day && !cargandoRecetaDelExtra
+          ? anadirExtraDelAtleta(day, comidaDelExtra.id, extraPendiente, fijasDelDia, limites, ingredientesDelExtra)
+          : null;
+        const cede = reajustePendiente?.enSuComida;
+        const num = (n: number) => String(n).replace('.', ',');
+        const pendienteVista = extraPendiente && reajustePendiente && comidaDelExtra ? (
+          <div className="space-y-3 pt-2">
+            <div className="p-3 bg-raised border border-hairline rounded-control">
+              <p className="font-sans text-body-s text-ink truncate">{textoDeExtra(extraPendiente)}</p>
+              <p className="font-mono text-caption text-ink-2">{Math.round(macrosDeAcompanamiento(extraPendiente).kcal)} kcal · en {comidaDelExtra.name.toLowerCase()}</p>
+            </div>
+            {cede ? (
+              <div className="px-1 space-y-1">
+                <p className="font-sans text-caption text-ink-2">
+                  Entra entero. Para hacerle sitio, tu {comidaDelExtra.name.toLowerCase()} baja {cede.kcalAntes - cede.kcalDespues} kcal:
+                </p>
+                <ul className="space-y-1">
+                  {cede.ingredientes.map(i => (
+                    <li key={i.nombre} className="flex items-baseline justify-between gap-2 font-sans text-label text-ink">
+                      <span className="truncate">{i.nombre}</span>
+                      <span className="font-mono text-caption shrink-0">
+                        <span className="text-ink-3 line-through mr-2">{i.antes} g</span>
+                        <span className="text-accent-ink font-semibold">{i.despues} g</span>
+                      </span>
+                    </li>
+                  ))}
+                  {cede.ingredientes.length === 0 && (
+                    <li className="flex items-baseline justify-between gap-2 font-sans text-label text-ink">
+                      <span className="truncate">{comidaDelExtra.recipeName}</span>
+                      <span className="font-mono text-caption shrink-0">
+                        <span className="text-ink-3 line-through mr-2">×{num(cede.racionAntes)}</span>
+                        <span className="text-accent-ink font-semibold">×{num(cede.racionDespues)}</span>
+                      </span>
+                    </li>
+                  )}
+                </ul>
+                {reajustePendiente.cambios.length > 0 && (
+                  <p className="font-sans text-caption text-ink-2 pt-1">Lo que ese plato no puede ceder sale del resto del día.</p>
+                )}
+              </div>
+            ) : (
+              <p className="font-sans text-caption text-ink-2 px-1">
+                No cabe en esta comida tal como está. Entra entero y el resto del día se recoloca:
+              </p>
+            )}
+            <ReajusteDelDia dia={day!} reajuste={reajustePendiente} mealId={comidaDelExtra.id} fijas={fijasDelDia} />
+            <div className="flex items-center gap-2">
+              <Button
+                size="s"
+                variant="primary"
+                onClick={() => {
+                  void guardarReajuste(reajustePendiente, comidaDelExtra.id, 'extra', `${textoDeExtra(extraPendiente)} en ${comidaDelExtra.name.toLowerCase()}${cede ? ` (el plato baja ${cede.kcalAntes - cede.kcalDespues} kcal)` : ''}`, extraPestana === 'caprichos');
+                  setExtraPendiente(null);
+                  setExtrasFor(null);
+                }}
+              >Añadir</Button>
+              <Button size="s" variant="ghost" onClick={() => setExtraPendiente(null)}>Volver</Button>
+            </div>
+          </div>
+        ) : null;
+
         return (
           <Sheet
             open
@@ -971,6 +1150,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
             title={actual ? 'Cambiar este extra' : 'Añadir un extra'}
             size="m"
           >
+            {pendienteVista ?? (
             <div className="space-y-3 pt-2">
               {actual && (
                 <div className="flex items-center justify-between gap-3 p-3 bg-raised border border-hairline rounded-control">
@@ -1020,15 +1200,27 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                 </button>
               )}
 
+              {!actual && hayCaprichos && (
+                <div className="grid grid-cols-2 gap-1 p-1 bg-raised rounded-control">
+                  {([['cuadrar', 'Para completar'], ['caprichos', 'Caprichos']] as const).map(([id, texto]) => (
+                    <button
+                      key={id}
+                      onClick={() => { setExtraPestana(id); setExtraQuery(''); }}
+                      className={`py-2 rounded-lg font-sans text-label font-bold transition-colors ${extraPestana === id ? 'bg-surface text-ink shadow-sm' : 'text-ink-3 hover:text-ink'}`}
+                    >{texto}</button>
+                  ))}
+                </div>
+              )}
+
               <div>
                 <p className="font-mono text-caption text-ink-3 mb-2">
-                  {actual ? 'Cámbialo por otro alimento' : 'Fruta, lácteos, pan y frutos secos; lo que te gusta, primero'}
+                  {actual ? 'Cámbialo por otro alimento' : enCaprichos ? (Number.isFinite(caprichosQuedan) ? (caprichosQuedan > 0 ? `Te ${caprichosQuedan === 1 ? 'queda' : 'quedan'} ${caprichosQuedan} de ${permisos.caprichosPorSemana} esta semana · entra entero y tu comida se ajusta` : `Ya has usado tus ${permisos.caprichosPorSemana} caprichos de esta semana`) : 'Entra entero; tu comida se ajusta sola') : 'Fruta, lácteos, pan y frutos secos; lo que te gusta, primero'}
                 </p>
                 <input
                   type="search"
                   value={extraQuery}
                   onChange={e => setExtraQuery(e.target.value)}
-                  placeholder="Buscar en el catálogo (plátano, yogur, pan…)"
+                  placeholder={enCaprichos ? 'Buscar un capricho (helado, chocolate…)' : 'Buscar en el catálogo (plátano, yogur, pan…)'}
                   className="w-full px-3 py-2 bg-bg border border-control-line rounded-control font-sans text-body text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
                 />
               </div>
@@ -1036,26 +1228,43 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
               <div className="space-y-1">
                 {catalogoAlimentos.length === 0 ? (
                   <p className="font-sans text-label text-ink-3 text-center py-6">El catálogo no ha cargado. Inténtalo otra vez con conexión.</p>
-                ) : lista.length === 0 ? (
-                  <p className="font-sans text-label text-ink-3 text-center py-6">{q ? 'Nada con ese nombre en el catálogo.' : 'Ningún extra cabe ya en esta comida.'}</p>
-                ) : lista.slice(0, 60).map(a => {
-                  const muestra = extraDeCatalogo(a, a.unidad ? a.unidad.gramos : gramosPosibles(a)[0]);
-                  return (
-                    <button
-                      key={a.id}
-                      onClick={() => elegirAlimento(a)}
-                      className="w-full flex items-center justify-between gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
-                    >
-                      <span className="min-w-0">
-                        <span className="block font-sans text-body-s text-ink truncate">{nombreDeAlimento(a)}</span>
-                        <span className="block font-mono text-caption text-ink-3">{textoDeExtra(muestra)} · {muestra.macros!.kcal} kcal</span>
-                      </span>
-                      {prefs.liked.some(l => normalizeStr(a.nombre).includes(normalizeStr(l))) && <Badge tone="accent">Te gusta</Badge>}
-                    </button>
-                  );
-                })}
+                ) : !hayAlgo ? (
+                  <p className="font-sans text-label text-ink-3 text-center py-6">
+                    {q ? 'Nada con ese nombre.' : enCaprichos ? 'Aún no has apuntado caprichos. Búscalo arriba o apúntalos en Perfil › Preferencias.' : 'Ningún extra cabe ya en esta comida.'}
+                  </p>
+                ) : grupos.map(gr => (
+                  <React.Fragment key={gr.titulo ?? 'lista'}>
+                    {gr.titulo && <p className="font-mono text-caption text-ink-3 uppercase pt-2">{gr.titulo}</p>}
+                    {gr.items.map(a => {
+                      const muestra = extraDeCatalogo(a, a.unidad ? a.unidad.gramos : gramosPosibles(a)[0]);
+                      const ajusta = !actual && (enCaprichos ? !cabe(muestra) : !cabeAlgo(a));
+                      return (
+                        <button
+                          key={a.id}
+                          onClick={() => elegirAlimento(a)}
+                          disabled={enCaprichos && caprichosQuedan <= 0}
+                          className="w-full flex items-center justify-between gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-50 disabled:hover:border-hairline"
+                        >
+                          <span className="min-w-0">
+                            <span className="block font-sans text-body-s text-ink truncate">{nombreDeAlimento(a)}</span>
+                            <span className="block font-mono text-caption text-ink-3">{enCaprichos ? textoDeRacion(a) : `${textoDeExtra(muestra)} · ${muestra.macros!.kcal} kcal`}</span>
+                          </span>
+                          {enCaprichos
+                            ? null
+                            : ajusta
+                            ? <Badge tone="neutral">Ajusta el día</Badge>
+                            : prefs.liked.some(l => normalizeStr(a.nombre).includes(normalizeStr(l))) && <Badge tone="accent">Te gusta</Badge>}
+                        </button>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+                {enCaprichos && !q && conRestricciones && (
+                  <p className="font-sans text-caption text-ink-3 px-1 pt-2">Con tus alergias o intolerancias aquí solo salen los que has apuntado tú. Para otros, búscalo o pídeselo a tu entrenador.</p>
+                )}
               </div>
             </div>
+            )}
           </Sheet>
         );
       })()}
@@ -1080,7 +1289,19 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                     <FotoDeReceta src={fotoDeReceta(detailRecipe)} alt={detailRecipe.name} className="w-full h-full object-cover" fallback={null} />
                   </div>
                 )}
-                {(detailMeal?.scale ?? 1) !== 1 && (
+                {detailMeal && day && detalleEnElDia ? (
+                  <RacionDelMenu
+                    dia={day}
+                    meal={detailMeal}
+                    prueba={platoDePrueba}
+                    reajuste={reajusteDePrueba}
+                    fijas={fijasDelDia}
+                    hecha={detalleHecha}
+                    pasoMaximo={permisos.pasoDeRacion}
+                    onProbar={setPlatoDePrueba}
+                    onGuardar={guardarPlatoDePrueba}
+                  />
+                ) : (detailMeal?.scale ?? 1) !== 1 && (
                   <p className="font-mono text-caption text-accent-ink">
                     Cantidades para ×{detailMeal!.scale} de la receta
                   </p>
@@ -1097,9 +1318,10 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                     <p className="font-mono text-caption text-ink-3 uppercase mb-2">Ingredientes</p>
                     <ul className="">
                       {(detailRecipeVista.ingredientsText?.length
-                        ? detailRecipeVista.ingredientsText.map(i => ({ label: i.name, qty: Number.isFinite(i.quantity) ? `${i.quantity}g` : '' }))
-                        : (detailRecipeVista.ingredients ?? []).map(i => ({ label: i.foodLabel, qty: `×${i.quantity}` }))
+                        ? detailRecipeVista.ingredientsText.map((i, n) => ({ label: i.name, qty: Number.isFinite(i.quantity) ? `${i.quantity}g` : '', variable: variablesDelDetalle.get(n) }))
+                        : (detailRecipeVista.ingredients ?? []).map(i => ({ label: i.foodLabel, qty: `×${i.quantity}`, variable: undefined as IngredienteVariable | undefined }))
                       ).map((ing, idx) => {
+                        const v = ing.variable;
                         const swappedTo = detailSwaps.get(ing.label);
                         const subs = detailMealId ? substitutesFor(ing.label) : [];
                         const open = subForIngredient === ing.label;
@@ -1116,7 +1338,21 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                                   <span className="text-ink">{ing.label}</span>
                                 )}
                               </span>
-                              <span className="font-mono text-caption text-ink-2 shrink-0">{ing.qty}</span>
+                              {v ? (
+                                <span className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={() => moverIngrediente(v, -1)} disabled={v.gramos <= v.min} title={`${v.paso} g menos`}
+                                    className="w-9 h-9 rounded-control bg-surface border border-hairline text-ink-2 hover:text-ink text-body-s font-bold flex items-center justify-center disabled:opacity-40"
+                                  >−</button>
+                                  <span className={`font-mono text-caption min-w-12 text-center ${v.gramos !== v.pautado ? 'text-accent-ink font-semibold' : 'text-ink-2'}`}>{v.gramos}g</span>
+                                  <button
+                                    onClick={() => moverIngrediente(v, 1)} disabled={v.gramos >= v.max} title={`${v.paso} g más`}
+                                    className="w-9 h-9 rounded-control bg-surface border border-hairline text-ink-2 hover:text-ink text-body-s font-bold flex items-center justify-center disabled:opacity-40"
+                                  >+</button>
+                                </span>
+                              ) : (
+                                <span className="font-mono text-caption text-ink-2 shrink-0">{ing.qty}</span>
+                              )}
                               {subs.length > 0 && (
                                 <button
                                   onClick={() => setSubForIngredient(open ? null : ing.label)}
@@ -1149,7 +1385,27 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                       })}
                     </ul>
                     {detailMealId && (
-                      <p className="font-sans text-caption text-ink-3 mt-2">Cambia un ingrediente por otro parecido si no lo tienes o no te gusta.</p>
+                      <p className="font-sans text-caption text-ink-3 mt-2">
+                        {variablesDelDetalle.size > 0 ? 'Sube o baja los gramos de cada ingrediente: el resto del día se ajusta. ' : ''}
+                        Cambia un ingrediente por otro parecido si no lo tienes o no te gusta.
+                      </p>
+                    )}
+                    {/* La barra de guardar también aquí abajo: los ingredientes
+                        quedan lejos de la caja de la ración. */}
+                    {platoDePrueba && reajusteDePrueba && (
+                      <div className="mt-3 p-3 bg-surface border border-hairline rounded-control">
+                        <p className={`flex items-center gap-1 font-mono text-caption ${reajusteDePrueba.estado === 'cuadra' ? 'text-success' : 'text-accent-ink'}`}>
+                          <Icon name={reajusteDePrueba.estado === 'cuadra' ? 'check_circle' : 'info'} size="s" />
+                          {textoDeEstado(reajusteDePrueba)}
+                        </p>
+                        {reajusteDePrueba.cambios.map(c => (
+                          <p key={c.mealId} className="font-sans text-caption text-ink-2 mt-1">{textoDeCambio(c)}</p>
+                        ))}
+                        <div className="flex items-center gap-2 mt-3">
+                          <Button size="s" variant="primary" onClick={guardarPlatoDePrueba}>Guardar</Button>
+                          <Button size="s" variant="ghost" onClick={() => setPlatoDePrueba(null)}>Cancelar</Button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 ) : null}

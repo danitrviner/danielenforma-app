@@ -421,3 +421,69 @@ describe('cdgCatalogo · catálogo CDG con licencia personal del coach', () => {
     await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'cdgCatalogo', 'v4')));
   });
 });
+
+describe('weeklyMenus · el atleta guarda su ración y sus caprichos (16-11)', () => {
+  // La ración y el capricho que no cabe escriben `days` + `reajustes` en una
+  // sola escritura. Sin `reajustes` en la regla, Firestore la rechazaba ENTERA
+  // y la app decía «Guardado» igualmente.
+  const MENU = {
+    athleteId: ATLETA, coachId: 'uid-coach', weekStart: '2026-11-16', status: 'published',
+    days: [{ day: 1, meals: [] }], swapHistory: [],
+  };
+  const REAJUSTE = { at: '2026-11-16T10:00:00.000Z', day: 1, mealId: 'm1', tipo: 'racion', texto: 'Desayuno ×1,25', desvioKcal: 0 };
+  const atleta = () => env.authenticatedContext('uid-atleta-menu', { email: ATLETA, email_verified: true }).firestore();
+
+  it('guarda el día reajustado junto con el historial', async () => {
+    await sembrar(async db => { await setDoc(doc(db, 'weeklyMenus', 'm1'), MENU); });
+    await assertSucceeds(updateDoc(doc(atleta(), 'weeklyMenus', 'm1'), {
+      days: [{ day: 1, meals: [{ id: 'm1', scale: 1.25 }] }], reajustes: [REAJUSTE],
+    }));
+  });
+
+  it('sigue pudiendo cambiar un plato (days + swapHistory)', async () => {
+    await sembrar(async db => { await setDoc(doc(db, 'weeklyMenus', 'm1'), MENU); });
+    await assertSucceeds(updateDoc(doc(atleta(), 'weeklyMenus', 'm1'), {
+      days: [{ day: 1, meals: [] }], swapHistory: [{ at: '2026-11-16', mealId: 'm1' }],
+    }));
+  });
+
+  it('NO puede tocar nada más aprovechando el reajuste', async () => {
+    await sembrar(async db => { await setDoc(doc(db, 'weeklyMenus', 'm1'), MENU); });
+    await assertFails(updateDoc(doc(atleta(), 'weeklyMenus', 'm1'), { reajustes: [REAJUSTE], status: 'draft' }));
+    await assertFails(updateDoc(doc(atleta(), 'weeklyMenus', 'm1'), { reajustes: [REAJUSTE], coachId: 'otro' }));
+  });
+
+  it('NO puede reajustar un menú sin publicar ni el de otro atleta', async () => {
+    await sembrar(async db => {
+      await setDoc(doc(db, 'weeklyMenus', 'borrador'), { ...MENU, status: 'draft' });
+      await setDoc(doc(db, 'weeklyMenus', 'ajeno'), { ...MENU, athleteId: 'otro@enforma.com' });
+    });
+    await assertFails(updateDoc(doc(atleta(), 'weeklyMenus', 'borrador'), { reajustes: [REAJUSTE] }));
+    await assertFails(updateDoc(doc(atleta(), 'weeklyMenus', 'ajeno'), { reajustes: [REAJUSTE] }));
+  });
+});
+
+describe('libertad y arranque · quién escribe qué (16-11)', () => {
+  const atleta = () => env.authenticatedContext('uid-atleta-menu', { email: ATLETA, email_verified: true }).firestore();
+  const coach = () => env.authenticatedContext('uid-coach', { email: COACH, email_verified: true }).firestore();
+
+  it('la libertad la pone el coach; el atleta la lee y no la cambia', async () => {
+    await assertSucceeds(setDoc(doc(coach(), 'athleteRecipeRules', ATLETA), { athleteId: ATLETA, reglas: [], libertad: { nivel: 'guiado' } }));
+    await assertSucceeds(getDoc(doc(atleta(), 'athleteRecipeRules', ATLETA)));
+    await assertFails(setDoc(doc(atleta(), 'athleteRecipeRules', ATLETA), { athleteId: ATLETA, reglas: [], libertad: { nivel: 'libre' } }));
+  });
+
+  it('el atleta guarda su arranque, sus alimentos y sus preferencias', async () => {
+    await assertSucceeds(setDoc(doc(atleta(), 'recipeFavorites', ATLETA), {
+      athleteId: ATLETA, recipeIds: [], arranque: { si: ['r1'], no: ['r2'], hechoEn: '2026-11-16' },
+    }));
+    await assertSucceeds(setDoc(doc(atleta(), 'onboarding', ATLETA), { likedFoods: ['Pollo'], dislikedFoods: ['Atún'] }, { merge: true }));
+    await assertSucceeds(setDoc(doc(atleta(), 'athleteNutritionConfigs', ATLETA), { athleteId: ATLETA, recetasRapidas: true }, { merge: true }));
+  });
+
+  it('otro atleta no ve ni pisa el arranque ajeno', async () => {
+    const otro = env.authenticatedContext('uid-otro', { email: 'otro@enforma.com', email_verified: true }).firestore();
+    await assertFails(getDoc(doc(otro, 'recipeFavorites', ATLETA)));
+    await assertFails(setDoc(doc(otro, 'recipeFavorites', ATLETA), { athleteId: ATLETA, recipeIds: [] }));
+  });
+});

@@ -23,6 +23,36 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: '2026-11-menu-a-tu-medida',
+    fecha: '2026-11-16',
+    titulo: 'Tu menú, a tu medida',
+    puntos: [
+      {
+        titulo: 'Más o menos de un plato',
+        texto:
+          'En Mi menú, abre una comida y sube o baja la ración, o los gramos de un ingrediente. Antes de guardar ' +
+          'ves cómo se ajusta el resto del día para que siga cuadrando.',
+      },
+      {
+        titulo: 'Caprichos que cuentan',
+        texto:
+          'En «Extra» tienes una pestaña de caprichos. El capricho entra entero y esa comida se ajusta para ' +
+          'hacerle sitio: te lo enseña antes de añadirlo.',
+      },
+      {
+        titulo: 'Enséñame qué te gusta',
+        texto:
+          '40 platos, sí o no, en dos minutos, y tu próximo menú acierta más. Después lo tienes en «Tus gustos», ' +
+          'arriba de Mi menú, para ver más platos o cambiar lo que dijiste.',
+      },
+      {
+        titulo: 'Cambiar de plato, con aviso',
+        texto:
+          'Si cambias un plato por otro que no es equivalente, antes de cambiarlo ves lo que se mueve en el resto del día.',
+      },
+    ],
+  },
+  {
     id: '2026-10-recetario-descubrir',
     fecha: '2026-10-16',
     titulo: 'Un recetario para descubrir',
