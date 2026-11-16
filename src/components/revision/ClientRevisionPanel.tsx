@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  UserProfile, WorkoutLog, Exercise, Mesocycle, MuscleGroup, ProgressPhoto, BodyweightLog,
+  UserProfile, WorkoutLog, Exercise, Mesocycle, ProgressPhoto, BodyweightLog,
   WeightCheckIn, Questionnaire, QuestionnaireResponse, WorkoutAssignment,
 } from '../../types';
 import { Sexo } from '../../utils/athleteProfileSignals';
@@ -28,7 +28,8 @@ import BodyweightPanel from '../BodyweightPanel';
 import SelectorPeriodoRevision from './SelectorPeriodoRevision';
 import BloquePatrones from './BloquePatrones';
 import BloqueMejoresEjercicios from './BloqueMejoresEjercicios';
-import BloqueSeriesPorGrupo from './BloqueSeriesPorGrupo';
+import BloqueEstimuloSemanal from './BloqueEstimuloSemanal';
+import { semanasDeLaRevision } from '../../utils/cdg/iemSemanal';
 import BloqueCuerpo from './BloqueCuerpo';
 import BloqueCardio from './BloqueCardio';
 import BloqueBienestar from './BloqueBienestar';
@@ -38,8 +39,11 @@ import BloqueRecibido from './BloqueRecibido';
 import BloqueRetosNivel from './BloqueRetosNivel';
 import BloqueCierre from './BloqueCierre';
 import BloqueCambios from './BloqueCambios';
+import CierreDeBloque from './CierreDeBloque';
+import { addDays } from '../../utils/trainingWeek';
+import { nombreDeMeso } from '../../utils/nombresMeso';
 import LineaDeTiempoAsistente from '../autopiloto/LineaDeTiempoAsistente';
-import { Card, Button, Icon } from '../ui';
+import { Card, Button, Icon, SegmentedControl } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    REVISIÓN — la pantalla de un vistazo.
@@ -145,9 +149,25 @@ export default function ClientRevisionPanel({
   });
   const [todoAbierto, setTodoAbierto] = useState(false);
   const { presentando, alternar: alternarPresentacion } = useModoPresentacion();
-  // Grupo bajo el cursor: sincroniza la fila de la tabla con la región de la
-  // silueta en los dos sentidos (la silueta llega en T4).
-  const [grupoActivo, setGrupoActivo] = useState<MuscleGroup | null>(null);
+
+  // ── Cierre de bloque (16-11-2026) ─────────────────────────────────────────
+  // La revisión semanal y el cierre de un mesociclo son dos conversaciones
+  // distintas: la primera mira una semana, la segunda el bloque entero del
+  // principio al final. Viven en la misma pestaña, separadas por un selector.
+  const bloquesConCierre = useMemo(
+    () => mesocycles.filter(m => !!m.startDate && m.startDate <= hoy).sort((a, b) => b.number - a.number),
+    [mesocycles, hoy],
+  );
+  const recienCerrado = useMemo(() => bloqueCerradoRecientemente(mesocycles, hoy), [mesocycles, hoy]);
+  const [modo, setModo] = useState<'semanal' | 'cierre'>('semanal');
+  const [mesoCierreId, setMesoCierreId] = useState<string | null>(null);
+  const mesoCierre = useMemo(() => {
+    const elegido = bloquesConCierre.find(m => m.id === mesoCierreId);
+    if (elegido) return elegido;
+    if (recienCerrado) return recienCerrado;
+    // Sin bloque recién cerrado: el último terminado y, si no hay, el que está en curso.
+    return bloquesConCierre.find(m => addDays(m.startDate, m.weeks * 7 - 1) < hoy) ?? bloquesConCierre[0] ?? null;
+  }, [bloquesConCierre, mesoCierreId, recienCerrado, hoy]);
 
   // Clave compartida con MesocycleManager y el panel del asistente: un documento, y
   // casi siempre ya en caché.
@@ -174,6 +194,13 @@ export default function ClientRevisionPanel({
   const ultimaRevision = useMemo(() => fechaDeLaUltimaRevision(checkins), [checkins]);
 
   const { ventana, informe } = revision;
+  // Semanas del bloque «Estímulo por semana»: las del bloque si se está mirando
+  // un mesociclo; si no, las seis últimas.
+  const semanasIem = useMemo(() => {
+    const mesoMirado = periodo.tipo === 'meso' ? mesocycles.find(m => m.id === periodo.mesoId) : null;
+    const hasta = ventana.hasta < hoy ? ventana.hasta : hoy;
+    return semanasDeLaRevision({ hasta, inicioBloque: mesoMirado?.startDate ?? null });
+  }, [periodo, mesocycles, ventana.hasta, hoy]);
   const peso = useMemo(
     () => pesoVsSemanaPasada(bodyweightLogs, ventana.desde, ventana.hasta),
     [bodyweightLogs, ventana.desde, ventana.hasta],
@@ -243,6 +270,59 @@ export default function ClientRevisionPanel({
         </p>
       )}
 
+      {/* ── Revisión de la semana / Cierre de bloque ── */}
+      {mesoCierre && !presentando && (
+        <div className="space-y-3">
+          <SegmentedControl
+            label="Qué revisar"
+            value={modo}
+            onChange={v => setModo(v as 'semanal' | 'cierre')}
+            options={[
+              { value: 'semanal', label: 'Revisión de la semana' },
+              { value: 'cierre', label: 'Cierre de bloque' },
+            ]}
+          />
+          {modo === 'semanal' && recienCerrado && (
+            <button
+              type="button"
+              onClick={() => { setMesoCierreId(recienCerrado.id); setModo('cierre'); }}
+              className="fila-pulsable w-full flex items-center gap-3 rounded-surface border border-accent-line bg-accent/10 px-4 py-3 text-left"
+            >
+              <Icon name="flag" size="m" className="text-accent-ink shrink-0" />
+              <span className="min-w-0 flex-1">
+                <span className="block font-sans text-label font-bold text-ink">
+                  {nombreDeMeso(recienCerrado)} terminó el {addDays(recienCerrado.startDate, recienCerrado.weeks * 7 - 1)}
+                </span>
+                <span className="block font-sans text-caption text-ink-2">
+                  Tienes su cierre listo: rendimiento del inicio al final, cuerpo, cuestionarios y qué cambiar en el siguiente.
+                </span>
+              </span>
+              <Icon name="chevron_right" size="m" className="text-ink-3 shrink-0" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {modo === 'cierre' && mesoCierre ? (
+        <CierreDeBloque
+          athlete={athlete}
+          meso={mesoCierre}
+          bloques={bloquesConCierre}
+          onCambiarBloque={setMesoCierreId}
+          mesocycles={mesocycles}
+          logs={logs}
+          exercises={exercises}
+          assignments={assignments}
+          photos={photos}
+          bodyweightLogs={bodyweightLogs}
+          questionnaires={questionnaires}
+          responses={responses}
+          sexo={sexo}
+          hoy={hoy}
+          presentando={presentando}
+        />
+      ) : (
+      <>
       {/* ── Día de revisión y pausa: se cambian aquí también, no solo en
           Revisiones, que es donde Dani está cuando lo decide (29-10). Fuera
           en modo presentación, como el resto de controles. */}
@@ -332,18 +412,18 @@ export default function ClientRevisionPanel({
         </Seccion>
 
         <Seccion
-          titulo="Volumen por grupo"
+          titulo="Estímulo por semana (IEM)"
           accion={
             <Button variant="ghost" onClick={() => onGoToTab('entrenamientos')}>
               Ajustar el bloque
             </Button>
           }
         >
-          <BloqueSeriesPorGrupo
-            celdas={revision.mapa}
+          <BloqueEstimuloSemanal
+            logs={logs}
+            exercises={exercises}
+            semanas={semanasIem}
             domsPorGrupo={revision.bienestar.domsPorGrupo}
-            grupoActivo={grupoActivo}
-            onGrupoActivo={setGrupoActivo}
             todoAbierto={todoAbierto}
           />
         </Seccion>
@@ -490,6 +570,8 @@ export default function ClientRevisionPanel({
           />
         </Seccion>
       </Secciones>
+      </>
+      )}
     </div>
   );
 }

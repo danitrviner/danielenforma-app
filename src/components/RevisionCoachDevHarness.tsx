@@ -10,6 +10,8 @@ import { bodyweightForAthleteKey, pesoPrimeroKey, pesoUltimoKey } from '../hooks
 import { VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
 import { isoWeekKey, isoWeekBounds } from '../utils/challengeOptions';
 import ClientRevisionPanel from './revision/ClientRevisionPanel';
+import { cdgCatalogoKey } from '../hooks/useMotorCdg';
+import catalogoCdgPrueba from '../utils/cdg/__fixtures__/catalogoPrueba.json';
 import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import ClientImplantacionPanel from './implantacion/ClientImplantacionPanel';
 
@@ -46,8 +48,22 @@ const PERFIL: UserProfile = {
 
 // ── Ejercicios ──────────────────────────────────────────────────────────────
 function ej(id: string, name: string, muscleGroup: MuscleGroup, secundarios?: MuscleGroup[]): Exercise {
-  return { id, ownerId: 'coach', name, primaryFocus: '', muscleGroup, secondaryMuscleGroups: secundarios, type: 'fuerza' } as Exercise;
+  return { id, ownerId: 'coach', name, primaryFocus: '', muscleGroup, secondaryMuscleGroups: secundarios, type: 'fuerza', cdgNombre: CDG_DE[id] } as Exercise;
 }
+
+// Vínculo con el catálogo CDG de prueba (src/utils/cdg/__fixtures__), para que
+// el bloque «Estímulo por semana (IEM)» tenga algo que calcular.
+const CDG_DE: Record<string, string> = {
+  press_banca: 'Press banca plano con mancuernas (caja torácica amplia) - Pectoral, deltoides anterior, tríceps',
+  press_inclinado: 'Press inclinado en máquina pendular - Pectoral, deltoides anterior, tríceps',
+  remo_barra: 'Remo en multipower - Dorsal, trapecio, deltoides posterior',
+  jalon: 'Jalón estable en polea alta agarre ancho prono - Dorsal, deltoides posterior',
+  elevaciones: 'Elevaciones laterales con mancuernas - Deltoides medial',
+  curl_polea: 'Curl de bíceps en polea - Bíceps',
+  frances: 'Press francés con mancuernas - Tríceps',
+  sentadilla: 'Sentadilla en multipower (dominante rodilla) - Cuádriceps, aductores, glúteo',
+  peso_muerto_rumano: 'Curl femoral en máquina sentado - Isquios',
+};
 
 const EJERCICIOS: Exercise[] = [
   ej('press_banca', 'Press banca', 'pecho', ['triceps', 'deltoide_ant']),
@@ -522,6 +538,7 @@ export default function RevisionCoachDevHarness() {
     qc.setQueryData(['workouts'], RUTINAS);
     // Implantación.
     qc.setQueryData(['roadmap', EMAIL], null);
+    qc.setQueryData(cdgCatalogoKey, JSON.stringify(catalogoCdgPrueba));
     // Dos recordatorios: uno vencido sobre un paso del montaje y una tarea
     // suelta para mañana, para ver los dos estados del aviso.
     qc.setQueryData(['coachClientTasks', EMAIL], [
