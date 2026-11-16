@@ -134,7 +134,7 @@ export {
 // Movido a src/db/onboarding.ts (2026-07-18) — reexportado aquí para que ningún
 // import existente (`from '../dbService'`) tenga que cambiar.
 export {
-  getOnboarding, updateOnboardingFoods, saveOnboarding, updateOnboarding,
+  getOnboarding, updateOnboardingFoods, updateOnboardingCaprichos, saveOnboarding, updateOnboarding,
   getOnboardingTemplate, saveOnboardingTemplate, fusionarConsentimientoIA,
 } from './db/onboarding';
 

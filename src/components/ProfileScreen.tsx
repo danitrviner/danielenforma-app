@@ -7,6 +7,7 @@ import { updateUserProfile, getOnboarding } from '../dbService';
 import { signOut, auth } from '../firebase';
 import { useToast } from '../hooks/useToast';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
+import MisCaprichosPanel from './MisCaprichosPanel';
 import MenuPreferencesPanel from './MenuPreferencesPanel';
 import MiFichaCard from './MiFichaCard';
 import AthleteHighlightsPanel from './AthleteHighlightsPanel';
@@ -424,6 +425,21 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
                   allergies={onboarding.allergies}
                   onSaved={(liked, disliked) =>
                     queryClient.setQueryData<OnboardingData | null>(onboardingKey, prev => prev ? { ...prev, likedFoods: liked, dislikedFoods: disliked } : prev)
+                  }
+                />
+              </div>
+            )}
+            {onboarding && (
+              <div className="bg-surface border border-hairline p-5 rounded-surface">
+                <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2 mb-4">
+                  <Icon name="cookie" size="m" className="text-accent-ink" />
+                  Mis caprichos
+                </h3>
+                <MisCaprichosPanel
+                  athleteEmail={profile.email}
+                  caprichos={onboarding.caprichos ?? []}
+                  onSaved={caprichos =>
+                    queryClient.setQueryData<OnboardingData | null>(onboardingKey, prev => prev ? { ...prev, caprichos } : prev)
                   }
                 />
               </div>

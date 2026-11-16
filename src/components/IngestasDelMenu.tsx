@@ -16,6 +16,7 @@ import { fotoDeReceta } from '../utils/fotoDeReceta';
 import { macrosDeReceta } from '../utils/macrosDeReceta';
 import { etiquetaDeTiempo } from '../utils/tiempoDeReceta';
 import FotoDeReceta from './FotoDeReceta';
+import { alimentoDelCapricho, buscarCaprichos, caprichosPorGrupo, textoDeRacion, type CaprichoDelAtleta } from '../utils/caprichos';
 import { Button, Icon, PanelLateral, ProgressBar, SearchField } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -39,6 +40,8 @@ interface Props {
   diasConDieta: WeekDay[];
   /** Falso con batch cooking o variedad 1–2: las recetas cerradas no rotan. */
   rotan: boolean;
+  /** Los que apunta el atleta en Perfil › Preferencias (`OnboardingData.caprichos`). */
+  caprichosDelAtleta?: CaprichoDelAtleta[];
 }
 
 /** Lo que puede llevar cada ingesta del menú (MealSlotSpec.fruta). */
@@ -59,7 +62,7 @@ const fmt = (n: number) => n.toLocaleString('es-ES');
 
 type Vista = 'resumen' | 'recetas' | 'extra';
 
-export default function IngestasDelMenu({ slots, onChange, paquetes, catalogo, kcalDelDia, diasConDieta, rotan }: Props) {
+export default function IngestasDelMenu({ slots, onChange, paquetes, catalogo, kcalDelDia, diasConDieta, rotan, caprichosDelAtleta = [] }: Props) {
   const pctSum = slots.reduce((s, sl) => s + sl.pct, 0);
   const [panel, setPanel] = useState<{ i: number; vista: Vista; raiz: Vista } | null>(null);
   const cambiar = (i: number, parche: Partial<MealSlotSpec>) => onChange(slots.map((s, idx) => (idx === i ? { ...s, ...parche } : s)));
@@ -148,7 +151,7 @@ export default function IngestasDelMenu({ slots, onChange, paquetes, catalogo, k
                 <BloqueRecetas sl={delPanel} paquetes={paquetes} dias={diasConDieta.length} rotan={rotan}
                   onChange={recetas => cambiar(panel.i, { recetas })} onAbrir={() => setPanel({ ...panel, vista: 'recetas' })} />
                 <div className="border-t border-hairline" />
-                <BloqueExtra sl={delPanel} kcalIngesta={kcalDe(delPanel)} diasConDieta={diasConDieta}
+                <BloqueExtra sl={delPanel} kcalIngesta={kcalDe(delPanel)} diasConDieta={diasConDieta} caprichosDelAtleta={caprichosDelAtleta}
                   onChange={extra => cambiar(panel.i, { extra })} onAbrir={() => setPanel({ ...panel, vista: 'extra' })} />
               </>
             )}
@@ -161,7 +164,7 @@ export default function IngestasDelMenu({ slots, onChange, paquetes, catalogo, k
                 }} />
             )}
             {panel.vista === 'extra' && (
-              <BuscadorDeExtra catalogo={catalogo}
+              <BuscadorDeExtra catalogo={catalogo} caprichosDelAtleta={caprichosDelAtleta}
                 onElegir={extra => {
                   cambiar(panel.i, { extra: { ...extra, ...(delPanel.extra?.dias ? { dias: delPanel.extra.dias } : {}) } });
                   if (panel.raiz === 'extra') setPanel(null); else setPanel({ ...panel, vista: panel.raiz });
@@ -242,8 +245,8 @@ function BloqueRecetas({ sl, paquetes, dias, rotan, onChange, onAbrir }: {
 
 /* ── El extra fijo: postre, capricho, complemento ──────────────────────────── */
 
-function BloqueExtra({ sl, kcalIngesta, diasConDieta, onChange, onAbrir }: {
-  sl: MealSlotSpec; kcalIngesta: number | null; diasConDieta: WeekDay[];
+function BloqueExtra({ sl, kcalIngesta, diasConDieta, caprichosDelAtleta, onChange, onAbrir }: {
+  sl: MealSlotSpec; kcalIngesta: number | null; diasConDieta: WeekDay[]; caprichosDelAtleta: CaprichoDelAtleta[];
   onChange: (e: ExtraFijo | undefined) => void; onAbrir: () => void;
 }) {
   const extra = sl.extra;
@@ -256,6 +259,12 @@ function BloqueExtra({ sl, kcalIngesta, diasConDieta, onChange, onAbrir }: {
           <Icon name="cookie" size="s" />Añadir postre o capricho
         </button>
         <p className="font-sans text-caption text-ink-3">Algo que lleva siempre además del plato, los días que tú digas. Se descuenta antes de elegir el plato.</p>
+        {caprichosDelAtleta.length > 0 && (
+          <p className="flex items-start gap-1 font-sans text-caption text-ink-2">
+            <Icon name="favorite" size="s" className="mt-px flex-shrink-0 text-accent-ink" />
+            <span>Le apetece: {caprichosDelAtleta.map(c => c.nombre).join(', ')}.</span>
+          </p>
+        )}
       </div>
     );
   }
@@ -377,38 +386,70 @@ function BuscadorDeRecetas({ slot, elegidas, onAlternar }: {
   );
 }
 
-const DULCES = /chocolate|helado|galleta|miel|mermelada|natillas|flan|cacao|turr[oó]n|bizcocho|gominola/i;
-
-function BuscadorDeExtra({ catalogo, onElegir }: { catalogo: AlimentoCatalogo[]; onElegir: (e: ExtraFijo) => void }) {
+function BuscadorDeExtra({ catalogo, caprichosDelAtleta, onElegir }: {
+  catalogo: AlimentoCatalogo[]; caprichosDelAtleta: CaprichoDelAtleta[]; onElegir: (e: ExtraFijo) => void;
+}) {
   const [q, setQ] = useState('');
-  const lista = useMemo(() => {
-    const coinciden = catalogo.filter(a => coincideBusqueda(a.nombre, q));
-    // Sin buscar nada, primero lo que suele ser un capricho: es a lo que se viene.
-    const orden = q.trim() === '' ? [...coinciden].sort((a, b) => Number(DULCES.test(b.nombre)) - Number(DULCES.test(a.nombre))) : coinciden;
-    return orden.slice(0, 40);
-  }, [catalogo, q]);
+  const buscando = q.trim() !== '';
+  const resultados = useMemo(() => (buscando ? buscarCaprichos(q, catalogo) : []), [buscando, q, catalogo]);
+  const grupos = useMemo(() => caprichosPorGrupo(), []);
+
+  const fila = (a: AlimentoCatalogo) => (
+    <li key={a.id}>
+      <button type="button" onClick={() => onElegir(extraDeAlimento(a))}
+        className="flex w-full items-center gap-3 rounded-control px-2 py-2 text-left transition-colors hover:bg-surface">
+        <div className="min-w-0 flex-1">
+          <p className="font-sans text-label leading-tight text-ink">{nombreDeAlimento(a)}</p>
+          <p className="font-mono text-caption text-ink-3">{textoDeRacion(a)}</p>
+        </div>
+        <Icon name="add" size="m" className="text-ink-3" />
+      </button>
+    </li>
+  );
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <SearchField label="Buscar alimento" placeholder="Chocolate, helado, galletas…" value={q} onChange={setQ} onCancel={() => setQ('')} />
-      {lista.length === 0 ? (
-        <p className="py-6 text-center font-sans text-caption text-ink-3">Ningún alimento con ese nombre en el catálogo.</p>
+
+      {/* Lo que ha apuntado el atleta, siempre arriba. Con kcal se mete de un
+          toque; escrito a su manera, el toque lo busca en la lista. */}
+      {!buscando && caprichosDelAtleta.length > 0 && (
+        <div className="space-y-1 rounded-surface border border-accent-line bg-accent/5 p-2">
+          <p className="flex items-center gap-1 px-1 font-sans text-caption uppercase text-accent-ink">
+            <Icon name="favorite" size="s" />Lo que ha pedido el atleta
+          </p>
+          <ul className="space-y-0.5">
+            {caprichosDelAtleta.map(c => {
+              const a = alimentoDelCapricho(c);
+              return (
+                <li key={c.id}>
+                  <button type="button" onClick={() => (a ? onElegir(extraDeAlimento(a)) : setQ(c.nombre))}
+                    className="flex w-full items-center gap-3 rounded-control px-2 py-2 text-left transition-colors hover:bg-surface">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-sans text-label leading-tight text-ink">{c.nombre}</p>
+                      <p className="font-mono text-caption text-ink-3">{a ? textoDeRacion(a) : 'Escrito a su manera · toca para buscarlo'}</p>
+                      {c.nota && <p className="font-sans text-caption text-ink-2">«{c.nota}»</p>}
+                    </div>
+                    <Icon name={a ? 'add' : 'search'} size="m" className="text-ink-3" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {buscando ? (
+        resultados.length === 0
+          ? <p className="py-6 text-center font-sans text-caption text-ink-3">Nada con ese nombre en los caprichos ni en el catálogo.</p>
+          : <ul className="space-y-0.5">{resultados.map(fila)}</ul>
       ) : (
-        <ul className="space-y-0.5">
-          {lista.map(a => (
-            <li key={a.id}>
-              <button type="button" onClick={() => onElegir(extraDeAlimento(a))}
-                className="flex w-full items-center gap-3 rounded-control px-2 py-2 text-left transition-colors hover:bg-surface">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-sans text-label text-ink">{nombreDeAlimento(a)}</p>
-                  <p className="font-mono text-caption text-ink-3">
-                    {fmt(Math.round(a.porCien.kcal))} kcal/100 g{a.unidad ? ` · 1 ${a.unidad.nombre} = ${fmt(a.unidad.gramos)} g` : ''}
-                  </p>
-                </div>
-                <Icon name="add" size="m" className="text-ink-3" />
-              </button>
-            </li>
-          ))}
-        </ul>
+        grupos.map(g => (
+          <div key={g.id} className="space-y-1">
+            <p className={TITULILLO}>{g.titulo}</p>
+            <ul className="space-y-0.5">{g.caprichos.map(fila)}</ul>
+          </div>
+        ))
       )}
     </div>
   );

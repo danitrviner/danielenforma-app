@@ -1,6 +1,7 @@
 import type { AceptacionesLegales } from './legal/aceptacion.js';
 import type { DietaryRestrictionCode } from './utils/dietaryRestrictions.js';
 import type { ObjetivoCorporalTipo } from './utils/verificacionObjetivo.js';
+import type { CaprichoDelAtleta } from './utils/caprichos.js';
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 
@@ -1294,6 +1295,10 @@ export interface OnboardingData {
   // ── Alimentos ─────────────────────────────────────────────────────────────
   likedFoods:         string[];
   dislikedFoods:      string[];
+  /** Los caprichos que el atleta quiere meter en su plan (11-2026, Dani). Los
+   *  apunta él en Perfil › Preferencias y el coach los ve al poner el extra
+   *  fijo de una comida. Ver `utils/caprichos.ts`. */
+  caprichos?:         CaprichoDelAtleta[];
   allergies:          string[];
   /* Condiciones de salud que hacen que una receta entera no sea apta (celiaquía,
      intolerancias, embarazo…). Son los códigos `forbiddenFor` del recetario, ver

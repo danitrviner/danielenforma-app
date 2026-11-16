@@ -5,6 +5,8 @@ import { objetivoYCupo } from '../utils/macrosLegado';
 import { ToastProvider } from '../hooks/useToast';
 import WeeklyMenuEditor from './WeeklyMenuEditor';
 import RecipeBuilderScreen from './RecipeBuilderScreen';
+import MisCaprichosPanel from './MisCaprichosPanel';
+import type { CaprichoDelAtleta } from '../utils/caprichos';
 import { SegmentedControl } from './ui';
 import { setLocalBypassMode } from '../db/core';
 
@@ -28,6 +30,12 @@ const ALTA = {
     { intakeType: 4, name: 'Merienda', needsTupper: false },
     { intakeType: 5, name: 'Cena', needsTupper: false },
   ],
+  // Lo que apuntaría el atleta en Perfil › Preferencias › Mis caprichos.
+  caprichos: [
+    { id: 'c1', nombre: 'Helado de vainilla', nota: 'el finde después de cenar', creadoEn: '2026-11-16',
+      alimento: { id: 'capricho-helado-vainilla', nombre: 'Helado de vainilla', porCien: { kcal: 207, p: 3.5, hc: 24, g: 11 }, unidad: { nombre: 'bola', gramos: 60 } } },
+    { id: 'c2', nombre: 'Un Magnum almendrado', nota: 'viernes con la peli', creadoEn: '2026-11-16' },
+  ],
 } as unknown as OnboardingData;
 const PROGRAMACION: AthleteDietConfig = {
   athleteId: EMAIL, activeDietIds: ['d1'],
@@ -47,10 +55,15 @@ const CATALOGO = [
   alimento('yogurgriego', 'Yogur griego natural', 115, 4, 4, 9.5, { nombre: 'yogur', gramos: 125 }),
   alimento('miel', 'Miel', 304, 0.3, 82, 0),
   alimento('crema', 'Crema de cacahuete', 600, 25, 12, 50),
+  // Lo que salía antes al abrir el extra sin buscar y no es ningún capricho.
+  alimento('alubias', 'Alubias blancas cocidas', 100, 7, 14, 0.5),
+  alimento('ajos', 'Ajos tiernos', 40, 2, 8, 0.3),
+  alimento('mermelada-albahaca', 'Mermelada de tomate y albahaca', 190, 0.5, 47, 0),
 ];
 
 export default function MenusYRecetasDevHarness() {
-  const [vista, setVista] = useState<'menu' | 'recetas'>('menu');
+  const [vista, setVista] = useState<'menu' | 'recetas' | 'caprichos'>('menu');
+  const [caprichos, setCaprichos] = useState<CaprichoDelAtleta[]>(ALTA.caprichos ?? []);
   const client = useMemo(() => {
     const c = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false }, mutations: { retry: false } } });
     c.setQueryData(['catalogoAlimentos'], CATALOGO);
@@ -63,11 +76,13 @@ export default function MenusYRecetasDevHarness() {
         <div className="min-h-screen bg-bg text-ink p-4">
           <div className="mx-auto max-w-4xl space-y-4">
             <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">/dev/menus — datos de mentira · guardar no escribe</p>
-            <SegmentedControl label="Qué pantalla ver" value={vista} onChange={v => setVista(v as 'menu' | 'recetas')}
-              options={[{ value: 'menu', label: 'Creador de menús' }, { value: 'recetas', label: 'Biblioteca › Recetas' }]} />
+            <SegmentedControl label="Qué pantalla ver" value={vista} onChange={v => setVista(v as 'menu' | 'recetas' | 'caprichos')}
+              options={[{ value: 'menu', label: 'Creador de menús' }, { value: 'recetas', label: 'Biblioteca › Recetas' }, { value: 'caprichos', label: 'Mis caprichos (atleta)' }]} />
             {vista === 'menu'
-              ? <WeeklyMenuEditor athleteEmail={EMAIL} coachId="dev-coach" onboarding={ALTA} diets={[DIETA]} dietConfig={PROGRAMACION} nutritionConfig={null} onSaved={() => {}} onCancel={() => {}} />
-              : <RecipeBuilderScreen coachId="dev-coach" />}
+              ? <WeeklyMenuEditor athleteEmail={EMAIL} coachId="dev-coach" onboarding={{ ...ALTA, caprichos }} diets={[DIETA]} dietConfig={PROGRAMACION} nutritionConfig={null} onSaved={() => {}} onCancel={() => {}} />
+              : vista === 'caprichos'
+                ? <div className="max-w-md rounded-surface border border-hairline bg-surface p-5"><MisCaprichosPanel athleteEmail={EMAIL} caprichos={caprichos} onSaved={setCaprichos} /></div>
+                : <RecipeBuilderScreen coachId="dev-coach" />}
           </div>
         </div>
       </ToastProvider>

@@ -544,6 +544,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
           kcalDelDia={kcalDelDiaTipo}
           diasConDieta={WEEK_DAYS.filter(d => schedule[d])}
           rotan={!batch && variety > 2}
+          caprichosDelAtleta={onboarding?.caprichos ?? []}
         />
 
         {/* Batch cooking — supersedes variety when on */}
