@@ -859,6 +859,11 @@ export interface WorkoutSetLog {
    *  registros anteriores y en las series añadidas al corregir una sesión ya
    *  terminada: ahí «ahora» no es cuando se hizo. Ver utils/tiemposDeSerie.ts. */
   hechaEn?: string;
+  /** ¿El RIR lo eligió el atleta? (17-11-2026). `true` = lo apuntó él;
+   *  `false` = la serie se guardó con el RIR pautado sin tocar, así que no dice
+   *  nada de su esfuerzo y no entra en el RM ni en la calibración. Ausente en
+   *  los registros anteriores: ahí no se sabe y se dan por buenos. */
+  rirApuntado?: boolean;
 }
 
 /** Respuesta del coach a una nota del atleta (28-10-2026). */
@@ -903,6 +908,16 @@ export interface WorkoutLog {
    *  Da contexto a un día malo: no es lo mismo rendir peor habiendo llegado
    *  justo que habiendo llegado bien. */
   comoLlega?: 'bien' | 'normal' | 'justo';
+  /** Cansancio al salir de ESTA sesión, 0-10 (17-11-2026). El protocolo del
+   *  Índice de Hipertrofia lo usa de freno (8-9: no subir sin bajar antes la
+   *  fatiga de la sesión) y hasta ahora solo existía como pregunta semanal. */
+  cansancioAlSalir?: number;
+  /** Agujetas de las zonas trabajadas en esta sesión, 1-5, contestadas entre
+   *  36 y 72 h después (17-11-2026). Clave = `ZonaIem` (utils/cdg/zonas.ts).
+   *  Sustituye al recuerdo semanal cuando existe. */
+  agujetas48h?: Partial<Record<string, number>>;
+  /** Cuándo contestó `agujetas48h` (ISO). */
+  agujetas48hAt?: string;
   /** Respuesta del coach a la nota del entreno completo. */
   noteReply?: RespuestaCoach;
   /** Instante en que se ABRIÓ el player por primera vez (ISO), no en que se
