@@ -8,7 +8,8 @@ import type { PaqueteDeRecetas } from '../utils/seleccionDeRecetas';
 import { nombreDeAlimento, type AlimentoCatalogo } from '../utils/catalogoAlimentos';
 import {
   DIAS_SEMANA, INICIAL_DE_DIA, avisoDeRecetas, conCantidad, conDiaAlternado, extraDeAlimento,
-  kcalDeExtra, modoDeRecetas, pasoDeExtra, resumenDeRecetas, textoDeDias, textoDeExtraFijo, tocaElDia,
+  kcalDeExtra, modoDeRecetas, pasoDeExtra, resumenDeRecetas, resumenDeFrutas, conFrutaAlternada, frutasDelCatalogo,
+  extrasDeIngesta, resumenDeExtras, textoDeDias, tocaElDia,
   type ExtraFijo, type RecetaDeIngesta, type RecetasDeIngesta,
 } from '../utils/ingestaPersonalizada';
 import { coincideBusqueda } from '../utils/busqueda';
@@ -60,13 +61,14 @@ const pildora = (activa: boolean) =>
 const TITULILLO = 'font-sans text-caption text-ink-3 uppercase';
 const fmt = (n: number) => n.toLocaleString('es-ES');
 
-type Vista = 'resumen' | 'recetas' | 'extra';
+type Vista = 'resumen' | 'recetas' | 'extra' | 'frutas';
 
 export default function IngestasDelMenu({ slots, onChange, paquetes, catalogo, kcalDelDia, diasConDieta, rotan, caprichosDelAtleta = [] }: Props) {
   const pctSum = slots.reduce((s, sl) => s + sl.pct, 0);
   const [panel, setPanel] = useState<{ i: number; vista: Vista; raiz: Vista } | null>(null);
   const cambiar = (i: number, parche: Partial<MealSlotSpec>) => onChange(slots.map((s, idx) => (idx === i ? { ...s, ...parche } : s)));
   const nombreDePaquete = (id: string) => paquetes.find(p => p.id === id)?.nombre;
+  const nombreDeFruta = (id: string) => catalogo.find(a => a.id === id)?.nombre;
   const kcalDe = (sl: MealSlotSpec) => (kcalDelDia ? Math.round((kcalDelDia * sl.pct) / 100) : null);
   const abrir = (i: number, vista: Vista) => setPanel({ i, vista, raiz: vista });
 
@@ -109,24 +111,32 @@ export default function IngestasDelMenu({ slots, onChange, paquetes, catalogo, k
                   })}
                 </div>
 
-                {!soloFruta && (
-                  <div className="flex items-center justify-between gap-3 border-t border-hairline pt-2">
+                <div className="flex items-center justify-between gap-3 border-t border-hairline pt-2">
                     <p className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 font-sans text-caption text-ink-2">
-                      <span className="inline-flex items-center gap-1">
-                        <Icon name="skillet" size="s" className={modoDeRecetas(sl.recetas) === 'lista' ? 'text-ink-3' : 'text-accent-ink'} />
-                        {resumenDeRecetas(sl.recetas, nombreDePaquete)}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Icon name="cookie" size="s" className={sl.extra ? 'text-accent-ink' : 'text-ink-3'} />
-                        {sl.extra ? `${textoDeExtraFijo(sl.extra)} · ${textoDeDias(sl.extra.dias, diasConDieta).toLowerCase()}` : 'Sin extra fijo'}
-                      </span>
+                      {!soloFruta && (
+                        <span className="inline-flex items-center gap-1">
+                          <Icon name="skillet" size="s" className={modoDeRecetas(sl.recetas) === 'lista' ? 'text-ink-3' : 'text-accent-ink'} />
+                          {resumenDeRecetas(sl.recetas, nombreDePaquete)}
+                        </span>
+                      )}
+                      {sl.fruta && (
+                        <span className="inline-flex items-center gap-1">
+                          <Icon name="nutrition" size="s" className={sl.frutas?.length ? 'text-accent-ink' : 'text-ink-3'} />
+                          {resumenDeFrutas(sl.frutas, nombreDeFruta)}
+                        </span>
+                      )}
+                      {!soloFruta && (
+                        <span className="inline-flex items-center gap-1">
+                          <Icon name="cookie" size="s" className={extrasDeIngesta(sl).length > 0 ? 'text-accent-ink' : 'text-ink-3'} />
+                          {resumenDeExtras(sl, diasConDieta)}
+                        </span>
+                      )}
                     </p>
                     <button type="button" onClick={() => abrir(i, 'resumen')}
                       className="flex flex-shrink-0 items-center gap-1 font-sans text-caption font-bold text-accent-ink hover:text-ink">
                       <Icon name="tune" size="s" />A medida
                     </button>
                   </div>
-                )}
               </div>
             );
           })}
@@ -135,7 +145,10 @@ export default function IngestasDelMenu({ slots, onChange, paquetes, catalogo, k
 
       {panel && delPanel && (
         <PanelLateral open onClose={() => setPanel(null)}
-          title={panel.vista === 'recetas' ? `Recetas de ${delPanel.name}` : panel.vista === 'extra' ? `Extra fijo de ${delPanel.name}` : `${delPanel.name} a medida`}>
+          title={panel.vista === 'recetas' ? `Recetas de ${delPanel.name}`
+            : panel.vista === 'extra' ? `Extra fijo de ${delPanel.name}`
+              : panel.vista === 'frutas' ? `Fruta de ${delPanel.name}`
+                : `${delPanel.name} a medida`}>
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
             {panel.vista === 'resumen' && (
               <p className="font-sans text-caption text-ink-3">Se queda guardado para este atleta al generar: sus próximos menús salen igual.</p>
@@ -148,12 +161,29 @@ export default function IngestasDelMenu({ slots, onChange, paquetes, catalogo, k
             )}
             {panel.vista === 'resumen' && (
               <>
-                <BloqueRecetas sl={delPanel} paquetes={paquetes} dias={diasConDieta.length} rotan={rotan}
-                  onChange={recetas => cambiar(panel.i, { recetas })} onAbrir={() => setPanel({ ...panel, vista: 'recetas' })} />
-                <div className="border-t border-hairline" />
-                <BloqueExtra sl={delPanel} kcalIngesta={kcalDe(delPanel)} diasConDieta={diasConDieta} caprichosDelAtleta={caprichosDelAtleta}
-                  onChange={extra => cambiar(panel.i, { extra })} onAbrir={() => setPanel({ ...panel, vista: 'extra' })} />
+                {delPanel.fruta !== 'solo' && (
+                  <>
+                    <BloqueRecetas sl={delPanel} paquetes={paquetes} dias={diasConDieta.length} rotan={rotan}
+                      onChange={recetas => cambiar(panel.i, { recetas })} onAbrir={() => setPanel({ ...panel, vista: 'recetas' })} />
+                    <div className="border-t border-hairline" />
+                  </>
+                )}
+                {delPanel.fruta && (
+                  <>
+                    <BloqueFrutas sl={delPanel} catalogo={catalogo}
+                      onChange={frutas => cambiar(panel.i, { frutas })} onAbrir={() => setPanel({ ...panel, vista: 'frutas' })} />
+                    {delPanel.fruta !== 'solo' && <div className="border-t border-hairline" />}
+                  </>
+                )}
+                {delPanel.fruta !== 'solo' && (
+                  <BloqueExtra sl={delPanel} kcalIngesta={kcalDe(delPanel)} diasConDieta={diasConDieta} caprichosDelAtleta={caprichosDelAtleta}
+                    onChange={extras => cambiar(panel.i, { extras, extra: undefined })} onAbrir={() => setPanel({ ...panel, vista: 'extra' })} />
+                )}
               </>
+            )}
+            {panel.vista === 'frutas' && (
+              <BuscadorDeFrutas catalogo={catalogo} elegidas={delPanel.frutas ?? []}
+                onAlternar={id => cambiar(panel.i, { frutas: conFrutaAlternada(delPanel.frutas, id) })} />
             )}
             {panel.vista === 'recetas' && (
               <BuscadorDeRecetas slot={delPanel.slot} elegidas={delPanel.recetas?.recetas ?? []}
@@ -166,7 +196,10 @@ export default function IngestasDelMenu({ slots, onChange, paquetes, catalogo, k
             {panel.vista === 'extra' && (
               <BuscadorDeExtra catalogo={catalogo} caprichosDelAtleta={caprichosDelAtleta}
                 onElegir={extra => {
-                  cambiar(panel.i, { extra: { ...extra, ...(delPanel.extra?.dias ? { dias: delPanel.extra.dias } : {}) } });
+                  // Los días son los mismos para todos los caprichos de la comida.
+                  const ya = extrasDeIngesta(delPanel);
+                  const dias = ya[0]?.dias;
+                  cambiar(panel.i, { extras: [...ya, { ...extra, ...(dias ? { dias } : {}) }], extra: undefined });
                   if (panel.raiz === 'extra') setPanel(null); else setPanel({ ...panel, vista: panel.raiz });
                 }} />
             )}
@@ -174,7 +207,9 @@ export default function IngestasDelMenu({ slots, onChange, paquetes, catalogo, k
           {panel.vista !== 'extra' && (
             <div className="border-t border-hairline p-4">
               <Button variant="primary" fullWidth onClick={() => (panel.vista === panel.raiz ? setPanel(null) : setPanel({ ...panel, vista: panel.raiz }))}>
-                {panel.vista === 'recetas' ? `Listo · ${(delPanel.recetas?.recetas?.length ?? 0) === 1 ? '1 elegida' : `${delPanel.recetas?.recetas?.length ?? 0} elegidas`}` : 'Listo'}
+                {panel.vista === 'recetas' ? `Listo · ${(delPanel.recetas?.recetas?.length ?? 0) === 1 ? '1 elegida' : `${delPanel.recetas?.recetas?.length ?? 0} elegidas`}`
+                  : panel.vista === 'frutas' ? `Listo · ${resumenDeFrutas(delPanel.frutas, nombreDeFruta).toLowerCase()}`
+                    : 'Listo'}
               </Button>
             </div>
           )}
@@ -247,10 +282,10 @@ function BloqueRecetas({ sl, paquetes, dias, rotan, onChange, onAbrir }: {
 
 function BloqueExtra({ sl, kcalIngesta, diasConDieta, caprichosDelAtleta, onChange, onAbrir }: {
   sl: MealSlotSpec; kcalIngesta: number | null; diasConDieta: WeekDay[]; caprichosDelAtleta: CaprichoDelAtleta[];
-  onChange: (e: ExtraFijo | undefined) => void; onAbrir: () => void;
+  onChange: (e: ExtraFijo[]) => void; onAbrir: () => void;
 }) {
-  const extra = sl.extra;
-  if (!extra) {
+  const extras = extrasDeIngesta(sl);
+  if (extras.length === 0) {
     return (
       <div className="min-w-0 space-y-2">
         <p className={TITULILLO}>Extra fijo</p>
@@ -268,46 +303,63 @@ function BloqueExtra({ sl, kcalIngesta, diasConDieta, caprichosDelAtleta, onChan
       </div>
     );
   }
-  const kcal = kcalDeExtra(extra);
-  const cantidad = extra.piezas ?? extra.gramos ?? 0;
-  const paso = pasoDeExtra(extra);
-  const ponerDias = (dias: WeekDay[] | undefined) => {
-    const { dias: _fuera, ...resto } = extra;
-    const validos = dias?.filter(d => diasConDieta.includes(d));
-    onChange(validos && validos.length < diasConDieta.length ? { ...resto, dias: validos } : resto);
+  /* Los días son de la COMIDA, no de cada capricho: se editan una vez y van a
+     todos. Lo que rota es qué capricho toca cada día (ingestaPersonalizada.ts). */
+  const dias = extras[0].dias;
+  const conDias = (nuevos: WeekDay[] | undefined) => {
+    const validos = nuevos?.filter(d => diasConDieta.includes(d));
+    const todos = !validos || validos.length >= diasConDieta.length;
+    return extras.map(e => {
+      const { dias: _fuera, ...resto } = e;
+      return todos ? resto : { ...resto, dias: validos };
+    });
   };
+  const kcalMedia = Math.round(extras.reduce((t, e) => t + kcalDeExtra(e), 0) / extras.length);
   return (
     <div className="min-w-0 space-y-2">
       <p className={TITULILLO}>Extra fijo</p>
       <div className="space-y-3 rounded-surface border border-hairline bg-bg p-3">
-        <div className="flex items-start gap-2">
-          <Icon name="cookie" size="m" className="mt-0.5 flex-shrink-0 text-accent-ink" />
-          <div className="min-w-0 flex-1">
-            <p className="font-sans text-label font-bold leading-tight text-ink">{extra.nombre}</p>
-            <p className="font-mono text-caption text-ink-2">{fmt(kcal)} kcal · {textoDeDias(extra.dias, diasConDieta).toLowerCase()}</p>
-          </div>
-          <button type="button" onClick={onAbrir} className="flex-shrink-0 font-sans text-caption font-bold text-ink-2 hover:text-ink">Cambiar</button>
-          <button type="button" aria-label="Quitar el extra" onClick={() => onChange(undefined)} className="flex-shrink-0 text-ink-3 hover:text-ink"><Icon name="close" size="s" /></button>
-        </div>
+        {extras.map((extra, n) => {
+          const cantidad = extra.piezas ?? extra.gramos ?? 0;
+          const paso = pasoDeExtra(extra);
+          const cambiarUno = (e: ExtraFijo) => onChange(extras.map((x, i) => (i === n ? e : x)));
+          return (
+            <div key={`${extra.alimentoId}_${n}`} className={n > 0 ? 'space-y-2 border-t border-hairline pt-3' : 'space-y-2'}>
+              <div className="flex items-start gap-2">
+                <Icon name="cookie" size="m" className="mt-0.5 flex-shrink-0 text-accent-ink" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-sans text-label font-bold leading-tight text-ink">{extra.nombre}</p>
+                  <p className="font-mono text-caption text-ink-2">{fmt(kcalDeExtra(extra))} kcal</p>
+                </div>
+                <button type="button" aria-label={`Quitar ${extra.nombre}`} onClick={() => onChange(extras.filter((_, i) => i !== n))}
+                  className="flex-shrink-0 text-ink-3 hover:text-ink"><Icon name="close" size="s" /></button>
+              </div>
+              <div className="flex items-center gap-2" role="group" aria-label={`Cantidad de ${extra.nombre}`}>
+                <button type="button" aria-label="Menos" onClick={() => cambiarUno(conCantidad(extra, cantidad - paso))}
+                  className="flex h-8 w-8 items-center justify-center rounded-control border border-hairline bg-raised text-ink-2 hover:text-ink"><Icon name="remove" size="s" /></button>
+                <span className="min-w-[88px] text-center font-mono text-label font-bold tabular-nums text-ink">
+                  {extra.piezas != null ? `${fmt(extra.piezas)} ${extra.unidad ?? 'ud'}` : `${fmt(extra.gramos ?? 0)} g`}
+                </span>
+                <button type="button" aria-label="Más" onClick={() => cambiarUno(conCantidad(extra, cantidad + paso))}
+                  className="flex h-8 w-8 items-center justify-center rounded-control border border-hairline bg-raised text-ink-2 hover:text-ink"><Icon name="add" size="s" /></button>
+              </div>
+            </div>
+          );
+        })}
 
-        <div className="flex items-center gap-2" role="group" aria-label="Cantidad">
-          <button type="button" aria-label="Menos" onClick={() => onChange(conCantidad(extra, cantidad - paso))}
-            className="flex h-8 w-8 items-center justify-center rounded-control border border-hairline bg-raised text-ink-2 hover:text-ink"><Icon name="remove" size="s" /></button>
-          <span className="min-w-[88px] text-center font-mono text-label font-bold tabular-nums text-ink">
-            {extra.piezas != null ? `${fmt(extra.piezas)} ${extra.unidad ?? 'ud'}` : `${fmt(extra.gramos ?? 0)} g`}
-          </span>
-          <button type="button" aria-label="Más" onClick={() => onChange(conCantidad(extra, cantidad + paso))}
-            className="flex h-8 w-8 items-center justify-center rounded-control border border-hairline bg-raised text-ink-2 hover:text-ink"><Icon name="add" size="s" /></button>
-        </div>
+        <button type="button" onClick={onAbrir} className="flex items-center gap-1 font-sans text-caption font-bold text-accent-ink hover:text-ink">
+          <Icon name="add" size="s" />Añadir otro capricho
+        </button>
 
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 border-t border-hairline pt-3">
+          <p className="font-sans text-caption text-ink-3">{extras.length === 1 ? 'Qué días lo lleva' : 'Qué días lleva capricho'}</p>
           <div className="flex gap-1" role="group" aria-label="Días que toca">
             {DIAS_SEMANA.map(d => {
               const conDieta = diasConDieta.includes(d);
-              const toca = conDieta && tocaElDia(extra, d);
+              const toca = conDieta && tocaElDia(extras[0], d);
               return (
                 <button key={d} type="button" aria-pressed={toca} aria-label={DIA_CORTO[d]} disabled={!conDieta}
-                  onClick={() => onChange(conDiaAlternado(extra, d, diasConDieta))}
+                  onClick={() => onChange(extras.map(e => conDiaAlternado(e, d, diasConDieta)))}
                   className={`h-8 w-8 rounded-full border font-mono text-caption font-bold disabled:opacity-30 ${toca ? 'border-accent bg-accent text-on-accent' : 'border-hairline text-ink-2 hover:border-strong'}`}>
                   {INICIAL_DE_DIA[d]}
                 </button>
@@ -315,17 +367,23 @@ function BloqueExtra({ sl, kcalIngesta, diasConDieta, caprichosDelAtleta, onChan
             })}
           </div>
           <div className="flex gap-3 font-sans text-caption text-ink-2">
-            <button type="button" className="hover:text-ink" onClick={() => ponerDias(undefined)}>Todos</button>
-            <button type="button" className="hover:text-ink" onClick={() => ponerDias(ENTRE_SEMANA)}>Entre semana</button>
-            <button type="button" className="hover:text-ink" onClick={() => ponerDias(FINDE)}>Fin de semana</button>
+            <button type="button" className="hover:text-ink" onClick={() => onChange(conDias(undefined))}>Todos</button>
+            <button type="button" className="hover:text-ink" onClick={() => onChange(conDias(ENTRE_SEMANA))}>Entre semana</button>
+            <button type="button" className="hover:text-ink" onClick={() => onChange(conDias(FINDE))}>Fin de semana</button>
           </div>
         </div>
 
-        {kcalIngesta != null && kcalIngesta > kcal && (
+        {extras.length > 1 && (
           <p className="font-sans text-caption text-ink-3">
-            Esos días el plato baja de {fmt(kcalIngesta)} a {fmt(kcalIngesta - kcal)} kcal para que el día siga cuadrando.
+            Esos días va rotando entre los {extras.length}: no le toca el mismo dos veces seguidas.
           </p>
         )}
+        {kcalIngesta != null && kcalIngesta > kcalMedia && (
+          <p className="font-sans text-caption text-ink-3">
+            Esos días el plato baja de {fmt(kcalIngesta)} a {fmt(kcalIngesta - kcalMedia)} kcal{extras.length > 1 ? ' de media' : ''} para que el día siga cuadrando.
+          </p>
+        )}
+        <p className="sr-only">{textoDeDias(dias, diasConDieta)}</p>
       </div>
     </div>
   );
@@ -450,6 +508,87 @@ function BuscadorDeExtra({ catalogo, caprichosDelAtleta, onElegir }: {
             <ul className="space-y-0.5">{g.caprichos.map(fila)}</ul>
           </div>
         ))
+      )}
+    </div>
+  );
+}
+
+/* ── Qué fruta sale de postre ──────────────────────────────────────────────── */
+
+function BloqueFrutas({ sl, catalogo, onChange, onAbrir }: {
+  sl: MealSlotSpec; catalogo: AlimentoCatalogo[];
+  onChange: (frutas: string[] | undefined) => void; onAbrir: () => void;
+}) {
+  const elegidas = sl.frutas ?? [];
+  const nombre = (id: string) => catalogo.find(a => a.id === id)?.nombre ?? 'Fruta';
+  return (
+    <div className="min-w-0 space-y-2">
+      <p className={TITULILLO}>Qué fruta</p>
+      <div role="radiogroup" aria-label={`Qué fruta sale en ${sl.name}`} className="flex flex-wrap gap-1.5">
+        <button type="button" role="radio" aria-checked={elegidas.length === 0} onClick={() => onChange(undefined)} className={pildora(elegidas.length === 0)}>
+          Cualquiera
+        </button>
+        <button type="button" role="radio" aria-checked={elegidas.length > 0} onClick={onAbrir} className={pildora(elegidas.length > 0)}>
+          <Icon name="nutrition" size="s" />Solo estas
+        </button>
+      </div>
+      {elegidas.length === 0 ? (
+        <p className="font-sans text-caption text-ink-3">Va rotando entre las frutas que le cuadran, sin repetir siempre la misma.</p>
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-1.5">
+            {elegidas.map(id => (
+              <span key={id} className="flex items-center gap-1 rounded-chip border border-hairline bg-bg py-1 pl-2.5 pr-1.5 font-sans text-caption text-ink">
+                {nombre(id)}
+                <button type="button" aria-label={`Quitar ${nombre(id)}`} onClick={() => onChange(conFrutaAlternada(elegidas, id))} className="text-ink-3 hover:text-ink">
+                  <Icon name="close" size="s" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <button type="button" onClick={onAbrir} className="flex items-center gap-1 font-sans text-caption font-bold text-accent-ink hover:text-ink">
+            <Icon name="add" size="s" />Añadir más frutas
+          </button>
+          <p className="font-sans text-caption text-ink-3">
+            {elegidas.length === 1 ? 'Siempre esta fruta.' : `Rota entre estas ${elegidas.length}.`} Si ninguna cuadra ese día, sale otra antes que quedarse sin fruta.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+function BuscadorDeFrutas({ catalogo, elegidas, onAlternar }: {
+  catalogo: AlimentoCatalogo[]; elegidas: string[]; onAlternar: (id: string) => void;
+}) {
+  const [q, setQ] = useState('');
+  const dentro = new Set(elegidas);
+  const lista = useMemo(() => frutasDelCatalogo(catalogo).filter(a => coincideBusqueda(a.nombre, q)).slice(0, 60), [catalogo, q]);
+  return (
+    <div className="space-y-2">
+      <SearchField label="Buscar fruta" placeholder="Plátano, manzana, kiwi…" value={q} onChange={setQ} onCancel={() => setQ('')} />
+      {lista.length === 0 ? (
+        <p className="py-6 text-center font-sans text-caption text-ink-3">Ninguna fruta con ese nombre en el catálogo.</p>
+      ) : (
+        <ul className="space-y-0.5">
+          {lista.map(a => {
+            const marcada = dentro.has(a.id);
+            return (
+              <li key={a.id}>
+                <button type="button" aria-pressed={marcada} onClick={() => onAlternar(a.id)}
+                  className={`flex w-full items-center gap-3 rounded-control px-2 py-2 text-left transition-colors ${marcada ? 'bg-accent/10' : 'hover:bg-surface'}`}>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-sans text-label text-ink">{nombreDeAlimento(a)}</p>
+                    <p className="font-mono text-caption text-ink-3">
+                      {fmt(Math.round(a.porCien.kcal))} kcal/100 g{a.unidad ? ` · 1 ${a.unidad.nombre} = ${fmt(a.unidad.gramos)} g` : ''}
+                    </p>
+                  </div>
+                  <Icon name={marcada ? 'check_circle' : 'radio_button_unchecked'} size="m" filled={marcada} className={marcada ? 'text-accent-ink' : 'text-ink-3'} />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

@@ -8,7 +8,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, WeeklyMenu, RecipeFavorites, MenuCompletionLog,
   WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory, MenuComplement, MealItem, DietMode, RecetaPendiente, DietItem,
-  Macros,
+  Macros,  OnboardingData,
 } from '../types';
 import { itemsDeComidaDelMenu } from '../utils/conversionNutricional';
 import {
@@ -24,7 +24,7 @@ import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import { foodNameWithoutGrams, foodNameShort, itemWeightLabel } from '../utils/exchangeHelpers';
 import { macrosDeLaComida, macrosDelPlato, macrosDeAcompanamiento } from '../utils/menuMacros';
-import { alimentosParaExtras, alimentoDelExtra, cabeExtra, esExtraDelCatalogo, extraDeCatalogo, gramosPosibles, gramosVecinos, textoDeExtra } from '../utils/extrasDelCatalogo';
+import { alimentosParaExtras, alimentoDelExtra, cabeExtra, familiaDeExtra, esExtraDelCatalogo, extraDeCatalogo, gramosPosibles, gramosVecinos, textoDeExtra } from '../utils/extrasDelCatalogo';
 import { buscarEnCatalogo, nombreDeAlimento, type AlimentoCatalogo } from '../utils/catalogoAlimentos';
 import { intercambiosDeMacros } from '../utils/macrosLegado';
 import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
@@ -55,6 +55,7 @@ import {
   type IngredienteVariable, type Reajuste,
 } from '../utils/reajusteDelAtleta';
 import { alimentoDelCapricho, caprichosPorGrupo, buscarCaprichos, textoDeRacion } from '../utils/caprichos';
+import { updateOnboardingFoods } from '../dbService';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WEEK_DAY_SHORT: Record<WeekDay, string> = { mon: 'L', tue: 'M', wed: 'X', thu: 'J', fri: 'V', sat: 'S', sun: 'D' };
@@ -1016,6 +1017,8 @@ export default function MyMenuScreen({ profile, onAddToPlan, guardarArranque, gu
             ? buscarEnCatalogo(catalogoAlimentos, q, 40)
             : alimentosParaExtras(catalogoAlimentos, { liked: prefs.liked, disliked: prefs.disliked, allergies: prefs.allergies, conditions: prefs.conditions, dietType: prefs.dietType }).map(c => c.a);
         const cabeAlgo = (a: AlimentoCatalogo) => cabe(extraDeCatalogo(a, gramosPosibles(a)[0]));
+        /* Cambiando la fruta («no siempre plátano»), las frutas van primero. */
+        const esFrutaActual = !!actual && !q && !!alimentoDelExtra(actual) && familiaDeExtra(alimentoDelExtra(actual)!) === 'fruta';
         /* Cambiando un extra que ya está, solo lo que cabe en su comida. Al
          * añadir uno nuevo se ofrece todo: lo que no cabe entra igual y lo
          * compensa el resto del día (utils/reajusteDelAtleta). */
@@ -1031,7 +1034,12 @@ export default function MyMenuScreen({ profile, onAddToPlan, guardarArranque, gu
             { titulo: 'Los tuyos', items: propios },
             ...(conRestricciones ? [] : caprichosPorGrupo().map(gr => ({ titulo: gr.titulo, items: gr.caprichos.filter(c => !noLeGusta(c)) as AlimentoCatalogo[] }))),
           ].filter(gr => gr.items.length > 0)
-          : [{ titulo: null, items: lista.slice(0, 60) }];
+          : esFrutaActual
+            ? [
+              { titulo: 'Otras frutas', items: lista.filter(a => familiaDeExtra(a) === 'fruta').slice(0, 40) },
+              { titulo: 'Lo demás', items: lista.filter(a => familiaDeExtra(a) !== 'fruta').slice(0, 40) },
+            ].filter(gr => gr.items.length > 0)
+            : [{ titulo: null, items: lista.slice(0, 60) }];
         const hayAlgo = grupos.some(gr => gr.items.length > 0);
 
         function cambiarCantidad(delta: 1 | -1) {
@@ -1078,7 +1086,17 @@ export default function MyMenuScreen({ profile, onAddToPlan, guardarArranque, gu
             setExtraPendiente(extraDeCatalogo(a, preferida));
             return;
           }
-          const nuevo = { ...extraDeCatalogo(a, quepan.length > 0 ? quepan[quepan.length - 1] : posibles[0]), ...(extrasFor.idx == null || extras[extrasFor.idx]?.delAtleta ? { delAtleta: true } : {}) };
+          /* Lo ha elegido él: `delAtleta` para que el reajuste del día no se lo
+             quite y para que ese alimento le salga más veces en los menús
+             siguientes (`extrasElegidos`, gustosDelAtleta.ts). Cambiar la fruta
+             que puso el coach no la degrada: la suya ocupa el mismo sitio. */
+          const anterior = extrasFor.idx != null ? extras[extrasFor.idx] : null;
+          const nuevo: MenuComplement = {
+            ...extraDeCatalogo(a, quepan.length > 0 ? quepan[quepan.length - 1] : posibles[0]),
+            delAtleta: true,
+            ...(anterior?.obligatoria ? { obligatoria: true } : {}),
+            ...(anterior?.fijo ? { fijo: true } : {}),
+          };
           const siguiente = extrasFor.idx != null
             ? extras.map((c, i) => i === extrasFor.idx ? nuevo : c)
             : [...extras, nuevo];
@@ -1239,6 +1257,30 @@ export default function MyMenuScreen({ profile, onAddToPlan, guardarArranque, gu
                   className="w-full py-2 font-sans text-body-s text-danger hover:text-danger/80 transition-colors"
                 >
                   Quitar este extra
+                </button>
+              )}
+
+              {/* «Esta fruta no» (17-11-2026): se apunta en sus gustos, así que
+                  el generador deja de proponérsela en TODOS sus menús, no solo
+                  aquí. Mismo sitio donde viven los alimentos del alta. */}
+              {actual && esDelCatalogo && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nombre = actual.foodLabel;
+                    const disliked = onboarding?.dislikedFoods ?? [];
+                    if (!disliked.some(x => normalizeStr(x) === normalizeStr(nombre))) {
+                      const siguiente = [...disliked, nombre];
+                      queryClient.setQueryData(['onboarding', profile.email], (p: OnboardingData | null | undefined) => (p ? { ...p, dislikedFoods: siguiente } : p));
+                      void updateOnboardingFoods(profile.email, onboarding?.likedFoods ?? [], siguiente).catch(() => {});
+                    }
+                    guardarExtras(extrasFor!.mealId, extras.filter((_, i) => i !== extrasFor!.idx));
+                    setExtrasFor(null);
+                    showToast(`Apuntado: no te pondré más ${nombre.toLowerCase()}.`);
+                  }}
+                  className="w-full py-2 font-sans text-body-s text-ink-2 hover:text-ink transition-colors"
+                >
+                  No me gusta, no me lo pongas más
                 </button>
               )}
 

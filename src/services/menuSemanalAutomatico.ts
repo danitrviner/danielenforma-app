@@ -77,6 +77,7 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
     paquetes: acceso.paquetes ?? [],
     favoritasDelCoach: acceso.favoritas ?? [],
     azar: Math.random,
+    ...(reglas.topeDeFrutas ? { topeDeFrutas: reglas.topeDeFrutas } : {}),
     // Lo que ha cambiado en sus menús anteriores: recetas que quita, alimentos que sustituye.
     cambios: senalesDeCambios(todosLosMenus),
   };

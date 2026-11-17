@@ -282,6 +282,10 @@ export function resumirReglasDeReceta(
     const texto = (d: typeof diasA) => (d.length ? etiquetaDeDias(d) : 'ninguno');
     l.push(`Días con tiempo para cocinar: ${flecha(texto(diasA), texto(diasD))}`);
   }
+  if ((antes?.topeDeFrutas ?? null) !== (despues.topeDeFrutas ?? null)) {
+    const texto = (n: number | undefined) => (n ? `${n} por semana` : 'sin tope');
+    l.push(`Frutas distintas: ${flecha(texto(antes?.topeDeFrutas), texto(despues.topeDeFrutas))}`);
+  }
   // Ingesta a medida (11-2026): fruta, recetas cerradas y extra fijo por comida.
   const ingA = antes?.ingestas ?? {};
   const ingD = despues.ingestas ?? {};
