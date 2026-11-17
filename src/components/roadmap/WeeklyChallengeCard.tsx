@@ -45,12 +45,15 @@ const TIPO_SEMANA: Record<NonNullable<NonNullable<WeeklyChallenge['contexto']>['
   test: 'test', descarga: 'descarga', puente: 'semana puente', paron: 'vuelta de parón', evento: 'semana fuera',
 };
 
-/** «Hipertrofia 1 · semana 2 de 9», para que el reto se lea como parte del bloque. */
-function lineaDeContexto(ch: WeeklyChallenge): string | null {
+/** «Hipertrofia 1 · semana 2 de 9», para que el reto se lea como parte del bloque.
+ *  Si el ejercicio del reto es de una zona con estrella (17-11-2026), lo dice:
+ *  el reto de la semana y el objetivo del bloque tiran de lo mismo. */
+export function lineaDeContexto(ch: Pick<WeeklyChallenge, 'contexto'>): string | null {
   const c = ch.contexto;
   if (!c) return null;
   const partes = [c.bloque, `semana ${c.semana} de ${c.semanas}`];
   if (c.tipoSemana) partes.push(TIPO_SEMANA[c.tipoSemana]);
+  if (c.conObjetivo) partes.push('va con tu objetivo del bloque');
   return partes.join(' · ');
 }
 

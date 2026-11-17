@@ -31,6 +31,7 @@ import { alimentosDelBancoDelCoach, contextoNutricional, findProfile, textoDeObj
 import { esTipoDeBloque, TIPOS_DE_BLOQUE_VALIDOS } from './hipotesis.js';
 import { TIPOS_DE_BLOQUE, avisoDeEstrellas, enLista, nombreCortoDeZona } from '../../utils/hipotesisDeBloque/tiposDeBloque.js';
 import { zonasDeGrupos } from '../../utils/hipotesisDeBloque/mapaDeRespuesta.js';
+import { entradaYaPasada, entradasPrevistas } from '../../utils/rampaEnRutinas.js';
 
 export async function generateReportDraft(email: string, periodDaysInput: number, introOverride?: string): Promise<string> {
   const profile = await findProfile(email);
@@ -939,6 +940,25 @@ export async function proposeWorkoutDays(
     .filter(x => (x.plan > 0 || x.sesiones > 0) && Math.abs(x.plan - x.sesiones) >= 2)
     .map(x => `${x.grupo}: mesociclo ${x.plan} / sesiones ${x.sesiones}`);
 
+  // Norma de ejercicio nuevo (17-11-2026): los que el atleta no ha hecho nunca
+  // (o no en más de 8 semanas) entran con más repeticiones las semanas 1-3. La
+  // entrada no va en la propuesta —ahí se pauta el rango de verdad—: la pone
+  // la app al guardar las sesiones o, si en ese momento no puede leer los
+  // registros, la primera vez que Dani abre el bloque en el editor. Aquí solo
+  // se avisa de cuáles son, para que el asistente se lo cuente. Si los
+  // registros no se pueden leer, no se avisa de nada.
+  let nuevos: string[] = [];
+  if (!entradaYaPasada(meso.startDate, cicloDiasDeMeso(meso), hoyIsoLocal())) {
+    try {
+      const registros = await getWorkoutLogs(athleteEmail);
+      const porId = new Map(exercises.map(e => [e.id, e]));
+      nuevos = entradasPrevistas(
+        days.flatMap(d => d.exercises),
+        { registros, inicio: meso.startDate, ejercicio: id => porId.get(id) },
+      ).map(n => `${porId.get(n.exerciseId)?.name ?? n.exerciseId}: ${n.entrada} las semanas 1-3 y desde la 4 su ${n.pautado}`);
+    } catch { /* sin registros no se avisa: la entrada se decide al guardar o en el editor */ }
+  }
+
   const totalSeries = days.reduce((s, d) => s + d.exercises.reduce((t, e) => t + e.sets, 0), 0);
   const summary = `Sesiones de ${nombreDeMeso(meso)} · ${days.length} ${days.length === 1 ? 'día' : 'días'} · ${totalSeries} series`;
 
@@ -962,6 +982,10 @@ export async function proposeWorkoutDays(
     mesocycle: `${nombreDeMeso(meso)} (${meso.id})`,
     dias: days.map(d => `${d.dayIndex}: ${d.exercises.length} ejercicios`),
     desviacionRespectoAlMesociclo: desvios.length ? desvios : undefined,
+    ...(nuevos.length ? {
+      ejerciciosNuevos: nuevos,
+      normaEjercicioNuevo: 'Estos ejercicios son nuevos para el atleta: la app les pone esa entrada de repeticiones al guardar las sesiones (o cuando Dani abra el bloque en el editor, donde puede quitarla). No cambies el rango pautado; díselo a Dani en una línea.',
+    } : {}),
     note: 'Propuesta creada. Dani puede editar series, reps, RIR y quitar ejercicios antes de aprobarla.',
   });
 }

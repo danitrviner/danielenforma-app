@@ -10,6 +10,10 @@
 //   · El resto de semanas compiten por score y rotan con la memoria del motor:
 //     doble progresión, supera tu sesión, AMRAP en la última serie, grupo
 //     estancado, mismo peso con más reserva y récord de repeticiones.
+//   · Con hipótesis en el bloque (17-11-2026), dentro de cada reto se elige
+//     antes un ejercicio de las zonas con estrella: el reto de la semana
+//     empuja lo mismo que el bloque quiere mejorar. No cambia qué retos salen
+//     ni su nota; solo sobre qué ejercicio, y el reto lo dice (`conObjetivo`).
 //
 // Devuelve opciones con el mismo contrato que challengeOptions; quien llama
 // les aplica la rotación y el orden final.
@@ -23,6 +27,7 @@ import {
   recordDeReps, tablaDeRecords, seguroParaAmrap, esGuiado,
 } from './planDeLaSemana.js';
 import { saltoReal, veredictoDeSerie } from './cargaSugerida.js';
+import { estrellasDe, gruposDeLasZonas } from './hipotesisDeBloque/tiposDeBloque.js';
 
 export const SCORE_RENDIMIENTO = {
   semanaEspecial: 95,
@@ -66,7 +71,10 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
   const tipo = contexto?.tipoSemana;
   const pendientes = sesionesPendientes(plan, today);
   const exById = new Map(input.exercises.map(e => [e.id, e]));
-  const meta = (o: Omit<ChallengeOption, 'contexto'>): ChallengeOption => ({ ...o, ...(contexto ? { contexto } : {}) });
+  // `delObjetivo`: el reto va sobre un ejercicio (o un grupo) de una zona con
+  // estrella. Sin contexto de bloque no hay dónde decirlo.
+  const meta = (o: Omit<ChallengeOption, 'contexto'>, delObjetivo = false): ChallengeOption =>
+    ({ ...o, ...(contexto ? { contexto: delObjetivo ? { ...contexto, conObjetivo: true } : contexto } : {}) });
 
   // Un candidato por ejercicio: la primera sesión pendiente en la que sale.
   const candidatos: Candidato[] = [];
@@ -84,6 +92,14 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
   }
   const claves = new Set((plan.meso?.ejerciciosClave ?? []).map(k => k.split('::').pop() ?? k));
   const esClave = (c: Candidato) => (claves.has(c.ej.exerciseId) ? 0 : 1);
+  // «Es del objetivo» (17-11-2026): el ejercicio trabaja un grupo de una zona
+  // con estrella del bloque (las que tienen hipótesis). Va por delante de
+  // «clave»: las estrellas son la decisión del bloque, y un ejercicio clave de
+  // otra zona puede esperar a la semana siguiente. Sin hipótesis no hay
+  // grupos y todo queda como estaba.
+  const gruposDelObjetivo = new Set<MuscleGroup>(gruposDeLasZonas(estrellasDe(plan.meso)));
+  const vaConElObjetivo = (c: Candidato) => !!c.ej.grupo && gruposDelObjetivo.has(c.ej.grupo);
+  const esDelObjetivo = (c: Candidato) => (vaConElObjetivo(c) ? 0 : 1);
 
   // ── Semanas especiales ──────────────────────────────────────────────────────
   if (tipo === 'test') {
@@ -208,7 +224,7 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
       // toca subir ni quedan repeticiones que buscar. Eso es de «mismo peso,
       // más reserva», no de doble progresión.
       .filter(x => x.veredicto != null || (x.falta > 0 && x.falta <= 2))
-      .sort((a, b) => esClave(a.c) - esClave(b.c) || a.falta - b.falta);
+      .sort((a, b) => esDelObjetivo(a.c) - esDelObjetivo(b.c) || esClave(a.c) - esClave(b.c) || a.falta - b.falta);
     const elegido = conRango[0];
     if (elegido) {
       const { c, veredicto } = elegido;
@@ -231,7 +247,7 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
             workoutId: c.sesion.workoutId, workoutName: c.sesion.nombre,
             assignmentId: c.sesion.assignmentId, sessionDate: c.sesion.date,
           },
-        }));
+        }, vaConElObjetivo(c)));
       } else {
         // Con un salto de carga grande, llegar al tope no basta: antes de subir
         // hay que abrir el rango (las mismas repeticiones que pide la tarjeta).
@@ -255,7 +271,7 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
             workoutId: c.sesion.workoutId, workoutName: c.sesion.nombre,
             assignmentId: c.sesion.assignmentId, sessionDate: c.sesion.date,
           },
-        }));
+        }, vaConElObjetivo(c)));
       }
     }
   }
@@ -298,10 +314,13 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
       .filter(c => !c.ej.prescripcion.technique && seguroParaAmrap(exById.get(c.ej.exerciseId)))
       // Primero lo guiado (máquina, polea): ahí la última repetición no se paga.
       .sort((a, b) => Number(!esGuiado(exById.get(a.ej.exerciseId))) - Number(!esGuiado(exById.get(b.ej.exerciseId)))
-        || esClave(a) - esClave(b) || a.sesion.date.localeCompare(b.sesion.date));
+        || esDelObjetivo(a) - esDelObjetivo(b) || esClave(a) - esClave(b) || a.sesion.date.localeCompare(b.sesion.date));
     if (aptos.length > 0) {
       // Rota entre los aptos semana a semana: «de vez en cuando», no siempre el mismo.
-      const c = pickVariant(aptos.slice(0, 4), seed);
+      // Con ejercicios del objetivo entre ellos, la rotación es solo entre esos:
+      // si no, con cuatro aptos por delante el de la estrella podía no salir nunca.
+      const delObjetivo = aptos.filter(vaConElObjetivo);
+      const c = pickVariant((delObjetivo.length > 0 ? delObjetivo : aptos).slice(0, 4), seed);
       const peso = c.series[c.series.length - 1].weight;
       const record = recordDeReps(workoutLogs, c.ej.exerciseId, peso, today);
       const tuning = difficultyFor('amrap_serie', memory);
@@ -319,7 +338,7 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
           workoutId: c.sesion.workoutId, workoutName: c.sesion.nombre,
           assignmentId: c.sesion.assignmentId, sessionDate: c.sesion.date,
         },
-      }));
+      }, vaConElObjetivo(c)));
     }
   }
 
@@ -358,7 +377,9 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
           muscleGroup: grupo as MuscleGroup, muscleLabel: label,
           referencias: refs,
         },
-      }));
+        // Qué grupo sale lo sigue decidiendo cuántos ejercicios lleva parados;
+        // si además es de una zona con estrella, el reto lo dice.
+      }, gruposDelObjetivo.has(grupo as MuscleGroup)));
     }
   }
 
@@ -367,7 +388,7 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
     const alFallo = candidatos
       .map(c => ({ c, s: [...c.series].filter(s => s.rir === 0).sort((a, b) => b.weight - a.weight)[0] }))
       .filter((x): x is { c: Candidato; s: Marca } => !!x.s && x.s.reps >= 3)
-      .sort((a, b) => esClave(a.c) - esClave(b.c));
+      .sort((a, b) => esDelObjetivo(a.c) - esDelObjetivo(b.c) || esClave(a.c) - esClave(b.c));
     const elegido = alFallo[0];
     if (elegido) {
       const { c, s } = elegido;
@@ -384,7 +405,7 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
           workoutId: c.sesion.workoutId, workoutName: c.sesion.nombre,
           assignmentId: c.sesion.assignmentId, sessionDate: c.sesion.date,
         },
-      }));
+      }, vaConElObjetivo(c)));
     }
   }
 
@@ -393,7 +414,7 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
     const conTabla = candidatos
       .map(c => ({ c, tabla: tablaDeRecords(workoutLogs, c.ej.exerciseId, today) }))
       .filter(x => x.tabla.length >= 2)
-      .sort((a, b) => esClave(a.c) - esClave(b.c) || b.tabla.length - a.tabla.length);
+      .sort((a, b) => esDelObjetivo(a.c) - esDelObjetivo(b.c) || esClave(a.c) - esClave(b.c) || b.tabla.length - a.tabla.length);
     const elegido = conTabla[0];
     if (elegido) {
       const { c, tabla } = elegido;
@@ -411,7 +432,7 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
           workoutId: c.sesion.workoutId, workoutName: c.sesion.nombre,
           assignmentId: c.sesion.assignmentId, sessionDate: c.sesion.date,
         },
-      }));
+      }, vaConElObjetivo(c)));
     }
   }
 

@@ -30,6 +30,9 @@ import {
   RM_ESPERADO_AVANZADO_PCT, RM_OBJETIVO_PCT, SEMANAS_ENTRE_SUBIDAS, SEMANAS_POR_DEFECTO, SEMANAS_PRIMER_BLOQUE,
   SUBIDA_DE_PROCESO_PCT, VELOCIDAD_POR_DEFECTO,
 } from '../utils/hipotesisDeBloque/cifras.js';
+import {
+  DIAS_PARA_VOLVER_A_SER_NUEVO, RANGO_ENTRADA_AISLAMIENTO, RANGO_ENTRADA_MULTIARTICULAR, SEMANAS_DE_ENTRADA,
+} from '../utils/rampaDeEjercicioNuevo.js';
 import { REPS_MAX_RM, REPS_MIN_RM, RIR_MAX_RM } from '../utils/rmValido.js';
 import { RUIDO_RM_PCT } from '../utils/ruidoDeMedida.js';
 
@@ -42,6 +45,9 @@ import { RUIDO_RM_PCT } from '../utils/ruidoDeMedida.js';
 const ESCALON_PCT = VELOCIDADES.find(v => v.value === VELOCIDAD_POR_DEFECTO)!.pct;
 const SEMANAS_DE_PARON = Math.round(DIAS_DE_PARON_PARA_REDUCIR / 7);
 const MANTENER = FRACCION_DE_MANTENER === 0.5 ? 'la MITAD' : `el ${Math.round(FRACCION_DE_MANTENER * 100)} %`;
+// Norma de ejercicio nuevo (17-11-2026): mismas cifras que `rampaDeEjercicioNuevo.ts`,
+// que es quien pone las reglas en la rutina.
+const SEMANAS_PARA_SER_NUEVO = Math.round(DIAS_PARA_VOLVER_A_SER_NUEVO / 7);
 
 export const DOCTRINA_ENTRENAMIENTO_DEFAULT = `## Criterio de ENTRENAMIENTO (mío — aplícalo por encima de cualquier convención genérica)
 
@@ -153,6 +159,9 @@ máquina 8-12/RIR 1-0/2-2,5min · aislamiento medio 10-15/RIR 1-0/1,5-2,5min · 
 12-20/RIR 0/1-1,5min.
 Mismo criterio para todos: no existe el "rango de fuerza" para unos clientes y el "rango de estética"
 para otros.
+EJERCICIO NUEVO (no lo ha hecho nunca, o no en más de ${SEMANAS_PARA_SER_NUEVO} semanas): las semanas 1-${SEMANAS_DE_ENTRADA} entra con más repeticiones
+—${RANGO_ENTRADA_MULTIARTICULAR} los multiarticulares, ${RANGO_ENTRADA_AISLAMIENTO} los de aislamiento— y desde la semana ${SEMANAS_DE_ENTRADA + 1} pasa de golpe al rango pautado. Tú
+pauta el rango de verdad (su 8-10, su 6-8): la entrada la pone la app al guardar la rutina, no la escribas en las reps.
 
 ### 8. Orden de la sesión
 El grupo PRIORITARIO del bloque va primero en la sesión, en fresco: es por el que se va a juzgar el

@@ -6,6 +6,7 @@ import { cicloDiasDeMeso } from '../asignacionMesociclo.js';
 import type { ZonaIem } from '../cdg/zonas.js';
 import { nombreCortoDeSesion } from '../nombresMeso.js';
 import { siguienteNumeroDeBloque } from '../numeroDeBloque.js';
+import { conRampaPendiente } from '../rampaEnRutinas.js';
 import { etapaDesdeMeso, mesoDeAtletaDesdeEtapa, rutinasDeMesoDePlantilla } from '../plantillaMeso.js';
 import { planDeSemana1Reducida, resolveExerciseForWeek, vueltasDelCiclo } from '../progression.js';
 import { addDays, diasEntreFechas } from '../trainingWeek.js';
@@ -268,7 +269,9 @@ export function siguienteBloque(e: EntradaDeSiguienteBloque): SiguienteBloque {
   };
 
   const rutinas = rutinasDeMesoDePlantilla({ ...nuevo, id: '' }, { ownerId: e.ownerId, athleteName: e.athleteName })
-    .map(({ mesocycleId: _sinMeso, ...r }) => r);
+    // La norma de ejercicio nuevo se aplica al abrir el bloque en el editor,
+    // que es quien tiene los registros del atleta: aquí solo se deja la marca.
+    .map(({ mesocycleId: _sinMeso, ...r }) => ({ ...r, tags: conRampaPendiente(r.tags) }));
   // El recorte de la semana 1 se guarda por ejercicio (lo lee la app del
   // atleta): sin él, el interruptor encendido no recortaría nada hasta que el
   // coach abriera el bloque en el editor.

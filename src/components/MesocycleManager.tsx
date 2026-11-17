@@ -90,7 +90,7 @@ import DraftEjercicios from './mesociclo/DraftEjercicios';
 import EstadoDelBloque, { LoQueVeElAtleta, chipDeEstado } from './mesociclo/EstadoDelBloque';
 import { estadoDelMeso, sesionesQueEstorban, pendientesDesde, vistaDelAtleta, type SesionesQueEstorban } from '../utils/bloqueDelAtleta';
 import { Avatar, Skeleton, Badge, SegmentedControl } from './ui';
-import { PRIORIDADES, PRIORIDAD, LEYENDA_DE_PRIORIDADES, esIgnorado, avisoDeEstrellasDelMeso, mesoAnteriorA } from '../utils/hipotesisDelMeso';
+import { PRIORIDADES, PRIORIDAD, LEYENDA_DE_PRIORIDADES, esIgnorado, avisoDeEstrellasDelMeso } from '../utils/hipotesisDelMeso';
 import { ZONA_POR_CLAVE, type ZonaIem } from '../utils/cdg/zonas';
 import { planDeSemana1Reducida } from '../utils/progression';
 import TipoDeBloqueSelector from './mesociclo/TipoDeBloqueSelector';
@@ -98,6 +98,10 @@ import Semana1Reducida from './mesociclo/Semana1Reducida';
 import FichasDeHipotesis from './mesociclo/FichasDeHipotesis';
 import { useHipotesisDelBloque } from './mesociclo/useHipotesisDelBloque';
 import { alCambiarSemana1, camposDeBloqueNuevo } from './mesociclo/hipotesisDelEditor';
+import {
+  conRampaSiEsNuevo, entradaYaPasada, etiquetaDeRampa, parcheConRampaAlDia, quitarRampaDeEntrada, registrosPrevistos, rutinaConRampa,
+  sinRampaPendiente, tieneRampaPendiente, type RegistroParaRampa,
+} from '../utils/rampaEnRutinas';
 import { EmptyState, Dialog, Input, Icon, Tabs, TabItem, Sheet, Pager, Select, Button } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -724,7 +728,10 @@ function MesoExercisesTabs({
     const we = base.exercises[exIdx];
     if (!we) return;
     apuntar({ tipo: 'dia', clave: claveGrupo(base), prev: base.exercises });
-    if (semana === 0) { guardarEjercicio(base, exIdx, patch); return; }
+    // En Base, un ejercicio con la entrada de «nuevo» lleva el rango pautado
+    // copiado en su regla de la semana 4: si cambia el rango, la regla lo sigue
+    // (o la entrada se quita si ya no cabe). Ver `parcheConRampaAlDia`.
+    if (semana === 0) { guardarEjercicio(base, exIdx, parcheConRampaAlDia(we, patch)); return; }
     // Solo lo que de verdad cambia respecto a esta semana: el editor a veces
     // manda el ejercicio entero (al tocar bloques).
     const r0 = resolveExerciseForWeek(we, semana) as unknown as Record<string, unknown>;
@@ -734,6 +741,16 @@ function MesoExercisesTabs({
     });
   };
   const semanasObjetivo = () => alcance === 'alternar' ? semanasAlternas(semana, vueltas) : [semana];
+  // Norma de ejercicio nuevo (17-11-2026): el coach ve la entrada en la fila y
+  // la puede quitar de ese ejercicio. Borra solo sus dos reglas; se deshace
+  // como cualquier otro cambio del día.
+  const quitarRampa = (g: MesoWorkoutGroup, exIdx: number) => {
+    const base = baseDe(g);
+    const we = base.exercises[exIdx];
+    if (!we) return;
+    apuntar({ tipo: 'dia', clave: claveGrupo(base), prev: base.exercises });
+    guardarEjercicio(base, exIdx, { weeklyProgression: quitarRampaDeEntrada(we).weeklyProgression });
+  };
   // Datos de la tarjeta de carga aguda/crónica (11-a), estables entre repintados:
   // el panel recalcula con todo el historial solo cuando cambian de verdad.
   const cargaPanel = useMemo(
@@ -1148,6 +1165,9 @@ function MesoExercisesTabs({
                   // después), y hasta ahora la única forma de cambiarlo era
                   // borrar y volver a añadir.
                   const marcas = semana > 0 && gruposBase[gIdx]?.exercises[exIdx] ? origenDeCambios(gruposBase[gIdx].exercises[exIdx], semana) : {};
+                  // La entrada de ejercicio nuevo se lee de la BASE: en una
+                  // semana concreta `we` ya viene resuelto.
+                  const rampa = etiquetaDeRampa(gruposBase[gIdx]?.exercises[exIdx] ?? we);
                   const flechas = semana > 0 ? <span /> : (
                     <div className={`flex flex-col flex-shrink-0 ${enFilas ? 'items-center fila-oculta' : ''}`}>
                       <button
@@ -1202,6 +1222,20 @@ function MesoExercisesTabs({
                         <span className="flex items-center gap-1 mt-0.5 font-sans text-caption text-accent-ink">
                           <Icon name="swap_vert" size="s" />
                           Alterna con {(allExercises.find(e => e.id === companeroAlterno.exerciseId)?.name ?? 'otro ejercicio').toLowerCase()}
+                        </span>
+                      )}
+                      {rampa && (
+                        <span className="flex items-center gap-1 mt-0.5 font-sans text-caption text-accent-ink">
+                          <span title="Ejercicio nuevo para el atleta: las tres primeras semanas va con más repeticiones y desde la cuarta, con el rango que has pautado.">{rampa}</span>
+                          <button
+                            type="button"
+                            onClick={() => quitarRampa(g, exIdx)}
+                            title="Quitar la entrada de ejercicio nuevo: irá con su rango desde la semana 1"
+                            aria-label={`Quitar la entrada de ejercicio nuevo de ${ex?.name ?? 'este ejercicio'}`}
+                            className="text-ink-3 hover:text-danger transition-colors"
+                          >
+                            <Icon name="close" size="s" />
+                          </button>
                         </span>
                       )}
                       {isDuplicate && (
@@ -2066,6 +2100,29 @@ export default function MesocycleManager({
   });
   const cierreLogs = athleteLogs ?? logsQuery;
 
+  /* Norma de ejercicio nuevo (17-11-2026): todo lo que escribe rutinas en esta
+     pantalla —asignar lo generado, aplicar una plantilla, añadir o cambiar un
+     ejercicio— pasa cada ejercicio por `conRampaSiEsNuevo` con los registros
+     del atleta y el inicio del bloque. Los registros salen de la caché de
+     siempre (`workoutLogs`, la misma clave que ClientHub, el generador y el
+     cierre): si ya están, no se lee nada. `null` si no se han podido leer o
+     si esto es una plantilla (sin atleta no hay «nuevo»): entonces no se pone
+     ninguna entrada, que es distinto de «no tiene registros». Tampoco en un
+     bloque que ya pasó de su semana 3 (`entradaYaPasada`): ahí las reglas de
+     la entrada no cambiarían nada y la marca de la fila mentiría. */
+  const registrosDelAtleta = async (): Promise<WorkoutLog[] | null> => {
+    if (modoPlantilla || !selectedEmail) return null;
+    return queryClient.ensureQueryData({
+      queryKey: ['workoutLogs', selectedEmail],
+      queryFn: () => getWorkoutLogs(selectedEmail),
+    }).catch(() => null);
+  };
+  const datosDeRampa = (registros: readonly RegistroParaRampa[] | null, meso: Mesocycle | null) => {
+    const porId = new Map(allExercises.map(e => [e.id, e]));
+    const aTiempo = !!meso && !entradaYaPasada(meso.startDate, cicloDiasDeMeso(meso), hoyIsoLocal());
+    return { registros: aTiempo ? registros : null, inicio: meso?.startDate ?? '', ejercicio: (id: string) => porId.get(id) };
+  };
+
   // Máquinas que el atleta marcó en el alta: el Draft las enseña por grupo para
   // relacionarlas con los ejercicios. Solo se piden al abrir esa pestaña.
   const { data: maquinasDelAtleta } = useQuery({
@@ -2158,8 +2215,9 @@ export default function MesocycleManager({
         // crear las del bloque dos veces sería peor que no crearlas.
         const crear = faltanRutinas && (await getWorkoutsByMesocycleIdStrict(meso.id)).length === 0;
         if (crear) {
+          const rampa = datosDeRampa(await registrosDelAtleta(), meso);
           for (const rutina of rutinasDeMesoDePlantilla(meso, { ownerId: coachId, athleteName })) {
-            await createWorkoutStrict(rutina);
+            await createWorkoutStrict({ ...rutina, exercises: rutinaConRampa(rutina.exercises, rampa) });
           }
           await queryClient.invalidateQueries({ queryKey: ['workouts'] });
         }
@@ -2189,7 +2247,39 @@ export default function MesocycleManager({
         console.error('[completarBloqueDePlantilla]', err);
       }
     })();
-  }, [modoPlantilla, editing, loadingMesoWorkouts, mesoWorkouts.length, mesoGroupsForTabs, coachId, athleteName, allExercises, queryClient, scheduleAutoSave]);
+    // `datosDeRampa` y `registrosDelAtleta` se rehacen en cada pintado; lo que leen ya está en la lista.
+  }, [modoPlantilla, editing, loadingMesoWorkouts, mesoWorkouts.length, mesoGroupsForTabs, coachId, athleteName, allExercises, queryClient, scheduleAutoSave]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Rutinas que creó el asistente al aprobar una propuesta SIN poder mirar los
+     registros del atleta (17-11-2026): llegan marcadas (`tieneRampaPendiente`)
+     y es aquí, la primera vez que el coach abre el bloque, donde se les pone
+     la entrada de ejercicio nuevo. Solo a los ejercicios que no la tengan y
+     que no lleven ya un rango programado en esas semanas (eso es del coach:
+     lo decide `conRampaDeEntrada`). La marca se quita al terminar, así que
+     pasa una vez: si después el coach quita la entrada de un ejercicio, no
+     vuelve. Sin registros o sin catálogo no se hace nada y se reintenta. */
+  const rampasRevisadas = useRef(new Set<string>());
+  useEffect(() => {
+    if (modoPlantilla || !editing || loadingMesoWorkouts || allExercises.length === 0) return;
+    const meso = editing;
+    const pendientes = mesoWorkouts.filter(tieneRampaPendiente);
+    if (pendientes.length === 0 || rampasRevisadas.current.has(meso.id)) return;
+    rampasRevisadas.current.add(meso.id);
+    void (async () => {
+      try {
+        const registros = await registrosDelAtleta();
+        if (!registros) { rampasRevisadas.current.delete(meso.id); return; }
+        const rampa = datosDeRampa(registros, meso);
+        for (const w of pendientes) {
+          await updateWorkoutStrict(w.id, { exercises: rutinaConRampa(w.exercises, rampa), tags: sinRampaPendiente(w.tags) });
+        }
+        await queryClient.invalidateQueries({ queryKey: ['workouts'] });
+      } catch (err) {
+        rampasRevisadas.current.delete(meso.id);
+        console.error('[rampaPendiente]', err);
+      }
+    })();
+  }, [modoPlantilla, editing?.id, editing?.startDate, loadingMesoWorkouts, mesoWorkouts, allExercises]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // El bloque tal cual, con sus cambios por semana, descargas y test, como
   // plantilla reutilizable con otros clientes. Sin nada del atleta: ver
@@ -2558,10 +2648,15 @@ export default function MesocycleManager({
         if (w.dayIndex != null && w.dayIndex < editing.daysPerWeek) rutinaPorDia.set(w.dayIndex, w.id);
       }
 
+      // La entrada de ejercicio nuevo se pone AQUÍ, al escribir las rutinas, y
+      // no al generar la vista previa: el rango que vuelve en la semana 4 tiene
+      // que ser el que el coach dejó después de retocarla.
+      const rampa = datosDeRampa(await registrosDelAtleta(), editing);
       const dayWorkoutIds: string[] = [];
       for (let dayIdx = 0; dayIdx < editing.daysPerWeek; dayIdx++) {
         const pd = previewDays[dayIdx] ?? { dayIndex: dayIdx, exercises: [], warnings: [] };
-        const exercises: WorkoutExercise[] = pd.exercises.map(({ name: _name, equipmentMismatch: _mismatch, ...we }) => we);
+        const exercises: WorkoutExercise[] = rutinaConRampa(
+          pd.exercises.map(({ name: _name, equipmentMismatch: _mismatch, ...we }) => we), rampa);
         const name = nombreDeSesion({
           tipo: nombrePropioDeSesion(editing.nombresSesion, dayIdx) ?? tiposCiclo[dayIdx],
           dayIdx, athleteName, meso: editing,
@@ -3010,7 +3105,9 @@ export default function MesocycleManager({
   // plantilla de mesociclo (handleApplyTemplate) o un ejercicio nuevo.
   async function handleUseLibraryWorkout(group: MesoWorkoutGroup, libraryWorkout: Workout) {
     if (!await confirm(`¿Copiar los ${libraryWorkout.exercises.length} ejercicios de "${libraryWorkout.name}" a este día? Se añaden a los que ya tenga.`)) return;
-    const copied = libraryWorkout.exercises.map((e, i) => ({ ...e, order: group.exercises.length + i }));
+    // Lo que venga de la biblioteca y sea nuevo para el atleta entra con su rampa.
+    const rampa = datosDeRampa(await registrosDelAtleta(), editing);
+    const copied = rutinaConRampa(libraryWorkout.exercises.map((e, i) => ({ ...e, order: group.exercises.length + i })), rampa);
     void writeMesoWorkoutExercises(group, [...group.exercises, ...copied]);
   }
 
@@ -3057,7 +3154,9 @@ export default function MesocycleManager({
         exerciseId: ex.id, order: group.exercises.length, sets: 3, reps, rir, restSeconds,
         muscleGroup: ex.muscleGroup,
       };
-      void writeMesoWorkoutExercises(group, [...group.exercises, newEx]);
+      // Si es nuevo para el atleta, entra con más repeticiones las tres primeras semanas.
+      const rampa = datosDeRampa(await registrosDelAtleta(), editing);
+      void writeMesoWorkoutExercises(group, [...group.exercises, conRampaSiEsNuevo(newEx, rampa)]);
     } else {
       // Aviso honesto antes de escribir: aplica a todas las semanas, y por
       // ahora es un texto fijo — el número real de sesiones ya registradas
@@ -3068,7 +3167,16 @@ export default function MesocycleManager({
         setExercisePicker(null);
         return;
       }
-      const updated = group.exercises.map((e, i) => i !== exIdx ? e : { ...e, exerciseId: ex.id, muscleGroup: ex.muscleGroup ?? e.muscleGroup });
+      // La entrada de «nuevo» es del ejercicio, no del hueco: la del que sale
+      // no vale para el que entra, y al que entra le toca la suya si es nuevo.
+      // Sin registros a mano no se decide: se queda como estaba.
+      const registros = await registrosDelAtleta();
+      const rampa = datosDeRampa(registros, editing);
+      const updated = group.exercises.map((e, i) => {
+        if (i !== exIdx) return e;
+        const cambiado = { ...e, exerciseId: ex.id, muscleGroup: ex.muscleGroup ?? e.muscleGroup };
+        return registros ? conRampaSiEsNuevo(quitarRampaDeEntrada(cambiado), rampa) : cambiado;
+      });
       void writeMesoWorkoutExercises(group, updated);
     }
     setExercisePicker(null);
@@ -3097,6 +3205,13 @@ export default function MesocycleManager({
       const created: Mesocycle[] = [];
       let startDate = hoyIsoLocal();
 
+      // Norma de ejercicio nuevo: las rutinas de cada etapa nacen ya con su
+      // entrada. Las etapas se crean todas hoy, así que a los registros reales
+      // se les suma lo que el atleta habrá hecho en las etapas anteriores
+      // (`registrosPrevistos`): lo que repite de una etapa a la siguiente no es nuevo.
+      const registros = await registrosDelAtleta();
+      let previstos: RegistroParaRampa[] = [];
+
       const reviewTasks: Promise<unknown>[] = [];
       for (let i = 0; i < tpl.stages.length; i++) {
         const stage = tpl.stages[i];
@@ -3111,8 +3226,10 @@ export default function MesocycleManager({
         created.push(meso);
         // Si la plantilla traía los ejercicios hechos, sus rutinas nacen ya
         // (sin asignar al calendario): la pestaña Ejercicios no sale vacía.
-        for (const rutina of rutinasDeMesoDePlantilla(meso, { ownerId: coachId, athleteName })) {
-          await createWorkoutStrict(rutina);
+        const rutinas = rutinasDeMesoDePlantilla(meso, { ownerId: coachId, athleteName });
+        const rampa = datosDeRampa(registros && [...registros, ...previstos], meso);
+        for (const rutina of rutinas) {
+          await createWorkoutStrict({ ...rutina, exercises: rutinaConRampa(rutina.exercises, rampa) });
         }
 
         // Cadencia de revisiones de la etapa (Bloque H, Pantalla 4) — se crean
@@ -3136,6 +3253,7 @@ export default function MesocycleManager({
 
         // Advance start date
         startDate = addDays(startDate, stage.weeks * 7);
+        previstos = [...previstos, ...registrosPrevistos(rutinas.flatMap(r => r.exercises.map(e => e.exerciseId)), addDays(startDate, -1))];
       }
       await Promise.all(reviewTasks);
       await queryClient.invalidateQueries({ queryKey: ['workouts'] });
@@ -3234,16 +3352,13 @@ export default function MesocycleManager({
     () => [...new Set(mesoGroupsForTabs.flatMap(g => g.exercises.map(e => e.exerciseId)))],
     [mesoGroupsForTabs],
   );
-  const mesoAnteriorId = editing && !modoPlantilla ? mesoAnteriorA(editing, mesocycles)?.id : undefined;
-  const idsDelAnterior = useMemo(
-    () => (mesoAnteriorId
-      ? [...new Set(allWorkouts.filter(w => w.mesocycleId === mesoAnteriorId).flatMap(w => w.exercises.map(e => e.exerciseId)))]
-      : null),
-    [allWorkouts, mesoAnteriorId],
-  );
+  // Los «ejercicios nuevos» que sugieren la semana 1 reducida son los de la
+  // norma (`ejerciciosNuevosDelBloque`: nunca hechos o no en más de 8 semanas),
+  // contra los registros del atleta; antes se comparaba con las rutinas del
+  // bloque anterior. El hook los cuenta con los registros que ya carga.
   const hipotesisDelBloque = useHipotesisDelBloque({
     meso: editing, mesocycles, athleteEmail: selectedEmail, exercises: allExercises, logs: athleteLogs,
-    ejerciciosDelBloque: idsDelBloque, ejerciciosDelAnterior: idsDelAnterior,
+    ejerciciosDelBloque: idsDelBloque,
     activo: !modoPlantilla && !!selectedEmail,
   });
   /** Los ejercicios de una zona en las rutinas del bloque, por su nombre (fila «Resultado» de la ficha). */

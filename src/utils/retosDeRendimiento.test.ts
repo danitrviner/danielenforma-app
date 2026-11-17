@@ -508,3 +508,109 @@ describe('fuera de su gimnasio (17-11-2026)', () => {
     expect(recordsBatidos(logs, '2026-11-05', '2026-11-17')).toBe(0);
   });
 });
+
+/* Retos ligados al objetivo del bloque (17-11-2026): con hipótesis, cada reto
+   elige antes un ejercicio de las zonas con estrella y lo dice en su contexto.
+   No cambia qué retos salen ni las semanas especiales. */
+describe('retos ligados al objetivo del bloque (17-11-2026)', () => {
+  const conEstrellas = (zonas: string[], extra: Partial<Mesocycle> = {}): Partial<AutoChallengeInput> => ({
+    mesocycles: [{ ...MESO, hipotesis: Object.fromEntries(zonas.map(z => [z, { palanca: 'volumen' }])), ...extra } as Mesocycle],
+  });
+  const de = (o: Partial<AutoChallengeInput>, kind: WeeklyChallenge['kind']) =>
+    generateChallengeOptions(input(o)).find(x => x.kind === kind);
+
+  it('sin hipótesis todo queda como estaba: mismo ejercicio y sin marca', () => {
+    const opt = de({}, 'doble_progresion')!;
+    expect(opt.metric.exerciseId).toBe('prensa');
+    expect(opt.contexto?.conObjetivo).toBeUndefined();
+  });
+
+  it('doble progresión: con estrella en isquios va al femoral que está a 2 del tope, no a la prensa', () => {
+    const opt = de(conEstrellas(['isquios']), 'doble_progresion')!;
+    expect(opt.metric.exerciseId).toBe('femoral2');
+    expect(opt.contexto).toEqual({ bloque: 'Hipertrofia 1', semana: 2, semanas: 9, conObjetivo: true });
+  });
+
+  it('la estrella va por delante del ejercicio clave', () => {
+    const opt = de(conEstrellas(['isquios'], { ejerciciosClave: ['w-pierna::prensa'] }), 'doble_progresion')!;
+    expect(opt.metric.exerciseId).toBe('femoral2');
+    // Y entre dos de fuera del objetivo, sigue mandando «clave».
+    const sinEstrella = de({ mesocycles: [{ ...MESO, ejerciciosClave: ['w-pierna::femoral2'] } as Mesocycle] }, 'doble_progresion')!;
+    expect(sinEstrella.metric.exerciseId).toBe('femoral2');
+    expect(sinEstrella.contexto?.conObjetivo).toBeUndefined();
+  });
+
+  it('si la estrella ya era el ejercicio elegido, solo se añade la marca', () => {
+    const opt = de(conEstrellas(['cuadriceps']), 'doble_progresion')!;
+    expect(opt.metric).toMatchObject({ exerciseId: 'prensa', subirDe: 120 });
+    expect(opt.contexto?.conObjetivo).toBe(true);
+  });
+
+  it('no inventa retos: si ningún candidato es del objetivo, sale el de siempre y sin marca', () => {
+    // «Más reserva» solo tiene un candidato (la extensión, que fue al fallo).
+    const opt = de(conEstrellas(['isquios']), 'mas_reserva')!;
+    expect(opt.metric.exerciseId).toBe('ext');
+    expect(opt.contexto?.conObjetivo).toBeUndefined();
+    const tipos = (o: Partial<AutoChallengeInput>) => generateChallengeOptions(input(o)).map(x => x.kind).sort();
+    expect(tipos(conEstrellas(['isquios']))).toEqual(tipos({}));
+  });
+
+  it('AMRAP: con ejercicios del objetivo entre los aptos, rota solo entre ellos (cualquier semana)', () => {
+    // Cuatro semanas seguidas (la rotación cambia de ejercicio con la semana):
+    // siempre un femoral, nunca la prensa ni la extensión.
+    for (let i = 0; i < 4; i++) {
+      const today = addDays(HOY, i * 7);
+      const asignaciones = [asig('a-pierna', addDays('2026-10-30', i * 7), 'w-pierna', 'm1')];
+      const opt = de({ ...conEstrellas(['isquios']), today, assignments: asignaciones }, 'amrap_serie')!;
+      expect(['femoral', 'femoral2']).toContain(opt.metric.exerciseId);
+      expect(opt.contexto?.conObjetivo).toBe(true);
+    }
+    // Sin estrellas, la rotación de siempre.
+    expect(de({}, 'amrap_serie')!.contexto?.conObjetivo).toBeUndefined();
+  });
+
+  it('récord de repeticiones: la marca solo si el ejercicio elegido es del objetivo', () => {
+    // Solo la extensión tiene dos marcas vigentes: sale con cualquier estrella.
+    expect(de(conEstrellas(['isquios']), 'record_reps')).toMatchObject({ metric: { exerciseId: 'ext' } });
+    expect(de(conEstrellas(['isquios']), 'record_reps')!.contexto?.conObjetivo).toBeUndefined();
+    expect(de(conEstrellas(['cuadriceps']), 'record_reps')!.contexto?.conObjetivo).toBe(true);
+    expect(de(conEstrellas(['cuadriceps']), 'mas_reserva')!.contexto?.conObjetivo).toBe(true);
+  });
+
+  it('grupo estancado: el grupo lo deciden los parones; la marca, la estrella', () => {
+    const suyo = de(conEstrellas(['isquios']), 'grupo_estancado')!;
+    expect(suyo.metric.muscleGroup).toBe('isquios');
+    expect(suyo.contexto?.conObjetivo).toBe(true);
+    const ajeno = de(conEstrellas(['cuadriceps']), 'grupo_estancado')!;
+    expect(ajeno.metric.muscleGroup).toBe('isquios');
+    expect(ajeno.contexto?.conObjetivo).toBeUndefined();
+  });
+
+  it('una zona de varios grupos (deltoides) cubre todos los suyos', () => {
+    const hombro: Workout = { ...PIERNA, exercises: [...PIERNA.exercises, we('lat', 5, '10-12', 'deltoide_lat')] } as Workout;
+    const logs = [...HISTORIAL, log('2026-10-23', { lat: [s(10, 11)] })];
+    const opt = de({
+      ...conEstrellas(['deltoides']), workouts: [hombro, VIEJA], workoutLogs: logs,
+      exercises: [...EJERCICIOS, ex('lat', 'Elevaciones laterales en polea', 'deltoide_lat')],
+    }, 'doble_progresion')!;
+    expect(opt.metric.exerciseId).toBe('lat');
+    expect(opt.contexto?.conObjetivo).toBe(true);
+  });
+
+  it('descarga, puente y vuelta de parón no cambian ni llevan la marca', () => {
+    const descarga = generateChallengeOptions(input(conEstrellas(['isquios'], { semanasDescarga: [2] })));
+    const sinEstrellas = generateChallengeOptions(input({ mesocycles: [{ ...MESO, semanasDescarga: [2] } as Mesocycle] }));
+    expect(descarga.map(o => [o.kind, o.title])).toEqual(sinEstrellas.map(o => [o.kind, o.title]));
+    expect(descarga.some(o => o.contexto?.conObjetivo)).toBe(false);
+    for (const extra of [{ semanasPivot: [2] }, { vuelveDeParon: true, startDate: LUNES }] as Partial<Mesocycle>[]) {
+      const opts = generateChallengeOptions(input(conEstrellas(['isquios'], extra)));
+      expect(opts.some(o => o.contexto?.conObjetivo)).toBe(false);
+    }
+  });
+
+  it('el reto que se guarda conserva la marca', () => {
+    const ch = generateAutoChallenge(input(conEstrellas(['isquios'])));
+    expect(ch).toMatchObject({ kind: 'doble_progresion', metric: { exerciseId: 'femoral2' } });
+    expect(ch.contexto).toEqual({ bloque: 'Hipertrofia 1', semana: 2, semanas: 9, conObjetivo: true });
+  });
+});

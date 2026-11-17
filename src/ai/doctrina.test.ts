@@ -118,6 +118,15 @@ describe('decisiones de Dani que no se pueden perder', () => {
     expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/parón de más de 3 semanas/);
   });
 
+  // 17-11-2026: norma de ejercicio nuevo. Las cifras salen de `rampaDeEjercicioNuevo.ts`.
+  it('ejercicio nuevo: semanas 1-3 a 10-12 (multiarticular) o 12-14 (aislamiento), y desde la 4 el rango pautado', () => {
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain('EJERCICIO NUEVO (no lo ha hecho nunca, o no en más de 8 semanas)');
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/semanas 1-3 entra con más repeticiones\s+—10-12 los multiarticulares, 12-14 los de aislamiento—/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/desde la semana 4 pasa de golpe al rango pautado/);
+    // El asistente pauta el rango real: la entrada la pone la app.
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/la entrada la pone la app al guardar la rutina/);
+  });
+
   it('bloques de 12 semanas (8 el primero) y sin fases fijas por semana', () => {
     expect(SEMANAS_POR_DEFECTO).toBe(12);
     expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain('### 11. Estructura del bloque (12 semanas por defecto; 8 el primer bloque)');

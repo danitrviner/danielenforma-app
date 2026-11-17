@@ -10,7 +10,8 @@ import {
 import { mapaDeRespuesta, type MapaDeRespuesta } from '../../utils/hipotesisDeBloque/mapaDeRespuesta';
 import type { PropuestaDeHipotesis } from '../../utils/hipotesisDeBloque/proponerHipotesis';
 import { sugerirSemana1Reducida } from '../../utils/hipotesisDeBloque/tiposDeBloque';
-import { diasDeParon, ejerciciosNuevos, mesoAnteriorA, propuestaDelMeso } from '../../utils/hipotesisDelMeso';
+import { diasDeParon, mesoAnteriorA, propuestaDelMeso } from '../../utils/hipotesisDelMeso';
+import { ejerciciosNuevosDelBloque } from '../../utils/rampaDeEjercicioNuevo';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -25,6 +26,13 @@ import { hoyIsoLocal } from '../../utils/trainingWeek';
 
    Sin bloque anterior, sin registros o sin catálogo CDG no hay cifras de
    proceso: `motivoSinCifras` dice cuál de las tres, para que la ficha lo diga.
+
+   La sugerencia de «semana 1 reducida» cuenta los ejercicios nuevos con la
+   misma norma que les pone la entrada de repeticiones (`rampaDeEjercicioNuevo`:
+   nunca hechos, o no en más de 8 semanas antes del inicio del bloque). Hasta
+   el 17-11-2026 se comparaba con las rutinas del bloque anterior, y un
+   ejercicio que el atleta llevaba un año haciendo salía como nuevo solo por
+   no estar en el último bloque. Sin registros cargados todavía, ninguno.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export interface HipotesisDelBloque {
@@ -50,9 +58,8 @@ export function useHipotesisDelBloque(o: {
   exercises: readonly Exercise[];
   /** Registros ya cargados por quien monta la pantalla; si no, se piden aquí. */
   logs?: WorkoutLog[];
-  /** Ejercicios de las rutinas de este bloque y del anterior (para «ejercicios nuevos»). */
+  /** Ejercicios de las rutinas de este bloque (para «ejercicios nuevos»). */
   ejerciciosDelBloque?: readonly string[];
-  ejerciciosDelAnterior?: readonly string[] | null;
   /** Apagado en plantillas y en bloques sin tipo: no se pide nada. */
   activo?: boolean;
 }): HipotesisDelBloque {
@@ -101,9 +108,9 @@ export function useHipotesisDelBloque(o: {
   }, [anteriores]);
 
   const sugerenciaSemana1 = useMemo(() => sugerirSemana1Reducida({
-    ejerciciosNuevos: ejerciciosNuevos(o.ejerciciosDelBloque ?? [], o.ejerciciosDelAnterior ?? null),
+    ejerciciosNuevos: meso && logs ? ejerciciosNuevosDelBloque(o.ejerciciosDelBloque ?? [], logs, meso.startDate).length : 0,
     diasDeParon: meso && logs ? diasDeParon(logs, meso.startDate) : null,
-  }), [o.ejerciciosDelBloque, o.ejerciciosDelAnterior, meso, logs]);
+  }), [o.ejerciciosDelBloque, meso, logs]);
 
   const motivoSinCifras = anterior ? null
     : !mesoAnterior ? 'Es el primer bloque del atleta: no hay bloque anterior del que sacar las cifras de proceso.'
