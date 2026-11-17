@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Exercise, Mesocycle, WorkoutAssignment, WorkoutLog, BodyweightLog } from '../types';
 import { auth } from '../firebase';
-import { getBodyMeasurementsForAthlete, getNutritionProgram, getQuestionnairesByCoach, getResponsesForAthlete } from '../dbService';
+import { getBodyMeasurementsForAthlete, getNutritionProgram, getOnboarding, getQuestionnairesByCoach, getResponsesForAthlete } from '../dbService';
 import { bodyMeasurementsForAthleteKey } from '../hooks/useBodyMeasurements';
 import type { FilaVolumenGrupo } from '../utils/cierreMesociclo';
 import { buildCierreCompleto } from '../utils/cierreCompleto';
@@ -14,6 +14,8 @@ import { Icon, EmptyState, Badge, SegmentedControl, BarraCumplimiento } from './
 import {
   fmt, conSigno, colorDelta, Tile, Seccion, SemanaASemana, Podio, ListaEjercicios, Agregado,
 } from './cierre/piezas';
+import VeredictosDeHipotesis from './cierre/VeredictosDeHipotesis';
+import { mapaDeRespuesta } from '../utils/hipotesisDeBloque/mapaDeRespuesta';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Cierre del mesociclo — solo para el entrenador.
@@ -81,6 +83,13 @@ export default function MesocycleReviewPanel({
     enabled: !!email,
   });
 
+  // Nivel del atleta: a un avanzado, la hipótesis se le juzga a dos bloques.
+  const { data: alta } = useQuery({
+    queryKey: ['onboarding', email],
+    queryFn: () => getOnboarding(email),
+    enabled: !!email,
+  });
+
   // El cierre entero y su único mensaje (utils/cierreCompleto). El peso
   // corporal al final del bloque lo resuelve el propio motor: suma a las
   // series de dominadas/fondos y alimenta el 1RM alométrico.
@@ -88,10 +97,13 @@ export default function MesocycleReviewPanel({
     () => buildCierreCompleto({
       meso, mesocycles, logs, assignments, exercises, athleteName,
       bodyweightLogs: pesoLogs, medidas, responses: respuestas, questionnaires: cuestionarios, programaNutricion: programa,
+      // Con el motor CDG salen también los veredictos de las hipótesis del bloque.
+      motorCdg: motor, nivel: alta?.experienceLevel,
     }),
-    [meso, mesocycles, logs, assignments, exercises, athleteName, pesoLogs, medidas, respuestas, cuestionarios, programa],
+    [meso, mesocycles, logs, assignments, exercises, athleteName, pesoLogs, medidas, respuestas, cuestionarios, programa, motor, alta?.experienceLevel],
   );
-  const { cierre, pesoCorporalKg: pesoEnCierre, mensaje: mensajeGenerado } = completo;
+  const { cierre, pesoCorporalKg: pesoEnCierre, mensaje: mensajeGenerado, hipotesis } = completo;
+  const mapa = useMemo(() => mapaDeRespuesta(mesocycles).frase, [mesocycles]);
   const prog = cierre.progresion;
   const res = prog.resumen;
 
@@ -211,6 +223,21 @@ export default function MesocycleReviewPanel({
                 : 'sin RIR suficiente'}
             />
           </div>
+
+          {/* ── Qué pasó con cada hipótesis (solo se enseña: se firma en Revisión) ── */}
+          {hipotesis && (hipotesis.estrellas.length > 0 || (meso.cierreDeHipotesis?.veredictos.length ?? 0) > 0) && (
+            <VeredictosDeHipotesis
+              key={`veredictos-${meso.id}`}
+              meso={meso}
+              calculo={hipotesis}
+              firmado={meso.cierreDeHipotesis}
+              ficha={hipotesis.ficha}
+              mapa={mapa}
+              enCurso={cierre.enCurso}
+              presentando
+              nota="Los veredictos se firman, y el bloque siguiente se crea, en Revisión › Cierre de bloque."
+            />
+          )}
 
           {/* ── Lo que hay que contarle ── */}
           {cierre.titulares.length > 0 && (

@@ -2,7 +2,7 @@
 // Si algo no cuadra, el ejecutor de la tool devuelve estos issues como
 // tool_result de error para que el modelo se autocorrija — nunca llega una
 // propuesta rota a la tarjeta de revisión de Dani.
-import { FoodCategory, DietItem, Macros, MealItem, MuscleGroup, MUSCLE_LABELS } from '../types.js';
+import { FoodCategory, DietItem, Macros, MealItem, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS } from '../types.js';
 import { CATS, BUDGET_CATS } from '../utils/exchangeHelpers.js';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma.js';
 import { parseBaseGrams } from '../utils/conversionNutricional.js';
@@ -223,7 +223,7 @@ export interface MesocycleProposalPayload {
   weeks: number;
   daysPerWeek: number;
   objective: string;
-  groups: Partial<Record<MuscleGroup, { series: number; priority?: 'alta' | 'media' | 'baja' }>>;
+  groups: Partial<Record<MuscleGroup, { series: number; priority?: MuscleGroupConfig['priority'] }>>;
 }
 
 /** El bloque estándar de Dani (doctrina §11). Si el asistente no dice semanas,
@@ -282,8 +282,12 @@ export function validateMesocyclePayload(payload: MesocycleProposalPayload): Val
     } else {
       totalSeries += s;
     }
-    if (cfg?.priority && !['alta', 'media', 'baja'].includes(cfg.priority)) {
-      issues.push({ field: `groups.${group}.priority`, message: `priority de "${group}" debe ser alta, media o baja` });
+    // Cuatro niveles (17-11-2026): alta = especializar, media = desarrollar,
+    // baja = mantener (la mitad), ignorar = 0 series y fuera del bloque.
+    if (cfg?.priority && !['alta', 'media', 'baja', 'ignorar'].includes(cfg.priority)) {
+      issues.push({ field: `groups.${group}.priority`, message: `priority de "${group}" debe ser alta, media, baja o ignorar` });
+    } else if (cfg?.priority === 'ignorar' && typeof s === 'number' && s > 0) {
+      issues.push({ field: `groups.${group}.series`, message: `"${group}" está en ignorar: sus series tienen que ser 0 (recibido: ${s}). Si quieres trabajarlo poco, ponlo en baja (mantener).` });
     }
   }
 

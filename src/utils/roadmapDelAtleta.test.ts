@@ -214,3 +214,32 @@ describe('semanas de la fase, bloques y próximo cambio (hoja de periodización,
     expect(construirRoadmap(base).proximoCambio).toMatchObject({ semana: 11, texto: 'En la S11 empiezas «Mantenimiento».' });
   });
 });
+
+describe('objetivo del bloque y bloque terminado en el Road map (17-11)', () => {
+  const comun = { program: PROGRAMA, semanas: semanas(), assignments: [], workoutLogs: [], respuestas: [], stepLogs: [], stepGoal: 9000, hoy: HOY };
+  const conHipotesis = { id: 'm1', athleteId: 'a@x.com', name: 'Hipertrofia 1', startDate: '2026-10-12', weeks: 8, daysPerWeek: 3, tipoBloque: 'desarrollo', hipotesis: { pectoral: { palanca: 'volumen' } } } as unknown as Mesocycle;
+
+  it('sin hipótesis en el bloque no hay objetivo que enseñar', () => {
+    const sin = { ...conHipotesis, hipotesis: undefined } as unknown as Mesocycle;
+    expect(construirRoadmap({ ...comun, mesociclos: [sin] }).objetivoDelBloque).toBeNull();
+    expect(construirRoadmap({ ...comun, mesociclos: [] }).objetivoDelBloque).toBeNull();
+  });
+
+  it('con hipótesis trae la frase y la misma semana que el bloque; sin catálogo de ejercicios, sin barra', () => {
+    const r = construirRoadmap({ ...comun, mesociclos: [conHipotesis] });
+    expect(r.objetivoDelBloque).toMatchObject({ mesocycleId: 'm1', semana: r.bloque!.semana, semanas: 8, semanaTexto: 'Semana 3 de 8', zonas: [], empujon: null });
+    expect(r.objetivoDelBloque!.frase).toMatch(/^Este bloque va de pecho\./);
+  });
+
+  it('con el catálogo mide el progreso de sus zonas', () => {
+    const r = construirRoadmap({ ...comun, mesociclos: [conHipotesis], exercises: [{ id: 'press', name: 'Press', muscleGroup: 'pecho' }] as never[] });
+    expect(r.objetivoDelBloque!.zonas).toMatchObject([{ zona: 'pectoral', estado: 'pronto' }]);
+  });
+
+  it('el bloque que acabó hace 14 días o menos trae su cierre; después, ya no', () => {
+    const acabado = { id: 'm0', athleteId: 'a@x.com', name: 'Adaptación', startDate: '2026-09-14', weeks: 6, daysPerWeek: 3 } as unknown as Mesocycle; // acaba el 25-10
+    const r = construirRoadmap({ ...comun, mesociclos: [acabado] });
+    expect(r.bloqueTerminado).toMatchObject({ mesocycleId: 'm0', nombre: 'Adaptación', fin: '2026-10-25', antesDespues: [], constancia: null });
+    expect(construirRoadmap({ ...comun, hoy: '2026-11-09', mesociclos: [acabado] }).bloqueTerminado).toBeNull();
+  });
+});

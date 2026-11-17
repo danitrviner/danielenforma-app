@@ -1,10 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  AthleteDossier, BodyweightLog, Exercise, Mesocycle, ProgressPhoto, Questionnaire,
+  AthleteDossier, BodyweightLog, CierreDeHipotesis, Exercise, Mesocycle, ProgressPhoto, Questionnaire,
   QuestionnaireResponse, UserProfile, WorkoutAssignment, WorkoutLog,
 } from '../../types';
-import { getDietCompletionLogsForAthlete, getDietsForAthlete, getNutritionProgram } from '../../dbService';
+import { auth } from '../../firebase';
+import { getDietCompletionLogsForAthlete, getDietsForAthlete, getNutritionProgram, getOnboarding } from '../../dbService';
+import { getWorkouts } from '../../db/training';
+import { useMotorCdg } from '../../hooks/useMotorCdg';
+import { mapaDeRespuesta } from '../../utils/hipotesisDeBloque/mapaDeRespuesta';
+import { siguienteBloque, zonasQuePide } from '../../utils/hipotesisDeBloque/siguienteBloque';
 import { getBodyMeasurementsForAthlete } from '../../db/bodyMeasurements';
 import { bodyMeasurementsForAthleteKey } from '../../hooks/useBodyMeasurements';
 import { appendDossierFacts, getDossier } from '../../db/dossier';
@@ -21,6 +26,9 @@ import { Badge, Button, EmptyState, Icon, SegmentedControl, Select } from '../ui
 import {
   fmt, conSigno, colorDelta, Tile, Seccion, SemanaASemana, Podio, ListaEjercicios, Agregado, MiniLinea,
 } from '../cierre/piezas';
+import VeredictosDeHipotesis from '../cierre/VeredictosDeHipotesis';
+import CrearSiguienteBloque from '../cierre/CrearSiguienteBloque';
+import { useEscriturasDelCierre } from '../cierre/escriturasDelCierre';
 import ComparadorFotos from './ComparadorFotos';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -41,6 +49,12 @@ import ComparadorFotos from './ComparadorFotos';
 
    Mismos motores que Plan › Entrenamiento › Cierre: los números coinciden, y
    el mensaje para el cliente es el mismo (utils/cierreCompleto).
+
+   17-11-2026 (hipótesis del bloque): si el bloque abrió con hipótesis, lo
+   primero es qué pasó con cada una (cierre/VeredictosDeHipotesis) —el coach
+   las firma y quedan en el mesociclo— y el bloque siguiente ya propuesto
+   (cierre/CrearSiguienteBloque). Un bloque antiguo, sin hipótesis, no enseña
+   ninguna de las dos.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
@@ -268,6 +282,15 @@ export default function CierreDeBloque({
     queryKey: ['nutritionProgram', athlete.email],
     queryFn: () => getNutritionProgram(athlete.email),
   });
+  // Para las hipótesis del bloque: el motor CDG (mide el proceso), el nivel del
+  // atleta (a un avanzado se le juzga a dos bloques) y las rutinas del bloque
+  // (de ellas se clona el siguiente). Mismas claves de caché que el resto.
+  const { motor } = useMotorCdg();
+  const { data: alta } = useQuery({
+    queryKey: ['onboarding', athlete.email],
+    queryFn: () => getOnboarding(athlete.email),
+  });
+  const { data: rutinas = [] } = useQuery({ queryKey: ['workouts'], queryFn: getWorkouts });
 
   // Los tres motores juntos y su único mensaje: lo mismo que ven el editor
   // del mesociclo, el borrador que se firma y el asistente.
@@ -276,10 +299,11 @@ export default function CierreDeBloque({
       meso, mesocycles, logs, assignments, exercises, athleteName: athlete.displayName, hoy,
       bodyweightLogs, medidas, photos, responses, questionnaires,
       dietLogs: registrosDeComida, diets: dietas, programaNutricion: programa,
+      motorCdg: motor, nivel: alta?.experienceLevel,
     }),
-    [meso, mesocycles, logs, assignments, exercises, athlete.displayName, hoy, bodyweightLogs, medidas, photos, responses, questionnaires, registrosDeComida, dietas, programa],
+    [meso, mesocycles, logs, assignments, exercises, athlete.displayName, hoy, bodyweightLogs, medidas, photos, responses, questionnaires, registrosDeComida, dietas, programa, motor, alta?.experienceLevel],
   );
-  const { cierre, evolucion, conclusiones, pesoCorporalKg: pesoKg, mensaje: mensajeGenerado } = completo;
+  const { cierre, evolucion, conclusiones, pesoCorporalKg: pesoKg, mensaje: mensajeGenerado, hipotesis } = completo;
   const filas = useMemo(() => filasComparadas(cierre, evolucion), [cierre, evolucion]);
 
   const [mensaje, setMensaje] = useState(mensajeGenerado);
@@ -291,6 +315,56 @@ export default function CierreDeBloque({
       showToast(`${que} copiado al portapapeles.`, 'success');
     } catch {
       showToast('No se ha podido copiar. Selecciona el texto y cópialo a mano.', 'error');
+    }
+  };
+
+  // ── Hipótesis del bloque: veredictos, firma y bloque siguiente ─────────────
+  // Lo firmado en esta pantalla manda sobre lo que trae el mesociclo hasta que
+  // la lista de bloques se vuelva a leer.
+  const [firmadoAqui, setFirmadoAqui] = useState<{ mesoId: string; cierre: CierreDeHipotesis } | null>(null);
+  const [firmando, setFirmando] = useState(false);
+  const { guardarCierre } = useEscriturasDelCierre();
+  const firmado = firmadoAqui?.mesoId === meso.id ? firmadoAqui.cierre : meso.cierreDeHipotesis;
+  const ejercicioDe = useMemo(() => {
+    const porId = new Map(exercises.map(e => [e.id, e]));
+    return (id: string) => porId.get(id);
+  }, [exercises]);
+  const duracionMediaMin = useMemo(() => {
+    const d = cierre.progresion.semanas.map(s => s.duracionMediaMin).filter((x): x is number => x != null);
+    return d.length ? d.reduce((a, b) => a + b, 0) / d.length : null;
+  }, [cierre.progresion.semanas]);
+  // Todos sus bloques, con este tal como queda firmado: de ahí el mapa de respuesta.
+  const mapa = useMemo(
+    () => mapaDeRespuesta(mesocycles.map(m => (m.id === meso.id && firmado ? { ...m, cierreDeHipotesis: firmado } : m))).frase,
+    [mesocycles, meso.id, firmado],
+  );
+  const propuesto = useMemo(() => {
+    if (!hipotesis) return null;
+    return siguienteBloque({
+      meso, rutinas: rutinas.filter(w => w.mesocycleId === meso.id), mesocycles,
+      veredictos: firmado?.veredictos ?? hipotesis.veredictos,
+      estado: hipotesis.estado, ejercicios: hipotesis.ejercicios,
+      quitaria: evolucion.voz?.quitaria, pideElAtleta: zonasQuePide(evolucion.voz?.priorizar),
+      // El parón se cuenta desde lo último que entrenó, sea de este bloque o de uno posterior.
+      fin: cierre.fin, hoy, ultimaSesion: logs.reduce<string | null>((u, l) => (l.date <= hoy && (u == null || l.date > u) ? l.date : u), null),
+      ownerId: auth.currentUser?.uid ?? '', athleteName: athlete.displayName,
+      nombreDe: id => ejercicioDe(id)?.name, grupoDe: id => ejercicioDe(id)?.muscleGroup,
+    });
+  }, [hipotesis, meso, rutinas, mesocycles, firmado, evolucion.voz, cierre.fin, hoy, athlete.displayName, ejercicioDe, logs]);
+
+  const guardarVeredictos = async (nuevo: CierreDeHipotesis) => {
+    setFirmando(true);
+    try {
+      await guardarCierre(meso.id, nuevo);
+      setFirmadoAqui({ mesoId: meso.id, cierre: nuevo });
+      queryClient.setQueryData<Mesocycle[]>(['mesocycles', athlete.email], prev =>
+        prev?.map(m => (m.id === meso.id ? { ...m, cierreDeHipotesis: nuevo } : m)));
+      showToast('Veredictos guardados en el bloque', 'success');
+    } catch (err) {
+      console.error('CierreDeBloque: no se pudieron guardar los veredictos', err);
+      showToast('No se han podido guardar los veredictos', 'error');
+    } finally {
+      setFirmando(false);
     }
   };
 
@@ -380,6 +454,33 @@ export default function CierreDeBloque({
         </div>
       ) : (
         <>
+          {/* ── 0. Hipótesis del bloque: qué pasó con cada una y el bloque siguiente ── */}
+          {hipotesis && (hipotesis.estrellas.length > 0 || (firmado?.veredictos.length ?? 0) > 0) && (
+            <VeredictosDeHipotesis
+              key={`veredictos-${meso.id}`}
+              meso={meso}
+              calculo={hipotesis}
+              firmado={firmado}
+              ficha={hipotesis.ficha}
+              duracionMediaMin={duracionMediaMin}
+              mapa={mapa}
+              enCurso={cierre.enCurso}
+              guardando={firmando}
+              onGuardar={guardarVeredictos}
+              presentando={presentando}
+            />
+          )}
+          {!presentando && propuesto && (
+            <CrearSiguienteBloque
+              key={`siguiente-${meso.id}`}
+              athleteEmail={athlete.email}
+              meso={meso}
+              propuesto={propuesto}
+              sinFirmar={!firmado}
+              sinCifras={!hipotesis?.estado}
+            />
+          )}
+
           {/* ── 1. Conclusiones ── */}
           <div className="grid gap-3 md:grid-cols-2">
             <Seccion titulo="Qué sacamos del bloque" icon="lightbulb">

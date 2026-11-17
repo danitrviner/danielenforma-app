@@ -6,6 +6,8 @@ import { buildCierreCompleto, mensajeDeCierre } from './cierreCompleto';
 import { buildCierreMesociclo } from './cierreMesociclo';
 import { RUIDO_RM_PCT } from './ruidoDeMedida';
 import { addDays } from './trainingWeek';
+import catalogoPrueba from './cdg/__fixtures__/catalogoPrueba.json';
+import { crearMotor, expandirCatalogo, type CdgCatalogoCompacto } from './cdg';
 
 /* El mensaje del cierre es UNO (F8): el editor del mesociclo, Revisión › Cierre
    de bloque, el borrador que se firma y el asistente llaman a
@@ -172,5 +174,49 @@ describe('un bloque de 8 semanas sin mejora real no «funciona»', () => {
     const { cierre, conclusiones } = cerrar(logs);
     expect(cierre.progresion.resumen.medianaPct!).toBeGreaterThan(5);
     expect(conclusiones.hallazgos.map(h => h.id)).toContain('funciona');
+  });
+});
+
+describe('hipótesis del bloque en el cierre', () => {
+  const motor = crearMotor(expandirCatalogo(catalogoPrueba as CdgCatalogoCompacto));
+  const PRESS: Exercise = {
+    id: 'press', ownerId: 'c', name: 'Press banca', primaryFocus: '', muscleGroup: 'pecho', type: 'fuerza', isCustom: false,
+    cdgNombre: 'Press banca plano con mancuernas (caja torácica amplia) - Pectoral, deltoides anterior, tríceps',
+  };
+  const CON_HIPOTESIS: Mesocycle = {
+    ...MESO, tipoBloque: 'desarrollo', hipotesis: { pectoral: { palanca: 'volumen', iemMedioObjetivo: 1, iemTecho: 99 } },
+  };
+  // Cuatro semanas de press, cada una con 2,5 kg más y saliendo con un 6 de cansancio.
+  const logs = [0, 1, 2, 3].map((i): WorkoutLog => ({
+    id: `p${i}`, athleteId: 'a@b.c', workoutId: 'w', assignmentId: 'as', mesocycleId: 'm1', date: addDays('2026-06-02', i * 7),
+    completedAt: `${addDays('2026-06-02', i * 7)}T10:00:00.000Z`, cansancioAlSalir: 6,
+    entries: [{ exerciseId: 'press', sets: [{ weight: 40 + i * 2.5, repsDone: 8, rir: 1 }, { weight: 40 + i * 2.5, repsDone: 8, rir: 1 }] }],
+  }));
+  const base = { ...BASE, meso: CON_HIPOTESIS, mesocycles: [CON_HIPOTESIS], exercises: [PRESS], logs };
+
+  it('un bloque antiguo, sin tipo ni estrellas, no lleva hipótesis y el resto no cambia', () => {
+    const c = buildCierreCompleto({ ...BASE, motorCdg: motor });
+    expect(c.hipotesis).toBeNull();
+    expect(c.mensaje).toBe(buildCierreCompleto(BASE).mensaje);
+  });
+
+  it('sin motor CDG el cierre sale igual, sin veredictos y diciéndolo', () => {
+    const sin = buildCierreCompleto(base);
+    const con = buildCierreCompleto({ ...base, motorCdg: motor });
+    expect(sin.hipotesis).toMatchObject({ sinMotor: true, veredictos: [], estrellas: ['pectoral'], cansancioMedio: 6 });
+    expect(sin.mensaje).toBe(con.mensaje);
+    expect(sin.cierre.progresion).toEqual(con.cierre.progresion);
+    expect(sin.conclusiones).toEqual(con.conclusiones);
+  });
+
+  it('con motor da un veredicto por hipótesis, con la progresión del propio cierre, y la ficha del método', () => {
+    const c = buildCierreCompleto({ ...base, motorCdg: motor, bodyweightLogs: PESOS });
+    const h = c.hipotesis!;
+    expect(h.sinMotor).toBe(false);
+    expect(h.veredictos).toHaveLength(1);
+    expect(h.veredictos[0]).toMatchObject({ zona: 'pectoral', palanca: 'volumen', procesoCumplido: true, lectura: 'confirmada' });
+    expect(h.veredictos[0].rmPct).toBe(c.cierre.progresion.ejercicios.find(e => e.exerciseId === 'press')!.deltaPct);
+    expect(h.estado?.porZona.pectoral?.iemFinal).toBeGreaterThan(0);
+    expect(h.ficha).toEqual({ cansancioMedio: 6, pesoDeltaKg: c.evolucion.peso!.deltaKg });
   });
 });

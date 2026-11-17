@@ -208,7 +208,8 @@ function idealSessions(series: number): number {
   return 3;
 }
 
-const PRIORITY_WEIGHT: Record<MuscleGroupConfig['priority'], number> = { alta: 3, media: 2, baja: 1 };
+// Ignorar pesa 0: un grupo ignorado no decide el reparto (17-11-2026).
+const PRIORITY_WEIGHT: Record<MuscleGroupConfig['priority'], number> = { alta: 3, media: 2, baja: 1, ignorar: 0 };
 
 // De entre los repartos que encajan con daysPerWeek, cuál cubre mejor la
 // frecuencia que pide el volumen ya configurado (más series/prioridad alta
@@ -228,7 +229,7 @@ export function recommendSplit(
   for (const split of candidates) {
     let penalty = 0;
     for (const [group, cfg] of Object.entries(groups) as [MuscleGroup, MuscleGroupConfig][]) {
-      if (cfg.series <= 0) continue;
+      if (cfg.series <= 0 || cfg.priority === 'ignorar') continue;
       // Se compara la FRECUENCIA por semana, no el número de días del ciclo:
       // dos veces en un ciclo de 9 días no compiten de tú a tú con dos veces
       // en una semana.

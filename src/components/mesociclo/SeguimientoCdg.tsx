@@ -23,7 +23,8 @@ import { useAthleteWeight } from '../../hooks/useAthleteWeight';
 import { useQuery } from '@tanstack/react-query';
 import { getDossier } from '../../db/dossier';
 import { dossierKey } from '../DossierPanel';
-import { Button, Collapsible, Select } from '../ui';
+import { Button, Collapsible, Icon, Select } from '../ui';
+import { ETIQUETA_DE_SEMAFORO, semaforoDelBloque, type ColorDeSemaforo } from '../../utils/hipotesisDeBloque/semaforoDeHipotesis';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Seguimiento CDG (solo coach)
@@ -57,6 +58,11 @@ import { Button, Collapsible, Select } from '../ui';
    terminar; si no, del cuestionario semanal como antes. Las agujetas mezclan
    las contestadas a las 48 h de cada sesión con las del cuestionario: manda la
    más reciente, y al lado se dice de dónde sale («a 48 h» o «semanal»).
+
+   17-11-2026 (hipótesis del bloque): arriba del todo, el semáforo de cada zona
+   con estrella —IEM medio del bloque frente al objetivo, techo, semanas desde
+   la última subida y RM de la zona— con las mismas cuentas que hará el cierre
+   (utils/hipotesisDeBloque/semaforoDeHipotesis). Sin hipótesis, no aparece.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
@@ -91,6 +97,9 @@ const origenCorto = (l: LecturaAgujetas) => (origenDeLectura(l) === '48h' ? 'a 4
 // Bandas de estrés articular del curso (X1): colorean, no avisan.
 const TONO_BANDA_IEA: Record<BandaIEA, string> = { bajo: 'text-ink-3', medio: 'text-ink-2', alto: 'text-ink font-bold' };
 const aNumero = (t: string) => Number(t.replace(',', '.').trim());
+// Semáforo de las hipótesis del bloque.
+const PUNTO_SEMAFORO: Record<ColorDeSemaforo, string> = { en_camino: 'bg-success', por_detras: 'bg-warning', sin_dato: 'bg-track' };
+const TEXTO_SEMAFORO: Record<ColorDeSemaforo, string> = { en_camino: 'text-success', por_detras: 'text-warning', sin_dato: 'text-ink-3' };
 
 function Seccion ({ titulo, children, abierta = false }: { titulo: string; children: React.ReactNode; abierta?: boolean }) {
   return (
@@ -163,6 +172,17 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
     const comparacionBloques = { antes: media(anteriores), ahora: media(semanas.map(s => s.calculo)) };
     return { semanas, descartados, carga, comparacionBloques, ciclo: rendimientoDelCiclo(motor, semanas) };
   }, [motor, logs, meso, cicloDias, vueltas, nombreCdgDe, sesionPorWorkout, grupos, umbrales, pesoCorporal, semanaEnCurso]);
+
+  // Semáforo de las hipótesis: cómo va cada zona con estrella en lo que va de
+  // bloque. Solo se calcula si el bloque las tiene.
+  const conHipotesis = Object.keys(meso.hipotesis ?? {}).length > 0;
+  const semaforo = useMemo(() => {
+    if (!motor || !conHipotesis) return [];
+    return semaforoDelBloque({
+      motor, meso, logs, exercises: allExercises, programados: grupos.flatMap(g => g.exercises),
+      semanaActual: semanaEnCurso, vueltas, hoy: hoyIsoLocal(), pesoCorporalKg: pesoKg,
+    });
+  }, [motor, conHipotesis, meso, logs, allExercises, grupos, semanaEnCurso, vueltas, pesoKg]);
 
   const [semanaSel, setSemanaSel] = useState<string>('');
   // Por defecto, la última semana COMPLETA: la que está en curso tiene pocas
@@ -251,6 +271,30 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
           </p>
         )}
       </div>
+
+      {semaforo.length > 0 && (
+        <Seccion titulo="Hipótesis del bloque" abierta>
+          <ul className="space-y-2">
+            {semaforo.map(f => (
+              <li key={f.zona} className="flex items-start gap-2 font-sans text-caption">
+                <span aria-hidden="true" className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${PUNTO_SEMAFORO[f.color]}`} />
+                <span className="min-w-0">
+                  <span className="flex flex-wrap items-center gap-x-1.5">
+                    <Icon name="star" size="s" filled className="text-accent-ink" />
+                    <b className="text-ink">{f.nombre}</b>
+                    <span className="text-ink-3">· {f.palanca} ·</span>
+                    <b className={TEXTO_SEMAFORO[f.color]}>{ETIQUETA_DE_SEMAFORO[f.color]}</b>
+                  </span>
+                  <span className="block font-mono text-ink-2 tabular-nums">{f.texto}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="font-sans text-caption text-ink-3">
+            Lo que va de bloque, sin la semana en curso: el IEM medio realizado frente al de la hipótesis y el RM de los ejercicios de la zona frente a lo que tocaría a estas alturas. Es la misma cuenta que hará el cierre; aquí todavía se puede corregir.
+          </p>
+        </Seccion>
+      )}
 
       {semanas.length > 0 && (
         <Select

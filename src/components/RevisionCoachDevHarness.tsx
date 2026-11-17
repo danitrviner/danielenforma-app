@@ -14,6 +14,10 @@ import { cdgCatalogoKey } from '../hooks/useMotorCdg';
 import catalogoCdgPrueba from '../utils/cdg/__fixtures__/catalogoPrueba.json';
 import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import ClientImplantacionPanel from './implantacion/ClientImplantacionPanel';
+import SeguimientoCdg from './mesociclo/SeguimientoCdg';
+import DossierPanel from './DossierPanel';
+import { DOSSIER_VACIO } from '../db/dossier';
+import { EscriturasDelCierreContext, type EscriturasDelCierre } from './cierre/escriturasDelCierre';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Banco de pruebas de Cliente › Revisión — ruta `/dev/revision-coach`, solo en
@@ -101,6 +105,16 @@ const MESO_ACTUAL: Mesocycle = {
     isquios:       { series: 8,  priority: 'media' },
     core:          { series: 6,  priority: 'baja' },
   }),
+  // Hipótesis del bloque (17-11): dos zonas con estrella. Las cifras están
+  // puestas para que se vean dos lecturas distintas en Cierre de bloque: el
+  // pectoral llega a su estímulo y el deltoides se queda corto del suyo.
+  tipoBloque: 'desarrollo', cdgVelocidad: 'suave',
+  hipotesis: {
+    pectoral: { palanca: 'volumen', iemMedioAnterior: 11.8, iemFinalAnterior: 12.6, iemMedioObjetivo: 13, iemArranque: 12.6, iemTecho: 13.9, rmObjetivoPct: 5, limite: 'hombro sin molestias' },
+    deltoides: { palanca: 'intensidad', iemMedioAnterior: 26, iemFinalAnterior: 27.5, iemMedioObjetivo: 28.6, iemArranque: 27.5, iemTecho: 30.3, rmObjetivoPct: 5 },
+  },
+  cdgObjetivosIem: { pectoral: 13.9, deltoides: 30.3 },
+  cdgModoPorZona: { pectoral: 'dinamico', deltoides: 'dinamico' },
 } as Mesocycle;
 
 const MESO_ANTERIOR: Mesocycle = {
@@ -112,6 +126,19 @@ const MESO_ANTERIOR: Mesocycle = {
     triceps: { series: 6, priority: 'baja' }, cuadriceps: { series: 9, priority: 'media' },
     isquios: { series: 6, priority: 'media' }, core: { series: 6, priority: 'baja' },
   }),
+  // Bloque ya cerrado y FIRMADO: de él sale el mapa de respuesta («Qué le
+  // funciona») y es el caso «firmado» de la sección de veredictos.
+  tipoBloque: 'desarrollo',
+  hipotesis: { dorsal: { palanca: 'volumen', iemMedioObjetivo: 20, iemTecho: 22, rmObjetivoPct: 5 } },
+  cierreDeHipotesis: {
+    firmadoEn: `${haceDias(15)}T10:00:00.000Z`,
+    veredictos: [{
+      zona: 'dorsal', palanca: 'volumen', iemMedio: 21.2, iemMedioObjetivo: 20, procesoCumplido: true,
+      rmPct: 5.6, rmObjetivoPct: 5, resultadoCumplido: true, lectura: 'confirmada',
+      decision: 'Misma línea; la estrella pasa a pecho y hombro.',
+    }],
+    ficha: { contexto: 'neutro', cansancioMedio: 6.2, faseNutricional: 'Mantenimiento', pesoDeltaKg: -0.8 },
+  },
 } as Mesocycle;
 
 // ── Logs ────────────────────────────────────────────────────────────────────
@@ -122,6 +149,8 @@ function log(dias: number, entries: { id: string; series: [number, number][]; ri
     id: `log_${contador++}`, athleteId: EMAIL, workoutId: 'w', assignmentId: 'as',
     mesocycleId: dias <= 16 ? 'meso_2' : 'meso_1',
     date, completedAt: `${date}T18:30:00.000Z`,
+    // Cansancio al salir (0-10), para el límite de los veredictos y la ficha de cierre.
+    cansancioAlSalir: 6 + (contador % 2), duracionSeg: (64 + (contador % 5) * 3) * 60, startedAt: `${date}T17:20:00.000Z`,
     entries: entries.map(e => ({
       exerciseId: e.id,
       sets: e.series.map(([weight, repsDone]) => ({ weight, repsDone, rir: e.rir ?? 2 })),
@@ -467,12 +496,26 @@ const RESPUESTAS: QuestionnaireResponse[] = [35, 28, 21, 14, 7].map((d, i) => ({
   ],
 }));
 
+// Lo que el cierre de bloque escribe (firmar veredictos, crear el bloque
+// siguiente) se queda aquí, en la consola: sin sesión de coach Firestore lo
+// rechazaría y no se podría ver ni el cierre firmado ni el bloque creado.
+const ESCRITURAS_DE_MENTIRA: EscriturasDelCierre = {
+  guardarCierre: async (mesoId, cierre) => { console.info('[harness] guardarCierre', mesoId, cierre); },
+  crearMesociclo: async meso => { console.info('[harness] crearMesociclo', meso); return { ...meso, id: 'meso_nuevo' }; },
+  crearRutina: async rutina => { console.info('[harness] crearRutina', rutina); return { ...rutina, id: `w_nueva_${rutina.dayIndex}` }; },
+  alAbrirEditor: email => console.info('[harness] abrir el editor de', email),
+};
+
 export default function RevisionCoachDevHarness() {
   // `?anatomia=1` enciende TODOS los grupos a la vez, en las cinco zonas de
   // volumen. No es una vista de datos: es para poder juzgar el DIBUJO —con el
   // fixture normal la mitad de los músculos están a cero y salen apagados, así
   // que no se ve si la lámina está bien hecha.
   const anatomia = new URLSearchParams(window.location.search).has('anatomia');
+  // `?pantalla=seguimiento` monta el Seguimiento CDG del bloque en curso (el
+  // semáforo de las hipótesis) y `?pantalla=ficha` la ficha viva («Qué le
+  // funciona»): las dos viven dentro del editor y de la pestaña Ficha, que
+  // piden sesión de coach.
   // `?pantalla=implantacion` monta la otra pestaña con el mismo fixture.
   const pantalla = new URLSearchParams(window.location.search).get('pantalla');
   // `?renovar=1` adelanta el bloque para que termine dentro de tres días: es la
@@ -539,6 +582,10 @@ export default function RevisionCoachDevHarness() {
     // Implantación.
     qc.setQueryData(['roadmap', EMAIL], null);
     qc.setQueryData(cdgCatalogoKey, JSON.stringify(catalogoCdgPrueba));
+    // Ficha viva y bloques del atleta, para `?pantalla=ficha` y `?pantalla=seguimiento`.
+    qc.setQueryData(['dossier', EMAIL], DOSSIER_VACIO);
+    qc.setQueryData(['athleteStatusNote', EMAIL], '');
+    qc.setQueryData(['mesocycles', EMAIL], [MESO_ANTERIOR, MESO_ACTUAL]);
     // Dos recordatorios: uno vencido sobre un paso del montaje y una tarea
     // suelta para mañana, para ver los dos estados del aviso.
     qc.setQueryData(['coachClientTasks', EMAIL], [
@@ -562,7 +609,20 @@ export default function RevisionCoachDevHarness() {
           <p className="font-mono text-caption text-ink-3 uppercase tracking-widest mb-3">
             /dev/revision-coach — datos de mentira{anatomia ? ' · modo anatomía' : ''}
           </p>
-          {pantalla === 'objetivos' ? (
+          {pantalla === 'seguimiento' ? (
+            <SeguimientoCdg
+              athleteEmail={EMAIL}
+              logs={LOGS}
+              meso={MESO_ACTUAL}
+              cicloDias={7}
+              vueltas={MESO_ACTUAL.weeks}
+              grupos={RUTINAS.map(w => ({ name: w.name, dayIndex: w.dayIndex, workoutIds: [w.id], exercises: w.exercises }))}
+              allExercises={EJERCICIOS}
+              onGuardarUmbrales={u => console.info('[harness] onGuardarUmbrales', u)}
+            />
+          ) : pantalla === 'ficha' ? (
+            <DossierPanel athleteEmail={EMAIL} athleteName={PERFIL.displayName} />
+          ) : pantalla === 'objetivos' ? (
             <NutritionPeriodizationPanel
               athleteEmail={EMAIL}
               athleteName={PERFIL.displayName}
@@ -591,6 +651,7 @@ export default function RevisionCoachDevHarness() {
               onAbrirEditor={t => console.info('[harness] onAbrirEditor', t)}
             />
           ) : (
+          <EscriturasDelCierreContext.Provider value={ESCRITURAS_DE_MENTIRA}>
           <ClientRevisionPanel
             athlete={PERFIL}
             logs={anatomia ? LOGS_ANATOMIA : LOGS}
@@ -605,6 +666,7 @@ export default function RevisionCoachDevHarness() {
             assignments={[]}
             onGoToTab={t => console.info('[harness] onGoToTab', t)}
           />
+          </EscriturasDelCierreContext.Provider>
           )}
         </div>
       </div>

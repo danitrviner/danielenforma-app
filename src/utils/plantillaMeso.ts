@@ -14,10 +14,19 @@ import { distribucionDesdeDias } from './distribucionDeMeso.js';
    atleta.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/** Lo que define el PLAN de un bloque y no depende de ningún atleta ni fecha. */
+/**
+ * Lo que define el PLAN de un bloque y no depende de ningún atleta ni fecha.
+ *
+ * 17-11-2026: el tipo de bloque y la semana 1 reducida viajan con la plantilla.
+ * Las hipótesis no (`hipotesis`, `cierreDeHipotesis`, los techos de
+ * `cdgObjetivosIem`): salen de cómo acabó el bloque anterior de CADA atleta.
+ * Tampoco el recorte por ejercicio de la semana 1 (`semana1Recorte`): depende
+ * de sus estrellas y se recalcula al abrir el bloque en el editor.
+ */
 const CAMPOS_DE_PLAN = [
   'cycleDays', 'customOffsets', 'splitId', 'reparto', 'distribution', 'phaseType',
   'nombresSesion', 'ejerciciosClave', 'notasSemana', 'deloadWeek', 'semanasDescarga', 'semanasTest', 'semanasPivot',
+  'tipoBloque', 'semana1Reducida',
 ] as const satisfies readonly (keyof Mesocycle & keyof TemplateStage)[];
 
 /**

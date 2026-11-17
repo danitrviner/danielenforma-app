@@ -161,3 +161,31 @@ describe('plantilla aplicada a un atleta: llega terminada', () => {
     expect(meso.distribution).toEqual(MESO.distribution);
   });
 });
+
+describe('tipo de bloque y semana 1 reducida (17-11-2026)', () => {
+  const conHipotesis: Mesocycle = {
+    ...MESO, tipoBloque: 'especializacion', semana1Reducida: true, semana1Recorte: { banca: 1 },
+    hipotesis: { pectoral: { palanca: 'volumen', iemTecho: 64 } }, cdgObjetivosIem: { pectoral: 64 },
+    cierreDeHipotesis: { firmadoEn: '2026-11-16T10:00:00.000Z', veredictos: [] },
+  };
+
+  it('la plantilla guarda el tipo y la semana 1 reducida, y los aplica', () => {
+    const etapa = etapaDesdeMeso(conHipotesis, { id: 'st1' });
+    expect(etapa).toMatchObject({ tipoBloque: 'especializacion', semana1Reducida: true });
+    const meso = mesoDesdeEtapa(etapa, { id: 'm2', athleteId: 'otro@enforma.com', number: 1, startDate: '2026-11-30' });
+    expect(meso).toMatchObject({ tipoBloque: 'especializacion', semana1Reducida: true });
+  });
+
+  it('las hipótesis, sus techos y el recorte por ejercicio no viajan: son del atleta', () => {
+    const etapa = etapaDesdeMeso(conHipotesis, { id: 'st1' }) as unknown as Record<string, unknown>;
+    for (const k of ['hipotesis', 'cierreDeHipotesis', 'cdgObjetivosIem', 'semana1Recorte']) expect(k in etapa).toBe(false);
+    const plantilla = plantillaDesdeMeso(conHipotesis, { ownerId: 'coach', etapaId: 'st1' });
+    expect(JSON.stringify(plantilla)).not.toContain('iemTecho');
+  });
+
+  it('una plantilla sin tipo sigue aplicándose sin tipo', () => {
+    const meso = mesoDesdeEtapa(etapaDesdeMeso(MESO, { id: 'st1' }), { id: 'm2', athleteId: 'a', number: 1, startDate: '2026-11-30' });
+    expect(meso.tipoBloque).toBeUndefined();
+    expect(meso.semana1Reducida).toBeUndefined();
+  });
+});

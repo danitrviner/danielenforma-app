@@ -4,7 +4,7 @@ import { VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
 import { suggestVolume, VolumeSuggestionInput, SERIES_POR_DIA_TOPE } from './volumeSuggestion';
 import type { VolumeHistory } from './volumeHistory';
 
-type Prioridad = 'alta' | 'media' | 'baja';
+type Prioridad = 'alta' | 'media' | 'baja' | 'ignorar';
 
 const prioridades = (parcial: Partial<Record<MuscleGroup, Prioridad>> = {}) =>
   Object.fromEntries(MUSCLE_ORDER.map(g => [g, parcial[g] ?? 'media'])) as Record<MuscleGroup, Prioridad>;
@@ -238,7 +238,7 @@ describe('suggestVolume · determinismo y trazabilidad', () => {
   it('cada grupo explica de dónde sale su número', () => {
     const r = suggestVolume(base({ level: 'avanzado', priorities: soloUno('pecho', 'alta') }));
     expect(r.reasons.pecho[0]).toContain('avanzado');
-    expect(r.reasons.pecho.join(' ')).toContain('Prioridad alta');
+    expect(r.reasons.pecho.join(' ')).toContain('Especializar');
   });
 });
 
@@ -266,10 +266,34 @@ describe('suggestVolume · objetivo por músculo (P6)', () => {
     expect(suggestVolume(base({ priorities: todoBaja, history: hist('media', 6) })).groups.biceps.series).toBe(minimo);
   });
 
-  it('avisa con más de tres grupos en prioridad alta, no con tres', () => {
+  it('avisa a partir de tres zonas con estrella; los tres deltoides cuentan como una (17-11-2026)', () => {
     const alta = (gs: MuscleGroup[]) => Object.fromEntries(MUSCLE_ORDER.map(g => [g, gs.includes(g) ? 'alta' : 'baja'])) as Record<MuscleGroup, Prioridad>;
-    const aviso = (r: ReturnType<typeof suggestVolume>) => r.warnings.some(w => w.includes('prioridad alta'));
-    expect(aviso(suggestVolume(base({ priorities: alta(['pecho', 'dorsal', 'biceps']) })))).toBe(false);
-    expect(aviso(suggestVolume(base({ priorities: alta(['pecho', 'dorsal', 'biceps', 'triceps']) })))).toBe(true);
+    const aviso = (r: ReturnType<typeof suggestVolume>) => r.warnings.some(w => w.includes('estrellas'));
+    expect(aviso(suggestVolume(base({ priorities: alta(['pecho', 'dorsal']) })))).toBe(false);
+    expect(aviso(suggestVolume(base({ priorities: alta(['pecho', 'deltoide_ant', 'deltoide_lat', 'deltoide_post']) })))).toBe(false);
+    expect(aviso(suggestVolume(base({ priorities: alta(['pecho', 'dorsal', 'biceps']) })))).toBe(true);
+  });
+
+  it('en especialización avisa ya con dos estrellas', () => {
+    const alta = Object.fromEntries(MUSCLE_ORDER.map(g => [g, g === 'pecho' || g === 'dorsal' ? 'alta' : 'baja'])) as Record<MuscleGroup, Prioridad>;
+    const r = suggestVolume(base({ priorities: alta, tipoBloque: 'especializacion' }));
+    expect(r.warnings.join(' ')).toContain('una sola estrella');
+  });
+});
+
+describe('suggestVolume · ignorar (17-11-2026)', () => {
+  it('un grupo ignorado sale a 0 series aunque el atleta lo pidiera y tenga historial', () => {
+    const r = suggestVolume(base({
+      priorities: prioridades({ gemelo: 'ignorar' }),
+      history: { groups: { gemelo: { planned: 10, performed: 10 } }, adherencePct: 95, meanRir: 1, feedback: { priorityGroups: ['gemelo'], overloadGroups: [], doms: {} } } as unknown as VolumeHistory,
+    }));
+    expect(r.groups.gemelo).toEqual({ series: 0, priority: 'ignorar' });
+    expect(r.reasons.gemelo[0]).toContain('Ignorado');
+  });
+  it('no cuenta en el aviso de huérfanos del reparto', () => {
+    const sin = suggestVolume(base({ daysPerWeek: 4, splitId: '4-push-pull-x2' }));
+    expect(sin.warnings.join(' ')).toContain('Cuádriceps');
+    const r = suggestVolume(base({ priorities: prioridades({ cuadriceps: 'ignorar' }), daysPerWeek: 4, splitId: '4-push-pull-x2' }));
+    expect(r.warnings.join(' ')).not.toContain('Cuádriceps');
   });
 });

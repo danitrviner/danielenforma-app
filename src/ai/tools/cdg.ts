@@ -49,6 +49,7 @@ import { ewmaDeSeñal } from '../../utils/wellnessTrend.js';
 import { normalizarTexto as normTexto } from '../../utils/busqueda.js';
 import { addDays, hoyIsoLocal } from '../../utils/trainingWeek.js';
 import { nombreDeMeso } from '../../utils/nombresMeso.js';
+import { hipotesisParaElAsistente } from './hipotesis.js';
 
 // ── Motor ───────────────────────────────────────────────────────────────────
 
@@ -71,6 +72,8 @@ const r2 = (v: number) => Math.round(v * 100) / 100;
 interface ContextoCdg {
   motor: MotorCdg;
   meso: Mesocycle;
+  /** Todos los bloques del atleta: de sus cierres firmados sale el mapa de respuesta. */
+  mesos: Mesocycle[];
   /** Las sesiones del bloque por `dayIndex`. */
   dias: Workout[];
   porId: Map<string, Exercise>;
@@ -98,7 +101,7 @@ async function contextoCdg(email: string, mesocycleId?: string): Promise<Context
   const vueltas = vueltasDelCiclo(meso.weeks, ciclo);
   const semanaActual = Math.min(vueltas, Math.max(1, mesocycleWeekNumber(meso.startDate, hoy, ciclo)));
   const resolver = (we: WorkoutExercise, s: number) => (s <= 0 ? we : resolverEjercicioDelMeso(we, meso, s));
-  return { motor, meso, dias, porId, nombreCdgDe, grupoDe, ciclo, vueltas, semanaActual, resolver, hoy };
+  return { motor, meso, mesos, dias, porId, nombreCdgDe, grupoDe, ciclo, vueltas, semanaActual, resolver, hoy };
 }
 
 /** Igual que la pantalla (`useAgujetasCdg`): «la semana que acaba» son hoy y los seis días anteriores. */
@@ -217,7 +220,7 @@ export async function getCdgSemana(email: string, mesocycleId?: string): Promise
 
   const sinVinculo = c.dias.flatMap(d => d.exercises).filter(we => !c.nombreCdgDe(we.exerciseId)).map(we => c.porId.get(we.exerciseId)?.name ?? we.exerciseId);
   return toResult({
-    mesociclo: { id: c.meso.id, nombre: nombreDeMeso(c.meso), semanaActual: c.semanaActual, vueltas: c.vueltas, cicloDias: c.ciclo, velocidad, descargas: c.meso.semanasDescarga ?? [], semanasPuente: c.meso.semanasPivot ?? [] },
+    mesociclo: { id: c.meso.id, nombre: nombreDeMeso(c.meso), semanaActual: c.semanaActual, vueltas: c.vueltas, cicloDias: c.ciclo, velocidad, descargas: c.meso.semanasDescarga ?? [], semanasPuente: c.meso.semanasPivot ?? [], ...hipotesisParaElAsistente(c.meso, c.mesos) },
     // De dónde parte la propuesta de la semana que viene y si esa semana admite subida (F2).
     semanaQueViene: { semana: c.semanaActual + 1, semanaBase, sinProgresion, avisoBase },
     // Agujetas de 5: no llevan % (lo decide Dani), pero bloquean la zona (F6).

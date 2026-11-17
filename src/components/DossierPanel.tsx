@@ -29,6 +29,7 @@ import { getDossier, saveDossierJudgement, saveDossierNote, DOSSIER_VACIO } from
 import { ESCALAS } from '../utils/cdg/tipificacion';
 import { getAthleteStatusNote } from '../db/coachSettings';
 import { Button, Card, Icon } from './ui';
+import QueLeFunciona from './cierre/QueLeFunciona';
 
 export const dossierKey = (email: string) => ['dossier', email] as const;
 
@@ -152,6 +153,9 @@ export default function DossierPanel({ athleteEmail, athleteName }: Props) {
             className="w-full bg-field border border-control-line rounded-control p-3 text-label text-ink resize-y focus:border-accent-line focus:outline-none"
           />
         </label>
+
+        {/* Mapa de respuesta: lo que dicen los cierres de bloque firmados. */}
+        <QueLeFunciona athleteEmail={athleteEmail} />
 
         {/* Tipificación (guía del IH): cinco escalas para decidir más rápido. */}
         <div className="flex flex-col gap-2">

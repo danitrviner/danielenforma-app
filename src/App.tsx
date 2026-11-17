@@ -189,6 +189,11 @@ const PlantillaHarness = import.meta.env.DEV
   ? pantallaDiferida('PlantillaDevHarness', () => import('./components/mesociclo/PlantillaDevHarness'))
   : null;
 
+// Banco de pruebas de las fichas «Hipótesis del bloque» del mesociclo (ruta /dev/hipotesis-bloque).
+const HipotesisBloqueHarness = import.meta.env.DEV
+  ? pantallaDiferida('HipotesisBloqueDevHarness', () => import('./components/mesociclo/HipotesisBloqueDevHarness'))
+  : null;
+
 // Banco de pruebas del Diario de nutrición del atleta (ruta /dev/nutricion).
 const NutricionHarness = import.meta.env.DEV
   ? pantallaDiferida('NutricionDevHarness', () => import('./components/NutricionDevHarness'))
@@ -962,6 +967,13 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <PlantillaHarness />
+      </Suspense>
+    );
+  }
+  if (HipotesisBloqueHarness && location.pathname === '/dev/hipotesis-bloque') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <HipotesisBloqueHarness />
       </Suspense>
     );
   }

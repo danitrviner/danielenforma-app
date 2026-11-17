@@ -1,0 +1,196 @@
+import type { HipotesisDeZona, Mesocycle, PalancaDeHipotesis, TipoDeBloque } from '../../types';
+import { VELOCIDADES, sensibilidadDeZona, type Sensibilidad, type Velocidad } from '../../utils/cdg/agujetas';
+import type { ZonaIem } from '../../utils/cdg/zonas';
+import { REDUCCION_SEMANA_1_PCT, redondearIem } from '../../utils/hipotesisDeBloque/cifras';
+import type { EstadoDeZona } from '../../utils/hipotesisDeBloque/estadoDelBloqueAnterior';
+import { cifrasDeHipotesis } from '../../utils/hipotesisDeBloque/proponerHipotesis';
+import {
+  TIPOS_DE_BLOQUE, aplicarTipoDeBloque, type CampoDeTipo,
+} from '../../utils/hipotesisDeBloque/tiposDeBloque';
+import { inicioPorDefecto } from '../../utils/hipotesisDelMeso';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Lo que hace el EDITOR con el tipo de bloque y las fichas de hipótesis
+   (17-11-2026)
+
+   El motor (`utils/hipotesisDeBloque/`) propone y el puente
+   (`utils/hipotesisDelMeso.ts`) dice qué se guarda al confirmar. Aquí va lo
+   que es de la pantalla y de nadie más: qué se escribe al pulsar un chip de
+   tipo, con qué nace un bloque nuevo, qué pasa con una ficha cuando el coach
+   cambia la palanca o una cifra, y los textos cortos de la ficha.
+
+   Puro: devuelve los cambios y quien llama los guarda.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/** Cómo se llama en pantalla cada campo que rellena un tipo (para «se respeta lo que tocaste»). */
+export const NOMBRE_DE_CAMPO: Record<CampoDeTipo, string> = {
+  weeks: 'las semanas',
+  cdgVelocidad: 'la velocidad',
+  cdgModoPorZona: 'el modo por zona',
+  semana1Reducida: 'la semana 1 reducida',
+  vuelveDeParon: 'la vuelta de parón',
+  phaseType: 'el color del calendario',
+  objective: 'el objetivo',
+};
+
+export interface TipoElegido {
+  /** Lo que hay que escribir en el mesociclo. */
+  cambios: Partial<Mesocycle>;
+  /** Campos que el coach había tocado y se dejan como están, ya con su nombre de pantalla. */
+  respetados: string[];
+  avisos: string[];
+}
+
+/** Elegir un tipo en la cabecera: los cambios de `aplicarTipoDeBloque`, sin pisar lo que el coach tocó. */
+export function elegirTipoDeBloque(meso: Mesocycle, tipo: TipoDeBloque): TipoElegido {
+  const r = aplicarTipoDeBloque(meso, tipo);
+  // El «objetivo» de un bloque antiguo no es un campo tocado: es el de siempre
+  // y se conserva a propósito. No hace falta decirlo cada vez.
+  const respetados = r.respetados.filter(c => !(c === 'objective' && !meso.tipoBloque)).map(c => NOMBRE_DE_CAMPO[c]);
+  return { cambios: r.cambios, respetados, avisos: r.avisos };
+}
+
+/**
+ * Con qué nace un bloque nuevo (Dani, 17-11): desarrollo, 12 semanas, y
+ * empieza el lunes siguiente al final del bloque que todavía no ha terminado
+ * (hoy si no hay ninguno). La semana 1 reducida nace apagada.
+ */
+export function camposDeBloqueNuevo(mesos: readonly Mesocycle[], hoy: string): Pick<Mesocycle, 'weeks' | 'startDate' | 'objective'> & Partial<Mesocycle> {
+  const { cambios } = aplicarTipoDeBloque({}, 'desarrollo', { nuevo: true });
+  return {
+    weeks: TIPOS_DE_BLOQUE.desarrollo.semanas,
+    objective: TIPOS_DE_BLOQUE.desarrollo.objective,
+    ...cambios,
+    startDate: inicioPorDefecto(mesos, hoy),
+  };
+}
+
+/** Lo que resume el tipo elegido bajo los chips: «hasta 3 estrellas en dinámico, el resto en estático · …». */
+export function resumenDelTipo(tipo: TipoDeBloque, meso: Pick<Mesocycle, 'weeks'> & Partial<Pick<Mesocycle, 'cdgVelocidad' | 'semana1Reducida'>>): string {
+  const p = TIPOS_DE_BLOQUE[tipo];
+  const estrellas = p.maxEstrellas === 0
+    ? 'sin estrellas'
+    : `${p.maxEstrellas === 1 ? 'una sola estrella' : `hasta ${p.maxEstrellas} estrellas`} en dinámico, el resto en estático`;
+  const velocidad = VELOCIDADES.find(v => v.value === (meso.cdgVelocidad ?? p.velocidad))?.label ?? '';
+  const resto = p.resto === 'mantener' ? 'lo que no lleva estrella, a mantener' : null;
+  return [
+    estrellas, resto, `velocidad ${velocidad.toLowerCase()}`,
+    `${meso.weeks} ${meso.weeks === 1 ? 'semana' : 'semanas'}`,
+    meso.semana1Reducida ? 'semana 1 reducida' : null,
+  ].filter(Boolean).join(' · ');
+}
+
+// ── Las fichas ──────────────────────────────────────────────────────────────
+
+/** El chip de cada palanca, como en la maqueta: qué pasa con el estímulo y con qué. */
+export const CHIP_DE_PALANCA: Record<PalancaDeHipotesis, string> = {
+  volumen: 'Más estímulo · volumen',
+  intensidad: 'Más estímulo · intensidad',
+  ejercicios: 'Mismo estímulo · otros ejercicios',
+  recuperar: 'Menos · recuperar',
+};
+
+export const ORDEN_DE_CHIPS: readonly PalancaDeHipotesis[] = ['volumen', 'intensidad', 'ejercicios', 'recuperar'];
+
+/** «dinámico · sube con agujetas 1-3». */
+export function textoDeModo(modo: Sensibilidad): string {
+  return modo === 'dinamico' ? 'dinámico · sube con agujetas 1-3' : 'estático · sube solo con agujetas 1';
+}
+
+/** El modo de una zona con estrella tal y como lo leerá el protocolo semanal. */
+export function modoDeLaZona(meso: Pick<Mesocycle, 'cdgModoPorZona' | 'cdgObjetivosIem' | 'tipoBloque'>, zona: ZonaIem, conEstrella = true): Sensibilidad {
+  if (meso.cdgModoPorZona?.[zona]) return sensibilidadDeZona(meso, zona);
+  const p = TIPOS_DE_BLOQUE[meso.tipoBloque ?? 'desarrollo'];
+  return conEstrella ? p.modoConEstrella : p.modoSinEstrella;
+}
+
+/** % que sube el techo sobre donde acabó el bloque anterior. `null` sin las dos cifras. */
+export function pctDeSubida(h: Pick<HipotesisDeZona, 'iemTecho' | 'iemFinalAnterior'>): number | null {
+  if (h.iemTecho == null || !(h.iemFinalAnterior != null && h.iemFinalAnterior > 0.005)) return null;
+  return Math.round(((h.iemTecho - h.iemFinalAnterior) / h.iemFinalAnterior) * 100);
+}
+
+/** El estado de la zona en el bloque anterior, sacado de la foto guardada en la hipótesis. */
+function estadoGuardado(h: HipotesisDeZona): Pick<EstadoDeZona, 'iemMedio' | 'iemFinal'> | null {
+  return h.iemMedioAnterior != null && h.iemFinalAnterior != null
+    ? { iemMedio: h.iemMedioAnterior, iemFinal: h.iemFinalAnterior }
+    : null;
+}
+
+/**
+ * Cambiar la palanca de una ficha: las cifras se rehacen para la palanca nueva
+ * (recuperar baja a la mitad, otros ejercicios no sube…) desde cómo acabó el
+ * bloque anterior. El límite propio se conserva; el objetivo de RM, también,
+ * salvo al entrar o salir de «recuperar» (ahí lo que se pide es no perder).
+ */
+export function conPalanca(
+  h: HipotesisDeZona, palanca: PalancaDeHipotesis,
+  o: { estado?: Pick<EstadoDeZona, 'iemMedio' | 'iemFinal'> | null; velocidad?: Velocidad; semana1Reducida?: boolean } = {},
+): HipotesisDeZona {
+  if (h.palanca === palanca) return h;
+  const cambiaDeSentido = (h.palanca === 'recuperar') !== (palanca === 'recuperar');
+  return cifrasDeHipotesis({
+    palanca,
+    estado: o.estado ?? estadoGuardado(h),
+    velocidad: o.velocidad,
+    semana1Reducida: o.semana1Reducida,
+    limite: h.limite,
+    rmObjetivoPct: cambiaDeSentido ? undefined : h.rmObjetivoPct,
+  });
+}
+
+export type CifraEditable = 'iemMedioObjetivo' | 'iemArranque' | 'iemTecho' | 'rmObjetivoPct';
+
+/** Lo que el coach escribe en una cifra de la ficha. Vacío o negativo = sin cifra. */
+export function conCifra(h: HipotesisDeZona, campo: CifraEditable, valor: number | null): HipotesisDeZona {
+  const out: HipotesisDeZona = { ...h };
+  if (valor == null || !Number.isFinite(valor) || valor < 0) delete out[campo];
+  else out[campo] = campo === 'rmObjetivoPct' ? Math.round(valor * 10) / 10 : redondearIem(valor);
+  return out;
+}
+
+/** El límite propio de la zona, en palabras del coach. Vacío = sin límite propio. */
+export function conLimite(h: HipotesisDeZona, limite: string): HipotesisDeZona {
+  const out: HipotesisDeZona = { ...h };
+  if (limite.trim()) out.limite = limite.trim();
+  else delete out.limite;
+  return out;
+}
+
+/** Lo que escribe una cifra tecleada: «58,5» → 58.5; vacío o basura → null. */
+export function leerCifra(texto: string): number | null {
+  const limpio = texto.replace('%', '').replace('+', '').replace(',', '.').trim();
+  if (!limpio) return null;
+  const n = Number(limpio);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+/** Una cifra de IEM o de % como se enseña: coma decimal, un decimal como mucho. */
+export function fmtCifra(v: number | null | undefined): string {
+  return v == null ? '' : v.toLocaleString('es-ES', { maximumFractionDigits: 1 });
+}
+
+/**
+ * Encender o apagar la semana 1 reducida: además del interruptor, el arranque
+ * de cada hipótesis guardada se mueve con él (un 7 % por debajo de donde acabó
+ * el bloque anterior, o justo ahí) si sigue siendo el que puso la app. Un
+ * arranque que el coach escribió a mano no se toca. Al apagar se quita también
+ * el recorte por ejercicio.
+ */
+export function alCambiarSemana1(meso: Pick<Mesocycle, 'hipotesis' | 'semana1Reducida'>, activa: boolean): Partial<Mesocycle> {
+  const arranque = (final: number, reducida: boolean) => redondearIem(reducida ? final * (1 - REDUCCION_SEMANA_1_PCT / 100) : final);
+  const antes = !!meso.semana1Reducida;
+  const cambios: Partial<Mesocycle> = { semana1Reducida: activa };
+  if (!activa) cambios.semana1Recorte = undefined;
+  const guardadas = meso.hipotesis ?? {};
+  let tocada = false;
+  const hipotesis = Object.fromEntries(Object.entries(guardadas).map(([zona, h]) => {
+    if (!h || h.palanca === 'recuperar' || h.iemFinalAnterior == null || h.iemArranque !== arranque(h.iemFinalAnterior, antes)) return [zona, h];
+    const nuevo = arranque(h.iemFinalAnterior, activa);
+    if (nuevo === h.iemArranque) return [zona, h];
+    tocada = true;
+    return [zona, { ...h, iemArranque: nuevo }];
+  }));
+  if (tocada) cambios.hipotesis = hipotesis;
+  return cambios;
+}

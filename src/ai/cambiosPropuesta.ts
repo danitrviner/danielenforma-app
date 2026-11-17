@@ -14,6 +14,7 @@ import {
   NutritionProgram, NutritionProgramProposalPayload,
 } from '../types.js';
 import { objetivoDeDieta } from '../utils/macrosLegado.js';
+import { TIPOS_DE_BLOQUE } from '../utils/hipotesisDeBloque/tiposDeBloque.js';
 
 const MACROS_DE_DIETA = [['p', 'Proteína'], ['hc', 'Hidratos'], ['g', 'Grasa']] as const;
 
@@ -28,6 +29,14 @@ export function cambiosDeMesociclo(anterior: Mesocycle | undefined, nuevo: Omit<
   if (anterior.weeks !== nuevo.weeks) cambios.push(`Semanas: ${anterior.weeks} → ${nuevo.weeks}`);
   if (anterior.daysPerWeek !== nuevo.daysPerWeek) cambios.push(`Días por semana: ${anterior.daysPerWeek} → ${nuevo.daysPerWeek}`);
   if ((anterior.objective ?? '') !== (nuevo.objective ?? '')) cambios.push(`Objetivo: «${anterior.objective ?? ''}» → «${nuevo.objective ?? ''}»`);
+  // Tipo de bloque (17-11-2026): solo si el nuevo lo dice; un bloque antiguo
+  // sin tipo no es «un cambio de tipo».
+  if (nuevo.tipoBloque && anterior.tipoBloque !== nuevo.tipoBloque) {
+    cambios.push(anterior.tipoBloque
+      ? `Tipo de bloque: ${TIPOS_DE_BLOQUE[anterior.tipoBloque].etiqueta} → ${TIPOS_DE_BLOQUE[nuevo.tipoBloque].etiqueta}`
+      : `Tipo de bloque: ${TIPOS_DE_BLOQUE[nuevo.tipoBloque].etiqueta}`);
+  }
+  if (nuevo.semana1Reducida && !anterior.semana1Reducida) cambios.push('Semana 1 reducida');
   if (anterior.deloadWeek !== nuevo.deloadWeek) {
     cambios.push(nuevo.deloadWeek === undefined
       ? `Descarga: fuera (antes en la semana ${anterior.deloadWeek})`
@@ -58,6 +67,9 @@ export function cambiosDeMesociclo(anterior: Mesocycle | undefined, nuevo: Omit<
   if (bajan.length) cambios.push(`Bajan: ${bajan.join(', ')}`);
   if (entran.length) cambios.push(`Entran: ${entran.join(', ')}`);
   if (salen.length) cambios.push(`Salen: ${salen.join(', ')}`);
+  // Los que el bloque nuevo ignora a propósito (cuarto nivel), tuvieran series o no.
+  const ignorados = MUSCLE_ORDER.filter(g => nuevo.groups?.[g]?.priority === 'ignorar' && anterior.groups?.[g]?.priority !== 'ignorar');
+  if (ignorados.length) cambios.push(`Se ignoran: ${ignorados.map(g => MUSCLE_LABELS[g]).join(', ')}`);
   return cambios;
 }
 

@@ -48,6 +48,7 @@ import { Macros, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, MUSCLE_ORDER, Ex
 import { tareaPorId, type BriefSeccion } from '../tareas.js';
 import { mediana } from '../../utils/perfilProgramacion.js';
 import { checkinsOf, findProfile, isoDate, markAthleteText, objetivoParaElAsistente, toResult } from './comunes.js';
+import { hipotesisParaElAsistente, NOTA_DE_HIPOTESIS } from './hipotesis.js';
 
 // ── Ejecutores ────────────────────────────────────────────────────────────────
 
@@ -161,6 +162,9 @@ export async function getClientOverview(email: string): Promise<string> {
       id: activeMeso.id, number: activeMeso.number, weeks: activeMeso.weeks,
       startDate: activeMeso.startDate, objective: activeMeso.objective,
       daysPerWeek: activeMeso.daysPerWeek,
+      // H11 (17-11-2026): el tipo de bloque, la hipótesis de cada zona
+      // prioritaria y, si están firmados, el cierre y el mapa de respuesta.
+      ...hipotesisParaElAsistente(activeMeso, mesos),
     } : null,
     nutritionProgram: program ? {
       startDate: program.startDate,
@@ -1172,8 +1176,12 @@ export async function getCierreBloque(email: string, mesocycleId?: string): Prom
   });
   const c = completo.cierre;
   const voz = completo.evolucion.voz;
+  const hipotesis = hipotesisParaElAsistente(meso, mesos);
   return toResult({
-    bloque: { id: c.mesoId, numero: c.numero, nombre: c.nombre, objetivo: c.objetivo, inicio: c.inicio, fin: c.fin, semanas: c.semanas, diasSemana: c.diasSemana, enCurso: c.enCurso, comparacion: c.comparacion },
+    bloque: { id: c.mesoId, numero: c.numero, nombre: c.nombre, objetivo: c.objetivo, inicio: c.inicio, fin: c.fin, semanas: c.semanas, diasSemana: c.diasSemana, enCurso: c.enCurso, comparacion: c.comparacion, tipoBloque: hipotesis.tipoBloque },
+    // H11 (17-11-2026): a qué se apostó en cada zona prioritaria; si Dani ya
+    // firmó el cierre, qué pasó con cada apuesta y el mapa de respuesta.
+    hipotesisDelBloque: hipotesis,
     sesiones: c.sesiones,
     volumen: {
       pct: c.volumen.pct, totalProgramadas: c.volumen.totalProgramadas, totalRealizadas: c.volumen.totalRealizadas,
@@ -1210,7 +1218,9 @@ export async function getCierreBloque(email: string, mesocycleId?: string): Prom
     } : null,
     pesoCorporalKg: completo.pesoCorporalKg,
     borradorParaElCliente: completo.mensaje,
-    note: 'Son los números de Mesociclo › Cierre, los mismos que ve Dani. Úsalos para el veredicto del bloque y para decir qué cambia en el siguiente (volumen por grupo que se cumplió o no, patrones que suben o se estancan). No recalcules nada.',
+    note: 'Son los números de Mesociclo › Cierre, los mismos que ve Dani. Úsalos para el veredicto del bloque y para decir qué cambia en el siguiente (volumen por grupo que se cumplió o no, patrones que suben o se estancan). No recalcules nada. '
+      + `hipotesisDelBloque → ${NOTA_DE_HIPOTESIS}`
+      + (hipotesis.hipotesis.length && !hipotesis.cierreDeHipotesis ? ' El cierre de las hipótesis de este bloque está SIN FIRMAR: no des ninguna por confirmada ni por fallida; recuérdale a Dani que lo firme en Mesociclo › Cierre.' : ''),
   });
 }
 
@@ -1353,10 +1363,10 @@ export async function getVolumeSuggestion(
   // Lo que no venga se queda en 'media'. Nunca se hereda del bloque anterior a
   // ciegas: si el coach quiere repetir prioridades, las dice.
   const pedidas = (input.prioridades ?? {}) as Record<string, string>;
-  const priorities = {} as Record<MuscleGroup, 'alta' | 'media' | 'baja'>;
+  const priorities = {} as Record<MuscleGroup, 'alta' | 'media' | 'baja' | 'ignorar'>;
   for (const g of MUSCLE_ORDER) {
     const v = pedidas[g];
-    priorities[g] = v === 'alta' || v === 'baja' ? v : 'media';
+    priorities[g] = v === 'alta' || v === 'baja' || v === 'ignorar' ? v : 'media';
   }
 
   const r = suggestVolume({

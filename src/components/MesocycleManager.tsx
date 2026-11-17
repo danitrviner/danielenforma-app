@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   MuscleGroup, MuscleGroupConfig, Mesocycle, Workout,
   DayPlan, WeekDistribution, Exercise, WorkoutExercise, TemplateDay,
-  WorkoutLog, WorkoutAssignment, PhaseType, EventoDeSemana, RepartoPropio, RepartoGuardado,
+  WorkoutLog, WorkoutAssignment, EventoDeSemana, RepartoPropio, RepartoGuardado,
   MUSCLE_LABELS, MUSCLE_LABELS_SHORT, MUSCLE_ORDER,
 } from '../types';
 import {
@@ -90,21 +90,21 @@ import DraftEjercicios from './mesociclo/DraftEjercicios';
 import EstadoDelBloque, { LoQueVeElAtleta, chipDeEstado } from './mesociclo/EstadoDelBloque';
 import { estadoDelMeso, sesionesQueEstorban, pendientesDesde, vistaDelAtleta, type SesionesQueEstorban } from '../utils/bloqueDelAtleta';
 import { Avatar, Skeleton, Badge, SegmentedControl } from './ui';
+import { PRIORIDADES, PRIORIDAD, LEYENDA_DE_PRIORIDADES, esIgnorado, avisoDeEstrellasDelMeso, mesoAnteriorA } from '../utils/hipotesisDelMeso';
+import { ZONA_POR_CLAVE, type ZonaIem } from '../utils/cdg/zonas';
+import { planDeSemana1Reducida } from '../utils/progression';
+import TipoDeBloqueSelector from './mesociclo/TipoDeBloqueSelector';
+import Semana1Reducida from './mesociclo/Semana1Reducida';
+import FichasDeHipotesis from './mesociclo/FichasDeHipotesis';
+import { useHipotesisDelBloque } from './mesociclo/useHipotesisDelBloque';
+import { alCambiarSemana1, camposDeBloqueNuevo } from './mesociclo/hipotesisDelEditor';
 import { EmptyState, Dialog, Input, Icon, Tabs, TabItem, Sheet, Pager, Select, Button } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// Tipo de fase (Roadmap → Calendario, coach) — decide el color/icono del
-// bloque en los 3 niveles del calendario. Opcional a propósito: sin marcar,
-// `clasificarFaseEntreno` (utils/roadmapCalendar.ts) lo deduce del objetivo.
-const PHASE_TYPE_OPTIONS: { value: '' | PhaseType; label: string }[] = [
-  { value: '', label: 'Auto (según objetivo)' },
-  { value: 'fuerza', label: 'Fuerza' },
-  { value: 'hipertrofia', label: 'Hipertrofia' },
-  { value: 'definicion', label: 'Definición' },
-  { value: 'mantenimiento', label: 'Mantenimiento' },
-  { value: 'descarga', label: 'Descarga' },
-];
+// El tipo de fase del calendario (`phaseType`) ya no se elige a mano: lo pone
+// el tipo de bloque (ver mesociclo/TipoDeBloqueSelector). Sin tipo —bloques
+// antiguos—, `clasificarFaseEntreno` lo sigue deduciendo del objetivo.
 
 const MUSCLE_GROUPS: MuscleGroup[] = MUSCLE_ORDER;
 
@@ -165,20 +165,18 @@ function Stepper({ value, min = 0, max = 25, onChange, landmark }: {
   );
 }
 
+// Cuatro niveles (17-11-2026): ⭐ Especializar · ◑ Desarrollar · ⚪ Mantener ·
+// ⊘ Ignorar. Los valores guardados siguen siendo 'alta' | 'media' | 'baja',
+// más 'ignorar' (ver utils/hipotesisDelMeso.ts).
 function PrioritySelector({ value, onChange }: {
-  value: 'alta' | 'media' | 'baja';
-  onChange: (v: 'alta' | 'media' | 'baja') => void;
+  value: MuscleGroupConfig['priority'];
+  onChange: (v: MuscleGroupConfig['priority']) => void;
 }) {
-  const opts = [
-    { v: 'alta'  as const, icon: '⭐', label: 'Alta'  },
-    { v: 'media' as const, icon: '◑',  label: 'Media' },
-    { v: 'baja'  as const, icon: '⚪', label: 'Baja'  },
-  ];
   return (
     <div className="flex gap-1">
-      {opts.map(o => (
+      {PRIORIDADES.map(p => ({ v: p.valor, icon: p.icono, label: p.etiqueta })).map(o => (
         <button
-          key={o.v} onClick={() => onChange(o.v)} title={o.label}
+          key={o.v} onClick={() => onChange(o.v)} title={o.label} aria-label={o.label} aria-pressed={value === o.v}
           className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 px-2 rounded-control text-title-s sm:text-label font-mono transition-[color,background-color,border-color,opacity,transform,box-shadow] flex items-center justify-center ${
             value === o.v ? 'bg-accent text-on-accent font-bold' : 'bg-raised text-ink-2 hover:bg-raised'
           }`}
@@ -521,8 +519,8 @@ const CalendarioCiclo: React.FC<{
 
 // ─── Progression view ─────────────────────────────────────────────────────────
 
-const PRIORITY_ICON: Record<'alta' | 'media' | 'baja', string> = {
-  alta: '⭐', media: '◑', baja: '⚪',
+const PRIORITY_ICON: Record<MuscleGroupConfig['priority'], string> = {
+  alta: PRIORIDAD.alta.icono, media: PRIORIDAD.media.icono, baja: PRIORIDAD.baja.icono, ignorar: PRIORIDAD.ignorar.icono,
 };
 
 function Delta({ delta, showEqual = false }: { delta: number | null; showEqual?: boolean }) {
@@ -1542,6 +1540,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup, onApplySuggestion
   const totals = columns.map(m => MUSCLE_GROUPS.reduce((s, g) => s + m.groups[g].series, 0));
   const currentTotal = MUSCLE_GROUPS.reduce((acc, g) => acc + editing.groups[g].series, 0);
   const [showSuggest, setShowSuggest] = useState(false);
+  const avisoEstrellas = avisoDeEstrellasDelMeso(editing);
 
   return (
     <div className="space-y-4">
@@ -1567,8 +1566,16 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup, onApplySuggestion
         <span className="text-success">▲ Sube</span>
         <span className="text-danger">▼ Baja</span>
         <span className="text-ink-3">= Sin cambio</span>
-        <span className="text-ink-2 ml-2">⭐ Alta · ◑ Media · ⚪ Baja prioridad</span>
+        <span className="text-ink-2 ml-2">{LEYENDA_DE_PRIORIDADES}</span>
       </div>
+      {/* Cuántas estrellas caben depende del tipo de bloque (`avisoDeEstrellas`
+          del motor): cuenta zonas, no grupos — los tres deltoides son una. */}
+      {avisoEstrellas && (
+        <div className="flex items-start gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded-surface">
+          <Icon name="warning" size="s" className="text-warning flex-shrink-0 mt-px" />
+          <p className="font-sans text-caption text-warning leading-relaxed">{avisoEstrellas.texto}</p>
+        </div>
+      )}
 
       {showSuggest && (
         <VolumeSuggestionSheet
@@ -1618,7 +1625,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup, onApplySuggestion
                 </div>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <Stepper value={cfg.series} onChange={v => onUpdateGroup(group, 'series', v)} landmark={landmark} />
+                <Stepper value={cfg.series} max={esIgnorado(cfg) ? 0 : 25} onChange={v => onUpdateGroup(group, 'series', v)} landmark={landmark} />
                 <PrioritySelector value={cfg.priority} onChange={v => onUpdateGroup(group, 'priority', v)} />
               </div>
               <div className="relative h-1 rounded-full bg-track">
@@ -1686,7 +1693,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup, onApplySuggestion
                         style={{ backgroundColor: cfg.series > 0 ? heatmapBg(cfg.series, landmark) : undefined }}
                       >
                         <div className="flex flex-col items-center gap-2">
-                          <Stepper value={cfg.series} onChange={v => onUpdateGroup(group, 'series', v)} landmark={landmark} />
+                          <Stepper value={cfg.series} max={esIgnorado(cfg) ? 0 : 25} onChange={v => onUpdateGroup(group, 'series', v)} landmark={landmark} />
                           <PrioritySelector value={cfg.priority} onChange={v => onUpdateGroup(group, 'priority', v)} />
                           {!zeroToZero && <Delta delta={delta} showEqual />}
                           <div className="relative h-1 w-full rounded-full bg-track">
@@ -2243,9 +2250,11 @@ export default function MesocycleManager({
 
   const updateGroup = (group: MuscleGroup, field: keyof MuscleGroupConfig, value: number | string) => {
     if (!editing) return;
+    // Ignorar es 0 series (17-11-2026): al ignorar un grupo se le quitan.
+    const extra = field === 'priority' && value === 'ignorar' ? { series: 0 } : {};
     const updated: Mesocycle = {
       ...editing,
-      groups: { ...editing.groups, [group]: { ...editing.groups[group], [field]: value } },
+      groups: { ...editing.groups, [group]: { ...editing.groups[group], [field]: value, ...extra } },
     };
     setEditing(updated);
     scheduleAutoSave(updated);
@@ -3154,9 +3163,9 @@ export default function MesocycleManager({
       const created = await createMesocycle({
         athleteId:   selectedEmail,
         number:      siguienteNumeroDeBloque(mesocycles),
-        weeks:       4,
-        startDate:   hoyIsoLocal(),
-        objective:   '',
+        // Desarrollo de 12 semanas, desde el lunes siguiente al final del
+        // bloque en curso (17-11-2026; antes 4 semanas desde hoy y sin objetivo).
+        ...camposDeBloqueNuevo(mesocycles, hoyIsoLocal()),
         daysPerWeek: 4,
         groups:      DEFAULT_GROUPS(),
       });
@@ -3214,6 +3223,67 @@ export default function MesocycleManager({
     if (!editing) return;
     actualizarMeso(ponerDescargaDeCabecera(editing, vuelta, cicloDias));
   };
+
+  // ── Hipótesis del bloque y semana 1 reducida (17-11-2026) ──────────────────
+  // Las fichas salen con el tipo de bloque elegido (o si el bloque ya traía
+  // hipótesis). Los datos —cómo acabó el bloque anterior, la propuesta del
+  // motor, el mapa de respuesta— los junta `useHipotesisDelBloque`.
+  const conHipotesis = !!editing && (!!editing.tipoBloque || Object.keys(editing.hipotesis ?? {}).length > 0);
+  const ejerciciosPorId = useMemo(() => new Map(allExercises.map(e => [e.id, e])), [allExercises]);
+  const idsDelBloque = useMemo(
+    () => [...new Set(mesoGroupsForTabs.flatMap(g => g.exercises.map(e => e.exerciseId)))],
+    [mesoGroupsForTabs],
+  );
+  const mesoAnteriorId = editing && !modoPlantilla ? mesoAnteriorA(editing, mesocycles)?.id : undefined;
+  const idsDelAnterior = useMemo(
+    () => (mesoAnteriorId
+      ? [...new Set(allWorkouts.filter(w => w.mesocycleId === mesoAnteriorId).flatMap(w => w.exercises.map(e => e.exerciseId)))]
+      : null),
+    [allWorkouts, mesoAnteriorId],
+  );
+  const hipotesisDelBloque = useHipotesisDelBloque({
+    meso: editing, mesocycles, athleteEmail: selectedEmail, exercises: allExercises, logs: athleteLogs,
+    ejerciciosDelBloque: idsDelBloque, ejerciciosDelAnterior: idsDelAnterior,
+    activo: !modoPlantilla && !!selectedEmail,
+  });
+  /** Los ejercicios de una zona en las rutinas del bloque, por su nombre (fila «Resultado» de la ficha). */
+  const ejerciciosDeZona = useCallback((zona: ZonaIem): string[] => {
+    const grupos = ZONA_POR_CLAVE[zona].grupos as readonly MuscleGroup[];
+    const nombres: string[] = [];
+    for (const we of mesoGroupsForTabs.flatMap(g => g.exercises)) {
+      const ejercicio = ejerciciosPorId.get(we.exerciseId);
+      const grupo = we.muscleGroup ?? ejercicio?.muscleGroup;
+      if (ejercicio?.name && grupo && grupos.includes(grupo) && !nombres.includes(ejercicio.name)) nombres.push(ejercicio.name);
+    }
+    return nombres;
+  }, [mesoGroupsForTabs, ejerciciosPorId]);
+
+  // Semana 1 reducida: el recorte es por GRUPO (un 7 % menos, en series
+  // enteras) y cae en ejercicios concretos, así que se calcula aquí, con todas
+  // las rutinas del ciclo delante, y se guarda en el bloque: es lo que lee
+  // `resolverEjercicioDelMeso` en la app del atleta. Se rehace solo cuando
+  // cambian las rutinas, las estrellas o el interruptor.
+  const planSemana1 = useMemo(() => {
+    if (!editing?.semana1Reducida || mesoGroupsForTabs.length === 0) return null;
+    const sinRecorte = { ...editing, semana1Reducida: false };
+    return planDeSemana1Reducida(
+      mesoGroupsForTabs.map(g => ({
+        exercises: g.exercises.map(we => {
+          const r = resolverEjercicioDelMeso(we, sinRecorte, 1);
+          return { ...r, muscleGroup: r.muscleGroup ?? ejerciciosPorId.get(r.exerciseId)?.muscleGroup };
+        }),
+      })),
+      editing.groups,
+    );
+  }, [editing, mesoGroupsForTabs, ejerciciosPorId]);
+  const recorteGuardado = editing?.semana1Recorte;
+  useEffect(() => {
+    if (modoPlantilla || !editing || !planSemana1 || loadingMesoWorkouts) return;
+    const ordenado = (o: Record<string, number>) => JSON.stringify(Object.keys(o).sort().map(k => [k, o[k]]));
+    if (ordenado(planSemana1) !== ordenado(recorteGuardado ?? {})) actualizarMeso({ semana1Recorte: planSemana1 });
+  }, [planSemana1, recorteGuardado, modoPlantilla, loadingMesoWorkouts]); // eslint-disable-line react-hooks/exhaustive-deps
+  const recorteDeSemana1 = Object.entries(planSemana1 ?? {})
+    .map(([id, series]) => ({ nombre: ejerciciosPorId.get(id)?.name ?? 'Un ejercicio', series }));
 
   // Dos versiones del patrón a mano, y no es redundante:
   //  - `customCrudo` es lo que hay tecleado AHORA MISMO, tenga o no el número
@@ -3780,22 +3850,10 @@ export default function MesocycleManager({
                   )}
                 </div>
 
-                <Input
-                  label="Objetivo"
-                  value={editing.objective}
-                  onChange={v => updateField('objective', v)}
-                  placeholder="Ej. Hipertrofia tren superior, puesta en forma general…"
-                />
-
-                {/* Tipo de fase (Roadmap → Calendario) — color/icono del bloque en
-                    los 3 niveles del calendario del coach. Opcional: sin marcar se
-                    deduce del objetivo de arriba (ver PHASE_TYPE_OPTIONS). */}
-                <Select
-                  label="Tipo (calendario)"
-                  value={editing.phaseType ?? ''}
-                  onChange={v => updateField('phaseType', v === '' ? undefined : v as PhaseType)}
-                  options={PHASE_TYPE_OPTIONS}
-                />
+                {/* Tipo de bloque (17-11-2026): sustituye al texto «Objetivo» y al
+                    desplegable «Tipo (calendario)». `objective` y `phaseType`
+                    se siguen escribiendo, derivados del tipo. */}
+                <TipoDeBloqueSelector meso={editing} onCambiar={actualizarMeso} />
 
                 {/* Semana de descarga — el mismo dato que «Descarga» en la barra de
                     semanas de Ejercicios: mitad de series esa semana de ciclo
@@ -3834,7 +3892,36 @@ export default function MesocycleManager({
                     </div>
                   )}
                 </div>
+
+                <Semana1Reducida
+                  activa={!!editing.semana1Reducida}
+                  motivo={modoPlantilla ? null : hipotesisDelBloque.sugerenciaSemana1.motivo}
+                  recorte={recorteDeSemana1.map(r => `${r.nombre} −${r.series}`)}
+                  conRutinas={mesoGroupsForTabs.some(g => g.exercises.length > 0)}
+                  onCambiar={activa => actualizarMeso(alCambiarSemana1(editing, activa))}
+                />
               </div>
+
+              {/* Hipótesis del bloque: una ficha por zona con estrella, encima
+                  de las pestañas. En una plantilla no hay atleta, así que no
+                  hay hipótesis; un bloque anterior a los tipos las enseña en
+                  cuanto se le elige uno. */}
+              {!modoPlantilla && conHipotesis && (
+                <FichasDeHipotesis
+                  meso={editing}
+                  propuesta={hipotesisDelBloque.propuesta}
+                  mesoAnterior={hipotesisDelBloque.mesoAnterior}
+                  anterior={hipotesisDelBloque.anterior}
+                  cargando={hipotesisDelBloque.cargando}
+                  motivoSinCifras={hipotesisDelBloque.motivoSinCifras}
+                  mapa={hipotesisDelBloque.mapa}
+                  ejerciciosDeZona={ejerciciosDeZona}
+                  minutosDeSesion={athleteOnboarding?.sessionMaxMinutes}
+                  nivel={athleteLevel}
+                  nombreAtleta={(selectedAthlete?.displayName ?? athleteName)?.split(' ')[0]}
+                  onCambiar={actualizarMeso}
+                />
+              )}
 
               {/* Tab bar — subrayado oro (ui/Tabs), igual que el resto de la app.
                   Antes era una píldora rellena local, la única pantalla que no

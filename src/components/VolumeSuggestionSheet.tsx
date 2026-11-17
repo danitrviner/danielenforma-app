@@ -10,6 +10,7 @@ import { repartoDelMesociclo } from '../utils/trainingSplits';
 import { cicloDiasDeMeso } from '../utils/asignacionMesociclo';
 import { zoneLabel, heatmapText } from '../utils/volumeZones';
 import { textoDeDescarga } from '../utils/descargaDelBloque';
+import { LEYENDA_DE_PRIORIDADES, PRIORIDAD, siguientePrioridad, type PrioridadDeGrupo } from '../utils/hipotesisDelMeso';
 import {
   getExercises, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds,
   getQuestionnairesByCoach, getResponsesForAthlete,
@@ -59,10 +60,10 @@ export default function VolumeSuggestionSheet({
   const [paso, setPaso] = useState<1 | 2>(1);
   const [level, setLevel] = useState<ExperienceLevel>(athleteLevel ?? 'intermedio');
   const [intent, setIntent] = useState<VolumeIntent>('estandar');
-  const [prioridades, setPrioridades] = useState<Record<MuscleGroup, 'alta' | 'media' | 'baja'>>(
+  const [prioridades, setPrioridades] = useState<Record<MuscleGroup, PrioridadDeGrupo>>(
     () => Object.fromEntries(
       MUSCLE_ORDER.map(g => [g, editing.groups[g]?.priority ?? 'media']),
-    ) as Record<MuscleGroup, 'alta' | 'media' | 'baja'>,
+    ) as Record<MuscleGroup, PrioridadDeGrupo>,
   );
   const [prioridadesTocadas, setPrioridadesTocadas] = useState(false);
   const [filaAbierta, setFilaAbierta] = useState<MuscleGroup | null>(null);
@@ -105,7 +106,8 @@ export default function VolumeSuggestionSheet({
     const pedidos = history.feedback?.priorityGroups ?? [];
     if (pedidos.length === 0) return prioridades;
     const copia = { ...prioridades };
-    for (const g of pedidos) copia[g] = 'alta';
+    // Lo que el coach ignoró a propósito no lo levanta una petición del atleta.
+    for (const g of pedidos) if (copia[g] !== 'ignorar') copia[g] = 'alta';
     return copia;
   }, [prioridades, prioridadesTocadas, history.feedback]);
 
@@ -125,7 +127,8 @@ export default function VolumeSuggestionSheet({
     intent,
     priorities: prioridadesEfectivas,
     history,
-  }), [landmarks, editing.daysPerWeek, semanasDelCiclo, editing.splitId, split, level, intent, prioridadesEfectivas, history]);
+    tipoBloque: editing.tipoBloque,
+  }), [landmarks, editing.daysPerWeek, semanasDelCiclo, editing.splitId, split, level, intent, prioridadesEfectivas, history, editing.tipoBloque]);
 
   const totalActual = MUSCLE_ORDER.reduce((s, g) => s + (editing.groups[g]?.series ?? 0), 0);
 
@@ -133,7 +136,7 @@ export default function VolumeSuggestionSheet({
     setPrioridadesTocadas(true);
     setPrioridades(prev => {
       const actual = (prioridadesTocadas ? prev : prioridadesEfectivas)[g];
-      const siguiente = actual === 'alta' ? 'baja' : actual === 'baja' ? 'media' : 'alta';
+      const siguiente = siguientePrioridad(actual);
       return { ...(prioridadesTocadas ? prev : prioridadesEfectivas), [g]: siguiente };
     });
   };
@@ -223,10 +226,10 @@ export default function VolumeSuggestionSheet({
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
               <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Prioridad por grupo</span>
-              <span className="font-mono text-caption text-ink-3">⭐ alta · ◑ media · ⚪ baja</span>
+              <span className="font-mono text-caption text-ink-3">{LEYENDA_DE_PRIORIDADES}</span>
             </div>
             <p className="font-sans text-caption text-ink-3">
-              Pulsa para cambiarla. Los ⭐ suben dentro de su rango y son los últimos que se recortan; los ⚪ bajan al volumen de mantenimiento.
+              Pulsa para cambiarla. Los ⭐ suben dentro de su rango y son los últimos que se recortan; los ⚪ bajan al volumen de mantenimiento; los ⊘ se quedan a 0 y no cuentan para nada.
             </p>
             <div className="flex flex-wrap gap-1.5">
               {MUSCLE_ORDER.map(g => {
@@ -235,7 +238,9 @@ export default function VolumeSuggestionSheet({
                   ? 'bg-accent border-accent-press text-on-accent'
                   : p === 'baja'
                     ? 'border-hairline bg-transparent text-ink-3'
-                    : 'border-hairline bg-raised text-ink-2';
+                    : p === 'ignorar'
+                      ? 'border-hairline bg-transparent text-ink-3 line-through'
+                      : 'border-hairline bg-raised text-ink-2';
                 return (
                   <button
                     key={g}
@@ -243,7 +248,7 @@ export default function VolumeSuggestionSheet({
                     onClick={() => cambiarPrioridad(g)}
                     className={`inline-flex items-center gap-1 rounded-chip border px-2.5 py-1.5 font-sans text-caption transition-colors ${tono}`}
                   >
-                    <span>{p === 'alta' ? '⭐' : p === 'baja' ? '⚪' : '◑'}</span>
+                    <span aria-label={PRIORIDAD[p].etiqueta}>{PRIORIDAD[p].icono}</span>
                     {MUSCLE_LABELS[g]}
                   </button>
                 );

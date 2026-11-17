@@ -6,6 +6,9 @@ import {
   buildDoctrinaBlock,
 } from './doctrina';
 import { MUSCLE_LABELS, type MuscleGroup } from '../types';
+import { RM_OBJETIVO_PCT, SEMANAS_ENTRE_SUBIDAS, SEMANAS_POR_DEFECTO } from '../utils/hipotesisDeBloque/cifras';
+import { RUIDO_RM_PCT } from '../utils/ruidoDeMedida';
+import { REPS_MAX_RM, REPS_MIN_RM, RIR_MAX_RM } from '../utils/rmValido';
 
 describe('buildDoctrinaBlock', () => {
   it('devuelve cadena vacía si no hay doctrina — el bloque no debe añadirse al system', () => {
@@ -87,6 +90,63 @@ describe('decisiones de Dani que no se pueden perder', () => {
     expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/9-10 solo con un motivo/);
     expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/más de 10 se reparte/);
     expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).not.toContain('8-12 series por músculo y sesión');
+  });
+
+  /* 17-11-2026: el sistema de hipótesis del bloque. Las cifras salen de
+     `hipotesisDeBloque/cifras.ts`, `ruidoDeMedida.ts` y `rmValido.ts`; aquí se
+     ata que la doctrina las dice y que lo que las contradecía ya no está. */
+  it('cada bloque lleva hipótesis por zona prioritaria, con objetivo medible', () => {
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/HIPÓTESIS por zona prioritaria, con objetivo medible/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain(`+${RM_OBJETIVO_PCT} % de RM estimado`);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/cambia de palanca/);
+  });
+
+  it('la subida va por escalones sostenidos 2 semanas, con techo por bloque, y desde la segunda se repiten los puntos', () => {
+    expect(SEMANAS_ENTRE_SUBIDAS).toBe(2);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain('se SOSTIENE al menos 2 semanas');
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/velocidad suave por defecto,\s+~10 %/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/TECHO por bloque: donde acabó el\s+anterior más un escalón/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/Desde la segunda subida del bloque se repiten los PUNTOS/);
+    // Lo que había antes: series sueltas por bloque y de MEV a MRV dentro del bloque.
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).not.toMatch(/\+1-2 series|\+2-4 series/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).not.toContain('Se progresa de MEV hacia MRV');
+  });
+
+  it('el bloque nuevo arranca donde acabó el anterior; semana 1 reducida solo con ejercicios nuevos o parón de más de 3 semanas', () => {
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain('ARRANCA DONDE ACABÓ EL ANTERIOR');
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/Semana 1 reducida \(un 5-10 % menos\) solo en dos casos/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/parón de más de 3 semanas/);
+  });
+
+  it('bloques de 12 semanas (8 el primero) y sin fases fijas por semana', () => {
+    expect(SEMANAS_POR_DEFECTO).toBe(12);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain('### 11. Estructura del bloque (12 semanas por defecto; 8 el primer bloque)');
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain('No hay fases fijas por semana');
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).not.toContain('1-4 / 4-8 / 9-12');
+  });
+
+  it('cuatro niveles por grupo: especializar, desarrollar, mantener a la mitad e ignorar', () => {
+    for (const nivel of ['Especializar (alta)', 'Desarrollar (media)', 'Mantener (baja): la MITAD', 'Ignorar (ignorar): 0 series']) {
+      expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain(nivel);
+    }
+  });
+
+  it('en descarga o semana puente se quita volumen, nunca intensidad, y solo por señales', () => {
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/Descarga y semana puente: se quita VOLUMEN, nunca intensidad/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/solo por SEÑALES/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/nunca por calendario/);
+    // La descarga de antes iba «la última semana», con series fijas.
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).not.toContain('Cuando toca: última semana');
+  });
+
+  it('el RM estimado tiene un ruido del 3 % y solo cuentan series de 3 a 12 repeticiones con RIR 2 o menos', () => {
+    expect([RUIDO_RM_PCT, REPS_MIN_RM, REPS_MAX_RM, RIR_MAX_RM]).toEqual([3, 3, 12, 2]);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/series de 3 a 12 repeticiones\s+con RIR 2 o menos/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain('ruido del 3 %');
+  });
+
+  it('el grupo prioritario va primero en la sesión', () => {
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/El grupo PRIORITARIO del bloque va primero en la sesión/);
   });
 
   it('en definición no se recorta volumen por defecto', () => {

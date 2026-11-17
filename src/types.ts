@@ -817,6 +817,10 @@ export interface TemplateStage {
   nombresSesion?: string[];
   ejerciciosClave?: string[];
   notasSemana?: Record<string, string>;
+  /** Tipo de bloque y semana 1 reducida (17-11-2026): viajan con la plantilla.
+   *  Las hipótesis no, porque dependen del atleta. Ver `Mesocycle.tipoBloque`. */
+  tipoBloque?: TipoDeBloque;
+  semana1Reducida?: boolean;
 }
 
 export interface Workout {
@@ -2475,7 +2479,13 @@ export const MUSCLE_LABELS_SHORT: Record<MuscleGroup, string> = {
 
 export interface MuscleGroupConfig {
   series: number;          // 0..25 series semanales
-  priority: 'alta' | 'media' | 'baja';
+  /**
+   * Cuatro niveles (17-11-2026). En pantalla: ⭐ Especializar ('alta'),
+   * ◑ Desarrollar ('media'), ⚪ Mantener ('baja', la mitad de lo que hacía) y
+   * ⊘ Ignorar ('ignorar': 0 series y fuera de sugerencias, avisos y reparto).
+   * Los tres primeros conservan su valor guardado de siempre: no hay migración.
+   */
+  priority: 'alta' | 'media' | 'baja' | 'ignorar';
 }
 
 export interface DayAssignment {
@@ -2682,6 +2692,12 @@ export interface Mesocycle {
    *  17-11): la app solo la sugiere con ejercicios nuevos o tras un parón de
    *  más de 3 semanas. Apagada, el bloque arranca donde acabó el anterior. */
   semana1Reducida?: boolean;
+  /** Con `semana1Reducida`: series que pierde cada ejercicio (clave =
+   *  `exerciseId`) en cada sesión de la semana 1 en la que aparece. Lo calcula
+   *  el editor con todas las rutinas delante (`planDeSemana1Reducida`, en
+   *  utils/progression.ts: un 7 % menos por grupo, en series enteras) y lo
+   *  aplica `resolverEjercicioDelMeso`. Sin él, la semana 1 no recorta nada. */
+  semana1Recorte?: Record<string, number>;
   /** Hipótesis del bloque, una por zona con estrella (clave = `ZonaIem`).
    *  Solo coach: la pantalla del atleta no la enseña. */
   hipotesis?: Partial<Record<string, HipotesisDeZona>>;

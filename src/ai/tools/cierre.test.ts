@@ -73,6 +73,29 @@ describe('get_cierre_bloque', () => {
     expect(r.borradorParaElCliente.match(/4 de 5 sesiones/g)).toHaveLength(1);
     expect(r.borradorParaElCliente.endsWith('Con esto monto el siguiente bloque.')).toBe(true);
   });
+  it('trae el tipo de bloque y las hipótesis; el cierre y el mapa de respuesta solo si está firmado (H11)', async () => {
+    const conHipotesis = { ...MESO, tipoBloque: 'desarrollo', hipotesis: { pectoral: { palanca: 'volumen', rmObjetivoPct: 5, iemTecho: 17.6 } } } as unknown as Mesocycle;
+    usarFuenteDeDatos({ ...fuente, getMesocycles: async () => [conHipotesis] } as unknown as FuenteDeDatos);
+    const sinFirmar = JSON.parse(await getCierreBloque('ana@x.com'));
+    expect(sinFirmar.bloque.tipoBloque).toBe('desarrollo');
+    expect(sinFirmar.hipotesisDelBloque.hipotesis).toEqual([expect.objectContaining({ zona: 'pectoral', palanca: 'volumen', rmObjetivoPct: 5, iemTecho: 17.6 })]);
+    expect(sinFirmar.hipotesisDelBloque.cierreDeHipotesis).toBeUndefined();
+    expect(sinFirmar.hipotesisDelBloque.mapaDeRespuesta).toBeUndefined();
+    expect(sinFirmar.note).toContain('SIN FIRMAR');
+
+    const cierreDeHipotesis = { firmadoEn: '2026-10-26T10:00:00.000Z', veredictos: [{ zona: 'pectoral', palanca: 'volumen', iemMedio: 17, procesoCumplido: true, rmPct: 6, rmObjetivoPct: 5, resultadoCumplido: true, lectura: 'confirmada' }] };
+    usarFuenteDeDatos({ ...fuente, getMesocycles: async () => [{ ...conHipotesis, cierreDeHipotesis }] } as unknown as FuenteDeDatos);
+    const firmado = JSON.parse(await getCierreBloque('ana@x.com'));
+    expect(firmado.hipotesisDelBloque.cierreDeHipotesis).toEqual(cierreDeHipotesis);
+    expect(firmado.hipotesisDelBloque.mapaDeRespuesta).toBe('Pectoral: responde a volumen (1 de 1).');
+    expect(firmado.note).not.toContain('SIN FIRMAR');
+  });
+  it('un bloque de antes del sistema de hipótesis no se inventa ninguna', async () => {
+    usarFuenteDeDatos(fuente as unknown as FuenteDeDatos);
+    const r = JSON.parse(await getCierreBloque('ana@x.com'));
+    expect(r.bloque.tipoBloque).toBeNull();
+    expect(r.hipotesisDelBloque).toEqual({ tipoBloque: null, hipotesis: [] });
+  });
   it('sin mesociclos lo dice; con un id que no existe, también', async () => {
     usarFuenteDeDatos({ ...fuente, getMesocycles: async () => [] } as unknown as FuenteDeDatos);
     expect(JSON.parse(await getCierreBloque('ana@x.com')).error).toMatch(/no tiene mesociclos/);

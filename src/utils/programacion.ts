@@ -96,7 +96,8 @@ export function seriesPlanificadasDelMeso(
   const acc = new Map<MuscleGroup, number>();
   if (!groups) return acc;
   for (const g of MUSCLE_ORDER) {
-    const s = groups[g]?.series ?? 0;
+    // Un grupo ignorado no se programa: ni pide series ni sale en el balance.
+    const s = groups[g]?.priority === 'ignorar' ? 0 : (groups[g]?.series ?? 0);
     if (s > 0) acc.set(g, Math.round(s * semanasDelCiclo));
   }
   return acc;
@@ -395,7 +396,9 @@ export function runDistribution(
   // una distancia que no existe.
   const diaDe = (sesion: number) => ciclo?.offsets?.[sesion] ?? sesion;
 
-  const totalSemanal = MUSCLE_ORDER.reduce((s, g) => s + groups[g].series, 0);
+  // Los ignorados (17-11-2026) no se reparten aunque conserven series escritas.
+  const cuenta = (g: MuscleGroup) => (groups[g].priority === 'ignorar' ? 0 : groups[g].series);
+  const totalSemanal = MUSCLE_ORDER.reduce((s, g) => s + cuenta(g), 0);
   const overloadAlert = Math.round(totalSemanal * semanas) > sesiones * 12;
 
   const active = rankMuscleGroups(groups);
