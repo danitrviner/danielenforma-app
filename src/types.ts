@@ -711,6 +711,10 @@ export interface WorkoutExercise {
   // first group's RIR) purely so summary views that just print "3×8-10" keep working
   // without knowing about groups. See src/utils/setGroups.ts.
   setGroups?: WorkoutSetGroup[];
+  /** Series alternas (P4): clave de pareja. Los dos ejercicios de la sesión
+   *  que la comparten se hacen por turnos (A1, B1, A2, B2…). Una clave suelta
+   *  no significa nada. Ver src/utils/seriesAlternas.ts. */
+  alterna?: string;
   // Progresión automática por semana del mesociclo (periodización) — cada regla es un
   // escalón que entra en `atWeek` y se mantiene hasta que una regla posterior lo
   // sustituye (acumulativo, no un delta de una sola semana). Se aplica en el momento de
@@ -849,6 +853,12 @@ export interface WorkoutSetLog {
   /** Serie principal (1 = la primera) tras la que se hizo el segmento. Ausente
    *  en los registros anteriores a E-06: entonces es la última principal. */
   segmentoDe?: number;
+  /** Instante (ISO) en que el atleta marcó la serie como hecha (D1,
+   *  11-11-2026). De la diferencia entre dos series seguidas sale el descanso
+   *  REAL, que hasta ahora no se guardaba (solo el pautado). Ausente en los
+   *  registros anteriores y en las series añadidas al corregir una sesión ya
+   *  terminada: ahí «ahora» no es cuando se hizo. Ver utils/tiemposDeSerie.ts. */
+  hechaEn?: string;
 }
 
 /** Respuesta del coach a una nota del atleta (28-10-2026). */
@@ -865,6 +875,17 @@ export interface WorkoutEntryLog {
   /** Lo que el coach contestó a `note`. El atleta lo ve la próxima vez que
    *  hace el ejercicio (tarjeta de la sesión) y le llega como notificación. */
   noteReply?: RespuestaCoach;
+  /** El atleta marcó «Otra máquina o recorrido» (D3): desde esta
+   *  sesión el 1RM, los récords y la tendencia de este ejercicio no se
+   *  comparan con lo anterior. Ver utils/referenciaDeEjercicio.ts. */
+  nuevaReferencia?: boolean;
+  /** Qué paró la última serie, contestado por el atleta al cerrar el ejercicio
+   *  (D2): 'musculo' | 'agarre' | 'aire' | 'ardor' | 'tecnica' | 'molestia'.
+   *  Ver utils/queTeParo.ts (`MotivoDeParada`). */
+  queParo?: string;
+  /** Molestia de 1 a 10 en este ejercicio (D5, 11-11-2026). Solo se pregunta
+   *  si el atleta dice que lo que le paró fue una molestia. */
+  molestia?: number;
 }
 
 export interface WorkoutLog {
@@ -878,6 +899,10 @@ export interface WorkoutLog {
   entries: WorkoutEntryLog[];
   note?: string;         // athlete's note on the workout as a whole
   noteCoachSeen?: boolean;
+  /** «¿Cómo llegas hoy?», contestado en un toque al empezar (D4, 11-11-2026).
+   *  Da contexto a un día malo: no es lo mismo rendir peor habiendo llegado
+   *  justo que habiendo llegado bien. */
+  comoLlega?: 'bien' | 'normal' | 'justo';
   /** Respuesta del coach a la nota del entreno completo. */
   noteReply?: RespuestaCoach;
   /** Instante en que se ABRIÓ el player por primera vez (ISO), no en que se
@@ -3388,6 +3413,9 @@ export interface KnowledgeNote {
 export interface CoachInstructions {
   text: string;
   updatedAt: string; // ISO
+  /** Solo en las doctrinas: huella del texto por defecto del que partió esta
+   *  copia, para poder avisar cuando se queda atrás (utils/doctrinaAtrasada.ts). */
+  base?: string;
 }
 
 // Frases reutilizables para el feedback de revisiones (check-ins) — el coach

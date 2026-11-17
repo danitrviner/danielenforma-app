@@ -16,6 +16,15 @@ import { nombreDeMeso } from './nombresMeso.js';
 import { mesocycleWeekNumber } from './progression.js';
 import { ewmaDeSeñal } from './wellnessTrend.js';
 import { ewmaDeSeriePorSesion } from './loadTrend.js';
+import { avisosDeDescanso, type AvisoDeDescanso } from './reglaDel80.js';
+import { avisosDeLimitante, type AvisoDeLimitante } from './queTeParo.js';
+import { diasMalosSeguidos, DIAS_MALOS_PARA_AVISAR } from './diaMalo.js';
+import { cambiosEnLaVentana, type CambioEnLaVentana } from './comparabilidad.js';
+import { calibracionDelAtleta, type CalibracionDelAtleta } from './calibracionRir.js';
+import { detectarEstancamiento, type Estancamiento } from './estancamiento.js';
+import { clasificarCaida, CAIDA_PCT, type PatronDeCaida } from './patronDeCaida.js';
+import { seriesEfectivas, type SeriesEfectivas } from './seriesEfectivas.js';
+import { senalesActivas, recortesPosibles, SENALES_PARA_DESCARGA, type Recorte } from './descargaPorSenales.js';
 import { computeIRP, historialIRP, IRPResult } from './readinessIndex.js';
 import { domsCronicoDeGrupo, esDomsCronico } from './domsCronico.js';
 import { DataPoint } from './seriesCorrelation.js';
@@ -256,6 +265,43 @@ export interface RevisionDelAtleta {
   curvaPorEjercicio: Record<string, number[]>;
   /** Última fecha con una serie registrada de ese ejercicio, en todo su historial. */
   ultimaSesionPorEjercicio: Record<string, string>;
+  /**
+   * Lo que dicen las series de los ejercicios de la ventana, más allá de los
+   * kilos (11-11-2026): si el descanso se queda corto (regla del 80 %), si lo
+   * que para la serie no es el músculo objetivo, y si lleva dos sesiones
+   * seguidas empezando peor. Se calculan con el historial hasta el final de
+   * la ventana, no solo con ella: un patrón necesita varias sesiones.
+   */
+  descansos: AvisoDeDescanso[];
+  limitantes: AvisoDeLimitante[];
+  diasMalos: { exerciseId: string; seguidos: number }[];
+  /**
+   * Bloque F4 + S1 + S3 (11-11-2026):
+   *  · `cambiosDeTarea`: ejercicios cuya tarea cambió dentro de la ventana
+   *    (orden, descanso, RIR, rango, técnica o máquina). Lo que baje ahí no es
+   *    comparable con lo de antes y no se da como alarma.
+   *  · `estancados`: tres o más sesiones comparables sin mejorar, con qué hacer.
+   *  · `calibracion`: cuánto se desvía su RIR cuando se comprueba con una
+   *    serie al máximo. `null` si nunca se ha comprobado.
+   */
+  cambiosDeTarea: Record<string, CambioEnLaVentana>;
+  estancados: Estancamiento[];
+  calibracion: CalibracionDelAtleta | null;
+  /**
+   * S2 + S7 (11-11-2026):
+   *  · `caida`: dónde baja el rendimiento (un ejercicio, una zona o todo).
+   *    `null` si no baja nada comparable.
+   *  · `descarga`: las señales que coinciden, si ya piden descarga y qué
+   *    recortar primero.
+   */
+  caida: PatronDeCaida | null;
+  descarga: { recomendada: boolean; senales: string[]; recortes: Recorte[] };
+  /** S10: cuántas de las series de la ventana llegaron a RIR 4 o menos. */
+  efectivas: SeriesEfectivas;
+  /** D5: ejercicios con molestia apuntada en la ventana (la más alta y cuántas veces). */
+  molestias: { exerciseId: string; maxima: number; veces: number }[];
+  /** D4: de las sesiones en las que contestó «¿cómo llegas hoy?», cuántas llegó justo. */
+  llegadas: { justo: number; contestadas: number };
 }
 
 /**
@@ -380,12 +426,90 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
   const bienestar = construirBienestar({ responses, questionnaires, ventana });
   const { curvaPorEjercicio, ultimaSesionPorEjercicio } = curvasDeLaVentana(informe.perExercise, logs);
 
+  const idsDeLaVentana = informe.perExercise.map(e => e.exerciseId);
+  const logsHastaLaVentana = logs.filter(l => l.date <= ventana.hasta);
+  const diasMalos = idsDeLaVentana
+    .map(exerciseId => ({ exerciseId, seguidos: diasMalosSeguidos(logsHastaLaVentana, exerciseId) }))
+    .filter(d => d.seguidos >= DIAS_MALOS_PARA_AVISAR)
+    .sort((a, b) => b.seguidos - a.seguidos);
+
+  const limitantes = avisosDeLimitante(logsHastaLaVentana, idsDeLaVentana);
+  const calibracion = calibracionDelAtleta(logsHastaLaVentana);
+  const recuperacionGeneralMala = bienestar.irp.valor != null && bienestar.irp.valor <= 0;
+  const grupoDe = new Map(exercises.map(e => [e.id, e.muscleGroup]));
+  const estancados = idsDeLaVentana
+    .map(exerciseId => {
+      const grupo = grupoDe.get(exerciseId);
+      return detectarEstancamiento(logsHastaLaVentana, exerciseId, {
+        recuperacionMala: recuperacionGeneralMala || bienestar.domsCronico.some(d => d.grupo === grupo),
+        desfaseRir: calibracion?.porEjercicio.find(c => c.exerciseId === exerciseId)?.desfaseMedio ?? calibracion?.desfaseMedio,
+        limitante: limitantes.find(l => l.exerciseId === exerciseId)?.motivo,
+        zona: mapa.find(c => c.group === grupo)?.zona,
+      });
+    })
+    .filter((e): e is Estancamiento => e != null)
+    .sort((a, b) => b.sesiones - a.sesiones);
+
+  const molestiasPor = new Map<string, { maxima: number; veces: number }>();
+  for (const log of logsVentana) {
+    for (const e of log.entries) {
+      if (!e.molestia) continue;
+      const m = molestiasPor.get(e.exerciseId) ?? { maxima: 0, veces: 0 };
+      molestiasPor.set(e.exerciseId, { maxima: Math.max(m.maxima, e.molestia), veces: m.veces + 1 });
+    }
+  }
+  const molestias = [...molestiasPor.entries()].map(([exerciseId, m]) => ({ exerciseId, ...m })).sort((a, b) => b.maxima - a.maxima);
+  const contestadas = logsVentana.filter(l => l.comoLlega);
+  const llegadas = { justo: contestadas.filter(l => l.comoLlega === 'justo').length, contestadas: contestadas.length };
+
+  const cambiosDeTarea = cambiosEnLaVentana(logsHastaLaVentana, idsDeLaVentana, ventana.desde, ventana.hasta);
+  // Cae lo que baja siendo la misma tarea, o lo que lleva sesiones seguidas empezando peor.
+  const caen = [...new Set([
+    ...informe.perExercise
+      .filter(e => e.deltaOrmPct != null && e.deltaOrmPct <= -CAIDA_PCT && !cambiosDeTarea[e.exerciseId])
+      .map(e => e.exerciseId),
+    ...diasMalos.map(d => d.exerciseId),
+  ])];
+  const { horasSueño, estres } = bienestar.irp;
+  // También cuenta lo que dice él al empezar: si llega justo a la mayoría de las sesiones.
+  const llegaJusto = llegadas.contestadas >= 2 && llegadas.justo * 2 > llegadas.contestadas;
+  const contextoMalo = recuperacionGeneralMala || llegaJusto || (horasSueño != null && horasSueño < 6) || (estres != null && estres >= 7);
+  const caida = clasificarCaida(caen, exercises, { enLaVentana: idsDeLaVentana.length, contextoMalo });
+  const senales = senalesActivas({
+    caidaTransversal: caida?.tipo === 'transversal',
+    recuperacionMala: recuperacionGeneralMala,
+    ejerciciosConDiasMalos: diasMalos.length,
+    gruposConAgujetasCronicas: bienestar.domsCronico.length,
+  });
+  const descarga = {
+    recomendada: senales.length >= SENALES_PARA_DESCARGA,
+    senales,
+    recortes: recortesPosibles({
+      logs: logsHastaLaVentana, ejercicios: idsDeLaVentana, catalogo: exercises,
+      mantenimiento: mapa
+        .filter(c => c.prioridad === 'baja')
+        .map(c => ({ grupo: c.group, hechas: c.realizadasSemana, bastan: Math.round(c.planificadasSemana ?? landmarks[c.group]?.mv ?? 0) }))
+        .filter(m => m.bastan > 0),
+    }),
+  };
+
   return {
     ventana, informe, patrones,
     ejerciciosPorPatron: porPatron,
     ejerciciosSinPatron: sinPatron,
     suben, bajan, mapa, bienestar,
     curvaPorEjercicio, ultimaSesionPorEjercicio,
+    descansos: avisosDeDescanso(logsHastaLaVentana, idsDeLaVentana),
+    limitantes,
+    diasMalos,
+    cambiosDeTarea,
+    caida,
+    descarga,
+    efectivas: seriesEfectivas(logsVentana),
+    molestias,
+    llegadas,
+    estancados,
+    calibracion,
   };
 }
 

@@ -392,6 +392,8 @@ export default function ClientRevisionPanel({
             comparacion={ventana.etiquetaComparacion.replace(/^vs /, '')}
             curvas={revision.curvaPorEjercicio}
             ultimaSesion={revision.ultimaSesionPorEjercicio}
+            cambios={revision.cambiosDeTarea}
+            estancados={revision.estancados}
             todoAbierto={todoAbierto}
           />
         </Seccion>
@@ -553,6 +555,9 @@ export default function ClientRevisionPanel({
             desde={ventana.desde}
             hasta={ventana.hasta}
             todoAbierto={todoAbierto}
+            logs={logs}
+            exercises={exercises}
+            presentando={presentando}
           />
         </Seccion>
 

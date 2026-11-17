@@ -15,6 +15,8 @@ const EJERCICIOS = [
   { id: 'press', name: 'Press banca' },
   { id: 'remo', name: 'Remo en polea' },
   { id: 'elev', name: 'Elevaciones laterales' },
+  { id: 'curl', name: 'Curl en polea baja con barra' },
+  { id: 'tri', name: 'Extensión de tríceps en polea alta' },
 ] as unknown as Exercise[];
 const WORKOUT: Workout = {
   id: 'w', ownerId: '', name: 'Torso de prueba',
@@ -22,6 +24,9 @@ const WORKOUT: Workout = {
     { exerciseId: 'press', order: 0, sets: 3, reps: '8-10', rir: 2, restSeconds: 0 },
     { exerciseId: 'remo', order: 1, sets: 2, reps: '10-12', rir: 1, restSeconds: 0, technique: 'dropset' },
     { exerciseId: 'elev', order: 2, sets: 2, reps: '12-15', rir: 1, restSeconds: 0, technique: 'myoreps' },
+    // Series alternas (P4): comparten página y se hacen por turnos.
+    { exerciseId: 'curl', order: 3, sets: 3, reps: '10-12', rir: 1, restSeconds: 120, alterna: 'p1' },
+    { exerciseId: 'tri', order: 4, sets: 3, reps: '10-15', rir: 1, restSeconds: 120, alterna: 'p1' },
   ],
 };
 const ANTERIOR: WorkoutEntryLog[] = [
@@ -32,6 +37,8 @@ const ANTERIOR: WorkoutEntryLog[] = [
   },
   { exerciseId: 'remo', sets: [60, 60].map(w => ({ weight: w, repsDone: 10, rir: 1 })) },
   { exerciseId: 'elev', sets: [10, 10].map(w => ({ weight: w, repsDone: 12, rir: 1 })) },
+  { exerciseId: 'curl', sets: [25, 25, 25].map(w => ({ weight: w, repsDone: 11, rir: 1 })) },
+  { exerciseId: 'tri', sets: [30, 30, 30].map(w => ({ weight: w, repsDone: 13, rir: 1 })) },
 ];
 const LOGS = [{
   id: 'l1', athleteId: 'dev@example.com', workoutId: 'w', assignmentId: 'a0',
@@ -48,6 +55,13 @@ function setsIniciales(): SetInput[][] {
 export default function EntrenoDevHarness() {
   const [sets, setSets] = useState(setsIniciales);
   const [notas, setNotas] = useState<string[]>(WORKOUT.exercises.map(() => ''));
+  // D3: «otra máquina o recorrido» por ejercicio.
+  const [referencias, setReferencias] = useState<boolean[]>([]);
+  // D2: «¿qué te ha parado?» — aquí se pregunta en los dos primeros ejercicios.
+  const [quePararon, setQuePararon] = useState<(string | undefined)[]>([]);
+  // D5 y D4: molestia por ejercicio y cómo llega hoy.
+  const [molestias, setMolestias] = useState<(number | undefined)[]>([]);
+  const [comoLlega, setComoLlega] = useState<WorkoutLog['comoLlega']>(undefined);
   const [terminado, setTerminado] = useState(false);
   const assignment: WorkoutAssignment = { id: 'dev', workoutId: 'w', athleteId: 'dev@example.com', date: HOY, status: 'pending' };
 
@@ -65,6 +79,15 @@ export default function EntrenoDevHarness() {
         prevEntries={ANTERIOR}
         exerciseNoteInputs={notas}
         updateExerciseNote={(exIdx, v) => setNotas(prev => prev.map((n, i) => (i === exIdx ? v : n)))}
+        referenciasNuevas={referencias}
+        marcarReferenciaNueva={(exIdx, marcada) => setReferencias(prev => { const n = [...prev]; n[exIdx] = marcada; return n; })}
+        quePararon={quePararon}
+        marcarQueParo={(exIdx, motivo) => setQuePararon(prev => { const n = [...prev]; n[exIdx] = motivo; return n; })}
+        preguntarQueParo={[true, true, false]}
+        molestias={molestias}
+        marcarMolestia={(exIdx, v) => setMolestias(prev => { const n = [...prev]; n[exIdx] = v; return n; })}
+        comoLlega={comoLlega}
+        onComoLlega={setComoLlega}
         getExercise={id => EJERCICIOS.find(e => e.id === id)}
         getPersonalNote={() => undefined}
         logs={LOGS}

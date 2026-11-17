@@ -34,7 +34,11 @@ export interface SetPrefill {
  * `WorkoutLog`, que es otro documento — la prescripción del coach en
  * `Workout.exercises[].rir` no se toca nunca desde aquí.
  */
-export function prefillWorkoutSets(workout: Workout, prevEntries: WorkoutEntryLog[]): SetPrefill[][] {
+export function prefillWorkoutSets(
+  workout: Workout, prevEntries: WorkoutEntryLog[],
+  /** Salto real de carga de cada ejercicio (`saltoReal`), si se conoce. */
+  saltoDe?: (exerciseId: string) => number | null,
+): SetPrefill[][] {
   return workout.exercises
     .slice()
     .sort((a, b) => a.order - b.order)
@@ -42,7 +46,7 @@ export function prefillWorkoutSets(workout: Workout, prevEntries: WorkoutEntryLo
       const prevEntry = prevEntries.find(e => e.exerciseId === we.exerciseId);
       // Donde toca subir (doble progresión, ver cargaSugerida.ts) la fila llega
       // ya con la carga nueva y el mínimo del rango, no con lo de la última vez.
-      const sugerida = sugerirCarga(we, prevEntry).series;
+      const sugerida = sugerirCarga(we, prevEntry, saltoDe?.(we.exerciseId)).series;
       // «La serie 2 de la última vez» cuenta solo series principales: las
       // bajadas de una técnica en otra serie que no sea la última van en medio.
       const previas = prevEntry ? seriesPrincipales(prevEntry.sets) : [];

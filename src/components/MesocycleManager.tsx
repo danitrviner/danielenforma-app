@@ -19,7 +19,7 @@ import {
 } from '../dbService';
 import ExerciseConfigEditor, { COLUMNAS_FILA } from './ExerciseConfigEditor';
 import RoutinePreview, { PreviewDay, PreviewExercise } from './training/RoutinePreview';
-import { elegirEjercicios } from '../utils/seleccionEjercicios';
+import { elegirEjercicios, esquemaPorDefecto } from '../utils/seleccionEjercicios';
 import SeriesBalance from './training/SeriesBalance';
 import MesocycleReviewPanel from './MesocycleReviewPanel';
 import {
@@ -40,6 +40,10 @@ import {
 import BarraDeSemanas, { type Alcance, type AvisoDeSemana, type ElementoProgramado } from './mesociclo/BarraDeSemanas';
 import PlanificadorProgresion from './mesociclo/PlanificadorProgresion';
 import PanelIndicesCdg from './mesociclo/PanelIndicesCdg';
+import AvisoDeAlternas from './mesociclo/AvisoDeAlternas';
+import { registrarCambio } from '../db/cambios';
+import { resumirRutina } from '../utils/cambiosAtleta';
+import { parejasPautadas, ahorroPautado } from '../utils/seriesAlternas';
 import BarraObjetivosCdg from './mesociclo/BarraObjetivosCdg';
 import { useAgujetasCdg } from '../hooks/useAgujetasCdg';
 import { clasificarFaseEntreno } from '../utils/roadmapCalendar';
@@ -1083,9 +1087,9 @@ function MesoExercisesTabs({
                 />
                 <span className="font-mono text-caption text-ink-2 tabular-nums">
                   {g.exercises.reduce((s, e) => s + e.sets, 0)} series · {g.exercises.length} ejercicios
-                  {duracionEstimadaMin(g.exercises) > 0 && (
-                    <span title="Series × (45 s de trabajo + descanso). Sin contar el calentamiento.">
-                      {' · ~'}{duracionEstimadaMin(g.exercises)} min
+                  {duracionEstimadaMin(g.exercises, ahorroPautado(g.exercises)) > 0 && (
+                    <span title="Series × (45 s de trabajo + descanso), menos lo que ahorran las series alternas. Sin contar el calentamiento.">
+                      {' · ~'}{duracionEstimadaMin(g.exercises, ahorroPautado(g.exercises))} min
                     </span>
                   )}
                   <ResumenCdgDia
@@ -1101,6 +1105,16 @@ function MesoExercisesTabs({
                 )}
                 referencia="la distribución del día"
                 onGroupClick={g => jumpToGroup(g, gIdx)}
+              />
+              <AvisoDeAlternas
+                ejercicios={g.exercises}
+                allExercises={allExercises}
+                athleteEmail={meso.athleteId || undefined}
+                onEscribir={semana === 0 ? nuevos => {
+                  const base = baseDe(g);
+                  apuntar({ tipo: 'dia', clave: claveGrupo(base), prev: base.exercises });
+                  onWriteDay(base, nuevos);
+                } : undefined}
               />
             </div>
             <div className={enFilas ? 'space-y-1.5 pb-2' : 'p-2 space-y-1.5'}>
@@ -1124,6 +1138,8 @@ function MesoExercisesTabs({
                   const ex = allExercises.find(e => e.id === we.exerciseId);
                   const videoKey = `${claveDia(g, gIdx)}-${exIdx}`;
                   const isDuplicate = duplicateExerciseIds.has(we.exerciseId);
+                  const parejaAlterna = parejasPautadas(g.exercises).find(p => p.includes(exIdx));
+                  const companeroAlterno = parejaAlterna ? g.exercises[parejaAlterna[0] === exIdx ? parejaAlterna[1] : parejaAlterna[0]] : undefined;
                   const jumpKey = `${claveDia(g, gIdx)}-${exIdx}`;
                   const refFila = (el: HTMLDivElement | null) => { if (el) exerciseRefs.current.set(jumpKey, el); else exerciseRefs.current.delete(jumpKey); };
 
@@ -1181,6 +1197,12 @@ function MesoExercisesTabs({
                             (we.setGroups?.length ?? 0) > 0 ? `${we.sets} series en ${we.setGroups!.length} bloques` : null,
                           ].filter(Boolean).join(' · ')}
                         </p>
+                      )}
+                      {companeroAlterno && (
+                        <span className="flex items-center gap-1 mt-0.5 font-sans text-caption text-accent-ink">
+                          <Icon name="swap_vert" size="s" />
+                          Alterna con {(allExercises.find(e => e.id === companeroAlterno.exerciseId)?.name ?? 'otro ejercicio').toLowerCase()}
+                        </span>
                       )}
                       {isDuplicate && (
                         <span className="inline-flex items-center gap-1 mt-1 font-mono text-caption font-bold text-danger">
@@ -2414,6 +2436,7 @@ export default function MesocycleManager({
             logsDelAtleta: logsParaRotacion,
             vetados,
             inicio: conDraft ? (usados[group] ?? 0) : 0,
+            nivel: athleteLevel,
           });
           if (conDraft) usados[group] = (usados[group] ?? 0) + chunks.length;
           for (const el of elegidos) {
@@ -2435,8 +2458,8 @@ export default function MesocycleManager({
           }
         }
 
-        // Orden de la guía del IH: lo prioritario primero; en pierna, analíticos
-        // antes que multiarticulares; en el resto, alternar empuje y tracción.
+        // Orden: lo prioritario primero; en pierna, lo pesado (multiarticulares)
+        // antes que los analíticos; en el resto, alternar empuje y tracción.
         // Salvo que el coach haya ordenado los grupos del día a mano: entonces
         // manda su orden, que es el de `day.assignments`.
         const porIdEj = new Map(exercises.map(e => [e.id, e]));
@@ -2820,14 +2843,17 @@ export default function MesocycleManager({
     if (!ex) return;
     setPreviewDays(prev => prev.map((d, di) => {
       if (di !== dayIdx) return d;
+      // Reps, RIR y descanso según el tipo de ejercicio (P1): no es lo mismo
+      // añadir a mano un peso muerto que un curl.
+      const { reps, rir, restSeconds } = esquemaPorDefecto(ex, athleteLevel);
       const newEx: PreviewExercise = {
         exerciseId,
         name: ex.name,
         muscleGroup: ex.muscleGroup ?? 'core',
         sets: 3,
-        reps: '8-12',
-        rir: 2,
-        restSeconds: 90,
+        reps,
+        rir,
+        restSeconds,
         order: d.exercises.length,
       };
       // Detrás del último de su grupo, para que caiga en su bloque de la vista
@@ -2877,18 +2903,34 @@ export default function MesocycleManager({
      saber si le habían llegado al atleta. Si Firestore fallaba, `updateWorkout`
      lo guardaba solo en este navegador sin decir nada. Ahora es estricto: o se
      guarda, o sale el error y se vuelve a leer lo que de verdad hay. */
-  async function escribirEnRutinas(ids: string[], patch: Partial<Workout>) {
+  async function escribirEnRutinas(ids: string[], patch: Partial<Workout>): Promise<boolean> {
     setSaveState('saving');
     try {
       await Promise.all(ids.map(id => updateWorkoutStrict(id, patch)));
       setSaveState('saved');
       setTimeout(() => setSaveState(s => (s === 'saved' ? 'idle' : s)), 2500);
+      return true;
     } catch (err) {
       console.error('[escribirEnRutinas]', err);
       setSaveState('error');
       showToast('No se guardó el cambio en la rutina. Revisa la conexión y vuelve a hacerlo.', 'error');
       void queryClient.invalidateQueries({ queryKey: ['workouts'] });
+      return false;
     }
+  }
+
+  /* Deja en «Lo que he cambiado» de la revisión lo que se toca dentro de un
+     día (series, reps, RIR, descanso, técnica, ejercicios que entran o salen).
+     Hasta el 11-11-2026 solo se apuntaban los cambios del mesociclo. Varios
+     retoques seguidos del mismo día se funden en una sola entrada
+     (`registrarCambio`). No bloquea ni rompe el guardado. */
+  function anotarCambioDeRutina(group: MesoWorkoutGroup, antes: WorkoutExercise[], despues: WorkoutExercise[]) {
+    if (!editing?.athleteId || group.workoutIds.length === 0) return;
+    void registrarCambio<WorkoutExercise[]>({
+      athleteId: editing.athleteId, area: 'entreno', objeto: `rutina:${group.workoutIds[0]}`,
+      titulo: group.name, antes, despues,
+      resumir: (a, d) => resumirRutina(a, d, id => allExercises.find(e => e.id === id)?.name),
+    });
   }
 
   async function updateMesoWorkoutExercise(
@@ -2899,7 +2941,7 @@ export default function MesocycleManager({
     queryClient.setQueryData<Workout[]>(['workouts'], prev => prev?.map(w =>
       group.workoutIds.includes(w.id) ? { ...w, exercises: updatedExercises } : w
     ));
-    await escribirEnRutinas(group.workoutIds, { exercises: updatedExercises });
+    if (await escribirEnRutinas(group.workoutIds, { exercises: updatedExercises })) anotarCambioDeRutina(group, group.exercises, updatedExercises);
   }
 
   // T11.a: escribe el Workout del día — se aplica a las semanas restantes de
@@ -2911,7 +2953,7 @@ export default function MesocycleManager({
     queryClient.setQueryData<Workout[]>(['workouts'], prev => prev?.map(w =>
       group.workoutIds.includes(w.id) ? { ...w, exercises: updatedExercises } : w
     ));
-    await escribirEnRutinas(group.workoutIds, { exercises: updatedExercises });
+    if (await escribirEnRutinas(group.workoutIds, { exercises: updatedExercises })) anotarCambioDeRutina(group, group.exercises, updatedExercises);
   }
 
   // La validación (nombre vacío, duplicado con otro día) vive en `MesoExercisesTabs`
@@ -2983,8 +3025,9 @@ export default function MesocycleManager({
       return;
     }
     if (exIdx === null) {
+      const { reps, rir, restSeconds } = esquemaPorDefecto(ex, athleteLevel);
       const newEx: WorkoutExercise = {
-        exerciseId: ex.id, order: group.exercises.length, sets: 3, reps: '8-12', rir: 2, restSeconds: 90,
+        exerciseId: ex.id, order: group.exercises.length, sets: 3, reps, rir, restSeconds,
         muscleGroup: ex.muscleGroup,
       };
       void writeMesoWorkoutExercises(group, [...group.exercises, newEx]);

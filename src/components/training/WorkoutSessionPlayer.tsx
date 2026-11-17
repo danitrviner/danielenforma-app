@@ -15,13 +15,26 @@ import { haptics } from '../../services/haptics';
 import { formatDate } from '../../utils/trainingWeek';
 import { useEstable } from '../../hooks/useEstable';
 import { SetInput } from './setInput';
-import { estadoDelEjercicio } from '../../utils/seriesPrincipales';
+import { estadoDelEjercicio, seriesPrincipales } from '../../utils/seriesPrincipales';
 import { logrosDelEjercicio, tonelajeMaximoAntesDe, type Logro } from '../../utils/logrosDelEjercicio';
 import ExerciseCard from './ExerciseCard';
+import type { MotivoDeParada } from '../../utils/queTeParo';
 import ExerciseCloseCard from './ExerciseCloseCard';
+import ParejaAlternaCard, { type LadoDePareja } from './ParejaAlternaCard';
+import { paginasDeSesion, siguienteTurno, descansoTrasTurno } from '../../utils/seriesAlternas';
+import { llevaSegmentos } from '../../utils/tecnicaDeSerie';
+import { comprobarRir } from '../../utils/calibracionRir';
+import { saltoReal } from '../../utils/cargaSugerida';
+import { rmDeSerie } from '../../utils/oneRepMax';
 import AvisoDeRetoEnSesion from './AvisoDeRetoEnSesion';
 import { ListaDeNovedades } from './NovedadesDeSemana';
 import type { NovedadesDeLaSesion } from '../../utils/planificadorProgresion';
+
+const COMO_LLEGA: { clave: NonNullable<WorkoutLog['comoLlega']>; etiqueta: string }[] = [
+  { clave: 'bien', etiqueta: 'Con energía' },
+  { clave: 'normal', etiqueta: 'Normal' },
+  { clave: 'justo', etiqueta: 'Justo' },
+];
 
 export interface SessionCelebration {
   isFirstEver: boolean;
@@ -43,6 +56,20 @@ interface Props {
   prevEntries: WorkoutEntryLog[];
   exerciseNoteInputs: string[];
   updateExerciseNote: (exIdx: number, value: string) => void;
+  /** D3: por ejercicio, si el atleta ha marcado «otra máquina o recorrido». */
+  referenciasNuevas?: boolean[];
+  /** Ausente = la casilla no se ofrece. */
+  marcarReferenciaNueva?: (exIdx: number, marcada: boolean) => void;
+  /** D2: por ejercicio, qué paró la última serie y en cuáles se pregunta. */
+  quePararon?: (string | undefined)[];
+  marcarQueParo?: (exIdx: number, motivo: MotivoDeParada | undefined) => void;
+  preguntarQueParo?: boolean[];
+  /** D5: por ejercicio, molestia de 1 a 10. */
+  molestias?: (number | undefined)[];
+  marcarMolestia?: (exIdx: number, valor: number | undefined) => void;
+  /** D4: «¿cómo llegas hoy?». Ausente `onComoLlega` = no se pregunta. */
+  comoLlega?: WorkoutLog['comoLlega'];
+  onComoLlega?: (valor: WorkoutLog['comoLlega']) => void;
   getExercise: (id: string) => Exercise | undefined;
   getPersonalNote: (exerciseId: string) => string | undefined;
   logs: WorkoutLog[];
@@ -81,6 +108,9 @@ interface Props {
 export default function WorkoutSessionPlayer({
   profile, activeAssignment, activeWorkout, playerSets, updateSet, addSetRow, prevEntries,
   exerciseNoteInputs, updateExerciseNote,
+  referenciasNuevas, marcarReferenciaNueva,
+  quePararon, marcarQueParo, preguntarQueParo,
+  molestias, marcarMolestia, comoLlega, onComoLlega,
   getExercise, getPersonalNote, logs, exerciseProgressById, handleFinish, isFinishing,
   sessionStartedAt, completedDurationSeg,
   celebration, dismissCelebration, cerrarPlayer, sameDayCardio,
@@ -91,7 +121,21 @@ export default function WorkoutSessionPlayer({
   const doneSetsTotal = playerSets.flat().filter(s => s.done).length;
   const totalSetsAll = playerSets.flat().length;
 
+  // Páginas del carrusel: un ejercicio cada una, salvo las parejas de series
+  // alternas (P4), que comparten página. `pageIdx` cuenta PÁGINAS, no
+  // ejercicios. Lo que lleva bajadas o miniseries no se alterna aunque venga
+  // emparejado: cada uno va a su página, como siempre.
+  const paginas = useMemo(
+    () => {
+      const ordenados = activeWorkout.exercises.slice().sort((a, b) => a.order - b.order);
+      return paginasDeSesion(ordenados, i => !llevaSegmentos(ordenados[i].technique));
+    },
+    [activeWorkout.exercises],
+  );
+  const parejaDe = (exIdx: number) => paginas.find(pg => pg.length === 2 && pg.includes(exIdx));
+  const hechasDe = (exIdx: number) => (playerSets[exIdx] || []).map(x => x.done);
   const [pageIdx, setPageIdx] = useState(0);
+  const paginaActual = paginas[Math.min(pageIdx, paginas.length - 1)] ?? [0];
   const [openVideoIdx, setOpenVideoIdx] = useState<number | null>(null);
   const [historyExId, setHistoryExId] = useState<string | null>(null);
   // Ejercicios que el atleta ha reabierto explícitamente tras cerrarlos (ver
@@ -120,7 +164,7 @@ export default function WorkoutSessionPlayer({
     const estado = estadoDelEjercicio(playerSets[exIdx] || []);
     return estado === 'cerrado' || (estado === 'tecnica-pendiente' && cerradosAMano.has(exIdx));
   };
-  const isLastPage = pageIdx === orderedExercises.length - 1;
+  const isLastPage = pageIdx === paginas.length - 1;
   const isEditingCompleted = activeAssignment.status === 'completed';
 
   // Cronómetro de descanso — vive aquí (antes en TrainingScreen) porque solo
@@ -208,10 +252,23 @@ export default function WorkoutSessionPlayer({
     void haptics.light();
     updateSet(exIdx, sIdx, 'done', markingDone);
     if (markingDone) onMarkActionDone();
-    if (markingDone && we.restSeconds) {
+    // En una pareja de series alternas, tras la serie toca el otro ejercicio:
+    // la pausa es la corta (el descanso de cada músculo sigue entero porque
+    // mientras tanto trabaja el compañero).
+    let descanso = we.restSeconds;
+    const pareja = parejaDe(exIdx);
+    if (markingDone && pareja) {
+      const lado = pareja[0] === exIdx ? 0 : 1;
+      const hechas = pareja.map(i => hechasDe(i).map((h, s) => (i === exIdx && s === sIdx ? true : h)));
+      descanso = descansoTrasTurno(
+        lado, hechas[0], hechas[1],
+        orderedExercises[pareja[0]].restSeconds ?? 0, orderedExercises[pareja[1]].restSeconds ?? 0,
+      );
+    }
+    if (markingDone && descanso) {
       setRestTimer({
-        restTotalSeconds: we.restSeconds,
-        restEndsAt: Date.now() + we.restSeconds * 1000,
+        restTotalSeconds: descanso,
+        restEndsAt: Date.now() + descanso * 1000,
         exerciseName: ex?.name || 'tu ejercicio',
         exIdx, setIdx: sIdx,
       });
@@ -246,7 +303,17 @@ export default function WorkoutSessionPlayer({
   /** La serie que toca: la primera sin marcar del ejercicio que se está
    *  viendo. Es lo que se apunta desde la pantalla de bloqueo. */
   const serieEnCurso = useMemo(() => {
-    const exIdx = restTimer ? restTimer.exIdx : pageIdx;
+    const base = restTimer ? restTimer.exIdx : paginaActual[0];
+    // En una pareja la que toca es el siguiente turno, que suele ser del OTRO
+    // ejercicio, no la serie siguiente del que se acaba de marcar.
+    const pareja = parejaDe(base);
+    if (pareja) {
+      const turno = siguienteTurno(hechasDe(pareja[0]), hechasDe(pareja[1]));
+      const exIdxP = turno ? pareja[turno.ej] : pareja[1];
+      const setsP = playerSets[exIdxP] || [];
+      return { exIdx: exIdxP, setIdx: turno ? turno.serie : Math.max(setsP.length - 1, 0), exSets: setsP };
+    }
+    const exIdx = base;
     const exSets = playerSets[exIdx] || [];
     const pendiente = exSets.findIndex(x => !x.done);
     // Si el descanso viene de marcar una serie, la que toca es la siguiente.
@@ -254,7 +321,8 @@ export default function WorkoutSessionPlayer({
       ? Math.min(restTimer.setIdx + 1, Math.max(exSets.length - 1, 0))
       : (pendiente === -1 ? Math.max(exSets.length - 1, 0) : pendiente);
     return { exIdx, setIdx, exSets };
-  }, [restTimer, pageIdx, playerSets]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restTimer, pageIdx, playerSets, paginas]);
 
   const estadoEnVivo = useMemo((): EstadoEnVivo | null => {
     const { exIdx, setIdx, exSets } = serieEnCurso;
@@ -345,6 +413,8 @@ export default function WorkoutSessionPlayer({
   const updateSetStable = useEstable(updateSet);
   const addSetRowStable = useEstable(addSetRow);
   const updateExerciseNoteStable = useEstable(updateExerciseNote);
+  const marcarReferenciaNuevaStable = useEstable((exIdx: number, marcada: boolean) => marcarReferenciaNueva?.(exIdx, marcada));
+  const marcarQueParoStable = useEstable((exIdx: number, motivo: MotivoDeParada | undefined) => marcarQueParo?.(exIdx, motivo));
   const handleMarkDoneStable = useEstable(handleMarkDone);
   // `EMPEZAR YA` / `SIGUIENTE`: el descanso termina AHORA, no desaparece.
   // La actividad sigue viva en «a por la serie N» (§3.2).
@@ -379,6 +449,8 @@ export default function WorkoutSessionPlayer({
       onMarkDone: (sIdx: number, markingDone: boolean) => handleMarkDoneStable(exIdx, sIdx, markingDone),
       onAddRow: (segmentoDe: number) => addSetRowStable(exIdx, segmentoDe),
       onNoteChange: (v: string) => updateExerciseNoteStable(exIdx, v),
+      onToggleReferencia: (marcada: boolean) => marcarReferenciaNuevaStable(exIdx, marcada),
+      onQueParo: (motivo: MotivoDeParada | undefined) => marcarQueParoStable(exIdx, motivo),
       onCerrarEjercicio: () => cerrarConTecnicaPendiente(exIdx),
     }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -402,6 +474,8 @@ export default function WorkoutSessionPlayer({
   // una vez, al cerrarlo.
   const logrosDe = (exIdx: number): Logro[] | undefined => {
     if (isEditingCompleted || cerradosAlAbrir.current?.has(exIdx)) return undefined;
+    // Con referencia nueva no se celebra nada contra las marcas de antes (D3).
+    if (referenciasNuevas?.[exIdx]) return undefined;
     const we = orderedExercises[exIdx];
     return logrosDelEjercicio({
       nombre: getExercise(we.exerciseId)?.name || 'este ejercicio',
@@ -434,33 +508,83 @@ export default function WorkoutSessionPlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firmaCerrados, isEditingCompleted]);
 
-  const pages = orderedExercises.map((we, exIdx) => {
+  // P12: el salto de carga que usa de verdad en cada ejercicio.
+  const saltos = useMemo(
+    () => new Map(activeWorkout.exercises.map(we => [we.exerciseId, saltoReal(logs, we.exerciseId)])),
+    [logs, activeWorkout.exercises],
+  );
+
+  // F6: ejercicios que el atleta no ha registrado nunca.
+  const yaHechos = useMemo(() => new Set(logs.flatMap(l => l.entries.map(e => e.exerciseId))), [logs]);
+
+  // F3: cuando sale igual que la última vez, que no se lea como un fracaso.
+  const mensajeDe = (exIdx: number): string | undefined => {
+    if (isEditingCompleted || referenciasNuevas?.[exIdx]) return undefined;
+    const previa = prevEntries.find(e => e.exerciseId === orderedExercises[exIdx].exerciseId);
+    if (!previa) return undefined;
+    const hoy = Math.max(0, ...seriesPrincipales(playerSets[exIdx] || []).filter(x => x.done).map(x => rmDeSerie({ weight: x.weight, repsDone: x.repsDone, rir: x.rir === 'fallo' ? 0 : x.rir, alFallo: x.rir === 'fallo' })));
+    const antes = Math.max(0, ...seriesPrincipales(previa.sets).map(rmDeSerie));
+    if (!(hoy > 0) || !(antes > 0)) return undefined;
+    const cambio = (hoy - antes) / antes;
+    if (Math.abs(cambio) <= 0.01) return 'Igual que la última vez. Una sesión igual no es estancarse: lo que cuenta es cómo vas en varias semanas.';
+    if (cambio < 0) return 'Hoy ha salido un poco por debajo de la última vez. Una sesión suelta no dice nada: sueño, comida y cansancio mueven el número de un día para otro.';
+    return undefined;
+  };
+
+  // F4: si hoy hay una serie al máximo comparable con lo que venía apuntando,
+  // se le enseña al cerrar el ejercicio cuánto se desviaba su RIR. Con
+  // referencia nueva la sesión anterior no vale de estimación.
+  const comprobacionDe = (exIdx: number) => {
+    const hechas = seriesPrincipales(playerSets[exIdx] || []).filter(x => x.done).map(x => ({
+      weight: parseFloat(x.weight) || 0,
+      repsDone: parseInt(x.repsDone) || 0,
+      rir: x.rir === 'fallo' ? 0 : Number(x.rir) || 0,
+      alFallo: x.rir === 'fallo',
+    }));
+    const previa = referenciasNuevas?.[exIdx] ? undefined : prevEntries.find(e => e.exerciseId === orderedExercises[exIdx].exerciseId);
+    return comprobarRir(hechas, previa ? seriesPrincipales(previa.sets) : undefined);
+  };
+
+  const nombreDePagina = (pg: number[] | undefined) => pg?.map(i => getExercise(orderedExercises[i]?.exerciseId)?.name).filter(Boolean).join(' + ') || undefined;
+  const irALaSiguiente = () => setPageIdx(i => Math.min(i + 1, paginas.length - 1));
+
+  const paginaDeUno = (exIdx: number, pIdx: number, enPareja?: 'primera' | 'segunda') => {
+    const we = orderedExercises[exIdx];
     const ex = getExercise(we.exerciseId);
     const exSets = playerSets[exIdx] || [];
     const prevEntry = prevEntries.find(e => e.exerciseId === we.exerciseId);
     const cerrado = estaCerrado(exIdx);
-    const isLast = exIdx === orderedExercises.length - 1;
+    const isLast = pIdx === paginas.length - 1;
     const cb = exerciseCallbacksByIdx[exIdx];
 
     // Reabierto manualmente (botón "Editar" en la tarjeta de cierre): se
     // queda editable el resto de la sesión, aunque se vuelvan a marcar todas
     // las series como hechas — no lo colapsamos solo, para no sacar al
     // atleta de en medio de una edición.
-    if (cerrado && !reopenedExercises.has(exIdx)) {
+    if (enPareja || (cerrado && !reopenedExercises.has(exIdx))) {
       return (
         <ExerciseCloseCard
           key={`${we.exerciseId}-${exIdx}`}
           we={we}
           ex={ex}
           exSets={exSets}
-          priorBestOrm={priorBestByExercise.get(we.exerciseId)}
+          // Con referencia nueva no hay marca anterior con la que comparar (D3).
+          priorBestOrm={referenciasNuevas?.[exIdx] ? undefined : priorBestByExercise.get(we.exerciseId)}
           noteValue={exerciseNoteInputs[exIdx] || ''}
           onNoteChange={cb.onNoteChange}
+          queParo={quePararon?.[exIdx]}
+          onQueParo={marcarQueParo && preguntarQueParo?.[exIdx] ? cb.onQueParo : undefined}
           isLast={isLast}
-          nextExerciseName={!isLast ? (getExercise(orderedExercises[exIdx + 1]?.exerciseId)?.name) : undefined}
-          onNext={() => setPageIdx(i => Math.min(i + 1, orderedExercises.length - 1))}
-          onReopen={() => onReopenExercise(exIdx)}
-          sameDayCardio={sameDayCardio}
+          nextExerciseName={!isLast ? nombreDePagina(paginas[pIdx + 1]) : undefined}
+          onNext={irALaSiguiente}
+          // Reabrir uno de la pareja reabre la tabla por turnos entera.
+          onReopen={() => (parejaDe(exIdx) ?? [exIdx]).forEach(onReopenExercise)}
+          sameDayCardio={enPareja === 'primera' ? null : sameDayCardio}
+          sinSiguiente={enPareja === 'primera'}
+          comprobacion={comprobacionDe(exIdx)}
+          molestia={molestias?.[exIdx]}
+          onMolestia={marcarMolestia ? v => marcarMolestia(exIdx, v) : undefined}
+          mensaje={mensajeDe(exIdx)}
           logros={logrosDe(exIdx)}
           festejar={festejando === exIdx}
         />
@@ -485,7 +609,11 @@ export default function WorkoutSessionPlayer({
         onAddRow={cb.onAddRow}
         noteValue={exerciseNoteInputs[exIdx] || ''}
         onNoteChange={cb.onNoteChange}
-        restTimer={pageIdx === exIdx && restTimer && restSecondsLeft
+        saltoKg={saltos.get(we.exerciseId)}
+        esNuevo={!isEditingCompleted && !yaHechos.has(we.exerciseId)}
+        nuevaReferencia={referenciasNuevas?.[exIdx] ?? false}
+        onToggleReferencia={marcarReferenciaNueva && !isEditingCompleted ? cb.onToggleReferencia : undefined}
+        restTimer={pageIdx === pIdx && restTimer && restSecondsLeft
           ? { totalSeconds: restTimer.restTotalSeconds, secondsLeft: restSecondsLeft }
           : null}
         onSkipRest={onSkipRestStable}
@@ -496,6 +624,61 @@ export default function WorkoutSessionPlayer({
         cambios={avisoSesion?.datos.porEjercicio[exIdx]}
         onCerrarEjercicio={estadoDelEjercicio(exSets) === 'tecnica-pendiente' ? cb.onCerrarEjercicio : undefined}
       />
+      </div>
+    );
+  };
+
+  const pages = paginas.map((pg, pIdx) => {
+    if (pg.length < 2) return paginaDeUno(pg[0], pIdx);
+    const [a, b] = pg;
+    // Los dos cerrados y ninguno reabierto: las dos tarjetas de cierre, una
+    // encima de otra, con el «Siguiente» solo en la segunda.
+    if (pg.every(estaCerrado) && !pg.some(i => reopenedExercises.has(i))) {
+      return (
+        <div key={`pareja-${a}-${b}`} className="space-y-3">
+          {paginaDeUno(a, pIdx, 'primera')}
+          {paginaDeUno(b, pIdx, 'segunda')}
+        </div>
+      );
+    }
+    const lado = (exIdx: number): LadoDePareja => {
+      const we = orderedExercises[exIdx];
+      const cb = exerciseCallbacksByIdx[exIdx];
+      return {
+        we,
+        ex: getExercise(we.exerciseId),
+        exSets: playerSets[exIdx] || [],
+        prevEntry: prevEntries.find(e => e.exerciseId === we.exerciseId),
+        personalNote: getPersonalNote(we.exerciseId),
+        isVideoOpen: openVideoIdx === exIdx,
+        onToggleVideo: cb.onToggleVideo,
+        onOpenHistory: cb.onOpenHistory,
+        onUpdateSet: cb.onUpdateSet,
+        onMarkDone: cb.onMarkDone,
+        noteValue: exerciseNoteInputs[exIdx] || '',
+        onNoteChange: cb.onNoteChange,
+        nuevaReferencia: referenciasNuevas?.[exIdx] ?? false,
+        onToggleReferencia: marcarReferenciaNueva && !isEditingCompleted ? cb.onToggleReferencia : undefined,
+        cambios: avisoSesion?.datos.porEjercicio[exIdx],
+        saltoKg: saltos.get(we.exerciseId),
+        esNuevo: !isEditingCompleted && !yaHechos.has(we.exerciseId),
+      };
+    };
+    return (
+      <div key={`pareja-${a}-${b}`} className="space-y-3">
+        {pg.map(i => (
+          <React.Fragment key={i}>
+            <AvisoDeRetoEnSesion athleteEmail={profile.email} exerciseId={orderedExercises[i].exerciseId} workoutId={activeWorkout.id} />
+          </React.Fragment>
+        ))}
+        <ParejaAlternaCard
+          lados={[lado(a), lado(b)]}
+          restTimer={pageIdx === pIdx && restTimer && restSecondsLeft
+            ? { totalSeconds: restTimer.restTotalSeconds, secondsLeft: restSecondsLeft }
+            : null}
+          onSkipRest={onSkipRestStable}
+          onAddRestSeconds={addRestSecondsStable}
+        />
       </div>
     );
   });
@@ -512,7 +695,7 @@ export default function WorkoutSessionPlayer({
           <div className="flex-1 min-w-0">
             <h1 className="sr-only">{activeWorkout.name}</h1>
             <p className="font-mono text-caption text-ink-2 uppercase whitespace-nowrap truncate">
-              {formatDate(activeAssignment.date).replace(/ \d{4}$/, '')} · EJ. {String(pageIdx + 1).padStart(2, '0')}/{orderedExercises.length}
+              {formatDate(activeAssignment.date).replace(/ \d{4}$/, '')} · EJ. {paginaActual.map(i => String(i + 1).padStart(2, '0')).join('-')}/{orderedExercises.length}
             </p>
           </div>
           {/* Cronómetro general — empieza al abrir la sesión (no al marcar la
@@ -537,14 +720,14 @@ export default function WorkoutSessionPlayer({
 
         {/* Barra segmentada — un tramo por ejercicio (mockup frame 01), sustituye
             al contador de texto como referencia visual rápida de dónde vas. */}
-        <div className="flex gap-1.5" role="group" aria-label={`Ejercicio ${pageIdx + 1} de ${orderedExercises.length}`}>
+        <div className="flex gap-1.5" role="group" aria-label={`Ejercicio ${paginaActual.map(i => i + 1).join(' y ')} de ${orderedExercises.length}`}>
           {orderedExercises.map((_, i) => {
             const cerrado = estaCerrado(i);
             return (
               <span
                 key={i}
                 className={`h-[3px] flex-1 rounded-full ${
-                  i === pageIdx ? 'bg-accent' : cerrado ? 'bg-accent/45' : 'bg-hairline'
+                  paginaActual.includes(i) ? 'bg-accent' : cerrado ? 'bg-accent/45' : 'bg-hairline'
                 }`}
               />
             );
@@ -558,6 +741,35 @@ export default function WorkoutSessionPlayer({
         icon="touch_app"
         text="Marca el círculo al terminar cada serie — es lo que usa tu coach para progresarte."
       />
+
+      {/* F5: RIR 0 y FALLO no son lo mismo, y el dato solo vale si se apunta bien. */}
+      <Coachmark
+        id="training_rir0_vs_fallo"
+        profile={profile}
+        icon="help"
+        text="RIR 0: no te quedaba otra repetición con buena técnica y paraste. FALLO: intentaste otra y no salió. Apunta lo que pasó de verdad."
+      />
+
+      {/* D4: cómo llega hoy, en un toque y antes de la primera serie. Da
+          contexto a un día malo sin tener que escribir nada. */}
+      {onComoLlega && !isEditingCompleted && doneSetsTotal === 0 && (
+        <div className="flex flex-wrap items-center gap-2 px-1">
+          <span className="font-sans text-label text-ink-2">¿Cómo llegas hoy?</span>
+          {COMO_LLEGA.map(o => (
+            <button
+              key={o.clave}
+              type="button"
+              onClick={() => onComoLlega(comoLlega === o.clave ? undefined : o.clave)}
+              aria-pressed={comoLlega === o.clave}
+              className={`rounded-control border px-2.5 py-1.5 font-sans text-label transition-colors ${
+                comoLlega === o.clave ? 'border-accent-line text-accent-ink' : 'border-hairline text-ink-2 hover:text-ink'
+              }`}
+            >
+              {o.etiqueta}
+            </button>
+          ))}
+        </div>
+      )}
 
       {avisoSesion && onAvisoSesion && !isEditingCompleted && (
         <Dialog

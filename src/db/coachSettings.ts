@@ -4,6 +4,7 @@ import { DOCTRINA_DEFAULTS, type DoctrinaKind } from '../ai/doctrina';
 import { VOLUME_LANDMARKS_DEFAULT, isValidLandmarksTable, type VolumeLandmark } from '../data/volumeLandmarks';
 import { forceLocalOnly, setLocalBypassMode, esFalloDePermisos } from './core';
 import { escribirLocal } from '../utils/almacenLocal';
+import { doctrinaAtrasada, esElPorDefecto, huella, type DoctrinaAtrasada } from '../utils/doctrinaAtrasada';
 
 // ─── INSTRUCCIONES FIJAS DEL COACH (para el asistente IA) ───────────────────────
 // Doc único (id determinista 'main'): reglas propias de Dani, con prioridad
@@ -42,50 +43,80 @@ const DOCTRINA_DOC_IDS: Record<DoctrinaKind, string> = {
 
 const doctrinaLocalKey = (kind: DoctrinaKind) => `enforma_doctrina_${kind}_v1`;
 
-/** Texto guardado, o null si Dani nunca lo ha tocado (→ usar el default). */
-async function getDoctrinaRaw(kind: DoctrinaKind): Promise<string | null> {
+/** La copia guardada, o null si Dani nunca la ha tocado (→ usar el default). */
+async function getDoctrinaRaw(kind: DoctrinaKind): Promise<Pick<CoachInstructions, 'text' | 'base' | 'updatedAt'> | null> {
   const local = localStorage.getItem(doctrinaLocalKey(kind));
-  if (forceLocalOnly) return local;
+  const deLocal = local === null ? null : { text: local, updatedAt: '' };
+  if (forceLocalOnly) return deLocal;
   try {
     const snap = await getDoc(doc(db, 'coachSettings', DOCTRINA_DOC_IDS[kind]));
-    if (!snap.exists()) return null;
-    const text = (snap.data() as CoachInstructions).text ?? '';
+    if (!snap.exists()) {
+      // Sin copia en el servidor tampoco vale la de este navegador: si no, un
+      // fallo de red la resucitaría cuando ya se volvió al texto por defecto.
+      localStorage.removeItem(doctrinaLocalKey(kind));
+      return null;
+    }
+    const d = snap.data() as CoachInstructions;
+    const text = d.text ?? '';
     escribirLocal(doctrinaLocalKey(kind), text);
-    return text;
+    return { text, base: d.base, updatedAt: d.updatedAt };
   } catch (err) {
     console.warn(`getDoctrina(${kind}) Firestore failed, using local:`, err);
     setLocalBypassMode(true, err);
-    return local;
+    return deLocal;
   }
 }
 
 /** Lo que se manda al modelo: lo de Dani si lo ha tocado, el default si no. */
 export async function getDoctrina(kind: DoctrinaKind): Promise<string> {
   const raw = await getDoctrinaRaw(kind);
-  return raw === null ? DOCTRINA_DEFAULTS[kind] : raw;
+  return raw === null ? DOCTRINA_DEFAULTS[kind] : raw.text;
 }
 
-/** Para el editor: además de la doctrina activa, si viene del default o no. */
+/**
+ * Para el editor: la doctrina activa, si viene del default o no y, si es una
+ * copia que se ha quedado atrás del texto por defecto, cuánto (`atrasada`).
+ */
 export async function getDoctrinaParaEditar(
   kind: DoctrinaKind,
-): Promise<{ text: string; esDefault: boolean }> {
+): Promise<{ text: string; esDefault: boolean; atrasada: DoctrinaAtrasada | null; base: string | null }> {
   const raw = await getDoctrinaRaw(kind);
   return raw === null
-    ? { text: DOCTRINA_DEFAULTS[kind], esDefault: true }
-    : { text: raw, esDefault: false };
+    ? { text: DOCTRINA_DEFAULTS[kind], esDefault: true, atrasada: null, base: null }
+    : { text: raw.text, esDefault: false, atrasada: doctrinaAtrasada(raw, DOCTRINA_DEFAULTS[kind]), base: raw.base ?? null };
 }
 
-export async function saveDoctrina(kind: DoctrinaKind, text: string): Promise<void> {
+/**
+ * Guarda la copia de Dani. Un texto igual al de por defecto NO se guarda como
+ * copia (se vuelve al default): guardarlo lo congelaba, y así fue como las
+ * dos doctrinas de producción dejaron de recibir cambios durante meses.
+ * Devuelve `true` si lo que queda activo es el texto por defecto.
+ */
+export async function saveDoctrina(
+  kind: DoctrinaKind, text: string,
+  /**
+   * De qué versión del texto por defecto parte la copia. Sin valor = de la
+   * actual. Al retocar una copia que YA iba atrasada se pasa la suya (`null`
+   * si no la tenía): editarla no la pone al día, y el aviso tiene que seguir.
+   */
+  base?: string | null,
+): Promise<boolean> {
+  if (esElPorDefecto(text, DOCTRINA_DEFAULTS[kind])) {
+    await resetDoctrina(kind);
+    return true;
+  }
   escribirLocal(doctrinaLocalKey(kind), text);
-  if (forceLocalOnly) return;
+  if (forceLocalOnly) return false;
   try {
-    const data: CoachInstructions = { text, updatedAt: new Date().toISOString() };
+    const partida = base === undefined ? huella(DOCTRINA_DEFAULTS[kind]) : base;
+    const data: CoachInstructions = { text, updatedAt: new Date().toISOString(), ...(partida ? { base: partida } : {}) };
     await setDoc(doc(db, 'coachSettings', DOCTRINA_DOC_IDS[kind]), data);
   } catch (err) {
     console.warn(`saveDoctrina(${kind}) Firestore failed, kept local:`, err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
   }
+  return false;
 }
 
 /** Vuelve al criterio por defecto: borra la copia de Dani en vez de escribir el

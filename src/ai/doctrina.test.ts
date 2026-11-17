@@ -79,8 +79,14 @@ describe('decisiones de Dani que no se pueden perder', () => {
     expect(DOCTRINA_NUTRICION_DEFAULT).toMatch(/PROPÓNMELA|propónmela/);
   });
 
-  it('mantiene la ventana de 8-12 series por músculo y sesión', () => {
-    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain('8-12 series por músculo y sesión');
+  // Dani, 11-11-2026: antes «8-12 es la ventana buena». Se baja para que el
+  // asistente diga lo mismo que la calculadora de reparto (tope de 8) y no
+  // proponga 12 series de un músculo en un día que luego se marcan como exceso.
+  it('hasta 8 series por músculo y sesión; 9-10 con motivo; más de 10 se reparte', () => {
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain('Hasta 8 series por músculo y sesión');
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/9-10 solo con un motivo/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/más de 10 se reparte/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).not.toContain('8-12 series por músculo y sesión');
   });
 
   it('en definición no se recorta volumen por defecto', () => {

@@ -14,6 +14,8 @@ export interface SetInput {
   segmento?: boolean;
   /** Serie principal (1 = la primera) a la que pertenece el segmento. */
   segmentoDe?: number;
+  /** Instante (ISO) en que se marcó como hecha. Ver `WorkoutSetLog.hechaEn`. */
+  hechaEn?: string;
 }
 
 /** Orden de ciclo del selector compacto de la tabla: el valor más bajo (serie

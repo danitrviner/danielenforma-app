@@ -7,6 +7,7 @@ import {
   getDoctrina, getDoctrinaParaEditar, saveDoctrina, resetDoctrina, getVolumeLandmarks, getVolumeLandmarksParaEditar, saveVolumeLandmarks, resetVolumeLandmarks,
   getWorkouts, getExercises,
 } from '../dbService';
+import type { DoctrinaAtrasada } from '../utils/doctrinaAtrasada';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
 import { runAgentTurn, messageText, TurnoCancelado } from '../ai/aiClient';
 import { TAREAS, type Tarea } from '../ai/tareas';
@@ -96,13 +97,17 @@ const PROMPT_TABS: { id: PromptTab; label: string }[] = [
 // Editor de una doctrina. Aparte del textarea, su trabajo real es dejar claro
 // si lo que se está leyendo es el criterio de Dani o el de fábrica: sin ese
 // aviso, editar el default y guardarlo parece lo mismo que no tocar nada.
-function DoctrinaEditor({ descripcion, valor, onChange, esDefault, onRestaurar, disabled }: {
+function DoctrinaEditor({ descripcion, valor, onChange, esDefault, onRestaurar, disabled, atrasada, onDarPorRevisada }: {
   descripcion: string;
   valor: string;
   onChange: (v: string) => void;
   esDefault: boolean;
   onRestaurar: () => void;
   disabled: boolean;
+  /** La copia guardada se ha quedado atrás del criterio por defecto. */
+  atrasada?: DoctrinaAtrasada | null;
+  /** «Ya lo he revisado»: la copia pasa a darse por al día. */
+  onDarPorRevisada?: () => void;
 }) {
   return (
     <>
@@ -117,6 +122,30 @@ function DoctrinaEditor({ descripcion, valor, onChange, esDefault, onRestaurar, 
           </Button>
         )}
       </div>
+      {/* Una copia guardada deja de recibir lo que cambie en el criterio por
+          defecto. Sin este aviso pasó meses sin que nadie lo notara. */}
+      {!esDefault && atrasada && (
+        <div className="rounded-control border border-warning/40 bg-warning/10 p-3 space-y-2">
+          <p className="text-label text-ink">
+            <span className="font-bold">{atrasada.seguro ? 'Tu copia se ha quedado atrás.' : 'Tu copia puede haberse quedado atrás.'}</span>{' '}
+            El criterio por defecto tiene {atrasada.faltan.length} {atrasada.faltan.length === 1 ? 'línea que la tuya no tiene' : 'líneas que la tuya no tiene'}
+            {atrasada.desde ? ` (la guardaste el ${new Date(atrasada.desde).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })})` : ''}.
+            Mientras uses tu copia, el asistente no las lee.
+          </p>
+          <details>
+            <summary className="cursor-pointer text-caption font-mono text-accent-ink">Ver qué le falta</summary>
+            <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto list-none">
+              {atrasada.faltan.map((l, i) => <li key={i} className="text-caption font-mono text-ink-2">{l}</li>)}
+            </ul>
+          </details>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" size="s" onClick={onRestaurar} disabled={disabled}>Usar el de por defecto</Button>
+            {onDarPorRevisada && (
+              <Button variant="ghost" size="s" onClick={onDarPorRevisada} disabled={disabled}>Ya lo he revisado</Button>
+            )}
+          </div>
+        </div>
+      )}
       <textarea
         value={valor}
         onChange={e => onChange(e.target.value)}
@@ -317,6 +346,8 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   // que restaurar.
   const [entrenoEsDefault, setEntrenoEsDefault] = useState(true);
   const [nutricionEsDefault, setNutricionEsDefault] = useState(true);
+  // Copias que se han quedado atrás del criterio por defecto, y de qué versión parten.
+  const [atrasadas, setAtrasadas] = useState<Partial<Record<'entrenamiento' | 'nutricion', { aviso: DoctrinaAtrasada; base: string | null }>>>({});
   const [landmarksDraft, setLandmarksDraft] = useState<Record<MuscleGroup, VolumeLandmark>>(VOLUME_LANDMARKS_DEFAULT);
   const [landmarksEsDefault, setLandmarksEsDefault] = useState(true);
   const [landmarksError, setLandmarksError] = useState<string | null>(null);
@@ -360,6 +391,10 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     ]);
     if (ent) { setEntrenoDraft(ent.text); setEntrenoEsDefault(ent.esDefault); }
     if (nut) { setNutricionDraft(nut.text); setNutricionEsDefault(nut.esDefault); }
+    setAtrasadas({
+      ...(ent?.atrasada ? { entrenamiento: { aviso: ent.atrasada, base: ent.base } } : {}),
+      ...(nut?.atrasada ? { nutricion: { aviso: nut.atrasada, base: nut.base } } : {}),
+    });
     if (vol) { setLandmarksDraft(vol.table); setLandmarksEsDefault(vol.esDefault); }
   };
 
@@ -370,12 +405,12 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         await saveCoachInstructions(instructionsDraft.trim());
         queryClient.setQueryData(coachInstructionsKey, instructionsDraft.trim());
       } else if (promptTab === 'entrenamiento') {
-        await saveDoctrina('entrenamiento', entrenoDraft.trim());
-        setEntrenoEsDefault(false);
+        // Un texto igual al de por defecto no se guarda como copia; y retocar
+        // una copia atrasada no la pone al día (conserva su versión de partida).
+        setEntrenoEsDefault(await saveDoctrina('entrenamiento', entrenoDraft.trim(), atrasadas.entrenamiento?.base));
         queryClient.invalidateQueries({ queryKey: doctrinaKey });
       } else if (promptTab === 'nutricion') {
-        await saveDoctrina('nutricion', nutricionDraft.trim());
-        setNutricionEsDefault(false);
+        setNutricionEsDefault(await saveDoctrina('nutricion', nutricionDraft.trim(), atrasadas.nutricion?.base));
         queryClient.invalidateQueries({ queryKey: doctrinaKey });
       } else {
         setLandmarksError(null);
@@ -404,6 +439,19 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       const fresh = await getDoctrinaParaEditar(kind);
       if (kind === 'entrenamiento') { setEntrenoDraft(fresh.text); setEntrenoEsDefault(true); }
       else { setNutricionDraft(fresh.text); setNutricionEsDefault(true); }
+      setAtrasadas(prev => ({ ...prev, [kind]: undefined }));
+      queryClient.invalidateQueries({ queryKey: doctrinaKey });
+    } finally {
+      setSavingInstructions(false);
+    }
+  };
+
+  /** «Ya lo he revisado»: la copia se da por al día respecto al criterio por defecto de hoy. */
+  const darDoctrinaPorRevisada = async (kind: 'entrenamiento' | 'nutricion') => {
+    setSavingInstructions(true);
+    try {
+      await saveDoctrina(kind, (kind === 'entrenamiento' ? entrenoDraft : nutricionDraft).trim());
+      setAtrasadas(prev => ({ ...prev, [kind]: undefined }));
       queryClient.invalidateQueries({ queryKey: doctrinaKey });
     } finally {
       setSavingInstructions(false);
@@ -947,6 +995,8 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   esDefault={entrenoEsDefault}
                   onRestaurar={() => restaurarDoctrina('entrenamiento')}
                   disabled={savingInstructions}
+                  atrasada={atrasadas.entrenamiento?.aviso}
+                  onDarPorRevisada={() => { void darDoctrinaPorRevisada('entrenamiento'); }}
                 />
               )}
 
@@ -958,6 +1008,8 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   esDefault={nutricionEsDefault}
                   onRestaurar={() => restaurarDoctrina('nutricion')}
                   disabled={savingInstructions}
+                  atrasada={atrasadas.nutricion?.aviso}
+                  onDarPorRevisada={() => { void darDoctrinaPorRevisada('nutricion'); }}
                 />
               )}
 

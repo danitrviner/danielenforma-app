@@ -1,8 +1,14 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getCambiosAtleta } from '../../db/cambios';
+import { getHipotesis, guardarHipotesis } from '../../db/hipotesis';
 import type { AreaCambio, CambioAtleta } from '../../utils/cambiosAtleta';
+import type { Exercise, WorkoutLog } from '../../types';
+import { estadoDeHipotesis, type Hipotesis } from '../../utils/hipotesis';
+import { addDays, hoyIsoLocal } from '../../utils/trainingWeek';
 import { Icon, Skeleton } from '../ui';
+import { useToast } from '../../hooks/useToast';
+import HipotesisDeCambio, { type EjercicioParaMirar } from './HipotesisDeCambio';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Lo que he cambiado — dos widgets, Nutrición y Entreno.
@@ -10,6 +16,12 @@ import { Icon, Skeleton } from '../ui';
    Qué le he tocado a este atleta en el periodo que estoy revisando, con la
    flecha de antes → después. Sustituye a mirar el historial de la ficha, que
    mezcla propuestas, actividad del atleta y cambios en una sola lista.
+
+   Los cambios de entreno llevan además su hipótesis (S5, 11-11-2026): qué se
+   espera de él y cuándo se mira (ver HipotesisDeCambio.tsx). Un cambio cuya
+   revisión ya toca se enseña SIEMPRE, aunque se hiciera antes del periodo que
+   se está mirando: si no, vencería sin que nadie lo viera. En presentación no
+   sale nada de esto: son notas de trabajo del coach.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const VISIBLES = 4;
@@ -24,7 +36,7 @@ function fecha(at: string): string {
   return new Date(at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
-const Entrada: React.FC<{ c: CambioAtleta; abierta: boolean }> = ({ c, abierta }) => {
+const Entrada: React.FC<{ c: CambioAtleta; abierta: boolean; children?: React.ReactNode }> = ({ c, abierta, children }) => {
   const lineas = abierta ? c.lineas : c.lineas.slice(0, LINEAS_POR_CAMBIO);
   const resto = c.lineas.length - lineas.length;
   return (
@@ -39,6 +51,7 @@ const Entrada: React.FC<{ c: CambioAtleta; abierta: boolean }> = ({ c, abierta }
         ))}
         {resto > 0 && <li className="font-mono text-caption text-ink-3">+{resto} más</li>}
       </ul>
+      {children}
     </li>
   );
 };
@@ -49,14 +62,27 @@ const Widget: React.FC<{
   desde: string;
   hasta: string;
   todoAbierto: boolean;
-}> = ({ cfg, cambios, desde, hasta, todoAbierto }) => {
+  /** Solo en entreno y fuera de presentación: lo que hace falta para las hipótesis. */
+  hipotesis?: {
+    lista: Hipotesis[];
+    logs: readonly WorkoutLog[];
+    ejercicios: EjercicioParaMirar[];
+    hoy: string;
+    onGuardar: (h: Hipotesis) => void;
+  };
+}> = ({ cfg, cambios, desde, hasta, todoAbierto, hipotesis }) => {
   const [verTodos, setVerTodos] = useState(false);
-  const enPeriodo = cambios.filter(c => {
+  const delPeriodo = (c: CambioAtleta) => {
     const dia = c.at.slice(0, 10);
     return dia >= desde && dia <= hasta;
-  });
+  };
+  const enPeriodo = cambios.filter(delPeriodo);
+  // Lo que toca revisar y se cambió antes del periodo: arriba, siempre a la vista.
+  const porRevisar = hipotesis
+    ? cambios.filter(c => !delPeriodo(c) && hipotesis.lista.some(h => h.id === c.id && estadoDeHipotesis(h, hipotesis.hoy) === 'toca_revisar'))
+    : [];
   const abierto = verTodos || todoAbierto;
-  const lista = abierto ? enPeriodo : enPeriodo.slice(0, VISIBLES);
+  const lista = [...porRevisar, ...(abierto ? enPeriodo : enPeriodo.slice(0, VISIBLES))];
   const anteriores = cambios.length - enPeriodo.length;
 
   return (
@@ -75,7 +101,20 @@ const Widget: React.FC<{
         <p className="font-sans text-label text-ink-3">{cfg.vacio}</p>
       ) : (
         <ul className="m-0 p-0 list-none">
-          {lista.map(c => <Entrada key={c.id} c={c} abierta={abierto} />)}
+          {lista.map(c => (
+            <Entrada key={c.id} c={c} abierta={abierto}>
+              {hipotesis && (
+                <HipotesisDeCambio
+                  cambio={c}
+                  hipotesis={hipotesis.lista.find(h => h.id === c.id)}
+                  logs={hipotesis.logs}
+                  ejercicios={hipotesis.ejercicios}
+                  hoy={hipotesis.hoy}
+                  onGuardar={hipotesis.onGuardar}
+                />
+              )}
+            </Entrada>
+          ))}
         </ul>
       )}
 
@@ -102,9 +141,43 @@ interface Props {
   desde: string;
   hasta: string;
   todoAbierto: boolean;
+  /** Para el antes y el después de las hipótesis. Sin ellos no se ofrecen. */
+  logs?: WorkoutLog[];
+  exercises?: Exercise[];
+  /** En presentación las hipótesis no salen: son notas del coach. */
+  presentando?: boolean;
 }
 
-export default function BloqueCambios({ athleteEmail, desde, hasta, todoAbierto }: Props) {
+/** Semanas hacia atrás de las que salen los ejercicios en los que se puede mirar un cambio. */
+const SEMANAS_DE_EJERCICIOS = 10;
+
+export default function BloqueCambios({ athleteEmail, desde, hasta, todoAbierto, logs, exercises, presentando = false }: Props) {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const hoy = hoyIsoLocal();
+  const conHipotesis = !presentando && !!logs && !!exercises;
+  const { data: hipotesis = [] } = useQuery({
+    queryKey: ['hipotesis', athleteEmail],
+    queryFn: () => getHipotesis(athleteEmail),
+    enabled: conHipotesis,
+    staleTime: 60_000,
+  });
+  const ejercicios = useMemo<EjercicioParaMirar[]>(() => {
+    if (!logs || !exercises) return [];
+    const corte = addDays(hoy, -7 * SEMANAS_DE_EJERCICIOS);
+    const ids = new Set(logs.filter(l => l.date >= corte).flatMap(l => l.entries.map(e => e.exerciseId)));
+    return exercises.filter(e => ids.has(e.id)).map(e => ({ id: e.id, nombre: e.name })).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  }, [logs, exercises, hoy]);
+  const guardar = (h: Hipotesis) => {
+    const antes = queryClient.getQueryData<Hipotesis[]>(['hipotesis', athleteEmail]);
+    queryClient.setQueryData<Hipotesis[]>(['hipotesis', athleteEmail], prev => [...(prev ?? []).filter(x => x.id !== h.id), h]);
+    guardarHipotesis(athleteEmail, h).catch(err => {
+      console.error('BloqueCambios: no se pudo guardar la hipótesis', err);
+      queryClient.setQueryData(['hipotesis', athleteEmail], antes);
+      showToast('No se ha podido guardar', 'error');
+    });
+  };
+
   const { data = [], isPending, isError } = useQuery({
     queryKey: ['cambiosAtleta', athleteEmail],
     queryFn: () => getCambiosAtleta(athleteEmail),
@@ -126,6 +199,7 @@ export default function BloqueCambios({ athleteEmail, desde, hasta, todoAbierto 
           desde={desde}
           hasta={hasta}
           todoAbierto={todoAbierto}
+          hipotesis={conHipotesis && cfg.area === 'entreno' ? { lista: hipotesis, logs: logs!, ejercicios, hoy, onGuardar: guardar } : undefined}
         />
       ))}
     </div>
