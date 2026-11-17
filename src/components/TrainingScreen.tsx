@@ -34,6 +34,10 @@ import { haptics } from '../services/haptics';
 import { Badge, BadgeTone, Button, Icon, SegmentedControl, Chip, EmptyState } from './ui';
 import WorkoutSessionPlayer, { SessionCelebration } from './training/WorkoutSessionPlayer';
 import NovedadesDeSemana from './training/NovedadesDeSemana';
+import ObjetivoDelBloque from './training/ObjetivoDelBloque';
+import BloqueTerminado from './training/BloqueTerminado';
+import { progresoDelObjetivo, mesoDelObjetivo } from '../utils/progresoDelObjetivo';
+import { bloqueTerminadoParaElAtleta } from '../utils/bloqueTerminado';
 import { novedadesDeSemana, hayNovedades } from '../utils/semanasDelBloque';
 import { novedadesDeLaSesion, type NovedadesDeLaSesion } from '../utils/planificadorProgresion';
 import { cargarAvisoSesion, guardarAvisoSesion, borrarAvisoSesion } from '../utils/avisoDeSesion';
@@ -341,6 +345,18 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
 
   // Lo que el coach ha programado que cambie ESTA semana de ciclo respecto a
   // la anterior (un top set nuevo, otro ejercicio, la descarga).
+  // El objetivo del bloque en una frase y cuánto le falta (17-11-2026). Sin
+  // hipótesis en el bloque no sale nada: el componente se calla solo.
+  const objetivoDelBloque = useMemo(
+    () => progresoDelObjetivo({ meso: mesoDelObjetivo(mesocycles, today), logs, exercises, workouts, assignments, hoy: today }),
+    [mesocycles, logs, exercises, workouts, assignments, today],
+  );
+  // El bloque que acaba de terminar: sus «antes → después» y su constancia.
+  const bloqueTerminado = useMemo(
+    () => bloqueTerminadoParaElAtleta({ mesociclos: mesocycles, assignments, logs, exercises, hoy: today }),
+    [mesocycles, assignments, logs, exercises, today],
+  );
+
   const novedades = useMemo(() => {
     const primera = bloqueHoy?.dias[0]?.assignment;
     const meso = primera?.mesocycleId ? mesocycles.find(m => m.id === primera.mesocycleId) : undefined;
@@ -1174,6 +1190,10 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
             ))}
           </div>
 
+          {/* Fuera de la lista: se ve aunque no queden sesiones pendientes, que es
+              justo lo que pasa cuando el bloque acaba de terminar. */}
+          {!loading && listFilter === 'pending' && <BloqueTerminado cierre={bloqueTerminado} className="mb-3" />}
+
           {loading ? (
             <div className="space-y-3">
               <Skeleton className="h-20 w-full" />
@@ -1193,6 +1213,7 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
               /* La vuelta en curso, del Día 1 al Día N y en ese orden. Sin bloque
                  «Atrasados» al final: el que se pasó sale en su sitio, en rojo. */
               <div className="space-y-3">
+                <ObjetivoDelBloque progreso={objetivoDelBloque} />
                 {novedades && <NovedadesDeSemana novedades={novedades.n} clave={novedades.clave} semana={novedades.semana} />}
                 <div className="flex items-center gap-3">
                   <span className="font-mono text-caption uppercase font-bold tracking-widest text-accent-ink">

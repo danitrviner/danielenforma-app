@@ -175,8 +175,10 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     return construirRoadmap({
       program: nutritionProgram, semanas, evaluacion, mesociclos: mesocycles, assignments, workoutLogs, respuestas, stepLogs, stepGoal, hoy,
       planPublishedAt: profile.planPublishedAt, pesos: bodyweightLogs, kcalDieta, ctxFuerza,
+      // Para la barra del objetivo del bloque: de qué grupo es cada ejercicio y el nivel del atleta.
+      exercises, nivel: onboarding?.experienceLevel,
     });
-  }, [loading, nutritionProgram, diets, bodyweightLogs, dietCompletionLogs, stepLogs, stepGoal, hoy, mesocycles, assignments, workoutLogs, respuestas, exercises, profile.planPublishedAt]);
+  }, [loading, nutritionProgram, diets, bodyweightLogs, dietCompletionLogs, stepLogs, stepGoal, hoy, mesocycles, assignments, workoutLogs, respuestas, exercises, profile.planPublishedAt, onboarding?.experienceLevel]);
 
   // Retos conseguidos: los logros que no salen del plan.
   const logrosExtra: HitoAutomatico[] = useMemo(() =>

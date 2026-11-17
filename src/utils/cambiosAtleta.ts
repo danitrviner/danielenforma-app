@@ -20,6 +20,9 @@ import { objetivoDeDieta } from './macrosLegado.js';
    que es justo lo que el historial de la ficha no conseguía.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/** Los cuatro niveles de un grupo, como se llaman en pantalla (17-11-2026). */
+const NIVEL_DE_GRUPO: Record<string, string> = { alta: 'especializar', media: 'desarrollar', baja: 'mantener', ignorar: 'ignorar' };
+
 export type AreaCambio = 'nutricion' | 'entreno';
 
 export interface CambioAtleta {
@@ -193,7 +196,8 @@ export function resumirMeso(antes: Mesocycle | undefined, despues: Mesocycle): s
     if (a !== b) l.push(`${MUSCLE_LABELS[g]} ${flecha(a, b)} series`);
     const pa = antes.groups?.[g]?.priority;
     const pb = despues.groups?.[g]?.priority;
-    if (pa && pb && pa !== pb) l.push(`${MUSCLE_LABELS[g]} prioridad ${flecha(pa, pb)}`);
+    // Con los nombres que ve el coach, no con el valor guardado («alta → ignorar»).
+    if (pa && pb && pa !== pb) l.push(`${MUSCLE_LABELS[g]} ${flecha(NIVEL_DE_GRUPO[pa] ?? pa, NIVEL_DE_GRUPO[pb] ?? pb)}`);
   }
   const nombresA = (antes.nombresSesion ?? []).join('|');
   const nombresD = (despues.nombresSesion ?? []).join('|');

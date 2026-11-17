@@ -7,7 +7,7 @@ import type { ZonaIem } from '../cdg/zonas.js';
 import { nombreCortoDeSesion } from '../nombresMeso.js';
 import { siguienteNumeroDeBloque } from '../numeroDeBloque.js';
 import { etapaDesdeMeso, mesoDeAtletaDesdeEtapa, rutinasDeMesoDePlantilla } from '../plantillaMeso.js';
-import { resolveExerciseForWeek, vueltasDelCiclo } from '../progression.js';
+import { planDeSemana1Reducida, resolveExerciseForWeek, vueltasDelCiclo } from '../progression.js';
 import { addDays, diasEntreFechas } from '../trainingWeek.js';
 import { candidatosACambio, type CandidatoACambio } from './candidatosACambio.js';
 import type { EstadoDeEjercicio, EstadoDelBloque } from './estadoDelBloqueAnterior.js';
@@ -269,6 +269,10 @@ export function siguienteBloque(e: EntradaDeSiguienteBloque): SiguienteBloque {
 
   const rutinas = rutinasDeMesoDePlantilla({ ...nuevo, id: '' }, { ownerId: e.ownerId, athleteName: e.athleteName })
     .map(({ mesocycleId: _sinMeso, ...r }) => r);
+  // El recorte de la semana 1 se guarda por ejercicio (lo lee la app del
+  // atleta): sin él, el interruptor encendido no recortaría nada hasta que el
+  // coach abriera el bloque en el editor.
+  if (nuevo.semana1Reducida) nuevo.semana1Recorte = planDeSemana1Reducida(rutinas, nuevo.groups);
 
   const idsDelBloque = dias.flatMap(d => d.exercises.map(x => x.exerciseId));
   const { cambiar, clonar } = candidatosACambio({

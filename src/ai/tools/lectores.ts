@@ -1220,7 +1220,7 @@ export async function getCierreBloque(email: string, mesocycleId?: string): Prom
     borradorParaElCliente: completo.mensaje,
     note: 'Son los números de Mesociclo › Cierre, los mismos que ve Dani. Úsalos para el veredicto del bloque y para decir qué cambia en el siguiente (volumen por grupo que se cumplió o no, patrones que suben o se estancan). No recalcules nada. '
       + `hipotesisDelBloque → ${NOTA_DE_HIPOTESIS}`
-      + (hipotesis.hipotesis.length && !hipotesis.cierreDeHipotesis ? ' El cierre de las hipótesis de este bloque está SIN FIRMAR: no des ninguna por confirmada ni por fallida; recuérdale a Dani que lo firme en Mesociclo › Cierre.' : ''),
+      + (hipotesis.hipotesis.length && !hipotesis.cierreDeHipotesis ? ' El cierre de las hipótesis de este bloque está SIN FIRMAR: no des ninguna por confirmada ni por fallida; recuérdale a Dani que lo firme en Revisión › Cierre de bloque.' : ''),
   });
 }
 
