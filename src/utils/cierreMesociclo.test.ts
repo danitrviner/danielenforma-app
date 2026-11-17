@@ -172,4 +172,37 @@ describe('buildCierreMesociclo', () => {
     expect(buildCierreMesociclo(args).resumenParaCliente).toBe(buildCierreMesociclo(args).resumenParaCliente);
     expect(buildCierreMesociclo(args).titulares).toEqual(buildCierreMesociclo(args).titulares);
   });
+
+  it('sin bloque anterior, cuenta la progresión dentro del propio bloque', () => {
+    const logs = [
+      log('2026-06-01', 'press', [{ weight: 80, repsDone: 8 }]),
+      log('2026-06-22', 'press', [{ weight: 90, repsDone: 8 }]),
+    ];
+    const c = buildCierreMesociclo({
+      meso: meso({ number: 1 }), mesocycles: [meso({ number: 1 })], logs, assignments: [], exercises: EJERCICIOS,
+      athleteName: 'Marta', hoy: '2026-07-15',
+    });
+    expect(c.progresion.resumen).toMatchObject({ comparables: 1, mejoran: 1 });
+    expect(c.titulares[0]).toMatch(/^Mejora en 1 de 1 ejercicios/);
+    expect(c.titulares.some(t => t.includes('Press banca 80 kg × 8 → 90 kg × 8'))).toBe(true);
+    expect(c.resumenParaCliente).toContain('· Press banca: 80 kg × 8 → 90 kg × 8');
+  });
+
+  it('compara el tonelaje con el bloque anterior por semana, no en total', () => {
+    // Bloque anterior de 1 semana con 1 sesión; este de 4 semanas con 4 sesiones iguales.
+    const previo = meso({ id: 'm1', number: 1, startDate: '2026-05-25', weeks: 1 });
+    const sesion = [{ weight: 80, repsDone: 8 }];
+    const logs = [
+      log('2026-05-26', 'press', sesion),
+      log('2026-06-01', 'press', sesion), log('2026-06-08', 'press', sesion),
+      log('2026-06-15', 'press', sesion), log('2026-06-22', 'press', sesion),
+    ];
+    const c = buildCierreMesociclo({
+      meso: meso(), mesocycles: [previo, meso()], logs, assignments: [], exercises: EJERCICIOS, hoy: '2026-07-15',
+    });
+    expect(c.informe.tonnage.deltaPct).toBe(300); // el total engaña…
+    const t = c.titulares.find(x => x.startsWith('Kg movidos por semana'));
+    expect(t).toContain('un 0% vs Meso #1'); // …por semana es lo mismo
+    expect(t).not.toContain('300');
+  });
 });

@@ -1,25 +1,31 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Exercise, Mesocycle, WorkoutAssignment, WorkoutLog, BodyweightLog } from '../types';
 import { buildCierreMesociclo, FilaVolumenGrupo } from '../utils/cierreMesociclo';
-import { ExercisePerf } from '../utils/trainingReport';
 import { useMotorCdg } from '../hooks/useMotorCdg';
 import { iemDeLogs, filasIEM, type FilaIEM } from '../utils/cdg';
 import { Sexo } from '../utils/athleteProfileSignals';
-import { e1rmAlometrico, pesoCorporalEn } from '../utils/allometricScore';
+import { pesoCorporalEn } from '../utils/allometricScore';
 import { useToast } from '../hooks/useToast';
-import { Icon, EmptyState, Badge, SegmentedControl, Delta, BarraCumplimiento } from './ui';
-import TablaGruposPerf from './training/TablaGruposPerf';
+import { addDays } from '../utils/trainingWeek';
+import { Icon, EmptyState, Badge, SegmentedControl, BarraCumplimiento } from './ui';
+import {
+  fmt, conSigno, colorDelta, Tile, Seccion, SemanaASemana, Podio, ListaEjercicios, Agregado,
+} from './cierre/piezas';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Cierre del mesociclo — solo para el entrenador.
 
-   Responde a las cuatro preguntas que se hacen al terminar un bloque y que
-   hasta ahora había que contestar a mano revisando sesión por sesión:
-   ¿lo hizo?, ¿hizo el volumen que le puse?, ¿está más fuerte?, ¿en qué?
+   Responde a las preguntas que se hacen al terminar un bloque: ¿está más
+   fuerte?, ¿en qué y cuánto?, ¿lo hizo?, ¿cómo ha ido semana a semana?, ¿qué
+   se ha quedado parado? Y deja escrito lo que hay que contarle al cliente.
 
-   Todo son cuentas locales sobre los logs del atleta (ver utils/cierreMesociclo
-   y utils/trainingReport). Sin IA: los mismos datos dan siempre los mismos
-   números y el mismo borrador de texto.
+   Rehecho el 16-11-2026: antes solo comparaba con el mesociclo ANTERIOR, y
+   como casi todos los atletas están en su primer bloque, no salía ningún %.
+   Ahora la referencia principal es el propio bloque —la primera semana de
+   cada ejercicio frente a las últimas— (utils/progresionDelBloque.ts), y la
+   comparación con el bloque anterior queda como capa extra cuando existe.
+
+   Todo son cuentas locales sobre los logs del atleta. Sin IA.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
@@ -30,46 +36,39 @@ interface Props {
   exercises: Exercise[];
   athleteName?: string;
   cargando?: boolean;
-  // Para el 1RM alométrico de la tabla «Fuerza» — null-tolerante: sin sexo o
-  // sin peso registrado en el bloque, la columna simplemente no aparece.
+  // Para el 1RM alométrico y el lastre de dominadas/fondos — null-tolerante.
   sexo?: Sexo | null;
   pesoLogs?: BodyweightLog[];
 }
 
-function Tile({ label, value, sub, color = 'var(--color-ink)' }: {
-  label: string; value: React.ReactNode; sub?: React.ReactNode; color?: string;
-}) {
-  return (
-    <div className="bg-surface border border-hairline rounded-surface px-4 py-3 flex-1 min-w-[140px]">
-      <span className="font-mono text-caption text-ink-2 uppercase tracking-[.1em] block">{label}</span>
-      <span className="font-mono font-semibold text-title-l tabular-nums block leading-tight" style={{ color }}>{value}</span>
-      {sub && <span className="font-mono text-caption text-ink-3 block">{sub}</span>}
-    </div>
-  );
-}
-
-type Vista = 'volumen' | 'fuerza' | 'grupos' | 'patrones' | 'estimulo';
+type Vista = 'ejercicios' | 'patrones' | 'grupos' | 'volumen' | 'estimulo';
 
 export default function MesocycleReviewPanel({
   meso, mesocycles, logs, assignments, exercises, athleteName, cargando = false,
   sexo = null, pesoLogs = [],
 }: Props) {
   const { showToast } = useToast();
-  const [vista, setVista] = useState<Vista>('volumen');
+  const [vista, setVista] = useState<Vista>('ejercicios');
   const { motor, cargando: cargandoCdg, noSubido } = useMotorCdg();
 
+  // Peso corporal al final del bloque (última medida conocida hasta esa fecha):
+  // suma a las series de dominadas/fondos y alimenta el 1RM alométrico.
+  const finBloque = useMemo(() => addDays(meso.startDate, meso.weeks * 7 - 1), [meso.startDate, meso.weeks]);
+  const pesoEnCierre = useMemo(() => pesoCorporalEn(finBloque, pesoLogs), [finBloque, pesoLogs]);
+
   const cierre = useMemo(
-    () => buildCierreMesociclo({ meso, mesocycles, logs, assignments, exercises, athleteName }),
-    [meso, mesocycles, logs, assignments, exercises, athleteName],
+    () => buildCierreMesociclo({ meso, mesocycles, logs, assignments, exercises, athleteName, pesoCorporalKg: pesoEnCierre }),
+    [meso, mesocycles, logs, assignments, exercises, athleteName, pesoEnCierre],
   );
+  const prog = cierre.progresion;
+  const res = prog.resumen;
 
-  // Peso corporal al final del bloque (aproximación documentada: si el
-  // atleta no se pesó ese día, es la última medida conocida hasta esa fecha)
-  // — para el 1RM alométrico, que corrige el sesgo del peso corporal.
-  const pesoEnCierre = useMemo(() => pesoCorporalEn(cierre.fin, pesoLogs), [cierre.fin, pesoLogs]);
+  // El borrador se edita aquí mismo antes de copiarlo; vuelve al generado si
+  // cambian los datos (otro bloque, logs nuevos).
+  const [borrador, setBorrador] = useState(cierre.resumenParaCliente);
+  useEffect(() => { setBorrador(cierre.resumenParaCliente); }, [cierre.resumenParaCliente]);
 
-  // Estímulo (IEM de CDG) de las sesiones del bloque. Sustituye al antiguo «IEA»
-  // (series efectivas × RIR medio / 10): mismo hueco, ahora con la fórmula de la hoja.
+  // Estímulo (IEM de CDG) de las sesiones del bloque.
   const estimulo = useMemo(() => {
     if (!motor) return null;
     const delBloque = logs.filter(l => l.date >= cierre.inicio && l.date <= cierre.fin);
@@ -92,20 +91,21 @@ export default function MesocycleReviewPanel({
   }
 
   const sinDatos = cierre.informe.sessions === 0;
+  const hayAnterior = cierre.comparacion !== 'sin mesociclo previo';
+  const adh = cierre.sesiones.adherenciaPct;
+  const vol = cierre.volumen.pct;
 
   return (
     <div className="space-y-4">
       {/* Cabecera */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
+        <div className="min-w-0">
           <p className="font-sans font-bold text-ink text-body-s">
             Cierre del mesociclo #{cierre.numero}{cierre.objetivo ? ` · ${cierre.objetivo}` : ''}
           </p>
           <p className="font-mono text-caption text-ink-2">
             {cierre.inicio} → {cierre.fin} · {cierre.semanas} sem × {cierre.diasSemana} días ·{' '}
-            {cierre.comparacion === 'sin mesociclo previo'
-              ? 'sin bloque anterior con el que comparar'
-              : `comparado con ${cierre.comparacion}`}
+            progresión del inicio al final del bloque{hayAnterior ? ` y comparado con ${cierre.comparacion}` : ''}
           </p>
         </div>
         <Badge tone={cierre.enCurso ? 'warning' : 'success'}>
@@ -113,12 +113,12 @@ export default function MesocycleReviewPanel({
         </Badge>
       </div>
 
-      {cierre.enCurso && (
+      {cierre.enCurso && !sinDatos && (
         <div className="flex items-start gap-2 bg-warning/10 border border-warning/30 rounded-surface px-3 py-2.5">
           <Icon name="warning" size="s" className="text-warning flex-shrink-0 mt-px" />
           <p className="font-sans text-caption text-warning leading-relaxed">
-            El mesociclo todavía no ha terminado ({cierre.fin}). Los números son de lo que va registrado hasta hoy,
-            así que el volumen realizado saldrá corto por definición.
+            El mesociclo todavía no ha terminado ({cierre.fin}). La progresión compara lo que va registrado hasta hoy
+            con su primera semana.
           </p>
         </div>
       )}
@@ -128,61 +128,72 @@ export default function MesocycleReviewPanel({
           <EmptyState
             icon="bar_chart"
             title="Sin sesiones registradas en este mesociclo."
-            description="El cierre se calcula con lo que el atleta registra al entrenar. En cuanto haya sesiones aparecerán aquí el volumen realizado, la fuerza y los récords."
+            description="El cierre se calcula con lo que el atleta registra al entrenar. En cuanto haya sesiones aparecerán aquí la progresión de cada ejercicio, el volumen y la adherencia."
           />
         </div>
       ) : (
         <>
-          {/* Los cuatro números de cabecera */}
+          {/* ── Los números de cabecera ── */}
           <div className="flex flex-wrap gap-3">
             <Tile
+              icon="trending_up"
+              label="Fuerza"
+              value={res.medianaPct != null ? `${conSigno(res.medianaPct)}%` : '—'}
+              sub={res.comparables > 0
+                ? `mejora en ${res.mejoran} de ${res.comparables} ejercicios`
+                : 'falta una segunda semana para comparar'}
+              color={colorDelta(res.medianaPct)}
+            />
+            <Tile
+              icon="event_available"
               label="Adherencia"
-              value={cierre.sesiones.adherenciaPct != null ? `${cierre.sesiones.adherenciaPct}%` : '—'}
+              value={adh != null ? `${adh}%` : '—'}
               sub={cierre.sesiones.programadas > 0
                 ? `${cierre.sesiones.completadas}/${cierre.sesiones.programadas} sesiones`
-                : 'sin sesiones asignadas'}
-              color={
-                cierre.sesiones.adherenciaPct == null ? 'var(--color-ink-3)'
-                : cierre.sesiones.adherenciaPct >= 85 ? 'var(--color-success)'
-                : cierre.sesiones.adherenciaPct >= 65 ? 'var(--color-warning)' : 'var(--color-danger)'
-              }
+                : `${cierre.sesiones.registradas} sesiones registradas`}
+              color={adh == null ? 'var(--color-ink-3)' : adh >= 85 ? 'var(--color-success)' : adh >= 65 ? 'var(--color-warning)' : 'var(--color-danger)'}
             />
             <Tile
+              icon="fitness_center"
               label="Volumen hecho"
-              value={cierre.volumen.pct != null ? `${cierre.volumen.pct}%` : '—'}
+              value={vol != null ? `${vol}%` : '—'}
               sub={`${cierre.volumen.totalRealizadas} de ${cierre.volumen.totalProgramadas} series`}
-              color={
-                cierre.volumen.pct == null ? 'var(--color-ink-3)'
-                : cierre.volumen.pct >= 90 ? 'var(--color-success)'
-                : cierre.volumen.pct >= 70 ? 'var(--color-warning)' : 'var(--color-danger)'
-              }
+              color={vol == null ? 'var(--color-ink-3)' : vol >= 90 ? 'var(--color-success)' : vol >= 70 ? 'var(--color-warning)' : 'var(--color-danger)'}
             />
             <Tile
-              label="Tonelaje"
-              value={`${cierre.informe.tonnage.current.toLocaleString('es-ES', { maximumFractionDigits: 0 })} kg`}
-              sub={<Delta pct={cierre.informe.tonnage.deltaPct} />}
+              icon="monitoring"
+              label="Kg por semana"
+              value={res.tonelajeSemanal?.deltaPct != null ? `${conSigno(res.tonelajeSemanal.deltaPct)}%` : '—'}
+              sub={res.tonelajeSemanal
+                ? `${fmt(Math.round(res.tonelajeSemanal.inicio), 0)} → ${fmt(Math.round(res.tonelajeSemanal.final), 0)} kg`
+                : `${fmt(cierre.informe.tonnage.current, 0)} kg en total`}
+              color={colorDelta(res.tonelajeSemanal?.deltaPct)}
             />
             <Tile
-              label="Récords"
-              value={cierre.informe.perExercise.filter(e => e.isPR).length}
-              sub={`${cierre.informe.sessions} sesiones registradas`}
-              color="var(--color-accent-ink)"
+              icon="speed"
+              label="RIR medio"
+              value={res.rir ? `${fmt(res.rir.inicio)} → ${fmt(res.rir.final)}` : '—'}
+              sub={res.rir
+                ? res.rir.final < res.rir.inicio - 0.2 ? 'más cerca del fallo'
+                  : res.rir.final > res.rir.inicio + 0.2 ? 'más lejos del fallo' : 'esfuerzo parecido'
+                : 'sin RIR suficiente'}
             />
           </div>
 
-          {/* Titulares — lo que el coach le cuenta al cliente */}
+          {/* ── Lo que hay que contarle ── */}
           {cierre.titulares.length > 0 && (
-            <div className="bg-surface border border-hairline rounded-surface p-4 space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Lo que hay que contarle</span>
+            <Seccion
+              titulo="Lo que hay que contarle"
+              icon="campaign"
+              extra={(
                 <button
                   onClick={() => copiar(cierre.titulares.map(t => `· ${t}`).join('\n'), 'Resumen')}
                   className="flex items-center gap-1 font-sans text-caption font-bold text-accent-ink hover:text-ink transition-colors"
                 >
-                  <Icon name="content_copy" size="s" />
-                  Copiar
+                  <Icon name="content_copy" size="s" />Copiar
                 </button>
-              </div>
+              )}
+            >
               <ul className="space-y-1.5">
                 {cierre.titulares.map((t, i) => (
                   <li key={i} className="flex items-start gap-2">
@@ -191,47 +202,83 @@ export default function MesocycleReviewPanel({
                   </li>
                 ))}
               </ul>
-            </div>
+            </Seccion>
           )}
 
+          {/* ── Semana a semana ── */}
+          <SemanaASemana semanas={prog.semanas} />
+
+          {/* ── Lo mejor / lo que se queda parado ── */}
+          <Podio ejercicios={prog.ejercicios} />
+
+          {/* ── Detalle ── */}
           <SegmentedControl
             label="Detalle del cierre"
             value={vista}
             onChange={v => setVista(v as Vista)}
             options={[
-              { value: 'volumen',  label: 'Volumen' },
-              { value: 'fuerza',   label: 'Fuerza' },
-              { value: 'grupos',   label: 'Por grupo' },
-              { value: 'patrones', label: 'Rendimiento' },
-              { value: 'estimulo', label: 'Estímulo (IEM)' },
+              { value: 'ejercicios', label: 'Ejercicios' },
+              { value: 'patrones',   label: 'Patrones' },
+              { value: 'grupos',     label: 'Grupos' },
+              { value: 'volumen',    label: 'Volumen' },
+              { value: 'estimulo',   label: 'Estímulo' },
             ]}
           />
 
+          {vista === 'ejercicios' && <ListaEjercicios ejercicios={prog.ejercicios} sexo={sexo} pesoKg={pesoEnCierre} />}
+          {vista === 'patrones' && (
+            <Agregado
+              filas={prog.porPatron}
+              vacio="Ningún ejercicio del bloque cae en un patrón de movimiento (empujes, tracciones, brazo, pierna, cadera)."
+              anterior={hayAnterior ? cierre.patrones : null}
+              comparacion={cierre.comparacion}
+            />
+          )}
+          {vista === 'grupos' && (
+            <Agregado
+              filas={prog.porGrupo}
+              vacio="Los ejercicios del bloque no tienen grupo muscular asignado."
+              anterior={hayAnterior ? cierre.informe.muscleGroups : null}
+              comparacion={cierre.comparacion}
+            />
+          )}
           {vista === 'volumen'  && <TablaVolumen filas={cierre.volumen.filas} comparacion={cierre.comparacion} />}
-          {vista === 'fuerza'   && <TablaFuerza ejercicios={cierre.informe.perExercise} comparacion={cierre.comparacion} sexo={sexo} pesoKg={pesoEnCierre} />}
-          {vista === 'grupos'   && <TablaGruposPerf grupos={cierre.informe.muscleGroups} comparacion={cierre.comparacion} />}
-          {vista === 'patrones' && <TablaGruposPerf grupos={cierre.patrones} comparacion={cierre.comparacion} />}
           {vista === 'estimulo' && <TablaEstimulo estimulo={estimulo} cargando={cargandoCdg} noSubido={noSubido} />}
 
-          {/* Borrador para el cliente */}
-          <div className="bg-surface border border-hairline rounded-surface p-4 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Borrador para el cliente</span>
-              <button
-                onClick={() => copiar(cierre.resumenParaCliente, 'Borrador')}
-                className="flex items-center gap-1 font-sans text-caption font-bold text-accent-ink hover:text-ink transition-colors"
-              >
-                <Icon name="content_copy" size="s" />
-                Copiar
-              </button>
-            </div>
-            <p className="font-sans text-label text-ink leading-relaxed bg-bg border border-hairline rounded-control p-3">
-              {cierre.resumenParaCliente}
-            </p>
+          {/* ── Borrador para el cliente ── */}
+          <Seccion
+            titulo="Mensaje para el cliente"
+            icon="chat"
+            extra={(
+              <div className="flex items-center gap-3">
+                {borrador !== cierre.resumenParaCliente && (
+                  <button
+                    onClick={() => setBorrador(cierre.resumenParaCliente)}
+                    className="font-sans text-caption font-bold text-ink-2 hover:text-ink transition-colors"
+                  >
+                    Restaurar
+                  </button>
+                )}
+                <button
+                  onClick={() => copiar(borrador, 'Mensaje')}
+                  className="flex items-center gap-1 font-sans text-caption font-bold text-accent-ink hover:text-ink transition-colors"
+                >
+                  <Icon name="content_copy" size="s" />Copiar
+                </button>
+              </div>
+            )}
+          >
+            <textarea
+              value={borrador}
+              onChange={e => setBorrador(e.target.value)}
+              rows={Math.min(16, Math.max(6, borrador.split('\n').length + 1))}
+              aria-label="Mensaje para el cliente"
+              className="w-full font-sans text-label text-ink leading-relaxed bg-bg border border-hairline rounded-control p-3 resize-y focus:outline-none focus:border-accent"
+            />
             <p className="font-mono text-caption text-ink-3">
-              Escrito con sus propios datos. Es un punto de partida — edítalo antes de mandarlo.
+              Escrito con sus propios datos. Edítalo aquí antes de copiarlo.
             </p>
-          </div>
+          </Seccion>
         </>
       )}
     </div>
@@ -277,70 +324,6 @@ function TablaVolumen({ filas, comparacion }: { filas: FilaVolumenGrupo[]; compa
           ))}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-function TablaFuerza({ ejercicios, comparacion, sexo, pesoKg }: {
-  ejercicios: ExercisePerf[]; comparacion: string; sexo: Sexo | null; pesoKg: number | null;
-}) {
-  if (ejercicios.length === 0) {
-    return <p className="font-sans text-caption text-ink-3">Sin ejercicios registrados en la ventana del mesociclo.</p>;
-  }
-  // Por 1RM estimado descendente: la pregunta de esta tabla es la fuerza, no el volumen.
-  const orden = [...ejercicios].sort((a, b) => b.bestOrm - a.bestOrm);
-  const alometricoDisponible = sexo != null && pesoKg != null;
-  return (
-    <div className="space-y-2">
-      <div className="overflow-x-auto rounded-surface border border-hairline">
-        <table className="w-full border-collapse" style={{ minWidth: alometricoDisponible ? '620px' : '520px' }}>
-          <thead>
-            <tr className="bg-bg">
-              <th className="text-left px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Ejercicio</th>
-              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Series</th>
-              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Tonelaje</th>
-              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">1RM est.</th>
-              {alometricoDisponible && (
-                <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">1RM alom.</th>
-              )}
-              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">vs {comparacion}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orden.map(e => (
-              <tr key={e.exerciseId} className="border-b border-hairline last:border-b-0">
-                <td className="px-3 py-2.5 font-sans text-label text-ink">
-                  <span className="flex items-center gap-2">
-                    <span className="truncate">{e.name}</span>
-                    {e.isPR && <Badge tone="accent">PR</Badge>}
-                  </span>
-                </td>
-                <td className="px-3 py-2.5 text-right font-mono text-label text-ink-2 tabular-nums">{e.sets}</td>
-                <td className="px-3 py-2.5 text-right font-mono text-label text-ink-2 tabular-nums">
-                  {e.tonnage.toLocaleString('es-ES', { maximumFractionDigits: 0 })} kg
-                </td>
-                <td className="px-3 py-2.5 text-right font-mono text-label font-bold text-ink tabular-nums">{e.bestOrm} kg</td>
-                {alometricoDisponible && (
-                  <td className="px-3 py-2.5 text-right font-mono text-label text-ink-2 tabular-nums">
-                    {e1rmAlometrico(e.bestOrm, pesoKg!, sexo!) ?? '—'}
-                  </td>
-                )}
-                <td className="px-3 py-2.5 text-right"><Delta pct={e.deltaOrmPct} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {alometricoDisponible ? (
-        <p className="font-mono text-caption text-ink-3">
-          1RM alométrico = 1RM est. / Peso^{sexo === 'hombre' ? '0.55' : '0.50'} — corrige el sesgo de comparar fuerza
-          entre pesos corporales distintos. Calculado con el peso del {pesoKg}kg registrado hacia el {comparacion === 'sin mesociclo previo' ? 'final del bloque' : 'cierre'}.
-        </p>
-      ) : (
-        <p className="font-mono text-caption text-ink-3">
-          Falta {sexo == null ? 'el sexo biológico (anamnesis)' : 'un peso corporal registrado'} para mostrar el 1RM alométrico.
-        </p>
-      )}
     </div>
   );
 }
