@@ -3,7 +3,7 @@ import { MUSCLE_LABELS } from '../types.js';
 import { contextoPesoCorporal, pesoDeSerie } from './pesoCorporal.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
 import { addDays, diasEntreFechas } from './trainingWeek.js';
-import { patronesDeGrupo, PATTERN_LABELS, type MovementPattern } from './movementPatterns.js';
+import { patronesDeEjercicio, PATTERN_LABELS, type MovementPattern } from './movementPatterns.js';
 import { RUIDO_RM_PCT } from './ruidoDeMedida.js';
 import { mediana as medianaDe } from './rmValido.js';
 import {
@@ -561,7 +561,7 @@ export function buildProgresionDelBloque(params: {
       nombre,
       grupo,
       grupoLabel: grupo ? MUSCLE_LABELS[grupo] : 'Sin grupo',
-      patrones: grupo ? patronesDeGrupo(grupo) : [],
+      patrones: patronesDeEjercicio(ex),
       sesiones: acc.fechas.size,
       series: acc.series,
       tonelaje: acc.tonelaje,

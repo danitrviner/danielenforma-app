@@ -20,12 +20,12 @@ const log = (date: string, exerciseId: string, sets: WorkoutSetLog[]): WorkoutLo
 });
 
 describe('seriesTonelajePorPatron', () => {
-  it('reparte el tonelaje de un ejercicio en todos los patrones de sus grupos', () => {
+  it('un press cuenta entero en empuje de torso y nada en brazo (F17: el patrón lo decide el ejercicio)', () => {
     const logs = [log('2026-06-01', 'press', [{ weight: 80, repsDone: 8, rir: 2 }])]; // 640 kg
     const series = seriesTonelajePorPatron(logs, EJERCICIOS);
-    // pecho (principal, peso 1 -> empuje_torso) 640 + tríceps (secundario, peso 0.5 -> torso Y brazo) 320
-    expect(series.find(s => s.pattern === 'empuje_torso')!.points[0].value).toBe(960);
-    expect(series.find(s => s.pattern === 'brazo')!.points[0].value).toBe(320);
+    // Antes: 640 del pecho + 320 del tríceps secundario en torso (960), y otros 320 en brazo.
+    expect(series.find(s => s.pattern === 'empuje_torso')!.points[0].value).toBe(640);
+    expect(series.find(s => s.pattern === 'brazo')?.points[0]?.value ?? 0).toBe(0);
   });
 
   it('ignora los grupos sin patrón asignado (core)', () => {

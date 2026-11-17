@@ -111,8 +111,13 @@ export interface UserProfile {
    * escritores no coincidían en cuántos puntos vale un nivel.
    */
   level: number;
-  /** Umbrales de aviso de la carga aguda/crónica (CDG) de ESTE atleta. Ausente = 0,8 – 1,6. */
-  cdgUmbralesCarga?: { inferior: number; superior: number };
+  /** Umbrales de aviso de la carga aguda/crónica (CDG) de ESTE atleta. Ausente = 0,8 – 1,6.
+   *  `limitesArticulares` (X1, 17-11-2026): estrés articular semanal máximo de
+   *  este atleta por articulación (clave = nombre de la articulación en el
+   *  motor CDG, p. ej. «Hombro Articular»). Va aquí dentro, junto a sus otros
+   *  umbrales, para guardarse por el mismo camino (Seguimiento › «Guardar para
+   *  este atleta»). Ausente, o sin una articulación = sin límite en ella. */
+  cdgUmbralesCarga?: { inferior: number; superior: number; limitesArticulares?: Partial<Record<string, number>> };
   currentStreak: number;
   maxStreak: number;
   initialWeight: number;
@@ -864,6 +869,13 @@ export interface WorkoutSetLog {
    *  nada de su esfuerzo y no entra en el RM ni en la calibración. Ausente en
    *  los registros anteriores: ahí no se sabe y se dan por buenos. */
   rirApuntado?: boolean;
+  /** La serie se hizo FUERA del gimnasio habitual (17-11-2026): otras poleas,
+   *  otras máquinas, otros pesos. Cuenta para el volumen y el estímulo (el RIR
+   *  sí se cumple), pero no para la fuerza: ni RM, ni récords, ni tonelaje, ni
+   *  referencia de carga para la sesión siguiente. Se copia de
+   *  `WorkoutLog.fuera` en cada serie para que cualquier motor que filtre por
+   *  serie (rmValido.ts) la deje fuera sin saber de dónde viene. */
+  fuera?: boolean;
 }
 
 /** Respuesta del coach a una nota del atleta (28-10-2026). */
@@ -912,6 +924,9 @@ export interface WorkoutLog {
    *  Índice de Hipertrofia lo usa de freno (8-9: no subir sin bajar antes la
    *  fatiga de la sesión) y hasta ahora solo existía como pregunta semanal. */
   cansancioAlSalir?: number;
+  /** Sesión hecha fuera del gimnasio habitual (viaje, hotel, otro gimnasio),
+   *  marcada por el atleta o por el coach (17-11-2026). Ver `WorkoutSetLog.fuera`. */
+  fuera?: boolean;
   /** Agujetas de las zonas trabajadas en esta sesión, 1-5, contestadas entre
    *  36 y 72 h después (17-11-2026). Clave = `ZonaIem` (utils/cdg/zonas.ts).
    *  Sustituye al recuerdo semanal cuando existe. */
@@ -2661,7 +2676,7 @@ export interface Mesocycle {
   /** Tipo de bloque (17-11-2026): un preset EDITABLE que rellena duración,
    *  velocidad, modo por zona y estrellas; no un catálogo cerrado. Sustituye en
    *  pantalla a `objective` y a `phaseType`, que se siguen escribiendo
-   *  derivados para el calendario y las plantillas. Ver utils/hipotesis/tiposDeBloque.ts. */
+   *  derivados para el calendario y las plantillas. Ver utils/hipotesisDeBloque/tiposDeBloque.ts. */
   tipoBloque?: TipoDeBloque;
   /** Empezar con la semana 1 reducida. Opcional y APAGADA por defecto (Dani,
    *  17-11): la app solo la sugiere con ejercicios nuevos o tras un parón de

@@ -7,7 +7,9 @@
  * columnas: aquí se marcan las parejas de sesiones en días consecutivos del
  * ciclo (`dayIndex` seguidos) en las que la misma articulación pasa del
  * umbral en las dos. Umbral orientativo (unidades de estrés articular de la
- * hoja); no es una regla del curso, solo un resaltado.
+ * hoja); no es una regla del curso, solo un resaltado. Cae en mitad de la
+ * banda «alto por sesión» del curso (4-6, `BANDAS_IEA` en referencias.ts): se
+ * deja en 5 para no cambiar lo que ya se marcaba (X1, 17-11-2026).
  */
 export interface SesionArticular { nombre: string; dayIndex?: number; estresArticular: number[] }
 export interface AvisoDiasSeguidos { articulacion: string; j: number; sesiones: [number, number]; valores: [number, number] }

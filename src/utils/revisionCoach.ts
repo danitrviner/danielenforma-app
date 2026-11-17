@@ -6,7 +6,7 @@ import {
   buildTrainingReport, TrainingReport, ExercisePerf, ComparisonMode, resolveWindows,
 } from './trainingReport.js';
 import {
-  buildMovementPatternReport, MovementPattern, PatternPerf, patronesDeGrupo, PATTERN_LABELS,
+  buildMovementPatternReport, MovementPattern, PatternPerf, patronesDeEjercicio, PATTERN_LABELS,
 } from './movementPatterns.js';
 import { seriesRealizadasPorGrupo } from './programacion.js';
 import { construirMapaCalor, CeldaMapaCalor } from './mapaCalorCorporal.js';
@@ -613,8 +613,8 @@ export function agruparEjerciciosPorPatron(
   const sinPatron: ExercisePerf[] = [];
 
   for (const ex of perExercise) {
-    const grupo = porId.get(ex.exerciseId)?.muscleGroup;
-    const patrones = grupo ? patronesDeGrupo(grupo) : [];
+    // El patrón lo decide el ejercicio (F17): un curl no es una tracción.
+    const patrones = patronesDeEjercicio(porId.get(ex.exerciseId));
     if (patrones.length === 0) { sinPatron.push(ex); continue; }
     for (const p of patrones) porPatron[p].push(ex);
   }

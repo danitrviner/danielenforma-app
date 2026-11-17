@@ -10,7 +10,7 @@ import type { WorkoutExercise, WorkoutLog, WorkoutTechnique } from '../../types.
 import { parsearReps, rirARpe, type CdgSerie, type CdgTecnica, type MotorCdg } from './motor.js'
 import type { CdgSerieRealizada, SemanaRealizada, CargaPorSesion } from './seguimiento.js'
 import { seriesPrincipales } from '../seriesPrincipales.js'
-import { seriesConTecnica } from '../tecnicaDeSerie.js'
+import { llevaSegmentos, serieDelSegmento, seriesConTecnica } from '../tecnicaDeSerie.js'
 import { pesoDeSerie, type ContextoPesoCorporal } from '../pesoCorporal.js'
 
 export type NombreCdgDe = (exerciseId: string) => string | undefined
@@ -55,22 +55,75 @@ export function seriesProgramadas (
   return out
 }
 
+export interface OpcionesDeRealizadas {
+  contarSinPeso?: boolean
+  /** Técnica fija en la última serie, se haya apuntado o no (lo de antes de F15). */
+  tecnica?: CdgTecnica | null
+  pesoCorporal?: ContextoPesoCorporal | null
+  /**
+   * F15 (17-11-2026): que las bajadas y miniseries APUNTADAS (`WorkoutSetLog.segmento`)
+   * lleguen a lo realizado como técnica de la serie tras la que se hicieron.
+   * Sin esto lo realizado iba siempre «Normal» mientras lo programado multiplica
+   * la técnica, y el ratio aguda:crónica salía inflado donde hay técnicas.
+   * Apagado por defecto: quien no lo pide sigue leyendo lo de siempre.
+   */
+  segmentos?: boolean
+  /** La técnica que tenía pautada el ejercicio (`WorkoutExercise.technique`), si se conoce. */
+  tecnicaPautada?: WorkoutTechnique | null
+}
+
+/**
+ * Qué técnica del motor le toca a una serie con bajadas o miniseries apuntadas.
+ *
+ * El registro guarda QUE se hicieron y tras qué serie, pero no qué técnica era:
+ * con eso solo no se reconstruye con fidelidad. Así que:
+ *  - si se sabe la técnica pautada del ejercicio, es esa, con la MISMA
+ *    equivalencia que lo programado (`TECNICA_POR_DEFECTO`: un drop set es
+ *    «Drop 1» tenga una bajada o dos). Aguda y crónica cuentan igual la misma
+ *    técnica, que es lo que necesita el ratio;
+ *  - si no se sabe (bloques anteriores, ejercicio que ya no está en la rutina),
+ *    se deduce del peso: segmentos con menos kg que su serie son un drop set;
+ *    con los mismos, miniseries. Es una aproximación y se dice en pantalla.
+ */
+export function tecnicaDeSegmentos (
+  pautada: WorkoutTechnique | null | undefined,
+  pesoSerie: number,
+  segmentos: ReadonlyArray<{ weight: number }>,
+  tecnicas: Record<WorkoutTechnique, CdgTecnica | null> = TECNICA_POR_DEFECTO
+): CdgTecnica | null {
+  if (segmentos.length === 0) return null
+  if (pautada && llevaSegmentos(pautada)) return tecnicas[pautada]
+  return segmentos.every(g => g.weight < pesoSerie) ? tecnicas.dropset : tecnicas.myoreps
+}
+
 /**
  * Series REALIZADAS de un log (equivalente a la Semana X). Igual que la hoja
  * (decisión de Dani, 16-10-2026):
  *  - `alFallo` cuenta como RIR 0 (la hoja no distingue fallo de RIR 0).
  *  - Las series sin kg (peso corporal = 0 kg en la app) NO cuentan, como en la
  *    hoja. `contarSinPeso: true` las incluiría.
+ * Con `segmentos: true`, la serie principal tras la que hay bajadas o
+ * miniseries HECHAS (con repeticiones) lleva su técnica; una técnica pautada
+ * que el atleta no apuntó no cuenta: no consta que la hiciera.
  */
 export function seriesRealizadas (
   entry: WorkoutLog['entries'][number],
   nombreCdgDe: NombreCdgDe,
-  { contarSinPeso = false, tecnica = null as CdgTecnica | null, pesoCorporal = null as ContextoPesoCorporal | null } = {}
+  { contarSinPeso = false, tecnica = null, pesoCorporal = null, segmentos = false, tecnicaPautada = null }: OpcionesDeRealizadas = {}
 ): CdgSerieRealizada[] {
   const nombre = nombreCdgDe(entry.exerciseId)
   if (!nombre) return []
   const out: CdgSerieRealizada[] = []
-  for (const s of seriesPrincipales(entry.sets)) {
+  const principales = seriesPrincipales(entry.sets)
+  // Bajadas y miniseries hechas, por la serie principal (1 = la primera) a la que pertenecen.
+  const hechos = new Map<number, Array<{ weight: number }>>()
+  if (segmentos) {
+    for (const s of entry.sets) {
+      const n = s.repsDone ? serieDelSegmento(s, principales.length) : null
+      if (n != null) hechos.set(n, [...(hechos.get(n) ?? []), s])
+    }
+  }
+  for (const [i, s] of principales.entries()) {
     if (!s.repsDone) continue
     // Dominadas, fondos…: lo apuntado más el peso del atleta, si se conoce (CR5).
     const kg = pesoDeSerie(s.weight, entry.exerciseId, pesoCorporal)
@@ -80,7 +133,7 @@ export function seriesRealizadas (
       repetitions: { min: s.repsDone, max: s.repsDone, raw: String(s.repsDone) },
       weight: kg,
       rpe: rirARpe(s.alFallo ? 0 : s.rir),
-      intensification: '',
+      intensification: tecnicaDeSegmentos(tecnicaPautada, s.weight, hechos.get(i + 1) ?? []) ?? '',
       // RIR pautado sin tocar: la serie cuenta para el estímulo y el tonelaje,
       // pero no para el RM (rendimientoDeRegistros.ts).
       ...(s.rirApuntado === false && !s.alFallo ? { rirApuntado: false } : {})
@@ -99,14 +152,19 @@ export function semanaRealizadaDesdeLogs (
   logs: WorkoutLog[],
   nombreCdgDe: NombreCdgDe,
   sesionDe: (log: WorkoutLog) => number | undefined,
-  opciones?: Parameters<typeof seriesRealizadas>[2]
+  opciones?: Omit<OpcionesDeRealizadas, 'tecnicaPautada'> & {
+    /** Técnica pautada de cada ejercicio de cada registro (F15); solo se mira con `segmentos`. */
+    tecnicaPautadaDe?: (log: WorkoutLog, exerciseId: string) => WorkoutTechnique | null | undefined
+  }
 ): SemanaRealizada {
   const semana: SemanaRealizada = Array.from({ length: 7 }, () => [])
   for (const log of logs) {
     const d = sesionDe(log)
     if (d == null || d < 0 || d > 6) continue
     for (const entry of log.entries) {
-      const sets = seriesRealizadas(entry, nombreCdgDe, opciones)
+      const sets = seriesRealizadas(entry, nombreCdgDe, {
+        ...opciones, tecnicaPautada: opciones?.segmentos ? opciones.tecnicaPautadaDe?.(log, entry.exerciseId) ?? null : null
+      })
       if (sets.length) semana[d].push(sets)
     }
   }

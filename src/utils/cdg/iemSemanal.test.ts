@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import catalogoPrueba from './__fixtures__/catalogoPrueba.json'
 import { crearMotor, expandirCatalogo, type CdgCatalogoCompacto } from './index'
-import { iemSemanalPorZona, semanasDeLaRevision } from './iemSemanal'
+import { iemSemanalPorZona, semanasDeLaRevision, numeroDeSemana } from './iemSemanal'
 import type { WorkoutLog } from '../../types'
 
 const motor = crearMotor(expandirCatalogo(catalogoPrueba as CdgCatalogoCompacto))
@@ -43,6 +43,25 @@ describe('iemSemanalPorZona', () => {
 describe('semanasDeLaRevision', () => {
   it('las del bloque desde su inicio', () => {
     expect(semanasDeLaRevision({ hasta: '2026-11-16', inicioBloque: '2026-10-26' })).toEqual(['2026-10-26', '2026-11-02', '2026-11-09', '2026-11-16'])
+  })
+  it('F5 · de un bloque largo se enseñan las 8 últimas con su número REAL de semana', () => {
+    // Bloque de 10 semanas desde el 07-09: la primera columna es la S3, no la «S1».
+    const s = semanasDeLaRevision({ hasta: '2026-11-15', inicioBloque: '2026-09-07' })
+    expect(s).toHaveLength(8)
+    expect(s[0]).toBe('2026-09-21')
+    expect(s.numeros).toEqual([3, 4, 5, 6, 7, 8, 9, 10])
+    expect(numeroDeSemana(s, 0)).toBe(3)
+    expect(numeroDeSemana(s, 7)).toBe(10)
+  })
+  it('F5 · un bloque corto empieza en la S1, y con ciclo de 14 días el número es la vuelta', () => {
+    expect(semanasDeLaRevision({ hasta: '2026-11-16', inicioBloque: '2026-10-26' }).numeros).toEqual([1, 2, 3, 4])
+    expect(semanasDeLaRevision({ hasta: '2026-11-16', inicioBloque: '2026-10-26', cicloDias: 14 }).numeros).toEqual([1, 1, 2, 2])
+  })
+  it('F5 · sin bloque no hay semana de bloque: se rotula por posición', () => {
+    const s = semanasDeLaRevision({ hasta: '2026-11-18' })
+    expect(s.numeros).toBeUndefined()
+    expect(numeroDeSemana(s, 2)).toBe(3)
+    expect(numeroDeSemana(['2026-11-02', '2026-11-09'], 1)).toBe(2)
   })
   it('sin bloque, las 6 últimas de lunes a domingo', () => {
     const s = semanasDeLaRevision({ hasta: '2026-11-18' })

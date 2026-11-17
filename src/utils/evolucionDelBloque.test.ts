@@ -172,6 +172,52 @@ describe('buildEvolucionDelBloque', () => {
     ]);
   });
 
+  it('cierre por ejercicio: los que quitaría y el que echa de menos salen con sus ids y en palabras', () => {
+    const cierre: Questionnaire = {
+      id: 'qc', ownerId: 'c', title: 'Cierre de bloque',
+      questions: [
+        { id: 'rating', label: 'Valora el bloque', type: 'scale', required: true, signalKey: 'meso_end.rating' },
+        { id: 'ej', label: '¿Qué ejercicios se quedan y cuáles quitarías?', type: 'keep_change', required: false, signalKey: 'meso_end.quitar', tituloCorto: 'Ejercicios' },
+        { id: 'echa', label: '¿Echas de menos algún ejercicio?', type: 'text', required: false, signalKey: 'meso_end.echa_de_menos', tituloCorto: 'Echa de menos' },
+      ],
+    };
+    const r: QuestionnaireResponse = {
+      id: 'r', questionnaireId: 'qc', assignmentId: 'x', athleteId: 'a', submittedAt: '2026-10-05T09:00:00.000Z',
+      answers: [
+        { questionId: 'rating', value: 7 },
+        { questionId: 'ej', value: '-press,+sent,-curl' },
+        { questionId: 'ej__comentario', value: 'Quitaría: Press militar, Curl en polea. Se quedan: Sentadilla.' },
+        { questionId: 'echa', value: '  El peso muerto  ' },
+      ],
+    };
+    const ev = buildEvolucionDelBloque({ ...base, questionnaires: [cierre], responses: [r] });
+    expect(ev.voz).toMatchObject({ valoracion: 7, quitaria: ['press', 'curl'], seQuedan: ['sent'], echaDeMenos: 'El peso muerto' });
+    expect(ev.voz!.respuestas).toEqual([
+      { pregunta: 'Ejercicios', respuesta: 'Quitaría: Press militar, Curl en polea. Se quedan: Sentadilla.' },
+      { pregunta: 'Echa de menos', respuesta: 'El peso muerto' },
+    ]);
+  });
+
+  it('cierre por ejercicio sin contestar: listas vacías y sin «echa de menos»', () => {
+    const cierre: Questionnaire = {
+      id: 'qc', ownerId: 'c', title: 'Cierre de bloque',
+      questions: [
+        { id: 'rating', label: 'Valora el bloque', type: 'scale', required: true, signalKey: 'meso_end.rating' },
+        { id: 'ej', label: 'Ejercicios', type: 'keep_change', required: false, signalKey: 'meso_end.quitar' },
+        { id: 'echa', label: '¿Echas de menos algún ejercicio?', type: 'text', required: false, signalKey: 'meso_end.echa_de_menos' },
+      ],
+    };
+    const r: QuestionnaireResponse = {
+      id: 'r', questionnaireId: 'qc', assignmentId: 'x', athleteId: 'a', submittedAt: '2026-10-05T09:00:00.000Z',
+      answers: [{ questionId: 'rating', value: 7 }, { questionId: 'echa', value: '   ' }],
+    };
+    const voz = buildEvolucionDelBloque({ ...base, questionnaires: [cierre], responses: [r] }).voz!;
+    expect(voz.quitaria).toEqual([]);
+    expect(voz.seQuedan).toEqual([]);
+    expect(voz.echaDeMenos).toBeUndefined();
+    expect(voz.respuestas).toEqual([]);
+  });
+
   it('dieta: % de kcal frente al objetivo por semana y días dentro del ±10 %', () => {
     const dieta = { id: 'd', athleteId: 'a', name: 'D', meals: [] } as unknown as Diet;
     const dia = (date: string, kcal: number, objetivo: number): DietCompletionLog => ({

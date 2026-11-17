@@ -60,3 +60,42 @@ describe('tonelaje por semana (aviso de rendimiento)', () => {
     expect(tonelajePorSemana(logs, { id: 'm', startDate: '2026-01-05' }, 7, new Set(['press']), [1, 2, 3])).toEqual([600, 625, 0])
   })
 })
+
+/* Hipótesis del bloque (17-11-2026): el borrador sigue el ritmo de la semana
+   en firme: 2 semanas sostenidas entre subida y subida, y los puntos de la
+   primera en vez del porcentaje. */
+describe('borrador con ritmo: meseta y puntos', () => {
+  const iemDe = (s: { porEjercicio: Map<string, { we: WorkoutExercise }> }) =>
+    iemProgramadoPorZona(motor, nombreCdgDe, [...s.porEjercicio.values()].map(c => c.we)).pectoral
+  const inicio = iemProgramadoPorZona(motor, nombreCdgDe, ejercicios().map(x => x.we)).pectoral
+
+  it('si la semana en firme sube, la siguiente sostiene y la de después vuelve a subir', () => {
+    const b = borradorDeSemanas({ motor, nombreCdgDe, ejercicios: ejercicios(), pctPorZona: { pectoral: 10 }, semanas: [5, 6, 7, 8], ritmo: { pectoral: { sostenidas: 1 } } })
+    const iem = b.map(iemDe)
+    expect(iem[0]).toBeCloseTo(inicio, 5)       // S5 sostiene
+    expect(iem[1]).toBeGreaterThan(iem[0])      // S6 sube
+    expect(iem[2]).toBeCloseTo(iem[1], 5)       // S7 sostiene
+    expect(iem[3]).toBeGreaterThan(iem[2])      // S8 sube
+    expect([...b[0].porEjercicio.values()].every(c => c.motivos.length === 0)).toBe(true)
+  })
+
+  it('una zona que venía en meseta sube en la primera semana del borrador', () => {
+    const b = borradorDeSemanas({ motor, nombreCdgDe, ejercicios: ejercicios(), pctPorZona: { pectoral: 10 }, semanas: [5, 6], ritmo: { pectoral: { sostenidas: 2 } } })
+    expect(iemDe(b[0])).toBeGreaterThan(inicio)
+    expect(iemDe(b[1])).toBeCloseTo(iemDe(b[0]), 5)
+  })
+
+  it('con los puntos de la primera subida, pide esos puntos y no el porcentaje', () => {
+    // 30 % sería mucho más; 1 punto sobre la base es lo que se pide.
+    const conPuntos = borradorDeSemanas({ motor, nombreCdgDe, ejercicios: ejercicios(), pctPorZona: { pectoral: 30 }, semanas: [5], ritmo: { pectoral: { sostenidas: 2, puntos: 1 } } })
+    const sinPuntos = borradorDeSemanas({ motor, nombreCdgDe, ejercicios: ejercicios(), pctPorZona: { pectoral: 30 }, semanas: [5], ritmo: { pectoral: { sostenidas: 2 } } })
+    expect(iemDe(conPuntos[0])).toBeLessThan(iemDe(sinPuntos[0]))
+  })
+
+  it('sin `ritmo` sube todas las semanas, como antes', () => {
+    const b = borradorDeSemanas({ motor, nombreCdgDe, ejercicios: ejercicios(), pctPorZona: { pectoral: 10 }, semanas: [5, 6] })
+    expect(iemDe(b[0])).toBeGreaterThan(inicio)
+    expect(iemDe(b[1])).toBeGreaterThan(iemDe(b[0]))
+  })
+})
+

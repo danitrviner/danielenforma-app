@@ -11,6 +11,7 @@ import type { MotorCdg } from './motor.js'
 import type { NombreCdgDe } from './adaptadores.js'
 import { iemDeLogs } from './estimulo.js'
 import { ZONAS_IEM, iemPorZona, type ZonaIem } from './zonas.js'
+import { semanaDelBloque } from '../semanaDelBloque.js'
 
 export interface FilaIemSemanal {
   clave: ZonaIem
@@ -77,15 +78,41 @@ export function iemSemanalPorZona (motor: MotorCdg, logs: WorkoutLog[], nombreCd
 }
 
 /**
+ * Los inicios de semana que enseña Revisión y, cuando son de un bloque, el
+ * número REAL de cada una dentro de él (`numeros`, alineado con la lista).
+ * Va como propiedad no enumerable de la propia lista para que quien solo quiere
+ * las fechas la siga usando como un `string[]` cualquiera.
+ */
+export type SemanasDeRevision = string[] & { readonly numeros?: number[] }
+
+/** Cuántas columnas caben en la tabla de Revisión: de un bloque largo, las últimas. */
+export const SEMANAS_EN_REVISION = 8
+
+/** «S3», el rótulo de la columna `i`: su semana del bloque si se sabe; si no, su posición. */
+export function numeroDeSemana (semanas: SemanasDeRevision, i: number): number {
+  return semanas.numeros?.[i] ?? i + 1
+}
+
+/**
  * Las semanas que enseña Revisión: las del bloque en curso si se mira el
  * bloque; si no, las `n` últimas (de lunes a domingo) hasta `hasta`.
+ *
+ * F5 (17-11-2026): de un bloque se enseñan las 8 últimas, pero cada una lleva
+ * su número de semana del bloque (`semanaDelBloque`, la misma cuenta que
+ * Rutinas y el Road map). Antes se rotulaban por posición y en un bloque de 10
+ * semanas la S3 salía como «S1». Las columnas siguen siendo tramos de 7 días
+ * desde el inicio del bloque; con `cicloDias` distinto de 7 el número es el de
+ * la vuelta del ciclo en la que EMPIEZA cada tramo.
  */
-export function semanasDeLaRevision (o: { hasta: string; inicioBloque?: string | null; n?: number }): string[] {
+export function semanasDeLaRevision (o: { hasta: string; inicioBloque?: string | null; n?: number; cicloDias?: number }): SemanasDeRevision {
   const n = o.n ?? 6
   if (o.inicioBloque && o.inicioBloque <= o.hasta) {
-    const out: string[] = []
-    for (let s = o.inicioBloque; s <= o.hasta; s = sumarDias(s, 7)) out.push(s)
-    return out.slice(-8)
+    const todas: string[] = []
+    for (let s = o.inicioBloque; s <= o.hasta; s = sumarDias(s, 7)) todas.push(s)
+    const out = todas.slice(-SEMANAS_EN_REVISION)
+    const bloque = { startDate: o.inicioBloque }
+    const numeros = out.map(s => semanaDelBloque(bloque, s, o.cicloDias && o.cicloDias > 0 ? o.cicloDias : 7))
+    return Object.defineProperty(out, 'numeros', { value: numeros, enumerable: false }) as SemanasDeRevision
   }
   const [y, m, d] = o.hasta.split('-').map(Number)
   const dia = new Date(y, m - 1, d).getDay()

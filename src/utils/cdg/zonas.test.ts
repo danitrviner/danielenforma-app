@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ZONAS_IEM, indicesDeZonas, iemPorZona, avisosIemIea, variacion } from './zonas'
+import { ZONAS_IEM, indicesDeZonas, iemPorZona, avisosIemIea, variacion, articulacionesSobreSuLimite, limitesValidos } from './zonas'
 import { agujetasPorZona, propuestaZona, aEscala5, tipoDeBloque, contextoDeLaSemana, sensibilidadDeZona, pctEfectivo } from './agujetas'
 import { bandaIF, consejosDeTiempo } from './referencias'
 import { readFileSync, existsSync } from 'node:fs'
@@ -199,3 +199,24 @@ describe('primera semana tras parón (P5)', () => {
     expect(propuestaZona({ ...base, agujetas: 5 }).tono).toBe('freno')
   })
 })
+
+describe('X1 · límite de estrés articular del atleta', () => {
+  const ARTICULACIONES = ['Hombro Articular', 'Rodilla Articular', 'Cadera Articular']
+
+  it('avisa solo de las articulaciones con límite que lo pasan', () => {
+    const r = articulacionesSobreSuLimite(ARTICULACIONES, [4.2, 9, 2], { 'Hombro Articular': 3, 'Cadera Articular': 3 })
+    expect(r).toEqual([{ articulacion: 'Hombro Articular', j: 0, valor: 4.2, limite: 3 }])
+  })
+
+  it('justo en el límite no avisa: es «por encima de su límite»', () => {
+    expect(articulacionesSobreSuLimite(ARTICULACIONES, [3, 0, 0], { 'Hombro Articular': 3 })).toEqual([])
+    expect(articulacionesSobreSuLimite(ARTICULACIONES, [3.1, 0, 0], { 'Hombro Articular': 3 })).toHaveLength(1)
+  })
+
+  it('sin límites, o con límites que no son un número mayor que cero, no hay aviso', () => {
+    expect(articulacionesSobreSuLimite(ARTICULACIONES, [20, 20, 20], undefined)).toEqual([])
+    expect(articulacionesSobreSuLimite(ARTICULACIONES, [20, 20, 20], { 'Hombro Articular': 0, 'Rodilla Articular': Number.NaN, 'Cadera Articular': '3' })).toEqual([])
+    expect(limitesValidos({ a: 3, b: 0, c: -1, d: null, e: 2.5 })).toEqual({ a: 3, e: 2.5 })
+  })
+})
+

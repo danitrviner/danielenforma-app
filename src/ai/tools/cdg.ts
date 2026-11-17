@@ -11,7 +11,11 @@
      (freno/acelerador) por zona. Desde el 17-11-2026 (D6r, D7) el cansancio
      al salir sale de lo apuntado en cada sesión (media y cuál fue la más
      dura) y las agujetas mezclan las contestadas a las 48 h con las del
-     cuestionario semanal; sin datos por sesión, todo como antes.
+     cuestionario semanal; sin datos por sesión, todo como antes. Y la
+     propuesta respeta el ritmo de la hipótesis del bloque: 2 semanas
+     sostenidas entre subida y subida (meseta) y, de la segunda subida en
+     adelante, los mismos PUNTOS que la primera en vez del porcentaje. Las
+     subidas se deducen de lo programado semana a semana.
    · propose_progresion_iem: la progresión de la semana que viene con
      `proponerProgresionIem` → propuesta `weekPlan` (origenIem) con los cambios
      por ejercicio. El modelo solo puede descartar cambios o ser más prudente.
@@ -30,7 +34,7 @@ import {
 import { toResult } from './comunes.js';
 import { crearMotor, expandirCatalogo, parsearEsfuerzo, parsearReps, type CdgCatalogoCompacto, type MotorCdg } from '../../utils/cdg/motor.js';
 import { ZONAS_IEM, iemPorZona, type ZonaIem } from '../../utils/cdg/zonas.js';
-import { agujetasPorZona, agujetasVigentes, contextoDeLaSemana, origenDeLectura, propuestaZona, sensibilidadDeZona, tipoDeBloque, ultimaVigente, type Propuesta } from '../../utils/cdg/agujetas.js';
+import { agujetasPorZona, agujetasVigentes, contextoDeLaSemana, origenDeLectura, propuestaZona, semanasFueraDeSubidas, sensibilidadDeZona, subidasDeLaZona, tipoDeBloque, ultimaVigente, type Propuesta } from '../../utils/cdg/agujetas.js';
 import { cansancioDeSesiones } from '../../utils/cdg/senalesPorSemana.js';
 import { avisoDeSemanaBase, motivoSinProgresion, semanaBaseDeIem } from '../../utils/cdg/semanaBase.js';
 import { aplicarOperaciones, iemProgramadoPorZona, proponerProgresionIem, type EjercicioProgramable, type OperacionIem } from '../../utils/cdg/progresionIem.js';
@@ -152,21 +156,28 @@ function zonasHacia(c: ContextoCdg, s: Awaited<ReturnType<typeof señalesDe>>, s
   const { contexto, motivos } = contextoDeLaSemana({ estres: s.estres, sueñoHoras: s.sueño, motivacion: s.motivacion });
   const cansancio = cansancioDe(c, s);
   const sesionMasCansada = cansancio.sesiones ? { etiqueta: cansancio.sesiones.peor.etiqueta, valor: cansancio.sesiones.peor.valor } : undefined;
+  // Lo programado semana a semana hasta la que se propone: de ahí se deducen
+  // las subidas de cada zona (meseta y puntos), igual que en Planificar.
+  const programadoPorSemana = Array.from({ length: Math.max(0, semana - 1) }, (_, i) =>
+    iemProgramadoPorZona(motor, nombreCdgDe, dias.flatMap(d => d.exercises.map(we => resolver(we, i + 1)))));
+  const semanasFuera = semanasFueraDeSubidas(meso);
   const zonas = ZONAS_IEM.filter(z => (iemBase[z.clave] ?? 0) > 0.005).map(z => {
     const lectura = s.agujetas[z.clave];
     const vigente = !!lectura && agujetasVigentes(lectura.fecha, c.hoy);
     const objetivo = meso.cdgObjetivosIem?.[z.clave];
     const modo = sensibilidadDeZona(meso, z.clave);
+    const subidas = subidasDeLaZona({ programado: programadoPorSemana.map(p => p[z.clave] ?? 0), destino: semana, semanasFuera });
     const calculada = propuestaZona({
       agujetas: vigente ? lectura!.valor : undefined, anterior: vigente ? lectura!.anterior : undefined, sensible: z.sensible,
       tipo: { sensibilidad: modo, velocidad }, esObjetivo: objetivo != null, iem: iemBase[z.clave], contexto, fatigaPost: cansancio.fatigaPost, sesionMasCansada, objetivo,
       primeraSemanaTrasParon: !!meso.vuelveDeParon && semana <= 2,
+      subidas,
     });
     // Los frenos se respetan; lo que no sale es una subida para una semana recortada.
     const propuesta: Propuesta = sinProgresion && (calculada.pct ?? 0) > 0
       ? { tono: 'mantener', texto: `${sinProgresion} La subida se propone para la siguiente semana normal.` }
       : calculada;
-    return { zona: z.clave, nombre: z.nombre, modo, objetivo, iemBase: iemBase[z.clave] ?? 0, agujetas: vigente ? lectura : undefined, propuesta };
+    return { zona: z.clave, nombre: z.nombre, modo, objetivo, iemBase: iemBase[z.clave] ?? 0, agujetas: vigente ? lectura : undefined, propuesta, subidas };
   });
   const bloqueadas = zonas.filter(z => z.propuesta.bloqueante);
   return {
@@ -225,10 +236,15 @@ export async function getCdgSemana(email: string, mesocycleId?: string): Promise
       iemProgramadoEstaSemana: r1(programadoAhora[z.zona] ?? 0),
       iemRealizadoSemanaPasada: realizado ? r1(realizado[z.zona] ?? 0) : null,
       agujetas: z.agujetas ? { valor: z.agujetas.valor, fecha: z.agujetas.fecha, anterior: z.agujetas.anterior ?? null, origen: origenDeLectura(z.agujetas) === '48h' ? 'a_48h_de_la_sesion' : 'cuestionario_semanal' } : null,
-      propuestaSemanaQueViene: { tono: z.propuesta.tono, pct: z.propuesta.pct ?? null, iemPropuesto: z.propuesta.iemPropuesto ?? null, bloqueante: !!z.propuesta.bloqueante, texto: z.propuesta.texto },
+      // Subidas ya programadas en el bloque (deducidas de lo programado): de ahí salen la meseta y los puntos.
+      subidasDelBloque: z.subidas.subidas.map(x => ({ semana: x.semana, puntos: x.puntos, pct: x.pct })),
+      propuestaSemanaQueViene: {
+        tono: z.propuesta.tono, pct: z.propuesta.pct ?? null, iemPropuesto: z.propuesta.iemPropuesto ?? null, bloqueante: !!z.propuesta.bloqueante,
+        enMeseta: !!z.propuesta.enMeseta, puntos: z.propuesta.puntos ?? null, texto: z.propuesta.texto,
+      },
     })),
     ejerciciosSinVinculoCdg: [...new Set(sinVinculo)],
-    note: 'Números del motor CDG, los mismos que Dani ve en Mesociclo › Seguimiento. `propuestaSemanaQueViene` es el protocolo freno/acelerador por zona: con «freno» o «vigilar» NO subas esa zona, y con `bloqueante: true` (agujetas de 5, duele en reposo) no subas NADA que la trabaje y díselo a Dani: cuánto bajar lo decide él. `semanaQueViene.semanaBase` es la semana sobre la que se calcula el % (la última que no es descarga ni puente). `contexto.fatigaPost` es el cansancio al salir (0-10): con `fatigaPostOrigen: "sesiones"` es la media de lo que apuntó al terminar cada sesión de los últimos 7 días y `sesionMasCansada` dice cuál fue la más dura; con 8 o más no se sube sin bajar antes la fatiga de ESA sesión (díselo a Dani con el nombre de la sesión). Las agujetas llevan `origen`: contestadas a las 48 h de la sesión o recuerdo del cuestionario semanal. Para programar la semana que viene llama a propose_progresion_iem (el motor calcula los cambios; tú solo descartas o recortas).',
+    note: 'Números del motor CDG, los mismos que Dani ve en Mesociclo › Seguimiento. `propuestaSemanaQueViene` es el protocolo freno/acelerador por zona: con «freno» o «vigilar» NO subas esa zona, y con `bloqueante: true` (agujetas de 5, duele en reposo) no subas NADA que la trabaje y díselo a Dani: cuánto bajar lo decide él. `semanaQueViene.semanaBase` es la semana sobre la que se calcula el % (la última que no es descarga ni puente). Ritmo de subidas: con `enMeseta: true` la zona subió hace menos de 2 semanas sostenidas y esta semana MANTIENE (no es un freno: se vuelve a mirar la semana que viene); con `puntos` la subida repite los puntos de IEM de la primera subida del bloque en vez del porcentaje (el `pct` ya viene calculado para esos puntos: no lo sustituyas por el de la velocidad). `contexto.fatigaPost` es el cansancio al salir (0-10): con `fatigaPostOrigen: "sesiones"` es la media de lo que apuntó al terminar cada sesión de los últimos 7 días y `sesionMasCansada` dice cuál fue la más dura; con 8 o más no se sube sin bajar antes la fatiga de ESA sesión (díselo a Dani con el nombre de la sesión). Las agujetas llevan `origen`: contestadas a las 48 h de la sesión o recuerdo del cuestionario semanal. Para programar la semana que viene llama a propose_progresion_iem (el motor calcula los cambios; tú solo descartas o recortas).',
   });
 }
 

@@ -25,9 +25,16 @@
  *       Cuánto lo dice la velocidad (suave ~10 %, medio ~20 %, agresivo ~30 %).
  * Las agujetas no se leen a ciegas: los ejercicios en estiramiento y los tempos
  * excéntricos largos dan más agujetas con el mismo IEM.
+ *
+ * Desde el 17-11-2026 (hipótesis del bloque) el acelerador tiene además ritmo:
+ * entre subida y subida van 2 semanas sostenidas como mínimo (meseta), y de la
+ * segunda subida del bloque en adelante se repiten los PUNTOS de la primera,
+ * no el porcentaje (curso, Caso 6). Las subidas no se guardan: se deducen de
+ * lo programado semana a semana (`subidasDeLaZona`).
  */
 import type { WorkoutLog } from '../../types.js'
 import { ZONAS_IEM, esZonaIem, type ZonaIem } from './zonas.js'
+import { SEMANAS_ENTRE_SUBIDAS, SUBIDA_MINIMA } from '../hipotesisDeBloque/cifras.js'
 
 /**
  * Tipo de bloque (guía del Índice de Hipertrofia, «tipos de bloque»): dos ejes
@@ -123,6 +130,8 @@ export function agujetasDeSesiones (sesiones: readonly SesionConAgujetas[], hast
   return out
 }
 
+const r1 = (v: number) => Math.round(v * 10) / 10
+
 export const aEscala5 = (v010: number) => Math.min(5, Math.max(1, Math.round(v010 / 2)))
 
 const diasEntre = (desde: string, hasta: string) =>
@@ -193,6 +202,80 @@ export interface Propuesta {
    * asistente) no sube NADA que trabaje esa zona y lo enseña.
    */
   bloqueante?: boolean
+  /** La zona iba a subir pero está en meseta: subió hace menos de 2 semanas
+   *  sostenidas. No lleva %: se mantiene y se vuelve a mirar la semana que viene. */
+  enMeseta?: boolean
+  /** Puntos de IEM que se suben cuando la subida repite los de la primera del
+   *  bloque en vez del porcentaje (segunda subida y siguientes). */
+  puntos?: number
+}
+
+export interface SubidaDeZona {
+  /** Semana (vuelta) en la que el IEM programado de la zona pasó a un nivel nuevo. */
+  semana: number
+  de: number
+  a: number
+  /** Puntos de IEM que subió. */
+  puntos: number
+  pct: number
+}
+
+export interface SubidasDeLaZona {
+  subidas: SubidaDeZona[]
+  primera: SubidaDeZona | null
+  ultima: SubidaDeZona | null
+  /** Semanas normales que lleva en el nivel de la última subida antes de
+   *  `destino`, contando la de la subida. `null` si no ha subido en el bloque. */
+  semanasSostenidas: number | null
+  /** Subió hace menos de `SEMANAS_ENTRE_SUBIDAS` semanas sostenidas: todavía no toca otra. */
+  enMeseta: boolean
+}
+
+/**
+ * Semanas que no cuentan al deducir las subidas: descargas y puentes (van
+ * recortadas a propósito) y la semana 1 cuando arranca reducida o vuelve de
+ * un parón (volver de ahí al nivel normal no es una subida).
+ */
+export function semanasFueraDeSubidas (meso: { semanasDescarga?: number[]; semanasPivot?: number[]; semana1Reducida?: boolean; vuelveDeParon?: boolean }): number[] {
+  const fuera = new Set([...(meso.semanasDescarga ?? []), ...(meso.semanasPivot ?? [])])
+  if (meso.semana1Reducida || meso.vuelveDeParon) fuera.add(1)
+  return [...fuera].sort((x, y) => x - y)
+}
+
+/**
+ * Las subidas de una zona en lo que va de bloque, DEDUCIDAS de su IEM
+ * programado semana a semana (no se guarda nada nuevo). Una subida es una
+ * semana normal en la que lo programado supera el nivel más alto que llevaba
+ * en el bloque (en más de `SUBIDA_MINIMA`): volver a donde estaba después de
+ * un freno no es subir. Solo se miran las semanas anteriores a `destino`, la
+ * que se va a programar.
+ */
+export function subidasDeLaZona (o: {
+  /** IEM programado de la zona en cada semana del bloque (índice 0 = S1). */
+  programado: readonly number[]
+  /** La semana para la que se propone. */
+  destino: number
+  /** Semanas que no cuentan (`semanasFueraDeSubidas`). */
+  semanasFuera?: readonly number[]
+}): SubidasDeLaZona {
+  const fuera = new Set(o.semanasFuera ?? [])
+  const normales: number[] = []
+  for (let s = 1; s < o.destino && s <= o.programado.length; s++) if (!fuera.has(s)) normales.push(s)
+  const subidas: SubidaDeZona[] = []
+  let nivel = 0
+  for (const s of normales) {
+    const v = o.programado[s - 1] ?? 0
+    if (nivel > 0.005 && v - nivel >= Math.max(SUBIDA_MINIMA.puntos, nivel * SUBIDA_MINIMA.pct / 100)) {
+      subidas.push({ semana: s, de: r1(nivel), a: r1(v), puntos: r1(v - nivel), pct: r1((v / nivel - 1) * 100) })
+    }
+    if (v > nivel) nivel = v
+  }
+  const ultima = subidas[subidas.length - 1] ?? null
+  const semanasSostenidas = ultima ? normales.filter(s => s >= ultima.semana).length : null
+  return {
+    subidas, primera: subidas[0] ?? null, ultima, semanasSostenidas,
+    enMeseta: semanasSostenidas != null && semanasSostenidas < SEMANAS_ENTRE_SUBIDAS,
+  }
 }
 
 /**
@@ -268,8 +351,6 @@ export function contextoDeLaSemana (o: { estres?: number; sueñoHoras?: number; 
   return { contexto: buenos ? 'favorable' : 'neutro', motivos: [] }
 }
 
-const r1 = (v: number) => Math.round(v * 10) / 10
-
 /**
  * Freno / acelerador de una zona: el protocolo semanal de la guía.
  *  1. Agujetas 5 (duele en reposo) → nunca subir; reducir o pausar esa carga,
@@ -286,6 +367,11 @@ const r1 = (v: number) => Math.round(v * 10) / 10
  *     (≥ 100) no más de un 10 %: se mantienen los puntos añadidos, no el porcentaje.
  *  6. El IEM objetivo de la zona (Volumen) es la meta: la subida no lo pasa, y
  *     si ya llega, el motor no propone y decide el coach (Dani, 25-10).
+ *  7. Meseta (17-11-2026): si la zona subió hace menos de 2 semanas sostenidas,
+ *     no se propone otra subida todavía. Los frenos van siempre por delante.
+ *  8. Puntos (curso, Caso 6): de la segunda subida del bloque en adelante se
+ *     repiten los PUNTOS de la primera, no el porcentaje, y nunca más de lo que
+ *     daría el porcentaje (contexto y base alta incluidos).
  */
 export function propuestaZona (o: {
   agujetas?: number; anterior?: number; sensible: boolean; tipo: TipoDeBloque; esObjetivo: boolean;
@@ -301,8 +387,11 @@ export function propuestaZona (o: {
   /** Semana 1 de un bloque tras un parón (`Mesocycle.vuelveDeParon`): el curso
    *  pide no apretar el freno de golpe, el pico de agujetas suele normalizarse solo (P5). */
   primeraSemanaTrasParon?: boolean
+  /** Las subidas ya programadas de la zona en este bloque (`subidasDeLaZona`):
+   *  de ahí salen la meseta y los puntos. Sin él, como siempre. */
+  subidas?: Pick<SubidasDeLaZona, 'primera' | 'semanasSostenidas' | 'enMeseta'>
 }): Propuesta {
-  const { agujetas: a, anterior, sensible, tipo, esObjetivo, iem = 0, contexto = 'sin-dato', fatigaPost, sesionMasCansada, objetivo, primeraSemanaTrasParon } = o
+  const { agujetas: a, anterior, sensible, tipo, esObjetivo, iem = 0, contexto = 'sin-dato', fatigaPost, sesionMasCansada, objetivo, primeraSemanaTrasParon, subidas } = o
   const con = (pct: number) => (iem > 0.005 ? { pct, iemPropuesto: r1(iem * (1 + pct / 100)) } : { pct })
   if (a == null) return { tono: 'sin-dato', texto: 'Sin agujetas registradas: decide con la recuperación entre sesiones y el rendimiento.' }
   if (a >= 4 && primeraSemanaTrasParon) {
@@ -328,6 +417,13 @@ export function propuestaZona (o: {
   if (objetivo != null && objetivo > 0 && iem >= objetivo - 0.05) {
     return { tono: 'objetivo', texto: `Ya llega a su objetivo de ${r1(objetivo).toLocaleString('es-ES')}: decide tú si sigue subiendo.` }
   }
+  if (subidas?.enMeseta) {
+    const n = subidas.semanasSostenidas ?? 0
+    return {
+      tono: 'mantener', enMeseta: true,
+      texto: `Mantener: lleva ${n === 1 ? 'una semana' : `${n} semanas`} en el nivel nuevo y entre subida y subida van ${SEMANAS_ENTRE_SUBIDAS} sostenidas como mínimo.`,
+    }
+  }
   let pct = VELOCIDADES.find(v => v.value === tipo.velocidad)!.pct
   const notas: string[] = []
   if (contexto !== 'favorable') {
@@ -335,15 +431,28 @@ export function propuestaZona (o: {
     notas.push(contexto === 'desfavorable' ? 'contexto desfavorable: si subes, poco; si se repite varias semanas, baja' : contexto === 'neutro' ? 'contexto neutro: la mitad' : 'sin datos de contexto: la mitad')
   }
   if (iem >= UMBRALES_PROTOCOLO.iemBaseAlta && pct > UMBRALES_PROTOCOLO.subidaMaxBaseAlta) { pct = UMBRALES_PROTOCOLO.subidaMaxBaseAlta; notas.push('base alta: mantén los puntos añadidos, no repitas el porcentaje') }
+  // Segunda subida del bloque y siguientes: los puntos de la primera, no el
+  // porcentaje. Con el contexto en contra, la mitad, igual que el %; y nunca
+  // más de lo que daría el % (si la primera fue un salto a mano, no se repite).
+  let puntos: number | undefined
+  const deLaPrimera = subidas?.primera?.puntos
+  if (deLaPrimera != null && deLaPrimera > 0 && iem > 0.005) {
+    puntos = Math.min(deLaPrimera * (contexto === 'favorable' ? 1 : 0.5), iem * pct / 100)
+    pct = Math.max(1, Math.round(puntos / iem * 100))
+    notas.push(`se repiten los puntos de la primera subida del bloque (S${subidas!.primera!.semana}), no el porcentaje`)
+  }
   if (iem > 0.005 && iem < 10) notas.push('zona poco trabajada: admite subidas mucho mayores')
   if (objetivo != null && objetivo > 0 && iem > 0.005 && iem * (1 + pct / 100) > objetivo) {
     // Hacia abajo: la subida no pasa del objetivo (1e-9 por el redondeo de coma flotante).
     pct = Math.max(1, Math.floor((objetivo / iem - 1) * 100 + 1e-9))
+    if (puntos != null) puntos = Math.min(puntos, objetivo - iem)
     notas.push(`hasta su objetivo de ${r1(objetivo).toLocaleString('es-ES')}`)
   }
+  const cuanto = puntos != null ? `+${r1(puntos).toLocaleString('es-ES')} puntos (~${pct} %)` : `~${pct} %`
   return {
     tono: 'acelerar',
-    texto: `Margen para subir el IEM ~${pct} %${esObjetivo ? ' (zona objetivo)' : ''}${notas.length ? ` · ${notas.join(' · ')}` : ''}. Comprueba que el IF de la sesión lo admite.`,
+    texto: `Margen para subir el IEM ${cuanto}${esObjetivo ? ' (zona objetivo)' : ''}${notas.length ? ` · ${notas.join(' · ')}` : ''}. Comprueba que el IF de la sesión lo admite.`,
     ...con(pct),
+    ...(puntos != null ? { puntos: r1(puntos) } : {}),
   }
 }

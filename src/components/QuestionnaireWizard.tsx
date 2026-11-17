@@ -10,6 +10,14 @@ import { pasosDeCuestionario, esDeAgujetas } from '../utils/pasosDeCuestionario'
 import type { ZonaEntrenada } from '../utils/cuestionarioAuto';
 import AgujetasPaso from './cuestionario/AgujetasPaso';
 import MapaGrupos, { esPreguntaDeMapa } from './cuestionario/MapaGrupos';
+import EjerciciosDelBloquePaso, { type VarianteEjercicios } from './cuestionario/EjerciciosDelBloquePaso';
+import { NotaMideteIgual, CambioDeMedida } from './cuestionario/MedirseIgual';
+import {
+  esPreguntaPorEjercicio, leerVotos, votosATexto, conVoto, fraseDeVotos, cuentaDeVotos,
+  type EjercicioDelBloque, type VotoDeEjercicio,
+} from '../utils/cierrePorEjercicio';
+import { useEjerciciosDelBloque } from '../hooks/useEjerciciosDelBloque';
+import { esPerimetro, medidaAnterior } from '../utils/cambioDePerimetro';
 import { todayStr } from '../utils/questionnaireSchedule';
 import { bodyweightForAthleteKey, invalidarExtremosDePeso } from '../hooks/useAthleteWeight';
 import { useBodyMeasurements, bodyMeasurementsForAthleteKey } from '../hooks/useBodyMeasurements';
@@ -36,6 +44,11 @@ interface Props {
   autoRellenos?: Partial<Record<AutoRelleno, number>>;
   /** Zonas que entrenó esta semana (agujetas: solo se pregunta por esas). */
   zonasEntrenadas?: ZonaEntrenada[];
+  /** Ejercicios del bloque que se cierra (pregunta «se queda / lo quitaría»).
+   *  Sin pasarlos, el asistente los busca él cuando el cuestionario la lleva. */
+  ejerciciosDelBloque?: EjercicioDelBloque[];
+  /** Cómo se pinta esa pregunta: filas con iconos o tarjetas con texto. */
+  varianteEjercicios?: VarianteEjercicios;
   onSubmitted: (r: QuestionnaireResponse) => void;
   onCancel: () => void;
 }
@@ -65,16 +78,21 @@ const ESPERA_GUARDADO_MS = 600;
 
 export default function QuestionnaireWizard({
   questionnaire, assignment, athleteEmail, currentWeight, borrador, onBorrador,
-  autoRellenos, zonasEntrenadas = [], onSubmitted, onCancel,
+  autoRellenos, zonasEntrenadas = [], ejerciciosDelBloque, varianteEjercicios, onSubmitted, onCancel,
 }: Props) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-  const { latest: latestMeasurements } = useBodyMeasurements(athleteEmail);
+  const { all: todasLasMedidas, latest: latestMeasurements } = useBodyMeasurements(athleteEmail);
   // resolveQuestions aplica los overrides de personalización por cliente que el
   // coach configura en ClientReviewsPanel. Sin esto, el chip "personalizado · N"
   // que ve el coach no tendría ningún efecto en lo que responde el atleta.
   const questions = useMemo(() => resolveQuestions(questionnaire, assignment), [questionnaire, assignment]);
   const pasos = useMemo(() => pasosDeCuestionario(questions), [questions]);
+  // Cierre por ejercicio: solo se leen los ejercicios del bloque si este
+  // cuestionario lleva la pregunta y quien lo abre no los ha pasado ya.
+  const llevaEjercicios = useMemo(() => questions.some(esPreguntaPorEjercicio), [questions]);
+  const delBloque = useEjerciciosDelBloque(athleteEmail, llevaEjercicios && !ejerciciosDelBloque);
+  const ejercicios = ejerciciosDelBloque ?? delBloque.ejercicios;
   // Lo que la app ya sabe sale contestado (pasos, peso, sesiones hechas): el
   // atleta solo lo confirma o lo corrige. Nunca pisa lo que ya respondió.
   const [answers, setAnswers] = useState<Answers>(() => {
@@ -102,6 +120,8 @@ export default function QuestionnaireWizard({
   const isLast = stepIdx === ultimoPaso;
   // Agujetas: un paso con todas las zonas (solo se exigen las entrenadas).
   const pasoAgujetas = grupo.length > 0 && grupo.every(esDeAgujetas);
+  // Pantallas donde se apunta algún perímetro: llevan la nota de «mídete igual».
+  const hayPerimetros = grupo.some(q => q.type === 'metric' && esPerimetro(q.metricKey));
 
   // Autoguardado con retraso: cada respuesta o cambio de pantalla se guarda,
   // pero no una escritura por cada tecla.
@@ -138,6 +158,16 @@ export default function QuestionnaireWizard({
       return { ...prev, [questionId]: value };
     });
   };
+
+  /** Un toque en «se queda» o «lo quitaría». El valor lleva los ids (para los
+   *  motores) y el comentario, la misma respuesta con nombres (para el coach). */
+  const votarEjercicio = (question: QuestionnaireQuestion, id: string, voto: VotoDeEjercicio) => {
+    const votos = conVoto(leerVotos(answers[question.id]), id, voto);
+    setAnswer(question.id, votosATexto(votos));
+    setAnswer(idComentario(question.id), fraseDeVotos(votos, x => ejercicios.find(e => e.id === x)?.nombre));
+  };
+
+  const hoy = todayStr();
 
   const prefillFor = (q: QuestionnaireQuestion): number | undefined => {
     if (q.type !== 'metric' || !q.metricKey) return undefined;
@@ -219,8 +249,11 @@ export default function QuestionnaireWizard({
   /** Primer paso con una obligatoria sin responder, o -1. */
   const pasoIncompleto = () => pasos.findIndex(p => p.some(i => {
     const q = questions[i];
-    return q.required && answers[q.id] === undefined && !(esDeAgujetas(q) && !zonaEntrenada(q));
+    return q.required && answers[q.id] === undefined && !(esDeAgujetas(q) && !zonaEntrenada(q)) && !sinEjercicios(q);
   }));
+  // Si el coach la marca obligatoria y el bloque no tiene ejercicios apuntados,
+  // no hay nada que contestar: no puede bloquear el envío.
+  const sinEjercicios = (q: QuestionnaireQuestion) => esPreguntaPorEjercicio(q) && ejercicios.length === 0;
   const zonaEntrenada = (q: QuestionnaireQuestion) =>
     zonasEntrenadas.length === 0 || zonasEntrenadas.some(z => `agujetas.${z.zona}` === q.signalKey);
 
@@ -268,7 +301,7 @@ export default function QuestionnaireWizard({
 
   const goNext = async () => {
     if (enRepaso) { await enviar(); return; }
-    const faltaAqui = grupo.some(q => q.required && answers[q.id] === undefined && !(esDeAgujetas(q) && !zonaEntrenada(q)));
+    const faltaAqui = grupo.some(q => q.required && answers[q.id] === undefined && !(esDeAgujetas(q) && !zonaEntrenada(q)) && !sinEjercicios(q));
     if (faltaAqui) {
       setError(grupo.length > 1 ? 'Rellena lo obligatorio para continuar.' : 'Responde para continuar.');
       return;
@@ -363,6 +396,16 @@ export default function QuestionnaireWizard({
           />
         )}
 
+        {/* «Mídete igual»: el cambio frente a la medida anterior, o «sin cambio
+            medible» si no supera el error de la cinta. */}
+        {question.type === 'metric' && esPerimetro(question.metricKey) && (
+          <CambioDeMedida
+            metricKey={question.metricKey}
+            anterior={medidaAnterior(todasLasMedidas, question.metricKey, hoy)}
+            actual={typeof valor === 'number' ? valor : undefined}
+          />
+        )}
+
         {question.type === 'media' && (
           <div className="space-y-2">
             <input
@@ -423,7 +466,19 @@ export default function QuestionnaireWizard({
           </div>
         )}
 
-        {question.type === 'keep_change' && (
+        {question.type === 'keep_change' && esPreguntaPorEjercicio(question) && (
+          <EjerciciosDelBloquePaso
+            ejercicios={ejercicios}
+            votos={leerVotos(valor)}
+            onVoto={(id, voto) => votarEjercicio(question, id, voto)}
+            variante={varianteEjercicios}
+            cargando={!ejerciciosDelBloque && delBloque.cargando}
+            etiquetaQueda={question.labelTrue}
+            etiquetaQuitar={question.labelFalse}
+          />
+        )}
+
+        {question.type === 'keep_change' && !esPreguntaPorEjercicio(question) && (
           <div className="space-y-2">
             {dosOpciones(question, [['mantener', question.labelTrue ?? 'Lo mantengo'], ['cambiar', question.labelFalse ?? 'Quiero un cambio']])}
             {valor === 'cambiar' && comentario(question, '¿Qué cambiarías?', true)}
@@ -487,6 +542,7 @@ export default function QuestionnaireWizard({
     const c = answers[idComentario(q.id)];
     const coment = typeof c === 'string' && c.trim() ? c.trim() : '';
     if (v === undefined) return { texto: '' };
+    if (esPreguntaPorEjercicio(q)) return { texto: cuentaDeVotos(v) };
     if (q.type === 'scale') return { texto: coment, pill: `${v}/${q.scaleMax ?? 10}` };
     if (q.type === 'keep_change') return { texto: coment, pill: v === 'mantener' ? (q.labelTrue ?? 'Lo mantengo') : (q.labelFalse ?? 'Cambio') };
     if (q.type === 'boolean') return { texto: coment, pill: v ? (q.labelTrue ?? 'Sí') : (q.labelFalse ?? 'No') };
@@ -652,6 +708,7 @@ export default function QuestionnaireWizard({
             ) : unica ? (
               <>
                 {burbujas(unica)}
+                {hayPerimetros && <NotaMideteIgual />}
                 <div className="space-y-2">
                   <p className="font-mono text-caption uppercase tracking-[.14em] text-ink-4 flex justify-between">
                     <span>Tu respuesta</span>
@@ -663,6 +720,7 @@ export default function QuestionnaireWizard({
             ) : (
               <>
                 {burbujas(grupo[0], false)}
+                {hayPerimetros && <NotaMideteIgual />}
                 <div className="space-y-4">
                   {grupo.map(q => (
                     <div key={q.id} className="space-y-1.5">

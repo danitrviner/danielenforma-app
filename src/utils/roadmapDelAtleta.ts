@@ -6,6 +6,7 @@ import { conEstadoReal } from './estadoDeAsignacion.js';
 import { addDays, diasEntreFechas, getWeekStart } from './trainingWeek.js';
 import { aggregate, allTimeBestBefore } from './trainingReport.js';
 import type { ContextoPesoCorporal } from './pesoCorporal.js';
+import { semanaDelBloque, totalDeSemanasDelBloque } from './semanaDelBloque.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El Road map del atleta, derivado de los objetivos (29-10-2026)
@@ -85,8 +86,15 @@ export interface DondeEstas {
 export interface BloqueDelCamino {
   id: string;
   nombre: string;
+  /** Semana del bloque por la que va: la VUELTA del microciclo, la misma cuenta
+   *  que Rutinas (F5, 17-11-2026; ver `semanaDelBloque.ts`). Antes era días/7 y
+   *  con un ciclo de 14 días decía «semana 4» donde Rutinas decía «semana 2». */
   semana: number;
+  /** De cuántas: las vueltas del bloque, en la misma unidad que `semana`. */
   semanas: number;
+  /** Lo que dura en semanas de calendario (`Mesocycle.weeks`). Coincide con
+   *  `semanas` salvo en los ciclos que no duran 7 días. */
+  semanasCalendario: number;
   desde: string;
   hasta: string;
 }
@@ -224,7 +232,7 @@ export function bloqueEnCurso(mesociclos: readonly Mesocycle[], hoy: string): Bl
   if (!m) return null;
   return {
     id: m.id, nombre: m.name || 'Bloque de entreno',
-    semana: Math.floor(diasEntreFechas(m.startDate, hoy) / 7) + 1, semanas: m.weeks,
+    semana: semanaDelBloque(m, hoy), semanas: totalDeSemanasDelBloque(m) ?? m.weeks, semanasCalendario: m.weeks,
     desde: m.startDate, hasta: addDays(m.startDate, m.weeks * 7 - 1),
   };
 }
@@ -234,8 +242,9 @@ export function bloquesDelCamino(mesociclos: readonly Mesocycle[], hoy: string):
   return [...mesociclos].filter(m => !!m.startDate).sort((a, b) => a.startDate.localeCompare(b.startDate)).map(m => {
     const hasta = addDays(m.startDate, m.weeks * 7 - 1);
     return {
-      id: m.id, nombre: m.name || 'Bloque de entreno', semanas: m.weeks, desde: m.startDate, hasta,
-      semana: Math.min(m.weeks, Math.max(1, Math.floor(diasEntreFechas(m.startDate, hoy) / 7) + 1)),
+      id: m.id, nombre: m.name || 'Bloque de entreno', desde: m.startDate, hasta,
+      // Misma cuenta que `bloqueEnCurso`: 1 en un bloque que aún no ha empezado y la última en uno terminado.
+      semana: semanaDelBloque(m, hoy), semanas: totalDeSemanasDelBloque(m) ?? m.weeks, semanasCalendario: m.weeks,
       estado: hasta < hoy ? 'pasada' : m.startDate > hoy ? 'futura' : 'actual',
     };
   });

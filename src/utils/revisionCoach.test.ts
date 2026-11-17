@@ -169,7 +169,7 @@ describe('mesoActivo', () => {
 describe('agruparEjerciciosPorPatron', () => {
   const exercises = [
     ej('press', 'pecho'),
-    ej('frances', 'triceps'),   // empuje_torso Y brazo
+    ej('frances', 'triceps'),   // aislamiento de tríceps: solo Brazo (F17)
     ej('plancha', 'core'),      // sin patrón
     ej('remo', 'dorsal'),
   ];
@@ -178,9 +178,9 @@ describe('agruparEjerciciosPorPatron', () => {
     bestOrm: 100, prevBestOrm: 95, deltaOrmPct: 5, isPR: false,
   }));
 
-  it('un ejercicio de dos patrones aparece ENTERO en los dos', () => {
+  it('el patrón lo decide el ejercicio: un aislamiento de tríceps va a Brazo, no a empuje de torso (F17)', () => {
     const { porPatron } = agruparEjerciciosPorPatron(perf, exercises);
-    expect(porPatron.empuje_torso.map(e => e.exerciseId)).toEqual(['press', 'frances']);
+    expect(porPatron.empuje_torso.map(e => e.exerciseId)).toEqual(['press']);
     expect(porPatron.brazo.map(e => e.exerciseId)).toEqual(['frances']);
   });
 

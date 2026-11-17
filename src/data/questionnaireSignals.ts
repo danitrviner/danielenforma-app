@@ -19,6 +19,9 @@ export type VolumeSignalKey =
   | 'meso_end.effort'
   | 'meso_end.priority_groups'
   | 'meso_end.overload_groups'
+  // Cierre por ejercicio (17-11-2026): ver utils/cierrePorEjercicio.ts.
+  | 'meso_end.quitar'
+  | 'meso_end.echa_de_menos'
   | `doms.${MuscleGroup}`;
 
 // Señales de perfil del atleta (anamnesis, se responden una vez) y de
@@ -47,6 +50,9 @@ export const SEÑALES_FIN_MESOCICLO: { key: VolumeSignalKey; label: string; tipo
   { key: 'meso_end.effort',          label: 'Exigencia de las series (1-10)',      tipos: ['scale', 'numeric'] },
   { key: 'meso_end.priority_groups', label: 'Grupos a priorizar (multi)',          tipos: ['choice'] },
   { key: 'meso_end.overload_groups', label: 'Grupos con demasiado volumen (multi)', tipos: ['choice'] },
+  // La pregunta enseña sola los ejercicios del bloque: «se queda» o «lo quitaría».
+  { key: 'meso_end.quitar',          label: 'Ejercicios del bloque: se queda o lo quitaría', tipos: ['keep_change'] },
+  { key: 'meso_end.echa_de_menos',   label: 'Ejercicio que echa de menos (texto)',  tipos: ['text'] },
 ];
 
 export const SEÑALES_DOMS: { key: VolumeSignalKey; label: string; tipos: string[] }[] =

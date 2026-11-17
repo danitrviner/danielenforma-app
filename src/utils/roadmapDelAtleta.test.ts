@@ -190,6 +190,20 @@ describe('semanas de la fase, bloques y próximo cambio (hoja de periodización,
     expect(r.bloques.map(b => [b.nombre, b.estado, b.semana])).toEqual([['Adaptación', 'pasada', 6], ['Hipertrofia 1', 'actual', 7], ['Hipertrofia 2', 'futura', 1]]);
   });
 
+  it('F5 · la semana del bloque es la vuelta del ciclo, como en Rutinas, no días/7', () => {
+    // Ciclo de 14 días en un bloque de 8 semanas: 4 vueltas. Hoy (29-10) es su día 18 → vuelta 2 (días/7 daba 3).
+    const largo = { ...meso('m1', 'Frecuencia 1,5', '2026-10-12', 8), daysPerWeek: 6, cycleDays: 14 } as Mesocycle;
+    const r = construirRoadmap({ ...base, mesociclos: [largo] });
+    expect(r.bloque).toMatchObject({ semana: 2, semanas: 4, semanasCalendario: 8, hasta: '2026-12-06' });
+    expect(r.bloques[0]).toMatchObject({ semana: 2, semanas: 4, semanasCalendario: 8, estado: 'actual' });
+  });
+
+  it('F5 · con ciclo semanal el número no cambia', () => {
+    const semanal = { ...meso('m1', 'Hipertrofia 1', '2026-10-12', 8), daysPerWeek: 4 } as Mesocycle;
+    const r = construirRoadmap({ ...base, mesociclos: [semanal] });
+    expect(r.bloque).toMatchObject({ semana: 3, semanas: 8, semanasCalendario: 8 });
+  });
+
   it('el próximo cambio: escalón de kcal, de pasos o cambio de fase, lo primero que llegue', () => {
     const kcal = [null, ...semanas().map(s => s.kcalPlan)]; kcal[9] = 2000;
     const r = construirRoadmap({ ...base, kcalSemana: kcal });

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Exercise, MuscleGroup, WorkoutLog } from '../../types';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
 import { useMotorCdg } from '../../hooks/useMotorCdg';
-import { iemSemanalPorZona, ZONA_POR_CLAVE } from '../../utils/cdg';
+import { iemSemanalPorZona, numeroDeSemana, ZONA_POR_CLAVE, type SemanasDeRevision } from '../../utils/cdg';
 import { Icon } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -19,8 +19,9 @@ import { Icon } from '../ui';
 interface Props {
   logs: WorkoutLog[];
   exercises: Exercise[];
-  /** Primer día de cada semana a enseñar (ver `semanasDeLaRevision`). */
-  semanas: string[];
+  /** Primer día de cada semana a enseñar (ver `semanasDeLaRevision`). Si son
+   *  de un bloque, la lista trae el número real de cada semana (F5). */
+  semanas: SemanasDeRevision;
   /** Agujetas recientes por grupo (1-10), para cruzarlas con el estímulo. */
   domsPorGrupo?: Partial<Record<MuscleGroup, number>>;
   todoAbierto?: boolean;
@@ -70,6 +71,9 @@ export default function BloqueEstimuloSemanal({ logs, exercises, semanas, domsPo
   const enCurso = datos.enCurso;
   // La columna en negrita es la última semana completa: la que se cuenta.
   const ultima = enCurso != null ? enCurso - 1 : semanas.length - 1;
+  // F5: el rótulo es la semana del bloque, no la posición de la columna. De un
+  // bloque de 10 semanas se enseñan las 8 últimas y la primera es la S3.
+  const primera = numeroDeSemana(semanas, 0);
 
   return (
     <div className="space-y-3">
@@ -80,7 +84,7 @@ export default function BloqueEstimuloSemanal({ logs, exercises, semanas, domsPo
               <th className="text-left px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Zona</th>
               {semanas.map((s, i) => (
                 <th key={s} className="text-right px-2 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline whitespace-nowrap">
-                  <span className="block">S{i + 1}</span>
+                  <span className="block">S{numeroDeSemana(semanas, i)}</span>
                   <span className="block normal-case tracking-normal text-ink-3">{i === enCurso ? 'en curso' : diaMes(s)}</span>
                 </th>
               ))}
@@ -153,7 +157,7 @@ export default function BloqueEstimuloSemanal({ logs, exercises, semanas, domsPo
       <p className="font-mono text-caption text-ink-3">
         IEM realizado de la plantilla CDG, sumado por zona (como las agujetas): cada serie cuenta según el ejercicio, el RIR y las
         repeticiones. Más color, más estímulo. «vs sem. ant.» compara la última semana completa (en negrita) con la anterior; la semana en
-        curso sale más clara y no cuenta hasta que termina. Agujetas: media de sus últimas respuestas, en rojo a partir de 6/10. Las series sin kg y las de RIR 5 no cuentan.
+        curso sale más clara y no cuenta hasta que termina.{primera > 1 ? ` Se enseñan las ${semanas.length} últimas semanas del bloque: empieza en la S${primera}.` : ''} Agujetas: media de sus últimas respuestas, en rojo a partir de 6/10. Las series sin kg y las de RIR 5 no cuentan.
       </p>
     </div>
   );

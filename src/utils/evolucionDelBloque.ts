@@ -7,6 +7,7 @@ import { addDays, diasEntreFechas } from './trainingWeek.js';
 import { adherenciaPorKcal } from './diaDeDieta.js';
 import { RANGO_PCT_SEMANA, type ObjetivoCorporalTipo } from './verificacionObjetivo.js';
 import { RUIDO_PERIMETRO_CM } from './ruidoDeMedida.js';
+import { SEÑAL_ECHA_DE_MENOS, SEÑAL_QUITAR, idsConVoto, leerVotos } from './cierrePorEjercicio.js';
 import {
   computeAnthropometricIndices, ANTHROPOMETRIC_INDEX_LABELS, type AnthropometricIndexKey,
 } from './anthropometricIndices.js';
@@ -128,6 +129,17 @@ export interface VozDelAtleta {
    * montar el siguiente bloque.
    */
   respuestas: { pregunta: string; respuesta: string }[];
+  /**
+   * Cierre por ejercicio (17-11-2026, señal `meso_end.quitar`): ids de los
+   * ejercicios que QUITARÍA. Son candidatos a cambio para el bloque siguiente.
+   * Vacío si no marcó ninguno; ausente solo en una voz que no construyó este
+   * motor. La misma respuesta sale también en `respuestas`, con los nombres.
+   */
+  quitaria?: string[];
+  /** Ids de los que dijo «me gusta, se queda»: no son candidatos a cambio. */
+  seQuedan?: string[];
+  /** «¿Echas de menos algún ejercicio?» (señal `meso_end.echa_de_menos`), tal como lo escribió. */
+  echaDeMenos?: string;
 }
 
 export interface EvolucionDelBloque {
@@ -385,7 +397,9 @@ export function buildEvolucionDelBloque(params: {
         // El comentario libre de una pregunta `conComentario` viaja como otra
         // respuesta, con el id de su pregunta más `__comentario`.
         const base = a.questionId.endsWith('__comentario') ? preguntas.get(a.questionId.slice(0, -'__comentario'.length)) : undefined;
-        if (esDeCierre && base) anotar(`${base.tituloCorto ?? base.label} (comentario)`, a.value);
+        // En la pregunta por ejercicio el «comentario» ES la respuesta en
+        // palabras (los nombres de los que quitaría y de los que se quedan).
+        if (esDeCierre && base) anotar(base.signalKey === SEÑAL_QUITAR ? (base.tituloCorto ?? base.label) : `${base.tituloCorto ?? base.label} (comentario)`, a.value);
         continue;
       }
       const sk = p.signalKey ?? '';
@@ -399,6 +413,16 @@ export function buildEvolucionDelBloque(params: {
         if (sk === 'meso_end.effort') vozAqui.exigencia = Number(a.value) || null;
         if (sk === 'meso_end.priority_groups') vozAqui.priorizar = String(a.value).split(/[,;]\s*/).filter(Boolean);
         if (sk === 'meso_end.overload_groups') vozAqui.demasiado = String(a.value).split(/[,;]\s*/).filter(Boolean);
+        if (sk === SEÑAL_QUITAR) {
+          const votos = leerVotos(a.value);
+          vozAqui.quitaria = idsConVoto(votos, 'quitar');
+          vozAqui.seQuedan = idsConVoto(votos, 'queda');
+        }
+        if (sk === SEÑAL_ECHA_DE_MENOS && typeof a.value === 'string' && a.value.trim()) {
+          vozAqui.echaDeMenos = a.value.trim();
+          // También en palabras, con el resto de lo que escribe en el cierre.
+          anotar(p.tituloCorto ?? p.label, a.value);
+        }
         continue;
       }
       if (sk.startsWith('perfil.')) continue;
@@ -431,6 +455,9 @@ export function buildEvolucionDelBloque(params: {
         priorizar: vozAqui.priorizar ?? voz?.priorizar ?? [],
         demasiado: vozAqui.demasiado ?? voz?.demasiado ?? [],
         respuestas: enPalabras.length ? enPalabras : voz?.respuestas ?? [],
+        quitaria: vozAqui.quitaria ?? voz?.quitaria ?? [],
+        seQuedan: vozAqui.seQuedan ?? voz?.seQuedan ?? [],
+        ...((vozAqui.echaDeMenos ?? voz?.echaDeMenos) ? { echaDeMenos: vozAqui.echaDeMenos ?? voz?.echaDeMenos } : {}),
       };
     }
   }

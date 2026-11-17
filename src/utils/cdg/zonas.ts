@@ -87,3 +87,32 @@ export function avisosIemIea (
   }
   return out
 }
+
+/** Articulación cuyo estrés de la semana pasa del límite que el coach le puso a ESTE atleta. */
+export interface AvisoDeLimiteArticular { articulacion: string; j: number; valor: number; limite: number }
+
+/** Solo los límites que sirven: número mayor que cero. Lo demás (vacío, 0, texto) es «sin límite». */
+export function limitesValidos (limites: Partial<Record<string, unknown>> | null | undefined): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const [k, v] of Object.entries(limites ?? {})) if (typeof v === 'number' && Number.isFinite(v) && v > 0) out[k] = v
+  return out
+}
+
+/**
+ * X1 (17-11-2026): articulaciones por encima del límite semanal del atleta.
+ * Hasta ahora lo articular solo se leía en relativo (`avisosIemIea`, días
+ * seguidos); esto es el tope absoluto y por cliente que pide el curso («con
+ * antecedentes en una articulación, por debajo de 3 a la semana en ella»).
+ * `estresSemanal` va en el orden de `articulaciones` (el total de la semana).
+ * Es informativo: dice que pasa de SU límite, no por qué se le puso.
+ */
+export function articulacionesSobreSuLimite (
+  articulaciones: readonly string[], estresSemanal: readonly number[], limites: Partial<Record<string, unknown>> | null | undefined
+): AvisoDeLimiteArticular[] {
+  const validos = limitesValidos(limites)
+  return articulaciones.flatMap((articulacion, j) => {
+    const limite = validos[articulacion]
+    const valor = estresSemanal[j] ?? 0
+    return limite != null && valor > limite + 0.005 ? [{ articulacion, j, valor, limite }] : []
+  })
+}

@@ -219,3 +219,44 @@ describe('semana base, bloqueos y vigencia (F2, F6, F16)', () => {
     expect(reciente.contexto.sueñoHoras).toBe(7.5);
   });
 });
+
+/* 17-11-2026 · Hipótesis del bloque: meseta de 2 semanas entre subidas y, de la
+   segunda en adelante, los puntos de la primera. Se deduce de lo programado. */
+describe('ritmo de subidas: meseta y puntos', () => {
+  const con = (cambios: Partial<FuenteDeDatos>) => usarFuenteDeDatos({ ...fuente, ...cambios } as unknown as FuenteDeDatos);
+  const restaurar = () => usarFuenteDeDatos(fuente as unknown as FuenteDeDatos);
+  // Las laterales pasan de 3 a 4 series en la semana `atWeek`: el deltoides sube ahí.
+  const sesionQueSubeEn = (atWeek: number): Workout => ({
+    ...SESION,
+    exercises: SESION.exercises.map(we => (we.exerciseId === 'lat' ? { ...we, weeklyProgression: [{ atWeek, cambios: { sets: 4 } }] } : we)),
+  });
+  const deltoidesDe = async () => {
+    const r = JSON.parse(await getCdgSemana('ana@x.com'));
+    return r.zonas.find((z: { zona: string }) => z.zona === 'deltoides');
+  };
+
+  it('sin subidas programadas todo sigue igual: acelera con el % de la velocidad', async () => {
+    const d = await deltoidesDe();
+    expect(d.subidasDelBloque).toEqual([]);
+    expect(d.propuestaSemanaQueViene).toMatchObject({ tono: 'acelerar', enMeseta: false, puntos: null });
+  });
+
+  it('subió esta semana (S3): para la S4 mantiene, en meseta', async () => {
+    con({ getWorkouts: async () => [sesionQueSubeEn(3)] });
+    const d = await deltoidesDe();
+    restaurar();
+    expect(d.subidasDelBloque.map((s: { semana: number }) => s.semana)).toEqual([3]);
+    expect(d.propuestaSemanaQueViene).toMatchObject({ tono: 'mantener', enMeseta: true, pct: null });
+  });
+
+  it('subió en la S2 y lleva dos semanas sostenidas: vuelve a subir, con los puntos de la primera', async () => {
+    con({ getWorkouts: async () => [sesionQueSubeEn(2)] });
+    const d = await deltoidesDe();
+    restaurar();
+    const [primera] = d.subidasDelBloque;
+    expect(primera.semana).toBe(2);
+    expect(d.propuestaSemanaQueViene).toMatchObject({ tono: 'acelerar', enMeseta: false });
+    expect(d.propuestaSemanaQueViene.puntos).toBeGreaterThan(0);
+    expect(d.propuestaSemanaQueViene.puntos).toBeLessThanOrEqual(primera.puntos);
+  });
+});

@@ -6,7 +6,7 @@
  * la hoja. Las fórmulas viven en seguimiento.ts (validadas contra la hoja); aquí
  * solo se agrupan los datos de la app y se deciden las ventanas de semanas.
  */
-import type { WorkoutExercise, WorkoutLog } from '../../types.js'
+import type { WorkoutExercise, WorkoutLog, WorkoutTechnique } from '../../types.js'
 import { mesocycleWeekNumber, resolverEjercicioDelMeso } from '../progression.js'
 import type { MotorCdg } from './motor.js'
 import { cargaProgramada, semanaRealizadaDesdeLogs, type NombreCdgDe } from './adaptadores.js'
@@ -20,7 +20,16 @@ import {
 // El RM de los registros de la app sale solo de las series válidas (rmValido.ts, 17-11-2026).
 import { rendimientoCicloDeRegistros, rendimientoSemanaDeRegistros } from './rendimientoDeRegistros.js'
 
-export interface UmbralesCarga { inferior: number; superior: number }
+/** Estrés articular semanal máximo de un atleta en cada articulación (clave = nombre de `motor.articulaciones`). */
+export type LimitesArticulares = Partial<Record<string, number>>
+
+export interface UmbralesCarga {
+  inferior: number
+  superior: number
+  /** X1 (17-11-2026): límite semanal de estrés articular por articulación de ESTE
+   *  atleta. Viaja y se guarda con sus umbrales (`UserProfile.cdgUmbralesCarga`). */
+  limitesArticulares?: LimitesArticulares
+}
 export const UMBRALES_CARGA_POR_DEFECTO: UmbralesCarga = { inferior: 0.8, superior: 1.6 }
 
 export interface SemanaSeguimiento {
@@ -35,7 +44,7 @@ export interface SemanaSeguimiento {
 
 export interface EntradaSemanas {
   logs: WorkoutLog[]
-  meso: { id: string; startDate: string; semanasDescarga?: number[]; semanasTest?: number[] }
+  meso: { id: string; startDate: string } & NonNullable<Parameters<typeof resolverEjercicioDelMeso>[1]>
   cicloDias: number
   vueltas: number
   /** Sesión del microciclo (0-6) a la que pertenece una rutina: `Workout.dayIndex`. */
@@ -44,6 +53,27 @@ export interface EntradaSemanas {
   motor: MotorCdg
   /** Para sumar el peso corporal a dominadas, fondos… (CR5). Sin él, como siempre. */
   pesoCorporal?: ContextoPesoCorporal | null
+  /** Lo programado en el bloque (F15): de ahí sale qué técnica llevaba pautada
+   *  cada ejercicio en cada semana. Sin ello, la técnica de las bajadas y
+   *  miniseries apuntadas se deduce del peso (`tecnicaDeSegmentos`). */
+  grupos?: GrupoDelDia[]
+}
+
+/**
+ * La técnica que tenía pautada un ejercicio en la semana `semana` del bloque,
+ * ya resuelta (cambios por semana, test). Se busca primero en la sesión del
+ * registro y, si allí no está, en el resto del bloque. `undefined` = no se sabe.
+ */
+export function tecnicaPautadaEnElBloque (
+  grupos: GrupoDelDia[], meso: Parameters<typeof resolverEjercicioDelMeso>[1], semana: number, sesion: number | undefined, exerciseId: string
+): WorkoutTechnique | null | undefined {
+  const deLaSesion = (g: GrupoDelDia, i: number) => (g.dayIndex ?? i) === sesion
+  const candidatos = [...grupos.filter(deLaSesion), ...grupos.filter((g, i) => !deLaSesion(g, i))]
+  for (const g of candidatos) {
+    const we = g.exercises.map(x => resolverEjercicioDelMeso(x, meso, semana)).find(x => x.exerciseId === exerciseId)
+    if (we) return we.technique ?? null
+  }
+  return undefined
 }
 
 /**
@@ -51,6 +81,10 @@ export interface EntradaSemanas {
  * La hoja solo tiene 7 huecos de sesión por semana: los logs de rutinas sin
  * `dayIndex` (rutinas antiguas) o con `dayIndex` > 6 (ciclos de 8-10 días) se
  * cuentan en `descartados` en vez de perderse sin avisar.
+ *
+ * F15 (17-11-2026): lo realizado lleva las técnicas que el atleta APUNTÓ
+ * (bajadas, miniseries), con la misma equivalencia que lo programado. Antes
+ * iba siempre sin técnica y el ratio aguda:crónica salía inflado donde las hay.
  */
 export function semanasRealizadasDelMeso (e: EntradaSemanas) {
   const porSemana = new Map<number, WorkoutLog[]>()
@@ -67,7 +101,11 @@ export function semanasRealizadasDelMeso (e: EntradaSemanas) {
   }
   const semanas: SemanaSeguimiento[] = [...porSemana.keys()].sort((a, b) => a - b).map(semana => {
     const logs = porSemana.get(semana)!
-    const realizada = semanaRealizadaDesdeLogs(logs, e.nombreCdgDe, l => e.sesionDeWorkout(l.workoutId), { pesoCorporal: e.pesoCorporal ?? null })
+    const grupos = e.grupos
+    const realizada = semanaRealizadaDesdeLogs(logs, e.nombreCdgDe, l => e.sesionDeWorkout(l.workoutId), {
+      pesoCorporal: e.pesoCorporal ?? null, segmentos: true,
+      tecnicaPautadaDe: grupos ? (l, id) => tecnicaPautadaEnElBloque(grupos, e.meso, semana, e.sesionDeWorkout(l.workoutId), id) : undefined
+    })
     return {
       semana, realizada, logs: logs.length,
       calculo: calcularSemana(e.motor, realizada),
@@ -115,6 +153,8 @@ export type CargaAgudaCronicaDelMeso =
       semanasUsadas: number[]
       /** Semanas realizadas que NO entran en la crónica por ser de descarga o puente (F15). */
       semanasRecortadas: number[]
+      /** Semanas SIN ninguna sesión que entran en la crónica como cero (F15): están en `semanasUsadas`. */
+      semanasVacias: number[]
       /** La semana que se compara es de descarga o puente: no se avisa «por debajo». */
       referenciaRecortada: 'descarga' | 'puente' | null
       /** Semanas de bloques anteriores usadas (E-10): entonces solo cuentan los totales. */
@@ -140,9 +180,15 @@ export type CargaAgudaCronicaDelMeso =
  *    normal parecería un salto. Y si la semana que se compara es una de ellas,
  *    no se avisa «por debajo»: quedarse corto es justo lo que se busca.
  * Lo que se estrena (crónica 0, carga esta semana) sale en `avisos.nuevos`, no
- * como ratio 1. Las semanas SIN sesiones siguen sin contar como ceros (como en
- * la hoja: «últimas semanas realizadas»), y de los bloques anteriores no se
- * sabe cuáles fueron descarga.
+ * como ratio 1. De los bloques anteriores no se sabe cuáles fueron descarga.
+ *
+ * Semanas SIN ninguna sesión (F15, 17-11-2026): la hoja se las salta («últimas
+ * semanas realizadas») y aquí ya no. Una semana de vacaciones dentro del bloque
+ * baja la crónica de verdad, así que cuenta como CERO si ya ha pasado (anterior
+ * a `semanaEnCurso`; sin ese dato, anterior a la última realizada). Las del
+ * principio del bloque, antes de su primera sesión, solo cuentan si el atleta
+ * ya tenía registros de antes (`semanasAnteriores` trae alguna): si no, son
+ * anteriores a su primer registro y no dicen nada de su carga.
  */
 export function cargaAgudaCronicaDelMeso (args: {
   motor: MotorCdg
@@ -169,9 +215,24 @@ export function cargaAgudaCronicaDelMeso (args: {
   const ref = elegida ?? semanas[semanas.length - 1].semana + 1
   if (ref > vueltas) return { disponible: false, motivo: 'La última semana del bloque ya está realizada: no hay semana siguiente que comparar.' }
   const recortada = (s: number) => semanaRecortada(meso ?? {}, s)
-  const candidatas = semanas.filter(s => s.semana < ref && s.semana !== args.semanaEnCurso)
-  const semanasRecortadas = candidatas.filter(s => recortada(s.semana) != null).map(s => s.semana)
-  const previas = candidatas.filter(s => recortada(s.semana) == null).slice(-SEMANAS_CARGA_CRONICA).reverse()
+  const realizadas = semanas.filter(s => s.semana < ref && s.semana !== args.semanaEnCurso)
+  const semanasRecortadas = realizadas.filter(s => recortada(s.semana) != null).map(s => s.semana)
+  // Semanas sin sesiones que cuentan como cero (ver arriba).
+  const hechas = new Set(semanas.map(s => s.semana))
+  const primeraHecha = semanas.length ? semanas[0].semana : Infinity
+  const pasadasHasta = args.semanaEnCurso ?? (semanas.length ? semanas[semanas.length - 1].semana : 0)
+  const conHistoria = (args.semanasAnteriores?.length ?? 0) > 0
+  const semanasVacias: number[] = []
+  for (let s = 1; s < ref && s < pasadasHasta; s++) {
+    if (hechas.has(s) || recortada(s) != null) continue
+    if (s < primeraHecha && !conHistoria) continue
+    semanasVacias.push(s)
+  }
+  const candidatas: Array<{ semana: number; calculo: CalculoSemana }> = [
+    ...realizadas.filter(s => recortada(s.semana) == null),
+    ...semanasVacias.map(semana => ({ semana, calculo: semanaSinSesiones(motor) })),
+  ].sort((a, b) => a.semana - b.semana)
+  const previas = candidatas.slice(-SEMANAS_CARGA_CRONICA).reverse()
   const deOtros = previas.length < SEMANAS_CARGA_CRONICA
     ? (args.semanasAnteriores ?? []).slice(0, SEMANAS_CARGA_CRONICA - previas.length)
     : []
@@ -194,18 +255,30 @@ export function cargaAgudaCronicaDelMeso (args: {
   const soloTotal = <T extends { sesion: string }>(xs: T[]) => (cruza ? xs.filter(x => x.sesion === 'Total de sesiones') : xs)
   return {
     disponible: true, semanaReferencia: ref, semanasUsadas: previas.map(s => s.semana),
-    semanasRecortadas, referenciaRecortada,
+    semanasRecortadas, referenciaRecortada, semanasVacias: semanasVacias.filter(v => previas.some(p => p.semana === v)),
     semanasDeOtrosBloques: deOtros.length, fiable: total >= SEMANAS_CARGA_CRONICA, ac,
     // `nuevos` ya es solo del total de la semana.
     avisos: { sesionesIF: soloTotal(avisos.sesionesIF), musculos: soloTotal(avisos.musculos), articulaciones: soloTotal(avisos.articulaciones), nuevos: avisos.nuevos },
   }
 }
 
+/** Una semana sin ninguna sesión: todo a cero, con la forma de una realizada. */
+export function semanaSinSesiones (motor: MotorCdg): CalculoSemana {
+  return calcularSemana(motor, Array.from({ length: 7 }, () => []))
+}
+
 /**
  * Semanas realizadas ANTES de un bloque (de bloques anteriores), en tramos de
- * 7 días hacia atrás desde su inicio, la más reciente primero. Las semanas sin
- * entrenos no cuentan (como en la hoja: solo semanas realizadas). Todo va a la
+ * 7 días hacia atrás desde su inicio, la más reciente primero. Todo va a la
  * sesión 1: entre bloques solo se comparan totales.
+ *
+ * Tramos sin entrenos (F15, 17-11-2026): cuentan como CERO cuando caen DENTRO
+ * de un bloque que estaba en marcha, es decir, entre dos sesiones registradas
+ * del mismo mesociclo (unas vacaciones a mitad de bloque). Los demás se saltan
+ * como antes: el hueco entre el final de un bloque y el inicio del siguiente
+ * (no se sabe si seguía en marcha) y todo lo anterior al primer registro.
+ * Las bajadas y miniseries apuntadas cuentan también aquí; como de un bloque
+ * anterior no se tiene lo pautado, su técnica se deduce del peso.
  */
 export function semanasAnterioresAlBloque (e: {
   logs: WorkoutLog[]; inicio: string; motor: MotorCdg; nombreCdgDe: NombreCdgDe; maxSemanas?: number; buscarHasta?: number
@@ -214,16 +287,25 @@ export function semanasAnterioresAlBloque (e: {
   const max = e.maxSemanas ?? SEMANAS_CARGA_CRONICA
   const tramos = e.buscarHasta ?? 12
   const inicio = Date.parse(`${e.inicio.slice(0, 10)}T00:00:00Z`)
+  const dia = (l: WorkoutLog) => Date.parse(`${l.date.slice(0, 10)}T00:00:00Z`)
+  // Primer y último registro de cada mesociclo: lo que hay entre medias es bloque en marcha.
+  const porBloque = new Map<string, { primero: number; ultimo: number }>()
+  for (const l of e.logs) {
+    if (!l.mesocycleId) continue
+    const t = dia(l); const b = porBloque.get(l.mesocycleId)
+    porBloque.set(l.mesocycleId, { primero: Math.min(b?.primero ?? t, t), ultimo: Math.max(b?.ultimo ?? t, t) })
+  }
+  const dentroDeUnBloque = (desde: number, hasta: number) => [...porBloque.values()].some(b => b.primero < desde && b.ultimo >= hasta)
   const out: CalculoSemana[] = []
   for (let k = 1; k <= tramos && out.length < max; k++) {
     const desde = inicio - k * 7 * 86_400_000
     const hasta = desde + 7 * 86_400_000
-    const deLaSemana = e.logs.filter(l => {
-      const t = Date.parse(`${l.date.slice(0, 10)}T00:00:00Z`)
-      return t >= desde && t < hasta
-    })
-    if (deLaSemana.length === 0) continue
-    out.push(calcularSemana(e.motor, semanaRealizadaDesdeLogs(deLaSemana, e.nombreCdgDe, () => 0, { pesoCorporal: e.pesoCorporal ?? null })))
+    const deLaSemana = e.logs.filter(l => dia(l) >= desde && dia(l) < hasta)
+    if (deLaSemana.length === 0) {
+      if (dentroDeUnBloque(desde, hasta)) out.push(semanaSinSesiones(e.motor))
+      continue
+    }
+    out.push(calcularSemana(e.motor, semanaRealizadaDesdeLogs(deLaSemana, e.nombreCdgDe, () => 0, { pesoCorporal: e.pesoCorporal ?? null, segmentos: true })))
   }
   return out
 }

@@ -40,9 +40,13 @@ import { SetInput, nuevaSerieVacia, tieneReps, seriesHechas, filaASerie } from '
 import { mejorRmValido } from './training/cierreDeEjercicio';
 import { AL_VOLVER_A_LA_APP } from '../utils/refrescoDelAtleta';
 import { dondePreguntar, esMotivoDeParada, type MotivoDeParada } from '../utils/queTeParo';
+import SaltarSesion, { SesionSaltada, type VarianteSaltar } from './SaltarSesion';
+import { ESPERA_PARA_DESHACER_MS, cambiosAlSaltar, sePuedeSaltar, type MotivoDeSalto } from '../utils/saltarSesion';
 
 interface TrainingScreenProps {
   profile: UserProfile;
+  /** Cómo se pregunta el motivo de «No voy a poder hacerla» (hoja o en la tarjeta). */
+  varianteSaltar?: VarianteSaltar;
 }
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -100,7 +104,7 @@ const ESTADO_CIRCULO: Record<EstadoDeDia, string> = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function TrainingScreen({ profile }: TrainingScreenProps) {
+export default function TrainingScreen({ profile, varianteSaltar }: TrainingScreenProps) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const tutorial = useTutorialEngine();
@@ -859,6 +863,68 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     }
   };
 
+  // ── «No voy a poder hacerla» ───────────────────────────────────────────────
+  // La sesión se pinta como saltada al momento, pero la escritura espera unos
+  // segundos: las reglas de Firestore no dejan al atleta devolver una
+  // asignación a «pendiente», así que deshacer solo puede ser no haberla
+  // guardado todavía. Ver utils/saltarSesion.ts.
+  const [saltoEnEspera, setSaltoEnEspera] = useState<{ id: string; motivo: MotivoDeSalto } | null>(null);
+  const saltoRef = useRef<{ id: string; motivo: MotivoDeSalto; temporizador: number } | null>(null);
+
+  const pintarEstado = (id: string, status: WorkoutAssignment['status']) =>
+    queryClient.setQueryData<WorkoutAssignment[]>(assignmentsKey, prev => prev?.map(a => a.id === id ? { ...a, status } : a));
+
+  /** Guarda de verdad el salto que estaba esperando (si lo hay). */
+  const guardarSaltoEnEspera = () => {
+    const salto = saltoRef.current;
+    if (!salto) return;
+    window.clearTimeout(salto.temporizador);
+    saltoRef.current = null;
+    setSaltoEnEspera(null);
+    updateWorkoutAssignment(salto.id, cambiosAlSaltar(salto.motivo))
+      .then(() => pintarEstado(salto.id, 'skipped'))
+      .catch(err => {
+        console.error('No se pudo marcar la sesión como saltada:', err);
+        pintarEstado(salto.id, 'pending');
+        showToast('No se pudo guardar. La sesión sigue pendiente.');
+      });
+  };
+  const guardarSaltoRef = useRef(guardarSaltoEnEspera);
+  guardarSaltoRef.current = guardarSaltoEnEspera;
+
+  const saltarSesion = (a: WorkoutAssignment, motivo: MotivoDeSalto) => {
+    // Si había otra esperando, esa ya no se puede deshacer: se guarda ahora.
+    guardarSaltoEnEspera();
+    pintarEstado(a.id, 'skipped');
+    const temporizador = window.setTimeout(() => guardarSaltoRef.current(), ESPERA_PARA_DESHACER_MS);
+    saltoRef.current = { id: a.id, motivo, temporizador };
+    setSaltoEnEspera({ id: a.id, motivo });
+    void haptics.success();
+  };
+
+  const deshacerSalto = () => {
+    const salto = saltoRef.current;
+    if (!salto) return;
+    window.clearTimeout(salto.temporizador);
+    saltoRef.current = null;
+    setSaltoEnEspera(null);
+    pintarEstado(salto.id, 'pending');
+  };
+
+  // Salir de Rutinas, o mandar la app al fondo, antes de que venza la espera no
+  // puede perder el salto: se guarda en ese momento.
+  useEffect(() => {
+    const guardar = () => guardarSaltoRef.current();
+    const alOcultar = () => { if (document.visibilityState === 'hidden') guardar(); };
+    window.addEventListener('pagehide', guardar);
+    document.addEventListener('visibilitychange', alOcultar);
+    return () => {
+      window.removeEventListener('pagehide', guardar);
+      document.removeEventListener('visibilitychange', alOcultar);
+      guardar();
+    };
+  }, []);
+
   // ── Tarjeta de un día del ciclo (la usan tanto la vuelta en curso como el
   // histórico por vueltas) ───────────────────────────────────────────────────
   const renderAssignmentCard = (dia: DiaDelCiclo, opts?: { destacado?: boolean }) => {
@@ -915,6 +981,29 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 <Icon name="push_pin" size="s" filled className="text-accent-ink mt-0.5 shrink-0" />
                 <p className="text-caption text-ink">{a.note}</p>
               </div>
+            )}
+            {/* «No voy a poder hacerla»: discreta, debajo de todo, y solo en una
+                sesión pendiente sin series apuntadas. */}
+            {wo && sePuedeSaltar(a, seriesAMedias) && (
+              <div className="mt-1.5">
+                <SaltarSesion sesion={wo.name} variante={varianteSaltar} onSaltar={motivo => saltarSesion(a, motivo)} />
+              </div>
+            )}
+            {saltoEnEspera?.id === a.id && (
+              <div className="mt-1.5">
+                <SesionSaltada motivo={saltoEnEspera.motivo} onDeshacer={deshacerSalto} />
+              </div>
+            )}
+            {/* Pasada la espera ya no se puede volver a «pendiente» (reglas),
+                pero sí hacerla: al terminarla queda como completada. */}
+            {wo && a.status === 'skipped' && saltoEnEspera?.id !== a.id && (
+              <button
+                type="button"
+                onClick={() => openPlayer(a)}
+                className="mt-1.5 inline-flex items-center gap-1 font-sans text-caption text-ink-4 underline underline-offset-2 hover:text-ink-2"
+              >
+                Al final sí la hago
+              </button>
             )}
           </div>
         </div>

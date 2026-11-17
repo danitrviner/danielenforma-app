@@ -11,13 +11,15 @@ import { ZONAS_IEM, type ZonaIem } from '../../utils/cdg/zonas';
 import { resumenSesion } from '../../utils/cdg/programacion';
 import {
   propuestaZona, tipoDeBloque, contextoDeLaSemana, agujetasVigentes, sensibilidadDeZona, pctEfectivo,
-  type Propuesta, type Sensibilidad,
+  subidasDeLaZona, semanasFueraDeSubidas,
+  type Propuesta, type Sensibilidad, type SubidasDeLaZona,
 } from '../../utils/cdg/agujetas';
 import {
   proponerProgresionIem, iemProgramadoPorZona, aplicarOperaciones, semanasSinMejorar,
   type CambioIem, type EjercicioProgramable, type OperacionIem, type ResumenZonaIem,
 } from '../../utils/cdg/progresionIem';
-import { borradorDeSemanas, tonelajePorSemana, etiquetaOperacion, type SemanaBorrador } from '../../utils/cdg/borradorIem';
+import { borradorDeSemanas, tonelajePorSemana, etiquetaOperacion, type RitmoDeZona, type SemanaBorrador } from '../../utils/cdg/borradorIem';
+import { SEMANAS_ENTRE_SUBIDAS } from '../../utils/hipotesisDeBloque/cifras';
 import { avisoDeSemanaBase, destinosDeProgresion, esDescargaOPuente, semanaBaseDeIem, semanaDePartidaDeIem } from '../../utils/cdg/semanaBase';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -35,6 +37,12 @@ import { avisoDeSemanaBase, destinosDeProgresion, esDescargaOPuente, semanaBaseD
    puente van recortadas y no sirven de base ni de destino, F2), y el 5 de
    agujetas es un aviso bloqueante: la zona sale siempre, no recibe ninguna
    subida —tampoco de rebote— y solo se puede bajar (F6).
+
+   17-11-2026 (hipótesis del bloque): el acelerador tiene ritmo. Entre subida
+   y subida van 2 semanas sostenidas (meseta) y de la segunda subida en
+   adelante se repiten los PUNTOS de la primera, no el porcentaje. Las subidas
+   se deducen de lo programado semana a semana (`subidasDeLaZona`): no se
+   guarda nada nuevo. El borrador de las semanas siguientes sigue el mismo ritmo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export interface DiaParaIem {
@@ -65,6 +73,10 @@ export interface ZonaDeLaPropuesta {
   agujetas?: number;
   /** Agujetas de 5 (duele en reposo): no se sube nada que la trabaje; solo se puede bajar. */
   bloqueada: boolean;
+  /** Las subidas ya programadas de la zona en el bloque, deducidas de lo programado. */
+  subidas: SubidasDeLaZona;
+  /** Iba a subir, pero subió hace menos de 2 semanas sostenidas: esta semana mantiene. */
+  enMeseta: boolean;
 }
 
 export interface CasillaPropuesta { we: WorkoutExercise; motivos: string[]; incluida: boolean; porTiempo: boolean; superaMrv: boolean }
@@ -136,6 +148,12 @@ export function usePropuestaIem(p: {
     const semanaDePartida = semanaDePartidaDeIem(meso, semana);
     const iemPartida = iemProgramadoPorZona(motor, nombreCdgDe, dias.flatMap(d => d.exercises.map(we => resolver(we, semanaDePartida))));
 
+    // Lo programado semana a semana hasta la que se programa: de ahí se
+    // deducen las subidas de cada zona (meseta y puntos), sin guardar nada.
+    const programadoPorSemana = Array.from({ length: Math.max(0, semana - 1) }, (_, i) =>
+      iemProgramadoPorZona(motor, nombreCdgDe, dias.flatMap(d => d.exercises.map(we => resolver(we, i + 1)))));
+    const semanasFuera = semanasFueraDeSubidas(meso);
+
     // Rendimiento: tonelaje de las semanas hechas frente a la carga programada.
     const hechas = Array.from({ length: Math.max(0, (semanaActual ?? 0)) }, (_, i) => i + 1);
 
@@ -144,13 +162,18 @@ export function usePropuestaIem(p: {
       const vigente = !!lectura && agujetasVigentes(lectura.fecha, hoy);
       const objetivo = meso.cdgObjetivosIem?.[z.clave];
       const modo = modoLocal[z.clave] ?? sensibilidadDeZona(meso, z.clave);
-      const propuesta = propuestaZona({
+      const subidas = subidasDeLaZona({ programado: programadoPorSemana.map(p => p[z.clave] ?? 0), destino: semana, semanasFuera });
+      const entrada: Parameters<typeof propuestaZona>[0] = {
         agujetas: vigente ? lectura!.valor : undefined, anterior: vigente ? lectura!.anterior : undefined, sensible: z.sensible,
         tipo: { sensibilidad: modo, velocidad }, esObjetivo: objetivo != null, iem: iemBase[z.clave], contexto, fatigaPost: fatigaPost?.value, objetivo,
         sesionMasCansada: cansancioSesiones ? { etiqueta: cansancioSesiones.peor.etiqueta, valor: cansancioSesiones.peor.valor } : undefined,
         // Igual que el asistente: tras un parón, el pico de agujetas de las dos primeras semanas no frena de golpe.
         primeraSemanaTrasParon: !!meso.vuelveDeParon && semana <= 2,
-      });
+        subidas,
+      };
+      const propuesta = propuestaZona(entrada);
+      // En meseta no sube esta semana, pero el borrador necesita saber cuánto subirá cuando toque.
+      const pctTrasLaMeseta = propuesta.enMeseta ? propuestaZona({ ...entrada, subidas: { ...subidas, enMeseta: false } }).pct ?? 0 : 0;
       const bloqueada = !!propuesta.bloqueante;
       const sugerido = propuesta.pct ?? 0;
       const manual = pctManual[z.clave] != null;
@@ -165,6 +188,7 @@ export function usePropuestaIem(p: {
       return {
         agujetas: vigente ? lectura!.valor : undefined,
         zona: z.clave, nombre: z.nombre, modo, propuesta, pct, sugerido, manual, objetivo, bloqueada,
+        subidas, enMeseta: !!propuesta.enMeseta, pctTrasLaMeseta,
         semanaDePartida, acumulado: null as number | null,
         semanasSinMejorar: semanasSinMejorar(conDatos.map(x => x.t), cargas),
         partida: iemPartida[z.clave] ?? 0,
@@ -200,18 +224,35 @@ export function usePropuestaIem(p: {
     }
 
     const despues = iemProgramadoPorZona(motor, nombreCdgDe, aplicados.map(x => x.we));
-    const zonasFinal: ZonaDeLaPropuesta[] = porZona.map(({ partida, ...z }) => ({
+    const zonasFinal: ZonaDeLaPropuesta[] = porZona.map(({ partida, pctTrasLaMeseta: _pct, ...z }) => ({
       ...z,
       resumen: r.zonas.find(x => x.zona === z.zona),
       acumulado: partida > 0.005 ? (despues[z.zona] ?? 0) / partida - 1 : null,
     }));
+
+    // El ritmo con el que cada zona llega al borrador: la que sube en firme
+    // empieza a sostener (1 semana) y fija los puntos si es su primera subida;
+    // la que está en meseta lleva una semana más y subirá cuando cumpla las 2.
+    const pctDelBorrador: Partial<Record<ZonaIem, number>> = {};
+    const ritmo: Partial<Record<ZonaIem, RitmoDeZona>> = {};
+    for (const z of porZona) {
+      const sube = z.pct > 0;
+      const futuro = sube ? z.pct : z.enMeseta && !z.manual ? z.pctTrasLaMeseta : 0;
+      if (!(futuro > 0)) continue;
+      pctDelBorrador[z.zona] = futuro;
+      const delta = (despues[z.zona] ?? 0) - (iemBase[z.zona] ?? 0);
+      ritmo[z.zona] = {
+        sostenidas: sube ? 1 : (z.subidas.semanasSostenidas ?? SEMANAS_ENTRE_SUBIDAS) + 1,
+        puntos: z.subidas.primera?.puntos ?? (sube && delta > 0 ? Math.round(delta * 10) / 10 : null),
+      };
+    }
 
     // Borrador: de la semana siguiente hasta antes de la próxima descarga o puente.
     const siguientes: number[] = [];
     for (let s = semana + 1; s <= vueltas && !esDescargaOPuente(meso, s) && siguientes.length < 4; s++) siguientes.push(s);
     const borrador: SemanaBorrador[] = siguientes.length ? borradorDeSemanas({
       motor, nombreCdgDe, ejercicios: aplicados, semanas: siguientes, palancas, tiempo, mrvPorGrupo, zonasSinSubida,
-      pctPorZona: Object.fromEntries(zonasFinal.filter(z => z.pct > 0).map(z => [z.zona, z.pct])) as Partial<Record<ZonaIem, number>>,
+      pctPorZona: pctDelBorrador, ritmo,
       objetivos: meso.cdgObjetivosIem,
     }) : [];
 
