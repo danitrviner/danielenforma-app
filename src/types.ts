@@ -2658,6 +2658,94 @@ export interface Mesocycle {
    *  zonas con objetivo de IEM van en dinámico y el resto en estático. Manda
    *  sobre `cdgSensibilidad`, que queda para bloques antiguos. */
   cdgModoPorZona?: Partial<Record<string, 'estatico' | 'dinamico'>>;
+  /** Tipo de bloque (17-11-2026): un preset EDITABLE que rellena duración,
+   *  velocidad, modo por zona y estrellas; no un catálogo cerrado. Sustituye en
+   *  pantalla a `objective` y a `phaseType`, que se siguen escribiendo
+   *  derivados para el calendario y las plantillas. Ver utils/hipotesis/tiposDeBloque.ts. */
+  tipoBloque?: TipoDeBloque;
+  /** Empezar con la semana 1 reducida. Opcional y APAGADA por defecto (Dani,
+   *  17-11): la app solo la sugiere con ejercicios nuevos o tras un parón de
+   *  más de 3 semanas. Apagada, el bloque arranca donde acabó el anterior. */
+  semana1Reducida?: boolean;
+  /** Hipótesis del bloque, una por zona con estrella (clave = `ZonaIem`).
+   *  Solo coach: la pantalla del atleta no la enseña. */
+  hipotesis?: Partial<Record<string, HipotesisDeZona>>;
+  /** Qué pasó con cada hipótesis, firmado por el coach al cerrar el bloque. De
+   *  aquí sale el mapa de respuesta del atleta (qué le funciona a cada zona). */
+  cierreDeHipotesis?: CierreDeHipotesis;
+}
+
+/** Los cuatro tipos de bloque acordados con Dani (17-11-2026). Las semanas
+ *  puente no son un tipo: son una transición (`semanasPivot`). */
+export type TipoDeBloque = 'primer' | 'desarrollo' | 'especializacion' | 'mantenimiento';
+
+/** A qué se apuesta en una zona: más estímulo subiendo series, más estímulo
+ *  acercándose al fallo, el mismo estímulo con otros ejercicios, o menos para
+ *  recuperar. */
+export type PalancaDeHipotesis = 'volumen' | 'intensidad' | 'ejercicios' | 'recuperar';
+
+/**
+ * La hipótesis de una zona en un bloque (17-11-2026): qué se apuesta, cómo se
+ * sabrá si se HIZO (proceso) y cómo se sabrá si SIRVIÓ (resultado).
+ *
+ * Los IEM son semanales, de la zona. Todo lo «anterior» es una foto del bloque
+ * previo tomada al crear este: se guarda para que el cierre compare contra lo
+ * que se sabía entonces, no contra un cálculo que puede cambiar.
+ */
+export interface HipotesisDeZona {
+  palanca: PalancaDeHipotesis;
+  /** IEM medio semanal realizado del bloque anterior. */
+  iemMedioAnterior?: number;
+  /** IEM semanal con el que acabó el bloque anterior. */
+  iemFinalAnterior?: number;
+  /** PROCESO: IEM medio semanal que se quiere en este bloque (por defecto, la
+   *  media anterior + 10 %). */
+  iemMedioObjetivo?: number;
+  /** IEM semanal de arranque (por defecto, donde acabó el anterior; un 5-10 %
+   *  menos con `semana1Reducida`). */
+  iemArranque?: number;
+  /** Techo del bloque: hasta dónde puede subir (por defecto, donde acabó el
+   *  anterior + un escalón de la velocidad). Es el mismo número que
+   *  `cdgObjetivosIem[zona]`, que es el que lee el protocolo semanal. */
+  iemTecho?: number;
+  /** RESULTADO: mejora de RM estimado medio que se espera, en % (por defecto 5). */
+  rmObjetivoPct?: number;
+  /** Límite propio de la zona, en palabras del coach («hombro sin molestias»). */
+  limite?: string;
+}
+
+/** Los cuatro desenlaces de una hipótesis: se hizo o no, sirvió o no. */
+export type LecturaDeHipotesis = 'confirmada' | 'no_responde' | 'responde_con_menos' | 'sin_probar';
+
+export interface VeredictoDeHipotesis {
+  zona: string;
+  palanca: PalancaDeHipotesis;
+  /** PROCESO: IEM medio semanal realizado y si llegó al objetivo. */
+  iemMedio: number | null;
+  iemMedioObjetivo?: number;
+  procesoCumplido: boolean | null;
+  /** RESULTADO: % de RM estimado medio de los ejercicios de la zona. `null`
+   *  si no hubo marcas suficientes para medirlo. */
+  rmPct: number | null;
+  rmObjetivoPct: number;
+  resultadoCumplido: boolean | null;
+  lectura: LecturaDeHipotesis;
+  /** Lo que el coach decide para el bloque siguiente, en sus palabras. */
+  decision?: string;
+}
+
+export interface CierreDeHipotesis {
+  firmadoEn: string; // ISO
+  veredictos: VeredictoDeHipotesis[];
+  /** Ficha de cierre del método: con qué contexto se hizo el bloque. */
+  ficha?: {
+    contexto?: 'favorable' | 'neutro' | 'desfavorable';
+    cansancioMedio?: number;
+    molestias?: string;
+    motivacion?: string;
+    faseNutricional?: string;
+    pesoDeltaKg?: number;
+  };
 }
 
 // Tipos de fase de un mesociclo, para el color/icono del Roadmap → Calendario.
