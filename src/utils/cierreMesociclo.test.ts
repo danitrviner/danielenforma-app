@@ -418,3 +418,48 @@ describe('semanas no comparables y dato de fuerza del cierre', () => {
     expect(c.resumenParaCliente).not.toContain('Remo');
   });
 });
+
+describe('sesiones fuera de su gimnasio (17-11-2026)', () => {
+  // Cuatro semanas, una sesión de press y remo cada lunes; la de la semana 3,
+  // en un hotel. Dani: cuenta como hecha, pero no en series, volumen, RIR ni fuerza.
+  const LUNES = ['2026-06-01', '2026-06-08', '2026-06-15', '2026-06-22'];
+  const sesion = (date: string, fuera = false): WorkoutLog => ({
+    id: `l-${date}`, athleteId: 'a@b.c', workoutId: 'w', assignmentId: `a-${date}`, date, completedAt: `${date}T10:00:00.000Z`,
+    mesocycleId: 'm2', ...(fuera ? { fuera: true } : {}),
+    entries: ['press', 'remo'].map(exerciseId => ({
+      exerciseId,
+      sets: [0, 1, 2].map(() => ({ weight: fuera ? 20 : 80, repsDone: 10, rir: fuera ? 0 : 2, ...(fuera ? { fuera: true } : {}) })),
+    })),
+  });
+  const cerrar = () => buildCierreMesociclo({
+    meso: meso(), mesocycles: [meso()],
+    logs: LUNES.map((d, i) => sesion(d, i === 2)),
+    assignments: LUNES.map(d => asig(d, 'completed')),
+    exercises: EJERCICIOS, hoy: '2026-07-15',
+  });
+
+  it('la adherencia la cuenta como hecha', () => {
+    const c = cerrar();
+    expect(c.sesiones).toMatchObject({ completadas: 4, adherenciaPct: 100, registradas: 4 });
+  });
+
+  it('las series hechas por grupo no la cuentan', () => {
+    const c = cerrar();
+    const pecho = c.volumen.filas.find(f => f.group === 'pecho')!;
+    expect(pecho.realizadas).toBe(9); // 3 sesiones × 3 series, no 12
+    expect(c.volumen.totalRealizadas).toBe(18);
+  });
+
+  it('ni el RIR semana a semana', () => {
+    const c = cerrar();
+    expect(c.progresion.semanas.map(s => s.rirMedio)).toEqual([2, 2, null, 2]);
+    expect(c.progresion.semanas.map(s => s.series)).toEqual([6, 6, 0, 6]);
+    expect(c.progresion.semanas[2].sesionesHechas).toBe(1);
+  });
+
+  it('una línea para el coach dice cuántas fueron fuera; no va al cliente', () => {
+    const c = cerrar();
+    expect(c.notaDeDatos).toBe('1 sesión fuera de su gimnasio: cuenta como hecha, pero no entran en las series, el RIR ni la fuerza del bloque.');
+    expect(c.resumenParaCliente).not.toContain('fuera');
+  });
+});

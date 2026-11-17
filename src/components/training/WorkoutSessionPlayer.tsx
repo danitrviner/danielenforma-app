@@ -116,9 +116,6 @@ interface Props {
    *  no se ofrece el interruptor. */
   fuera?: boolean;
   onFuera?: (valor: boolean) => void;
-  /** El coach marcó esta semana como semana fuera: el interruptor llega
-   *  encendido y lo dice. */
-  semanaFuera?: boolean;
   /** Cómo se enseña el interruptor (ver InterruptorFuera.tsx). Solo el banco
    *  de pruebas pasa otra. */
   varianteFuera?: VarianteFuera;
@@ -145,7 +142,7 @@ export default function WorkoutSessionPlayer({
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, onMarkActionDone,
   avisoSesion, onAvisoSesion, tipoSemana,
   varianteRir = VARIANTE_RIR_POR_DEFECTO, cansancioAlSalir, onCansancioAlSalir,
-  fuera = false, onFuera, semanaFuera = false, varianteFuera = VARIANTE_FUERA_POR_DEFECTO,
+  fuera = false, onFuera, varianteFuera = VARIANTE_FUERA_POR_DEFECTO,
 }: Props) {
   const orderedExercises = activeWorkout.exercises.slice().sort((a, b) => a.order - b.order);
   const doneSetsTotal = playerSets.flat().filter(s => s.done).length;
@@ -859,7 +856,7 @@ export default function WorkoutSessionPlayer({
           «¿cómo llegas?», se puede cambiar durante toda la sesión y al
           corregirla. Ver InterruptorFuera.tsx. */}
       {onFuera && (
-        <InterruptorFuera activo={fuera} onCambiar={onFuera} semanaMarcada={semanaFuera} variante={varianteFuera} />
+        <InterruptorFuera activo={fuera} onCambiar={onFuera} variante={varianteFuera} />
       )}
 
       {avisoSesion && onAvisoSesion && !isEditingCompleted && (

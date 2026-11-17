@@ -5,6 +5,7 @@ import { adherenciaDeMesociclo } from './adherence.js';
 import { grupoDesdeEtiqueta, esSeñalDoms } from '../data/questionnaireSignals.js';
 import { seriesRealizadasPorGrupo } from './programacion.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
+import { sinSesionesFuera } from './sesionFuera.js';
 import { addDays, diasEntreFechas } from './trainingWeek.js';
 import { cicloDiasDeMeso } from './asignacionMesociclo.js';
 import { mesocycleWeekNumber } from './progression.js';
@@ -263,9 +264,18 @@ export function buildVolumeHistoryFrom(params: {
 
   // Por `mesocycleId` cuando el registro lo trae; por fechas para los antiguos.
   // De un bloque en curso, además, solo lo de sus semanas ya terminadas.
-  const logsPrevios = logs.filter(l => (l.mesocycleId
+  // Sin las sesiones hechas fuera de su gimnasio (Dani, 17-11-2026): con otras
+  // máquinas no son las mismas series ni el mismo RIR. La adherencia, que
+  // sale de las asignaciones, sí las cuenta como hechas.
+  const logsDelPrevio = logs.filter(l => (l.mesocycleId
     ? l.mesocycleId === previous.id && (!enCurso || l.date <= finPrevio)
     : (l.date >= previous.startDate && l.date <= finPrevio)));
+  const logsPrevios = sinSesionesFuera(logsDelPrevio);
+  // Las series de las sesiones fuera no cuentan, pero tampoco el tiempo que
+  // ocuparon: la media semanal se hace sobre la parte del bloque hecha en su
+  // gimnasio. Si no, al que viaja le salía que hizo menos de lo pautado y el
+  // sugeridor le recortaba volumen.
+  const parteEnSuGimnasio = logsDelPrevio.length > 0 ? logsPrevios.length / logsDelPrevio.length : 1;
 
   // ── Semanas de trabajo: las de descarga no entran en la media ───────────
   // En una descarga se hace la mitad de series A PROPÓSITO. Contándola, un
@@ -303,7 +313,7 @@ export function buildVolumeHistoryFrom(params: {
     for (const [grupo, sets] of realizadas) {
       if ((grupo as string) === 'none') continue;
       const planned = previous.groups[grupo]?.series ?? 0;
-      const performed = Math.round(sets / semanas);
+      const performed = Math.round(sets / (semanas * (parteEnSuGimnasio > 0 ? parteEnSuGimnasio : 1)));
       groups[grupo] = {
         planned, performed,
         deltaPct: planned > 0 ? Math.round(((performed - planned) / planned) * 100) : 0,

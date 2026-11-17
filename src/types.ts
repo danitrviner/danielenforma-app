@@ -1653,6 +1653,12 @@ export interface PlanSemanal {
   /** Lunes de la semana (YYYY-MM-DD). */
   semana: string;
   platos: PlatoDelPlan[];
+  /** Sesiones de esta semana que el atleta va a hacer FUERA de su gimnasio
+   *  (ids de `WorkoutAssignment`), marcadas por él desde Rutinas (17-11-2026).
+   *  Al empezar una de ellas, la sesión arranca ya como «fuera». Ver
+   *  `WorkoutLog.fuera`. Va aquí porque el atleta puede escribir este documento
+   *  sin reglas nuevas: en `workoutAssignments` solo puede cambiar el estado. */
+  sesionesFuera?: string[];
   updatedAt?: string;
 }
 
@@ -2008,6 +2014,9 @@ export interface ContextoDeReto {
   semana: number;              // vuelta del ciclo, 1-indexada
   semanas: number;             // vueltas totales del bloque
   tipoSemana?: 'test' | 'descarga' | 'puente' | 'paron' | 'evento';
+  /** El ejercicio (o el grupo) del reto es de una zona con estrella del bloque
+   *  (17-11-2026): la tarjeta añade «va con tu objetivo del bloque». */
+  conObjetivo?: boolean;
 }
 
 // De qué registro habla un reto de racha (kind 'racha_registro').

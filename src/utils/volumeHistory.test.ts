@@ -295,6 +295,26 @@ describe('buildVolumeHistoryFrom', () => {
     expect(h.groups.pecho?.performed).toBe(8);
   });
 
+  it('las sesiones fuera de su gimnasio no cuentan en series ni RIR; la adherencia sí (17-11-2026)', () => {
+    // Cuatro semanas a 8 series y RIR 2; la de la semana 3, en un hotel, con 3
+    // series a RIR 0. Sin filtrar saldrían 6,75 series y RIR 1,7.
+    const fuera = (d: string): WorkoutLog => ({
+      ...logConRir(d, 3, 0), fuera: true,
+      entries: [{ exerciseId: 'press', sets: Array.from({ length: 3 }, () => ({ weight: 20, repsDone: 12, rir: 0, fuera: true })) }],
+    });
+    const logs = [logConRir('2026-05-05', 8, 2), logConRir('2026-05-12', 8, 2), fuera('2026-05-19'), logConRir('2026-05-26', 8, 2)];
+    const h = buildVolumeHistoryFrom({
+      mesocycles: [previo, actual], currentId: 'm2', logs, exercises: ex,
+      assignments: ['a1', 'a2', 'a3', 'a4'].map(id => asig(id, 'm1', 'completed')),
+    });
+    expect(h.meanRir).toBe(2);
+    // 24 series en las 3 semanas hechas en su gimnasio: 8 por semana, lo pautado.
+    // La semana fuera no cuenta ni en las series ni en el tiempo; antes salían 6
+    // y el sugeridor le recortaba volumen al que viaja.
+    expect(h.groups.pecho?.performed).toBe(8);
+    expect(h.adherencePct).toBe(100);
+  });
+
   describe('sin bloque nuevo todavía (el asistente, currentId null)', () => {
     it('el bloque anterior es el que está en curso, contado solo en sus semanas terminadas', () => {
       // Hoy es miércoles de la 3.ª semana de m2: dos semanas terminadas.

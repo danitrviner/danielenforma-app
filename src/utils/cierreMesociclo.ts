@@ -7,7 +7,10 @@ import { buildMovementPatternReport, PatternPerf } from './movementPatterns.js';
 import { hoyIsoLocal, diasEntreFechas } from './trainingWeek.js';
 import { adherenciaDeMesociclo, asignacionesDeMesociclo } from './adherence.js';
 import { seriesRealizadasPorGrupo } from './programacion.js';
-import { buildProgresionDelBloque, notaDeSesionesSinMarca, ProgresionDelBloque, ProgresionEjercicio } from './progresionDelBloque.js';
+import {
+  buildProgresionDelBloque, notaDeSesionesFuera, notaDeSesionesSinMarca, ProgresionDelBloque, ProgresionEjercicio,
+} from './progresionDelBloque.js';
+import { sinSesionesFuera } from './sesionFuera.js';
 import { finDeBloque } from './finDeBloque.js';
 import { cicloDiasDeMeso } from './asignacionMesociclo.js';
 import { nombreDeMeso } from './nombresMeso.js';
@@ -33,7 +36,7 @@ export interface FilaVolumenGrupo {
   label: string;
   /** Series semanales configuradas en el mesociclo × sus semanas. */
   programadas: number;
-  /** Series efectivas registradas por el atleta dentro de la ventana del meso. */
+  /** Series efectivas registradas por el atleta dentro de la ventana del meso (sin las sesiones fuera de su gimnasio). */
   realizadas: number;
   /** realizadas / programadas, en %. `null` si no se programó nada de ese grupo. */
   pct: number | null;
@@ -87,7 +90,8 @@ export interface CierreMesociclo {
    * Con qué dato se ha decidido la fuerza del bloque (D4c, 17-11-2026): cuántas
    * veces un ejercicio se quedó sin marca por no tener series válidas y el
    * motivo más frecuente. `null` si todas dieron marca. Es para el coach: no
-   * va en el mensaje al cliente.
+   * va en el mensaje al cliente. Desde el 17-11-2026 empieza, si las hubo,
+   * por las sesiones hechas fuera de su gimnasio, que no entran en las cifras.
    */
   notaDeDatos: string | null;
   /** Frases para el coach, ya masticadas. */
@@ -228,7 +232,11 @@ export function buildCierreMesociclo(params: {
     assignments: asigMeso, pesoCorporalKg: params.pesoCorporalKg, hoy,
   });
   const res = progresion.resumen;
-  const notaDeDatos = notaDeSesionesSinMarca(res.sinMarca);
+  // Sesiones fuera de su gimnasio (utils/sesionFuera.ts): cuentan para la
+  // adherencia, pero no en series, volumen, RIR ni fuerza. Una línea lo dice,
+  // delante del «con qué dato» de la fuerza (no va al cliente).
+  const notaDeDatos = [notaDeSesionesFuera(res.sesionesFuera), notaDeSesionesSinMarca(res.sinMarca)]
+    .filter((n): n is string => !!n).join(' ') || null;
   const destacados = progresion.ejercicios.filter(e => e.estado === 'mejora').slice(0, 3);
   const flojos = progresion.ejercicios
     .filter(e => e.estado === 'baja' || (e.estado === 'estable' && e.semanasConDatos >= 3))
@@ -237,11 +245,17 @@ export function buildCierreMesociclo(params: {
   const fraseEj = (e: ProgresionEjercicio) => `${e.nombre} ${e.lectura} (${conSigno(e.deltaPct!)}%)`;
 
   // ── Volumen programado vs realizado ─────────────────────────────────────
-  const realizadasPorGrupo = seriesRealizadasPorGrupo(logsMeso, exercises);
+  // Sin las sesiones fuera de su gimnasio (Dani, 17-11-2026): con otras
+  // máquinas no son las mismas series. La adherencia sí las cuenta.
+  const realizadasPorGrupo = seriesRealizadasPorGrupo(sinSesionesFuera(logsMeso), exercises);
+  // Y lo programado de esas sesiones tampoco: si no, al que viaja le sale que
+  // «no completa el volumen» por las series que hizo fuera. Se descuenta la
+  // parte del bloque que fue fuera (sesiones fuera / sesiones hechas).
+  const fueraDelVolumen = logsMeso.length > 0 ? logsMeso.filter(l => l.fuera).length / logsMeso.length : 0;
   const filas: FilaVolumenGrupo[] = MUSCLE_ORDER
     .map(group => {
       const semanales = meso.groups[group]?.series ?? 0;
-      const programadas = semanales * semanasProgramadas;
+      const programadas = Math.round(semanales * semanasProgramadas * (1 - fueraDelVolumen));
       const realizadas = realizadasPorGrupo.get(group) ?? 0;
       return {
         group,

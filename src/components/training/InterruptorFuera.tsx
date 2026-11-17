@@ -8,7 +8,11 @@ import { TEXTO_FUERA } from '../../utils/sesionFuera';
    fuera; allí los pesos y las poleas no tienen nada que ver y solo se guían
    por el RIR. Un toque y la sesión cuenta como sesión y como esfuerzo, pero sus
    kilos no se comparan con los de siempre (utils/sesionFuera.ts). Se puede
-   cambiar durante toda la sesión y al corregirla.
+   cambiar durante toda la sesión y al corregirla. Llega ya encendido si el
+   atleta marcó la sesión en el panel de la semana, al final de Rutinas
+   (SesionesFueraDeLaSemana.tsx). Ya no se enciende solo porque el coach
+   marcara la semana como viaje o vacaciones (Dani, 17-11: «que lo pueda
+   hacer él desde el panel de entrenamiento»).
 
    Dos formas de enseñarlo para que Dani elija viéndolas (banco `/dev/entreno`).
    La lógica es la misma; solo cambia el aspecto:
@@ -33,12 +37,10 @@ export const VARIANTES_FUERA: { clave: VarianteFuera; etiqueta: string; explicac
 interface Props {
   activo: boolean;
   onCambiar: (activo: boolean) => void;
-  /** El coach marcó esta semana como semana fuera (viaje o vacaciones). */
-  semanaMarcada?: boolean;
   variante?: VarianteFuera;
 }
 
-export default function InterruptorFuera({ activo, onCambiar, semanaMarcada = false, variante = VARIANTE_FUERA_POR_DEFECTO }: Props) {
+export default function InterruptorFuera({ activo, onCambiar, variante = VARIANTE_FUERA_POR_DEFECTO }: Props) {
   if (variante === 'chip') {
     return (
       <div className="px-1 space-y-1.5">
@@ -54,7 +56,6 @@ export default function InterruptorFuera({ activo, onCambiar, semanaMarcada = fa
           {TEXTO_FUERA.corto}
         </button>
         {activo && <p className="font-sans text-caption text-ink-2">{TEXTO_FUERA.explicacion}</p>}
-        {semanaMarcada && <p className="font-sans text-caption text-accent-ink">{TEXTO_FUERA.semanaMarcada}</p>}
       </div>
     );
   }
@@ -65,7 +66,6 @@ export default function InterruptorFuera({ activo, onCambiar, semanaMarcada = fa
       <div className="min-w-0 flex-1">
         <p className="font-sans text-label font-bold text-ink">{TEXTO_FUERA.titulo}</p>
         <p className="font-sans text-caption text-ink-2">{TEXTO_FUERA.explicacion}</p>
-        {semanaMarcada && <p className="mt-0.5 font-sans text-caption text-accent-ink">{TEXTO_FUERA.semanaMarcada}</p>}
       </div>
       <button
         type="button"

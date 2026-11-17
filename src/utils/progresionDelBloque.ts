@@ -6,6 +6,7 @@ import { addDays, diasEntreFechas } from './trainingWeek.js';
 import { patronesDeEjercicio, PATTERN_LABELS, type MovementPattern } from './movementPatterns.js';
 import { RUIDO_RM_PCT } from './ruidoDeMedida.js';
 import { mediana as medianaDe } from './rmValido.js';
+import { esSesionFuera } from './sesionFuera.js';
 import {
   ETIQUETA_SIN_MARCA, motivoDeSerieSinMarca, motivoPrincipal, rmValidoDeSerie, type MotivoSinMarca,
 } from './marcaDeSesion.js';
@@ -44,6 +45,10 @@ import {
 //    los ejercicios con marca en MÁS DE LA MITAD de las semanas comparables
 //    (D4). Los demás se listan aparte como «pocas semanas para comparar»: ni
 //    a favor ni en contra.
+//  · Las sesiones hechas FUERA de su gimnasio (utils/sesionFuera.ts) cuentan
+//    como sesión hecha de su semana, y nada más: ni series, ni RIR, ni kg, ni
+//    marca (Dani, 17-11-2026: con otras máquinas no son las mismas series).
+//    Se cuentan aparte (`resumen.sesionesFuera`) para que el cierre lo diga.
 //
 // Determinista y sin IA, igual que el resto del cierre.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -148,7 +153,7 @@ export interface SemanaDelBloque {
   sesionesProgramadas: number;
   series: number;
   tonelaje: number;
-  /** RIR medio de las series principales con RIR apuntado (las de al fallo cuentan 0; las que no lo traen, no entran). */
+  /** RIR medio de las series principales con RIR apuntado (las de al fallo cuentan 0; las que no lo traen, no entran; las de sesiones fuera, tampoco). */
   rirMedio: number | null;
   /** Mediana de (marca de la semana / marca de la ventana inicial) × 100 de los ejercicios que cuentan. 100 = como empezó. */
   indiceFuerza: number | null;
@@ -190,7 +195,7 @@ export interface ProgresionDelBloque {
     medianaPct: number | null;
     /** Tonelaje semanal: primera semana comparable con datos → media de las dos últimas. */
     tonelajeSemanal: { inicio: number; final: number; deltaPct: number | null } | null;
-    /** RIR medio: primera semana → última, sin descargas, puentes, tests ni la vuelta de un parón. Bajar = entrena más cerca del fallo. */
+    /** RIR medio: primera semana → última, sin descargas, puentes, tests ni la vuelta de un parón (ni sesiones fuera). Bajar = entrena más cerca del fallo. */
     rir: { inicio: number; final: number } | null;
     /** Media de kg añadidos a la serie representativa en los ejercicios que subieron carga. */
     kgMedioAnadido: number | null;
@@ -209,6 +214,9 @@ export interface ProgresionDelBloque {
       porMotivo: Partial<Record<MotivoSinMarca, number>>;
       motivoPrincipal: MotivoSinMarca | null;
     };
+    /** Sesiones del bloque hechas fuera de su gimnasio: cuentan como hechas,
+     *  pero no entran en series, RIR, tonelaje ni fuerza. */
+    sesionesFuera: number;
   };
   porPatron: FilaAgregada<MovementPattern>[];
   porGrupo: FilaAgregada<MuscleGroup>[];
@@ -406,6 +414,7 @@ export function buildProgresionDelBloque(params: {
   const rirPorSemana = semanas.map(() => [] as number[]);
   const durPorSemana = semanas.map(() => [] as number[]);
   const diasPorSemana = semanas.map(() => new Set<string>());
+  let sesionesFuera = 0;
 
   for (const log of logs) {
     const sem = semanaDe(log.date);
@@ -413,6 +422,12 @@ export function buildProgresionDelBloque(params: {
     if (fila) {
       diasPorSemana[sem - 1].add(log.date);
       if (log.duracionSeg && log.duracionSeg > 0) durPorSemana[sem - 1].push(log.duracionSeg / 60);
+    }
+    // Hecha fuera de su gimnasio: la sesión está hecha (arriba), pero sus
+    // series, su RIR y sus kilos no son comparables con los de siempre.
+    if (esSesionFuera(log)) {
+      sesionesFuera++;
+      continue;
     }
     for (const entry of log.entries ?? []) {
       let acc = accs.get(entry.exerciseId);
@@ -428,12 +443,7 @@ export function buildProgresionDelBloque(params: {
       for (const s of entry.sets ?? []) {
         const kg = pesoDeSerie(s.weight, entry.exerciseId, ctx);
         const reps = Number(s.repsDone) || 0;
-        // Una serie hecha fuera de su gimnasio (utils/sesionFuera.ts) cuenta
-        // como serie y para el RIR medio, pero sus kilos no son los de siempre:
-        // no suman tonelaje ni pueden ser la marca de repeticiones. El RM ya la
-        // deja fuera `rmValidoDeSerie`, con el motivo «fuera de su gimnasio».
-        const fuera = s.fuera === true;
-        const t = fuera ? 0 : kg * reps;
+        const t = kg * reps;
         acc.tonelaje = r1(acc.tonelaje + t);
         if (fila) fila.tonelaje = r1(fila.tonelaje + t);
         if (s.segmento || reps <= 0) continue;
@@ -454,7 +464,7 @@ export function buildProgresionDelBloque(params: {
           acc.conPeso.set(log.date, motivos);
         }
         if (serie.e1rm > 0 && mejorQue(serie, acc.marcaRm.get(log.date) ?? null, 'e1rm')) acc.marcaRm.set(log.date, serie);
-        if (!fuera && mejorQue(serie, acc.marcaReps.get(log.date) ?? null, 'reps')) acc.marcaReps.set(log.date, serie);
+        if (mejorQue(serie, acc.marcaReps.get(log.date) ?? null, 'reps')) acc.marcaReps.set(log.date, serie);
       }
     }
   }
@@ -675,6 +685,7 @@ export function buildProgresionDelBloque(params: {
         porMotivo: sinMarcaPorMotivo,
         motivoPrincipal: motivoPrincipal(sinMarcaPorMotivo),
       },
+      sesionesFuera,
     },
     porPatron: agregar<MovementPattern>(e => e.patrones, k => PATTERN_LABELS[k]),
     porGrupo: agregar<MuscleGroup>(e => (e.grupo ? [e.grupo] : []), k => MUSCLE_LABELS[k]),
@@ -695,6 +706,15 @@ export function notaDeSemanasFuera(semanas: readonly Pick<SemanaDelBloque, 'sema
   const fuera = semanas.filter(s => !s.comparable && s.motivoNoComparable);
   if (fuera.length === 0) return null;
   return `No entran en la comparación de fuerza: ${fuera.map(s => `S${s.semana} (${ETIQUETA_NO_COMPARABLE[s.motivoNoComparable!]})`).join(', ')}.`;
+}
+
+/** «2 sesiones fuera de su gimnasio: …»: las que se hicieron pero no entran en
+ *  las cifras del bloque. Para el coach. `null` si no hubo ninguna. */
+export function notaDeSesionesFuera(sesionesFuera: number | undefined): string | null {
+  if (!sesionesFuera || sesionesFuera <= 0) return null;
+  const n = sesionesFuera === 1 ? '1 sesión' : `${sesionesFuera} sesiones`;
+  return `${n} fuera de su gimnasio: ${sesionesFuera === 1 ? 'cuenta como hecha' : 'cuentan como hechas'}, `
+    + 'pero no entran en las series, el RIR ni la fuerza del bloque.';
 }
 
 /** «Pocas semanas para comparar (no cuentan): Curl (2 sem.), Remo (3 sem.)». `null` si no hay ninguno. */

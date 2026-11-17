@@ -57,3 +57,14 @@ describe('F15 · bajadas y miniseries apuntadas en lo realizado', () => {
     expect(preguntas).toBe(1)
   })
 })
+
+describe('sesiones fuera de su gimnasio (17-11-2026)', () => {
+  it('la serie hecha fuera sale marcada; la de su gimnasio, sin el campo', () => {
+    const [dentro] = seriesRealizadas(entrada([serie(20)]), nombreCdgDe)
+    const [fuera] = seriesRealizadas(entrada([{ ...serie(8), fuera: true }]), nombreCdgDe)
+    expect('fuera' in dentro).toBe(false)
+    expect(fuera.fuera).toBe(true)
+    // Por lo demás, la misma serie: el estímulo la cuenta igual.
+    expect(fuera).toMatchObject({ weight: 8, rpe: dentro.rpe, repetitions: dentro.repetitions })
+  })
+})

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Exercise, MuscleGroup, WorkoutAssignment, WorkoutLog } from '../types';
 import {
-  buildProgresionDelBloque, notaDePocasSemanas, notaDeSemanasFuera, notaDeSesionesSinMarca, ventanasDeComparacion,
+  buildProgresionDelBloque, notaDePocasSemanas, notaDeSemanasFuera, notaDeSesionesFuera, notaDeSesionesSinMarca, ventanasDeComparacion,
 } from './progresionDelBloque';
 import { rmDeSerie } from './oneRepMax';
 import { addDays } from './trainingWeek';
@@ -17,7 +17,7 @@ const EJ = [
   ex('plancha', 'Dead bug', 'core'),
 ];
 
-type S = { weight: number; repsDone: number; rir?: number; segmento?: boolean; rirApuntado?: boolean; alFallo?: boolean };
+type S = { weight: number; repsDone: number; rir?: number; segmento?: boolean; rirApuntado?: boolean; alFallo?: boolean; fuera?: boolean };
 const log = (date: string, entries: Record<string, S[]>, extra: Partial<WorkoutLog> = {}): WorkoutLog => ({
   id: `l-${date}`, athleteId: 'a@b.c', workoutId: 'w', assignmentId: 'as', date, completedAt: `${date}T10:00:00.000Z`,
   entries: Object.entries(entries).map(([exerciseId, sets]) => ({ exerciseId, sets: sets.map(s => ({ rir: 2, ...s })) })),
@@ -539,18 +539,31 @@ describe('buildProgresionDelBloque', () => {
 });
 
 describe('fuera de su gimnasio (17-11-2026)', () => {
-  it('las series fuera cuentan como series pero no suman tonelaje, y su motivo sin marca es «fuera»', () => {
-    const p = buildProgresionDelBloque({
-      ...base,
-      logs: [
-        log('2026-09-07', { press: [{ weight: 80, repsDone: 8 }] }),
-        log('2026-09-14', { press: [{ weight: 30, repsDone: 10, fuera: true } as S] }, { fuera: true }),
-      ],
-    });
-    expect(p.semanas[0].tonelaje).toBe(640);
-    expect(p.semanas[1].tonelaje).toBe(0);
-    expect(p.semanas[1].series).toBe(1);
-    expect(p.resumen.sinMarca).toMatchObject({ registros: 2, sinMarca: 1, porMotivo: { fuera: 1 }, motivoPrincipal: 'fuera' });
-    expect(notaDeSesionesSinMarca(p.resumen.sinMarca)).toContain('fuera de su gimnasio');
+  // Dani (17-11, noche): la sesión fuera cuenta como hecha y nada más. Ni
+  // series, ni RIR, ni kilos, ni marca; el cierre dice cuántas fueron.
+  const logs = [
+    log('2026-09-07', { press: [{ weight: 80, repsDone: 8, rir: 2, rirApuntado: true }] }),
+    log('2026-09-14', { press: [{ weight: 30, repsDone: 10, rir: 0, fuera: true } as S] }, { fuera: true }),
+  ];
+
+  it('cuenta como sesión hecha de su semana, pero sin series, RIR ni tonelaje', () => {
+    const p = buildProgresionDelBloque({ ...base, logs });
+    expect(p.semanas[0]).toMatchObject({ sesionesHechas: 1, series: 1, tonelaje: 640, rirMedio: 2 });
+    expect(p.semanas[1]).toMatchObject({ sesionesHechas: 1, series: 0, tonelaje: 0, rirMedio: null });
+    expect(p.resumen.sesionesFuera).toBe(1);
+  });
+
+  it('no deja marca ni cuenta como «sin marca»: no es un dato de fuerza', () => {
+    const p = buildProgresionDelBloque({ ...base, logs });
+    expect(p.resumen.sinMarca).toMatchObject({ registros: 1, sinMarca: 0 });
+    expect(notaDeSesionesSinMarca(p.resumen.sinMarca)).toBeNull();
+    expect(p.ejercicios.find(e => e.exerciseId === 'press')!.semanasConDatos).toBe(1);
+  });
+
+  it('la nota para el coach dice cuántas fueron', () => {
+    expect(notaDeSesionesFuera(0)).toBeNull();
+    expect(notaDeSesionesFuera(undefined)).toBeNull();
+    expect(notaDeSesionesFuera(1)).toBe('1 sesión fuera de su gimnasio: cuenta como hecha, pero no entran en las series, el RIR ni la fuerza del bloque.');
+    expect(notaDeSesionesFuera(3)).toMatch(/^3 sesiones fuera de su gimnasio: cuentan como hechas/);
   });
 });

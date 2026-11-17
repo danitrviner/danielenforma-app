@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { calcularRM, rendimientoSemana, rendimientoCiclo, type CdgSerieRealizada, type SemanaRealizada } from './seguimiento'
+import { calcularRM, calcularSemana, rendimientoSemana, rendimientoCiclo, type CdgSerieRealizada, type SemanaRealizada } from './seguimiento'
+import catalogoPrueba from './__fixtures__/catalogoPrueba.json'
+import { crearMotor, expandirCatalogo, type CdgCatalogoCompacto } from './index'
+import { semanaRealizadaDesdeLogs } from './adaptadores'
+import type { WorkoutLog } from '../../types'
 import { rirARpe } from './motor'
 import {
   esSerieCdgValidaParaRm, rendimientoSemanaDeRegistros, rendimientoCicloDeRegistros, seriesCdgValidasParaRm,
@@ -105,5 +109,39 @@ describe('compararSemanas con filas sin marca', () => {
 
   it('si ningún ejercicio común tiene marca en las dos, no hay comparación', () => {
     expect(compararSemanas(sem(1, [fila('Banca', 100, 3000)]), sem(2, [fila('Banca', 0, 3000, true)]))).toBeNull()
+  })
+})
+
+describe('sesiones fuera de su gimnasio (17-11-2026)', () => {
+  const fuera = (kg: number, reps: number, rir: number) => ({ ...serie(kg, reps, rir), fuera: true }) as CdgSerieRealizada
+
+  it('una serie fuera no vale para el RM aunque cumpla el resto', () => {
+    expect(esSerieCdgValidaParaRm(fuera(80, 8, 2))).toBe(false)
+  })
+
+  it('un ejercicio hecho fuera no da fila: ni RM ni tonelaje en el seguimiento', () => {
+    expect(rendimientoSemanaDeRegistros('Semana 2', semana([fuera(30, 10, 1), fuera(30, 10, 1)]))).toEqual([])
+    // Con otro ejercicio en la misma sesión, solo sale ese.
+    const remo = [serie(60, 8, 2)].map(s => ({ ...s, exerciseName: 'Remo' }))
+    const filas = rendimientoSemanaDeRegistros('Semana 2', semana([fuera(30, 10, 1)], remo))
+    expect(filas.map(f => f.ejercicio)).toEqual(['Remo'])
+    expect(filas[0].tonelaje).toBe(480)
+  })
+
+  it('el estímulo (IEM) de la sesión fuera sí cuenta: el esfuerzo fue real', () => {
+    const motor = crearMotor(expandirCatalogo(catalogoPrueba as CdgCatalogoCompacto))
+    const BULG = 'Sentadilla búlgara con mancuernas (dominante rodilla) - Cuádriceps, aductores, glúteo'
+    const log = (conFuera: boolean): WorkoutLog => ({
+      id: 'l', athleteId: 'a@a.com', workoutId: 'w0', assignmentId: 'x', date: '2026-01-05', completedAt: '',
+      ...(conFuera ? { fuera: true } : {}),
+      entries: [{ exerciseId: 'bulg', sets: [0, 1].map(() => ({ weight: 20, repsDone: 10, rir: 2, ...(conFuera ? { fuera: true } : {}) })) }],
+    })
+    const deLogs = (conFuera: boolean) => semanaRealizadaDesdeLogs([log(conFuera)], id => (id === 'bulg' ? BULG : undefined), () => 0)
+    const dentro = calcularSemana(motor, deLogs(false))
+    const hotel = calcularSemana(motor, deLogs(true))
+    expect(hotel.IEM).toEqual(dentro.IEM)
+    expect(hotel.IF.some(v => v > 0)).toBe(true)
+    // …y el rendimiento de esa misma semana queda vacío.
+    expect(rendimientoSemanaDeRegistros('Semana 1', deLogs(true))).toEqual([])
   })
 })

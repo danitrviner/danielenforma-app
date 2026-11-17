@@ -15,6 +15,12 @@
  * válida no tiene marca: `rm` 0 con `sinMarca: true`, y no entra en el
  * rendimiento del ciclo.
  *
+ * Las series hechas fuera de su gimnasio (`fuera`, utils/sesionFuera.ts) no
+ * entran ni en el RM ni en el tonelaje: otras máquinas, otros kilos (Dani,
+ * 17-11-2026). Un ejercicio con todas sus series fuera no da fila: no hay
+ * dato de fuerza que enseñar, ni un «sin marca» que reclamar. Su estímulo
+ * (IEM) sí cuenta, pero eso se calcula en otro sitio (`calcularSemana`).
+ *
  * Vive aparte de seguimiento.ts porque `rmValido` importa `oneRepMax`, que
  * importa seguimiento: dentro de él sería una dependencia circular.
  */
@@ -27,8 +33,15 @@ import {
 /** RPE mínimo para que una serie valga para el RM: RIR `RIR_MAX_RM` o menos. */
 export const RPE_MIN_RM = 10 - RIR_MAX_RM
 
-/** ¿Vale la serie (ya en formato de la hoja) para estimar el RM? Mismo filtro que `rmValido.ts`. */
+/** ¿Se hizo la serie fuera de su gimnasio? La marca la pone el adaptador
+ *  (`CdgSerieRealizadaDeApp`); las series de la hoja no la llevan nunca. */
+export function esSerieCdgFuera (s: CdgSerieRealizada): boolean {
+  return (s as { fuera?: unknown }).fuera === true
+}
+
+/** ¿Vale la serie (ya en formato de la hoja) para estimar el RM? Mismo filtro que `rmValido.ts`, y nunca una hecha fuera. */
 export function esSerieCdgValidaParaRm (s: CdgSerieRealizada): boolean {
+  if (esSerieCdgFuera(s)) return false
   const reps = s.repetitions.min
   if (!(Number(s.weight) > 0)) return false
   if (!(reps >= REPS_MIN_RM && reps <= REPS_MAX_RM)) return false
@@ -43,11 +56,13 @@ export const seriesCdgValidasParaRm = (sets: CdgSerieRealizada[]) => sets.filter
 /**
  * `rendimientoSemana` para los registros de la app: el RM, solo con las series
  * válidas (media de ellas, como hace la hoja con las que recibe); el tonelaje,
- * con todas.
+ * con todas las que no se hicieron fuera de su gimnasio.
  */
 export function rendimientoSemanaDeRegistros (nombreSemana: string, semana: SemanaRealizada): FilaRendimiento[] {
   const filas: FilaRendimiento[] = []
-  semana.forEach((dia, d) => dia.forEach(sets => {
+  semana.forEach((dia, d) => dia.forEach(todas => {
+    // La marca va en todas las series de la sesión: o quedan todas o ninguna.
+    const sets = todas.filter(s => !esSerieCdgFuera(s))
     if (!sets.length) return
     const validas = seriesCdgValidasParaRm(sets)
     filas.push({

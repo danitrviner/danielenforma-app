@@ -1,6 +1,6 @@
-import type { EventoDeSemana, Mesocycle, TipoEventoSemana, WorkoutEntryLog, WorkoutLog, WorkoutSetLog } from '../types.js';
-import { COACH_NOMBRE } from './coach.js';
+import type { WorkoutAssignment, WorkoutEntryLog, WorkoutLog, WorkoutSetLog } from '../types.js';
 import { rirEfectivo } from './oneRepMax.js';
+import { addDays } from './trainingWeek.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Sesiones FUERA del gimnasio habitual (17-11-2026)
@@ -12,13 +12,19 @@ import { rirEfectivo } from './oneRepMax.js';
    siguiente.
 
    Desde hoy el atleta (o el coach, si se le olvidó) marca la sesión como
-   «fuera». En esa sesión:
+   «fuera»: en la propia sesión, o antes, desde Rutinas, con el panel de la
+   semana (abajo). En esa sesión:
 
-     · Cuenta para todo lo que no es fuerza: adherencia, series hechas,
-       volumen por grupo y RIR medio. El RIR sí se cumple.
+     · Cuenta como sesión hecha: adherencia. El RIR sí se cumple, y su
+       estímulo cuenta para controlar la carga (IEM del seguimiento CDG).
      · No cuenta para la fuerza: ni RM, ni récords, ni tonelaje, ni historial
        de cargas, ni estancamiento, ni referencia de carga para la sesión
        siguiente, ni salto de carga, ni retos de carga.
+     · Tampoco para las cifras del bloque (Dani, 17-11, noche): ni series
+       hechas ni volumen por grupo ni RIR medio, en el cierre, en la
+       progresión ni en el volumen del bloque siguiente. Con otras máquinas
+       las series no son las mismas series; el cierre dice cuántas quedaron
+       fuera para que no parezca que faltan.
 
    La marca va en el registro (`WorkoutLog.fuera`) y copiada en CADA serie
    (`WorkoutSetLog.fuera`): así cualquier motor que filtre por serie
@@ -32,7 +38,6 @@ export const TEXTO_FUERA = {
   titulo: 'Hoy entreno fuera de mi gimnasio',
   corto: 'Fuera de mi gimnasio',
   explicacion: 'Cuenta tu sesión y tu esfuerzo, pero no los pesos: no se comparan con los de siempre.',
-  semanaMarcada: `${COACH_NOMBRE} marcó esta semana como semana fuera.`,
 } as const;
 
 /** ¿Esta serie se hizo fuera del gimnasio habitual? */
@@ -85,19 +90,44 @@ export function cambioDeFuera(log: Pick<WorkoutLog, 'entries'>, fuera: boolean):
   return { entries: entradasConFuera(log.entries, fuera), fuera };
 }
 
-/* ── La semana que el coach marcó como semana fuera ──────────────────────── */
+/* ── El panel de la semana, en Rutinas ──────────────────────────────────────
 
-/** Eventos de semana que son «fuera»: el atleta no está en su gimnasio. Una
- *  competición u «otro» no lo dicen por sí solos. */
-export const EVENTOS_FUERA: readonly TipoEventoSemana[] = ['viaje', 'vacaciones'];
+   Dani (17-11, noche): el interruptor ya no se enciende solo porque el coach
+   marcara la semana como viaje o vacaciones —«no, que lo pueda hacer él desde
+   el panel de entrenamiento»—. El atleta, al final de Rutinas, marca qué
+   sesiones de esta semana va a hacer fuera. Se guarda en su plan semanal
+   (`PlanSemanal.sesionesFuera`, ids de asignación) y la sesión marcada
+   arranca con el interruptor encendido. Lo que haga dentro de la sesión
+   manda: si lo apaga, se queda apagado (el borrador lo recuerda). */
 
-export function esEventoFuera(ev: EventoDeSemana | undefined | null): boolean {
-  return !!ev && EVENTOS_FUERA.includes(ev.tipo);
+/** Lo que lee el atleta en el panel. */
+export const TEXTO_PANEL_FUERA = {
+  titulo: '¿Entrenas fuera esta semana?',
+  ayuda: 'Esas sesiones cuentan, pero sus pesos no se comparan con los de tu gimnasio.',
+} as const;
+
+/** Las sesiones que salen en el panel: las pendientes de la semana natural
+ *  que empieza el lunes `lunes`, por fecha. La semana natural y no la vuelta
+ *  del ciclo porque es la clave del plan semanal (`{email}_{lunes}`). */
+export function sesionesPendientesDeLaSemana<T extends Pick<WorkoutAssignment, 'id' | 'date' | 'status'>>(
+  asignaciones: readonly T[], lunes: string,
+): T[] {
+  const domingo = addDays(lunes, 6);
+  return asignaciones
+    .filter(a => a.status === 'pending' && a.date >= lunes && a.date <= domingo)
+    .sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
 }
 
-/** ¿El coach marcó la vuelta de ciclo `semana` como semana fuera? */
-export function semanaMarcadaFuera(meso: Pick<Mesocycle, 'eventosSemana'> | null | undefined, semana: number): boolean {
-  return esEventoFuera(meso?.eventosSemana?.[String(semana)]);
+/** Marca o desmarca una sesión en la lista del panel. Lista nueva; sin repetidos. */
+export function alternarSesionFuera(marcadas: readonly string[] | undefined, id: string): string[] {
+  const lista = marcadas ?? [];
+  return lista.includes(id) ? lista.filter(x => x !== id) : [...lista, id];
+}
+
+/** ¿Arranca la sesión como «fuera»? Si el atleta ya la abrió y tocó el
+ *  interruptor, lo que dejó en el borrador; si no, lo que marcó en el panel. */
+export function fueraAlAbrir(fueraDelBorrador: unknown, marcadaEnElPanel: boolean): boolean {
+  return typeof fueraDelBorrador === 'boolean' ? fueraDelBorrador : marcadaEnElPanel;
 }
 
 /* ── Lo que cuenta en una sesión fuera: el RIR ───────────────────────────── */

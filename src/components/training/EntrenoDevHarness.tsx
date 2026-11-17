@@ -9,7 +9,8 @@ import {
 } from './setInput';
 import WorkoutSessionPlayer, { type SessionCelebration } from './WorkoutSessionPlayer';
 import { VARIANTES_FUERA, VARIANTE_FUERA_POR_DEFECTO, type VarianteFuera } from './InterruptorFuera';
-import { cambiarPrerrelleno, serieConFuera } from '../../utils/sesionFuera';
+import { alternarSesionFuera, cambiarPrerrelleno, fueraAlAbrir, serieConFuera } from '../../utils/sesionFuera';
+import SesionesFueraDeLaSemana from './SesionesFueraDeLaSemana';
 
 /* Banco de pruebas del reproductor de entreno (`/dev/entreno`, solo en
    desarrollo). Un entreno inventado con un ejercicio normal, uno con drop set
@@ -23,10 +24,16 @@ import { cambiarPrerrelleno, serieConFuera } from '../../utils/sesionFuera';
    pregunta del cansancio (D6). Abajo se ve lo que se guardaría de cada serie.
 
    17-11-2026 (tarde): «Hoy entreno fuera de mi gimnasio». Segundo conmutador
-   con sus dos variantes (chip / fila) y otro para simular que el coach marcó
-   la semana como semana fuera (llega encendido). Encendido, la tabla pasa a
-   peso vacío con la pista, sin subidas ni récords, y cada serie se guarda con
-   la marca `fuera`. */
+   con sus dos variantes (chip / fila). Encendido, la tabla pasa a peso vacío
+   con la pista, sin subidas ni récords, y cada serie se guarda con la marca
+   `fuera`.
+
+   17-11-2026 (noche): ya no se enciende porque el coach marque la semana
+   como viaje (se quitó esa casilla). En su lugar, el panel «¿Entrenas fuera
+   esta semana?» de Rutinas, con tres sesiones de mentira: marcar o desmarcar
+   la de hoy vuelve a abrir la sesión de abajo como si se empezara desde
+   Rutinas, y tocar el interruptor dentro de la sesión se refleja en el panel,
+   como en la pantalla real. */
 
 const HOY = hoyIsoLocal();
 const EJERCICIOS = [
@@ -63,6 +70,12 @@ const ANTERIOR: WorkoutEntryLog[] = [
   { exerciseId: 'tri', sets: [30, 30, 30].map(w => ({ weight: w, repsDone: 13, rir: 1 })) },
   { exerciseId: 'jalon', sets: [55, 55].map(w => ({ weight: w, repsDone: 9, rir: 2 })) },
 ];
+/** Las sesiones de la semana del panel; la primera es la que se abre abajo. */
+const SESIONES_DEL_PANEL = [
+  { id: 'dev', nombre: 'Torso de prueba', fecha: HOY },
+  { id: 'dev-pierna', nombre: 'Pierna', fecha: addDays(HOY, 2) },
+  { id: 'dev-torso-b', nombre: 'Torso B', fecha: addDays(HOY, 4) },
+];
 const LOGS = [{
   id: 'l1', athleteId: 'dev@example.com', workoutId: 'w', assignmentId: 'a0',
   date: addDays(HOY, -7), completedAt: '', entries: ANTERIOR,
@@ -76,13 +89,15 @@ function setsIniciales(fuera = false): SetInput[][] {
 export default function EntrenoDevHarness() {
   const [sets, setSets] = useState(() => setsIniciales());
   // Sesión fuera de su gimnasio: la variante del interruptor, si está
-  // encendido y si el coach marcó la semana.
+  // encendido y qué sesiones están marcadas en el panel de la semana.
   const [varianteFuera, setVarianteFuera] = useState<VarianteFuera>(VARIANTE_FUERA_POR_DEFECTO);
   const [fuera, setFuera] = useState(false);
-  const [semanaFuera, setSemanaFuera] = useState(false);
+  const [marcadas, setMarcadas] = useState<string[]>([]);
   const cambiarFuera = (valor: boolean) => {
     setFuera(valor);
     setSets(prev => cambiarPrerrelleno(prev, setsIniciales(!valor), setsIniciales(valor)));
+    // Lo que se decide en la sesión manda sobre el panel (como en TrainingScreen).
+    setMarcadas(prev => (prev.includes('dev') === valor ? prev : alternarSesionFuera(prev, 'dev')));
   };
   const [notas, setNotas] = useState<string[]>(WORKOUT.exercises.map(() => ''));
   // D3: «otra máquina o recorrido» por ejercicio.
@@ -109,9 +124,11 @@ export default function EntrenoDevHarness() {
       tonnage: todas.reduce((t, s) => t + s.weight * s.repsDone, 0),
     });
   };
-  const reiniciar = () => {
-    setSets(setsIniciales(semanaFuera));
-    setFuera(semanaFuera);
+  /** Vuelve a abrir la sesión de cero, como al pulsar «Empezar» en Rutinas. */
+  const reiniciar = (marcadaEnElPanel = marcadas.includes('dev')) => {
+    const arranca = fueraAlAbrir(undefined, marcadaEnElPanel);
+    setSets(setsIniciales(arranca));
+    setFuera(arranca);
     setNotas(WORKOUT.exercises.map(() => ''));
     setReferencias([]); setQuePararon([]); setMolestias([]); setComoLlega(undefined);
     setCelebracion(null); setCansancio(undefined);
@@ -124,7 +141,7 @@ export default function EntrenoDevHarness() {
       <div className="mb-4 rounded-surface border border-dashed border-accent-line bg-surface p-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
           <p className="font-mono text-caption font-bold uppercase tracking-wide text-accent-ink">Banco de pruebas · cómo se apunta el RIR</p>
-          <button type="button" onClick={reiniciar} className="font-mono text-caption font-bold uppercase tracking-wide text-ink-2 hover:text-accent-ink">Reiniciar</button>
+          <button type="button" onClick={() => reiniciar()} className="font-mono text-caption font-bold uppercase tracking-wide text-ink-2 hover:text-accent-ink">Reiniciar</button>
         </div>
         <SegmentedControl
           label="Forma de apuntar el RIR"
@@ -143,13 +160,20 @@ export default function EntrenoDevHarness() {
           className="w-full"
         />
         <p className="font-sans text-caption text-ink-2">{VARIANTES_FUERA.find(v => v.clave === varianteFuera)?.explicacion}</p>
-        <label className="flex items-center gap-2 font-sans text-caption text-ink-2">
-          <input
-            type="checkbox" checked={semanaFuera}
-            onChange={e => { setSemanaFuera(e.target.checked); if (e.target.checked && !fuera) cambiarFuera(true); }}
-          />
-          El coach marcó esta semana como semana fuera (viaje)
-        </label>
+        <p className="font-sans text-caption text-ink-2">
+          Abajo, el panel de Rutinas: marcar o desmarcar «Torso de prueba» vuelve a abrir la sesión como si la empezaras desde allí.
+        </p>
+      </div>
+      <div className="mb-4">
+        <SesionesFueraDeLaSemana
+          sesiones={SESIONES_DEL_PANEL}
+          marcadas={marcadas}
+          onAlternar={id => {
+            const nuevas = alternarSesionFuera(marcadas, id);
+            setMarcadas(nuevas);
+            if (id === 'dev') reiniciar(nuevas.includes('dev'));
+          }}
+        />
       </div>
       <WorkoutSessionPlayer
         profile={{ userId: 'dev', email: 'dev@example.com', displayName: 'Dev' } as UserProfile}
@@ -189,7 +213,6 @@ export default function EntrenoDevHarness() {
         onCansancioAlSalir={setCansancio}
         fuera={fuera}
         onFuera={cambiarFuera}
-        semanaFuera={semanaFuera}
         varianteFuera={varianteFuera}
       />
 

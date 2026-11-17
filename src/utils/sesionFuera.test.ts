@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { WorkoutLog, WorkoutSetLog } from '../types';
 import {
   cambiarPrerrelleno, cambioDeFuera, cumpleElRir, entradasConFuera, esSesionFuera, kgDeSerie, mensajeDeCierreFuera,
-  pistaDePesoFuera, rirCumplido, rirCumplidoDeFilas, semanaMarcadaFuera, serieConFuera, seriesDeFuerza, sinSesionesFuera,
+  pistaDePesoFuera, rirCumplido, rirCumplidoDeFilas, serieConFuera, seriesDeFuerza, sinSesionesFuera,
+  alternarSesionFuera, fueraAlAbrir, sesionesPendientesDeLaSemana,
 } from './sesionFuera';
 
 const log = (id: string, extra: Partial<WorkoutLog> = {}, fueraEnSerie = false): WorkoutLog => ({
@@ -44,14 +45,34 @@ describe('la marca «fuera»', () => {
   });
 });
 
-describe('semana fuera marcada por el coach', () => {
-  it('viaje y vacaciones son semana fuera; competición y otro, no', () => {
-    const meso = { eventosSemana: { '2': { tipo: 'viaje' as const }, '3': { tipo: 'vacaciones' as const }, '4': { tipo: 'competicion' as const } } };
-    expect(semanaMarcadaFuera(meso, 2)).toBe(true);
-    expect(semanaMarcadaFuera(meso, 3)).toBe(true);
-    expect(semanaMarcadaFuera(meso, 4)).toBe(false);
-    expect(semanaMarcadaFuera(meso, 1)).toBe(false);
-    expect(semanaMarcadaFuera(undefined, 2)).toBe(false);
+describe('el panel de la semana, en Rutinas', () => {
+  const asig = (id: string, date: string, status: 'pending' | 'completed' | 'skipped' | 'perdido' = 'pending') => ({ id, date, status });
+
+  it('salen las pendientes de lunes a domingo, por fecha', () => {
+    const lista = [
+      asig('jue', '2026-11-19'), asig('lun', '2026-11-16'), asig('dom', '2026-11-22'),
+      asig('hecha', '2026-11-17', 'completed'), asig('saltada', '2026-11-18', 'skipped'),
+      asig('antes', '2026-11-15'), asig('despues', '2026-11-23'),
+    ];
+    expect(sesionesPendientesDeLaSemana(lista, '2026-11-16').map(a => a.id)).toEqual(['lun', 'jue', 'dom']);
+    expect(sesionesPendientesDeLaSemana([], '2026-11-16')).toEqual([]);
+  });
+
+  it('un toque marca la sesión y otro la desmarca, sin repetidas', () => {
+    expect(alternarSesionFuera(undefined, 'a')).toEqual(['a']);
+    expect(alternarSesionFuera(['a', 'b'], 'a')).toEqual(['b']);
+    expect(alternarSesionFuera(['b'], 'a')).toEqual(['b', 'a']);
+    const original = ['a'];
+    alternarSesionFuera(original, 'b');
+    expect(original).toEqual(['a']);
+  });
+
+  it('marcada en el panel llega encendida; lo que el atleta hizo en la sesión manda', () => {
+    expect(fueraAlAbrir(undefined, true)).toBe(true);
+    expect(fueraAlAbrir(undefined, false)).toBe(false);
+    expect(fueraAlAbrir(false, true)).toBe(false); // la abrió y lo apagó
+    expect(fueraAlAbrir(true, false)).toBe(true); // lo encendió en la sesión
+    expect(fueraAlAbrir('raro', true)).toBe(true); // un borrador viejo sin la marca
   });
 });
 

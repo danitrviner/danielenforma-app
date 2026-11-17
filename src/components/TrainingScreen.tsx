@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, Workout, WorkoutAssignment, WorkoutLog, WorkoutEntryLog } from '../types';
+import { PlanSemanal, UserProfile, Workout, WorkoutAssignment, WorkoutLog, WorkoutEntryLog } from '../types';
 import LoadHistoryPanel from './LoadHistoryPanel';
 import {
   getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getExercises,
   createWorkoutLog, updateWorkoutLog, updateWorkoutAssignment, getWorkoutLogs, getExerciseNotesForAthlete,
   getCardioAssignmentsForAthlete, getMesocycles,
 } from '../dbService';
-import { MONTHS_ES, addDays, formatDate, hoyIsoLocal } from '../utils/trainingWeek';
+import { MONTHS_ES, addDays, formatDate, getWeekStart, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, BloqueDelCiclo, DiaDelCiclo, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { prefillWorkoutSets, entradasDeLaUltimaVez } from '../utils/setPrefill';
 import { tipoDeSemana } from '../utils/tipoDeSemana';
-import { cambiarPrerrelleno, esSesionFuera, semanaMarcadaFuera, serieConFuera } from '../utils/sesionFuera';
+import {
+  alternarSesionFuera, cambiarPrerrelleno, esSesionFuera, fueraAlAbrir, serieConFuera, sesionesPendientesDeLaSemana,
+} from '../utils/sesionFuera';
+import { getPlanSemanal, guardarSesionesFuera } from '../db/planSemanal';
 import { saltoReal } from '../utils/cargaSugerida';
 import { conEstadoReal } from '../utils/estadoDeAsignacion';
 import { mesocycleWeekNumber, resolverEjercicioDelMeso } from '../utils/progression';
@@ -36,6 +39,7 @@ import WorkoutSessionPlayer, { SessionCelebration } from './training/WorkoutSess
 import NovedadesDeSemana from './training/NovedadesDeSemana';
 import ObjetivoDelBloque from './training/ObjetivoDelBloque';
 import BloqueTerminado from './training/BloqueTerminado';
+import SesionesFueraDeLaSemana from './training/SesionesFueraDeLaSemana';
 import { progresoDelObjetivo, mesoDelObjetivo } from '../utils/progresoDelObjetivo';
 import { bloqueTerminadoParaElAtleta } from '../utils/bloqueTerminado';
 import { novedadesDeSemana, hayNovedades } from '../utils/semanasDelBloque';
@@ -326,6 +330,40 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
   // pintaba de rojo la sesión de hoy y de amarillo la de ayer.
   const today = hoyIsoLocal();
 
+  // «¿Entrenas fuera esta semana?» (17-11-2026): las sesiones de esta semana
+  // que el atleta marcó para hacer fuera de su gimnasio, en su plan semanal.
+  // Clave propia y no la de Mi semana: allí se guarda el plan sin este campo
+  // y su caché lo pisaría (utils/sesionFuera.ts, db/planSemanal.ts).
+  const lunesDeHoy = getWeekStart(today);
+  const planFueraKey = ['sesionesFuera', profile.email, lunesDeHoy] as const;
+  const { data: planDeLaSemana } = useQuery({
+    queryKey: planFueraKey,
+    queryFn: () => getPlanSemanal(profile.email, lunesDeHoy),
+    ...AL_VOLVER_A_LA_APP,
+  });
+  const sesionesFueraMarcadas = planDeLaSemana?.sesionesFuera ?? [];
+  const [guardandoFuera, setGuardandoFuera] = useState(false);
+  const sesionesDelPanelFuera = sesionesPendientesDeLaSemana<WorkoutAssignment>(assignments, lunesDeHoy)
+    .map(a => ({ id: a.id, nombre: getWorkout(a.workoutId)?.name ?? 'Rutina', fecha: a.date }));
+  /** Marca o desmarca una sesión como «fuera» en el plan de la semana. Se pinta
+   *  al momento y, si no se puede guardar, vuelve atrás con un aviso. */
+  const marcarSesionFuera = (id: string, avisarSiFalla = true) => {
+    const anterior = queryClient.getQueryData<PlanSemanal | null>(planFueraKey);
+    const marcadas = alternarSesionFuera(anterior?.sesionesFuera, id);
+    queryClient.setQueryData<PlanSemanal | null>(planFueraKey, {
+      ...(anterior ?? { id: `${profile.email}_${lunesDeHoy}`, athleteId: profile.email, semana: lunesDeHoy, platos: [] }),
+      sesionesFuera: marcadas,
+    });
+    setGuardandoFuera(true);
+    guardarSesionesFuera(profile.email, lunesDeHoy, marcadas)
+      .catch(err => {
+        console.warn('guardarSesionesFuera failed:', err);
+        queryClient.setQueryData(planFueraKey, anterior ?? null);
+        if (avisarSiFalla) showToast('No se ha podido guardar. Inténtalo otra vez.');
+      })
+      .finally(() => setGuardandoFuera(false));
+  };
+
   const sortedAssignments = [...assignments].sort((a, b) => a.date.localeCompare(b.date));
   const filteredAssignments = listFilter === 'all'
     ? sortedAssignments
@@ -419,10 +457,10 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
     // carga subida; se repite lo de la última vez.
     const semana = meso ? mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso)) : 0;
     const prerrellenadas = prefillWorkoutSets(wo, entries, id => saltoReal(logs, id), tipoDeSemana(meso, semana));
-    // Fuera de su gimnasio: peso vacío y el objetivo del rango. Si el coach
-    // marcó la semana como semana fuera (viaje o vacaciones), llega encendido.
+    // Fuera de su gimnasio: peso vacío y el objetivo del rango. Si el atleta
+    // la marcó en el panel de la semana, llega encendido.
     const prerrellenadasFuera = prefillWorkoutSets(wo, entries, id => saltoReal(logs, id), tipoDeSemana(meso, semana), true);
-    const semanaFuera = semanaMarcadaFuera(meso, semana);
+    const marcadaEnElPanel = sesionesFueraMarcadas.includes(assignment.id);
 
     if (meso) {
       const base = baseWorkout.exercises.slice().sort((a, b) => a.order - b.order);
@@ -467,10 +505,11 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
 
     setActiveAssignment(assignment);
     setActiveWorkout(wo);
-    const fueraAlAbrir = typeof borrador?.fuera === 'boolean' ? borrador.fuera : semanaFuera;
+    // Lo que el atleta hizo en la sesión (el borrador) manda sobre el panel.
+    const arrancaFuera = fueraAlAbrir(borrador?.fuera, marcadaEnElPanel);
     prerrellenosRef.current = { normal: prerrellenadas, fuera: prerrellenadasFuera };
-    setFuera(fueraAlAbrir);
-    setPlayerSets(borrador?.playerSets ?? (fueraAlAbrir ? prerrellenadasFuera : prerrellenadas));
+    setFuera(arrancaFuera);
+    setPlayerSets(borrador?.playerSets ?? (arrancaFuera ? prerrellenadasFuera : prerrellenadas));
     setExerciseNoteInputs(borrador?.exerciseNoteInputs
       ?? wo.exercises.slice().sort((a, b) => a.order - b.order).map(() => ''));
     setReferenciasNuevas(Array.isArray(borrador?.referenciasNuevas) ? borrador.referenciasNuevas : []);
@@ -643,6 +682,15 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
    *  prerrelleno del otro modo; lo que el atleta ya escribió no se toca. */
   const cambiarFuera = (valor: boolean) => {
     setFuera(valor);
+    // Lo que el atleta decide en la sesión manda sobre el panel: si la sesión
+    // sale en el panel de esta semana, se marca o desmarca allí también. Así
+    // apagarlo sin marcar ninguna serie (sin borrador) no vuelve a encenderse
+    // al reabrirla, y el panel no dice algo distinto de la sesión.
+    if (activeAssignment && !editingLogId
+      && sesionesDelPanelFuera.some(s => s.id === activeAssignment.id)
+      && sesionesFueraMarcadas.includes(activeAssignment.id) !== valor) {
+      marcarSesionFuera(activeAssignment.id, false);
+    }
     const p = prerrellenosRef.current;
     if (p) setPlayerSets(prev => cambiarPrerrelleno(prev, valor ? p.normal : p.fuera, valor ? p.fuera : p.normal));
   };
@@ -670,13 +718,6 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
     const meso = activeAssignment?.mesocycleId ? mesocycles.find(m => m.id === activeAssignment.mesocycleId) : undefined;
     if (!activeAssignment || !meso) return null;
     return tipoDeSemana(meso, mesocycleWeekNumber(meso.startDate, activeAssignment.date, cicloDiasDeMeso(meso)));
-  }, [activeAssignment, mesocycles]);
-
-  // ¿El coach marcó esta semana como semana fuera? El interruptor lo dice.
-  const semanaFueraActiva = useMemo(() => {
-    const meso = activeAssignment?.mesocycleId ? mesocycles.find(m => m.id === activeAssignment.mesocycleId) : undefined;
-    if (!activeAssignment || !meso) return false;
-    return semanaMarcadaFuera(meso, mesocycleWeekNumber(meso.startDate, activeAssignment.date, cicloDiasDeMeso(meso)));
   }, [activeAssignment, mesocycles]);
 
   const marcarQueParo = (exIdx: number, motivo: MotivoDeParada | undefined) => {
@@ -1138,7 +1179,6 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
         tipoSemana={tipoSemanaActiva}
         fuera={fuera}
         onFuera={cambiarFuera}
-        semanaFuera={semanaFueraActiva}
         cansancioAlSalir={cansancioAlSalir}
         onCansancioAlSalir={logGuardadoId ? apuntarCansancio : undefined}
       />
@@ -1262,6 +1302,17 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
                 </div>
               );
             })()
+          )}
+
+          {/* «¿Entrenas fuera esta semana?»: al final del todo, para quien
+              baja buscándolo; no compite con las sesiones. */}
+          {!loading && listFilter === 'pending' && (
+            <SesionesFueraDeLaSemana
+              sesiones={sesionesDelPanelFuera}
+              marcadas={sesionesFueraMarcadas}
+              onAlternar={id => marcarSesionFuera(id)}
+              guardando={guardandoFuera}
+            />
           )}
         </div>
       )}

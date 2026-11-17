@@ -16,6 +16,18 @@ import { pesoDeSerie, type ContextoPesoCorporal } from '../pesoCorporal.js'
 export type NombreCdgDe = (exerciseId: string) => string | undefined
 
 /**
+ * Serie realizada tal como sale de los registros de la app: la de la hoja más
+ * la marca `fuera` (sesión hecha fuera de su gimnasio, utils/sesionFuera.ts).
+ * La hoja no la tiene, así que no va en `CdgSerieRealizada`: el estímulo (IEM)
+ * la ignora y la cuenta, que es lo que se quiere (el esfuerzo fue real); el
+ * rendimiento la mira para dejarla fuera del RM y del tonelaje
+ * (rendimientoDeRegistros.ts).
+ */
+export interface CdgSerieRealizadaDeApp extends CdgSerieRealizada {
+  fuera?: true
+}
+
+/**
  * Cómo se traduce la técnica de En Forma (una por ejercicio) a la de la hoja
  * (por serie). Decisión de Dani: por defecto se aplica a la ÚLTIMA serie.
  * `null` = no tiene equivalente y cuenta como serie normal.
@@ -105,15 +117,17 @@ export function tecnicaDeSegmentos (
  * Con `segmentos: true`, la serie principal tras la que hay bajadas o
  * miniseries HECHAS (con repeticiones) lleva su técnica; una técnica pautada
  * que el atleta no apuntó no cuenta: no consta que la hiciera.
+ * Una serie hecha fuera de su gimnasio sale con `fuera: true`
+ * (`CdgSerieRealizadaDeApp`).
  */
 export function seriesRealizadas (
   entry: WorkoutLog['entries'][number],
   nombreCdgDe: NombreCdgDe,
   { contarSinPeso = false, tecnica = null, pesoCorporal = null, segmentos = false, tecnicaPautada = null }: OpcionesDeRealizadas = {}
-): CdgSerieRealizada[] {
+): CdgSerieRealizadaDeApp[] {
   const nombre = nombreCdgDe(entry.exerciseId)
   if (!nombre) return []
-  const out: CdgSerieRealizada[] = []
+  const out: CdgSerieRealizadaDeApp[] = []
   const principales = seriesPrincipales(entry.sets)
   // Bajadas y miniseries hechas, por la serie principal (1 = la primera) a la que pertenecen.
   const hechos = new Map<number, Array<{ weight: number }>>()
@@ -136,7 +150,9 @@ export function seriesRealizadas (
       intensification: tecnicaDeSegmentos(tecnicaPautada, s.weight, hechos.get(i + 1) ?? []) ?? '',
       // RIR pautado sin tocar: la serie cuenta para el estímulo y el tonelaje,
       // pero no para el RM (rendimientoDeRegistros.ts).
-      ...(s.rirApuntado === false && !s.alFallo ? { rirApuntado: false } : {})
+      ...(s.rirApuntado === false && !s.alFallo ? { rirApuntado: false } : {}),
+      // Fuera de su gimnasio: estímulo sí; RM y tonelaje, no (17-11-2026).
+      ...(s.fuera === true ? { fuera: true as const } : {})
     })
   }
   if (tecnica && out.length) out[out.length - 1].intensification = tecnica
