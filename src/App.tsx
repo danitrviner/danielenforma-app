@@ -171,6 +171,14 @@ const FichaHarness = import.meta.env.DEV
 const EntrenoHarness = import.meta.env.DEV
   ? pantallaDiferida('EntrenoDevHarness', () => import('./components/training/EntrenoDevHarness'))
   : null;
+// Banco de pruebas de los cambios con hipótesis (ruta /dev/hipotesis).
+const HipotesisHarness = import.meta.env.DEV
+  ? pantallaDiferida('HipotesisDevHarness', () => import('./components/revision/HipotesisDevHarness'))
+  : null;
+// Banco de pruebas de las series alternas en el editor del coach (ruta /dev/alternas).
+const AlternasHarness = import.meta.env.DEV
+  ? pantallaDiferida('AlternasDevHarness', () => import('./components/training/AlternasDevHarness'))
+  : null;
 // Banco de pruebas del reto de la semana y su aviso en el entreno (ruta /dev/retos).
 const RetosHarness = import.meta.env.DEV
   ? pantallaDiferida('RetosDevHarness', () => import('./components/roadmap/RetosDevHarness'))
@@ -991,6 +999,20 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <FichaHarness />
+      </Suspense>
+    );
+  }
+  if (HipotesisHarness && location.pathname === '/dev/hipotesis') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <HipotesisHarness />
+      </Suspense>
+    );
+  }
+  if (AlternasHarness && location.pathname === '/dev/alternas') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <AlternasHarness />
       </Suspense>
     );
   }

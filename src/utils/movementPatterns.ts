@@ -1,5 +1,6 @@
 import { WorkoutLog, Exercise, Mesocycle, MuscleGroup } from '../types.js';
 import { aggregate, weightedGroupsOf, resolveWindows, ComparisonMode, Agg } from './trainingReport.js';
+import { ultimaReferenciaPorEjercicio } from './referenciaDeEjercicio.js';
 
 // Bloque "Rendimiento" del protocolo de mediciones de Dani: variación de 1RM
 // estimado y tonelaje agrupada por PATRÓN DE MOVIMIENTO (empuje torso,
@@ -109,8 +110,10 @@ export function buildMovementPatternReport(params: {
   const curLogs = logs.filter(l => inRange(l.date, w.curStart, w.curEnd));
   const prevLogs = w.prevStart && w.prevEnd ? logs.filter(l => inRange(l.date, w.prevStart!, w.prevEnd!)) : [];
 
-  const curP = patternAgg(aggregate(curLogs), exercises);
-  const prevP = patternAgg(aggregate(prevLogs), exercises);
+  // D3: el 1RM de antes de una referencia nueva no cuenta (ver referenciaDeEjercicio.ts).
+  const refs = ultimaReferenciaPorEjercicio(logs);
+  const curP = patternAgg(aggregate(curLogs, undefined, refs), exercises);
+  const prevP = patternAgg(aggregate(prevLogs, undefined, refs), exercises);
   const meanOf = (arr: number[]) => arr.length ? round1(arr.reduce((s, v) => s + v, 0) / arr.length) : null;
 
   const ordered = [...ALL_PATTERNS].sort((a, b) => (curP.get(b)?.tonnage ?? 0) - (curP.get(a)?.tonnage ?? 0));

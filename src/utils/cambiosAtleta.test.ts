@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { Diet, Mesocycle, NutritionProgram } from '../types';
-import { resumirDieta, resumirPrograma, resumirCalendarioDietas, resumirMeso, resumirConfigNutricion, resumirReglasDeReceta } from './cambiosAtleta';
+import type { Diet, Mesocycle, NutritionProgram, WorkoutExercise } from '../types';
+import { resumirDieta, resumirPrograma, resumirCalendarioDietas, resumirMeso, resumirConfigNutricion, resumirReglasDeReceta, resumirRutina } from './cambiosAtleta';
 import type { ReglasDeReceta } from './reglasDeReceta';
 
 const dieta = (over: Partial<Diet> = {}): Diet => ({
@@ -135,5 +135,41 @@ describe('resumirReglasDeReceta: recetas del generador por dieta', () => {
   it('sin cambios en la selección, nada', () => {
     const sel = { porDieta: { d1: { sin: ['Atún'] } } };
     expect(resumirReglasDeReceta(base(sel), base(sel), nombre)).toEqual([]);
+  });
+});
+
+describe('resumirRutina', () => {
+  const ej = (exerciseId: string, extra: Partial<WorkoutExercise> = {}): WorkoutExercise =>
+    ({ exerciseId, order: 0, sets: 3, reps: '8-10', rir: 2, restSeconds: 90, ...extra });
+  const NOMBRES: Record<string, string> = { press: 'Press banca', jalon: 'Jalón', remo: 'Remo en polea', curl: 'Curl' };
+  const nombreDe = (id: string) => NOMBRES[id];
+
+  it('una rutina recién creada o sin tocar no cuenta nada', () => {
+    expect(resumirRutina(undefined, [ej('press')], nombreDe)).toEqual([]);
+    expect(resumirRutina([ej('press')], [ej('press')], nombreDe)).toEqual([]);
+  });
+
+  it('una línea por ejercicio, con su nombre delante', () => {
+    const r = resumirRutina([ej('press'), ej('jalon')], [ej('press', { restSeconds: 150, sets: 4 }), ej('jalon', { rir: 1 })], nombreDe);
+    expect(r).toEqual(['Press banca: series 3 → 4 · descanso 90 → 150 s', 'Jalón: RIR 2 → 1']);
+  });
+
+  it('sustituir en el mismo puesto es una flecha; añadir y quitar, cada uno lo suyo', () => {
+    expect(resumirRutina([ej('press'), ej('jalon')], [ej('press'), ej('remo')], nombreDe)).toEqual(['Jalón → Remo en polea']);
+    expect(resumirRutina([ej('press')], [ej('press'), ej('curl', { reps: '10-12' })], nombreDe)).toEqual(['Añadido Curl (3 × 10-12)']);
+    expect(resumirRutina([ej('press'), ej('curl')], [ej('press')], nombreDe)).toEqual(['Quitado Curl']);
+  });
+
+  it('mover de sitio no es quitar y poner', () => {
+    expect(resumirRutina([ej('press'), ej('jalon')], [ej('jalon'), ej('press')], nombreDe)).toEqual(['Orden de los ejercicios cambiado']);
+  });
+
+  it('técnica, series alternas y cambios por semana', () => {
+    const r = resumirRutina(
+      [ej('curl')],
+      [ej('curl', { technique: 'dropset', alterna: 'p1', weeklyProgression: [{ atWeek: 3, addSets: 1 }] })],
+      nombreDe,
+    );
+    expect(r).toEqual(['Curl: técnica — → Drop-set · cambios por semana editados · pasa a series alternas']);
   });
 });

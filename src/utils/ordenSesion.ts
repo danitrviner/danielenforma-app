@@ -4,8 +4,10 @@ import type { MuscleGroup, MuscleGroupConfig } from '../types.js';
    Orden de los ejercicios dentro de una sesión (guía del Índice de Hipertrofia)
 
    1. Lo prioritario, al principio: los grupos con prioridad alta van primero.
-   2. En un día de pierna, de menos a más fatiga por serie: los analíticos
-      (pocos grupos secundarios) antes que los multiarticulares.
+   2. En un día de pierna, lo pesado primero: los multiarticulares (más grupos
+      secundarios) antes que los analíticos, para que lo más técnico y costoso
+      llegue sin fatiga previa (decisión de Dani, 11-11-2026; antes era al
+      revés y contradecía la doctrina, §8 «Orden de la sesión»).
    3. En el resto, alternar patrones: empuje, tracción, empuje… para que un
       grupo descanse mientras trabaja el otro.
    El orden es estable: dentro de cada criterio se respeta el que traían.
@@ -51,7 +53,7 @@ export function ordenarSesion<T extends EjercicioParaOrdenar>(
   const dePierna = ejercicios.filter(e => e.muscleGroup && PIERNA.includes(e.muscleGroup)).length;
   const esDiaDePierna = dePierna * 2 > ejercicios.length;
   const ordenarResto = esDiaDePierna
-    ? resto.map((e, i) => ({ e, i })).sort((a, b) => a.e.secundarios - b.e.secundarios || a.i - b.i).map(x => x.e)
+    ? resto.map((e, i) => ({ e, i })).sort((a, b) => b.e.secundarios - a.e.secundarios || a.i - b.i).map(x => x.e)
     : alternar(resto);
   return [...alta, ...ordenarResto];
 }

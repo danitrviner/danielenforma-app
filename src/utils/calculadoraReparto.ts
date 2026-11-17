@@ -169,6 +169,24 @@ const ESTRATEGIAS: Estrategia[] = [
   { id: 'full', nombre: 'Cuerpo completo', pesoCoherencia: 0, cluster: {} },
 ];
 
+/**
+ * Brazos cruzados (P9, 11-11-2026): el bíceps va con el empuje y el tríceps con
+ * el tirón. En un empuje/tirón normal el brazo llega ya gastado por los presses
+ * o los remos; cruzado llega fresco, que es lo que se quiere cuando es
+ * prioritario. Solo se ofrece si bíceps o tríceps están en prioridad alta.
+ */
+const BRAZOS_CRUZADOS: Estrategia = {
+  id: 'brazos-cruzados', nombre: 'Empuje + bíceps / Tirón + tríceps / Pierna', pesoCoherencia: 40,
+  cluster: asignar([
+    ['empuje', ['pecho', 'deltoide_ant', 'deltoide_lat', 'biceps', 'antebrazo']],
+    ['tiron', ['dorsal', 'trapecio', 'deltoide_post', 'triceps']],
+    ['pierna', PIERNA],
+  ]),
+};
+
+/** Opciones que se enseñan como mucho (una más si entra la de brazos cruzados). */
+const OPCIONES_MAXIMAS = 4;
+
 /* ── Contexto y coste ─────────────────────────────────────────────────────── */
 
 interface Contexto {
@@ -483,7 +501,9 @@ export function calcularRepartos(e: EntradaCalculadora): ResultadoCalculadora {
   // encaja mejor; ordenar por él pondría siempre primero el cuerpo completo,
   // que es justo el que no tiene que respetar ningún bloque.
   const opciones: OpcionDeReparto[] = [];
-  for (const est of ESTRATEGIAS) {
+  const brazosPrioritarios = (['biceps', 'triceps'] as MuscleGroup[]).some(g => ctx.prioridadAlta.has(g));
+  const estrategias = brazosPrioritarios ? [BRAZOS_CRUZADOS, ...ESTRATEGIAS] : ESTRATEGIAS;
+  for (const est of estrategias) {
     let mejor: { estado: Estado; coste: number } | null = null;
     for (const rotacion of [0, 1, 2]) {
       const estado = mejorar(colocarPorBloques(ctx, est, rotacion), ctx, est);
@@ -493,7 +513,7 @@ export function calcularRepartos(e: EntradaCalculadora): ResultadoCalculadora {
     const opcion = construirOpcion(mejor!.estado, ctx, est, e);
     if (!opciones.some(o => o.id === opcion.id)) opciones.push(opcion);
   }
-  return { opciones: opciones.slice(0, 4), avisos, cicloDias };
+  return { opciones: opciones.slice(0, OPCIONES_MAXIMAS + (brazosPrioritarios ? 1 : 0)), avisos, cicloDias };
 }
 
 function construirOpcion(estado: Estado, ctx: Contexto, est: Estrategia, e: EntradaCalculadora): OpcionDeReparto {

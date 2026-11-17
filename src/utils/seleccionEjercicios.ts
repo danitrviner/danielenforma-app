@@ -1,4 +1,4 @@
-import { Exercise, MuscleGroup, Workout, WorkoutLog } from '../types.js';
+import { Exercise, ExperienceLevel, MuscleGroup, Workout, WorkoutLog } from '../types.js';
 import { calcularPerfilProgramacion, PerfilEjercicio } from './perfilProgramacion.js';
 import { normalizarTexto } from './busqueda.js';
 
@@ -36,8 +36,75 @@ import { normalizarTexto } from './busqueda.js';
    Puro: ni React, ni Firestore, ni reloj propio.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/** Valores de respaldo cuando un ejercicio no tiene historial de Dani. */
-export const ESQUEMA_POR_DEFECTO = { reps: '8-12', rir: 2, restSeconds: 90 };
+/**
+ * Qué clase de ejercicio es, para darle un esquema de partida con sentido.
+ *
+ *  · analítico — sin grupos secundarios (curl, extensión, elevación lateral,
+ *    gemelo): fallar es seguro y barato, así que va más cerca del fallo y con
+ *    menos descanso.
+ *  · guiado — multiarticular en máquina, multipower o polea (prensa, hack,
+ *    jalón, press en máquina): estable, pero mueve mucha musculatura.
+ *  · libre — multiarticular sin guía (sentadilla, peso muerto, remo sin
+ *    apoyo, press con barra): el más técnico y el que más fatiga deja.
+ *
+ * La frontera sale del catálogo real (11-11-2026, 1.058 ejercicios de fuerza):
+ * los 185 sin secundarios son los analíticos; jalones, remos, presses y
+ * prensas llevan uno o más. `guiado` está relleno en todos; la polea no se
+ * marca como guiada, por eso se mira también el material.
+ */
+export type TipoDeEjercicio = 'analitico' | 'guiado' | 'libre';
+
+const MATERIAL_ESTABLE = ['maquina', 'multipower', 'polea'];
+
+export function tipoDeEjercicio(ex: Pick<Exercise, 'secondaryMuscleGroups' | 'guiado' | 'equipment'>): TipoDeEjercicio {
+  if ((ex.secondaryMuscleGroups?.length ?? 0) === 0) return 'analitico';
+  const estable = ex.guiado === true
+    || (ex.equipment ?? []).some(m => MATERIAL_ESTABLE.includes(normalizarTexto(m).trim()));
+  return estable ? 'guiado' : 'libre';
+}
+
+export interface Esquema { reps: string; rir: number; restSeconds: number }
+
+/**
+ * Esquema de partida por tipo de ejercicio (P1, 11-11-2026). Antes era
+ * `8-12 / RIR 2 / 90 s` para todo, igual para el peso muerto que para el gemelo,
+ * y contradecía la doctrina (§7 y §9: los multiarticulares complejos, 2,5-3 min).
+ * Los números son el centro de los rangos de la doctrina y de la formación:
+ * cuanto más seguro, estable y barato de recuperar es el ejercicio, más cerca
+ * del fallo y menos descanso.
+ */
+export const ESQUEMA_POR_TIPO: Record<TipoDeEjercicio, Esquema> = {
+  analitico: { reps: '10-15', rir: 1, restSeconds: 90 },
+  guiado:    { reps: '8-12',  rir: 2, restSeconds: 150 },
+  libre:     { reps: '6-10',  rir: 3, restSeconds: 180 },
+};
+
+export const ETIQUETA_DE_TIPO: Record<TipoDeEjercicio, string> = {
+  analitico: 'analítico',
+  guiado: 'multiarticular guiado',
+  libre: 'multiarticular libre',
+};
+
+/** RIR más alto que se pauta por defecto: por encima la serie apenas suma (doctrina §4). */
+const RIR_MAXIMO_POR_DEFECTO = 4;
+
+/**
+ * El esquema con el que nace un ejercicio que el coach no tiene en sus rutinas.
+ * Un principiante todavía no sabe dónde está su fallo: una repetición más de
+ * margen en todo, hasta que se calibre.
+ */
+export function esquemaPorDefecto(
+  ex: Pick<Exercise, 'secondaryMuscleGroups' | 'guiado' | 'equipment'>,
+  nivel?: ExperienceLevel,
+): Esquema & { tipo: TipoDeEjercicio } {
+  const tipo = tipoDeEjercicio(ex);
+  const base = ESQUEMA_POR_TIPO[tipo];
+  const rir = nivel === 'principiante' ? Math.min(RIR_MAXIMO_POR_DEFECTO, base.rir + 1) : base.rir;
+  return { ...base, rir, tipo };
+}
+
+/** Esquema de respaldo cuando no se sabe qué ejercicio es (el de un multiarticular guiado). */
+export const ESQUEMA_POR_DEFECTO: Esquema = ESQUEMA_POR_TIPO.guiado;
 
 /** Bloques seguidos usando el mismo ejercicio a partir de los cuales conviene rotar. */
 export const BLOQUES_PARA_ROTAR = 3;
@@ -75,6 +142,8 @@ export interface EntradaSeleccion {
    * a elegir los mismos dos. Por defecto 0 (el comportamiento de siempre).
    */
   inicio?: number;
+  /** Nivel del atleta (alta). Solo afecta al esquema por defecto: principiante = +1 de RIR. */
+  nivel?: ExperienceLevel;
 }
 
 interface Candidato {
@@ -217,6 +286,7 @@ export function elegirEjercicios(entrada: EntradaSeleccion): EjercicioElegido[] 
   return entrada.trozos.map((sets, i) => {
     const c = candidatos[((entrada.inicio ?? 0) + i) % candidatos.length];
     const p = c.perfil;
+    const porDefecto = esquemaPorDefecto(c.ejercicio, entrada.nivel);
     const razones: string[] = [];
 
     if (p) {
@@ -225,7 +295,8 @@ export function elegirEjercicios(entrada: EntradaSeleccion): EjercicioElegido[] 
         razones.push('Series, reps, RIR y descanso salen de la mediana de tus rutinas con este ejercicio');
       }
     } else {
-      razones.push('No lo tienes en ninguna rutina: va con el esquema por defecto');
+      razones.push(`No lo tienes en ninguna rutina: va con el esquema por defecto de un ${ETIQUETA_DE_TIPO[porDefecto.tipo]}`
+        + (entrada.nivel === 'principiante' ? ', con una repetición más de margen por ser principiante' : ''));
     }
     if (!c.compatible) {
       razones.push(hayCompatibles
@@ -242,9 +313,9 @@ export function elegirEjercicios(entrada: EntradaSeleccion): EjercicioElegido[] 
       nombre: c.ejercicio.name,
       grupo: entrada.grupo,
       sets,
-      reps: p?.reps ?? ESQUEMA_POR_DEFECTO.reps,
-      rir: p?.rir ?? ESQUEMA_POR_DEFECTO.rir,
-      restSeconds: p?.descansoSeg ?? ESQUEMA_POR_DEFECTO.restSeconds,
+      reps: p?.reps ?? porDefecto.reps,
+      rir: p?.rir ?? porDefecto.rir,
+      restSeconds: p?.descansoSeg ?? porDefecto.restSeconds,
       materialIncompatible: !c.compatible,
       razones,
     };

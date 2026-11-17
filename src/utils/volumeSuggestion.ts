@@ -67,6 +67,9 @@ const MAX_SERIES_PER_GROUP = 25;
  */
 export const SERIES_POR_DIA_TOPE = 23;
 
+/** Grupos que se pueden especializar a la vez sin que deje de significar algo (P6). */
+export const MAXIMO_ESPECIALIZADOS = 3;
+
 /** Series por sesión y grupo que tiene sentido acumular sin caer en trabajo basura. */
 export const SERIES_POR_SESION = 8;
 
@@ -236,6 +239,21 @@ export function suggestVolume(input: VolumeSuggestionInput): VolumeSuggestionRes
       if (series !== antes) razones.push(`Dial ${ETIQUETA_INTENT[intent]}: ${antes} → ${series}.`);
     }
 
+    // ── 4b. Mantener ≈ la mitad de lo que le hacía crecer (P6) ───────────
+    // El mínimo de la tabla es genérico. Si en el bloque anterior este grupo
+    // estaba creciendo con N series, para conservarlo hace falta alrededor de
+    // la mitad, que puede ser más que el mínimo de la tabla. Solo sube: nunca
+    // deja el mantenimiento por debajo de ese mínimo. Si ya venía en
+    // mantenimiento, lo que hacía ya era «la mitad» y no se vuelve a partir.
+    const previo = history?.groups?.[g];
+    if (prioridad === 'baja' && previo && previo.performed > 0 && history?.previous?.groups?.[g]?.priority !== 'baja') {
+      const mitad = Math.ceil(previo.performed / 2);
+      if (mitad > series) {
+        razones.push(`Venía haciendo ${previo.performed} series/semana: para mantener hace falta en torno a la mitad (${mitad}), más que el mínimo de la tabla (${series}).`);
+        series = mitad;
+      }
+    }
+
     // ── 5. Historial del bloque anterior ─────────────────────────────────
     const h = history?.groups?.[g];
     const adherencia = history?.adherencePct ?? null;
@@ -274,6 +292,13 @@ export function suggestVolume(input: VolumeSuggestionInput): VolumeSuggestionRes
     series = Math.max(0, Math.round(series));
     groups[g] = { series, priority: prioridad };
     reasons[g] = razones;
+  }
+
+  // ── 6b. Demasiados prioritarios (P6) ───────────────────────────────────
+  // Especializar es redistribuir: si casi todo es prioritario, nada lo es.
+  const especializados = MUSCLE_ORDER.filter(g => groups[g].priority === 'alta' && groups[g].series > 0);
+  if (especializados.length > MAXIMO_ESPECIALIZADOS) {
+    warnings.push(`Hay ${especializados.length} grupos en prioridad alta (${especializados.map(g => MUSCLE_LABELS[g]).join(', ')}). Con más de ${MAXIMO_ESPECIALIZADOS} ninguno recibe de verdad más que el resto: deja 2-3 en ⭐ y baja a ⚪ lo que solo haya que mantener.`);
   }
 
   // ── 7. Tope global, protegiendo los prioritarios ───────────────────────

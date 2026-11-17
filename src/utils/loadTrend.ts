@@ -1,4 +1,5 @@
 import { WorkoutLog } from '../types.js';
+import { esAnteriorALaReferencia, ultimaReferenciaPorEjercicio } from './referenciaDeEjercicio.js';
 import { rmDeSerie } from './oneRepMax.js';
 import { DataPoint } from './seriesCorrelation.js';
 import { computeEWMA } from './ewma.js';
@@ -11,7 +12,11 @@ import { computeEWMA } from './ewma.js';
  */
 export function ewmaDeSeriePorSesion(logs: WorkoutLog[], exerciseId: string, lambda = 0.3): DataPoint[] {
   const porDia = new Map<string, number>();
+  // D3: la curva empieza en la última referencia nueva (cambio de máquina o
+  // de recorrido); mezclar las dos tareas dibujaría una caída que no existe.
+  const refs = ultimaReferenciaPorEjercicio(logs);
   for (const log of logs) {
+    if (esAnteriorALaReferencia(refs, exerciseId, log.date)) continue;
     for (const entry of log.entries) {
       if (entry.exerciseId !== exerciseId) continue;
       for (const set of entry.sets) {

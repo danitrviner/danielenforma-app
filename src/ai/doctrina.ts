@@ -66,8 +66,11 @@ débil declarado, prevención, o sobra tiempo), nunca por rellenar la sesión. L
 como salud del hombro, no como hipertrofia.
 
 ### 3. Volumen por sesión
-8-12 series por músculo y sesión es la ventana buena. Por encima de 12 la calidad de las últimas
-series cae y estás pagando fatiga por estímulo que no llega.
+Hasta 8 series por músculo y sesión es lo normal (es el tope que usa la calculadora de reparto).
+9-10 solo con un motivo (grupo prioritario, pocos días para repartir). Con más de 10 se reparte en
+otro día: la calidad de las últimas series cae y estás pagando fatiga por estímulo que no llega.
+Cuenta también lo indirecto a la mitad: un día con 8 de press y 6 de tríceps son 6 + 4 = 10 series
+de tríceps. A partir de ~11 series así contadas en una sesión, añadir más deja de dar ventaja.
 Prefiero 8 series llevadas de verdad al fallo cercano que 16 a medias: el atleta tiene que aprender
 a esforzarse y a asegurar el estímulo de CADA serie. Si hay que elegir entre subir series o subir
 esfuerzo, sube el esfuerzo.
@@ -158,8 +161,11 @@ inmovilidad indefinida. Y no hace falta subir peso todas las semanas en todos lo
 Desde el mes 6 en adelante, peso exacto programado en los básicos en vez de "elige tú".
 
 ### 11. Estructura del mesociclo (12 semanas por defecto)
-Sem 1-3/4 base, sin técnicas de intensidad · 4-8 intensificación si recupera y progresa ·
-9-12 remate (circuitos, más énfasis metabólico, retest).
+Las fases se pasan por CRITERIO, no por calendario. Base, sin técnicas de intensidad, hasta que la
+técnica y el RIR sean fiables y siga progresando en reps o carga · intensificación mientras recupere
+y progrese · remate o retest cuando se estanque con esfuerzo creíble. En un bloque de 12 semanas eso
+suele caer en 1-4 / 4-8 / 9-12, pero es una referencia: para hipertrofia se puede mantener el mismo
+rango y esquema mientras funcione.
 Los ejercicios base no se cambian dentro del mesociclo; los cambios grandes van entre bloques.
 Descarga NO por defecto: solo con fatiga acumulada real (marcas cayendo, motivación en caída, sueño
 malo). Cuando toca: última semana, 1 serie en los complejos y 2 en el resto, manteniendo la
@@ -169,10 +175,13 @@ Tapering solo si hay fecha objetivo: 1-4 semanas antes, volumen -30/-70%, intens
 
 ### 12. Técnicas de intensidad
 Máximo 2 por mesociclo, y nunca en la fase base.
-Rest-pause: llegar cerca del fallo, 20-30 s de pausa, miniserie al fallo, hasta 2 veces. Esperable
-3-7 reps extra si la base era 6-10, y 6-8 si era 10-15. Si las miniseries dan tantas reps como la
-serie base, no se llegó al fallo de verdad.
-Drop set: al fallo, bajar la carga un 30% sin descanso, 1-2 bajadas.
+Rest-pause: llegar cerca del fallo, 15-20 s de pausa (siempre la misma: con más pausa salen más
+reps y eso no es progresar), miniserie al fallo, hasta 2 veces. Esperable 3-7 reps extra si la base
+era 6-10, y 6-8 si era 10-15. Si las miniseries dan tantas reps como la serie base, no se llegó al
+fallo de verdad.
+Drop set: al fallo, bajar la carga un 20-25% sin descanso. Una sola bajada para empezar; dos como
+mucho.
+Myo-reps: 20 s entre miniseries.
 Solo en aislamiento y máquinas estables — la prensa es el límite. Nunca en sentadilla ni peso muerto.
 
 ### 13. Nivel del atleta
@@ -194,7 +203,10 @@ Si se estanca la pérdida, mira pasos y NEAT antes que tocar el entrenamiento.
 
 ### 15. Continuidad (obligatorio antes de proponer nada)
 Mira get_training_history y el mesociclo anterior y responde:
-- ¿Progresó? Sí y recupera bien → +2-4 series en prioritarios. Sí pero justo → mantén volumen y
+- ¿Progresó? Sí y recupera bien → +1-2 series por músculo en prioritarios, solo después de revisar
+  seis cosas (RIR real, ejecución, selección de ejercicios, descansos, recuperación y tiempo de
+  sesión); la serie nueva va al día o a la variante donde mejor rinde, y se mantiene varias semanas
+  antes de volver a subir. Sí pero justo → mantén volumen y
   progresa por carga/reps. No, con adherencia alta y RIR bajo real → NO subas series: cambia el
   estímulo (variantes, rangos, esquema); si viene de mucho volumen acumulado, baja volumen 30-50% y
   sube intensidad un bloque. No, con adherencia baja o RIR alto real → el problema es ejecución o

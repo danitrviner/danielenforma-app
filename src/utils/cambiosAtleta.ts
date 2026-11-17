@@ -1,6 +1,7 @@
 import type {
-  AthleteDietConfig, AthleteNutritionConfig, Diet, Mesocycle, NutritionPhase, NutritionProgram, WeekDay,
+  AthleteDietConfig, AthleteNutritionConfig, Diet, Mesocycle, NutritionPhase, NutritionProgram, WeekDay, WorkoutExercise,
 } from '../types.js';
+import { TECHNIQUE_LABEL } from './workoutTechniques.js';
 import { MUSCLE_LABELS, MUSCLE_ORDER } from '../types.js';
 import { kcalDeDieta } from './semanasNutricion.js';
 import { etiquetaDeDias, type ReglasDeReceta } from './reglasDeReceta.js';
@@ -25,7 +26,7 @@ export interface CambioAtleta {
   id: string;
   athleteId: string;
   area: AreaCambio;
-  /** Qué documento tocó: `dieta:<id>`, `programa`, `config`, `calendario`, `meso:<id>`. */
+  /** Qué documento tocó: `dieta:<id>`, `programa`, `config`, `calendario`, `meso:<id>`, `rutina:<id>`. */
   objeto: string;
   /** «Dieta «Descanso»», «Mesociclo #3»… */
   titulo: string;
@@ -203,6 +204,72 @@ export function resumirMeso(antes: Mesocycle | undefined, despues: Mesocycle): s
   else if (antes.distribution && despues.distribution && antes.distribution.generatedAt !== despues.distribution.generatedAt) {
     l.push('Reparto de series recalculado');
   }
+  return l;
+}
+
+/**
+ * Rutina de un día: qué ejercicios entran, salen o se sustituyen y qué cambia
+ * en cada uno (series, reps, RIR, descanso, técnica…). Una línea por
+ * ejercicio, empezando por su nombre, para que se lea «Press banca: descanso
+ * 90 → 150 s» y se sepa en cuál mirar el resultado (11-11-2026).
+ *
+ * `undefined` antes = rutina recién creada: no es un cambio que contar.
+ */
+export function resumirRutina(
+  antes: WorkoutExercise[] | undefined, despues: WorkoutExercise[], nombreDe: (exerciseId: string) => string | undefined,
+): string[] {
+  if (!antes) return [];
+  const nombre = (id: string) => nombreDe(id) ?? 'Ejercicio';
+  const l: string[] = [];
+
+  // Empareja por ejercicio (el primero libre con el mismo id), no por posición:
+  // mover uno de sitio no es quitar uno y poner otro.
+  const libres = antes.map((e, i) => ({ e, i }));
+  const pares: { a: WorkoutExercise; d: WorkoutExercise }[] = [];
+  const nuevos: { d: WorkoutExercise; i: number }[] = [];
+  despues.forEach((d, i) => {
+    const k = libres.findIndex(x => x.e.exerciseId === d.exerciseId);
+    if (k < 0) { nuevos.push({ d, i }); return; }
+    pares.push({ a: libres[k].e, d });
+    libres.splice(k, 1);
+  });
+
+  // Uno que sale y otro que entra en el mismo puesto es una sustitución.
+  for (const n of nuevos) {
+    const k = libres.findIndex(x => x.i === n.i);
+    if (k >= 0) {
+      l.push(`${flecha(nombre(libres[k].e.exerciseId), nombre(n.d.exerciseId))}`);
+      libres.splice(k, 1);
+    } else {
+      l.push(`Añadido ${nombre(n.d.exerciseId)} (${n.d.sets} × ${n.d.reps})`);
+    }
+  }
+  for (const x of libres) l.push(`Quitado ${nombre(x.e.exerciseId)}`);
+
+  const json = (v: unknown) => JSON.stringify(v ?? null);
+  for (const { a, d } of pares) {
+    const c: string[] = [];
+    if (a.sets !== d.sets) c.push(`series ${flecha(a.sets, d.sets)}`);
+    if (a.reps !== d.reps) c.push(`reps ${flecha(a.reps, d.reps)}`);
+    if (a.rir !== d.rir) c.push(`RIR ${flecha(a.rir, d.rir)}`);
+    if ((a.restSeconds ?? 0) !== (d.restSeconds ?? 0)) c.push(`descanso ${flecha(a.restSeconds ?? 0, d.restSeconds ?? 0)} s`);
+    if (a.technique !== d.technique) {
+      c.push(`técnica ${flecha(a.technique ? TECHNIQUE_LABEL[a.technique] : '—', d.technique ? TECHNIQUE_LABEL[d.technique] : '—')}`);
+    } else if (json(a.tecnicaAjustes) !== json(d.tecnicaAjustes)) c.push('técnica ajustada');
+    if (json(a.setGroups) !== json(d.setGroups)) c.push('bloques de series editados');
+    if (json(a.weeklyProgression) !== json(d.weeklyProgression)) c.push('cambios por semana editados');
+    if (!a.alterna && d.alterna) c.push('pasa a series alternas');
+    else if (a.alterna && !d.alterna) c.push('deja las series alternas');
+    if (!a.recordVideoSet && d.recordVideoSet) c.push('pide vídeo');
+    else if (a.recordVideoSet && !d.recordVideoSet) c.push('ya no pide vídeo');
+    if ((a.warmupMode ?? 'none') !== (d.warmupMode ?? 'none') || json(a.manualWarmupSets) !== json(d.manualWarmupSets)) c.push('calentamiento editado');
+    if ((a.notes ?? '') !== (d.notes ?? '')) c.push('nota editada');
+    if (c.length > 0) l.push(`${nombre(d.exerciseId)}: ${c.join(' · ')}`);
+  }
+
+  // Los mismos ejercicios en otro orden.
+  const mismoConjunto = nuevos.length === 0 && libres.length === 0;
+  if (mismoConjunto && antes.map(e => e.exerciseId).join('|') !== despues.map(e => e.exerciseId).join('|')) l.push('Orden de los ejercicios cambiado');
   return l;
 }
 

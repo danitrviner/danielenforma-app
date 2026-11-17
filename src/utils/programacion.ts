@@ -180,12 +180,15 @@ const SEGUNDOS_POR_SERIE = 45;
 
 export function duracionEstimadaMin(
   exercises: Pick<WorkoutExercise, 'sets' | 'restSeconds'>[],
+  /** Segundos que ahorran las series alternas pautadas (utils/seriesAlternas.ts). */
+  ahorroSeg = 0,
 ): number {
-  const seg = exercises.reduce(
+  const bruto = exercises.reduce(
     (s, e) => s + Math.max(0, e.sets) * (SEGUNDOS_POR_SERIE + Math.max(0, e.restSeconds ?? 0)),
     0,
   );
-  if (seg === 0) return 0;
+  if (bruto === 0) return 0;
+  const seg = Math.max(0, bruto - ahorroSeg);
   return Math.max(5, Math.round(seg / 60 / 5) * 5);
 }
 
@@ -340,8 +343,8 @@ function getAntagonist(g: MuscleGroup): MuscleGroup | null {
  * por sesión son 2,5 sesiones por semana. De ahí salen las frecuencias «y
  * media» que un ciclo de una sola semana no puede dar.
  */
-// Una sola cifra para toda la app (doctrina §3: 8-12 series por músculo y
-// sesión); vive en volumeSuggestion.ts y la usan también la calculadora de
+// Una sola cifra para toda la app (doctrina §3: hasta 8 series por músculo y
+// sesión, desde el 11-11-2026; antes 8-12); vive en volumeSuggestion.ts y la usan también la calculadora de
 // repartos y el sugeridor (M6, 26-10-2026).
 const SERIES_POR_SESION_Y_GRUPO = SERIES_POR_SESION;
 

@@ -2,6 +2,8 @@ import React from 'react';
 import { MovementPattern, PatternPerf } from '../../utils/movementPatterns';
 import { ExercisePerf } from '../../utils/trainingReport';
 import TablaEjerciciosPatron from './TablaEjerciciosPatron';
+import type { CambioEnLaVentana } from '../../utils/comparabilidad';
+import type { Estancamiento } from '../../utils/estancamiento';
 import { Delta, Collapsible, EmptyState } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -26,11 +28,13 @@ interface Props {
   /** Curvas EWMA del 1RM por ejercicio, del historial completo. */
   curvas?: Record<string, number[]>;
   ultimaSesion?: Record<string, string>;
+  cambios?: Record<string, CambioEnLaVentana>;
+  estancados?: Estancamiento[];
 }
 
 export default function BloquePatrones({
   patrones, ejerciciosPorPatron, ejerciciosSinPatron, comparacion, todoAbierto = false,
-  curvas, ultimaSesion,
+  curvas, ultimaSesion, cambios, estancados,
 }: Props) {
   const conDatos = patrones.filter(p => p.sets > 0);
 
@@ -72,6 +76,8 @@ export default function BloquePatrones({
               ejercicios={ejercicios}
               comparacion={comparacion}
               curvas={curvas}
+              cambios={cambios}
+              estancados={estancados}
               ultimaSesion={ultimaSesion}
               vacio="Ningún ejercicio de este patrón en la ventana."
             />
@@ -96,6 +102,8 @@ export default function BloquePatrones({
             ejercicios={ejerciciosSinPatron}
             comparacion={comparacion}
             curvas={curvas}
+            cambios={cambios}
+            estancados={estancados}
             ultimaSesion={ultimaSesion}
           />
         </Collapsible>

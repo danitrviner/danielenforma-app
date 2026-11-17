@@ -2,6 +2,9 @@ import { MUSCLE_LABELS } from '../types.js';
 import { RevisionDelAtleta } from './revisionCoach.js';
 import { ComidaDeLaSemana } from './comidaDeLaSemana.js';
 import { PesoVsSemanaPasada } from './revisionCoach.js';
+import { describirCambios } from './comparabilidad.js';
+import { EFECTIVAS_MINIMO_PCT, RIR_EFECTIVO_MAXIMO } from './seriesEfectivas.js';
+import { fechaCorta } from './trainingWeek.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LOS TITULARES DE LA REVISIÓN — qué decir, en qué orden.
@@ -126,7 +129,14 @@ export function construirTitulares(params: {
     });
   }
   const peor = bajan[0];
-  if (peor && peor.deltaOrmPct != null && peor.deltaOrmPct < 0) {
+  const cambioDelPeor = peor ? revision.cambiosDeTarea?.[peor.exerciseId] : undefined;
+  if (peor && peor.deltaOrmPct != null && peor.deltaOrmPct < 0 && cambioDelPeor) {
+    // S3: si la tarea cambió dentro de la ventana, la bajada no es del atleta.
+    t.push({
+      id: 'baja_no_comparable', tono: 'neutro',
+      texto: `${peor.name} marca ${num(peor.deltaOrmPct)} % ${informe.comparisonLabel}, pero el ${fechaCorta(cambioDelPeor.date)} cambió ${describirCambios(cambioDelPeor.cambios)}: no es comparable con lo de antes. Es su referencia nueva.`,
+    });
+  } else if (peor && peor.deltaOrmPct != null && peor.deltaOrmPct < 0) {
     t.push({
       id: 'baja', tono: 'alarma',
       texto: `${peor.name} va a menos: ${num(peor.deltaOrmPct)} % ${informe.comparisonLabel}.`,
@@ -142,6 +152,129 @@ export function construirTitulares(params: {
       texto: `${records} ${records === 1 ? 'récord' : 'récords'} en esta ventana.`,
       paraCliente: `Has hecho ${records} ${records === 1 ? 'récord personal' : 'récords personales'}.`,
     });
+  }
+
+  // ── Lo que dicen las series (regla del 80 %, limitante, días malos) ──────
+  // Como mucho dos de cada: un vídeo no da para repasar ocho ejercicios, y el
+  // resto está en la tabla. Se leen con `?? []` por si alguien construye una
+  // revisión a mano (bancos de pruebas) sin calcularlos.
+  const nombreDe = (id: string) => informe.perExercise.find(e => e.exerciseId === id)?.name ?? 'Un ejercicio';
+  const MAXIMO_POR_TIPO = 2;
+  const QUE_PARA = { agarre: 'el agarre', aire: 'el aire', ardor: 'el ardor', tecnica: 'la técnica', molestia: 'una molestia' } as const;
+
+  for (const d of (revision.descansos ?? []).filter(x => x.tipo === 'corto').slice(0, MAXIMO_POR_TIPO)) {
+    const real = d.descansoRealSeg != null ? ` Está descansando unos ${d.descansoRealSeg} s.` : '';
+    t.push({
+      id: `descanso_corto_${d.exerciseId}`, tono: 'alarma',
+      texto: `${nombreDe(d.exerciseId)}: la 2.ª serie se queda en el ${d.conservadoPct} % de la 1.ª (${d.coinciden} de las últimas ${d.sesiones} sesiones). El descanso se queda corto: súbele 30-60 s.${real}`,
+      paraCliente: `En ${nombreDe(d.exerciseId).toLowerCase()} la segunda serie se te cae mucho: te subo un poco el descanso.`,
+    });
+  }
+
+  for (const l of (revision.limitantes ?? []).slice(0, MAXIMO_POR_TIPO)) {
+    t.push({
+      id: `limitante_${l.exerciseId}`, tono: 'alarma',
+      texto: `${nombreDe(l.exerciseId)}: lo que le para la serie es ${QUE_PARA[l.motivo]}, no el músculo (${l.veces} de ${l.de} sesiones). Antes de tocar series, ${l.arreglo}.`,
+      // Del coach: es una decisión de programación; se le cuenta con el cambio hecho.
+    });
+  }
+
+  for (const d of (revision.diasMalos ?? []).slice(0, MAXIMO_POR_TIPO)) {
+    t.push({
+      id: `dias_malos_${d.exerciseId}`, tono: 'alarma',
+      texto: `${nombreDe(d.exerciseId)}: ${d.seguidos} sesiones seguidas empezando 2 o más repeticiones por debajo con el mismo peso. Ya no es un día malo: mira sueño, estrés y carga antes de añadir nada.`,
+    });
+  }
+
+  // ── Dónde cae (S2) ───────────────────────────────────────────────────────
+  // El caso local ya lo cuenta «va a menos»; aquí solo lo que cambia la
+  // lectura: que sea una zona entera o que sea todo.
+  const caida = revision.caida;
+  if (caida && caida.tipo !== 'local') {
+    t.push({
+      id: `caida_${caida.tipo}`, tono: 'alarma',
+      texto: `Caída ${caida.tipo === 'regional' ? 'de zona' : 'general'} (${listar(caida.ejercicios.map(nombreDe))}). ${caida.lectura}.`,
+    });
+  }
+
+  // ── Descarga por señales y qué recortar primero (S7) ─────────────────────
+  const descarga = revision.descarga;
+  if (descarga?.recomendada) {
+    const recortes = descarga.recortes.slice(0, 3).map(r => r.texto);
+    t.push({
+      id: 'descarga_senales', tono: 'alarma',
+      texto: `Señales de descarga: ${listar(descarga.senales)}. ${recortes.length > 0
+        ? `Antes de regalar una semana entera, recorta por aquí: ${recortes.join('; ')}.`
+        : 'No hay nada evidente que recortar: programa una semana de descarga.'}`,
+      paraCliente: 'Vienes cargado, así que esta semana te quito algo de trabajo para que recuperes.',
+    });
+  }
+
+  // ── Estancamiento honesto (S1) ───────────────────────────────────────────
+  const PARA_CLIENTE_ESTANCADO: Partial<Record<string, (n: string) => string>> = {
+    apretar: n => `En ${n} llevas varias sesiones igual y creo que te queda más margen del que apuntas: aprieta un poco más el final de cada serie.`,
+    subir_series: n => `En ${n} llevas varias sesiones igual: te ajusto el plan para desatascarlo.`,
+    cambiar_variante: n => `En ${n} llevas muchas sesiones igual: te lo cambio por una variante nueva.`,
+  };
+  for (const e of (revision.estancados ?? []).slice(0, MAXIMO_POR_TIPO)) {
+    t.push({
+      id: `estancado_${e.exerciseId}`,
+      // «Mantener» no pide tocar nada: es un hecho, no una alarma.
+      tono: e.veredicto === 'mantener' ? 'neutro' : 'alarma',
+      texto: `${nombreDe(e.exerciseId)}: ${e.sesiones} sesiones comparables sin mejorar. ${e.accion}.`,
+      paraCliente: PARA_CLIENTE_ESTANCADO[e.veredicto]?.(nombreDe(e.exerciseId).toLowerCase()),
+    });
+  }
+
+  // ── Molestias por ejercicio (D5) y cómo llega (D4) ───────────────────────
+  // Una molestia de 4 o más, o repetida, es para mirarla antes que cualquier
+  // decisión de volumen.
+  for (const m of (revision.molestias ?? []).filter(x => x.maxima >= 4 || x.veces >= 2).slice(0, MAXIMO_POR_TIPO)) {
+    t.push({
+      id: `molestia_${m.exerciseId}`, tono: 'alarma',
+      texto: `${nombreDe(m.exerciseId)}: molestia de ${m.maxima}/10${m.veces > 1 ? ` (${m.veces} sesiones)` : ''}. Pídele vídeo y revisa técnica, recorrido y carga antes de seguir subiendo.`,
+      paraCliente: `Me apuntaste una molestia en ${nombreDe(m.exerciseId).toLowerCase()}: mándame un vídeo de una serie y lo miramos.`,
+    });
+  }
+  const ll = revision.llegadas;
+  if (ll && ll.contestadas >= 2 && ll.justo * 2 > ll.contestadas) {
+    t.push({
+      id: 'llega_justo', tono: 'alarma',
+      texto: `Llega justo a ${ll.justo} de ${ll.contestadas} sesiones (lo dice él al empezar). Antes de tocar el entreno, pregunta por sueño, comida y horario.`,
+    });
+  }
+
+  // ── Series efectivas (S10) ───────────────────────────────────────────────
+  const ef = revision.efectivas;
+  if (ef?.pct != null && ef.pct < EFECTIVAS_MINIMO_PCT) {
+    const donde = ef.dondeSePierden.slice(0, 2).map(d => nombreDe(d.exerciseId).toLowerCase());
+    t.push({
+      id: 'series_efectivas', tono: 'alarma',
+      texto: `Solo ${ef.efectivas} de ${ef.hechas} series (${ef.pct} %) llegan a RIR ${RIR_EFECTIVO_MAXIMO} o menos: el volumen que cuenta es menor que el que dice el papel${donde.length > 0 ? `. Se pierden sobre todo en ${listar(donde)}` : ''}.`,
+      paraCliente: 'Varias series se te quedan lejos del final: acércate más en las últimas repeticiones, que es donde está el estímulo.',
+    });
+  }
+
+  // ── Calibración del RIR (F4) ─────────────────────────────────────────────
+  const cal = revision.calibracion;
+  if (cal) {
+    const veces = `${cal.comprobaciones} ${cal.comprobaciones === 1 ? 'comprobación' : 'comprobaciones'}`;
+    const reps = num(Math.abs(cal.desfaseMedio));
+    const donde = cal.porEjercicio[0] && cal.porEjercicio.length > 1 ? `, sobre todo en ${nombreDe(cal.porEjercicio[0].exerciseId).toLowerCase()}` : '';
+    if (cal.lectura === 'se_queda_lejos') {
+      t.push({
+        id: 'rir_lejos', tono: 'alarma',
+        texto: `RIR: al comprobarlo con series al máximo (${veces}) se queda unas ${reps} repeticiones más lejos de lo que apunta${donde}. Antes de subirle series, que apriete.`,
+        paraCliente: 'En las series al máximo te han salido más repeticiones de las que creías tener: puedes acercarte más al final de cada serie.',
+      });
+    } else if (cal.lectura === 'se_pasa') {
+      t.push({
+        id: 'rir_se_pasa', tono: 'neutro',
+        texto: `RIR: al comprobarlo (${veces}) aprieta unas ${reps} repeticiones más de lo que apunta${donde}. Cuenta con más fatiga de la que dice el papel.`,
+      });
+    } else {
+      t.push({ id: 'rir_fino', tono: 'bien', texto: `RIR comprobado con series al máximo (${veces}): va fino.` });
+    }
   }
 
   // ── Comida ───────────────────────────────────────────────────────────────

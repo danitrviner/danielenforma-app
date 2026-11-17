@@ -241,3 +241,35 @@ describe('suggestVolume · determinismo y trazabilidad', () => {
     expect(r.reasons.pecho.join(' ')).toContain('Prioridad alta');
   });
 });
+
+describe('suggestVolume · objetivo por músculo (P6)', () => {
+  const todoBaja = Object.fromEntries(MUSCLE_ORDER.map(g => [g, 'baja'])) as Record<MuscleGroup, Prioridad>;
+  const previo = (priority: Prioridad) => ({ groups: { biceps: { series: 14, priority } } }) as unknown as VolumeHistory['previous'];
+  const hist = (priority: Prioridad, performed = 14): VolumeHistory => ({
+    adherencePct: 85, meanRir: 2, previous: previo(priority),
+    groups: { biceps: { planned: performed, performed, deltaPct: 0 } },
+  });
+  const minimo = suggestVolume(base({ priorities: todoBaja })).groups.biceps.series;
+
+  it('mantener parte de la mitad de lo que le hacía crecer, no del mínimo de la tabla', () => {
+    const con = suggestVolume(base({ priorities: todoBaja, history: hist('alta') }));
+    expect(minimo).toBe(L.biceps.mv);
+    expect(con.groups.biceps.series).toBe(7);
+    expect(con.reasons.biceps.join(' ')).toContain('en torno a la mitad');
+  });
+
+  it('si ya venía en mantenimiento no se vuelve a partir por la mitad', () => {
+    expect(suggestVolume(base({ priorities: todoBaja, history: hist('baja') })).groups.biceps.series).toBe(minimo);
+  });
+
+  it('si la mitad queda por debajo del mínimo de la tabla, manda la tabla', () => {
+    expect(suggestVolume(base({ priorities: todoBaja, history: hist('media', 6) })).groups.biceps.series).toBe(minimo);
+  });
+
+  it('avisa con más de tres grupos en prioridad alta, no con tres', () => {
+    const alta = (gs: MuscleGroup[]) => Object.fromEntries(MUSCLE_ORDER.map(g => [g, gs.includes(g) ? 'alta' : 'baja'])) as Record<MuscleGroup, Prioridad>;
+    const aviso = (r: ReturnType<typeof suggestVolume>) => r.warnings.some(w => w.includes('prioridad alta'));
+    expect(aviso(suggestVolume(base({ priorities: alta(['pecho', 'dorsal', 'biceps']) })))).toBe(false);
+    expect(aviso(suggestVolume(base({ priorities: alta(['pecho', 'dorsal', 'biceps', 'triceps']) })))).toBe(true);
+  });
+});

@@ -13,6 +13,8 @@ import { SetInput, RIR_OPCIONES, rirTexto, rirClaseColor, resumenRangosPautados 
 import RestRing from './RestRing';
 import { MOTIVOS_SALTAR, conMotivo, motivoDeLaNota } from '../../utils/saltarEjercicio';
 import { sugerirCarga, consejoEnVivo } from '../../utils/cargaSugerida';
+import { consejoDeDiaMalo } from '../../utils/diaMalo';
+import MarcaDeReferencia from './MarcaDeReferencia';
 
 interface Props {
   we: WorkoutExercise;
@@ -42,6 +44,14 @@ interface Props {
   /** Solo con las series principales hechas y la técnica a medias: da el
    *  ejercicio por terminado (ver `estadoDelEjercicio`). */
   onCerrarEjercicio?: () => void;
+  /** D3: el atleta ha marcado que hoy cambia la máquina o el recorrido. */
+  nuevaReferencia?: boolean;
+  /** Ausente = no se ofrece la casilla (p. ej. en pantallas de solo lectura). */
+  onToggleReferencia?: (marcada: boolean) => void;
+  /** P12: salto real de carga del ejercicio, sacado de su historial. */
+  saltoKg?: number | null;
+  /** F6: el atleta no ha hecho nunca este ejercicio. */
+  esNuevo?: boolean;
   /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip.tsx). */
   key?: React.Key;
 }
@@ -64,10 +74,8 @@ export default React.memo(function ExerciseCard({
   onUpdateSet, onMarkDone, onAddRow, noteValue, onNoteChange,
   restTimer, onSkipRest, onAddRestSeconds,
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, cambios,
-  onCerrarEjercicio,
+  onCerrarEjercicio, nuevaReferencia = false, onToggleReferencia, saltoKg, esNuevo = false,
 }: Props) {
-  const idNota = React.useId();
-  const motivoMarcado = motivoDeLaNota(noteValue);
   const expanded = expandSetGroups(we);
   // Las bajadas y miniseries no son series: no cuentan en «2/3».
   const totalSets = exSets.filter(s => !s.segmento).length;
@@ -81,8 +89,20 @@ export default React.memo(function ExerciseCard({
     previousSets: prevEntry?.sets,
   });
 
-  const sugerencia = React.useMemo(() => sugerirCarga(we, prevEntry), [we, prevEntry]);
-  const consejo = React.useMemo(() => consejoEnVivo(we, exSets), [we, exSets]);
+  const sugerencia = React.useMemo(() => sugerirCarga(we, prevEntry, saltoKg), [we, prevEntry, saltoKg]);
+  const consejo = React.useMemo(() => consejoEnVivo(we, exSets, saltoKg), [we, exSets, saltoKg]);
+  // F1: la primera serie ha salido claramente peor que la última vez. Con
+  // referencia nueva no se compara (es otra tarea).
+  const diaMalo = React.useMemo(
+    () => (nuevaReferencia ? null : consejoDeDiaMalo(exSets, prevEntry)),
+    [exSets, prevEntry, nuevaReferencia],
+  );
+  // El botón se ofrece mientras alguna serie pendiente esté sin peso (se
+  // rellenaría con el de siempre) o con más del propuesto.
+  const diaMaloPorAplicar = diaMalo?.seriesPendientes.some(i => {
+    const kg = parseFloat(exSets[i]?.weight);
+    return !(kg > 0) || kg > diaMalo.peso;
+  }) ?? false;
   const esDropset = we.technique === 'dropset';
   const esMyoreps = we.technique === 'myoreps';
   const esRestpause = we.technique === 'restpause';
@@ -261,7 +281,11 @@ export default React.memo(function ExerciseCard({
           </div>
         </div>
       )}
-      {sugerencia.resumen && doneSets === 0 && (
+      {/* F6 + P5: ejercicio que estrena. Semana de entrada, sin tocar lo pautado. */}
+      {esNuevo && doneSets === 0 && <ConsejoDelCoach texto={TEXTO_EJERCICIO_NUEVO} />}
+      {/* Con «otra máquina o recorrido» marcado, la subida de peso
+          que sale de la sesión anterior ya no aplica: era otra tarea. */}
+      {sugerencia.resumen && doneSets === 0 && !nuevaReferencia && (
         <ConsejoDelCoach texto={sugerencia.resumen} />
       )}
       {/* En plena sesión: la serie anterior se pasó del rango con margen. */}
@@ -269,6 +293,17 @@ export default React.memo(function ExerciseCard({
         <ConsejoDelCoach
           texto={consejo.texto}
           accion={{ texto: `Poner ${String(consejo.peso).replace('.', ',')} kg`, onClick: () => onUpdateSet(consejo.serie, 'weight', String(consejo.peso)) }}
+        />
+      )}
+
+      {/* En plena sesión: hoy viene más justo que la última vez (F1). */}
+      {diaMalo && (
+        <ConsejoDelCoach
+          texto={diaMalo.texto}
+          accion={diaMaloPorAplicar ? {
+            texto: `Poner ${String(diaMalo.peso).replace('.', ',')} kg en lo que queda`,
+            onClick: () => diaMalo.seriesPendientes.forEach(i => onUpdateSet(i, 'weight', String(diaMalo.peso))),
+          } : undefined}
         />
       )}
 
@@ -327,6 +362,35 @@ export default React.memo(function ExerciseCard({
         />
       )}
 
+      <PieDeEjercicio
+        we={we} ex={ex} doneSets={doneSets} noteValue={noteValue} onNoteChange={onNoteChange}
+        nuevaReferencia={nuevaReferencia} onToggleReferencia={onToggleReferencia} personalNote={personalNote}
+      />
+    </div>
+  );
+});
+
+/* El pie de un ejercicio: por qué no se ha hecho, «otra máquina o recorrido»,
+   la nota del atleta y lo que el coach dejó escrito. Va aparte porque la
+   tarjeta de series alternas (ParejaAlternaCard) lo pinta una vez por cada
+   ejercicio de la pareja, con su nombre como `titulo`. */
+export function PieDeEjercicio({ we, ex, doneSets, noteValue, onNoteChange, nuevaReferencia = false, onToggleReferencia, personalNote, titulo }: {
+  we: WorkoutExercise;
+  ex: Exercise | undefined;
+  /** Series principales ya marcadas: con alguna hecha no se pregunta por qué no se hizo. */
+  doneSets: number;
+  noteValue: string;
+  onNoteChange: (value: string) => void;
+  nuevaReferencia?: boolean;
+  onToggleReferencia?: (marcada: boolean) => void;
+  personalNote: string | undefined;
+  titulo?: string;
+  key?: React.Key;
+}) {
+  const idNota = React.useId();
+  const motivoMarcado = motivoDeLaNota(noteValue);
+  return (
+    <>
       {/* Nota del atleta para este ejercicio.
 
           Encima, el motivo de no haberlo hecho en un toque. Antes esto no
@@ -337,6 +401,7 @@ export default React.memo(function ExerciseCard({
           hacía falta era que la nota de un ejercicio SIN series dejara de
           tirarse al guardar (TrainingScreen.handleFinish). */}
       <div className="px-4 py-3 bg-bg border-t border-hairline">
+        {titulo && <p className="mb-2 font-sans text-label font-bold text-ink">{titulo}</p>}
         {(doneSets === 0 || motivoMarcado) && (
           <div className="mb-3">
             <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">¿No lo has hecho?</p>
@@ -359,6 +424,9 @@ export default React.memo(function ExerciseCard({
               })}
             </div>
           </div>
+        )}
+        {onToggleReferencia && !motivoMarcado && (
+          <MarcaDeReferencia marcada={nuevaReferencia} onCambiar={onToggleReferencia} />
         )}
         <label htmlFor={idNota} className="font-mono text-caption text-ink-2 uppercase tracking-wider block mb-2">Tu nota (opcional)</label>
         <textarea
@@ -390,9 +458,9 @@ export default React.memo(function ExerciseCard({
           <p className="text-label text-accent-ink">{personalNote}</p>
         </div>
       )}
-    </div>
+    </>
   );
-});
+}
 
 // ── Tabla normal (idéntica a la de antes, solo reubicada) ──────────────────
 
@@ -690,10 +758,13 @@ function MyorepsRows({ exSets, serie, indices, pauta, onUpdateSet, onMarkDone, o
 }
 
 
+/** F6 + P5: lo que se le dice la primera vez que hace un ejercicio. */
+export const TEXTO_EJERCICIO_NUEVO = 'Es la primera vez que haces este ejercicio: hoy es de entrada. Busca el peso y quédate con una repetición más de margen de la que marca. Es normal tener agujetas los próximos días.';
+
 /* El botón de «serie hecha»: al marcarla, el check entra con el sello
    (`seal-pop`, el mismo que cierra el anillo del día). Solo en la transición:
    abrir un entreno con series ya hechas no sella nada. */
-const BotonSerieHecha = React.forwardRef<HTMLButtonElement, { hecha: boolean; onClick: () => void }>(
+export const BotonSerieHecha = React.forwardRef<HTMLButtonElement, { hecha: boolean; onClick: () => void }>(
   function BotonSerieHecha({ hecha, onClick }, ref) {
     const sellando = useRecienHecho(hecha);
     return (
@@ -718,7 +789,7 @@ const BotonSerieHecha = React.forwardRef<HTMLButtonElement, { hecha: boolean; on
 /* Consejos de carga firmados por el coach (28-10-2026). Antes eran una frase
    suelta de la app («Sube a 82,5 kg: …»); Dani quería que se leyera como lo
    que es, una indicación suya, para que el atleta le haga caso. */
-function ConsejoDelCoach({ texto, accion }: { texto: string; accion?: { texto: string; onClick: () => void } }) {
+export function ConsejoDelCoach({ texto, accion }: { texto: string; accion?: { texto: string; onClick: () => void } }) {
   return (
     <div className="mx-4 mt-2 flex items-start gap-2.5 rounded-control border border-success/40 bg-success/10 px-3 py-2.5">
       <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-success/20 font-sans text-label font-bold text-success" aria-hidden="true">

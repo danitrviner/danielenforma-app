@@ -1,7 +1,9 @@
 import React from 'react';
+import { lecturaDeCalibracion, textoDeComprobacion, type Comprobacion } from '../../utils/calibracionRir';
 import { CardioAssignment, Exercise, WorkoutExercise } from '../../types';
 import { Icon, Button, Chip } from '../ui';
 import { rmDeSerie } from '../../utils/oneRepMax';
+import { MOTIVOS_DE_PARADA, type MotivoDeParada } from '../../utils/queTeParo';
 import { SetInput } from './setInput';
 import Confeti from './Confeti';
 import type { Logro, TipoDeLogro } from '../../utils/logrosDelEjercicio';
@@ -16,6 +18,9 @@ interface Props {
   priorBestOrm: number | undefined;
   noteValue: string;
   onNoteChange: (value: string) => void;
+  /** D2: qué paró la última serie. Ausente `onQueParo` = aquí no se pregunta. */
+  queParo?: string;
+  onQueParo?: (motivo: MotivoDeParada | undefined) => void;
   isLast: boolean;
   nextExerciseName: string | undefined;
   onNext: () => void;
@@ -32,6 +37,15 @@ interface Props {
   logros?: Logro[];
   /** Recién cerrado: suena la animación una vez. */
   festejar?: boolean;
+  /** Primera tarjeta de una pareja de series alternas: el «Siguiente» va en la segunda. */
+  sinSiguiente?: boolean;
+  /** F4: una serie al máximo ha comprobado el RIR que venía apuntando. */
+  comprobacion?: Comprobacion | null;
+  /** D5: molestia de 1 a 10. Solo se pregunta si lo que le paró fue una molestia. */
+  molestia?: number;
+  onMolestia?: (valor: number | undefined) => void;
+  /** F3: una frase que pone en contexto el resultado cuando no hay nada que celebrar. */
+  mensaje?: string;
   /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip.tsx). */
   key?: React.Key;
 }
@@ -59,8 +73,8 @@ function rpeDeSerie(s: SetInput): number | null {
  * vea en el momento, no al final de los 5 ejercicios.
  */
 export default function ExerciseCloseCard({
-  we, ex, exSets, priorBestOrm, noteValue, onNoteChange, isLast, nextExerciseName,
-  onNext, onReopen, sameDayCardio, logros, festejar,
+  we, ex, exSets, priorBestOrm, noteValue, onNoteChange, queParo, onQueParo, isLast, nextExerciseName,
+  onNext, onReopen, sameDayCardio, logros, festejar, sinSiguiente, comprobacion, molestia, onMolestia, mensaje,
 }: Props) {
   const idNota = React.useId();
   const doneSets = exSets.filter(s => s.done);
@@ -128,6 +142,11 @@ export default function ExerciseCloseCard({
         </div>
       )}
 
+      {/* F3: sin récord ni logro, una frase para que un día igual no se lea como un fracaso. */}
+      {mensaje && !(logros && logros.length > 0) && !(esRecord && bestSet) && (
+        <p className="mx-4 mt-4 font-sans text-label text-ink-2">{mensaje}</p>
+      )}
+
       <div className="mx-4 mt-4 grid grid-cols-2 gap-3">
         <div className="bg-raised rounded-surface p-3">
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Volumen</p>
@@ -138,6 +157,63 @@ export default function ExerciseCloseCard({
           <p className="font-mono text-title-m font-bold text-ink">{rpeMedio != null ? rpeMedio.toFixed(1) : '—'}</p>
         </div>
       </div>
+
+      {/* F4: el RIR, comprobado. Solo sale cuando una serie al máximo permite
+          compararlo con lo que apuntó; el resto de días no hay nada que decir. */}
+      {comprobacion && (
+        <div className={`mx-4 mt-4 rounded-surface border p-3.5 ${lecturaDeCalibracion(comprobacion.desfase) === 'calibrado' ? 'border-success/40 bg-success/10' : 'border-warning/40 bg-warning/10'}`}>
+          <p className="font-mono text-caption font-bold uppercase tracking-wide text-ink-2">Tu RIR, comprobado</p>
+          <p className="mt-1 font-sans text-label text-ink">{textoDeComprobacion(comprobacion)}</p>
+        </div>
+      )}
+
+      {/* D2: lo que limitó la serie decide si el ejercicio vale para ese
+          músculo. Un toque, y volver a tocar lo quita. */}
+      {onQueParo && (
+        <div className="mx-4 mt-4">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide mb-2">¿Qué te ha parado en la última serie?</p>
+          <div className="flex flex-wrap gap-1.5">
+            {MOTIVOS_DE_PARADA.map(m => {
+              const puesto = queParo === m.clave;
+              return (
+                <button
+                  key={m.clave}
+                  type="button"
+                  onClick={() => onQueParo(puesto ? undefined : m.clave)}
+                  aria-pressed={puesto}
+                  className={`rounded-control border px-2.5 py-1.5 font-sans text-label transition-colors ${
+                    puesto ? 'border-accent-line text-accent-ink' : 'border-hairline text-ink-2 hover:text-ink'
+                  }`}
+                >
+                  {m.etiqueta}
+                </button>
+              );
+            })}
+          </div>
+          {/* D5: cuánto molesta, para distinguir «lo noto» de «no puedo seguir». */}
+          {queParo === 'molestia' && onMolestia && (
+            <div className="mt-3">
+              <p className="font-mono text-caption text-ink-2 uppercase tracking-wide mb-2">¿Cuánto te molesta, de 1 a 10?</p>
+              <div className="flex flex-wrap gap-1.5">
+                {Array.from({ length: 10 }, (_, i) => i + 1).map(v => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => onMolestia(molestia === v ? undefined : v)}
+                    aria-pressed={molestia === v}
+                    aria-label={`Molestia ${v} de 10`}
+                    className={`h-9 w-9 rounded-control border font-mono text-label transition-colors ${
+                      molestia === v ? (v >= 6 ? 'border-danger text-danger' : 'border-accent-line text-accent-ink') : 'border-hairline text-ink-2 hover:text-ink'
+                    }`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mx-4 mt-4 space-y-2.5">
         <label htmlFor={idNota} className="font-mono text-caption text-ink-2 uppercase tracking-wide block">Nota para tu coach</label>
@@ -168,7 +244,7 @@ export default function ExerciseCloseCard({
       )}
 
       <div className="p-4">
-        {isLast ? (
+        {sinSiguiente ? null : isLast ? (
           // Sin botón primario propio: sería un segundo "primary" visible a
           // la vez que "Terminar sesión" de la barra fija de abajo, y el DS
           // solo permite uno (ver Button.tsx). Este es el último ejercicio,

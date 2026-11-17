@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getOnboarding } from '../../dbService';
+import { ahorroPautado } from '../../utils/seriesAlternas';
 import { MUSCLE_LABELS, type Exercise, type Mesocycle, type MuscleGroup, type WorkoutExercise, type WorkoutLog } from '../../types';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../../data/volumeLandmarks';
 import { resolverEjercicioDelMeso } from '../../utils/progression';
@@ -155,8 +156,8 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
     if (!motor || sesiones.length === 0) return null;
     const t = sumarSesiones(motor, sesiones.map(s => s.r));
     const columnas: Columna[] = [
-      ...sesiones.map((s, i) => ({ nombre: cortos[i] ?? s.nombre, completo: s.nombre, IF: s.r.IF, tiempoSeg: s.r.tiempoSeg, compuestos: s.r.compuestos, IEM: s.r.IEM, estresArticular: s.r.estresArticular })),
-      { nombre: 'Semana', IF: t.IF, tiempoSeg: t.tiempoSeg, compuestos: t.compuestos, IEM: t.IEM, estresArticular: t.estresArticular, total: true }
+      ...sesiones.map((s, i) => ({ nombre: cortos[i] ?? s.nombre, completo: s.nombre, IF: s.r.IF, tiempoSeg: Math.max(0, s.r.tiempoSeg - ahorroPautado(s.ejercicios)), compuestos: s.r.compuestos, IEM: s.r.IEM, estresArticular: s.r.estresArticular })),
+      { nombre: 'Semana', IF: t.IF, tiempoSeg: Math.max(0, t.tiempoSeg - sesiones.reduce((a, s) => a + ahorroPautado(s.ejercicios), 0)), compuestos: t.compuestos, IEM: t.IEM, estresArticular: t.estresArticular, total: true }
     ];
     const conValor = (nombres: string[], de: (c: Columna) => number[]) =>
       nombres.map((nombre, i) => ({ nombre, valores: columnas.map(c => de(c)[i] ?? 0) })).filter(f => f.valores.some(v => v > 0.005));
@@ -270,7 +271,7 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
 
   const avisosTiempo = useMemo(() => (minutosDisponibles == null ? [] : sesiones.flatMap((se, i) => consejosDeTiempo({
     minutosDisponibles,
-    tiempoSeg: se.r.tiempoSeg,
+    tiempoSeg: Math.max(0, se.r.tiempoSeg - ahorroPautado(se.ejercicios)),
     unilaterales: se.ejercicios.filter(e => (nombreCdgDe(e.exerciseId) ?? '').toLowerCase().includes('unilateral')).length,
   }).map(t => `${cortos[i] ?? se.nombre}: ${t}`))), [sesiones, cortos, minutosDisponibles, nombreCdgDe]);
 
