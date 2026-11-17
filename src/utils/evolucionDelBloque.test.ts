@@ -78,14 +78,98 @@ describe('buildEvolucionDelBloque', () => {
     expect(ev.voz).toMatchObject({ valoracion: 8, fecha: '2026-10-08' });
   });
 
-  it('medidas: primera y última del bloque con dos semanas de margen; ignora las de lateralidad', () => {
-    const m = (date: string, metricKey: string, value: number): BodyMeasurement =>
-      ({ id: date + metricKey, athleteId: 'a', date, metricKey, value, unit: 'cm', source: 'manual', createdAt: date } as BodyMeasurement);
+  const m = (date: string, metricKey: string, value: number): BodyMeasurement =>
+    ({ id: date + metricKey, athleteId: 'a', date, metricKey, value, unit: 'cm', source: 'manual', createdAt: date } as BodyMeasurement);
+
+  it('medidas: primera y última del bloque con dos semanas de margen', () => {
     const ev = buildEvolucionDelBloque({
       ...base,
-      medidas: [m('2026-08-30', 'cintura', 92), m('2026-10-03', 'cintura', 89.5), m('2026-09-10', 'biceps_izq', 35), m('2026-10-01', 'biceps_izq', 36)],
+      medidas: [m('2026-08-30', 'cintura', 92), m('2026-10-03', 'cintura', 89.5), m('2026-07-01', 'cintura', 99)],
     });
-    expect(ev.medidas).toEqual([expect.objectContaining({ clave: 'cintura', inicio: 92, final: 89.5, delta: -2.5 })]);
+    expect(ev.medidas).toEqual([expect.objectContaining({ clave: 'cintura', inicio: 92, final: 89.5, delta: -2.5, sinCambioMedible: false })]);
+  });
+
+  it('brazo y muslo entran, promediando izquierda y derecha cuando están las dos (F9)', () => {
+    const ev = buildEvolucionDelBloque({
+      ...base,
+      medidas: [
+        m('2026-09-08', 'biceps_izq_contraido', 38), m('2026-09-08', 'biceps_der_contraido', 39),
+        m('2026-10-02', 'biceps_izq_contraido', 39), m('2026-10-02', 'biceps_der_contraido', 40),
+        // Muslo: solo el derecho se ha medido dos veces → va él solo, sin promediar.
+        m('2026-09-08', 'muslo_der_relajado', 58), m('2026-09-08', 'muslo_izq_relajado', 57),
+        m('2026-10-02', 'muslo_der_relajado', 60),
+      ],
+    });
+    const de = (clave: string) => ev.medidas.find(x => x.clave === clave);
+    expect(de('biceps_contraido')).toMatchObject({ inicio: 38.5, final: 39.5, delta: 1, sinCambioMedible: false, label: 'Bíceps contraído (media izq. y der.)' });
+    expect(de('biceps_izq_contraido')).toBeUndefined(); // ya va en la media
+    expect(de('muslo_der_relajado')).toMatchObject({ inicio: 58, final: 60, delta: 2 });
+    expect(de('muslo_relajado')).toBeUndefined();
+    expect(de('muslo_izq_relajado')).toBeUndefined(); // un solo día: no hay con qué comparar
+  });
+
+  it('un cambio menor que el error de la cinta es «sin cambio medible»: 0,5 cm en brazo, 1 cm en el resto (F9)', () => {
+    const ev = buildEvolucionDelBloque({
+      ...base,
+      medidas: [
+        m('2026-09-08', 'biceps_der_relajado', 35), m('2026-10-02', 'biceps_der_relajado', 35.4), // 0,4 < 0,5
+        m('2026-09-08', 'biceps_der_contraido', 38), m('2026-10-02', 'biceps_der_contraido', 38.5), // 0,5: ya se mide
+        m('2026-09-08', 'cintura', 90), m('2026-10-02', 'cintura', 89.2),                          // 0,8 < 1
+        m('2026-09-08', 'cadera', 100), m('2026-10-02', 'cadera', 99),                             // 1: ya se mide
+      ],
+    });
+    const de = (clave: string) => ev.medidas.find(x => x.clave === clave)!;
+    expect(de('biceps_der_relajado').sinCambioMedible).toBe(true);
+    expect(de('biceps_der_contraido').sinCambioMedible).toBe(false);
+    expect(de('cintura').sinCambioMedible).toBe(true);
+    expect(de('cadera').sinCambioMedible).toBe(false);
+  });
+
+  it('índices perímetro / cintura al empezar y al acabar; sin los dos perímetros no hay índice (F9)', () => {
+    const ev = buildEvolucionDelBloque({
+      ...base,
+      medidas: [
+        m('2026-09-08', 'pecho', 100), m('2026-10-02', 'pecho', 104),
+        m('2026-09-08', 'cintura', 80), m('2026-10-02', 'cintura', 80),
+        m('2026-09-08', 'cadera', 96), // la cadera solo se midió una vez…
+      ],
+    });
+    expect(ev.indices.find(i => i.clave === 'ipc')).toMatchObject({ label: 'Pecho / Cintura', inicio: 1.25, final: 1.3, delta: 0.05, sinCambioMedible: false });
+    // …así que cadera/cintura no se enseña: hacen falta los dos perímetros medidos dos veces.
+    expect(ev.indices.find(i => i.clave === 'icac')).toBeUndefined();
+    expect(ev.indices.find(i => i.clave === 'ibc')).toBeUndefined(); // no hay bíceps
+  });
+
+  it('la voz del atleta trae también lo que contesta con sus palabras en el cuestionario de cierre (F18)', () => {
+    const cierre: Questionnaire = {
+      id: 'qc', ownerId: 'c', title: 'Cierre de bloque',
+      questions: [
+        { id: 'rating', label: 'Valora el bloque', type: 'scale', required: true, signalKey: 'meso_end.rating' },
+        { id: 'dur', label: '¿Cómo te ha resultado la duración de las sesiones?', type: 'choice', required: false, options: ['Corta', 'Bien', 'Demasiado larga'], tituloCorto: 'Duración de la sesión' },
+        { id: 'mant', label: '¿Qué ejercicios quieres mantener sí o sí, y qué te apetece probar o cambiar?', type: 'text', required: false, tituloCorto: 'Mantener y probar' },
+        { id: 'obj', label: '¿Tienes algún objetivo concreto para el próximo bloque?', type: 'text', required: false, tituloCorto: 'Objetivo' },
+        { id: 'mol', label: '¿Hay alguna molestia articular o muscular que tengamos que tener en cuenta?', type: 'text', required: false, tituloCorto: 'Molestias' },
+      ],
+    };
+    const r: QuestionnaireResponse = {
+      id: 'r', questionnaireId: 'qc', assignmentId: 'x', athleteId: 'a', submittedAt: '2026-10-05T09:00:00.000Z',
+      answers: [
+        { questionId: 'rating', value: 8 }, { questionId: 'dur', value: 'Demasiado larga' },
+        { questionId: 'mant', value: 'Mantener la sentadilla; cambiar el press militar' },
+        { questionId: 'obj', value: '   ' }, // en blanco: no se enseña
+        { questionId: 'mol', value: 'El hombro derecho al empujar' },
+      ],
+    };
+    // Un texto libre de OTRO cuestionario (el semanal) no es la voz del cierre.
+    const semanal: Questionnaire = { id: 'qs', ownerId: 'c', title: 'Semanal', questions: [{ id: 't', label: '¿Algo que contarme?', type: 'text', required: false }] };
+    const otra: QuestionnaireResponse = { id: 'o', questionnaireId: 'qs', assignmentId: 'x', athleteId: 'a', submittedAt: '2026-09-20T09:00:00.000Z', answers: [{ questionId: 't', value: 'Semana de mucho trabajo' }] };
+    const ev = buildEvolucionDelBloque({ ...base, questionnaires: [cierre, semanal], responses: [r, otra] });
+    expect(ev.voz).toMatchObject({ valoracion: 8, fecha: '2026-10-05' });
+    expect(ev.voz!.respuestas).toEqual([
+      { pregunta: 'Duración de la sesión', respuesta: 'Demasiado larga' },
+      { pregunta: 'Mantener y probar', respuesta: 'Mantener la sentadilla; cambiar el press militar' },
+      { pregunta: 'Molestias', respuesta: 'El hombro derecho al empujar' },
+    ]);
   });
 
   it('dieta: % de kcal frente al objetivo por semana y días dentro del ±10 %', () => {

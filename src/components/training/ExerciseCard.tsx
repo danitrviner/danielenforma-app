@@ -9,11 +9,12 @@ import { expandSetGroups } from '../../utils/setGroups';
 import { generateWarmup } from '../../utils/warmup/WarmupGenerator';
 import { parseTargetReps } from '../../utils/warmup/WarmupEngine';
 import ExerciseVideoPlayer from '../ExerciseVideoPlayer';
-import { SetInput, RIR_OPCIONES, rirTexto, rirClaseColor, resumenRangosPautados } from './setInput';
+import { SetInput, RIR_OPCIONES, rirTexto, rirClaseColor, resumenRangosPautados, tieneReps, AVISO_SIN_REPS } from './setInput';
 import RestRing from './RestRing';
 import { MOTIVOS_SALTAR, conMotivo, motivoDeLaNota } from '../../utils/saltarEjercicio';
 import { sugerirCarga, consejoEnVivo } from '../../utils/cargaSugerida';
 import { consejoDeDiaMalo } from '../../utils/diaMalo';
+import type { TipoDeSemana } from '../../utils/tipoDeSemana';
 import MarcaDeReferencia from './MarcaDeReferencia';
 
 interface Props {
@@ -52,6 +53,8 @@ interface Props {
   saltoKg?: number | null;
   /** F6: el atleta no ha hecho nunca este ejercicio. */
   esNuevo?: boolean;
+  /** F7a: semana de descarga, puente o vuelta de parón. En ellas no se sugiere subir carga. */
+  tipoSemana?: TipoDeSemana | null;
   /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip.tsx). */
   key?: React.Key;
 }
@@ -74,7 +77,7 @@ export default React.memo(function ExerciseCard({
   onUpdateSet, onMarkDone, onAddRow, noteValue, onNoteChange,
   restTimer, onSkipRest, onAddRestSeconds,
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, cambios,
-  onCerrarEjercicio, nuevaReferencia = false, onToggleReferencia, saltoKg, esNuevo = false,
+  onCerrarEjercicio, nuevaReferencia = false, onToggleReferencia, saltoKg, esNuevo = false, tipoSemana,
 }: Props) {
   const expanded = expandSetGroups(we);
   // Las bajadas y miniseries no son series: no cuentan en «2/3».
@@ -89,8 +92,10 @@ export default React.memo(function ExerciseCard({
     previousSets: prevEntry?.sets,
   });
 
-  const sugerencia = React.useMemo(() => sugerirCarga(we, prevEntry, saltoKg), [we, prevEntry, saltoKg]);
-  const consejo = React.useMemo(() => consejoEnVivo(we, exSets, saltoKg), [we, exSets, saltoKg]);
+  const sugerencia = React.useMemo(() => sugerirCarga(we, prevEntry, saltoKg, tipoSemana), [we, prevEntry, saltoKg, tipoSemana]);
+  const consejo = React.useMemo(() => consejoEnVivo(we, exSets, saltoKg, tipoSemana), [we, exSets, saltoKg, tipoSemana]);
+  // F23: una fila sin repeticiones no se marca; se avisa junto a ella.
+  const { sinReps, marcar } = useMarcarSerie(exSets, onMarkDone);
   // F1: la primera serie ha salido claramente peor que la última vez. Con
   // referencia nueva no se compara (es otra tarea).
   const diaMalo = React.useMemo(
@@ -124,14 +129,14 @@ export default React.memo(function ExerciseCard({
   const serieSiguiente = siguiente + 1;
   const segmentosSiguiente = siguiente >= 0 && seriesTecnica.includes(serieSiguiente) ? segmentosDe(serieSiguiente) : [];
   const principalSiguiente = siguiente >= 0 ? exSets[siguiente] : undefined;
-  const puedeCompletar = !!principalSiguiente && !!principalSiguiente.weight && !!principalSiguiente.repsDone;
+  const puedeCompletar = !!principalSiguiente && !!principalSiguiente.weight && tieneReps(principalSiguiente);
   const completarConTecnica = () => {
     if (!principalSiguiente || !puedeCompletar) return;
     onMarkDone(siguiente, true);
     const peso = parseFloat(principalSiguiente.weight) || 0;
     segmentosSiguiente.forEach((idx, k) => {
       const seg = exSets[idx];
-      if (seg.done || !seg.repsDone) return;
+      if (seg.done || !tieneReps(seg)) return;
       if (!seg.weight) {
         const sugerido = esDropset ? pesoDeBajada(peso, pctBajada, k) : peso || null;
         if (sugerido != null) onUpdateSet(idx, 'weight', String(sugerido));
@@ -312,18 +317,18 @@ export default React.memo(function ExerciseCard({
         <>
           <NormalTable
             we={we} exSets={exSets.slice(0, nPrincipales)} expanded={expanded} warmup={warmup} prevEntry={prevEntry}
-            onUpdateSet={onUpdateSet} onMarkDone={onMarkDone}
+            onUpdateSet={onUpdateSet} onMarkDone={marcar} sinReps={sinReps}
             firstSetRowTargetRef={firstSetRowTargetRef} setEditorTargetRef={setEditorTargetRef}
           />
           {seriesTecnica.map(k => (esDropset ? (
             <DropsetRows
               key={k} exSets={exSets} serie={k} indices={segmentosDe(k)} pctBajada={pctBajada} pauta={pautaDelBloque(we)}
-              onUpdateSet={onUpdateSet} onMarkDone={onMarkDone} onAddRow={() => onAddRow(k)}
+              onUpdateSet={onUpdateSet} onMarkDone={marcar} sinReps={sinReps} onAddRow={() => onAddRow(k)}
             />
           ) : (
             <MyorepsRows
               key={k} exSets={exSets} serie={k} indices={segmentosDe(k)} pauta={pautaDelBloque(we)}
-              onUpdateSet={onUpdateSet} onMarkDone={onMarkDone} onAddRow={() => onAddRow(k)}
+              onUpdateSet={onUpdateSet} onMarkDone={marcar} sinReps={sinReps} onAddRow={() => onAddRow(k)}
               variante={esRestpause ? 'restpause' : 'myoreps'}
             />
           )))}
@@ -338,7 +343,7 @@ export default React.memo(function ExerciseCard({
                 Completar serie {serieSiguiente} + {esDropset ? 'drop' : 'miniseries'}
               </button>
               {!puedeCompletar && <p className="mt-1.5 text-center font-sans text-caption text-ink-3">Apunta el peso y las reps de la serie {serieSiguiente}.</p>}
-              {puedeCompletar && segmentosSiguiente.some(i => !exSets[i].done && !exSets[i].repsDone) && (
+              {puedeCompletar && segmentosSiguiente.some(i => !exSets[i].done && !tieneReps(exSets[i])) && (
                 <p className="mt-1.5 text-center font-sans text-caption text-ink-3">Las {esDropset ? 'bajadas' : 'miniseries'} sin reps se quedan para marcarlas después.</p>
               )}
             </div>
@@ -357,7 +362,7 @@ export default React.memo(function ExerciseCard({
       ) : (
         <NormalTable
           we={we} exSets={exSets} expanded={expanded} warmup={warmup} prevEntry={prevEntry}
-          onUpdateSet={onUpdateSet} onMarkDone={onMarkDone}
+          onUpdateSet={onUpdateSet} onMarkDone={marcar} sinReps={sinReps}
           firstSetRowTargetRef={firstSetRowTargetRef} setEditorTargetRef={setEditorTargetRef}
         />
       )}
@@ -465,7 +470,7 @@ export function PieDeEjercicio({ we, ex, doneSets, noteValue, onNoteChange, nuev
 // ── Tabla normal (idéntica a la de antes, solo reubicada) ──────────────────
 
 function NormalTable({
-  we, exSets, expanded, warmup, prevEntry, onUpdateSet, onMarkDone, firstSetRowTargetRef, setEditorTargetRef,
+  we, exSets, expanded, warmup, prevEntry, onUpdateSet, onMarkDone, sinReps, firstSetRowTargetRef, setEditorTargetRef,
 }: {
   we: WorkoutExercise;
   exSets: SetInput[];
@@ -474,6 +479,8 @@ function NormalTable({
   prevEntry: WorkoutEntryLog | undefined;
   onUpdateSet: Props['onUpdateSet'];
   onMarkDone: Props['onMarkDone'];
+  /** F23: fila que se ha intentado marcar sin repeticiones (ver `useMarcarSerie`). */
+  sinReps: number | null;
   firstSetRowTargetRef?: Props['firstSetRowTargetRef'];
   setEditorTargetRef?: Props['setEditorTargetRef'];
 }) {
@@ -513,8 +520,8 @@ function NormalTable({
             const esSiguiente = !setInput.done && exSets.slice(0, sIdx).every(s => s.done);
             const alFallo = setInput.rir === 'fallo';
             return (
+              <React.Fragment key={sIdx}>
               <tr
-                key={sIdx}
                 className={`border-b transition-colors duration-(--duration-state) ${
                   alFallo && !setInput.done ? 'border-danger/35 bg-danger/6'
                   : setInput.done ? 'border-hairline bg-accent/6'
@@ -570,6 +577,12 @@ function NormalTable({
                   />
                 </td>
               </tr>
+              {sinReps === sIdx && (
+                <tr className="border-b border-hairline">
+                  <td colSpan={5} className="px-2 sm:px-4 pb-2"><AvisoSinReps /></td>
+                </tr>
+              )}
+              </React.Fragment>
             );
           })}
         </tbody>
@@ -584,7 +597,7 @@ function NormalTable({
 // así que un dropset en la última de 3 series convertía las series 2 y 3 en
 // bajadas. Ahora la técnica se SUMA a la serie, no la sustituye.
 
-function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, onMarkDone, onAddRow }: {
+function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, onMarkDone, sinReps, onAddRow }: {
   exSets: SetInput[];
   /** Serie principal tras la que van (1 = la primera). */
   serie: number;
@@ -596,6 +609,8 @@ function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, on
   pauta: string;
   onUpdateSet: Props['onUpdateSet'];
   onMarkDone: Props['onMarkDone'];
+  /** F23: fila que se ha intentado marcar sin repeticiones. */
+  sinReps: number | null;
   onAddRow: () => void;
   key?: React.Key;
 }) {
@@ -615,7 +630,8 @@ function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, on
         const dropWeight = parseFloat(s.weight || '') || 0;
         const caida = baseWeight > 0 && dropWeight > 0 ? Math.round((1 - dropWeight / baseWeight) * 100) : null;
         return (
-          <div key={sIdx} className="flex items-center gap-2 rounded-surface bg-raised p-3 ml-2 border-l-2 border-accent-line">
+          <React.Fragment key={sIdx}>
+          <div className="flex items-center gap-2 rounded-surface bg-raised p-3 ml-2 border-l-2 border-accent-line">
             <span className="flex h-7 w-9 flex-shrink-0 items-center justify-center rounded-control bg-hairline font-mono text-label font-bold text-ink-2">
               D{i + 1}
             </span>
@@ -646,7 +662,8 @@ function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, on
             <button
               onClick={() => {
                 // Sin peso escrito se apunta el sugerido: si no, la bajada contaría 0 kg.
-                if (!s.done && !s.weight && sugerido != null) onUpdateSet(sIdx, 'weight', String(sugerido));
+                // (Solo si se va a marcar de verdad: sin repeticiones no se marca.)
+                if (!s.done && tieneReps(s) && !s.weight && sugerido != null) onUpdateSet(sIdx, 'weight', String(sugerido));
                 onMarkDone(sIdx, !s.done);
               }}
               aria-label={s.done ? `Desmarcar bajada ${i + 1}` : `Marcar bajada ${i + 1} como hecha`}
@@ -657,6 +674,8 @@ function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, on
               <Icon name={s.done ? 'check_circle' : 'radio_button_unchecked'} size="s" filled={s.done} />
             </button>
           </div>
+          {sinReps === sIdx && <AvisoSinReps />}
+          </React.Fragment>
         );
       })}
       <button
@@ -680,7 +699,7 @@ function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, on
 
 // ── Myoreps / rest-pause: miniseries o pausas DESPUÉS de la última serie ───
 
-function MyorepsRows({ exSets, serie, indices, pauta, onUpdateSet, onMarkDone, onAddRow, variante }: {
+function MyorepsRows({ exSets, serie, indices, pauta, onUpdateSet, onMarkDone, sinReps, onAddRow, variante }: {
   exSets: SetInput[];
   /** Serie principal que hace de activación (1 = la primera). */
   serie: number;
@@ -693,6 +712,8 @@ function MyorepsRows({ exSets, serie, indices, pauta, onUpdateSet, onMarkDone, o
   pauta: string;
   onUpdateSet: Props['onUpdateSet'];
   onMarkDone: Props['onMarkDone'];
+  /** F23: fila que se ha intentado marcar sin repeticiones. */
+  sinReps: number | null;
   onAddRow: () => void;
 }) {
   const activacion = exSets.filter(s => !s.segmento)[serie - 1];
@@ -717,7 +738,7 @@ function MyorepsRows({ exSets, serie, indices, pauta, onUpdateSet, onMarkDone, o
                 onClick={() => {
                   // Las miniseries se hacen con el mismo peso que la serie de
                   // activación: se copia para que el tonelaje no salga a 0.
-                  if (!s.done && !s.weight && activacion?.weight) onUpdateSet(sIdx, 'weight', activacion.weight);
+                  if (!s.done && tieneReps(s) && !s.weight && activacion?.weight) onUpdateSet(sIdx, 'weight', activacion.weight);
                   onMarkDone(sIdx, !s.done);
                 }}
                 className={`flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-full border transition-colors ${
@@ -746,6 +767,7 @@ function MyorepsRows({ exSets, serie, indices, pauta, onUpdateSet, onMarkDone, o
             +
           </button>
         </div>
+        {sinReps != null && indices.includes(sinReps) && <AvisoSinReps />}
       </div>
       {totalEfectivo > 0 && (
         <div className="rounded-surface bg-bg p-3 flex items-center justify-between">
@@ -760,6 +782,26 @@ function MyorepsRows({ exSets, serie, indices, pauta, onUpdateSet, onMarkDone, o
 
 /** F6 + P5: lo que se le dice la primera vez que hace un ejercicio. */
 export const TEXTO_EJERCICIO_NUEVO = 'Es la primera vez que haces este ejercicio: hoy es de entrada. Busca el peso y quédate con una repetición más de margen de la que marca. Es normal tener agujetas los próximos días.';
+
+/* F23 (17-11-2026): marcar una serie exige repeticiones. Este gancho envuelve
+   el `onMarkDone` de la tarjeta: si la fila no las tiene, no la marca y
+   recuerda cuál fue para pintar el aviso junto a ella; el aviso se va solo en
+   cuanto el atleta las apunta. Desmarcar no se toca. Lo comparte la tarjeta de
+   series alternas (ParejaAlternaCard). */
+export function useMarcarSerie(exSets: readonly SetInput[], onMarkDone: Props['onMarkDone']) {
+  const [fila, setFila] = React.useState<number | null>(null);
+  const marcar = (sIdx: number, markingDone: boolean) => {
+    if (markingDone && !tieneReps(exSets[sIdx])) { setFila(sIdx); return; }
+    setFila(null);
+    onMarkDone(sIdx, markingDone);
+  };
+  return { sinReps: fila != null && !tieneReps(exSets[fila]) ? fila : null, marcar };
+}
+
+/** El aviso de F23, con la misma letra que el resto de avisos de la tarjeta. */
+export function AvisoSinReps() {
+  return <p role="status" className="mt-1.5 text-center font-sans text-caption text-warning">{AVISO_SIN_REPS}</p>;
+}
 
 /* El botón de «serie hecha»: al marcarla, el check entra con el sello
    (`seal-pop`, el mismo que cierra el anillo del día). Solo en la transición:

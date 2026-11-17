@@ -3,6 +3,7 @@ import type { WorkoutLog, WorkoutSetLog } from '../types';
 import { cambiosDeTarea, sesionesDelEjercicio, historialComparable, tramoComparable, cambiosEnLaVentana, describirCambios } from './comparabilidad';
 import { comprobarRir, calibracionDelAtleta, lecturaDeCalibracion, textoDeComprobacion } from './calibracionRir';
 import { detectarEstancamiento, sesionesSinMejorar } from './estancamiento';
+import { addDays } from './trainingWeek';
 
 const s = (weight: number, repsDone: number, rir = 2, extra: Partial<WorkoutSetLog> = {}): WorkoutSetLog => ({ weight, repsDone, rir, ...extra });
 let n = 0;
@@ -116,47 +117,60 @@ describe('calibración del RIR (F4)', () => {
 });
 
 describe('estancamiento honesto (S1)', () => {
-  const iguales = (k: number, sets = tres(80, 8)) => Array.from({ length: k }, (_, i) => press(`2026-10-${String(1 + i * 7).padStart(2, '0')}`, sets));
+  // Dos sesiones por semana (lunes y jueves), como en un bloque de frecuencia 2.
+  const fecha = (i: number) => addDays('2026-09-01', Math.floor(i / 2) * 7 + (i % 2) * 3);
+  const iguales = (k: number, sets = tres(80, 8)) => Array.from({ length: k }, (_, i) => press(fecha(i), sets));
 
-  it('cuenta las sesiones desde la última mejora', () => {
+  it('cuenta las sesiones desde la última mejora, y un 3 % o menos no es mejora (ruido)', () => {
     expect(sesionesSinMejorar([100, 100, 100])).toBe(3);
-    expect(sesionesSinMejorar([100, 103, 103])).toBe(2);
+    expect(sesionesSinMejorar([100, 104, 104])).toBe(2);
     expect(sesionesSinMejorar([100, 100, 104])).toBe(1);
+    // +1 % y +2,5 %: una repetición más o menos, no una marca nueva.
+    expect(sesionesSinMejorar([100, 101, 102.5])).toBe(3);
+    // Subiendo poco a poco sí acaba superando la referencia.
+    expect(sesionesSinMejorar([100, 101, 102, 104])).toBe(1);
   });
 
-  it('dos sesiones iguales no son estancamiento', () => {
+  it('tres o cinco sesiones iguales (semana y media o dos y media) no son estancamiento', () => {
     expect(detectarEstancamiento(iguales(2), 'press')).toBeNull();
+    expect(detectarEstancamiento(iguales(3), 'press')).toBeNull();
+    expect(detectarEstancamiento(iguales(5), 'press')).toBeNull();
   });
 
-  it('tres iguales con todo en orden: +1-2 series', () => {
-    expect(detectarEstancamiento(iguales(3), 'press')).toMatchObject({ sesiones: 3, veredicto: 'subir_series' });
+  it('seis iguales (unas tres semanas) con todo en orden: +1-2 series', () => {
+    expect(detectarEstancamiento(iguales(6), 'press')).toMatchObject({ sesiones: 6, veredicto: 'subir_series' });
   });
 
   it('si la última mejora, no hay nada que decir', () => {
-    const logs = [...iguales(3), press('2026-10-29', tres(80, 9))];
+    const logs = [...iguales(6), press(fecha(6), tres(80, 10))];
     expect(detectarEstancamiento(logs, 'press')).toBeNull();
+  });
+
+  it('una mejora por debajo del ruido (un kilo más, +1,25 %) no rompe el estancamiento', () => {
+    const logs = [...iguales(6), press(fecha(6), tres(81, 8))];
+    expect(detectarEstancamiento(logs, 'press')).toMatchObject({ sesiones: 7 });
   });
 
   it('un cambio de tarea reinicia la cuenta', () => {
     const remo = { exerciseId: 'remo', sets: tres(60, 10) };
-    const logs = [...iguales(3), press('2026-10-29', tres(80, 7), [remo])];
+    const logs = [...iguales(6), press(fecha(6), tres(80, 7), [remo])];
     expect(detectarEstancamiento(logs, 'press')).toBeNull();
   });
 
   it('el veredicto sigue el orden: contexto, esfuerzo, limitante, volumen, variante', () => {
-    const logs = iguales(3);
+    const logs = iguales(6);
     expect(detectarEstancamiento(logs, 'press', { recuperacionMala: true, limitante: 'agarre' })?.veredicto).toBe('mantener');
     expect(detectarEstancamiento(logs, 'press', { desfaseRir: 3, limitante: 'agarre' })?.veredicto).toBe('apretar');
-    expect(detectarEstancamiento(iguales(3, tres(80, 8, 4)), 'press')?.veredicto).toBe('apretar');
+    expect(detectarEstancamiento(iguales(6, tres(80, 8, 4)), 'press')?.veredicto).toBe('apretar');
     const limitante = detectarEstancamiento(logs, 'press', { limitante: 'agarre', zona: 'mrv' });
     expect(limitante?.veredicto).toBe('arreglar_limitante');
     expect(limitante?.accion).toContain('straps');
     expect(detectarEstancamiento(logs, 'press', { zona: 'mrv' })?.veredicto).toBe('repartir_o_reducir');
-    expect(detectarEstancamiento(iguales(4), 'press', { zona: 'mav' })?.veredicto).toBe('subir_series');
+    expect(detectarEstancamiento(iguales(8), 'press', { zona: 'mav' })?.veredicto).toBe('subir_series');
   });
 
-  it('con seis sesiones igual toca cambiar la variante', () => {
-    const logs = Array.from({ length: 6 }, (_, i) => press(`2026-09-${String(1 + i * 4).padStart(2, '0')}`, tres(80, 8)));
-    expect(detectarEstancamiento(logs, 'press')?.veredicto).toBe('cambiar_variante');
+  it('con once sesiones igual todavía es dosis; con doce (unas seis semanas) toca cambiar la variante', () => {
+    expect(detectarEstancamiento(iguales(11), 'press')?.veredicto).toBe('subir_series');
+    expect(detectarEstancamiento(iguales(12), 'press')?.veredicto).toBe('cambiar_variante');
   });
 });

@@ -24,11 +24,15 @@ import { calibracionDelAtleta, type CalibracionDelAtleta } from './calibracionRi
 import { detectarEstancamiento, type Estancamiento } from './estancamiento.js';
 import { clasificarCaida, CAIDA_PCT, type PatronDeCaida } from './patronDeCaida.js';
 import { seriesEfectivas, type SeriesEfectivas } from './seriesEfectivas.js';
-import { senalesActivas, recortesPosibles, SENALES_PARA_DESCARGA, type Recorte } from './descargaPorSenales.js';
+import { senalesActivas, recortesPosibles, SENALES_PARA_DESCARGA, type Recorte, type SenalesDeDescarga } from './descargaPorSenales.js';
+import { historialDeSeñal } from './signalReading.js';
+import { agujetasPorZona, agujetasVigentes, ultimaVigente } from './cdg/agujetas.js';
+import { ZONA_POR_CLAVE } from './cdg/zonas.js';
 import { computeIRP, historialIRP, IRPResult } from './readinessIndex.js';
 import { domsCronicoDeGrupo, esDomsCronico } from './domsCronico.js';
 import { DataPoint } from './seriesCorrelation.js';
 import { pesoRepresentativo } from './verificacionObjetivo.js';
+import { RUIDO_RM_PCT } from './ruidoDeMedida.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // REVISIÓN DEL COACH — el motor de la pantalla que Dani graba en vídeo para
@@ -280,7 +284,8 @@ export interface RevisionDelAtleta {
    *  · `cambiosDeTarea`: ejercicios cuya tarea cambió dentro de la ventana
    *    (orden, descanso, RIR, rango, técnica o máquina). Lo que baje ahí no es
    *    comparable con lo de antes y no se da como alarma.
-   *  · `estancados`: tres o más sesiones comparables sin mejorar, con qué hacer.
+   *  · `estancados`: seis o más sesiones comparables sin mejorar (unas tres
+   *    semanas a frecuencia 2), con qué hacer.
    *  · `calibracion`: cuánto se desvía su RIR cuando se comprueba con una
    *    serie al máximo. `null` si nunca se ha comprobado.
    */
@@ -374,6 +379,35 @@ export function construirBienestar(params: {
   };
 }
 
+/**
+ * Las señales del protocolo semanal que también cuentan para la descarga (R3,
+ * 17-11-2026): el cansancio al salir de las sesiones y las agujetas 1-5 por
+ * zona con su lectura de la semana previa. Salen de los mismos cuestionarios
+ * que ya recibe la revisión: ni una lectura más a la base de datos.
+ *
+ * Todo se mira a fecha de `hasta` (el final de la ventana), no de hoy: una
+ * revisión de hace un mes no puede usar lo contestado después, ni dar por
+ * vigente lo que entonces ya había caducado. Las agujetas convertidas del
+ * DOM's 0-10 no entran: ese cuestionario ya alimenta «agujetas que no se van»
+ * y contarlo dos veces haría una descarga de una sola fuente.
+ *
+ * El aviso de salto de carga NO sale de aquí: necesita el catálogo CDG, que
+ * esta función pura no tiene. `senalesActivas` ya lo acepta (`saltoDeCarga`).
+ */
+export function senalesDelProtocolo(params: {
+  responses: QuestionnaireResponse[];
+  questionnaires: Questionnaire[];
+  hasta: string;
+}): Pick<SenalesDeDescarga, 'cansancioAlSalir' | 'agujetasPorZona'> {
+  const { responses, questionnaires, hasta } = params;
+  const serie = (k: string) => historialDeSeñal(k, responses, questionnaires).filter(p => p.date <= hasta);
+  const cansancioAlSalir = ultimaVigente(serie('wellness.fatigue_post_weekly'), hasta)?.value;
+  const zonas = Object.values(agujetasPorZona(serie))
+    .filter(l => !l.deEscala10 && agujetasVigentes(l.fecha, hasta))
+    .map(l => ({ nombre: ZONA_POR_CLAVE[l.zona].nombre, valor: l.valor, anterior: l.anterior }));
+  return { cansancioAlSalir, agujetasPorZona: zonas };
+}
+
 export interface RevisionParams {
   logs: WorkoutLog[];
   exercises: Exercise[];
@@ -463,7 +497,8 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
   const llegadas = { justo: contestadas.filter(l => l.comoLlega === 'justo').length, contestadas: contestadas.length };
 
   const cambiosDeTarea = cambiosEnLaVentana(logsHastaLaVentana, idsDeLaVentana, ventana.desde, ventana.hasta);
-  // Cae lo que baja siendo la misma tarea, o lo que lleva sesiones seguidas empezando peor.
+  // Cae lo que baja más que el ruido de medida (`CAIDA_PCT` = `RUIDO_RM_PCT`)
+  // siendo la misma tarea, o lo que lleva sesiones seguidas empezando peor.
   const caen = [...new Set([
     ...informe.perExercise
       .filter(e => e.deltaOrmPct != null && e.deltaOrmPct <= -CAIDA_PCT && !cambiosDeTarea[e.exerciseId])
@@ -480,6 +515,9 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
     recuperacionMala: recuperacionGeneralMala,
     ejerciciosConDiasMalos: diasMalos.length,
     gruposConAgujetasCronicas: bienestar.domsCronico.length,
+    // R3: cansancio al salir y agujetas 1-5, de los cuestionarios que ya están aquí.
+    // El salto de carga (aguda:crónica) necesita el catálogo CDG y no se pasa todavía.
+    ...senalesDelProtocolo({ responses, questionnaires, hasta: ventana.hasta }),
   });
   const descarga = {
     recomendada: senales.length >= SENALES_PARA_DESCARGA,
@@ -586,14 +624,15 @@ export interface OpcionesMejoresYPeores {
  *  · `deltaOrmPct != null` — sin ventana de comparación no hay progresión que
  *    contar. Un ejercicio que se estrena no «sube un 100 %».
  *  · `minSeries` — dos series sueltas de un accesorio no son una tendencia.
- *  · `umbralPct` — un ±1 % en un RM estimado (fórmula CDG) es ruido de redondeo,
- *    no una mejora.
+ *  · `umbralPct` — por debajo del ruido de medida (`RUIDO_RM_PCT`, 3 %: lo que
+ *    mueve una repetición más o menos) no es ni mejora ni caída. Antes era un
+ *    2 % suelto y «va a menos» saltaba con una repetición de diferencia.
  */
 export function mejoresYPeores(
   perExercise: ExercisePerf[],
   opciones: OpcionesMejoresYPeores = {},
 ): { suben: ExercisePerf[]; bajan: ExercisePerf[] } {
-  const { n = 5, minSeries = 3, umbralPct = 2 } = opciones;
+  const { n = 5, minSeries = 3, umbralPct = RUIDO_RM_PCT } = opciones;
   const elegibles = perExercise.filter(e =>
     e.deltaOrmPct != null && e.sets >= minSeries && e.bestOrm > 0);
 

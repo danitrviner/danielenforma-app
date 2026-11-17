@@ -1,6 +1,7 @@
 import { WorkoutExercise, WorkoutEntryLog, WorkoutLog } from '../types.js';
 import { expandSetGroups } from './setGroups.js';
 import { seriesPrincipales } from './tecnicaDeSerie.js';
+import type { TipoDeSemana } from './tipoDeSemana.js';
 
 /* Doble progresión: se sube la carga cuando el atleta llegó al TOPE del rango
    de repeticiones con el esfuerzo pautado (su RIR igual o mayor que el del
@@ -73,28 +74,73 @@ export interface CargaSugerida {
 
 const kg = (n: number) => `${n.toLocaleString('es-ES', { maximumFractionDigits: 2 })} kg`;
 
+/** Una serie ya hecha, en lo que importa para decidir la carga. */
+export interface SerieHecha { weight: number; repsDone: number; rir: number; alFallo?: boolean }
+
+/** Lo que toca con una serie que llegó al tope del rango con margen. */
+export type Veredicto =
+  /** Sube: `peso` es la carga nueva y `reps` el mínimo del rango. */
+  | { que: 'subir'; peso: number; reps: number }
+  /** El salto es grande: antes de subir, `reps` repeticiones con el mismo `peso`. */
+  | { que: 'esperar'; peso: number; reps: number; paso: number };
+
+/**
+ * EL criterio de «toca subir», uno solo para toda la app (F7c, 17-11-2026):
+ * llegó al tope del rango, con el RIR pautado o más y sin ir al fallo; y si el
+ * salto de carga es grande, además con las repeticiones de margen que pide.
+ * `null` = se repite la carga.
+ *
+ * Lo usan la tarjeta de la sesión (`sugerirCarga`) y el reto «toca subir»
+ * (retosDeRendimiento). Antes el reto solo miraba las repeticiones: al atleta
+ * que llegó al tope yendo al fallo el reto le decía «sube» y la tarjeta, el
+ * mismo día, le dejaba el peso de siempre.
+ */
+export function veredictoDeSerie(
+  prev: SerieHecha | undefined, pauta: { reps: string; rir: number }, salto?: number | null,
+): Veredicto | null {
+  const rango = rangoDeReps(pauta.reps);
+  if (!prev || !rango || prev.weight <= 0 || prev.alFallo) return null;
+  if (prev.repsDone < rango.max || prev.rir < pauta.rir) return null;
+  const paso = salto ?? incrementoDe(prev.weight);
+  const extra = repsExtraAntesDeSubir(prev.weight, paso, rango);
+  if (prev.repsDone < rango.max + extra) return { que: 'esperar', peso: prev.weight, reps: rango.max + extra, paso };
+  return { que: 'subir', peso: Math.round((prev.weight + paso) * 100) / 100, reps: rango.min };
+}
+
+/**
+ * La serie de la última vez con la que se compara la fila `i` de hoy (F19).
+ * Normalmente es la misma serie. Si la última vez hubo menos series que las
+ * pautadas hoy (sesión cortada, o venir de una descarga con la mitad), las
+ * filas de más toman la última serie con repeticiones en vez de llegar en
+ * blanco; lo mismo si esa serie se guardó sin repeticiones. Sin ninguna serie
+ * con repeticiones, lo que hubiera en esa posición.
+ */
+export function serieDeReferencia<T extends { repsDone: number }>(previas: readonly T[], i: number): T | undefined {
+  const suya = previas[i];
+  if (suya && suya.repsDone > 0) return suya;
+  for (let k = previas.length - 1; k >= 0; k--) if (previas[k].repsDone > 0) return previas[k];
+  return suya;
+}
+
 export function sugerirCarga(
   we: WorkoutExercise, previa: WorkoutEntryLog | undefined,
   /** Salto real del ejercicio (`saltoReal`). Sin él, +1 / +2,5 kg. */
   salto?: number | null,
+  /** Semana de descarga, puente o vuelta de parón (`tipoDeSemana`), si lo es. */
+  semana?: TipoDeSemana | null,
 ): CargaSugerida {
   const filas = expandSetGroups(we);
-  if (!previa) return { series: filas.map(() => null), resumen: null };
+  // F7a: en descarga, puente y vuelta de parón no se sube. La semana es para
+  // recuperar o readaptarse, y una frase de «hoy prueba con más» iba justo en
+  // contra de lo que el coach ha programado: se repite lo de la última vez.
+  if (!previa || semana) return { series: filas.map(() => null), resumen: null };
   const previas = seriesPrincipales(previa.sets);
   // Series que llegaron al tope con margen pero no suben porque el salto es grande.
   let esperando: { peso: number; reps: number; paso: number } | null = null;
   const series = filas.map((fila, i) => {
-    const prev = previas[i];
-    const rango = rangoDeReps(fila.reps);
-    if (!prev || !rango || prev.weight <= 0 || prev.alFallo) return null;
-    if (prev.repsDone < rango.max || prev.rir < fila.rir) return null;
-    const paso = salto ?? incrementoDe(prev.weight);
-    const extra = repsExtraAntesDeSubir(prev.weight, paso, rango);
-    if (prev.repsDone < rango.max + extra) {
-      esperando ??= { peso: prev.weight, reps: rango.max + extra, paso };
-      return null;
-    }
-    return { peso: Math.round((prev.weight + paso) * 100) / 100, reps: rango.min };
+    const v = veredictoDeSerie(serieDeReferencia(previas, i), fila, salto);
+    if (v?.que === 'esperar') esperando ??= { peso: v.peso, reps: v.reps, paso: v.paso };
+    return v?.que === 'subir' ? { peso: v.peso, reps: v.reps } : null;
   });
   const suben = series.filter((s): s is SerieSugerida => s !== null);
   if (suben.length === 0) {
@@ -133,7 +179,11 @@ export function consejoEnVivo(
   we: Pick<WorkoutExercise, 'sets' | 'reps' | 'rir' | 'setGroups'>,
   sets: readonly { weight: string; repsDone: string; rir: string; done: boolean; segmento?: boolean }[],
   salto?: number | null,
+  /** Semana de descarga, puente o vuelta de parón (`tipoDeSemana`), si lo es. */
+  semana?: TipoDeSemana | null,
 ): ConsejoEnVivo | null {
+  // F7a: en las semanas de aflojar tampoco se pide más peso a mitad de sesión.
+  if (semana) return null;
   const filas = expandSetGroups(we);
   const principales = sets.map((s, i) => ({ s, i })).filter(x => !x.s.segmento);
   const siguiente = principales.findIndex(x => !x.s.done);
@@ -154,6 +204,9 @@ export function consejoEnVivo(
   return {
     serie: proxima.i,
     peso: nuevo,
-    texto: `Te has pasado del rango (${reps} reps en ${rangoTxt}) y aún te sobraba. Sube a ${kg(nuevo)} en la siguiente serie y vemos cómo va.`,
+    // «Si te sobraba», no «aún te sobraba» (F20b): el RIR llega prerrellenado
+    // con el pautado y puede que el atleta ni lo haya tocado. No se afirma algo
+    // que quizá no ha dicho.
+    texto: `Te has pasado del rango (${reps} reps en ${rangoTxt}). Si te sobraba, sube a ${kg(nuevo)} en la siguiente serie y vemos cómo va.`,
   };
 }

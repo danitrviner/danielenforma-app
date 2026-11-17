@@ -8,6 +8,7 @@ import { SYSTEM_FOODS } from '../nutricion_seed_en_forma.js';
 import { parseBaseGrams } from '../utils/conversionNutricional.js';
 import { macrosDesdeGramos, redondearMacros } from '../utils/macros.js';
 import { macrosDeLineas, objetivoDeDieta } from '../utils/macrosLegado.js';
+import { SERIES_POR_DIA_TOPE } from '../utils/volumeSuggestion.js';
 
 export interface ValidationIssue { field: string; message: string }
 
@@ -208,7 +209,15 @@ const MAX_SERIES_PER_GROUP = 25; // tope semanal por grupo (heatmap del Mesocycl
 // músculo y sesión (criterio de Dani), un torso que toca 3 músculos ya son
 // ~30. Subido a 25 por sesión el 2026-09-02 — sigue bloqueando por encima,
 // que es lo que evita que un error del modelo cuele 200 series.
-const SERIES_PER_DAY_SOFT_CAP = 25;
+//
+// Desde el 17-11-2026 es la MISMA constante que el sugeridor de volumen
+// (`SERIES_POR_DIA_TOPE`, 23 por sesión, cifra de Dani del 23-08). Con dos
+// números, el asistente podía proponer un bloque de 24-25 series por sesión
+// que el validador daba por bueno y que «Sugerir volumen» recortaba en cuanto
+// se abría: dos motores de la misma app diciendo cosas distintas del mismo
+// bloque. El aviso de la Distribución (días × 12) es otra cosa —solo avisa— y
+// se queda como está (decisión de Dani).
+const SERIES_PER_DAY_SOFT_CAP = SERIES_POR_DIA_TOPE;
 
 export interface MesocycleProposalPayload {
   weeks: number;

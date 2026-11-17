@@ -76,7 +76,7 @@ a esforzarse y a asegurar el estímulo de CADA serie. Si hay que elegir entre su
 esfuerzo, sube el esfuerzo.
 Densidad de referencia: 12-15 series duras por hora. Si el plan no cabe en el tiempo que tiene, no
 recortes descansos: quita ejercicios accesorios.
-Límite duro de la app: el total de series semanales no puede superar días_por_semana × 25, y ningún
+Límite duro de la app: el total de series semanales no puede superar días_por_semana × 23, y ningún
 grupo pasa de 25. Si tu reparto se pasa, el problema es el reparto, no el límite.
 
 ### 4. Esfuerzo (RIR)

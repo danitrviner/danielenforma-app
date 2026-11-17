@@ -35,7 +35,7 @@ export default function NovedadesDeSemana({ novedades, clave, semana }: { noveda
   );
 }
 
-/** Las líneas de novedades (descarga, test, evento, cambios por ejercicio):
+/** Las líneas de novedades (descarga, puente, parón, test, evento, cambios por ejercicio):
  *  las usa el aviso de la semana y el de la sesión. `sinDia` quita el «· Día»
  *  cuando todos los ejercicios son de la misma sesión. */
 export function ListaDeNovedades({ novedades, sinDia = false }: { novedades: Novedades; sinDia?: boolean }) {
@@ -44,6 +44,16 @@ export function ListaDeNovedades({ novedades, sinDia = false }: { novedades: Nov
       {novedades.descarga && (
         <li className="font-sans text-label text-ink-2">
           <span className="font-bold text-info">Semana de descarga.</span> Haces la mitad de series para recuperar. Cada serie, igual de bien hecha.
+        </li>
+      )}
+      {novedades.puente && (
+        <li className="font-sans text-label text-ink-2">
+          <span className="font-bold text-info">Semana puente.</span> Menos series para llegar fresco al tramo siguiente. No es para batir marcas.
+        </li>
+      )}
+      {novedades.vueltaDeParon && (
+        <li className="font-sans text-label text-ink-2">
+          <span className="font-bold text-info">Primera semana tras el parón.</span> Quédate lejos del fallo aunque te veas con ganas.
         </li>
       )}
       {novedades.test && (

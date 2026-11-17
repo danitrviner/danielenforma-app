@@ -1973,7 +1973,7 @@ export interface ContextoDeReto {
   bloque: string;              // «Hipertrofia 1»
   semana: number;              // vuelta del ciclo, 1-indexada
   semanas: number;             // vueltas totales del bloque
-  tipoSemana?: 'test' | 'descarga' | 'paron' | 'evento';
+  tipoSemana?: 'test' | 'descarga' | 'puente' | 'paron' | 'evento';
 }
 
 // De qué registro habla un reto de racha (kind 'racha_registro').

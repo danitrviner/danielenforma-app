@@ -68,6 +68,23 @@ describe('construirTitulares', () => {
     expect(ids(r)).not.toContain('baja');
   });
 
+  it('«va a menos» no salta con una bajada por debajo del ruido de medida (3 %)', () => {
+    const con = (deltaOrmPct: number) => construirTitulares({
+      revision: revision({ bajan: [{ exerciseId: 'remo', name: 'Remo', deltaOrmPct }] }),
+    });
+    expect(ids(con(-2))).not.toContain('baja');
+    expect(ids(con(-2.9))).not.toContain('baja');
+    expect(ids(con(-3))).toContain('baja');
+    // Y con la tarea cambiada, tampoco se menciona un −2 %: no hay nada que explicar.
+    const cambiada = construirTitulares({
+      revision: revision({
+        bajan: [{ exerciseId: 'remo', name: 'Remo', deltaOrmPct: -2 }],
+        cambiosDeTarea: { remo: { date: '2026-10-08', cambios: ['orden'] } },
+      }),
+    });
+    expect(ids(cambiada)).not.toContain('baja_no_comparable');
+  });
+
   it('solo avisa de los huecos de comida si son mayoría de la ventana', () => {
     const comida = (sinRegistrar: number, registrados: number): ComidaDeLaSemana => ({
       dias: [],

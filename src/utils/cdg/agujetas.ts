@@ -10,7 +10,8 @@
  *
  * Reglas (clase de seguimiento semanal del curso; el detalle, en `propuestaZona`):
  *   5 → freno: nunca subir; reducir o pausar la carga de esa zona (sin % fijo,
- *       decisión de Dani del 25-10).
+ *       decisión de Dani del 25-10). Es un aviso BLOQUEANTE (`Propuesta.bloqueante`):
+ *       nada que trabaje la zona sube y la zona se enseña siempre.
  *   4 → zona propensa a agujetas (`sensible` en zonas.ts: isquios y aductores):
  *       esperar una semana y, si sigue sin recuperar, bajar. Zona no propensa
  *       (p. ej. deltoides): te pasas, bajar un 15-30 %.
@@ -81,13 +82,31 @@ export interface LecturaAgujetas {
 
 export const aEscala5 = (v010: number) => Math.min(5, Math.max(1, Math.round(v010 / 2)))
 
+const diasEntre = (desde: string, hasta: string) =>
+  Math.round((Date.parse(`${hasta.slice(0, 10)}T00:00:00Z`) - Date.parse(`${desde.slice(0, 10)}T00:00:00Z`)) / 86_400_000)
+
+/**
+ * ¿La lectura `fechaAnterior` es de la semana previa a `fecha`? Otro día y a
+ * 14 días como mucho (F16): «segunda semana seguida en 4» no puede salir de
+ * comparar con una respuesta de hace dos meses.
+ */
+export function esLecturaDeLaSemanaPrevia (fechaAnterior: string, fecha: string, dias: number = UMBRALES_PROTOCOLO.diasAnteriorAgujetas): boolean {
+  const d = diasEntre(fechaAnterior, fecha)
+  return Number.isFinite(d) && d >= 1 && d <= dias
+}
+
 export function agujetasPorZona (serie: SerieDeSeñal): Partial<Record<ZonaIem, LecturaAgujetas>> {
   const out: Partial<Record<ZonaIem, LecturaAgujetas>> = {}
   for (const z of ZONAS_IEM) {
     const nuevas = serie(`agujetas.${z.clave}`).filter(p => p.value >= 1 && p.value <= 5)
     if (nuevas.length) {
       const u = nuevas[nuevas.length - 1]
-      out[z.clave] = { zona: z.clave, valor: u.value, fecha: u.date, anterior: nuevas[nuevas.length - 2]?.value, deEscala10: false }
+      // La anterior es la última de OTRO día, y solo vale si es de la semana previa.
+      const previa = [...nuevas].reverse().find(p => p.date.slice(0, 10) < u.date.slice(0, 10))
+      out[z.clave] = {
+        zona: z.clave, valor: u.value, fecha: u.date,
+        anterior: previa && esLecturaDeLaSemanaPrevia(previa.date, u.date) ? previa.value : undefined, deEscala10: false,
+      }
       continue
     }
     // Cuestionario antiguo: por fecha, el peor de los grupos de la zona.
@@ -96,7 +115,10 @@ export function agujetasPorZona (serie: SerieDeSeñal): Partial<Record<ZonaIem, 
     const fechas = [...porFecha.keys()].sort()
     if (!fechas.length) continue
     const f = fechas[fechas.length - 1]; const fa = fechas[fechas.length - 2]
-    out[z.clave] = { zona: z.clave, valor: aEscala5(porFecha.get(f)!), fecha: f, anterior: fa ? aEscala5(porFecha.get(fa)!) : undefined, deEscala10: true }
+    out[z.clave] = {
+      zona: z.clave, valor: aEscala5(porFecha.get(f)!), fecha: f,
+      anterior: fa && esLecturaDeLaSemanaPrevia(fa, f) ? aEscala5(porFecha.get(fa)!) : undefined, deEscala10: true,
+    }
   }
   return out
 }
@@ -109,6 +131,23 @@ export interface Propuesta {
   pct?: number
   /** IEM semanal al que llevaría ese cambio. */
   iemPropuesto?: number
+  /**
+   * Aviso bloqueante (F6, 17-11-2026): agujetas de 5, duele en reposo. No lleva
+   * % porque cuánto bajar lo decide el coach (Dani, 25-10), pero tampoco puede
+   * desaparecer como un «mantener»: quien use la propuesta (Planificar, el
+   * asistente) no sube NADA que trabaje esa zona y lo enseña.
+   */
+  bloqueante?: boolean
+}
+
+/**
+ * El % que se aplica de verdad a una zona en Planificar: el que ponga el coach
+ * o, si no ha tocado nada, el sugerido. Con aviso bloqueante (agujetas de 5) no
+ * hay sugerido y un % positivo se queda en 0: el coach solo decide cuánto BAJAR.
+ */
+export function pctEfectivo (propuesta: Propuesta, manual?: number): number {
+  if (propuesta.bloqueante) return Math.min(0, manual ?? 0)
+  return manual ?? propuesta.pct ?? 0
 }
 
 export type Contexto = 'favorable' | 'neutro' | 'desfavorable' | 'sin-dato'
@@ -129,6 +168,14 @@ export const UMBRALES_PROTOCOLO = {
   iemBaseAlta: 100, subidaMaxBaseAlta: 10,
   /** Una lectura de agujetas más antigua que esto ya no dice nada de la semana. */
   diasVigenciaAgujetas: 7,
+  /** La lectura «anterior» de agujetas solo cuenta si es de la semana previa:
+   *  como mucho estos días antes de la última (criterio propio, F16). */
+  diasAnteriorAgujetas: 14,
+  /** Estrés, sueño, motivación y cansancio al salir caducan a los 10 días
+   *  (criterio propio, F16, 17-11-2026: el cuestionario es semanal, así que 10
+   *  días cubren una respuesta que llega tarde pero no la de hace un mes).
+   *  Caducada = «sin dato», no la última que hubiera. */
+  diasVigenciaContexto: 10,
   /** Revisados por Dani el 27-10-2026 (son suyos, no del curso). */
   validados: true,
 } as const
@@ -137,6 +184,16 @@ export const UMBRALES_PROTOCOLO = {
 export function agujetasVigentes (fechaLectura: string, hoy: string, dias: number = UMBRALES_PROTOCOLO.diasVigenciaAgujetas): boolean {
   const ms = Date.parse(`${hoy}T00:00:00Z`) - Date.parse(`${fechaLectura.slice(0, 10)}T00:00:00Z`)
   return Number.isFinite(ms) && ms >= 0 && ms <= dias * 86_400_000
+}
+
+/**
+ * La última respuesta de una señal de contexto, si sigue vigente (F16). Antes
+ * se tomaba la última sin mirar la fecha: un estrés de 8 de hace tres meses
+ * seguía partiendo por la mitad todas las subidas.
+ */
+export function ultimaVigente (puntos: readonly PuntoSeñal[], hoy: string, dias: number = UMBRALES_PROTOCOLO.diasVigenciaContexto): PuntoSeñal | undefined {
+  const u = puntos[puntos.length - 1]
+  return u && agujetasVigentes(u.date, hoy, dias) ? u : undefined
 }
 
 /**
@@ -189,7 +246,8 @@ export function propuestaZona (o: {
   if (a >= 4 && primeraSemanaTrasParon) {
     return { tono: 'vigilar', texto: 'Primera semana tras un parón: el pico de agujetas es normal y suele normalizarse solo. No frenes de golpe; espera a la semana que viene y anótalo.' }
   }
-  if (a >= 5) return { tono: 'freno', texto: 'Duele incluso en reposo: no subir. Reduce o pausa la carga de esta zona y mira cómo evoluciona; tú decides cuánto. Si la subida vino de ejercicios en estiramiento, quita estiramiento antes que series.' }
+  // Sin % a propósito (Dani, 25-10), pero bloqueante: frena MÁS que un 4, no menos (F6).
+  if (a >= 5) return { tono: 'freno', bloqueante: true, texto: 'Duele incluso en reposo: no subir. Reduce o pausa la carga de esta zona y mira cómo evoluciona; tú decides cuánto. Si la subida vino de ejercicios en estiramiento, quita estiramiento antes que series.' }
   if (a >= 4) {
     if (!sensible) return { tono: 'freno', texto: 'No es una zona propensa a agujetas: con un 4 te estás pasando. Bajar su IEM un 15-30 %.', ...con(-20) }
     if (anterior != null && anterior >= 4) return { tono: 'freno', texto: 'Segunda semana seguida en 4 o más: no se recupera. Bajar su IEM un 15-30 %.', ...con(-20) }

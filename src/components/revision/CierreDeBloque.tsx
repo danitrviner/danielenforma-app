@@ -7,13 +7,12 @@ import {
 import { getDietCompletionLogsForAthlete, getDietsForAthlete, getNutritionProgram } from '../../dbService';
 import { getBodyMeasurementsForAthlete } from '../../db/bodyMeasurements';
 import { bodyMeasurementsForAthleteKey } from '../../hooks/useBodyMeasurements';
-import { appendDossierFacts } from '../../db/dossier';
-import { buildCierreMesociclo } from '../../utils/cierreMesociclo';
-import { buildEvolucionDelBloque, EvolucionDelBloque, EvolucionPregunta } from '../../utils/evolucionDelBloque';
-import { buildConclusionesDelBloque, Conclusion, TonoConclusion } from '../../utils/conclusionesDelBloque';
-import { faseEnCurso } from '../../utils/objetivoDeFase';
-import { pesoCorporalEn } from '../../utils/allometricScore';
-import { addDays } from '../../utils/trainingWeek';
+import { appendDossierFacts, getDossier } from '../../db/dossier';
+import type { CierreMesociclo } from '../../utils/cierreMesociclo';
+import { buildCierreCompleto } from '../../utils/cierreCompleto';
+import { finDeBloque } from '../../utils/finDeBloque';
+import { EvolucionDelBloque, EvolucionPregunta } from '../../utils/evolucionDelBloque';
+import { Conclusion, TonoConclusion, hechosDeCierre, hechosDeCierrePorGuardar } from '../../utils/conclusionesDelBloque';
 import { nombreDeMeso } from '../../utils/nombresMeso';
 import { Sexo } from '../../utils/athleteProfileSignals';
 import { useToast } from '../../hooks/useToast';
@@ -39,7 +38,8 @@ import ComparadorFotos from './ComparadorFotos';
      3. El detalle: rendimiento semana a semana, ejercicios, patrones y grupos,
         fotos, y lo constante que ha sido registrando.
 
-   Mismos motores que Plan › Entrenamiento › Cierre: los números coinciden.
+   Mismos motores que Plan › Entrenamiento › Cierre: los números coinciden, y
+   el mensaje para el cliente es el mismo (utils/cierreCompleto).
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
@@ -100,7 +100,7 @@ const COLOR_LECTURA: Record<EvolucionPregunta['lectura'], string> = {
   igual: 'var(--color-ink-2)',
 };
 
-function filasComparadas(c: ReturnType<typeof buildCierreMesociclo>, ev: EvolucionDelBloque): FilaComparada[] {
+function filasComparadas(c: CierreMesociclo, ev: EvolucionDelBloque): FilaComparada[] {
   const filas: FilaComparada[] = [];
   const res = c.progresion.resumen;
   const semanas = c.progresion.semanas;
@@ -151,11 +151,20 @@ function filasComparadas(c: ReturnType<typeof buildCierreMesociclo>, ev: Evoluci
       serie: p.semanal,
     });
   }
+  // Un cambio menor que el error de la cinta no lleva signo: con «−0,3 cm» se
+  // leería una bajada que no se distingue de volver a medir.
   for (const m of ev.medidas) {
     filas.push({
       clave: `m_${m.clave}`, grupo: 'Cuerpo', metrica: m.label,
       inicio: `${fmt(m.inicio)} ${m.unidad}`, final: `${fmt(m.final)} ${m.unidad}`,
-      cambio: `${conSigno(m.delta)} ${m.unidad}`, color: 'var(--color-ink-2)',
+      cambio: m.sinCambioMedible ? 'sin cambio medible' : `${conSigno(m.delta)} ${m.unidad}`, color: 'var(--color-ink-2)',
+    });
+  }
+  for (const i of ev.indices) {
+    filas.push({
+      clave: `i_${i.clave}`, grupo: 'Cuerpo', metrica: `Índice ${i.label}`,
+      inicio: fmt(i.inicio, 2), final: fmt(i.final, 2),
+      cambio: i.sinCambioMedible ? 'sin cambio medible' : `${i.delta > 0 ? '+' : ''}${fmt(i.delta, 2)}`, color: 'var(--color-ink-2)',
     });
   }
   if (ev.dieta && ev.dieta.inicio != null && ev.dieta.final != null) {
@@ -238,7 +247,6 @@ export default function CierreDeBloque({
   const queryClient = useQueryClient();
   const [vista, setVista] = useState<VistaDetalle>('grupos');
   const [guardando, setGuardando] = useState(false);
-  const fin = addDays(meso.startDate, meso.weeks * 7 - 1);
 
   // Las comidas del bloque entero (la revisión semanal solo pide su ventana).
   const { data: registrosDeComida = [] } = useQuery({
@@ -258,37 +266,19 @@ export default function CierreDeBloque({
     queryFn: () => getNutritionProgram(athlete.email),
   });
 
-  // El objetivo corporal que regía al terminar el bloque (o hoy, si sigue).
-  const objetivo = useMemo(() => {
-    const f = faseEnCurso(programa ?? null, hoy < fin ? hoy : fin);
-    return f?.objetivo?.tipo ?? null;
-  }, [programa, hoy, fin]);
-
-  const pesoKg = useMemo(() => pesoCorporalEn(fin, bodyweightLogs), [fin, bodyweightLogs]);
-  const cierre = useMemo(
-    () => buildCierreMesociclo({
-      meso, mesocycles, logs, assignments, exercises, athleteName: athlete.displayName, hoy, pesoCorporalKg: pesoKg,
-    }),
-    [meso, mesocycles, logs, assignments, exercises, athlete.displayName, hoy, pesoKg],
-  );
-  const evolucion = useMemo(
-    () => buildEvolucionDelBloque({
-      inicio: cierre.inicio, fin: cierre.fin, semanas: meso.weeks, hoy,
+  // Los tres motores juntos y su único mensaje: lo mismo que ven el editor
+  // del mesociclo, el borrador que se firma y el asistente.
+  const completo = useMemo(
+    () => buildCierreCompleto({
+      meso, mesocycles, logs, assignments, exercises, athleteName: athlete.displayName, hoy,
       bodyweightLogs, medidas, photos, responses, questionnaires,
-      dietLogs: registrosDeComida, diets: dietas, logs, objetivo,
+      dietLogs: registrosDeComida, diets: dietas, programaNutricion: programa,
     }),
-    [cierre.inicio, cierre.fin, meso.weeks, hoy, bodyweightLogs, medidas, photos, responses, questionnaires, registrosDeComida, dietas, logs, objetivo],
+    [meso, mesocycles, logs, assignments, exercises, athlete.displayName, hoy, bodyweightLogs, medidas, photos, responses, questionnaires, registrosDeComida, dietas, programa],
   );
-  const conclusiones = useMemo(() => buildConclusionesDelBloque(cierre, evolucion), [cierre, evolucion]);
+  const { cierre, evolucion, conclusiones, pesoCorporalKg: pesoKg, mensaje: mensajeGenerado } = completo;
   const filas = useMemo(() => filasComparadas(cierre, evolucion), [cierre, evolucion]);
 
-  // El mensaje: el del rendimiento, con lo del cuerpo y el bienestar metido
-  // antes de la despedida.
-  const mensajeGenerado = useMemo(() => {
-    const lineas = cierre.resumenParaCliente.split('\n');
-    const despedida = lineas.pop() ?? '';
-    return [...lineas, ...conclusiones.paraElCliente, despedida].join('\n');
-  }, [cierre.resumenParaCliente, conclusiones.paraElCliente]);
   const [mensaje, setMensaje] = useState(mensajeGenerado);
   useEffect(() => { setMensaje(mensajeGenerado); }, [mensajeGenerado]);
 
@@ -304,14 +294,21 @@ export default function CierreDeBloque({
   const guardarEnFicha = async () => {
     setGuardando(true);
     try {
-      const at = new Date().toISOString();
-      const etiqueta = `[Cierre ${nombreDeMeso(meso)} · ${cierre.inicio} → ${cierre.fin}]`;
-      const ficha = await appendDossierFacts(athlete.email, [
-        { at, kind: 'observacion', text: `${etiqueta} Hallazgos: ${conclusiones.hallazgos.map(h => h.texto).join(' ')}` },
-        ...(conclusiones.acciones.length
-          ? [{ at, kind: 'observacion' as const, text: `${etiqueta} Para el siguiente bloque: ${conclusiones.acciones.map(a => a.texto).join(' ')}` }]
-          : []),
-      ]);
+      // Pulsar dos veces escribía las conclusiones dos veces. La ficha solo
+      // admite añadir, así que se lee lo que ya tiene y se añade únicamente lo
+      // que aún no dice (mismo bloque, mismas conclusiones = mismo texto).
+      const nuevos = hechosDeCierre({
+        nombreBloque: nombreDeMeso(meso), inicio: cierre.inicio, fin: cierre.fin,
+        at: new Date().toISOString(), conclusiones,
+      });
+      const actual = await getDossier(athlete.email);
+      const porGuardar = hechosDeCierrePorGuardar(actual.hechos, nuevos);
+      if (porGuardar.length === 0) {
+        queryClient.setQueryData<AthleteDossier>(['dossier', athlete.email], actual);
+        showToast('Estas conclusiones ya estaban en la ficha del atleta', 'success');
+        return;
+      }
+      const ficha = await appendDossierFacts(athlete.email, porGuardar);
       queryClient.setQueryData<AthleteDossier>(['dossier', athlete.email], ficha);
       showToast('Conclusiones guardadas en la ficha del atleta', 'success');
     } catch (err) {
@@ -348,7 +345,7 @@ export default function CierreDeBloque({
               <Select
                 value={meso.id}
                 onChange={onCambiarBloque}
-                options={bloques.map(b => ({ value: b.id, label: addDays(b.startDate, b.weeks * 7 - 1) >= hoy ? `${nombreDeMeso(b)} (en curso)` : nombreDeMeso(b) }))}
+                options={bloques.map(b => ({ value: b.id, label: finDeBloque(b) >= hoy ? `${nombreDeMeso(b)} (en curso)` : nombreDeMeso(b) }))}
                 label="Bloque"
               />
             </div>
@@ -482,6 +479,12 @@ export default function CierreDeBloque({
                 </p>
                 {evolucion.voz.priorizar.length > 0 && <p className="font-sans text-caption text-ink-2">Quiere priorizar: {evolucion.voz.priorizar.join(', ')}</p>}
                 {evolucion.voz.demasiado.length > 0 && <p className="font-sans text-caption text-ink-2">Demasiado volumen en: {evolucion.voz.demasiado.join(', ')}</p>}
+                {/* Lo que contesta con sus palabras: mantener o cambiar, objetivo, molestias, duración. */}
+                {evolucion.voz.respuestas.map((r, i) => (
+                  <p key={`${i}-${r.pregunta}`} className="font-sans text-caption text-ink-2">
+                    <span className="font-bold text-ink">{r.pregunta}:</span> {r.respuesta}
+                  </p>
+                ))}
               </div>
             )}
           </Seccion>

@@ -9,7 +9,8 @@ import {
 } from '../dbService';
 import { MONTHS_ES, addDays, formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, BloqueDelCiclo, DiaDelCiclo, EstadoDeDia } from '../utils/cicloDelAtleta';
-import { prefillWorkoutSets } from '../utils/setPrefill';
+import { prefillWorkoutSets, entradasDeLaUltimaVez } from '../utils/setPrefill';
+import { tipoDeSemana } from '../utils/tipoDeSemana';
 import { saltoReal } from '../utils/cargaSugerida';
 import { conEstadoReal } from '../utils/estadoDeAsignacion';
 import { mesocycleWeekNumber, resolverEjercicioDelMeso } from '../utils/progression';
@@ -36,7 +37,7 @@ import NovedadesDeSemana from './training/NovedadesDeSemana';
 import { novedadesDeSemana, hayNovedades } from '../utils/semanasDelBloque';
 import { novedadesDeLaSesion, type NovedadesDeLaSesion } from '../utils/planificadorProgresion';
 import { cargarAvisoSesion, guardarAvisoSesion, borrarAvisoSesion } from '../utils/avisoDeSesion';
-import { SetInput, nuevaSerieVacia } from './training/setInput';
+import { SetInput, nuevaSerieVacia, tieneReps, seriesHechas } from './training/setInput';
 import { AL_VOLVER_A_LA_APP } from '../utils/refrescoDelAtleta';
 import { dondePreguntar, esMotivoDeParada, type MotivoDeParada } from '../utils/queTeParo';
 
@@ -379,25 +380,17 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       : baseWorkout;
 
     // Para cada ejercicio de la rutina, la sesión registrada más reciente
-    // entre TODAS las sesiones anteriores — es lo que rellena la tabla.
-    const sortedPrev = logs
-      .filter(l => l.date < assignment.date)
-      .sort((a, b) => b.date.localeCompare(a.date));
-    const seenExercises = new Set<string>();
-    const entries: WorkoutEntryLog[] = [];
-    for (const log of sortedPrev) {
-      for (const entry of log.entries) {
-        if (!seenExercises.has(entry.exerciseId)) {
-          seenExercises.add(entry.exerciseId);
-          entries.push(entry);
-        }
-      }
-    }
+    // entre TODAS las sesiones anteriores — es lo que rellena la tabla. Un
+    // ejercicio saltado con motivo no cuenta como «la última vez» (F19): se
+    // usa la sesión anterior que sí tenga series.
+    const entries = entradasDeLaUltimaVez(logs, assignment.date);
 
-    const prerrellenadas = prefillWorkoutSets(wo, entries, id => saltoReal(logs, id));
+    // F7a: en descarga, puente y vuelta de parón la tabla no llega con la
+    // carga subida; se repite lo de la última vez.
+    const semana = meso ? mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso)) : 0;
+    const prerrellenadas = prefillWorkoutSets(wo, entries, id => saltoReal(logs, id), tipoDeSemana(meso, semana));
 
     if (meso) {
-      const semana = mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso));
       const base = baseWorkout.exercises.slice().sort((a, b) => a.order - b.order);
       const datos = novedadesDeLaSesion(base, meso, semana, baseWorkout.name, id => exercises.find(e => e.id === id)?.name ?? 'Ejercicio');
       setAvisoSesion(hayNovedades(datos.novedades)
@@ -510,19 +503,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
     // "Última vez" para la referencia en pantalla: la sesión anterior a
     // ESTA, no la propia sesión que se está editando.
-    const sortedPrev = logs
-      .filter(l => l.id !== existingLog.id && l.date < assignment.date)
-      .sort((a, b) => b.date.localeCompare(a.date));
-    const seenExercises = new Set<string>();
-    const prevEntriesForEdit: WorkoutEntryLog[] = [];
-    for (const log of sortedPrev) {
-      for (const entry of log.entries) {
-        if (!seenExercises.has(entry.exerciseId)) {
-          seenExercises.add(entry.exerciseId);
-          prevEntriesForEdit.push(entry);
-        }
-      }
-    }
+    const prevEntriesForEdit = entradasDeLaUltimaVez(logs, assignment.date, existingLog.id);
 
     setActiveAssignment(assignment);
     setActiveWorkout(wo);
@@ -579,9 +560,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // frecuente de toda la pantalla.
   const updateSet = (exIdx: number, sIdx: number, field: keyof SetInput, value: string | boolean) => {
     setPlayerSets(prev => {
+      const fila = { ...prev[exIdx][sIdx], [field]: value };
+      // F23: una fila sin repeticiones no se da por hecha, venga de donde
+      // venga la orden (la tarjeta, que además avisa; el botón del bloqueo;
+      // «Cerrar ejercicio»). Va dentro del actualizador para ver las
+      // repeticiones recién escritas en la misma tanda. El peso 0 sí vale.
+      if (field === 'done' && value === true && !tieneReps(fila)) return prev;
       const next = [...prev];
       next[exIdx] = [...next[exIdx]];
-      const fila = { ...next[exIdx][sIdx], [field]: value };
       // D1: la hora a la que se marca la serie. Corrigiendo una sesión ya
       // terminada no se sella (ahí «ahora» no es cuando se hizo) y se conserva
       // la que tuviera; al desmarcar, se quita.
@@ -623,6 +609,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     return dondePreguntar(ids, meso?.ejerciciosClave);
   }, [activeWorkout, activeAssignment, mesocycles]);
 
+  // F7a: si la sesión abierta cae en semana de descarga, puente o vuelta de
+  // parón, para que sus tarjetas no sugieran subir carga.
+  const tipoSemanaActiva = useMemo(() => {
+    const meso = activeAssignment?.mesocycleId ? mesocycles.find(m => m.id === activeAssignment.mesocycleId) : undefined;
+    if (!activeAssignment || !meso) return null;
+    return tipoDeSemana(meso, mesocycleWeekNumber(meso.startDate, activeAssignment.date, cicloDiasDeMeso(meso)));
+  }, [activeAssignment, mesocycles]);
+
   const marcarQueParo = (exIdx: number, motivo: MotivoDeParada | undefined) => {
     setQuePararon(prev => {
       const next = [...prev];
@@ -653,7 +647,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // overlay, y mientras la celebración esté abierta manda ella.
   useBotonAtras(cerrarPlayer, !!activeAssignment && !celebration);
 
-  const canFinish = playerSets.some(exSets => exSets.some(s => s.done));
+  // Solo cuentan las series con repeticiones (F23): son las que se guardan.
+  const canFinish = playerSets.some(exSets => seriesHechas(exSets).length > 0);
 
   // 05-5. Autoguardado del entrenamiento en curso: cada serie marcada y cada
   // nota persiste al instante en el dispositivo. Antes, la única escritura era
@@ -700,8 +695,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       const entries: WorkoutEntryLog[] = orderedExercises
         .map((we, exIdx) => ({
           exerciseId: we.exerciseId,
-          sets: (playerSets[exIdx] || [])
-            .filter(s => s.done)
+          // F23: marcada Y con repeticiones. Una fila marcada en blanco (de un
+          // borrador anterior al arreglo) se guardaba como 0 kg × 0 reps.
+          sets: seriesHechas<SetInput>(playerSets[exIdx] || [])
             .map(s => ({
               weight: parseFloat(s.weight) || 0,
               repsDone: parseInt(s.repsDone) || 0,
@@ -971,6 +967,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           guardarAvisoSesion(profile.email, activeAssignment.id, leido);
           setAvisoSesion(a => a ? { ...a, leido } : a);
         }}
+        tipoSemana={tipoSemanaActiva}
       />
     );
   }

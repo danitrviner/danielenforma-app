@@ -140,4 +140,103 @@ describe('buildProgresionDelBloque', () => {
     expect(p.porPatron[0].clave).toBe('empuje_torso'); // ordenado de más a menos
     expect(p.porGrupo.find(f => f.clave === 'dorsal')!.deltaMedioPct).toBe(0);
   });
+
+  // ── F4: la semana en curso a medias no entra en los kg por semana ─────────
+  describe('kg por semana con el bloque en curso (F4)', () => {
+    const asig = (date: string): WorkoutAssignment => ({ id: date, workoutId: 'w', athleteId: 'a@b.c', date, status: 'pending' });
+    const dosPorSemana = [asig('2026-09-07'), asig('2026-09-10'), asig('2026-09-14'), asig('2026-09-17'), asig('2026-09-21'), asig('2026-09-24')];
+    const sesion = { sent: [{ weight: 100, repsDone: 5 }] }; // 500 kg
+
+    it('con media semana hecha no dice «mueve menos kg»: compara solo semanas enteras', () => {
+      const p = buildProgresionDelBloque({
+        ...base, assignments: dosPorSemana, hoy: '2026-09-22', // martes de la semana 3
+        logs: [log('2026-09-07', sesion), log('2026-09-10', sesion), log('2026-09-14', sesion), log('2026-09-17', sesion), log('2026-09-21', sesion)],
+      });
+      expect(p.semanas[2]).toMatchObject({ enCurso: true, incompleta: true, tonelaje: 500 });
+      // Semana 1 (1.000 kg) → semana 2 (1.000 kg): igual, no −50 %.
+      expect(p.resumen.tonelajeSemanal).toEqual({ inicio: 1000, final: 1000, deltaPct: 0 });
+    });
+
+    it('con solo una semana entera no hay comparación que dar', () => {
+      const p = buildProgresionDelBloque({
+        ...base, assignments: dosPorSemana, hoy: '2026-09-15',
+        logs: [log('2026-09-07', sesion), log('2026-09-10', sesion), log('2026-09-14', sesion)],
+      });
+      expect(p.resumen.tonelajeSemanal).toBeNull();
+    });
+
+    it('la semana en curso sí cuenta cuando ya se ha hecho todo lo programado', () => {
+      const p = buildProgresionDelBloque({
+        ...base, assignments: dosPorSemana.slice(0, 4), hoy: '2026-09-18', // viernes de la semana 2, las dos hechas
+        logs: [log('2026-09-07', sesion), log('2026-09-10', sesion), log('2026-09-14', sesion), log('2026-09-17', { sent: [{ weight: 110, repsDone: 5 }] })],
+      });
+      expect(p.semanas[1]).toMatchObject({ enCurso: true, incompleta: false });
+      expect(p.resumen.tonelajeSemanal).toMatchObject({ inicio: 1000, final: 1050 });
+    });
+
+    it('con el bloque terminado la última semana no queda «en curso»', () => {
+      const p = buildProgresionDelBloque({
+        ...base, hoy: '2026-10-05',
+        logs: [log('2026-09-07', sesion), log('2026-09-28', sesion)],
+      });
+      expect(p.semanas.every(s => !s.enCurso && !s.incompleta)).toBe(true);
+      expect(p.resumen.tonelajeSemanal).toMatchObject({ inicio: 500, final: 500 });
+    });
+  });
+
+  // ── F21: una serie sin RIR no es una serie al fallo ───────────────────────
+  describe('RIR medio (F21)', () => {
+    it('las series sin RIR apuntado no entran en la media', () => {
+      const p = buildProgresionDelBloque({
+        ...base,
+        logs: [
+          log('2026-09-07', { sent: [{ weight: 100, repsDone: 5, rir: 3 }, { weight: 100, repsDone: 5, rir: undefined }] }),
+          log('2026-09-14', { sent: [{ weight: 100, repsDone: 5, rir: 2 }, { weight: 100, repsDone: 5, rir: '' as unknown as number }] }),
+        ],
+      });
+      expect(p.semanas[0].rirMedio).toBe(3); // antes: (3 + 0) / 2 = 1,5
+      expect(p.semanas[1].rirMedio).toBe(2);
+      expect(p.resumen.rir).toEqual({ inicio: 3, final: 2 });
+    });
+
+    it('un bloque registrado sin RIR no «acaba al fallo»: no hay RIR medio', () => {
+      const p = buildProgresionDelBloque({
+        ...base,
+        logs: [
+          log('2026-09-07', { sent: [{ weight: 100, repsDone: 5, rir: undefined }] }),
+          log('2026-09-28', { sent: [{ weight: 105, repsDone: 5, rir: undefined }] }),
+        ],
+      });
+      expect(p.semanas.every(s => s.rirMedio === null)).toBe(true);
+      expect(p.resumen.rir).toBeNull();
+      expect(p.ejercicios[0].inicio!.rir).toBeNull();
+    });
+
+    it('un RIR 0 apuntado y una serie al fallo sí cuentan como 0', () => {
+      const p = buildProgresionDelBloque({
+        ...base,
+        logs: [{
+          ...log('2026-09-07', {}),
+          entries: [{ exerciseId: 'sent', sets: [{ weight: 100, repsDone: 5, rir: 0 }, { weight: 100, repsDone: 5, rir: 4, alFallo: true }, { weight: 100, repsDone: 5, rir: 2 }] }],
+        }],
+      });
+      expect(p.semanas[0].rirMedio).toBe(0.7); // (0 + 0 + 2) / 3
+    });
+  });
+
+  // ── F10: por debajo del ruido de medida no hay mejora ni caída ────────────
+  it('un cambio de RM estimado menor que el ruido (3 %) es «estable» (F10)', () => {
+    const p = buildProgresionDelBloque({
+      ...base,
+      logs: [
+        log('2026-09-07', { press: [{ weight: 100, repsDone: 8 }], remo: [{ weight: 100, repsDone: 8 }], sent: [{ weight: 100, repsDone: 8 }] }),
+        log('2026-09-28', { press: [{ weight: 102.5, repsDone: 8 }], remo: [{ weight: 97.5, repsDone: 8 }], sent: [{ weight: 103, repsDone: 8 }] }),
+      ],
+    });
+    const de = (id: string) => p.ejercicios.find(e => e.exerciseId === id)!;
+    expect(de('press')).toMatchObject({ deltaPct: 2.5, estado: 'estable', via: 'ninguna' });
+    expect(de('remo')).toMatchObject({ deltaPct: -2.5, estado: 'estable' });
+    expect(de('sent')).toMatchObject({ deltaPct: 3, estado: 'mejora' });
+    expect(p.resumen).toMatchObject({ comparables: 3, mejoran: 1, estables: 2, bajan: 0 });
+  });
 });

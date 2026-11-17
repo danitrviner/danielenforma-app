@@ -5,7 +5,8 @@
 //
 //   · Semanas especiales mandan: test → «bate 3 récords»; descarga o vuelta de
 //     un parón → «ninguna serie por debajo de RIR 3»; vacaciones/viaje →
-//     «mínimo 2 sesiones».
+//     «mínimo 2 sesiones»; semana puente → «haz tus sesiones, sin marcas».
+//     En descarga, parón y puente no se propone ningún reto de progresar.
 //   · El resto de semanas compiten por score y rotan con la memoria del motor:
 //     doble progresión, supera tu sesión, AMRAP en la última serie, grupo
 //     estancado, mismo peso con más reserva y récord de repeticiones.
@@ -21,6 +22,7 @@ import {
   sesionesPendientes, ultimaVez, ultimasDosVeces, serieTop, superaA, referenciaDe,
   recordDeReps, tablaDeRecords, seguroParaAmrap, esGuiado,
 } from './planDeLaSemana.js';
+import { saltoReal, veredictoDeSerie } from './cargaSugerida.js';
 
 export const SCORE_RENDIMIENTO = {
   semanaEspecial: 95,
@@ -141,21 +143,59 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
     return options;
   }
 
+  // Semana puente (F7c, 17-11-2026): menos series para llegar fresco al tramo
+  // siguiente. Hasta ahora el motor no la conocía y seguía pidiendo AMRAP,
+  // récords y subidas de carga en la semana pensada para bajar la fatiga. El
+  // reto es hacer las sesiones; como en descarga, nada de progresar. Va con
+  // la nota de semana especial para que quede por delante de los retos de
+  // carga «a la antigua» de challengeOptions, que no saben qué semana es.
+  if (plan.semanaPuente) {
+    const n = plan.sesiones.length;
+    if (n > 0) {
+      options.push(meta({
+        kind: 'entrenos_completados',
+        score: SCORE_RENDIMIENTO.semanaEspecial,
+        difficulty: 'justo',
+        title: n === 1 ? 'Semana puente: haz tu sesión' : `Semana puente: haz tus ${n} sesiones`,
+        description: `Semana puente: menos series para llegar fresco al tramo siguiente. El reto es ${n === 1 ? 'hacer tu sesión' : `hacer las ${n} sesiones`} tal y como vienen, sin buscar marcas.`,
+        reason: 'Semana puente del bloque — el reto es cumplirla, no progresar',
+        metric: { unit: 'sesiones', target: n, ...(plan.meso ? { mesocycleId: plan.meso.id } : {}) },
+      }));
+    }
+    return options;
+  }
+
   if (candidatos.length === 0) return options;
 
   // ── Doble progresión ────────────────────────────────────────────────────────
   {
+    // «Toca subir» lo decide la MISMA función que la tarjeta de la sesión
+    // (`veredictoDeSerie`, F7c 17-11-2026): tope del rango, con el RIR pautado
+    // o más, sin fallo, y con el salto real de carga del ejercicio. Antes aquí
+    // bastaba con las repeticiones, y el reto decía «sube» el mismo día que la
+    // tarjeta dejaba el peso de siempre.
     const conRango = candidatos
       .filter(c => c.ej.rango && c.ej.rango[1] > c.ej.rango[0])
-      .map(c => ({ c, falta: c.ej.rango![1] - c.top.reps }))
-      .filter(x => x.falta <= 2)
+      .map(c => ({
+        c,
+        falta: c.ej.rango![1] - c.top.reps,
+        veredicto: veredictoDeSerie(
+          { weight: c.top.weight, repsDone: c.top.reps, rir: c.top.rir, alFallo: c.top.alFallo },
+          { reps: c.ej.prescripcion.reps, rir: c.ej.prescripcion.rir },
+          saltoReal(workoutLogs, c.ej.exerciseId),
+        ),
+      }))
+      // En el tope pero sin margen (más justo de lo pautado, o al fallo): ni
+      // toca subir ni quedan repeticiones que buscar. Eso es de «mismo peso,
+      // más reserva», no de doble progresión.
+      .filter(x => x.veredicto != null || (x.falta > 0 && x.falta <= 2))
       .sort((a, b) => esClave(a.c) - esClave(b.c) || a.falta - b.falta);
     const elegido = conRango[0];
     if (elegido) {
-      const { c } = elegido;
+      const { c, veredicto } = elegido;
       const [lo, hi] = c.ej.rango!;
       const tuning = difficultyFor('doble_progresion', memory);
-      if (c.top.reps >= hi) {
+      if (veredicto?.que === 'subir') {
         options.push(meta({
           kind: 'doble_progresion',
           score: SCORE_RENDIMIENTO.dobleProgresion,
@@ -171,14 +211,22 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
           },
         }));
       } else {
-        const target = tuning.factor < 1 ? Math.min(hi, c.top.reps + 1) : hi;
+        // Con un salto de carga grande, llegar al tope no basta: antes de subir
+        // hay que abrir el rango (las mismas repeticiones que pide la tarjeta).
+        const espera = veredicto?.que === 'esperar' ? veredicto : null;
+        const objetivo = espera ? espera.reps : hi;
+        const target = tuning.factor < 1 ? Math.min(objetivo, c.top.reps + 1) : objetivo;
         options.push(meta({
           kind: 'doble_progresion',
           score: SCORE_RENDIMIENTO.dobleProgresion,
           difficulty: tuning.label,
           title: `${c.ej.nombre}: ${target} con ${fmtKg(c.top.weight)}`,
-          description: `Rango ${lo}-${hi}. La última vez: ${fmtKg(c.top.weight)} × ${c.top.reps}. Saca ${target} repeticiones con ${fmtKg(c.top.weight)}${target === hi ? ' y la próxima vez toca subir peso' : ''}. ${cierre}`,
-          reason: `Doble progresión: a ${hi - c.top.reps} repeticiones del tope del rango en ${c.ej.nombre}`,
+          description: espera
+            ? `Rango ${lo}-${hi}. La última vez: ${fmtKg(c.top.weight)} × ${c.top.reps}, ya en el tope, pero el siguiente peso son ${fmtKg(espera.paso)} más de golpe. Antes de subir, saca ${target} repeticiones con ${fmtKg(c.top.weight)}. ${cierre}`
+            : `Rango ${lo}-${hi}. La última vez: ${fmtKg(c.top.weight)} × ${c.top.reps}. Saca ${target} repeticiones con ${fmtKg(c.top.weight)}${target === hi ? ' y la próxima vez toca subir peso' : ''}. ${cierre}`,
+          reason: espera
+            ? `Doble progresión: en el tope del rango en ${c.ej.nombre}, pero el salto de carga es grande — abrir el rango antes de subir`
+            : `Doble progresión: a ${hi - c.top.reps} repeticiones del tope del rango en ${c.ej.nombre}`,
           metric: {
             unit: 'reps', target, baseline: c.top.reps, atWeight: c.top.weight,
             exerciseId: c.ej.exerciseId, exerciseName: c.ej.nombre,

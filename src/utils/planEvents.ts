@@ -1,6 +1,8 @@
 import { TaskItem, WorkoutAssignment, Workout, Exercise, Mesocycle, NutritionProgram, WorkoutLog, BodyweightLog } from '../types.js';
 import { addDays, getWeekStart } from './trainingWeek.js';
 import { evaluateCondition, ConditionContext } from './conditions.js';
+import { cicloDiasDeMeso } from './asignacionMesociclo.js';
+import { semanaDeCalendarioDeVuelta } from './descargaDelBloque.js';
 
 // ─── PlanEvent — modelo único de evento derivado para el cuadro de mando de
 // periodización ("Pantalla 1"). Nunca se teclea a mano ni se guarda aparte:
@@ -107,22 +109,36 @@ export function deriveVolumeIncreaseEvents(
   return events;
 }
 
-// Marcador de semana de descarga en el carril "Entrenamiento" (Bloque H) —
-// derivado de `Mesocycle.deloadWeek`, el campo que el coach marca a mano en el
-// editor del mesociclo (no hay forma de inferirlo de los datos de
-// entrenamiento en sí). Un mesociclo sin `deloadWeek` no genera marcador.
+// Marcadores de semana de descarga en el carril "Entrenamiento" (Bloque H).
+//
+// Uno por cada semana de `Mesocycle.semanasDescarga` (las que recortan el
+// entreno de verdad), no solo la primera: un bloque de 12 semanas con descarga
+// en la S6 y la S12 enseñaba una sola, y el aviso «revisión en semana de
+// descarga» no veía la otra. Van en semanas de ciclo, así que se llevan a su
+// semana de calendario (dos vueltas cortas en la misma semana dan un marcador).
+//
+// Un bloque antiguo que solo tiene `deloadWeek` (la marca que antes ponía la
+// cabecera del editor) sigue pintando ese marcador, como siempre. Sin ninguno
+// de los dos campos no hay marcador: la descarga la decide el coach, no se
+// infiere de los datos de entrenamiento.
 export function deriveDeloadEvents(mesocycles: Mesocycle[], today: string): PlanEvent[] {
   const events: PlanEvent[] = [];
   for (const m of mesocycles) {
-    if (m.deloadWeek === undefined) continue;
-    const date = addDays(m.startDate, (m.deloadWeek - 1) * 7);
-    events.push({
-      id: `deload-${m.id}`,
-      lane: 'entrenamiento',
-      date,
-      title: `Descarga: Mes. ${m.number}`,
-      status: date < today ? 'hecho' : 'programado',
-      icon: 'trending_down',
+    const cicloDias = cicloDiasDeMeso(m);
+    const semanas = m.semanasDescarga && m.semanasDescarga.length > 0
+      ? [...new Set(m.semanasDescarga.map(v => semanaDeCalendarioDeVuelta(v, cicloDias)))].sort((a, b) => a - b)
+      : m.deloadWeek !== undefined ? [m.deloadWeek] : [];
+    semanas.forEach((semana, i) => {
+      const date = addDays(m.startDate, (semana - 1) * 7);
+      events.push({
+        // La primera conserva el id de siempre; las demás llevan su semana.
+        id: i === 0 ? `deload-${m.id}` : `deload-${m.id}-s${semana}`,
+        lane: 'entrenamiento',
+        date,
+        title: `Descarga: Mes. ${m.number}`,
+        status: date < today ? 'hecho' : 'programado',
+        icon: 'trending_down',
+      });
     });
   }
   return events;

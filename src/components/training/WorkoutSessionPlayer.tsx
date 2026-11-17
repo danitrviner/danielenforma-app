@@ -14,7 +14,7 @@ import { segundosTranscurridos, formatearDuracion } from '../../utils/duracionSe
 import { haptics } from '../../services/haptics';
 import { formatDate } from '../../utils/trainingWeek';
 import { useEstable } from '../../hooks/useEstable';
-import { SetInput } from './setInput';
+import { SetInput, tieneReps } from './setInput';
 import { estadoDelEjercicio, seriesPrincipales } from '../../utils/seriesPrincipales';
 import { logrosDelEjercicio, tonelajeMaximoAntesDe, type Logro } from '../../utils/logrosDelEjercicio';
 import ExerciseCard from './ExerciseCard';
@@ -29,6 +29,8 @@ import { rmDeSerie } from '../../utils/oneRepMax';
 import AvisoDeRetoEnSesion from './AvisoDeRetoEnSesion';
 import { ListaDeNovedades } from './NovedadesDeSemana';
 import type { NovedadesDeLaSesion } from '../../utils/planificadorProgresion';
+import type { TipoDeSemana } from '../../utils/tipoDeSemana';
+import { tieneSeriesValidas } from '../../utils/setPrefill';
 
 const COMO_LLEGA: { clave: NonNullable<WorkoutLog['comoLlega']>; etiqueta: string }[] = [
   { clave: 'bien', etiqueta: 'Con energía' },
@@ -96,6 +98,9 @@ interface Props {
    *  null = aún no ha visto el aviso (se abre al entrar). */
   avisoSesion?: { datos: NovedadesDeLaSesion; semana: number; leido: boolean | null } | null;
   onAvisoSesion?: (leido: boolean) => void;
+  /** F7a: la sesión cae en semana de descarga, puente o vuelta de parón. En
+   *  ellas las tarjetas no sugieren subir carga. */
+  tipoSemana?: TipoDeSemana | null;
 }
 
 /**
@@ -115,7 +120,7 @@ export default function WorkoutSessionPlayer({
   sessionStartedAt, completedDurationSeg,
   celebration, dismissCelebration, cerrarPlayer, sameDayCardio,
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, onMarkActionDone,
-  avisoSesion, onAvisoSesion,
+  avisoSesion, onAvisoSesion, tipoSemana,
 }: Props) {
   const orderedExercises = activeWorkout.exercises.slice().sort((a, b) => a.order - b.order);
   const doneSetsTotal = playerSets.flat().filter(s => s.done).length;
@@ -249,6 +254,10 @@ export default function WorkoutSessionPlayer({
   const handleMarkDone = (exIdx: number, sIdx: number, markingDone: boolean) => {
     const we = orderedExercises[exIdx];
     const ex = getExercise(we.exerciseId);
+    // F23: sin repeticiones no hay serie que marcar (ni descanso que arrancar).
+    // La tarjeta ya avisa junto a la fila; esto es la red por si llega de otro
+    // sitio.
+    if (markingDone && !tieneReps(playerSets[exIdx]?.[sIdx])) return;
     void haptics.light();
     updateSet(exIdx, sIdx, 'done', markingDone);
     if (markingDone) onMarkActionDone();
@@ -514,8 +523,12 @@ export default function WorkoutSessionPlayer({
     [logs, activeWorkout.exercises],
   );
 
-  // F6: ejercicios que el atleta no ha registrado nunca.
-  const yaHechos = useMemo(() => new Set(logs.flatMap(l => l.entries.map(e => e.exerciseId))), [logs]);
+  // F6: ejercicios que el atleta no ha registrado nunca. Uno que solo ha
+  // saltado con motivo (entrada sin series, F19) sigue siendo un estreno.
+  const yaHechos = useMemo(
+    () => new Set(logs.flatMap(l => l.entries.filter(tieneSeriesValidas).map(e => e.exerciseId))),
+    [logs],
+  );
 
   // F3: cuando sale igual que la última vez, que no se lea como un fracaso.
   const mensajeDe = (exIdx: number): string | undefined => {
@@ -611,6 +624,7 @@ export default function WorkoutSessionPlayer({
         onNoteChange={cb.onNoteChange}
         saltoKg={saltos.get(we.exerciseId)}
         esNuevo={!isEditingCompleted && !yaHechos.has(we.exerciseId)}
+        tipoSemana={tipoSemana}
         nuevaReferencia={referenciasNuevas?.[exIdx] ?? false}
         onToggleReferencia={marcarReferenciaNueva && !isEditingCompleted ? cb.onToggleReferencia : undefined}
         restTimer={pageIdx === pIdx && restTimer && restSecondsLeft
@@ -678,6 +692,7 @@ export default function WorkoutSessionPlayer({
             : null}
           onSkipRest={onSkipRestStable}
           onAddRestSeconds={addRestSecondsStable}
+          tipoSemana={tipoSemana}
         />
       </div>
     );
@@ -781,7 +796,11 @@ export default function WorkoutSessionPlayer({
         >
           <div className="space-y-3">
             <p className="font-sans text-label text-ink-2">
-              Semana {avisoSesion.semana}. Tu entrenador ha cambiado esto respecto a la semana pasada:
+              {/* En la semana 1 no hay «semana pasada» con la que comparar (la
+                  vuelta de parón siempre cae ahí). */}
+              {avisoSesion.semana > 1
+                ? `Semana ${avisoSesion.semana}. Tu entrenador ha cambiado esto respecto a la semana pasada:`
+                : `Semana ${avisoSesion.semana}. Tenlo en cuenta antes de empezar:`}
             </p>
             <ListaDeNovedades novedades={avisoSesion.datos.novedades} sinDia />
             {avisoSesion.datos.porEjercicio.some(c => c.length > 0) && (

@@ -42,7 +42,7 @@ function esCeroSinDato(value: number, unit: string): boolean {
 }
 
 const TIPO_SEMANA: Record<NonNullable<NonNullable<WeeklyChallenge['contexto']>['tipoSemana']>, string> = {
-  test: 'test', descarga: 'descarga', paron: 'vuelta de parón', evento: 'semana fuera',
+  test: 'test', descarga: 'descarga', puente: 'semana puente', paron: 'vuelta de parón', evento: 'semana fuera',
 };
 
 /** «Hipertrofia 1 · semana 2 de 9», para que el reto se lea como parte del bloque. */

@@ -139,6 +139,29 @@ describe('13-h · tiempo de sesión, técnica y rendimiento (Dani, 25-10)', () =
     expect(tecnicas.every(c => c.porTiempo)).toBe(true)
   })
 
+  it('F6 · una zona bloqueada (agujetas de 5) no sube ni de rebote: el press no se toca si el tríceps está bloqueado', () => {
+    const b = base()
+    const libre = proponerProgresionIem({ motor, nombreCdgDe, ejercicios: dia(), iemBase: { pectoral: b }, pctPorZona: { pectoral: 30 } })
+    expect(libre.cambios.some(c => c.clave === 'A:press')).toBe(true)
+    const r = proponerProgresionIem({ motor, nombreCdgDe, ejercicios: dia(), iemBase: { pectoral: b }, pctPorZona: { pectoral: 30 }, zonasSinSubida: ['triceps'] })
+    expect(r.cambios.every(c => c.clave === 'A:peck')).toBe(true)
+    // El tríceps queda exactamente como estaba.
+    const triceps = (ejs: EjercicioProgramable[]) => proponerProgresionIem({ motor, nombreCdgDe, ejercicios: ejs, iemBase: { triceps: 1 }, pctPorZona: { triceps: 1 } }).zonas[0].antes
+    const ops = new Map<string, Parameters<typeof aplicarOperaciones>[1]>()
+    for (const c of r.cambios) ops.set(c.clave, [...(ops.get(c.clave) ?? []), c.op])
+    const despues = dia().map(x => ({ ...x, we: aplicarOperaciones(x.we, ops.get(x.clave) ?? []) }))
+    expect(triceps(despues)).toBe(triceps(dia()))
+    if (!r.zonas[0].alcanzado) expect(r.zonas[0].nota).toContain('agujetas de 5')
+  })
+
+  it('F6 · una zona bloqueada ignora un % positivo, pero se puede bajar', () => {
+    const b = base()
+    const sube = proponerProgresionIem({ motor, nombreCdgDe, ejercicios: dia(), iemBase: { pectoral: b }, pctPorZona: { pectoral: 20 }, zonasSinSubida: ['pectoral'] })
+    expect(sube).toEqual({ cambios: [], zonas: [] })
+    const baja = proponerProgresionIem({ motor, nombreCdgDe, ejercicios: dia(), iemBase: { pectoral: b }, pctPorZona: { pectoral: -25 }, zonasSinSubida: ['pectoral'] })
+    expect(baja.zonas[0].despues).toBeLessThan(b)
+  })
+
   it('una serie de más cuesta su descanso y ~45 s', () => {
     expect(segundosDeUnaSerie(we('press', 3, 2))).toBe(135)
   })

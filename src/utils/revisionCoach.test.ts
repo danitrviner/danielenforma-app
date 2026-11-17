@@ -6,7 +6,7 @@ import {
 import {
   resolverPeriodoRevision, buildRevisionCoach, agruparEjerciciosPorPatron,
   mejoresYPeores, mesoActivo, semanasDeVentana, pesoVsSemanaPasada, construirBienestar,
-  fechaDeLaUltimaRevision, curvasDeLaVentana,
+  fechaDeLaUltimaRevision, curvasDeLaVentana, senalesDelProtocolo,
 } from './revisionCoach';
 
 const HOY = '2026-09-14'; // lunes
@@ -238,6 +238,17 @@ describe('mejoresYPeores', () => {
     expect(mejoresYPeores(perf).suben.map(e => e.exerciseId)).not.toContain('ruido');
   });
 
+  it('el listón es el ruido de medida (3 %): un ±2,5 % no sube ni baja', () => {
+    const justos = [
+      { ...base, exerciseId: 'casi_sube', sets: 4, bestOrm: 102.5, prevBestOrm: 100, deltaOrmPct: 2.5 },
+      { ...base, exerciseId: 'casi_baja', sets: 4, bestOrm: 97.5, prevBestOrm: 100, deltaOrmPct: -2.5 },
+      { ...base, exerciseId: 'baja_de_verdad', sets: 4, bestOrm: 97, prevBestOrm: 100, deltaOrmPct: -3 },
+    ];
+    const { suben, bajan } = mejoresYPeores(justos);
+    expect(suben).toEqual([]);
+    expect(bajan.map(e => e.exerciseId)).toEqual(['baja_de_verdad']);
+  });
+
   it('los que bajan salen de la peor a la menos mala', () => {
     expect(mejoresYPeores(perf).bajan.map(e => e.exerciseId)).toEqual(['baja']);
   });
@@ -452,6 +463,62 @@ describe('construirBienestar', () => {
     expect(b.domsCronico).toEqual([]);
     expect(b.domsPorGrupo).toEqual({});
     expect(b.irpAlInicio).toBeNull();
+  });
+
+  // ── R3: señales del protocolo semanal para la descarga ─────────────────────
+  const Q_SEMANA: Questionnaire = {
+    id: 'q_s', ownerId: 'coach', title: 'Tu semana',
+    questions: [
+      { id: 'cansancio', label: 'Cansancio al salir', type: 'scale', required: false, scaleMin: 0, scaleMax: 10, signalKey: 'wellness.fatigue_post_weekly' },
+      { id: 'ag_isquios', label: 'Agujetas isquios', type: 'scale', required: false, scaleMin: 1, scaleMax: 5, signalKey: 'agujetas.isquios' },
+      { id: 'ag_gluteo', label: 'Agujetas glúteo', type: 'scale', required: false, scaleMin: 1, scaleMax: 5, signalKey: 'agujetas.gluteo' },
+    ],
+  };
+  const semana = (fecha: string, cansancio: number, isquios: number, gluteo: number): QuestionnaireResponse => ({
+    id: `s_${fecha}`, questionnaireId: 'q_s', assignmentId: 'a', athleteId: 'ana@x.com', submittedAt: `${fecha}T19:00:00.000Z`,
+    answers: [{ questionId: 'cansancio', value: cansancio }, { questionId: 'ag_isquios', value: isquios }, { questionId: 'ag_gluteo', value: gluteo }],
+  });
+
+  it('R3 · saca el cansancio al salir y las agujetas 1-5 con su semana previa, a fecha del final de la ventana', () => {
+    const responses = [semana('2026-09-04', 6, 4, 2), semana('2026-09-11', 9, 4, 3)];
+    const r = senalesDelProtocolo({ responses, questionnaires: [Q_SEMANA], hasta: '2026-09-14' });
+    expect(r.cansancioAlSalir).toBe(9);
+    expect(r.agujetasPorZona).toEqual([
+      { nombre: 'Isquiotibiales', valor: 4, anterior: 4 },
+      { nombre: 'Glúteo (mayor y medio)', valor: 3, anterior: 2 },
+    ]);
+    // Mirando una semana atrás, lo del 11-09 todavía no existía.
+    const antes = senalesDelProtocolo({ responses, questionnaires: [Q_SEMANA], hasta: '2026-09-07' });
+    expect(antes.cansancioAlSalir).toBe(6);
+    expect(antes.agujetasPorZona?.[0]).toEqual({ nombre: 'Isquiotibiales', valor: 4, anterior: undefined });
+  });
+
+  it('R3 · lo caducado es «sin dato», y el DOM\'s 0-10 no se cuenta dos veces', () => {
+    const viejo = senalesDelProtocolo({ responses: [semana('2026-08-01', 9, 5, 5)], questionnaires: [Q_SEMANA], hasta: '2026-09-14' });
+    expect(viejo.cansancioAlSalir).toBeUndefined();
+    expect(viejo.agujetasPorZona).toEqual([]);
+    // Las agujetas convertidas del DOM's por grupo ya van por «agujetas que no se van».
+    const soloDoms = senalesDelProtocolo({ responses: RESPUESTAS, questionnaires: [Q_BIENESTAR], hasta: '2026-09-14' });
+    expect(soloDoms.agujetasPorZona).toEqual([]);
+  });
+
+  it('R3 · buildRevisionCoach las pasa a la descarga: cansancio de 9 y agujetas repetidas son dos señales', () => {
+    const r = buildRevisionCoach({
+      logs: [], exercises: [], mesocycles: [], periodo: { tipo: '7d' }, hoy: HOY,
+      responses: [semana('2026-09-04', 6, 4, 2), semana('2026-09-11', 9, 4, 3)], questionnaires: [Q_SEMANA],
+    });
+    expect(r.descarga.senales).toEqual([
+      'sale muy cansado de las sesiones (9/10)',
+      'agujetas de 4 o más dos semanas seguidas en isquiotibiales',
+    ]);
+    expect(r.descarga.recomendada).toBe(true);
+    // Con una sola (cansancio alto, agujetas normales) no se recomienda.
+    const una = buildRevisionCoach({
+      logs: [], exercises: [], mesocycles: [], periodo: { tipo: '7d' }, hoy: HOY,
+      responses: [semana('2026-09-11', 9, 2, 2)], questionnaires: [Q_SEMANA],
+    });
+    expect(una.descarga.senales).toHaveLength(1);
+    expect(una.descarga.recomendada).toBe(false);
   });
 
   it('buildRevisionCoach lo expone sin que haya que pedirlo aparte', () => {

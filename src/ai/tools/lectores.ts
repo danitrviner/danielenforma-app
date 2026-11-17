@@ -26,9 +26,11 @@ import { computeWeightTrend } from '../../utils/nutritionAnalysis.js';
 import { estimateMaintenanceKcal } from '../../utils/energyCalc.js';
 import { buildTrainingReport } from '../../utils/trainingReport.js';
 import { buildRevisionCoach, PeriodoRevision, mesoActivo, pesoVsSemanaPasada } from '../../utils/revisionCoach.js';
-import { buildCierreMesociclo } from '../../utils/cierreMesociclo.js';
+import { buildCierreCompleto } from '../../utils/cierreCompleto.js';
+import { ID_EN_SUS_PALABRAS } from '../../utils/conclusionesDelBloque.js';
 import { suggestVolume, VolumeIntent } from '../../utils/volumeSuggestion.js';
 import { buildVolumeHistoryFrom } from '../../utils/volumeHistory.js';
+import { cicloDiasDeMeso } from '../../utils/asignacionMesociclo.js';
 import { VOLUME_LANDMARKS_DEFAULT } from '../../data/volumeLandmarks.js';
 import { construirTitulares } from '../../utils/titularesRevision.js';
 import { construirComidaDeLaSemana } from '../../utils/comidaDeLaSemana.js';
@@ -1138,10 +1140,15 @@ export async function getNutritionAnalysis(email: string): Promise<string> {
  * tokens en decirle al modelo lo que el motor ya resolvió.
  */
 /**
- * El CIERRE del bloque, para el asistente: `buildCierreMesociclo`, el mismo
- * motor que Dani ve en Mesociclo › Cierre. Sesiones, volumen programado y
- * realizado por grupo, tonelaje y 1RM frente al bloque anterior, patrones,
- * titulares y el borrador para el cliente. Solo lectura.
+ * El CIERRE del bloque, para el asistente: `buildCierreCompleto`, el mismo
+ * motor que Dani ve en Mesociclo › Cierre y en Revisión › Cierre de bloque.
+ * Sesiones, volumen programado y realizado por grupo, tonelaje y 1RM frente al
+ * bloque anterior, patrones, titulares, conclusiones, lo que dice el atleta y
+ * el borrador para el cliente. Solo lectura.
+ *
+ * Desde el 17-11-2026 se calcula con el peso corporal (sin él, dominadas y
+ * fondos daban otra cifra que en pantalla) y trae las conclusiones y la voz
+ * del atleta, que antes se quedaban en la pantalla.
  */
 export async function getCierreBloque(email: string, mesocycleId?: string): Promise<string> {
   const profile = await findProfile(email);
@@ -1153,9 +1160,20 @@ export async function getCierreBloque(email: string, mesocycleId?: string): Prom
   const empezados = mesos.filter(m => !!m.startDate).sort((a, b) => a.startDate.localeCompare(b.startDate));
   const meso = mesocycleId ? mesos.find(m => m.id === mesocycleId) : (mesoActivo(mesos, hoy) ?? empezados[empezados.length - 1]);
   if (!meso) return toResult({ error: mesocycleId ? `No existe el mesociclo ${mesocycleId}.` : 'El atleta no tiene mesociclos que cerrar.' });
-  const c = buildCierreMesociclo({ meso, mesocycles: mesos, logs, assignments, exercises, athleteName: aliasDeAtleta(profile.displayName, profile.email), hoy });
+  // Lo del cuerpo y los cuestionarios se lee solo cuando ya hay bloque que cerrar.
+  const coachUid = (coachActual().uid || undefined);
+  const [bodyweightLogs, medidas, responses, questionnaires, programaNutricion] = await Promise.all([
+    getBodyweightForAthlete(email), getBodyMeasurementsForAthlete(email), getResponsesForAthlete(email),
+    coachUid ? getQuestionnairesByCoach(coachUid) : Promise.resolve([]), getNutritionProgram(email),
+  ]);
+  const completo = buildCierreCompleto({
+    meso, mesocycles: mesos, logs, assignments, exercises, athleteName: aliasDeAtleta(profile.displayName, profile.email), hoy,
+    bodyweightLogs, medidas, responses, questionnaires, programaNutricion,
+  });
+  const c = completo.cierre;
+  const voz = completo.evolucion.voz;
   return toResult({
-    bloque: { id: c.mesoId, numero: c.numero, objetivo: c.objetivo, inicio: c.inicio, fin: c.fin, semanas: c.semanas, diasSemana: c.diasSemana, enCurso: c.enCurso, comparacion: c.comparacion },
+    bloque: { id: c.mesoId, numero: c.numero, nombre: c.nombre, objetivo: c.objetivo, inicio: c.inicio, fin: c.fin, semanas: c.semanas, diasSemana: c.diasSemana, enCurso: c.enCurso, comparacion: c.comparacion },
     sesiones: c.sesiones,
     volumen: {
       pct: c.volumen.pct, totalProgramadas: c.volumen.totalProgramadas, totalRealizadas: c.volumen.totalRealizadas,
@@ -1177,7 +1195,19 @@ export async function getCierreBloque(email: string, mesocycleId?: string): Prom
       semanas: c.progresion.semanas.map(s => ({ semana: s.semana, sesiones: `${s.sesionesHechas}/${s.sesionesProgramadas}`, tonelaje: s.tonelaje, rirMedio: s.rirMedio, indiceFuerza: s.indiceFuerza })),
     },
     titulares: c.titulares,
-    borradorParaElCliente: c.resumenParaCliente,
+    // Las reglas del cierre, con la cifra que dispara cada una. La que cita al
+    // atleta literal se queda fuera: su texto va abajo, marcado como dato.
+    conclusiones: {
+      hallazgos: completo.conclusiones.hallazgos.map(h => ({ tono: h.tono, texto: h.texto })),
+      acciones: completo.conclusiones.acciones.filter(a => a.id !== ID_EN_SUS_PALABRAS).map(a => ({ tono: a.tono, texto: a.texto })),
+    },
+    vozDelAtleta: voz ? {
+      fecha: voz.fecha, valoracion: voz.valoracion, recuperacion: voz.recuperacion, exigencia: voz.exigencia,
+      quierePriorizar: voz.priorizar, demasiadoVolumenEn: voz.demasiado,
+      respuestas: voz.respuestas.map(r => ({ pregunta: r.pregunta, respuesta: markAthleteText(r.respuesta) })),
+    } : null,
+    pesoCorporalKg: completo.pesoCorporalKg,
+    borradorParaElCliente: completo.mensaje,
     note: 'Son los números de Mesociclo › Cierre, los mismos que ve Dani. Úsalos para el veredicto del bloque y para decir qué cambia en el siguiente (volumen por grupo que se cumplió o no, patrones que suben o se estancan). No recalcules nada.',
   });
 }
@@ -1293,9 +1323,16 @@ export async function getVolumeSuggestion(
   const hoy = hoyIsoLocal();
   const actual = mesoActivo(mesos, hoy) ?? [...mesos].sort((a, b) => b.number - a.number)[0] ?? null;
 
+  // El bloque nuevo todavía no existe (esto se llama ANTES de proponerlo), así
+  // que no hay «bloque actual» que excluir: `currentId: null` y el historial
+  // sale del último bloque con semanas terminadas, que suele ser el que está en
+  // curso. Antes se pasaba el bloque en curso como `currentId`, el historial
+  // salía del bloque de ANTES de ese, y la respuesta llamaba «bloqueAnterior»
+  // al que estaba en curso: la etiqueta y los datos hablaban de bloques distintos.
   const history = buildVolumeHistoryFrom({
     mesocycles: mesos,
-    currentId: actual?.id ?? '',
+    currentId: null,
+    hoy,
     logs, exercises, assignments, responses, questionnaires,
   });
 
@@ -1323,6 +1360,11 @@ export async function getVolumeSuggestion(
   const r = suggestVolume({
     landmarks: landmarks ?? VOLUME_LANDMARKS_DEFAULT,
     daysPerWeek: diasPorSemana,
+    // `diasPorSemana` son las sesiones del MICROCICLO: con un ciclo de 14 días
+    // y 8 sesiones, el techo semanal es el de 4, no el de 8. Solo cuando las
+    // sesiones son las del bloque en curso: si el modelo pide otras, su ciclo
+    // no se conoce y se toma por semanal, como hasta ahora.
+    semanasDelCiclo: actual && diasPorSemana === actual.daysPerWeek ? cicloDiasDeMeso(actual) / 7 : undefined,
     splitId: actual?.splitId,
     reparto: actual ? repartoDelMesociclo(actual) : undefined,
     level: nivel,
@@ -1331,9 +1373,16 @@ export async function getVolumeSuggestion(
     history,
   });
 
+  const anterior = history.previous;
   return toResult({
     partiendoDe: {
-      bloqueAnterior: actual ? { id: actual.id, numero: actual.number, nombre: actual.name } : null,
+      // El bloque del que sale el historial de verdad, con cuánto de él se ha
+      // contado: si sigue en curso, solo sus semanas terminadas.
+      bloqueAnterior: anterior ? {
+        id: anterior.id, numero: anterior.number, nombre: anterior.name,
+        enCurso: history.enCurso === true, semanasContadas: history.semanasContadas,
+        adherenciaPct: history.adherencePct, rirMedio: history.meanRir,
+      } : null,
       diasPorSemana, nivel, intencionPedida: intent, intencionAplicada: r.intentAplicado,
     },
     totalSeries: r.totalSeries,

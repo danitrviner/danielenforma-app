@@ -509,7 +509,7 @@ export default function ClientWorkoutsPanel({
           const mesoAssignments = assignments.filter(a => a.mesocycleId === current.id);
           if (mesoAssignments.length === 0) return null;
           const completed = mesoAssignments.filter(a => a.status === 'completed').length;
-          const adherence = adherenciaDeMesociclo(assignments, current.id) ?? 0;
+          const adherence = adherenciaDeMesociclo(assignments, current.id, hoyIsoLocal()) ?? 0;
           const cells = [...mesoAssignments].sort((a, b) => a.date.localeCompare(b.date));
           return (
             <div className="bg-bg border border-hairline rounded-surface px-4 py-3 space-y-2">

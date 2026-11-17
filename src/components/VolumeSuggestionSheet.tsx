@@ -9,6 +9,7 @@ import { buildVolumeHistoryFrom } from '../utils/volumeHistory';
 import { repartoDelMesociclo } from '../utils/trainingSplits';
 import { cicloDiasDeMeso } from '../utils/asignacionMesociclo';
 import { zoneLabel, heatmapText } from '../utils/volumeZones';
+import { textoDeDescarga } from '../utils/descargaDelBloque';
 import {
   getExercises, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds,
   getQuestionnairesByCoach, getResponsesForAthlete,
@@ -174,9 +175,14 @@ export default function VolumeSuggestionSheet({
             {[
               `${sesionesPorSemana} sesiones/sem`,
               semanasDelCiclo === 1 ? 'ciclo semanal' : `ciclo de ${semanasDelCiclo.toLocaleString('es-ES')} semanas`,
-              `${editing.weeks} vueltas`,
+              // `weeks` son semanas de calendario, no vueltas del ciclo: con un
+              // ciclo de 14 días, 8 semanas son 4 vueltas (decía «8 vueltas»).
+              `${editing.weeks} ${editing.weeks === 1 ? 'semana' : 'semanas'}`,
               split ? split.nombre : 'sin reparto elegido',
-              editing.deloadWeek !== undefined ? `descarga en la semana ${editing.deloadWeek}` : 'sin descarga',
+              // Lee `semanasDescarga`, que es lo que recorta el entreno, y no
+              // solo `deloadWeek`: dice todas las descargas del bloque y no
+              // promete una que solo está pintada en el calendario.
+              textoDeDescarga(editing, cicloDias),
             ].map(t => (
               <span key={t} className="rounded-chip border border-hairline bg-raised px-2.5 py-1 font-mono text-caption text-ink-2">{t}</span>
             ))}

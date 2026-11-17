@@ -1,5 +1,6 @@
 import type { Exercise, MuscleGroup } from '../types.js';
 import { MUSCLE_LABELS } from '../types.js';
+import { RUIDO_RM_PCT } from './ruidoDeMedida.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El patrón de la caída (S2, 11-11-2026)
@@ -15,15 +16,17 @@ import { MUSCLE_LABELS } from '../types.js';
                      mal (o cayendo casi todo). Es recuperación general: no se
                      arregla tocando ejercicios.
 
-   Cuenta como caída un ejercicio que baja un 2,5 % o más frente a la ventana
-   anterior siendo la misma tarea (S3), o que lleva dos sesiones seguidas
-   empezando peor (F1).
+   Cuenta como caída un ejercicio que baja más que el ruido de medida (3 %,
+   `ruidoDeMedida.ts`; antes un 2,5 %, que es lo que mueve una sola repetición)
+   frente a la ventana anterior siendo la misma tarea (S3), o que lleva dos
+   sesiones seguidas empezando peor (F1).
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export type TipoDeCaida = 'local' | 'regional' | 'transversal';
 
-/** Bajada de 1RM, en %, a partir de la cual un ejercicio cuenta como caída. */
-export const CAIDA_PCT = 2.5;
+/** Bajada de 1RM, en %, a partir de la cual un ejercicio cuenta como caída:
+ *  el ruido de medida del RM estimado (17-11-2026). */
+export const CAIDA_PCT = RUIDO_RM_PCT;
 /** Ejercicios cayendo sin relación a partir de los cuales se mira el contexto. */
 const SIN_RELACION_MINIMO = 3;
 

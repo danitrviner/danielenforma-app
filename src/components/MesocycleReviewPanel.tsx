@@ -1,12 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Exercise, Mesocycle, WorkoutAssignment, WorkoutLog, BodyweightLog } from '../types';
-import { buildCierreMesociclo, FilaVolumenGrupo } from '../utils/cierreMesociclo';
+import { auth } from '../firebase';
+import { getBodyMeasurementsForAthlete, getNutritionProgram, getQuestionnairesByCoach, getResponsesForAthlete } from '../dbService';
+import { bodyMeasurementsForAthleteKey } from '../hooks/useBodyMeasurements';
+import type { FilaVolumenGrupo } from '../utils/cierreMesociclo';
+import { buildCierreCompleto } from '../utils/cierreCompleto';
 import { useMotorCdg } from '../hooks/useMotorCdg';
 import { iemDeLogs, filasIEM, type FilaIEM } from '../utils/cdg';
 import { Sexo } from '../utils/athleteProfileSignals';
-import { pesoCorporalEn } from '../utils/allometricScore';
 import { useToast } from '../hooks/useToast';
-import { addDays } from '../utils/trainingWeek';
 import { Icon, EmptyState, Badge, SegmentedControl, BarraCumplimiento } from './ui';
 import {
   fmt, conSigno, colorDelta, Tile, Seccion, SemanaASemana, Podio, ListaEjercicios, Agregado,
@@ -51,22 +54,51 @@ export default function MesocycleReviewPanel({
   const [vista, setVista] = useState<Vista>('ejercicios');
   const { motor, cargando: cargandoCdg, noSubido } = useMotorCdg();
 
-  // Peso corporal al final del bloque (última medida conocida hasta esa fecha):
-  // suma a las series de dominadas/fondos y alimenta el 1RM alométrico.
-  const finBloque = useMemo(() => addDays(meso.startDate, meso.weeks * 7 - 1), [meso.startDate, meso.weeks]);
-  const pesoEnCierre = useMemo(() => pesoCorporalEn(finBloque, pesoLogs), [finBloque, pesoLogs]);
+  // Lo que el mensaje dice del cuerpo y del bienestar sale de las medidas, los
+  // cuestionarios y la fase de nutrición. Se piden aquí con las mismas claves
+  // que Revisión › Cierre de bloque (casi siempre ya en caché) para que el
+  // mensaje de esta pantalla sea EL MISMO que el de allí, no uno más corto.
+  const email = meso.athleteId || '';
+  const coachUid = auth.currentUser?.uid ?? '';
+  const { data: medidas } = useQuery({
+    queryKey: bodyMeasurementsForAthleteKey(email),
+    queryFn: () => getBodyMeasurementsForAthlete(email),
+    enabled: !!email,
+  });
+  const { data: respuestas } = useQuery({
+    queryKey: ['responsesForAthlete', email],
+    queryFn: () => getResponsesForAthlete(email),
+    enabled: !!email,
+  });
+  const { data: cuestionarios } = useQuery({
+    queryKey: ['questionnairesByCoach', coachUid],
+    queryFn: () => getQuestionnairesByCoach(coachUid),
+    enabled: !!coachUid,
+  });
+  const { data: programa } = useQuery({
+    queryKey: ['nutritionProgram', email],
+    queryFn: () => getNutritionProgram(email),
+    enabled: !!email,
+  });
 
-  const cierre = useMemo(
-    () => buildCierreMesociclo({ meso, mesocycles, logs, assignments, exercises, athleteName, pesoCorporalKg: pesoEnCierre }),
-    [meso, mesocycles, logs, assignments, exercises, athleteName, pesoEnCierre],
+  // El cierre entero y su único mensaje (utils/cierreCompleto). El peso
+  // corporal al final del bloque lo resuelve el propio motor: suma a las
+  // series de dominadas/fondos y alimenta el 1RM alométrico.
+  const completo = useMemo(
+    () => buildCierreCompleto({
+      meso, mesocycles, logs, assignments, exercises, athleteName,
+      bodyweightLogs: pesoLogs, medidas, responses: respuestas, questionnaires: cuestionarios, programaNutricion: programa,
+    }),
+    [meso, mesocycles, logs, assignments, exercises, athleteName, pesoLogs, medidas, respuestas, cuestionarios, programa],
   );
+  const { cierre, pesoCorporalKg: pesoEnCierre, mensaje: mensajeGenerado } = completo;
   const prog = cierre.progresion;
   const res = prog.resumen;
 
   // El borrador se edita aquí mismo antes de copiarlo; vuelve al generado si
   // cambian los datos (otro bloque, logs nuevos).
-  const [borrador, setBorrador] = useState(cierre.resumenParaCliente);
-  useEffect(() => { setBorrador(cierre.resumenParaCliente); }, [cierre.resumenParaCliente]);
+  const [borrador, setBorrador] = useState(mensajeGenerado);
+  useEffect(() => { setBorrador(mensajeGenerado); }, [mensajeGenerado]);
 
   // Estímulo (IEM de CDG) de las sesiones del bloque.
   const estimulo = useMemo(() => {
@@ -101,7 +133,7 @@ export default function MesocycleReviewPanel({
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
           <p className="font-sans font-bold text-ink text-body-s">
-            Cierre del mesociclo #{cierre.numero}{cierre.objetivo ? ` · ${cierre.objetivo}` : ''}
+            Cierre de {cierre.nombre}{cierre.objetivo ? ` · ${cierre.objetivo}` : ''}
           </p>
           <p className="font-mono text-caption text-ink-2">
             {cierre.inicio} → {cierre.fin} · {cierre.semanas} sem × {cierre.diasSemana} días ·{' '}
@@ -251,9 +283,9 @@ export default function MesocycleReviewPanel({
             icon="chat"
             extra={(
               <div className="flex items-center gap-3">
-                {borrador !== cierre.resumenParaCliente && (
+                {borrador !== mensajeGenerado && (
                   <button
-                    onClick={() => setBorrador(cierre.resumenParaCliente)}
+                    onClick={() => setBorrador(mensajeGenerado)}
                     className="font-sans text-caption font-bold text-ink-2 hover:text-ink transition-colors"
                   >
                     Restaurar

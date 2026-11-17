@@ -11,7 +11,8 @@ import { pausaEntreTurnos, siguienteTurno, turnosDePareja } from '../../utils/se
 import ExerciseVideoPlayer from '../ExerciseVideoPlayer';
 import RestRing from './RestRing';
 import { SetInput, RIR_OPCIONES, rirTexto, rirClaseColor, resumenRangosPautados } from './setInput';
-import { BotonSerieHecha, ConsejoDelCoach, PieDeEjercicio, TEXTO_EJERCICIO_NUEVO } from './ExerciseCard';
+import { BotonSerieHecha, ConsejoDelCoach, PieDeEjercicio, TEXTO_EJERCICIO_NUEVO, useMarcarSerie, AvisoSinReps } from './ExerciseCard';
+import type { TipoDeSemana } from '../../utils/tipoDeSemana';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Series alternas en la sesión del atleta (P4) — versión «una tabla por
@@ -54,13 +55,21 @@ interface Props {
   restTimer: { totalSeconds: number; secondsLeft: number } | null;
   onSkipRest: () => void;
   onAddRestSeconds: (seconds: number) => void;
+  /** F7a: semana de descarga, puente o vuelta de parón. En ellas no se sugiere subir carga. */
+  tipoSemana?: TipoDeSemana | null;
   key?: React.Key;
 }
 
 const CELDA = 'rounded-control border bg-field px-1 sm:px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed';
 
-export default function ParejaAlternaCard({ lados, restTimer, onSkipRest, onAddRestSeconds }: Props) {
+export default function ParejaAlternaCard({ lados, restTimer, onSkipRest, onAddRestSeconds, tipoSemana }: Props) {
   const nombres = lados.map(l => l.ex?.name || l.we.exerciseId);
+  // F23: una fila sin repeticiones no se marca; se avisa junto a ella. Un
+  // gancho por ejercicio de la pareja (siempre son dos).
+  const marcado = [
+    useMarcarSerie(lados[0].exSets, lados[0].onMarkDone),
+    useMarcarSerie(lados[1].exSets, lados[1].onMarkDone),
+  ];
   const datos = lados.map(l => {
     const expanded = expandSetGroups(l.we);
     return {
@@ -74,8 +83,8 @@ export default function ParejaAlternaCard({ lados, restTimer, onSkipRest, onAddR
         targetReps: parseTargetReps(expanded[0]?.reps ?? l.we.reps),
         previousSets: l.prevEntry?.sets,
       }),
-      sugerencia: sugerirCarga(l.we, l.prevEntry, l.saltoKg),
-      consejo: consejoEnVivo(l.we, l.exSets, l.saltoKg),
+      sugerencia: sugerirCarga(l.we, l.prevEntry, l.saltoKg, tipoSemana),
+      consejo: consejoEnVivo(l.we, l.exSets, l.saltoKg, tipoSemana),
       // Con referencia nueva no se compara con la última vez (es otra tarea).
       diaMalo: l.nuevaReferencia ? null : consejoDeDiaMalo(l.exSets, l.prevEntry),
     };
@@ -236,8 +245,8 @@ export default function ParejaAlternaCard({ lados, restTimer, onSkipRest, onAddR
               const esSiguiente = toca?.ej === t.ej && toca.serie === sIdx;
               const alFallo = setInput.rir === 'fallo';
               return (
+                <React.Fragment key={`${t.ej}-${sIdx}`}>
                 <tr
-                  key={`${t.ej}-${sIdx}`}
                   className={`border-b transition-colors duration-(--duration-state) ${
                     alFallo && !setInput.done ? 'border-danger/35 bg-danger/6'
                     : setInput.done ? 'border-hairline bg-accent/6'
@@ -292,9 +301,15 @@ export default function ParejaAlternaCard({ lados, restTimer, onSkipRest, onAddR
                     </select>
                   </td>
                   <td className="px-2 sm:px-4 py-2 text-center">
-                    <BotonSerieHecha hecha={setInput.done} onClick={() => l.onMarkDone(sIdx, !setInput.done)} />
+                    <BotonSerieHecha hecha={setInput.done} onClick={() => marcado[t.ej].marcar(sIdx, !setInput.done)} />
                   </td>
                 </tr>
+                {marcado[t.ej].sinReps === sIdx && (
+                  <tr className="border-b border-hairline">
+                    <td colSpan={5} className="px-2 sm:px-4 pb-2"><AvisoSinReps /></td>
+                  </tr>
+                )}
+                </React.Fragment>
               );
             })}
           </tbody>

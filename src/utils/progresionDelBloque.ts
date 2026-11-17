@@ -6,6 +6,7 @@ import { contextoPesoCorporal, pesoDeSerie } from './pesoCorporal.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
 import { addDays, diasEntreFechas } from './trainingWeek.js';
 import { patronesDeGrupo, PATTERN_LABELS, type MovementPattern } from './movementPatterns.js';
+import { RUIDO_RM_PCT } from './ruidoDeMedida.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PROGRESIÓN DENTRO DEL BLOQUE — cómo ha evolucionado el atleta del principio
@@ -25,15 +26,20 @@ import { patronesDeGrupo, PATTERN_LABELS, type MovementPattern } from './movemen
 // Determinista y sin IA, igual que el resto del cierre.
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Variación (en %) por debajo de la cual un ejercicio se considera estable. */
-export const UMBRAL_ESTABLE_PCT = 2;
+/**
+ * Variación (en %) por debajo de la cual un ejercicio se considera estable.
+ * Era un 2 % propio de este motor; desde el 17-11-2026 es el ruido de medida
+ * del RM estimado, el mismo en toda la app (ver `ruidoDeMedida.ts`): una
+ * repetición más o menos ya mueve el RM un 2,5-3 %.
+ */
+export const UMBRAL_ESTABLE_PCT = RUIDO_RM_PCT;
 
 export interface MejorSerie {
   fecha: string;
   semana: number;
   kg: number;
   reps: number;
-  /** RIR registrado; `null` si fue al fallo. */
+  /** RIR registrado; `null` si fue al fallo o si la serie no lo trae apuntado. */
   rir: number | null;
   alFallo: boolean;
   /** 1RM estimado (fórmula CDG, con el RIR). 0 si la serie no da para estimarlo. */
@@ -92,7 +98,7 @@ export interface SemanaDelBloque {
   sesionesProgramadas: number;
   series: number;
   tonelaje: number;
-  /** RIR medio de las series principales (las de al fallo cuentan 0). */
+  /** RIR medio de las series principales con RIR apuntado (las de al fallo cuentan 0; las que no lo traen, no entran). */
   rirMedio: number | null;
   /** Mediana de (e1RM de la semana / e1RM de referencia) × 100 de los ejercicios hechos esa semana. 100 = como empezó. */
   indiceFuerza: number | null;
@@ -101,6 +107,8 @@ export interface SemanaDelBloque {
   esDescarga: boolean;
   /** La semana aún no ha terminado (bloque en curso): no se puede leer como «saltada». */
   enCurso: boolean;
+  /** En curso y con sesiones de la semana aún por hacer: sus kg no son los de una semana entera. */
+  incompleta: boolean;
 }
 
 export interface FilaAgregada<K extends string> {
@@ -125,7 +133,7 @@ export interface ProgresionDelBloque {
     bajan: number;
     /** Mediana de `deltaPct` de los comparables — el «cuánto más fuerte» del bloque. */
     medianaPct: number | null;
-    /** Tonelaje semanal: primera semana con datos → media de las dos últimas. */
+    /** Tonelaje semanal: primera semana con datos → media de las dos últimas. Sin la semana en curso a medias. */
     tonelajeSemanal: { inicio: number; final: number; deltaPct: number | null } | null;
     /** RIR medio: primera semana → última. Bajar = entrena más cerca del fallo. */
     rir: { inicio: number; final: number } | null;
@@ -164,10 +172,17 @@ export function textoSerie(s: Pick<MejorSerie, 'kg' | 'reps'>): string {
   return s.kg > 0 ? `${fmtKg(s.kg)} kg × ${s.reps}` : `${s.reps} reps`;
 }
 
-function rirDe(s: { rir?: number | string | null; alFallo?: boolean }): number {
+/**
+ * RIR de una serie, o `null` si no lo trae apuntado. Antes un RIR vacío valía
+ * 0, así que un bloque registrado sin RIR «acababa al fallo» y disparaba la
+ * acción de empezar con descarga. Mismo criterio que `rirStats.ts`: lo que no
+ * se apuntó no entra en la media. Al fallo sí es un 0 de verdad.
+ */
+function rirDe(s: { rir?: number | string | null; alFallo?: boolean }): number | null {
   if (s.alFallo) return 0;
+  if (s.rir == null || (typeof s.rir === 'string' && s.rir.trim() === '')) return null;
   const n = Number(s.rir);
-  return Number.isFinite(n) && n > 0 ? n : 0;
+  return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
 /** ¿Es `a` mejor serie que `b` en la métrica dada? */
@@ -270,7 +285,10 @@ export function buildProgresionDelBloque(params: {
     indiceFuerza: null,
     duracionMediaMin: null,
     esDescarga: descarga.has(i + 1),
-    enCurso: !!params.hoy && addDays(inicio, i * 7 + 6) >= params.hoy,
+    // La última semana puede acabar antes de sus 7 días si el bloque no dura
+    // semanas enteras (ciclos de 5 o 9 días): termina cuando termina el bloque.
+    enCurso: !!params.hoy && (addDays(inicio, i * 7 + 6) < fin ? addDays(inicio, i * 7 + 6) : fin) >= params.hoy,
+    incompleta: false,
   }));
   const rirPorSemana = semanas.map(() => [] as number[]);
   const durPorSemana = semanas.map(() => [] as number[]);
@@ -300,12 +318,13 @@ export function buildProgresionDelBloque(params: {
         const t = kg * reps;
         acc.tonelaje = r1(acc.tonelaje + t);
         if (fila) fila.tonelaje = r1(fila.tonelaje + t);
-        if (!s.segmento && reps > 0 && fila) rirPorSemana[sem - 1].push(rirDe(s));
         if (s.segmento || reps <= 0) continue;
+        const rir = rirDe(s);
+        if (rir != null && fila) rirPorSemana[sem - 1].push(rir);
 
         const serie: MejorSerie = {
           fecha: log.date, semana: sem, kg: r1(kg), reps,
-          rir: s.alFallo ? null : rirDe(s), alFallo: !!s.alFallo,
+          rir: s.alFallo ? null : rir, alFallo: !!s.alFallo,
           e1rm: cuentaParaRm({ weight: kg, repsDone: reps }) ? rmDeSerie({ ...s, weight: kg }) : 0,
         };
         if (serie.e1rm > 0 && mejorQue(serie, acc.porSemanaRm.get(sem) ?? null, 'e1rm')) acc.porSemanaRm.set(sem, serie);
@@ -323,6 +342,11 @@ export function buildProgresionDelBloque(params: {
     if (!a.date || a.date < inicio || a.date > fin) continue;
     const fila = semanas[semanaDe(a.date) - 1];
     if (fila) fila.sesionesProgramadas++;
+  }
+  // Una semana en curso solo se da por entera si ya se hizo todo lo que tenía
+  // programado; sin asignaciones no se puede saber, así que se trata como a medias.
+  for (const s of semanas) {
+    s.incompleta = s.enCurso && !(s.sesionesProgramadas > 0 && s.sesionesHechas >= s.sesionesProgramadas);
   }
 
   // ── Comparación inicio / final por ejercicio ──────────────────────────────
@@ -407,7 +431,9 @@ export function buildProgresionDelBloque(params: {
 
   // ── Resumen ──────────────────────────────────────────────────────────────
   const comparables = ejercicios.filter(e => e.deltaPct != null);
-  const conTonelaje = semanas.filter(s => s.tonelaje > 0 && !s.esDescarga);
+  // Sin la semana en curso a medias: con dos sesiones de cuatro hechas salía
+  // «mueve menos kg por semana: −50 %» de un atleta que iba al día.
+  const conTonelaje = semanas.filter(s => s.tonelaje > 0 && !s.esDescarga && !s.incompleta);
   const tonelajeSemanal = conTonelaje.length >= 2
     ? (() => {
         const ini = conTonelaje[0].tonelaje;

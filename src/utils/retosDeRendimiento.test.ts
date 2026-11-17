@@ -152,6 +152,16 @@ describe('planDeLaSemana', () => {
     expect(conMeso({ eventosSemana: { '2': { tipo: 'vacaciones' } } })).toBe('evento');
   });
 
+  it('F7c: marca la semana puente, salvo que además sea de descarga o de test', () => {
+    const puente = (m: Partial<Mesocycle>) => planDeLaSemana({
+      assignments: ASIGNACIONES, workouts: [PIERNA], mesocycles: [{ ...MESO, ...m } as Mesocycle], exercises: EJERCICIOS, today: HOY,
+    })!.semanaPuente;
+    expect(puente({ semanasPivot: [2] })).toBe(true);
+    expect(puente({ semanasPivot: [3] })).toBeUndefined();
+    expect(puente({ semanasPivot: [2], semanasDescarga: [2] })).toBeUndefined();
+    expect(puente({ semanasPivot: [2], semanasTest: [2] })).toBeUndefined();
+  });
+
   it('mesoActivo ignora bloques terminados o por empezar', () => {
     expect(mesoActivo([MESO], HOY)?.id).toBe('m1');
     expect(mesoActivo([{ ...MESO, startDate: '2026-01-05' } as Mesocycle], HOY)).toBeNull();
@@ -264,6 +274,50 @@ describe('retos de rendimiento — generación', () => {
     const opts = generateChallengeOptions(input({ mesocycles: [{ ...MESO, semanasDescarga: [2] } as Mesocycle] }));
     expect(opts[0].kind).toBe('rir_minimo');
     expect(opts.some(o => o.kind === 'amrap_serie' || o.kind === 'doble_progresion')).toBe(false);
+  });
+
+  const DE_PROGRESAR = ['doble_progresion', 'amrap_serie', 'supera_sesion', 'grupo_estancado', 'mas_reserva', 'record_reps'];
+
+  it('F7c: semana puente — el reto es hacer las sesiones, nada de progresar', () => {
+    const opts = generateChallengeOptions(input({ mesocycles: [{ ...MESO, semanasPivot: [2] } as Mesocycle] }));
+    expect(opts[0]).toMatchObject({ kind: 'entrenos_completados', title: 'Semana puente: haz tu sesión', metric: { target: 1, mesocycleId: 'm1' } });
+    expect(opts.some(o => DE_PROGRESAR.includes(o.kind))).toBe(false);
+  });
+
+  it('F7c: vuelta de parón — solo «RIR mínimo», nada de progresar', () => {
+    const opts = generateChallengeOptions(input({ mesocycles: [{ ...MESO, vuelveDeParon: true, startDate: LUNES } as Mesocycle] }));
+    expect(opts[0]).toMatchObject({ kind: 'rir_minimo', title: 'Vuelve con cabeza' });
+    expect(opts.some(o => DE_PROGRESAR.includes(o.kind))).toBe(false);
+  });
+
+  it('F7c: en descarga, puente y vuelta de parón tampoco salen los retos de carga «a la antigua»', () => {
+    const ANTIGUOS = ['carga_ejercicio', 'reps_ejercicio', 'series_grupo'];
+    const hay = (m: Partial<Mesocycle>) => generateChallengeOptions(input({ mesocycles: [{ ...MESO, ...m } as Mesocycle] })).some(o => ANTIGUOS.includes(o.kind));
+    expect(hay({})).toBe(true); // en una semana normal sí se proponen
+    expect(hay({ semanasDescarga: [2] })).toBe(false);
+    expect(hay({ semanasPivot: [2] })).toBe(false);
+    expect(hay({ vuelveDeParon: true, startDate: LUNES })).toBe(false);
+  });
+
+  // «Toca subir» con el mismo criterio que la tarjeta (`veredictoDeSerie`).
+  const conPrensa = (series: WorkoutSetLog[], reps = '8-12') => generateChallengeOptions(input({
+    workoutLogs: [...HISTORIAL.slice(0, -1), log('2026-10-22', { prensa: series, muerto: [s(85, 8)] })],
+    workouts: [{ ...PIERNA, exercises: [we('prensa', 0, reps), we('muerto', 4)] } as unknown as Workout, VIEJA],
+  })).find(o => o.kind === 'doble_progresion');
+
+  it('F7c: en el tope pero al fallo, o más justo de lo pautado, NO «toca subir» (la tarjeta tampoco sube)', () => {
+    expect(conPrensa([s(120, 12, 1)])?.metric).toMatchObject({ exerciseId: 'prensa', subirDe: 120 });
+    expect(conPrensa([s(120, 12, 0, true)])).toBeUndefined();
+    expect(conPrensa([s(120, 12, 0)])).toBeUndefined();
+  });
+
+  it('F7c: en el tope con un salto de carga grande, el reto pide abrir el rango, como la tarjeta', () => {
+    // Historial de la prensa: 110 y 120 kg → salto real de 10 kg (8 %): con un
+    // rango de 2 repeticiones hacen falta 2 más antes de subir.
+    const opt = conPrensa([s(120, 12, 1)], '10-12')!;
+    expect(opt.metric).toMatchObject({ exerciseId: 'prensa', atWeight: 120, target: 14 });
+    expect(opt.metric.subirDe).toBeUndefined();
+    expect(opt.description).toContain('Antes de subir, saca 14 repeticiones con 120 kg');
   });
 
   it('semana de test: «bate 3 récords»', () => {

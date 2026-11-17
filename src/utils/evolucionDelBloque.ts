@@ -1,11 +1,15 @@
 import type {
-  BodyMeasurement, BodyweightLog, Diet, DietCompletionLog, ProgressPhoto, Questionnaire,
+  BodyMeasurement, BodyMetricKey, BodyweightLog, Diet, DietCompletionLog, ProgressPhoto, Questionnaire,
   QuestionnaireQuestion, QuestionnaireResponse, WorkoutLog,
 } from '../types.js';
 import { BODY_METRIC_LABELS } from '../types.js';
 import { addDays, diasEntreFechas } from './trainingWeek.js';
 import { adherenciaPorKcal } from './diaDeDieta.js';
 import { RANGO_PCT_SEMANA, type ObjetivoCorporalTipo } from './verificacionObjetivo.js';
+import { RUIDO_PERIMETRO_CM } from './ruidoDeMedida.js';
+import {
+  computeAnthropometricIndices, ANTHROPOMETRIC_INDEX_LABELS, type AnthropometricIndexKey,
+} from './anthropometricIndices.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // EVOLUCIÓN DEL BLOQUE — todo lo que el atleta ha registrado durante un
@@ -49,6 +53,22 @@ export interface EvolucionMedida {
   unidad: string;
   fechaInicio: string;
   fechaFinal: string;
+  /**
+   * El cambio es menor que el error de la cinta (`RUIDO_PERIMETRO_CM`): no se
+   * enseña ni como mejora ni como empeoramiento, sino como «sin cambio medible».
+   */
+  sinCambioMedible: boolean;
+}
+
+/** Un índice perímetro / cintura (los de `anthropometricIndices.ts`) al empezar y al acabar. */
+export interface EvolucionIndice {
+  clave: AnthropometricIndexKey;
+  label: string;
+  inicio: number;
+  final: number;
+  delta: number;
+  /** Ninguno de sus dos perímetros ha cambiado más que el error de la cinta. */
+  sinCambioMedible: boolean;
 }
 
 export interface EvolucionPregunta {
@@ -101,12 +121,21 @@ export interface VozDelAtleta {
   exigencia: number | null;
   priorizar: string[];
   demasiado: string[];
+  /**
+   * Lo que contesta con sus palabras en ese mismo cuestionario: qué mantener o
+   * cambiar, su objetivo, molestias, cómo le ha resultado la duración. Se
+   * descartaban por no ser numéricas, y son justo lo que hay que leer antes de
+   * montar el siguiente bloque.
+   */
+  respuestas: { pregunta: string; respuesta: string }[];
 }
 
 export interface EvolucionDelBloque {
   semanas: number;
   peso: EvolucionPeso | null;
   medidas: EvolucionMedida[];
+  /** Índices perímetro / cintura con dato al empezar y al acabar. */
+  indices: EvolucionIndice[];
   preguntas: EvolucionPregunta[];
   dieta: EvolucionDieta | null;
   registro: RegistroDelAtleta;
@@ -119,6 +148,44 @@ export interface EvolucionDelBloque {
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
 const r2 = (n: number) => Math.round(n * 100) / 100;
+const r3 = (n: number) => Math.round(n * 1000) / 1000;
+
+/**
+ * Perímetros que se miden a los dos lados. En el cierre se enseñan
+ * PROMEDIADOS (izquierda y derecha medidas el mismo día): el filtro anterior
+ * los quitaba enteros, y con ellos el brazo y el muslo, que es lo primero que
+ * mira quien está en volumen.
+ */
+const PARES_DE_LADOS: { clave: string; label: string; izq: BodyMetricKey; der: BodyMetricKey }[] = [
+  { clave: 'biceps_relajado', label: 'Bíceps relajado', izq: 'biceps_izq_relajado', der: 'biceps_der_relajado' },
+  { clave: 'biceps_contraido', label: 'Bíceps contraído', izq: 'biceps_izq_contraido', der: 'biceps_der_contraido' },
+  { clave: 'muslo_relajado', label: 'Muslo relajado', izq: 'muslo_izq_relajado', der: 'muslo_der_relajado' },
+  { clave: 'muslo_contraido', label: 'Muslo contraído', izq: 'muslo_izq_contraido', der: 'muslo_der_contraido' },
+  { clave: 'gemelo_lados', label: 'Gemelo', izq: 'gemelo_izq', der: 'gemelo_der' },
+  { clave: 'biceps', label: 'Bíceps (legacy)', izq: 'biceps_izq', der: 'biceps_der' },
+  { clave: 'muslo', label: 'Muslo (legacy)', izq: 'muslo_izq', der: 'muslo_der' },
+];
+
+/** Error de la cinta para un perímetro: el brazo se mide más fino que el resto. */
+export function ruidoDePerimetro(clave: string): number {
+  return /^biceps/.test(clave) ? RUIDO_PERIMETRO_CM.brazo : RUIDO_PERIMETRO_CM.resto;
+}
+
+/** ¿Un cambio de perímetro (en cm) se queda dentro del error de medir? */
+function dentroDelRuido(clave: string, delta: number, unidad: string): boolean {
+  return unidad === 'cm' && Math.abs(delta) < ruidoDePerimetro(clave);
+}
+
+// Numerador de cada índice perímetro / cintura. El cálculo sigue siendo el de
+// `anthropometricIndices.ts`; esto solo es para saber qué dos medidas hay que
+// tener al empezar y al acabar. El WHtR (cintura / altura) no entra: no es un
+// perímetro contra la cintura y la altura no cambia en un bloque.
+const NUMERADOR_DE_INDICE: Partial<Record<AnthropometricIndexKey, BodyMetricKey>> = {
+  ipc: 'pecho',
+  ibc: 'biceps_der_contraido',
+  icac: 'cadera',
+  imc_muslo: 'muslo_der_relajado',
+};
 
 function mediana(xs: number[]): number | null {
   if (!xs.length) return null;
@@ -220,21 +287,61 @@ export function buildEvolucionDelBloque(params: {
   // Margen de dos semanas a cada lado: las mediciones se piden cada 2-4
   // semanas, y la de «inicio» suele ser la de justo antes de arrancar.
   const medidasBloque = (params.medidas ?? []).filter(m =>
-    m.metricKey !== 'bodyweight' && m.metricKey !== 'altura' && !/_izq|_der|gemelo/.test(m.metricKey)
+    m.metricKey !== 'bodyweight' && m.metricKey !== 'altura'
     && m.date >= addDays(inicio, -14) && m.date <= addDays(corte, 7));
-  const porClave = new Map<string, BodyMeasurement[]>();
-  for (const m of medidasBloque) {
+  const porClave = new Map<BodyMetricKey, BodyMeasurement[]>();
+  for (const m of [...medidasBloque].sort((a, b) => a.date.localeCompare(b.date))) {
     if (!porClave.has(m.metricKey)) porClave.set(m.metricKey, []);
     porClave.get(m.metricKey)!.push(m);
   }
   const medidas: EvolucionMedida[] = [];
-  for (const [clave, ms] of porClave) {
-    const o = [...ms].sort((a, b) => a.date.localeCompare(b.date));
-    const a = o[0], b = o[o.length - 1];
-    if (a.date === b.date) continue;
+  const medida = (clave: string, label: string, unidad: string, ini: number, fi: number, fechaInicio: string, fechaFinal: string) => {
+    const delta = r1(fi - ini);
     medidas.push({
-      clave, label: BODY_METRIC_LABELS[a.metricKey] ?? clave, unidad: a.unit,
-      inicio: a.value, final: b.value, delta: r1(b.value - a.value), fechaInicio: a.date, fechaFinal: b.date,
+      clave, label, unidad, inicio: r1(ini), final: r1(fi), delta, fechaInicio, fechaFinal,
+      sinCambioMedible: dentroDelRuido(clave, delta, unidad),
+    });
+  };
+  // Los dos lados, promediados, cuando hay al menos dos días con ambos medidos:
+  // comparar la media de un día con un solo lado de otro mezclaría la asimetría
+  // del atleta con el cambio del bloque.
+  const yaEnPar = new Set<BodyMetricKey>();
+  for (const par of PARES_DE_LADOS) {
+    const izq = new Map((porClave.get(par.izq) ?? []).map(m => [m.date, m]));
+    const ambos = (porClave.get(par.der) ?? []).filter(m => izq.has(m.date));
+    if (ambos.length < 2) continue;
+    const a = ambos[0], b = ambos[ambos.length - 1];
+    medida(par.clave, `${par.label} (media izq. y der.)`, a.unit,
+      (a.value + izq.get(a.date)!.value) / 2, (b.value + izq.get(b.date)!.value) / 2, a.date, b.date);
+    yaEnPar.add(par.izq).add(par.der);
+  }
+  for (const [clave, ms] of porClave) {
+    if (yaEnPar.has(clave)) continue;
+    const a = ms[0], b = ms[ms.length - 1];
+    if (a.date === b.date) continue;
+    medida(clave, BODY_METRIC_LABELS[a.metricKey] ?? clave, a.unit, a.value, b.value, a.date, b.date);
+  }
+
+  // Índices perímetro / cintura: la primera y la última medida de cada
+  // perímetro dentro de la ventana, con el cálculo de `anthropometricIndices`.
+  const primeras: Partial<Record<BodyMetricKey, BodyMeasurement>> = {};
+  const ultimas: Partial<Record<BodyMetricKey, BodyMeasurement>> = {};
+  for (const [clave, ms] of porClave) { primeras[clave] = ms[0]; ultimas[clave] = ms[ms.length - 1]; }
+  const indicesInicio = computeAnthropometricIndices(primeras);
+  const indicesFinal = computeAnthropometricIndices(ultimas);
+  const indices: EvolucionIndice[] = [];
+  for (const [clave, numerador] of Object.entries(NUMERADOR_DE_INDICE) as [AnthropometricIndexKey, BodyMetricKey][]) {
+    const ini = indicesInicio[clave], fi = indicesFinal[clave];
+    if (ini == null || fi == null) continue;
+    const num = { a: primeras[numerador]!, b: ultimas[numerador]! };
+    const cin = { a: primeras.cintura!, b: ultimas.cintura! };
+    // Hacen falta los DOS perímetros medidos dos veces: con uno solo repetido
+    // el índice «cambiaría» arrastrando una medida vieja del otro.
+    if (num.a.date === num.b.date || cin.a.date === cin.b.date) continue;
+    indices.push({
+      clave, label: ANTHROPOMETRIC_INDEX_LABELS[clave], inicio: ini, final: fi, delta: r3(fi - ini),
+      sinCambioMedible: dentroDelRuido(numerador, num.b.value - num.a.value, num.a.unit)
+        && dentroDelRuido('cintura', cin.b.value - cin.a.value, cin.a.unit),
     });
   }
 
@@ -263,10 +370,29 @@ export function buildEvolucionDelBloque(params: {
     const preguntas = new Map(q.questions.map(p => [p.id, p]));
     const zonas: number[] = [];
     const vozAqui: Partial<VozDelAtleta> = {};
+    // El cuestionario de cierre se reconoce por sus señales `meso_end.*`. Sus
+    // preguntas de texto y de elegir no llevan señal (son para leerlas, no
+    // para un cálculo), así que se recogen por pertenecer a ese cuestionario.
+    const esDeCierre = q.questions.some(p => (p.signalKey ?? '').startsWith('meso_end.'));
+    const enPalabras: VozDelAtleta['respuestas'] = [];
+    const anotar = (pregunta: string, valor: string | number | boolean) => {
+      const respuesta = typeof valor === 'string' ? valor.trim() : '';
+      if (respuesta) enPalabras.push({ pregunta, respuesta });
+    };
     for (const a of r.answers) {
       const p = preguntas.get(a.questionId);
-      if (!p) continue;
+      if (!p) {
+        // El comentario libre de una pregunta `conComentario` viaja como otra
+        // respuesta, con el id de su pregunta más `__comentario`.
+        const base = a.questionId.endsWith('__comentario') ? preguntas.get(a.questionId.slice(0, -'__comentario'.length)) : undefined;
+        if (esDeCierre && base) anotar(`${base.tituloCorto ?? base.label} (comentario)`, a.value);
+        continue;
+      }
       const sk = p.signalKey ?? '';
+      if (esDeCierre && !sk && (p.type === 'text' || p.type === 'choice')) {
+        anotar(p.tituloCorto ?? p.label, a.value);
+        continue;
+      }
       if (sk.startsWith('meso_end.')) {
         if (sk === 'meso_end.rating') vozAqui.valoracion = Number(a.value) || null;
         if (sk === 'meso_end.recovery') vozAqui.recuperacion = Number(a.value) || null;
@@ -296,7 +422,7 @@ export function buildEvolucionDelBloque(params: {
       series.get(clave)!.puntos.push({ fecha, v });
     }
     if (zonas.length) agujetasPorResp.push({ fecha, v: media(zonas)! });
-    if (Object.keys(vozAqui).length) {
+    if (Object.keys(vozAqui).length || enPalabras.length) {
       voz = {
         fecha,
         valoracion: vozAqui.valoracion ?? voz?.valoracion ?? null,
@@ -304,6 +430,7 @@ export function buildEvolucionDelBloque(params: {
         exigencia: vozAqui.exigencia ?? voz?.exigencia ?? null,
         priorizar: vozAqui.priorizar ?? voz?.priorizar ?? [],
         demasiado: vozAqui.demasiado ?? voz?.demasiado ?? [],
+        respuestas: enPalabras.length ? enPalabras : voz?.respuestas ?? [],
       };
     }
   }
@@ -393,5 +520,5 @@ export function buildEvolucionDelBloque(params: {
     diasDieta: diasDieta.length,
   };
 
-  return { semanas: nSemanas, peso, medidas, preguntas, dieta, registro, voz, fotos: fotosBloque };
+  return { semanas: nSemanas, peso, medidas, indices, preguntas, dieta, registro, voz, fotos: fotosBloque };
 }

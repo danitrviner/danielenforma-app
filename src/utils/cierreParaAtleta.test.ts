@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { bloqueCerradoRecientemente, textoCierre, finDePlan, diasHastaFinDePlan } from './cierreParaAtleta';
+import { bloqueCerradoRecientemente, finDePlan, diasHastaFinDePlan } from './cierreParaAtleta';
 import type { Mesocycle } from '../types';
 
 const HOY = '2026-10-29';
@@ -15,16 +15,17 @@ describe('bloqueCerradoRecientemente', () => {
   });
 });
 
-describe('textoCierre', () => {
-  it('tres cifras y las frases del motor', () => {
-    const t = textoCierre({
-      numero: 2,
-      sesiones: { registradas: 20, programadas: 24, completadas: 20, adherenciaPct: 83 },
-      volumen: { filas: [], totalProgramadas: 300, totalRealizadas: 270, pct: 90 },
-      informe: { perExercise: [{ isPR: true }, { isPR: false }, { isPR: true }] } as never,
-      resumenParaCliente: 'Has subido en press y en remo.',
-    }, 'Hipertrofia 1');
-    expect(t).toBe('Bloque «Hipertrofia 1» terminado: 20 de 24 sesiones, 90 % del trabajo programado, 2 récords. Has subido en press y en remo.');
+describe('bloqueCerradoRecientemente con ciclo distinto de 7 (F5)', () => {
+  // 4 semanas con ciclo de 10 días son 3 vueltas = 30 días: del 1 al 30 de junio.
+  const deDiez = { id: 'diez', athleteId: 'a', startDate: '2026-06-01', weeks: 4, daysPerWeek: 4, cycleDays: 10 } as Mesocycle;
+  it('no lo da por cerrado mientras le quedan días de la última vuelta', () => {
+    expect(bloqueCerradoRecientemente([deDiez], '2026-06-29')).toBeNull(); // con weeks × 7 ya había «acabado» el 28
+    expect(bloqueCerradoRecientemente([deDiez], '2026-06-30')).toBeNull(); // su último día
+    expect(bloqueCerradoRecientemente([deDiez], '2026-07-01')?.id).toBe('diez');
+  });
+  it('los 14 días del aviso cuentan desde su fin real', () => {
+    expect(bloqueCerradoRecientemente([deDiez], '2026-07-14')?.id).toBe('diez');
+    expect(bloqueCerradoRecientemente([deDiez], '2026-07-15')).toBeNull();
   });
 });
 

@@ -123,3 +123,99 @@ describe('get_alternativas_ejercicio', () => {
     expect(JSON.parse(await getAlternativasEjercicio('ana@x.com', { ejercicio: 'zzz' })).error).toBeTruthy();
   });
 });
+
+/* 17-11-2026 · F2 (semana base), F6 (agujetas de 5 bloqueantes) y F16 (señales caducadas). */
+describe('semana base, bloqueos y vigencia (F2, F6, F16)', () => {
+  const con = (cambios: Partial<FuenteDeDatos>) => usarFuenteDeDatos({ ...fuente, ...cambios } as unknown as FuenteDeDatos);
+  const restaurar = () => usarFuenteDeDatos(fuente as unknown as FuenteDeDatos);
+  const respuesta = (deltoides: number, pectoral: number, diasAtras = 1): QuestionnaireResponse => ({
+    ...RESPUESTA, submittedAt: `${addDays(HOY, -diasAtras)}T09:00:00.000Z`,
+    answers: [{ questionId: 'ag_d', value: deltoides }, { questionId: 'ag_p', value: pectoral }, { questionId: 'sl', value: 7.5 }],
+  });
+  type Zona = { zona: string; pct: number; antes: number; despues: number };
+
+  it('F2 · tras una semana de descarga, la propuesta parte de la última semana normal y sigue subiendo', async () => {
+    con({ getMesocycles: async () => [{ ...MESO, semanasDescarga: [3] }], getResponsesForAthlete: async () => [respuesta(1, 2)] });
+    const r = JSON.parse(await proposeProgresionIem('ana@x.com', {}, '', 'chat'));
+    restaurar();
+    expect(r.proposalCreated).toBe(true);
+    expect(r).toMatchObject({ semana: 4, semanaBase: 2 });
+    const deltoides = (r.zonas as Zona[]).find(z => z.zona === 'deltoides')!;
+    expect(deltoides.pct).toBeGreaterThan(0);
+    // Antes partía de la S3 a mitad de series y «subir un 10 %» era quitarle series.
+    expect(deltoides.despues).toBeGreaterThan(deltoides.antes);
+    expect((deltoides as Zona & { objetivo: number }).objetivo).toBeGreaterThan(deltoides.antes);
+    const p = creadas[0] as { summary: string; payload: { cambios: { exerciseId: string; sets: number; rir: number }[] } };
+    // El aislamiento de deltoides gana estímulo (una serie más o un RIR menos), no lo pierde.
+    const lat = p.payload.cambios.find(c => c.exerciseId === 'lat')!;
+    expect(lat.sets > 3 || lat.rir < 2).toBe(true);
+    expect(p.summary).toContain('sobre S2');
+    expect((r.avisos as string[]).join(' ')).toContain('S3 (descarga)');
+  });
+
+  it('F2 · una semana puente tampoco es destino de una subida', async () => {
+    con({ getMesocycles: async () => [{ ...MESO, semanasPivot: [4] }] });
+    const r = JSON.parse(await proposeProgresionIem('ana@x.com', { semana: 4 }, '', 'chat'));
+    restaurar();
+    expect(r.valid).toBe(false);
+    expect((r.issues as string[]).join(' ')).toContain('puente');
+    expect(creadas).toHaveLength(0);
+  });
+
+  it('F2 · get_cdg_semana no propone subir si la semana que viene es de descarga, y dice de dónde parte', async () => {
+    con({ getMesocycles: async () => [{ ...MESO, semanasDescarga: [4] }] });
+    const r = JSON.parse(await getCdgSemana('ana@x.com'));
+    restaurar();
+    expect(r.semanaQueViene).toMatchObject({ semana: 4, semanaBase: 3 });
+    expect(r.semanaQueViene.sinProgresion).toContain('descarga');
+    const deltoides = r.zonas.find((z: { zona: string }) => z.zona === 'deltoides');
+    expect(deltoides.propuestaSemanaQueViene).toMatchObject({ tono: 'mantener', pct: null });
+    // El freno del pectoral (un 4) se respeta igual.
+    expect(r.zonas.find((z: { zona: string }) => z.zona === 'pectoral').propuestaSemanaQueViene.tono).toBe('freno');
+  });
+
+  it('F6 · agujetas de 5: aviso bloqueante sin porcentaje, visible para el asistente', async () => {
+    con({ getResponsesForAthlete: async () => [respuesta(5, 2)] });
+    const r = JSON.parse(await getCdgSemana('ana@x.com'));
+    restaurar();
+    const deltoides = r.zonas.find((z: { zona: string }) => z.zona === 'deltoides');
+    expect(deltoides.propuestaSemanaQueViene).toMatchObject({ tono: 'freno', pct: null, bloqueante: true });
+    expect(r.avisosBloqueantes).toHaveLength(1);
+    expect(r.avisosBloqueantes[0]).toContain('Deltoides');
+    expect(r.avisosBloqueantes[0]).toContain('duele en reposo');
+    expect(r.avisosBloqueantes[0]).toContain('lo decide Dani');
+  });
+
+  it('F6 · la zona con un 5 no recibe subida ni de rebote, ni aunque el modelo la pida', async () => {
+    // Pectoral con margen (1) y deltoides con 5: el press subiría los dos, así que no se toca.
+    con({ getResponsesForAthlete: async () => [respuesta(5, 1)] });
+    const r = JSON.parse(await proposeProgresionIem('ana@x.com', { pct_por_zona: { deltoides: 10 } }, '', 'chat'));
+    restaurar();
+    expect(r.proposalCreated).toBeUndefined();
+    expect(r.valid).toBe(false);
+    expect(creadas).toHaveLength(0);
+    const avisos = (r.avisos as string[]).join(' ');
+    expect(avisos).toContain('agujetas de 5');
+    expect(avisos).toMatch(/Deltoides.*10 % ignorado/);
+  });
+
+  it('F6 · bajar la zona bloqueada sí se puede, y la propuesta lo deja a la vista', async () => {
+    con({ getResponsesForAthlete: async () => [respuesta(5, 2)] });
+    const r = JSON.parse(await proposeProgresionIem('ana@x.com', { pct_por_zona: { deltoides: -20 } }, '', 'chat'));
+    restaurar();
+    expect(r.proposalCreated).toBe(true);
+    const deltoides = (r.zonas as Zona[]).find(z => z.zona === 'deltoides')!;
+    expect(deltoides.despues).toBeLessThan(deltoides.antes);
+    expect((creadas[0] as { summary: string }).summary).toContain('Sin subir (agujetas de 5, decide tú cuánto bajar): Deltoides');
+  });
+
+  it('F16 · una respuesta de hace más de 10 días ya no es el contexto de la semana', async () => {
+    con({ getResponsesForAthlete: async () => [respuesta(1, 2, 40)] });
+    const viejo = JSON.parse(await getCdgSemana('ana@x.com'));
+    con({ getResponsesForAthlete: async () => [respuesta(1, 2, 9)] });
+    const reciente = JSON.parse(await getCdgSemana('ana@x.com'));
+    restaurar();
+    expect(viejo.contexto).toMatchObject({ sueñoHoras: null, contexto: 'sin-dato' });
+    expect(reciente.contexto.sueñoHoras).toBe(7.5);
+  });
+});

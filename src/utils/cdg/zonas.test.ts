@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { ZONAS_IEM, indicesDeZonas, iemPorZona, avisosIemIea, variacion } from './zonas'
-import { agujetasPorZona, propuestaZona, aEscala5, tipoDeBloque, contextoDeLaSemana, sensibilidadDeZona } from './agujetas'
+import { agujetasPorZona, propuestaZona, aEscala5, tipoDeBloque, contextoDeLaSemana, sensibilidadDeZona, pctEfectivo } from './agujetas'
 import { bandaIF, consejosDeTiempo } from './referencias'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -81,6 +81,29 @@ describe('freno / acelerador', () => {
     expect(p.pct).toBeUndefined()
     expect(p.texto).toContain('tú decides cuánto')
     expect(p.texto).toContain('estiramiento')
+  })
+  it('F6 · el 5 es un aviso bloqueante: frena más que el 4, aunque no lleve porcentaje', () => {
+    const cinco = propuestaZona({ ...base, agujetas: 5 })
+    expect(cinco.bloqueante).toBe(true)
+    expect(cinco.texto).toContain('no subir')
+    // Ni el 4 (que sí lleva −20 %) ni lo demás bloquean.
+    expect(propuestaZona({ ...base, agujetas: 4 }).bloqueante).toBeUndefined()
+    expect(propuestaZona({ ...base, sensible: true, agujetas: 4 }).bloqueante).toBeUndefined()
+    expect(propuestaZona({ ...base, agujetas: 1 }).bloqueante).toBeUndefined()
+    // En zona propensa también: un 5 no «espera una semana».
+    expect(propuestaZona({ ...base, sensible: true, agujetas: 5 })).toMatchObject({ tono: 'freno', bloqueante: true })
+  })
+  it('F6 · con la zona bloqueada el coach solo puede bajar: un % positivo se queda en 0', () => {
+    const cinco = propuestaZona({ ...base, agujetas: 5 })
+    expect(pctEfectivo(cinco)).toBe(0)
+    expect(pctEfectivo(cinco, 20)).toBe(0)
+    expect(pctEfectivo(cinco, -25)).toBe(-25)
+    // Sin bloqueo manda el coach y, si no ha tocado nada, el sugerido.
+    const uno = propuestaZona({ ...base, agujetas: 1 })
+    expect(pctEfectivo(uno)).toBe(10)
+    expect(pctEfectivo(uno, 30)).toBe(30)
+    expect(pctEfectivo(uno, 0)).toBe(0)
+    expect(pctEfectivo(propuestaZona({ ...base, agujetas: 4 }))).toBe(-20)
   })
   it('el objetivo de Volumen es la meta: no se pasa y, si ya llega, decide el coach', () => {
     expect(propuestaZona({ ...base, agujetas: 1, objetivo: 20 })).toMatchObject({ tono: 'objetivo' })

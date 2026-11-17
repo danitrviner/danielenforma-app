@@ -93,6 +93,67 @@ describe('cargaAgudaCronicaDelMeso', () => {
     }
   })
 
+  it('F15 · las semanas de descarga y de puente no entran en la crónica', () => {
+    const semanas = [1, 2, 3, 4, 5, 6, 7, 8].map(semana)
+    const r = cargaAgudaCronicaDelMeso({
+      motor, semanas, grupos, meso: { ...meso, semanasDescarga: [4], semanasPivot: [7] }, vueltas: 10, nombreCdgDe,
+    })
+    expect(r.disponible).toBe(true)
+    if (r.disponible) {
+      expect(r.semanaReferencia).toBe(9)
+      expect(r.semanasUsadas).toEqual([8, 6, 5, 3, 2, 1])
+      expect(r.semanasRecortadas).toEqual([4, 7])
+      expect(r.referenciaRecortada).toBeNull()
+    }
+  })
+
+  it('F15 · si al quitarlas no quedan tres semanas, lo dice con el motivo', () => {
+    const r = cargaAgudaCronicaDelMeso({
+      motor, semanas: [1, 2, 3].map(semana), grupos, meso: { ...meso, semanasDescarga: [3] }, vueltas: 8, nombreCdgDe,
+    })
+    expect(r.disponible).toBe(false)
+    expect('motivo' in r && r.motivo).toContain('hay 2')
+    expect('motivo' in r && r.motivo).toContain('S3')
+  })
+
+  it('F15 · una descarga programada no da el aviso «por debajo»; la misma bajada en semana normal, sí', () => {
+    const semanas = [1, 2, 3, 4, 5, 6].map(semana)
+    // Semana normal con una sola serie programada: muy por debajo de la media.
+    const una = [{ dayIndex: 0, exercises: [{ ...grupos[0].exercises[0], sets: 1 }] }]
+    const normal = cargaAgudaCronicaDelMeso({ motor, semanas, grupos: una, meso, vueltas: 8, nombreCdgDe })
+    expect(normal.disponible && normal.avisos.sesionesIF[7].fuera).toBe(true)
+    expect(normal.disponible && normal.avisos.musculos.length).toBeGreaterThan(0)
+    // Lo mismo, pero porque la S7 es de descarga (2 series → 1).
+    const dos = [{ dayIndex: 0, exercises: [{ ...grupos[0].exercises[0], sets: 2 }] }]
+    const descarga = cargaAgudaCronicaDelMeso({ motor, semanas, grupos: dos, meso: { ...meso, semanasDescarga: [7] }, vueltas: 8, nombreCdgDe })
+    expect(descarga.disponible).toBe(true)
+    if (descarga.disponible) {
+      expect(descarga.referenciaRecortada).toBe('descarga')
+      expect(descarga.ac.IF[7]).toBeLessThan(0.8)
+      expect(descarga.avisos.sesionesIF[7].fuera).toBe(false)
+      expect(descarga.avisos.musculos).toEqual([])
+      expect(descarga.avisos.articulaciones).toEqual([])
+    }
+  })
+
+  it('F15 · un ejercicio que estrena músculo sale como zona nueva, no como ratio 1 callado', () => {
+    const CURL = 'Curl de bíceps en polea - Bíceps'
+    const conCurl = [{ dayIndex: 0, exercises: [grupos[0].exercises[0], { exerciseId: 'curl', order: 1, sets: 3, reps: '10', restSeconds: 90, rir: 2 } as WorkoutExercise] }]
+    const r = cargaAgudaCronicaDelMeso({
+      motor, semanas: [1, 2, 3, 4, 5, 6].map(semana), grupos: conCurl, meso, vueltas: 8,
+      nombreCdgDe: id => (id === 'curl' ? CURL : nombreCdgDe(id)),
+    })
+    expect(r.disponible).toBe(true)
+    if (r.disponible) {
+      const nuevos = r.avisos.nuevos.filter(n => n.tipo === 'musculo').map(n => n.nombre)
+      expect(nuevos.length).toBeGreaterThan(0)
+      expect(nuevos.every(n => /codo|b[ií]ceps|antebrazo/i.test(n))).toBe(true)
+      expect(r.avisos.nuevos.every(n => n.sesion === 'Total de sesiones' && n.aguda > 0)).toBe(true)
+      // Lo que ya entrenaba (cuádriceps, glúteo…) no es nuevo.
+      expect(nuevos.some(n => /cu[aá]driceps|gl[uú]teo/i.test(n))).toBe(false)
+    }
+  })
+
   it('en Base (semana 0) no hay nada que comparar', () => {
     const r = cargaAgudaCronicaDelMeso({ motor, semanas: [1, 2, 3].map(semana), grupos, meso, vueltas: 8, nombreCdgDe, semanaReferencia: 0 })
     expect(r.disponible).toBe(false)

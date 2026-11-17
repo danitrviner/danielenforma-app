@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   Exercise, Mesocycle, MuscleGroup, MuscleGroupConfig, WorkoutAssignment, WorkoutLog, MUSCLE_ORDER,
 } from '../types';
-import { buildCierreMesociclo } from './cierreMesociclo';
+import { buildCierreMesociclo, semanasDeCalendarioEnDescarga } from './cierreMesociclo';
 
 const grupos = (parcial: Partial<Record<MuscleGroup, number>>): Record<MuscleGroup, MuscleGroupConfig> =>
   Object.fromEntries(MUSCLE_ORDER.map(g => [g, { series: parcial[g] ?? 0, priority: 'media' as const }])) as Record<MuscleGroup, MuscleGroupConfig>;
@@ -164,6 +164,20 @@ describe('buildCierreMesociclo', () => {
     expect(c.resumenParaCliente).toContain('Hipertrofia');
   });
 
+  it('llama al bloque por su nombre, no por «#número» (F8)', () => {
+    const previo = meso({ id: 'm1', number: 1, startDate: '2026-05-01', name: 'Base de fuerza' });
+    const actual = meso({ name: 'Hipertrofia 1' });
+    const c = buildCierreMesociclo({
+      meso: actual, mesocycles: [previo, actual], logs: [], assignments: [asig('2026-06-01', 'completed')],
+      exercises: EJERCICIOS, athleteName: 'Marta', hoy: '2026-07-15',
+    });
+    expect(c.nombre).toBe('Hipertrofia 1');
+    expect(c.comparacion).toBe('Base de fuerza');
+    expect(c.resumenParaCliente).toContain('cerramos el bloque «Hipertrofia 1»');
+    // Sin nombre sigue siendo «Meso #N» en pantalla.
+    expect(buildCierreMesociclo({ meso: meso(), mesocycles: [meso()], logs: [], assignments: [], exercises: EJERCICIOS, hoy: '2026-07-15' }).nombre).toBe('Meso #2');
+  });
+
   it('es determinista: dos llamadas con los mismos datos dan el mismo texto', () => {
     const args = {
       meso: meso(), mesocycles: [meso()], logs: [log('2026-06-02', 'press', [{ weight: 80, repsDone: 8 }])],
@@ -204,5 +218,126 @@ describe('buildCierreMesociclo', () => {
     const t = c.titulares.find(x => x.startsWith('Kg movidos por semana'));
     expect(t).toContain('un 0% vs Meso #1'); // …por semana es lo mismo
     expect(t).not.toContain('300');
+  });
+
+  // ── F3: adherencia con el bloque en curso ─────────────────────────────────
+  describe('adherencia con el bloque sin terminar (F3)', () => {
+    // 8 semanas a 2 sesiones (lunes y jueves) = 16. Hoy, martes de la semana 2.
+    const bloque = meso({ weeks: 8, daysPerWeek: 2 });
+    const fechas = Array.from({ length: 8 }, (_, s) => [`2026-06-${String(1 + s * 7).padStart(2, '0')}`, `2026-06-${String(4 + s * 7).padStart(2, '0')}`])
+      .flat().filter(f => f <= '2026-06-30');
+    const asignaciones = [...fechas, '2026-07-02', '2026-07-06', '2026-07-09', '2026-07-13', '2026-07-16', '2026-07-20', '2026-07-23']
+      .map(f => asig(f, f <= '2026-06-08' ? 'completed' : 'pending'));
+
+    it('en la semana 2 de 8 con todo hecho da 100 %, no 19 %', () => {
+      const c = buildCierreMesociclo({
+        meso: bloque, mesocycles: [bloque], logs: [], assignments: asignaciones, exercises: EJERCICIOS, athleteName: 'Marta', hoy: '2026-06-09',
+      });
+      expect(c.enCurso).toBe(true);
+      expect(c.sesiones).toMatchObject({ completadas: 3, programadas: 3, programadasEnTotal: 16, adherenciaPct: 100 });
+      expect(c.titulares.find(t => t.startsWith('Lleva'))).toBe('Lleva 3 de las 3 sesiones que tocaban hasta hoy (100%); el bloque tiene 16.');
+      expect(c.resumenParaCliente).toContain('Llevas 3 de las 3 sesiones que tocaban hasta hoy (100%).');
+      expect(c.resumenParaCliente).not.toContain('palanca');
+    });
+
+    it('con el bloque terminado vuelve a contar todas', () => {
+      const c = buildCierreMesociclo({
+        meso: bloque, mesocycles: [bloque], logs: [], assignments: asignaciones, exercises: EJERCICIOS, hoy: '2026-08-15',
+      });
+      expect(c.enCurso).toBe(false);
+      expect(c.sesiones).toMatchObject({ completadas: 3, programadas: 16, programadasEnTotal: 16, adherenciaPct: 19 });
+    });
+  });
+
+  // ── F5: el bloque acaba cuando acaban sus vueltas, no en semanas × 7 ──────
+  describe('fin real del bloque con ciclo distinto de 7 (F5)', () => {
+    // 4 semanas con ciclo de 10 días = 3 vueltas = 30 días: acaba el 30 de junio, no el 28.
+    const deDiez = meso({ cycleDays: 10 });
+    const logs = [
+      log('2026-06-01', 'press', [{ weight: 80, repsDone: 8 }]),
+      log('2026-06-29', 'press', [{ weight: 90, repsDone: 8 }]), // día 29: fuera de 4 × 7
+    ];
+
+    it('el fin es vueltas × ciclo, y el bloque sigue en curso hasta ese día', () => {
+      const c = buildCierreMesociclo({ meso: deDiez, mesocycles: [deDiez], logs, assignments: [], exercises: EJERCICIOS, hoy: '2026-06-30' });
+      expect(c.fin).toBe('2026-06-30');
+      expect(c.enCurso).toBe(true);
+      expect(c.semanasDeCalendario).toBe(5);
+      expect(buildCierreMesociclo({ meso: deDiez, mesocycles: [deDiez], logs, assignments: [], exercises: EJERCICIOS, hoy: '2026-07-01' }).enCurso).toBe(false);
+    });
+
+    it('las sesiones de los últimos días entran en la progresión', () => {
+      const c = buildCierreMesociclo({ meso: deDiez, mesocycles: [deDiez], logs, assignments: [], exercises: EJERCICIOS, hoy: '2026-07-15' });
+      expect(c.progresion.semanas).toHaveLength(5);
+      expect(c.progresion.ejercicios[0]).toMatchObject({ lectura: '80 kg × 8 → 90 kg × 8', estado: 'mejora' });
+    });
+
+    it('con ciclo de 5 días, 8 semanas son 11 vueltas = 55 días: acaba un día antes', () => {
+      const deCinco = meso({ weeks: 8, cycleDays: 5 });
+      const c = buildCierreMesociclo({ meso: deCinco, mesocycles: [deCinco], logs: [], assignments: [], exercises: EJERCICIOS, hoy: '2026-07-26' });
+      expect(c.fin).toBe('2026-07-25'); // 1 jun + 54 días
+      expect(c.enCurso).toBe(false);
+    });
+
+    it('la descarga, que se marca por vuelta, se lee en semanas de calendario', () => {
+      expect(semanasDeCalendarioEnDescarga([4], 7, 28)).toEqual([4]);          // ciclo semanal: la misma
+      expect(semanasDeCalendarioEnDescarga([4], 14, 56)).toEqual([7, 8]);      // vuelta 4 de 14 días = semanas 7 y 8
+      expect(semanasDeCalendarioEnDescarga([11], 5, 55)).toEqual([8]);         // vuelta 11 de 5 días = días 50-54
+      expect(semanasDeCalendarioEnDescarga([], 5, 55)).toEqual([]);
+      // Vuelta 3 de 10 días (días 20-29): la semana 4 (días 21-27) entera y la 5 (28-29) también.
+      const conDescarga = meso({ cycleDays: 10, semanasDescarga: [3] });
+      const c = buildCierreMesociclo({
+        meso: conDescarga, mesocycles: [conDescarga], exercises: EJERCICIOS, assignments: [], hoy: '2026-07-15',
+        logs: [
+          log('2026-06-01', 'press', [{ weight: 80, repsDone: 8 }]),
+          log('2026-06-15', 'press', [{ weight: 90, repsDone: 8 }]),
+          log('2026-06-24', 'press', [{ weight: 60, repsDone: 8 }]), // en descarga: no es el «final»
+        ],
+      });
+      expect(c.progresion.semanas.filter(s => s.esDescarga).map(s => s.semana)).toEqual([4, 5]);
+      expect(c.progresion.ejercicios[0].final).toMatchObject({ kg: 90 });
+    });
+  });
+
+  // ── F10: el mensaje no afirma más de lo que el dato permite ───────────────
+  describe('textos que el dato respalda (F10)', () => {
+    const cierreCon = (kgFinal: number) => buildCierreMesociclo({
+      meso: meso({ number: 1 }), mesocycles: [meso({ number: 1 })], assignments: [], exercises: EJERCICIOS, athleteName: 'Marta', hoy: '2026-07-15',
+      logs: [log('2026-06-01', 'press', [{ weight: 100, repsDone: 8 }]), log('2026-06-22', 'press', [{ weight: kgFinal, repsDone: 8 }])],
+    });
+
+    it('por debajo del ruido (3 %) no dice «eres más fuerte»: la fuerza se mantiene', () => {
+      const c = cierreCon(102.5);
+      expect(c.progresion.resumen.medianaPct).toBe(2.5);
+      expect(c.resumenParaCliente).toContain('En conjunto, tu fuerza se mantiene.');
+      expect(c.resumenParaCliente).not.toContain('más fuerte');
+      expect(c.titulares[0]).toContain('dentro del ±3% de error de medida, la fuerza se mantiene');
+    });
+
+    it('por encima del ruido sí lo dice', () => {
+      const c = cierreCon(110);
+      expect(c.resumenParaCliente).toContain('de media eres un +10% más fuerte.');
+      expect(c.titulares[0]).not.toContain('error de medida');
+    });
+
+    it('una caída mayor que el ruido se dice como caída', () => {
+      const c = cierreCon(90);
+      expect(c.resumenParaCliente).toContain('tu fuerza estimada baja un 10%');
+      expect(c.resumenParaCliente).not.toContain('se mantiene');
+    });
+
+    it('si mueve menos kg que en el bloque anterior, no explica por qué', () => {
+      const previo = meso({ id: 'm1', number: 1, startDate: '2026-05-04', weeks: 4 });
+      const c = buildCierreMesociclo({
+        meso: meso(), mesocycles: [previo, meso()], assignments: [], exercises: EJERCICIOS, hoy: '2026-07-15',
+        logs: [
+          log('2026-05-05', 'press', [{ weight: 100, repsDone: 10 }, { weight: 100, repsDone: 10 }]),
+          log('2026-06-02', 'press', [{ weight: 100, repsDone: 10 }]),
+        ],
+      });
+      const linea = c.resumenParaCliente.split('\n').find(l => l.startsWith('En total has movido'))!;
+      expect(linea).toContain('un -50% respecto al bloque anterior.');
+      expect(c.resumenParaCliente).not.toMatch(/tocaba|no iba de acumular/);
+    });
   });
 });

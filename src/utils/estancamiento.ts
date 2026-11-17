@@ -6,13 +6,16 @@ import { rmDeSerie } from './oneRepMax.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
 import { tramoComparable, type PuntoDelHistorial } from './comparabilidad.js';
 import { DESFASE_QUE_IMPORTA } from './calibracionRir.js';
+import { RUIDO_RM } from './ruidoDeMedida.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Estancamiento honesto (S1, 11-11-2026)
 
    «No progresa» solo se puede decir cuando:
-     1. hay al menos TRES sesiones seguidas de la misma tarea (S3: mismo orden,
-        descanso, RIR, rango y máquina) sin mejorar la marca;
+     1. hay al menos SEIS sesiones seguidas de la misma tarea (S3: mismo orden,
+        descanso, RIR, rango y máquina) sin mejorar la marca. A frecuencia 2
+        son unas tres semanas: el curso pide no reaccionar a una caída de 1-2
+        semanas (17-11-2026; antes eran tres sesiones, semana y media);
      2. el esfuerzo es creíble (no para a 4-5 del fallo ni se queda lejos
         cuando se comprueba, F4);
      3. el contexto acompaña (sueño, estrés y agujetas).
@@ -22,20 +25,25 @@ import { DESFASE_QUE_IMPORTA } from './calibracionRir.js';
    Y cuando sí lo es, la respuesta no es siempre «más series»:
      · lo que para la serie no es el músculo → arreglar eso primero (D2);
      · el grupo ya va alto de volumen → repartir o reducir;
-     · lleva muchas sesiones igual → cambiar la variante;
+     · lleva muchas sesiones igual (doce, unas seis semanas) → cambiar la
+       variante: cambiar de ejercicio es cosa de 6-8 semanas, no de tres;
      · si no → +1-2 series del grupo, varias semanas.
 
    La marca de cada sesión es el mejor 1RM estimado de sus series, que ya
    cuenta el RIR apuntado: hacer las mismas reps con una más de margen es
-   mejorar.
+   mejorar. «Mejorar» es superar el ruido de medida (`ruidoDeMedida.ts`): un
+   1 % de RM estimado no se distingue del error de medir.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/** Sesiones comparables sin mejorar a partir de las cuales se habla de estancamiento. */
-export const SESIONES_SIN_MEJORAR = 3;
-/** A partir de aquí ya no es cuestión de dosis: se cambia la variante. */
-export const SESIONES_PARA_CAMBIAR_VARIANTE = 6;
-/** Mejora mínima para contarla como tal (una repetición más son ~2,5-3 %). */
-const MEJORA_MINIMA = 0.01;
+/** Sesiones comparables sin mejorar a partir de las cuales se habla de
+ *  estancamiento: unas 3 semanas a frecuencia 2 (el curso: 1-2 semanas no son motivo). */
+export const SESIONES_SIN_MEJORAR = 6;
+/** A partir de aquí ya no es cuestión de dosis: se cambia la variante
+ *  (unas 6 semanas a frecuencia 2; el curso cambia de ejercicio a las 6-8). */
+export const SESIONES_PARA_CAMBIAR_VARIANTE = 12;
+/** Mejora mínima para contarla como tal: el ruido de medida del RM estimado
+ *  (una repetición más son ~2,5-3 %; por debajo no se distingue de medir mal). */
+const MEJORA_MINIMA = RUIDO_RM;
 /** RIR medio a partir del cual el esfuerzo no es creíble como estímulo. */
 const RIR_LEJOS = 4;
 

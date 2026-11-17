@@ -48,6 +48,8 @@ export function borradorDeSemanas (o: {
   palancas?: EntradaProgresionIem['palancas']
   mrvPorGrupo?: EntradaProgresionIem['mrvPorGrupo']
   tiempo?: EntradaProgresionIem['tiempo']
+  /** Zonas con aviso bloqueante: el borrador tampoco las sube (F6). */
+  zonasSinSubida?: EntradaProgresionIem['zonasSinSubida']
 }): SemanaBorrador[] {
   let estado = o.ejercicios
   const out: SemanaBorrador[] = []
@@ -60,7 +62,7 @@ export function borradorDeSemanas (o: {
     }
     const r = proponerProgresionIem({
       motor: o.motor, nombreCdgDe: o.nombreCdgDe, ejercicios: estado, iemBase: base, pctPorZona,
-      palancas: o.palancas, mrvPorGrupo: o.mrvPorGrupo, tiempo: o.tiempo,
+      palancas: o.palancas, mrvPorGrupo: o.mrvPorGrupo, tiempo: o.tiempo, zonasSinSubida: o.zonasSinSubida,
     })
     const ops = new Map<string, OperacionIem[]>()
     for (const c of r.cambios) ops.set(c.clave, [...(ops.get(c.clave) ?? []), c.op])

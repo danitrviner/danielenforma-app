@@ -11,6 +11,7 @@ import { mesocycleWeekNumber, resolverEjercicioDelMeso } from '../progression.js
 import type { MotorCdg } from './motor.js'
 import { cargaProgramada, semanaRealizadaDesdeLogs, type NombreCdgDe } from './adaptadores.js'
 import type { ContextoPesoCorporal } from '../pesoCorporal.js'
+import { semanaRecortada } from './semanaBase.js'
 import {
   avisosCarga, cargaAgudaCronica, calcularSemana, filasGestion, rendimientoCiclo, rendimientoSemana,
   SEMANAS_CARGA_CRONICA, SEMANAS_CARGA_MINIMAS, colapsarSemana, colapsarCarga, incrementosAntropometria,
@@ -110,6 +111,10 @@ export type CargaAgudaCronicaDelMeso =
       semanaReferencia: number
       /** Semanas de ESTE bloque usadas para la crónica. */
       semanasUsadas: number[]
+      /** Semanas realizadas que NO entran en la crónica por ser de descarga o puente (F15). */
+      semanasRecortadas: number[]
+      /** La semana que se compara es de descarga o puente: no se avisa «por debajo». */
+      referenciaRecortada: 'descarga' | 'puente' | null
       /** Semanas de bloques anteriores usadas (E-10): entonces solo cuentan los totales. */
       semanasDeOtrosBloques: number
       /** Menos de 6 semanas: se calcula, pero es poco fiable. */
@@ -127,7 +132,15 @@ export type CargaAgudaCronicaDelMeso =
  *    (`semanasAnteriores`, la más reciente primero) y solo se comparan los
  *    TOTALES de la semana: las sesiones de otro bloque no se corresponden;
  *  - con 3 a 5 semanas se calcula avisando de que es poco fiable; con menos, no;
- *  - la semana del calendario en curso (`semanaEnCurso`) no cuenta: está a medias.
+ *  - la semana del calendario en curso (`semanaEnCurso`) no cuenta: está a medias;
+ *  - las semanas de descarga y de puente tampoco (F15, 17-11-2026): van
+ *    recortadas a propósito y bajarían la media, con lo que la vuelta a la carga
+ *    normal parecería un salto. Y si la semana que se compara es una de ellas,
+ *    no se avisa «por debajo»: quedarse corto es justo lo que se busca.
+ * Lo que se estrena (crónica 0, carga esta semana) sale en `avisos.nuevos`, no
+ * como ratio 1. Las semanas SIN sesiones siguen sin contar como ceros (como en
+ * la hoja: «últimas semanas realizadas»), y de los bloques anteriores no se
+ * sabe cuáles fueron descarga.
  */
 export function cargaAgudaCronicaDelMeso (args: {
   motor: MotorCdg
@@ -153,7 +166,10 @@ export function cargaAgudaCronicaDelMeso (args: {
   if (elegida == null && semanas.length === 0) return { disponible: false, motivo: 'Todavía no hay sesiones registradas en este bloque.' }
   const ref = elegida ?? semanas[semanas.length - 1].semana + 1
   if (ref > vueltas) return { disponible: false, motivo: 'La última semana del bloque ya está realizada: no hay semana siguiente que comparar.' }
-  const previas = semanas.filter(s => s.semana < ref && s.semana !== args.semanaEnCurso).slice(-SEMANAS_CARGA_CRONICA).reverse()
+  const recortada = (s: number) => semanaRecortada(meso ?? {}, s)
+  const candidatas = semanas.filter(s => s.semana < ref && s.semana !== args.semanaEnCurso)
+  const semanasRecortadas = candidatas.filter(s => recortada(s.semana) != null).map(s => s.semana)
+  const previas = candidatas.filter(s => recortada(s.semana) == null).slice(-SEMANAS_CARGA_CRONICA).reverse()
   const deOtros = previas.length < SEMANAS_CARGA_CRONICA
     ? (args.semanasAnteriores ?? []).slice(0, SEMANAS_CARGA_CRONICA - previas.length)
     : []
@@ -161,7 +177,7 @@ export function cargaAgudaCronicaDelMeso (args: {
   if (total < SEMANAS_CARGA_MINIMAS) {
     return {
       disponible: false, semanaReferencia: ref,
-      motivo: `Hacen falta al menos ${SEMANAS_CARGA_MINIMAS} semanas realizadas para la carga crónica y hay ${total}.`
+      motivo: `Hacen falta al menos ${SEMANAS_CARGA_MINIMAS} semanas realizadas para la carga crónica y hay ${total}${semanasRecortadas.length ? ` (sin contar ${semanasRecortadas.map(n => `S${n}`).join(', ')}, de descarga o puente)` : ''}.`
     }
   }
   const cruza = deOtros.length > 0
@@ -170,13 +186,16 @@ export function cargaAgudaCronicaDelMeso (args: {
   const cronicas = [...previas.map(s => s.calculo), ...deOtros].map(c => (cruza ? colapsarSemana(c) : c))
   const ac = cargaAgudaCronica(aguda, cronicas, SEMANAS_CARGA_MINIMAS)!
   const u = { ...UMBRALES_CARGA_POR_DEFECTO, ...args.umbrales }
-  const avisos = avisosCarga(ac, motor, u)
+  const referenciaRecortada = recortada(ref)
+  const avisos = avisosCarga(ac, motor, { ...u, sinAvisoPorDebajo: referenciaRecortada != null })
   // Cruzando bloques, la «sesión 1» colapsada es la semana entera: solo vale el total.
   const soloTotal = <T extends { sesion: string }>(xs: T[]) => (cruza ? xs.filter(x => x.sesion === 'Total de sesiones') : xs)
   return {
     disponible: true, semanaReferencia: ref, semanasUsadas: previas.map(s => s.semana),
+    semanasRecortadas, referenciaRecortada,
     semanasDeOtrosBloques: deOtros.length, fiable: total >= SEMANAS_CARGA_CRONICA, ac,
-    avisos: { sesionesIF: soloTotal(avisos.sesionesIF), musculos: soloTotal(avisos.musculos), articulaciones: soloTotal(avisos.articulaciones) },
+    // `nuevos` ya es solo del total de la semana.
+    avisos: { sesionesIF: soloTotal(avisos.sesionesIF), musculos: soloTotal(avisos.musculos), articulaciones: soloTotal(avisos.articulaciones), nuevos: avisos.nuevos },
   }
 }
 

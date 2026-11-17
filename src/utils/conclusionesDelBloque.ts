@@ -1,6 +1,8 @@
 import type { CierreMesociclo } from './cierreMesociclo.js';
 import type { EvolucionDelBloque, EvolucionPregunta } from './evolucionDelBloque.js';
 import { OBJETIVO_LABEL } from './verificacionObjetivo.js';
+import { RUIDO_RM_PCT } from './ruidoDeMedida.js';
+import type { DossierFact } from '../types.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONCLUSIONES DEL BLOQUE — de los datos a las decisiones.
@@ -38,6 +40,14 @@ function pregunta(ev: EvolucionDelBloque, re: RegExp): EvolucionPregunta | undef
   return ev.preguntas.find(p => re.test(p.label.toLowerCase()) || re.test(p.clave));
 }
 
+/**
+ * Id de la acción que cita al atleta literal. Tiene nombre propio porque quien
+ * manda las conclusiones al asistente o las guarda en la ficha (que el
+ * asistente lee) debe dejarla fuera: es texto escrito por el atleta, y ahí
+ * solo entra marcado como dato.
+ */
+export const ID_EN_SUS_PALABRAS = 'en_sus_palabras';
+
 export function buildConclusionesDelBloque(cierre: CierreMesociclo, ev: EvolucionDelBloque): ConclusionesDelBloque {
   const hallazgos: Conclusion[] = [];
   const acciones: Conclusion[] = [];
@@ -62,12 +72,23 @@ export function buildConclusionesDelBloque(cierre: CierreMesociclo, ev: Evolucio
       if ((adh ?? 100) >= 80 && (vol ?? 100) >= 80) {
         acciones.push({ id: 'mantener', tono: 'bien', texto: 'Mantener la estructura (reparto, ejercicios principales y rangos) y seguir progresando cargas: lo que funciona no se cambia.' });
       }
-    } else if (fuerza >= 2) {
+    } else if (fuerza >= RUIDO_RM_PCT) {
       hallazgos.push({ id: 'progreso_lento', tono: 'neutro', texto: `Progreso moderado: mediana de ${signo(fuerza)}% de fuerza estimada (${res.mejoran} de ${res.comparables} ejercicios mejoran).` });
+    } else if (fuerza <= -RUIDO_RM_PCT) {
+      // Una caída mayor que el ruido es una caída, también en déficit: antes
+      // «mantiene la fuerza» salía con cualquier valor por debajo del 2 %, un
+      // −8 % incluido.
+      hallazgos.push({
+        id: 'fuerza_cae', tono: 'atencion',
+        texto: enDeficit
+          ? `En déficit la fuerza cae: mediana de ${signo(fuerza)}% (${res.bajan} de ${res.comparables} ejercicios bajan). Es más de lo que explica el error de medida.`
+          : `La fuerza cae: mediana de ${signo(fuerza)}% (${res.bajan} de ${res.comparables} ejercicios bajan).`,
+      });
+      acciones.push({ id: 'revisar_caida', tono: 'atencion', texto: 'Antes de montar el siguiente bloque, revisar por qué baja la fuerza (fatiga, sesiones saltadas, ritmo de pérdida de peso): el dato dice que cae, no por qué.' });
     } else if (enDeficit) {
-      hallazgos.push({ id: 'mantiene_deficit', tono: 'bien', texto: `En déficit mantiene la fuerza (mediana ${signo(fuerza)}%): es justo lo que se busca en esta fase.` });
+      hallazgos.push({ id: 'mantiene_deficit', tono: 'bien', texto: `En déficit mantiene la fuerza (mediana ${signo(fuerza)}%, dentro del ±${RUIDO_RM_PCT}% de error de medida): es lo que se busca en esta fase.` });
     } else {
-      hallazgos.push({ id: 'estancado', tono: 'atencion', texto: `El bloque no ha movido la fuerza: mediana de ${signo(fuerza)}% (${res.mejoran} de ${res.comparables} ejercicios mejoran).` });
+      hallazgos.push({ id: 'estancado', tono: 'atencion', texto: `El bloque no ha movido la fuerza: mediana de ${signo(fuerza)}%, dentro del ±${RUIDO_RM_PCT}% de error de medida (${res.mejoran} de ${res.comparables} ejercicios mejoran).` });
       acciones.push({ id: 'cambiar_estimulo', tono: 'atencion', texto: 'Cambiar el estímulo en el siguiente bloque: variantes nuevas en los principales, otro rango de repeticiones o más frecuencia en lo prioritario.' });
     }
   }
@@ -85,7 +106,7 @@ export function buildConclusionesDelBloque(cierre: CierreMesociclo, ev: Evolucio
   // ── 3. Lo mejor, para priorizarlo o protegerlo ───────────────────────────
   const mejorPatron = cierre.progresion.porPatron.find(p => p.deltaMedioPct != null);
   const peorPatron = [...cierre.progresion.porPatron].reverse().find(p => p.deltaMedioPct != null);
-  const mejoresGrupos = cierre.progresion.porGrupo.filter(g => (g.deltaMedioPct ?? 0) >= 2).slice(0, 3);
+  const mejoresGrupos = cierre.progresion.porGrupo.filter(g => (g.deltaMedioPct ?? 0) >= RUIDO_RM_PCT).slice(0, 3);
   if (mejoresGrupos.length > 0) {
     hallazgos.push({ id: 'mejores_grupos', tono: 'bien', texto: `Sus mejores grupos este bloque: ${mejoresGrupos.map(g => `${g.label.toLowerCase()} (${signo(g.deltaMedioPct!)}%)`).join(', ')}.` });
   }
@@ -97,9 +118,12 @@ export function buildConclusionesDelBloque(cierre: CierreMesociclo, ev: Evolucio
 
   // ── 4. ¿Lo hizo? Adherencia y volumen ────────────────────────────────────
   if (adh != null) {
-    if (adh >= 90) hallazgos.push({ id: 'adherencia', tono: 'bien', texto: `Adherencia excelente: ${adh}% de las sesiones.` });
+    // Con el bloque en curso, `adh` ya viene calculada solo sobre las sesiones
+    // que han tocado (ver `adherenciaDeMesociclo`): esto no salta por las futuras.
+    const deCuales = cierre.enCurso ? ' que tocaban hasta hoy' : '';
+    if (adh >= 90) hallazgos.push({ id: 'adherencia', tono: 'bien', texto: `Adherencia excelente: ${adh}% de las sesiones${deCuales}.` });
     else if (adh < 75) {
-      hallazgos.push({ id: 'adherencia', tono: 'atencion', texto: `Adherencia baja: ${adh}% de las sesiones programadas.` });
+      hallazgos.push({ id: 'adherencia', tono: 'atencion', texto: `Adherencia baja: ${adh}% de las sesiones programadas${deCuales}.` });
       acciones.push({ id: 'ajustar_dias', tono: 'atencion', texto: 'Ajustar el número de días a lo que de verdad puede hacer: un plan que se cumple entero rinde más que uno ambicioso a medias.' });
     }
   }
@@ -149,7 +173,11 @@ export function buildConclusionesDelBloque(cierre: CierreMesociclo, ev: Evolucio
   const p = ev.peso;
   if (p) {
     const cintura = ev.medidas.find(m => m.clave === 'cintura' || m.clave === 'abdomen');
-    const extraCintura = cintura ? ` y ${cintura.label.toLowerCase()} ${signo(cintura.delta)} ${cintura.unidad}` : '';
+    // Por debajo del error de la cinta no se da una cifra con signo: se leería
+    // como que ha bajado (o subido) algo que no se puede distinguir de medir.
+    const extraCintura = !cintura ? ''
+      : cintura.sinCambioMedible ? ` y ${cintura.label.toLowerCase()} sin cambio medible`
+      : ` y ${cintura.label.toLowerCase()} ${signo(cintura.delta)} ${cintura.unidad}`;
     const base = `Peso ${fmt(p.inicio)} → ${fmt(p.final)} kg (${signo(p.deltaKg)} kg${p.ritmoPctSemana != null ? `, ${signo(p.ritmoPctSemana, 2)}%/sem` : ''})${extraCintura}`;
     if (p.objetivo && p.enRango != null) {
       const obj = OBJETIVO_LABEL[p.objetivo].toLowerCase();
@@ -163,8 +191,12 @@ export function buildConclusionesDelBloque(cierre: CierreMesociclo, ev: Evolucio
     } else {
       hallazgos.push({ id: 'peso', tono: 'neutro', texto: `${base}.` });
     }
-    if (enDeficit && fuerza != null && fuerza >= 2 && p.deltaKg < 0) {
-      paraElCliente.push(`Has bajado ${fmt(Math.abs(p.deltaKg))} kg y aun así eres más fuerte que al empezar: buena señal de que lo que se va es grasa y no músculo.`);
+    // Sin «lo que se va es grasa y no músculo»: con peso y fuerza no se sabe
+    // de qué es el kilo que falta. Se dice lo que el dato sí dice.
+    if (enDeficit && fuerza != null && fuerza >= RUIDO_RM_PCT && p.deltaKg < 0) {
+      paraElCliente.push(`Has bajado ${fmt(Math.abs(p.deltaKg))} kg y aun así tu fuerza estimada es mayor que al empezar: buena señal.`);
+    } else if (enDeficit && fuerza != null && fuerza > -RUIDO_RM_PCT && p.deltaKg < 0) {
+      paraElCliente.push(`Has bajado ${fmt(Math.abs(p.deltaKg))} kg manteniendo la fuerza: es lo que buscamos en esta fase.`);
     } else if (p.deltaKg !== 0) {
       paraElCliente.push(`Tu peso ha pasado de ${fmt(p.inicio)} a ${fmt(p.final)} kg${extraCintura ? `,${extraCintura.replace(/^ y/, '')}` : ''}.`);
     }
@@ -193,6 +225,11 @@ export function buildConclusionesDelBloque(cierre: CierreMesociclo, ev: Evolucio
     }
     if (voz.priorizar.length > 0) acciones.push({ id: 'pide_priorizar', tono: 'neutro', texto: `Pide priorizar: ${voz.priorizar.join(', ')}.` });
     if (voz.demasiado.length > 0) acciones.push({ id: 'pide_menos', tono: 'neutro', texto: `Nota demasiado volumen en: ${voz.demasiado.join(', ')}. Valorar quitar series ahí.` });
+    // Lo que escribe con sus palabras (mantener o cambiar, objetivo, molestias,
+    // duración): tal cual, para leerlo antes de montar el siguiente bloque.
+    if (voz.respuestas.length > 0) {
+      acciones.push({ id: ID_EN_SUS_PALABRAS, tono: 'neutro', texto: `Tener en cuenta lo que dice: ${voz.respuestas.map(r => `${r.pregunta}: «${r.respuesta}»`).join(' · ')}.` });
+    }
   }
 
   // ── 9. Constancia del registro ───────────────────────────────────────────
@@ -234,4 +271,41 @@ export function etiquetaCorta(p: Pick<EvolucionPregunta, 'label' | 'clave'>): st
   if (/progres/.test(l)) return 'sensación de progreso';
   if (/satisf/.test(l)) return 'satisfacción';
   return p.label.replace(/[¿?]/g, '').trim().slice(0, 40);
+}
+
+// ── Guardar en la ficha ──────────────────────────────────────────────────────
+
+/**
+ * Las conclusiones del cierre, como hechos de la ficha del atleta. El texto
+ * sale solo de los datos (bloque, fechas y conclusiones), sin la hora: guardar
+ * dos veces lo mismo da dos textos idénticos, y eso es lo que permite no
+ * duplicarlos.
+ */
+export function hechosDeCierre(params: {
+  nombreBloque: string; inicio: string; fin: string; at: string;
+  conclusiones: Pick<ConclusionesDelBloque, 'hallazgos' | 'acciones'>;
+}): DossierFact[] {
+  const { conclusiones, at } = params;
+  const etiqueta = `[Cierre ${params.nombreBloque} · ${params.inicio} → ${params.fin}]`;
+  const hechos: DossierFact[] = [];
+  if (conclusiones.hallazgos.length) {
+    hechos.push({ at, kind: 'observacion', text: `${etiqueta} Hallazgos: ${conclusiones.hallazgos.map(h => h.texto).join(' ')}` });
+  }
+  // Sin la cita literal del atleta: la ficha la lee el asistente.
+  const acciones = conclusiones.acciones.filter(a => a.id !== ID_EN_SUS_PALABRAS);
+  if (acciones.length) {
+    hechos.push({ at, kind: 'observacion', text: `${etiqueta} Para el siguiente bloque: ${acciones.map(a => a.texto).join(' ')}` });
+  }
+  return hechos;
+}
+
+/**
+ * Qué hechos del cierre faltan por guardar: los que no están ya, con el mismo
+ * texto, en la ficha. Pulsar «Guardar en la ficha» dos veces escribía las
+ * conclusiones dos veces; la ficha solo admite añadir, así que lo que se
+ * evita es volver a añadir lo que ya dice.
+ */
+export function hechosDeCierrePorGuardar(yaEnLaFicha: readonly Pick<DossierFact, 'text'>[], nuevos: DossierFact[]): DossierFact[] {
+  const textos = new Set(yaEnLaFicha.map(h => h.text.trim()));
+  return nuevos.filter(h => !textos.has(h.text.trim()));
 }

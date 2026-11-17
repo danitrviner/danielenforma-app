@@ -78,6 +78,8 @@ import { useToast } from '../hooks/useToast';
 import { nombreDeMeso, nombreDeSesion, nombresCortosDeSesiones } from '../utils/nombresMeso';
 import { fechasDelMesociclo, cicloDiasDeMeso, sesionesDeMesociclo, offsetsDelMesociclo } from '../utils/asignacionMesociclo';
 import { isStale } from '../utils/repartoDesactualizado';
+import { descargaDeCabecera, ponerDescargaDeCabecera, podarSemanasFueraDelBloque } from '../utils/descargaDelBloque';
+import { siguienteNumeroDeBloque } from '../utils/numeroDeBloque';
 import { addDays, esFechaIso, fechaCorta, hoyIsoLocal, isoLocal } from '../utils/trainingWeek';
 import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
@@ -1599,7 +1601,11 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup, onApplySuggestion
           const ZONE_MAX = Math.max(1, landmark.mrv);
           const fillPct = Math.min(100, (cfg.series / ZONE_MAX) * 100);
           const mavPct  = (landmark.mavMin / ZONE_MAX) * 100;
-          const mrvPct  = (landmark.mavMax / ZONE_MAX) * 100;
+          // La marca «MRV» va en el MRV de verdad. Estaba pintada en `mavMax`
+          // (el techo del MAV), varias series antes del máximo recuperable
+          // que decía señalar. Como la barra va de 0 al MRV, cae en su final:
+          // el `min` la deja dentro de la pista en vez de un píxel fuera.
+          const mrvPct  = (landmark.mrv / ZONE_MAX) * 100;
           return (
             <div key={group} className="bg-surface border border-hairline rounded-surface p-3 space-y-3">
               <div className="flex items-center justify-between">
@@ -1621,7 +1627,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup, onApplySuggestion
                   style={{ width: `${fillPct}%`, backgroundColor: heatmapText(cfg.series, landmark) }}
                 />
                 <div className="absolute -top-0.5 -bottom-0.5 w-px bg-ink-3" style={{ left: `${mavPct}%` }} title="MAV" />
-                <div className="absolute -top-0.5 -bottom-0.5 w-px bg-danger/70" style={{ left: `${mrvPct}%` }} title="MRV" />
+                <div className="absolute -top-0.5 -bottom-0.5 w-px bg-danger/70" style={{ left: `min(${mrvPct}%, calc(100% - 1px))` }} title="MRV" />
               </div>
               {histText && (
                 <p className="font-mono text-caption text-ink-3">{histText}</p>
@@ -1689,7 +1695,8 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup, onApplySuggestion
                               style={{ width: `${fillPct}%`, backgroundColor: heatmapText(cfg.series, landmark) }}
                             />
                             <div className="absolute -top-0.5 -bottom-0.5 w-px bg-ink-3" style={{ left: `${(landmark.mavMin / ZONE_MAX) * 100}%` }} title="MAV" />
-                            <div className="absolute -top-0.5 -bottom-0.5 w-px bg-danger/70" style={{ left: `${(landmark.mavMax / ZONE_MAX) * 100}%` }} title="MRV" />
+                            {/* En el MRV del grupo, no en `mavMax`: ver la tarjeta de móvil de arriba. */}
+                            <div className="absolute -top-0.5 -bottom-0.5 w-px bg-danger/70" style={{ left: `min(${(landmark.mrv / ZONE_MAX) * 100}%, calc(100% - 1px))` }} title="MRV" />
                           </div>
                         </div>
                       </td>
@@ -2221,6 +2228,17 @@ export default function MesocycleManager({
     if ((field === 'startDate' || field === 'weeks') && asignacionesDelAtleta.some(a => a.mesocycleId === editing.id)) {
       setFechasMovidas(true);
     }
+  };
+
+  // Acortar el bloque deja descargas, tests, pivots, notas y eventos de
+  // semanas que ya no existen (ver `podarSemanasFueraDelBloque`). Se podan al
+  // SALIR del campo «Semanas» y no en cada tecla: para pasar de 8 a 12 se
+  // teclea primero un «1», y podar ahí borraría todo lo que hay de la S2 en
+  // adelante antes de llegar a escribir el «2».
+  const podarSemanasSobrantes = () => {
+    if (!editing) return;
+    const patch = podarSemanasFueraDelBloque(editing, editing.weeks, cicloDiasDeMeso(editing));
+    if (Object.keys(patch).length > 0) actualizarMeso(patch);
   };
 
   const updateGroup = (group: MuscleGroup, field: keyof MuscleGroupConfig, value: number | string) => {
@@ -3065,7 +3083,8 @@ export default function MesocycleManager({
     setApplyingTemplate(true);
     try {
       const programId = `prog_${Date.now()}`;
-      const startNumber = mesocycles.length + 1;
+      // El más alto + 1, no `length + 1`: ver `siguienteNumeroDeBloque`.
+      const startNumber = siguienteNumeroDeBloque(mesocycles);
       const created: Mesocycle[] = [];
       let startDate = hoyIsoLocal();
 
@@ -3134,7 +3153,7 @@ export default function MesocycleManager({
     try {
       const created = await createMesocycle({
         athleteId:   selectedEmail,
-        number:      mesocycles.length + 1,
+        number:      siguienteNumeroDeBloque(mesocycles),
         weeks:       4,
         startDate:   hoyIsoLocal(),
         objective:   '',
@@ -3185,6 +3204,16 @@ export default function MesocycleManager({
   // encajar y se cae al automático en vez de dejar el mesociclo sin calendario.
   const splitActual = editing ? repartoDelMesociclo(editing) : undefined;
   const cicloDias = editing ? cicloDiasDeMeso(editing) : 7;
+
+  // «Incluye semana de descarga» de la cabecera. Escribe `semanasDescarga`
+  // (lo que recorta el entreno) y deja `deloadWeek` como derivado para el
+  // calendario: antes escribía solo `deloadWeek` y la descarga se quedaba en
+  // un dibujo. Ver utils/descargaDelBloque.ts.
+  const descargaCabecera = editing ? descargaDeCabecera(editing, cicloDias) : undefined;
+  const cambiarDescargaCabecera = (vuelta: number | undefined) => {
+    if (!editing) return;
+    actualizarMeso(ponerDescargaDeCabecera(editing, vuelta, cicloDias));
+  };
 
   // Dos versiones del patrón a mano, y no es redundante:
   //  - `customCrudo` es lo que hay tecleado AHORA MISMO, tenga o no el número
@@ -3617,6 +3646,7 @@ export default function MesocycleManager({
                     <input id="mesocyclemanager-semanas" type="number" min={1} max={16}
                       value={editing.weeks}
                       onChange={e => updateField('weeks', parseInt(e.target.value) || 1)}
+                      onBlur={podarSemanasSobrantes}
                       className="w-full bg-raised border border-control-line rounded-control px-3 py-2 text-title-s text-ink font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
@@ -3767,30 +3797,40 @@ export default function MesocycleManager({
                   options={PHASE_TYPE_OPTIONS}
                 />
 
-                {/* Semana de descarga (Bloque H) — marca qué semana del meso es de
-                    descarga, dato que hoy no existe en ningún sitio de la app.
-                    Se usa para el marcador ▼ del carril Entrenamiento y para el
-                    aviso de conflicto "revisión en semana de descarga". */}
+                {/* Semana de descarga — el mismo dato que «Descarga» en la barra de
+                    semanas de Ejercicios: mitad de series esa semana de ciclo
+                    (`semanasDescarga`), y de ahí salen el marcador ▼ del
+                    carril Entrenamiento y el aviso «revisión en semana de
+                    descarga». El número es la S de la barra de semanas; apagar
+                    el interruptor quita todas las descargas del bloque. Un
+                    bloque antiguo con solo la marca del calendario sale
+                    encendido (el calendario la pinta) y pasa a recortar en
+                    cuanto se mueve el número. */}
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => updateField('deloadWeek', editing.deloadWeek !== undefined ? undefined : editing.weeks)}
-                    className={`relative w-10 h-5.5 rounded-full flex-shrink-0 transition-colors ${editing.deloadWeek !== undefined ? 'bg-accent' : 'bg-inset'}`}
+                    onClick={() => cambiarDescargaCabecera(descargaCabecera !== undefined ? undefined : vueltasDelCiclo(editing.weeks, cicloDias))}
+                    className={`relative w-10 h-5.5 rounded-full flex-shrink-0 transition-colors ${descargaCabecera !== undefined ? 'bg-accent' : 'bg-inset'}`}
                     style={{ padding: 3 }}
-                    aria-pressed={editing.deloadWeek !== undefined}
+                    aria-pressed={descargaCabecera !== undefined}
                   >
-                    <span className="block w-4 h-4 rounded-full bg-ink transition-transform duration-200" style={{ transform: editing.deloadWeek !== undefined ? 'translateX(18px)' : 'translateX(0)' }} />
+                    <span className="block w-4 h-4 rounded-full bg-ink transition-transform duration-200" style={{ transform: descargaCabecera !== undefined ? 'translateX(18px)' : 'translateX(0)' }} />
                   </button>
                   <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Incluye semana de descarga</span>
-                  {editing.deloadWeek !== undefined && (
+                  {descargaCabecera !== undefined && (
                     <div className="flex items-center gap-1.5">
                       <span className="font-sans text-caption text-ink-3">en la semana</span>
                       <input
-                        type="number" min={1} max={editing.weeks}
-                        value={editing.deloadWeek}
-                        onChange={e => updateField('deloadWeek', Math.min(editing.weeks, Math.max(1, parseInt(e.target.value) || 1)))}
+                        type="number" min={1} max={vueltasDelCiclo(editing.weeks, cicloDias)}
+                        value={descargaCabecera}
+                        onChange={e => cambiarDescargaCabecera(Math.min(vueltasDelCiclo(editing.weeks, cicloDias), Math.max(1, parseInt(e.target.value) || 1)))}
                         className="w-14 bg-raised border border-control-line rounded-control px-2 py-1 text-center text-caption text-ink font-mono focus:outline-none focus:border-accent"
                       />
+                      {(editing.semanasDescarga ?? []).length > 1 && (
+                        <span className="font-sans text-caption text-ink-3">
+                          y {(editing.semanasDescarga ?? []).filter(s => s !== descargaCabecera).map(s => `S${s}`).join(', ')}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>

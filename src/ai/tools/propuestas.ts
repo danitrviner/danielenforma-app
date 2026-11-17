@@ -11,6 +11,8 @@ import { distribucionDeMeso } from '../../utils/distribucionDeMeso.js';
 import { totalSemanas as totalSemanasNutri } from '../../utils/semanasNutricion.js';
 import { normalizarTexto as normTexto } from '../../utils/busqueda.js';
 import { nombreDeMeso } from '../../utils/nombresMeso.js';
+import { siguienteNumeroDeBloque } from '../../utils/numeroDeBloque.js';
+import { descargaEnSemanaDeCalendario } from '../../utils/descargaDelBloque.js';
 import type { LevelLadder, LadderLevel, LevelCriterionKind, WorkoutDayProposal, WorkoutDaysProposalPayload, RoadmapItem, NutritionPhaseProposal, NutritionProgramProposalPayload, RoadmapProposalPayload, SpecialDayProposalPayload, SpecialDayKind, WeekPlanProposalPayload, MacroAjustable, MensajeAtletaProposalPayload } from '../../types.js';
 import { PROTOCOLOS_VO2MAX } from '../../utils/cardioProgression.js';
 import type { SetupConfigProposalPayload, PublishBlockProposalPayload, WeeklyChallengeProposalPayload, WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload, MesocycleTemplateStageProposal, WorkoutDayExerciseProposal, QSchedule, WeekDay, ChallengeKind } from '../../types.js';
@@ -721,7 +723,7 @@ export async function proposeMesocycle(
 
   const existing = await getMesocycles(athleteEmail);
   // Tras borrar un mesociclo, `length + 1` repetía número (B14, 26-10-2026).
-  const number = Math.max(0, ...existing.map(m => m.number ?? 0)) + 1;
+  const number = siguienteNumeroDeBloque(existing);
 
   // Rellena todos los grupos: los omitidos van a 0 series (shape completo que
   // espera el editor de la app).
@@ -918,7 +920,7 @@ export async function proposePeriodizationBlock(
 
   const existing = await getMesocycles(athleteEmail);
   // Tras borrar un mesociclo, `length + 1` repetía número (B14, 26-10-2026).
-  const number = Math.max(0, ...existing.map(m => m.number ?? 0)) + 1;
+  const number = siguienteNumeroDeBloque(existing);
   const groups = Object.fromEntries(
     (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).map(g => {
       const cfg = groupsInput[g];
@@ -926,6 +928,10 @@ export async function proposePeriodizationBlock(
     })
   ) as Record<MuscleGroup, MuscleGroupConfig>;
 
+  // La descarga se guarda en `semanasDescarga`, que es lo que recorta el
+  // entreno; `deloadWeek` solo pinta el calendario. Guardando solo `deloadWeek`
+  // el asistente prometía una descarga («descarga en sem. 8») que el atleta
+  // nunca hacía. Ver utils/descargaDelBloque.ts.
   const mesocycle: Omit<Mesocycle, 'id'> = {
     athleteId: athleteEmail,
     number,
@@ -934,7 +940,7 @@ export async function proposePeriodizationBlock(
     objective,
     daysPerWeek,
     groups,
-    ...(deloadWeek !== undefined ? { deloadWeek } : {}),
+    ...(deloadWeek !== undefined ? descargaEnSemanaDeCalendario(deloadWeek, cicloDiasDeMeso({ daysPerWeek })) : {}),
   };
 
   const reviewCount = Math.max(1, Math.floor(weeks / reviewCadenceWeeks));

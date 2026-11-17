@@ -162,6 +162,31 @@ describe('aplicarPropuesta · configuración, road map, semana', () => {
     expect(r.resultEntityRef).toBe('meso');
   });
 
+  // 17-11-2026: el asistente guardaba solo `deloadWeek` (la marca del
+  // calendario) y el entreno solo recorta con `semanasDescarga`.
+  it('la descarga del bloque del asistente se crea en semanasDescarga, que es lo que recorta el entreno', async () => {
+    const crear = async (mesocycle: Partial<Mesocycle>) => {
+      const r = ok(await aplicarPropuesta(propuesta('periodizationBlock', { mesocycle: { ...meso, weeks: 8, ...mesocycle }, reviewCadenceWeeks: 4, reviewType: 'revision' }), lector(), OPC));
+      return (r.operaciones[0] as Extract<Operacion, { tipo: 'crearMesociclo' }>).mesociclo;
+    };
+    // Una propuesta antigua, aún sin aprobar, que solo trae la marca.
+    expect(await crear({ deloadWeek: 8 })).toMatchObject({ deloadWeek: 8, semanasDescarga: [8] });
+    // Una que ya trae las semanas de descarga no se pisa.
+    expect(await crear({ deloadWeek: 4, semanasDescarga: [4, 8] })).toMatchObject({ deloadWeek: 4, semanasDescarga: [4, 8] });
+    // Sin descarga, sin campos.
+    const sin = await crear({});
+    expect('semanasDescarga' in sin).toBe(false);
+    expect('deloadWeek' in sin).toBe(false);
+  });
+
+  it('la etapa de una plantilla con descarga lleva semanasDescarga', async () => {
+    const etapa = { name: 'Acumulación', weeks: 6, daysPerWeek: 4, groups: {}, deloadWeek: 6 };
+    const r = ok(await aplicarPropuesta(propuesta('mesocycleTemplate', { name: 'Bloque', stages: [etapa, { ...etapa, name: 'Sin descarga', deloadWeek: undefined }] }), lector(), OPC));
+    const { stages } = (r.operaciones[0] as Extract<Operacion, { tipo: 'crearPlantillaMesociclo' }>).plantilla;
+    expect(stages[0]).toMatchObject({ deloadWeek: 6, semanasDescarga: [6] });
+    expect('semanasDescarga' in stages[1]).toBe(false);
+  });
+
   it('el reto lleva el id de la semana ISO y el feedback del check-in guarda el texto anterior', async () => {
     const reto = ok(await aplicarPropuesta(propuesta('weeklyChallenge', { kind: 'pasos_media', title: 'Pasos', description: '', metric: { target: 8000 }, today: '2026-10-29' }), lector(), OPC));
     expect(reto.resultEntityId).toBe(`${EMAIL}_2026-W44`);

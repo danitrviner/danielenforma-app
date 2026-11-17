@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { Exercise, WorkoutLog, WorkoutSetLog } from '../types';
 import { clasificarCaida } from './patronDeCaida';
 import { seriesEfectivas } from './seriesEfectivas';
-import { senalesActivas, ultimaFrenteAPrimera, recortesPosibles, SENALES_PARA_DESCARGA } from './descargaPorSenales';
+import { senalesActivas, ultimaFrenteAPrimera, recortesPosibles, zonasQueNoSeRecuperan, SENALES_PARA_DESCARGA } from './descargaPorSenales';
 
 const ej = (id: string, muscleGroup: string, secundarios: string[] = []) =>
   ({ id, name: id, muscleGroup, secondaryMuscleGroups: secundarios }) as unknown as Exercise;
@@ -52,6 +52,37 @@ describe('descarga por señales (S7)', () => {
     expect(senalesActivas({ recuperacionMala: true, caidaTransversal: true })).toHaveLength(2);
     expect(senalesActivas({ ejerciciosConDiasMalos: 1, gruposConAgujetasCronicas: 1 })).toEqual([]);
     expect(senalesActivas({ ejerciciosConDiasMalos: 2, gruposConAgujetasCronicas: 3 })).toHaveLength(2);
+  });
+
+  it('R3 · salir muy cansado de las sesiones es señal a partir de 8 de 10', () => {
+    expect(senalesActivas({ cansancioAlSalir: 7 })).toEqual([]);
+    expect(senalesActivas({ cansancioAlSalir: 8 })).toEqual(['sale muy cansado de las sesiones (8/10)']);
+    expect(senalesActivas({})).toEqual([]);
+  });
+
+  it('R3 · agujetas de 4 o más (1-5) solo si se repiten dos semanas seguidas en la misma zona', () => {
+    expect(zonasQueNoSeRecuperan([{ nombre: 'Isquiotibiales', valor: 4 }])).toEqual([]);
+    expect(zonasQueNoSeRecuperan([{ nombre: 'Isquiotibiales', valor: 4, anterior: 3 }])).toEqual([]);
+    expect(zonasQueNoSeRecuperan([{ nombre: 'Isquiotibiales', valor: 3, anterior: 5 }])).toEqual([]);
+    expect(zonasQueNoSeRecuperan([{ nombre: 'Isquiotibiales', valor: 4, anterior: 5 }, { nombre: 'Glúteo', valor: 2, anterior: 2 }])).toEqual(['Isquiotibiales']);
+    expect(senalesActivas({ agujetasPorZona: [{ nombre: 'Isquiotibiales', valor: 4, anterior: 4 }, { nombre: 'Pectoral', valor: 5, anterior: 4 }] }))
+      .toEqual(['agujetas de 4 o más dos semanas seguidas en isquiotibiales y pectoral']);
+    expect(senalesActivas({ agujetasPorZona: [{ nombre: 'Pectoral', valor: 5 }] })).toEqual([]);
+  });
+
+  it('R3 · el aviso de salto de carga cuenta como una señal, diga lo que diga la lista', () => {
+    expect(senalesActivas({ saltoDeCarga: [] })).toEqual([]);
+    const t = senalesActivas({ saltoDeCarga: ['Glúteo', 'Total de la semana'] });
+    expect(t).toHaveLength(1);
+    expect(t[0]).toContain('salto de carga');
+    expect(t[0]).toContain('glúteo y total de la semana');
+    expect(t[0]).not.toMatch(/lesi/i);
+  });
+
+  it('R3 · las señales nuevas suman como las demás: dos piden descarga, una no', () => {
+    expect(senalesActivas({ cansancioAlSalir: 9 }).length).toBeLessThan(SENALES_PARA_DESCARGA);
+    expect(senalesActivas({ cansancioAlSalir: 9, agujetasPorZona: [{ nombre: 'Glúteo', valor: 4, anterior: 4 }] }).length).toBe(SENALES_PARA_DESCARGA);
+    expect(senalesActivas({ recuperacionMala: true, saltoDeCarga: ['Total de la semana'] }).length).toBe(SENALES_PARA_DESCARGA);
   });
 
   const s = (weight: number, repsDone: number): WorkoutSetLog => ({ weight, repsDone, rir: 1 });

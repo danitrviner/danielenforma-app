@@ -10,10 +10,11 @@ import {
   UMBRALES_PROTOCOLO, agujetasVigentes, sensibilidadDeZona, semanaPorDefecto, type ZonaIem,
   type TipoDeBloque, type Sensibilidad, type Velocidad, type TonoPropuesta,
   leerRendimiento, indicadoresCambioDeBloque, avisosIemIea, type SemanaParaLectura, type Contexto,
-  tipoSugerido, semanasHastaAburrirse, avisoDeFiabilidad, referenciasToleradas
+  tipoSugerido, semanasHastaAburrirse, avisoDeFiabilidad, referenciasToleradas,
+  contextoPorCiclos, rachaFinal, valorEnElCicloDe, esDescargaOPuente
 } from '../../utils/cdg';
 import { useAgujetasCdg } from '../../hooks/useAgujetasCdg';
-import { hoyIsoLocal } from '../../utils/trainingWeek';
+import { addDays, hoyIsoLocal } from '../../utils/trainingWeek';
 import { mesocycleWeekNumber } from '../../utils/progression';
 import { contextoPesoCorporal } from '../../utils/pesoCorporal';
 import { useAthleteWeight } from '../../hooks/useAthleteWeight';
@@ -35,7 +36,12 @@ import { Button, Collapsible, Select } from '../ui';
    fórmulas con el resto). Las series a peso corporal (dominadas, fondos…)
    cuentan con el peso del atleta cuando se conoce (CR5, Dani 27-10); sin peso
    registrado, se saltan como en la hoja. La semana del calendario en curso no
-   entra en la carga crónica.
+   entra en la carga crónica, ni las de descarga o puente (17-11-2026).
+
+   Las señales de contexto (estrés, sueño, motivación, cansancio al salir)
+   caducan a los 10 días y su historial se alinea por semana de revisión, no
+   por posición (F16). La lectura del rendimiento no compara con la semana en
+   curso a medias ni con una descarga (R1).
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
@@ -81,7 +87,7 @@ const Th = ({ children, derecha }: { children?: React.ReactNode; derecha?: boole
 );
 
 export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, vueltas, grupos, allExercises, umbrales, onGuardarUmbrales, onCambiarTipo, onCambiarModo }: Props) {
-  const { agujetas, sueño, estres, motivacion, fatigaPost, historial } = useAgujetasCdg(athleteEmail);
+  const { agujetas, sueño, estres, motivacion, fatigaPost, historial, caducadas } = useAgujetasCdg(athleteEmail);
   const tipo = tipoDeBloque(meso);
   // Tipificación del cliente (ficha viva): misma caché que la ficha.
   const { data: ficha } = useQuery({ queryKey: dossierKey(athleteEmail), queryFn: () => getDossier(athleteEmail), enabled: !!athleteEmail, staleTime: 60_000 });
@@ -267,6 +273,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                   {motivos.length ? ` (${motivos.join(', ')})` : ''}
                   {' · '}{estres ? `estrés ${estres.value}/10` : 'sin estrés'} · {sueño ? `${n1(sueño.value)} h de sueño` : 'sin sueño'} · {motivacion ? `motivación ${motivacion.value}/10` : 'sin motivación'}.
                   {contexto === 'desfavorable' && ' Un mal momento puntual no obliga a bajar; si se repite varias semanas, sí.'}
+                  {caducadas && caducadas.length > 0 && ` Sin dato reciente de ${caducadas.join(', ')}: su última respuesta tiene más de ${UMBRALES_PROTOCOLO.diasVigenciaContexto} días y ya no cuenta.`}
                 </li>
                 <li>
                   Al salir de las sesiones: {fatigaPost ? <b className={fatigaPost.value >= UMBRALES_PROTOCOLO.fatigaPostAlta ? 'text-warning' : 'text-ink'}>{fatigaPost.value}/10</b> : 'sin dato'}
@@ -376,7 +383,13 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
               {carga.semanasUsadas.length > 0 ? ` (de este bloque: ${carga.semanasUsadas.slice().sort((a, b) => a - b).map(s => `S${s}`).join(', ')}` : ' ('}
               {carga.semanasDeOtrosBloques > 0 ? `${carga.semanasUsadas.length > 0 ? '; ' : ''}${carga.semanasDeOtrosBloques} de bloques anteriores` : ''}).
               {carga.semanasDeOtrosBloques > 0 && ' Al mezclar bloques solo se compara el total de la semana: sus sesiones no se corresponden.'}
+              {carga.semanasRecortadas.length > 0 && ` No cuentan en la media ${carga.semanasRecortadas.map(n => `S${n}`).join(', ')}: ${carga.semanasRecortadas.length === 1 ? 'es' : 'son'} de descarga o puente.`}
             </p>
+            {carga.referenciaRecortada && (
+              <p className="font-sans text-caption text-ink-3">
+                La semana {carga.semanaReferencia} es {carga.referenciaRecortada === 'descarga' ? 'de descarga' : 'una semana puente'}: quedar por debajo de la media es lo que se busca, así que solo se avisa si se pasa por encima.
+              </p>
+            )}
             {!carga.fiable && (
               <p className="font-sans text-caption text-warning">Poca historia ({carga.semanasUsadas.length + carga.semanasDeOtrosBloques} de {SEMANAS_CARGA_CRONICA} semanas): tómalo como orientativo.</p>
             )}
@@ -386,7 +399,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                 {carga.avisos.sesionesIF.filter(s => !huecoVacio(s.sesion)).map(s => (
                   <tr key={s.sesion} className="border-t border-hairline">
                     <td className="py-1.5 text-ink">{nombreSesion(s.sesion)}</td>
-                    <td className={`py-1.5 text-right font-mono ${s.fuera ? 'text-warning font-bold' : 'text-ink'}`}>{n2(s.valor)}</td>
+                    <td className={`py-1.5 text-right font-mono ${s.fuera ? 'text-warning font-bold' : 'text-ink'}`}>{'nueva' in s && s.nueva ? <span className="font-sans text-ink-2">nueva (sin historia)</span> : n2(s.valor)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -396,6 +409,16 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                 {carga.avisos.musculos.map((a, i) => <li key={`m${i}`}>{nombreSesion(a.sesion)} · {a.nombre}: {n2(a.valor)}× la media (fuera de {n2((umbrales ?? UMBRALES_CARGA_POR_DEFECTO).inferior)}–{n2((umbrales ?? UMBRALES_CARGA_POR_DEFECTO).superior)})</li>)}
                 {carga.avisos.articulaciones.map((a, i) => <li key={`a${i}`}>{nombreSesion(a.sesion)} · {a.nombre}: {n2(a.valor)}× la media (fuera de {n2((umbrales ?? UMBRALES_CARGA_POR_DEFECTO).inferior)}–{n2((umbrales ?? UMBRALES_CARGA_POR_DEFECTO).superior)})</li>)}
               </ul>
+            )}
+            {/* Zona nueva (F15): sin historia no hay ratio; se avisa aparte, como información. */}
+            {carga.avisos.nuevos.length > 0 && (
+              <p className="font-sans text-caption text-ink-2">
+                <b className="text-ink">Zona nueva esta semana</b> (sin carga en las semanas de la media, así que no hay con qué compararla):{' '}
+                {[
+                  ...carga.avisos.nuevos.filter(x => x.tipo === 'musculo').map(x => `${x.nombre} (IEM ${n1(x.aguda)})`),
+                  ...carga.avisos.nuevos.filter(x => x.tipo === 'articulacion').map(x => `${x.nombre} (estrés articular ${n1(x.aguda)})`),
+                ].join(', ')}. Empieza con poco y mira las agujetas.
+              </p>
             )}
           </>
         )}
@@ -473,17 +496,23 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
       {(() => {
         // Guía del IH: tonelaje frente a RM y «¿toca cambiar de bloque?».
         const sumar = (m: number[][]) => m.reduce((a, d) => a + d.reduce((x, y) => x + y, 0), 0);
-        const paraLectura: SemanaParaLectura[] = semanas.map(s => ({ semana: s.semana, rendimiento: s.rendimiento, iemTotal: sumar(s.calculo.IEM) }));
+        // R1: ni la semana en curso a medias ni las de descarga o puente se comparan.
+        const paraLectura: SemanaParaLectura[] = semanas.map(s => ({
+          semana: s.semana, rendimiento: s.rendimiento, iemTotal: sumar(s.calculo.IEM),
+          incompleta: s.semana === semanaEnCurso && s.logs < sesionesPorCiclo,
+          descarga: esDescargaOPuente(meso, s.semana),
+        }));
         const lecturas = paraLectura.map((_, i) => leerRendimiento(paraLectura.slice(0, i + 1)).lectura).filter(l => l !== 'sin-dato');
         const ultima = leerRendimiento(paraLectura);
-        const contextos: Contexto[] = [];
-        const h = historial;
-        if (h) {
-          const n = Math.max(h.estres.length, h.sueño.length, h.motivacion.length);
-          for (let k = n; k >= 1; k--) {
-            contextos.push(contextoDeLaSemana({ estres: h.estres.at(-k), sueñoHoras: h.sueño.at(-k), motivacion: h.motivacion.at(-k) }).contexto);
-          }
-        }
+        // F16: el historial va por semana de revisión (su fecha), no por posición.
+        // Una semana sin contestar es «sin dato» y corta cualquier racha.
+        const ciclos = historial ? contextoPorCiclos(historial, hoyIsoLocal()) : [];
+        const contextos: Contexto[] = ciclos.map(c => c.contexto);
+        const fatigaSeguida = rachaFinal(ciclos.map(c => c.fatigaPost));
+        const motivacionSeguida = rachaFinal(ciclos.map(c => c.motivacion));
+        // El cansancio de cada semana realizada: la respuesta del ciclo de revisión
+        // en el que cae su último día (misma regla que `fechaSemanaDelBloque`).
+        const cansancioDe = (semana: number) => valorEnElCicloDe(ciclos, addDays(meso.startDate, semana * cicloDias - 1), 'fatigaPost');
         let avisosArticulares = 0;
         if (semanas.length >= 2) {
           const totales = (s: typeof semanas[number]) => ({
@@ -494,7 +523,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
         }
         const cambio = indicadoresCambioDeBloque({
           semanasHechas: semanas.length, contextos, semanasAburrimiento: semanasHastaAburrirse(tip),
-          fatigaPost: h?.fatigaPost ?? [], motivacion: h?.motivacion ?? [],
+          fatigaPost: fatigaSeguida, motivacion: motivacionSeguida,
           lecturas, avisosArticulares, rmUltimaSemana: ultima.rm,
         });
         return (
@@ -502,11 +531,14 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
             <Seccion titulo="Lectura del rendimiento">
               <p className="font-sans text-caption text-ink">{ultima.texto}</p>
               {ultima.tonelaje != null && ultima.rm != null && (
-                <p className="font-mono text-caption text-ink-2">Tonelaje {pct(ultima.tonelaje)} · RM {pct(ultima.rm)} (ejercicios comunes de las dos últimas semanas)</p>
+                <p className="font-mono text-caption text-ink-2">Tonelaje {pct(ultima.tonelaje)} · RM {pct(ultima.rm)} (ejercicios comunes de {ultima.semanas ? `S${ultima.semanas[0]} y S${ultima.semanas[1]}` : 'las dos últimas semanas'}; sin la semana en curso a medias ni descargas)</p>
               )}
               <p className="font-sans text-caption text-ink-3">Anota las bajadas intencionadas (descargas) para no malinterpretarlas después.</p>
               {(() => {
-                const ref = referenciasToleradas(semanas.map(se => Math.max(0, ...se.calculo.IF)), h?.fatigaPost ?? []);
+                // Cada semana con SU cansancio (por fecha); las que no lo tienen, fuera.
+                const pares = semanas.map(se => ({ IF: Math.max(0, ...se.calculo.IF), cansancio: cansancioDe(se.semana) }))
+                  .filter((x): x is { IF: number; cansancio: number } => x.cansancio != null);
+                const ref = referenciasToleradas(pares.map(x => x.IF), pares.map(x => x.cansancio));
                 if (ref.tolerado == null && ref.demasiado == null) return null;
                 return (
                   <p className="font-sans text-caption text-ink-2">

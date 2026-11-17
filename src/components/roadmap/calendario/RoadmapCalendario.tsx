@@ -210,7 +210,7 @@ export default function RoadmapCalendario(props: Props) {
 
   const bandaActiva = bandaEnFecha<BandaEntreno>(bandasEntreno, hoy);
   const mesoActivo = bandaActiva ? mesocycles.find(m => m.id === bandaActiva.id) : undefined;
-  const adherenciaBloque = mesoActivo ? adherenciaDeMesociclo(workoutAssignments, mesoActivo.id) : null;
+  const adherenciaBloque = mesoActivo ? adherenciaDeMesociclo(workoutAssignments, mesoActivo.id, hoy) : null;
   // La cifra cuenta hasta su valor al montar (P2); el hook va DESPUÉS del cálculo, no arriba.
   const adherenciaAnimada = useCuentaAlMontar(adherenciaBloque ?? 0);
   const semanaDelBloque = bandaActiva ? Math.floor((new Date(hoy + 'T00:00:00').getTime() - new Date(bandaActiva.inicio + 'T00:00:00').getTime()) / 86400000 / 7) + 1 : null;

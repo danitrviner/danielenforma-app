@@ -211,6 +211,26 @@ describe('deriveDeloadEvents', () => {
     expect(deriveDeloadEvents([withDeload], '2026-10-01')[0].status).toBe('hecho');
     expect(deriveDeloadEvents([withDeload], '2026-08-01')[0].status).toBe('programado');
   });
+
+  // 17-11-2026: la fuente de verdad de la descarga es `semanasDescarga`, y un
+  // bloque puede tener varias. Solo se pintaba la primera (`deloadWeek`).
+  it('pinta TODAS las semanas de semanasDescarga, no solo la primera', () => {
+    const events = deriveDeloadEvents([{ ...meso, semanasDescarga: [4, 8], deloadWeek: 4 }], '2026-08-01');
+    expect(events.map(e => e.date)).toEqual(['2026-08-22', '2026-09-19']);
+    expect(events.map(e => e.id)).toEqual(['deload-m1', 'deload-m1-s8']);
+  });
+
+  it('con semanasDescarga pero sin deloadWeek también hay marcador', () => {
+    const events = deriveDeloadEvents([{ ...meso, semanasDescarga: [8] }], '2026-08-01');
+    expect(events).toHaveLength(1);
+    expect(events[0].date).toBe('2026-09-19');
+  });
+
+  it('con un ciclo de 14 días lleva cada vuelta a su semana de calendario', () => {
+    // La vuelta 4 de un ciclo de 14 días empieza en la semana 7 del bloque.
+    const events = deriveDeloadEvents([{ ...meso, cycleDays: 14, semanasDescarga: [4], deloadWeek: 7 }], '2026-08-01');
+    expect(events.map(e => e.date)).toEqual(['2026-09-12']);
+  });
 });
 
 describe('detectConflicts', () => {

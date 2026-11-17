@@ -39,6 +39,26 @@ export function rirClaseColor(valor: string): string {
   return 'text-ink-2';
 }
 
+/**
+ * ¿Se puede dar esta fila por hecha? Solo con repeticiones (F23, 17-11-2026).
+ * Antes se podía marcar «Hecha» una fila vacía y se guardaba una serie de
+ * 0 kg × 0 repeticiones: contaba como serie, bajaba las medias y pasaba a ser
+ * «la última vez». El peso NO se exige: 0 kg es lo normal en un ejercicio con
+ * el peso del cuerpo.
+ */
+export function tieneReps(fila: Pick<SetInput, 'repsDone'> | undefined): boolean {
+  return !!fila && parseInt(fila.repsDone, 10) > 0;
+}
+
+/** Lo que se le dice junto a la fila cuando intenta marcarla sin repeticiones. */
+export const AVISO_SIN_REPS = 'Apunta las repeticiones para marcarla como hecha.';
+
+/** Las filas que se guardan como series: marcadas y con repeticiones. Una fila
+ *  marcada sin repeticiones (un borrador de antes de F23) no es una serie. */
+export function seriesHechas<T extends Pick<SetInput, 'repsDone' | 'done'>>(filas: readonly T[]): T[] {
+  return filas.filter(s => s.done && tieneReps(s));
+}
+
 /** Fila vacía por defecto para una bajada (dropset) o miniserie (myoreps)
  * añadida a mano por el atleta durante la sesión — mismo shape que cualquier
  * otra serie, sin campo nuevo en el modelo de datos (Contexto del plan:

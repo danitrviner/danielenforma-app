@@ -27,7 +27,8 @@ import {
 import { toResult } from './comunes.js';
 import { crearMotor, expandirCatalogo, parsearEsfuerzo, parsearReps, type CdgCatalogoCompacto, type MotorCdg } from '../../utils/cdg/motor.js';
 import { ZONAS_IEM, iemPorZona, type ZonaIem } from '../../utils/cdg/zonas.js';
-import { agujetasPorZona, agujetasVigentes, contextoDeLaSemana, propuestaZona, sensibilidadDeZona, tipoDeBloque } from '../../utils/cdg/agujetas.js';
+import { agujetasPorZona, agujetasVigentes, contextoDeLaSemana, propuestaZona, sensibilidadDeZona, tipoDeBloque, ultimaVigente, type Propuesta } from '../../utils/cdg/agujetas.js';
+import { avisoDeSemanaBase, motivoSinProgresion, semanaBaseDeIem } from '../../utils/cdg/semanaBase.js';
 import { aplicarOperaciones, iemProgramadoPorZona, proponerProgresionIem, type EjercicioProgramable, type OperacionIem } from '../../utils/cdg/progresionIem.js';
 import { resumenSesion } from '../../utils/cdg/programacion.js';
 import { semanaRealizadaDesdeLogs } from '../../utils/cdg/adaptadores.js';
@@ -95,20 +96,30 @@ async function contextoCdg(email: string, mesocycleId?: string): Promise<Context
 async function señalesDe(email: string) {
   const [respuestas, cuestionarios] = await Promise.all([getResponsesForAthlete(email), getQuestionnairesByCoach(coachActual().uid)]);
   const serie = (k: string) => historialDeSeñal(k, respuestas, cuestionarios);
-  const ultimoDe = (k: string) => serie(k).at(-1)?.value;
+  // Igual que la pantalla (`useAgujetasCdg`, F16): una respuesta de hace más de
+  // 10 días ya no es el contexto de esta semana. Caducada = sin dato.
+  const hoy = hoyIsoLocal();
+  const ultimoDe = (k: string) => ultimaVigente(serie(k), hoy)?.value;
   return {
     agujetas: agujetasPorZona(serie),
-    sueño: ewmaDeSeñal('wellness.sleep_hours_weekly', respuestas, cuestionarios).at(-1)?.value,
+    sueño: ultimaVigente(ewmaDeSeñal('wellness.sleep_hours_weekly', respuestas, cuestionarios), hoy)?.value,
     estres: ultimoDe('wellness.stress_weekly'),
     motivacion: ultimoDe('wellness.motivation_weekly'),
     fatigaPost: ultimoDe('wellness.fatigue_post_weekly'),
   };
 }
 
+/** Texto del aviso bloqueante de una zona con agujetas de 5 (F6): no lleva %, lo decide el coach. */
+const avisoBloqueante = (nombre: string) => `${nombre}: agujetas de 5, duele en reposo. No subir: ningún cambio puede añadirle estímulo. Cuánto bajar lo decide Dani: pregúntaselo antes de poner un porcentaje negativo en pct_por_zona.`;
+
 /** Las zonas con IEM programado y la propuesta del protocolo para cada una, de cara a `semana`. */
 function zonasHacia(c: ContextoCdg, s: Awaited<ReturnType<typeof señalesDe>>, semana: number) {
   const { motor, meso, dias, nombreCdgDe, resolver } = c;
-  const ref = semana - 1;
+  // La base es la última semana NORMAL anterior (F2): una descarga o una puente
+  // van recortadas y sobre ellas se propondría partir de media semana.
+  const ref = semanaBaseDeIem(meso, semana);
+  // Y en una semana de descarga o puente no se propone subida.
+  const sinProgresion = motivoSinProgresion(meso, semana);
   const iemBase = iemProgramadoPorZona(motor, nombreCdgDe, dias.flatMap(d => d.exercises.map(we => resolver(we, ref))));
   const velocidad = tipoDeBloque(meso).velocidad;
   const { contexto, motivos } = contextoDeLaSemana({ estres: s.estres, sueñoHoras: s.sueño, motivacion: s.motivacion });
@@ -117,14 +128,24 @@ function zonasHacia(c: ContextoCdg, s: Awaited<ReturnType<typeof señalesDe>>, s
     const vigente = !!lectura && agujetasVigentes(lectura.fecha, c.hoy);
     const objetivo = meso.cdgObjetivosIem?.[z.clave];
     const modo = sensibilidadDeZona(meso, z.clave);
-    const propuesta = propuestaZona({
+    const calculada = propuestaZona({
       agujetas: vigente ? lectura!.valor : undefined, anterior: vigente ? lectura!.anterior : undefined, sensible: z.sensible,
       tipo: { sensibilidad: modo, velocidad }, esObjetivo: objetivo != null, iem: iemBase[z.clave], contexto, fatigaPost: s.fatigaPost, objetivo,
       primeraSemanaTrasParon: !!meso.vuelveDeParon && semana <= 2,
     });
+    // Los frenos se respetan; lo que no sale es una subida para una semana recortada.
+    const propuesta: Propuesta = sinProgresion && (calculada.pct ?? 0) > 0
+      ? { tono: 'mantener', texto: `${sinProgresion} La subida se propone para la siguiente semana normal.` }
+      : calculada;
     return { zona: z.clave, nombre: z.nombre, modo, objetivo, iemBase: iemBase[z.clave] ?? 0, agujetas: vigente ? lectura : undefined, propuesta };
   });
-  return { zonas, iemBase, contexto, motivos, velocidad };
+  const bloqueadas = zonas.filter(z => z.propuesta.bloqueante);
+  return {
+    zonas, iemBase, contexto, motivos, velocidad, semanaBase: ref, sinProgresion,
+    avisoBase: avisoDeSemanaBase(meso, semana),
+    avisosBloqueantes: bloqueadas.map(z => avisoBloqueante(z.nombre)),
+    zonasSinSubida: bloqueadas.map(z => z.zona),
+  };
 }
 
 function zonaDeGrupo(grupo: MuscleGroup | undefined): ZonaIem | undefined {
@@ -137,7 +158,7 @@ export async function getCdgSemana(email: string, mesocycleId?: string): Promise
   const c = await contextoCdg(email, mesocycleId);
   if ('error' in c) return toResult({ error: c.error });
   const s = await señalesDe(email);
-  const { zonas, contexto, motivos, velocidad } = zonasHacia(c, s, c.semanaActual + 1);
+  const { zonas, contexto, motivos, velocidad, semanaBase, sinProgresion, avisoBase, avisosBloqueantes } = zonasHacia(c, s, c.semanaActual + 1);
   const programadoAhora = iemProgramadoPorZona(c.motor, c.nombreCdgDe, c.dias.flatMap(d => d.exercises.map(we => c.resolver(we, c.semanaActual))));
 
   // Lo REALIZADO la semana pasada, con los logs de esas fechas.
@@ -156,17 +177,21 @@ export async function getCdgSemana(email: string, mesocycleId?: string): Promise
 
   const sinVinculo = c.dias.flatMap(d => d.exercises).filter(we => !c.nombreCdgDe(we.exerciseId)).map(we => c.porId.get(we.exerciseId)?.name ?? we.exerciseId);
   return toResult({
-    mesociclo: { id: c.meso.id, nombre: nombreDeMeso(c.meso), semanaActual: c.semanaActual, vueltas: c.vueltas, cicloDias: c.ciclo, velocidad, descargas: c.meso.semanasDescarga ?? [] },
+    mesociclo: { id: c.meso.id, nombre: nombreDeMeso(c.meso), semanaActual: c.semanaActual, vueltas: c.vueltas, cicloDias: c.ciclo, velocidad, descargas: c.meso.semanasDescarga ?? [], semanasPuente: c.meso.semanasPivot ?? [] },
+    // De dónde parte la propuesta de la semana que viene y si esa semana admite subida (F2).
+    semanaQueViene: { semana: c.semanaActual + 1, semanaBase, sinProgresion, avisoBase },
+    // Agujetas de 5: no llevan % (lo decide Dani), pero bloquean la zona (F6).
+    avisosBloqueantes,
     contexto: { contexto, motivos, sueñoHoras: s.sueño ?? null, estres: s.estres ?? null, motivacion: s.motivacion ?? null, fatigaPost: s.fatigaPost ?? null },
     zonas: zonas.map(z => ({
       zona: z.zona, nombre: z.nombre, modo: z.modo, objetivoIem: z.objetivo ?? null,
       iemProgramadoEstaSemana: r1(programadoAhora[z.zona] ?? 0),
       iemRealizadoSemanaPasada: realizado ? r1(realizado[z.zona] ?? 0) : null,
       agujetas: z.agujetas ? { valor: z.agujetas.valor, fecha: z.agujetas.fecha, anterior: z.agujetas.anterior ?? null } : null,
-      propuestaSemanaQueViene: { tono: z.propuesta.tono, pct: z.propuesta.pct ?? null, iemPropuesto: z.propuesta.iemPropuesto ?? null, texto: z.propuesta.texto },
+      propuestaSemanaQueViene: { tono: z.propuesta.tono, pct: z.propuesta.pct ?? null, iemPropuesto: z.propuesta.iemPropuesto ?? null, bloqueante: !!z.propuesta.bloqueante, texto: z.propuesta.texto },
     })),
     ejerciciosSinVinculoCdg: [...new Set(sinVinculo)],
-    note: 'Números del motor CDG, los mismos que Dani ve en Mesociclo › Seguimiento. `propuestaSemanaQueViene` es el protocolo freno/acelerador por zona: con «freno» o «vigilar» NO subas esa zona. Para programar la semana que viene llama a propose_progresion_iem (el motor calcula los cambios; tú solo descartas o recortas).',
+    note: 'Números del motor CDG, los mismos que Dani ve en Mesociclo › Seguimiento. `propuestaSemanaQueViene` es el protocolo freno/acelerador por zona: con «freno» o «vigilar» NO subas esa zona, y con `bloqueante: true` (agujetas de 5, duele en reposo) no subas NADA que la trabaje y díselo a Dani: cuánto bajar lo decide él. `semanaQueViene.semanaBase` es la semana sobre la que se calcula el % (la última que no es descarga ni puente). Para programar la semana que viene llama a propose_progresion_iem (el motor calcula los cambios; tú solo descartas o recortas).',
   });
 }
 
@@ -175,19 +200,21 @@ export async function getCdgSemana(email: string, mesocycleId?: string): Promise
 export async function proposeProgresionIem(email: string, input: Record<string, unknown>, rationale: string, chatId: string): Promise<string> {
   const c = await contextoCdg(email, typeof input.mesocycle_id === 'string' ? input.mesocycle_id : undefined);
   if ('error' in c) return toResult({ valid: false, issues: [c.error] });
-  const descargas = c.meso.semanasDescarga ?? [];
   const pedida = typeof input.semana === 'number' ? Math.round(input.semana) : c.semanaActual + 1;
   const issues: string[] = [];
+  // Ni descarga ni puente son destino de una subida (F2).
+  const sinProgresion = motivoSinProgresion(c.meso, pedida);
   if (pedida < 2 || pedida > c.vueltas) issues.push(`La semana a programar va de 2 a ${c.vueltas} (semana actual: ${c.semanaActual}).`);
-  else if (descargas.includes(pedida)) issues.push(`La S${pedida} es de descarga: no se progresa en ella.`);
+  else if (sinProgresion) issues.push(sinProgresion);
   if (c.dias.length === 0) issues.push('El mesociclo no tiene sesiones.');
   if (issues.length) return toResult({ valid: false, issues });
 
   const [s, alta, landmarks] = await Promise.all([señalesDe(email), getOnboarding(email), getVolumeLandmarks().catch(() => undefined)]);
-  const { zonas, iemBase, contexto } = zonasHacia(c, s, pedida);
+  const { zonas, iemBase, contexto, semanaBase, avisoBase, avisosBloqueantes, zonasSinSubida } = zonasHacia(c, s, pedida);
 
   // El % por zona: el del motor, o el del modelo si es MÁS prudente (nunca más agresivo).
-  const avisos: string[] = [];
+  // Los avisos bloqueantes (agujetas de 5) y la semana base van siempre por delante.
+  const avisos: string[] = [...avisosBloqueantes, ...(avisoBase ? [avisoBase] : [])];
   const override = (input.pct_por_zona && typeof input.pct_por_zona === 'object' ? input.pct_por_zona : {}) as Record<string, unknown>;
   const pctPorZona: Partial<Record<ZonaIem, number>> = {};
   for (const z of zonas) {
@@ -215,7 +242,7 @@ export async function proposeProgresionIem(email: string, input: Record<string, 
     ? (Object.fromEntries(Object.entries(landmarks).map(([g, l]) => [g, (l as { mrv?: number } | undefined)?.mrv])) as Partial<Record<MuscleGroup, number>>)
     : undefined;
 
-  const r = proponerProgresionIem({ motor: c.motor, nombreCdgDe: c.nombreCdgDe, ejercicios, iemBase, pctPorZona, palancas: { rir: true, series: true, tecnica: false }, tiempo, mrvPorGrupo });
+  const r = proponerProgresionIem({ motor: c.motor, nombreCdgDe: c.nombreCdgDe, ejercicios, iemBase, pctPorZona, palancas: { rir: true, series: true, tecnica: false }, tiempo, mrvPorGrupo, zonasSinSubida });
   const opsDe = new Map<string, OperacionIem[]>();
   for (const ch of r.cambios) opsDe.set(ch.clave, [...(opsDe.get(ch.clave) ?? []), ch.op]);
 
@@ -234,14 +261,18 @@ export async function proposeProgresionIem(email: string, input: Record<string, 
     return toResult({ valid: false, issues: ['El motor no propone ningún cambio para esa semana (zonas en freno, en objetivo o sin margen).'], zonas: r.zonas, avisos });
   }
 
-  const summary = `Progresión IEM S${pedida} de ${nombreDeMeso(c.meso)}: ${cambios.length} ejercicio${cambios.length === 1 ? '' : 's'} · ${resumenZonas}`;
+  // Las zonas bloqueadas quedan a la vista en la propuesta que aprueba Dani, no solo en el chat.
+  const sinSubir = zonas.filter(z => z.propuesta.bloqueante).map(z => z.nombre);
+  const summary = `Progresión IEM S${pedida} de ${nombreDeMeso(c.meso)}: ${cambios.length} ejercicio${cambios.length === 1 ? '' : 's'} · ${resumenZonas}`
+    + (sinSubir.length ? ` · Sin subir (agujetas de 5, decide tú cuánto bajar): ${sinSubir.join(', ')}` : '')
+    + (semanaBase !== pedida - 1 ? ` · sobre ${semanaBase === 0 ? 'Base' : `S${semanaBase}`}` : '');
   const payload: WeekPlanProposalPayload = { mesocycleId: c.meso.id, mesocycleName: nombreDeMeso(c.meso), cambios, origenIem: true };
   const proposal = await createAiProposal({
     athleteId: email, kind: 'weekPlan', status: 'proposed', chatId, summary, rationale: rationale || `Protocolo CDG: contexto ${contexto}.`,
     payload, cambios: lineas, createdAt: new Date().toISOString(),
   });
   return toResult({
-    proposalCreated: true, proposalId: proposal.id, semana: pedida, contexto,
+    proposalCreated: true, proposalId: proposal.id, semana: pedida, semanaBase, contexto,
     zonas: r.zonas.map(z => ({ zona: z.zona, nombre: z.nombre, pct: z.pct, antes: r1(z.antes), despues: r1(z.despues), objetivo: z.objetivo, alcanzado: z.alcanzado, nota: z.nota ?? null })),
     cambios: lineas, avisos,
     note: 'Propuesta weekPlan creada con los cambios del motor. Si algún cambio no procede (molestia, ejercicio que no quiere), vuelve a llamar con `descartar` y la nueva propuesta sustituye a esta cuando Dani la apruebe.',

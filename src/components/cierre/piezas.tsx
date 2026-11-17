@@ -7,6 +7,7 @@ import type {
 } from '../../utils/progresionDelBloque';
 import { Sexo } from '../../utils/athleteProfileSignals';
 import { e1rmAlometrico } from '../../utils/allometricScore';
+import { RUIDO_RM_PCT } from '../../utils/ruidoDeMedida';
 import {
   Icon, Badge, Chip,
   MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA, TOOLTIP_GRAFICA,
@@ -22,10 +23,12 @@ import TablaGruposPerf from '../training/TablaGruposPerf';
 export const fmt = (n: number, dec = 1) => n.toLocaleString('es-ES', { maximumFractionDigits: dec });
 export const conSigno = (n: number) => `${n > 0 ? '+' : ''}${fmt(n)}`;
 
+// Verde o rojo solo cuando el cambio supera el ruido de medida del RM
+// estimado (`ruidoDeMedida.ts`); por debajo es gris, ni mejora ni caída.
 export function colorDelta(pct: number | null | undefined): string {
   if (pct == null) return 'var(--color-ink-3)';
-  if (pct >= 2) return 'var(--color-success)';
-  if (pct <= -2) return 'var(--color-danger)';
+  if (pct >= RUIDO_RM_PCT) return 'var(--color-success)';
+  if (pct <= -RUIDO_RM_PCT) return 'var(--color-danger)';
   return 'var(--color-ink-2)';
 }
 

@@ -2,6 +2,7 @@ import { WorkoutExercise, WeeklyProgressionRule, CambiosDeSemana, WorkoutSetGrou
 import { resolveExerciseForWeek, resolverEjercicioDelMeso, mesocycleWeekNumber } from './progression.js';
 import { startOfDay, planWeekDueDate, mesocycleEndDate } from './scheduleEngine.js';
 import { describirTecnica } from './tecnicaDeSerie.js';
+import { esSemanaPuente, esVueltaDeParon } from './tipoDeSemana.js';
 
 /* Programar un mesociclo semana a semana (barra de semanas de Mesociclo ›
    Ejercicios). Los cambios viven en el propio ejercicio, como reglas de
@@ -261,6 +262,11 @@ export function compararSemanas(
 
 export interface NovedadesDeSemana {
   descarga: boolean;
+  /** Semana puente (pivot): menos series salvo en los grupos prioritarios. Si
+   *  además es de descarga, solo se avisa la descarga. */
+  puente: boolean;
+  /** Primera semana tras un parón: RIR 3 o más. */
+  vueltaDeParon: boolean;
   test: boolean;
   evento?: EventoDeSemana;
   /** true si la semana anterior era de descarga y esta no. */
@@ -268,15 +274,27 @@ export interface NovedadesDeSemana {
   cambios: Novedad[];
 }
 
-/** Novedades para el atleta al empezar la semana de ciclo `semana`. */
+/**
+ * Novedades para el atleta al empezar la semana de ciclo `semana`.
+ *
+ * F7b (17-11-2026): la semana puente y la vuelta de parón también se avisan.
+ * El entreno ya las aplicaba (menos series, RIR más alto), pero el atleta se
+ * las encontraba sin saber por qué, y ni `compararSemanas` las ve: no son
+ * cambios del ejercicio, son de la semana.
+ */
 export function novedadesDeSemana(
   ejercicios: EjercicioDelDia[],
-  meso: { semanasDescarga?: number[]; semanasTest?: number[]; eventosSemana?: Record<string, EventoDeSemana> },
+  meso: {
+    semanasDescarga?: number[]; semanasTest?: number[]; semanasPivot?: number[]; vuelveDeParon?: boolean;
+    eventosSemana?: Record<string, EventoDeSemana>;
+  },
   semana: number, nombreDe: (id: string) => string,
 ): NovedadesDeSemana {
   const descargas = meso.semanasDescarga ?? [];
   return {
     descarga: descargas.includes(semana),
+    puente: esSemanaPuente(meso, semana),
+    vueltaDeParon: esVueltaDeParon(meso, semana),
     test: (meso.semanasTest ?? []).includes(semana),
     evento: meso.eventosSemana?.[String(semana)],
     vuelveElVolumen: semana > 1 && descargas.includes(semana - 1) && !descargas.includes(semana),
@@ -285,7 +303,7 @@ export function novedadesDeSemana(
 }
 
 export function hayNovedades(n: NovedadesDeSemana): boolean {
-  return n.descarga || n.test || !!n.evento || n.vuelveElVolumen || n.cambios.length > 0;
+  return n.descarga || n.puente || n.vueltaDeParon || n.test || !!n.evento || n.vuelveElVolumen || n.cambios.length > 0;
 }
 
 /** Series totales de la semana (lo que se hace de verdad, descarga incluida). */

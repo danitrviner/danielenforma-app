@@ -14,6 +14,21 @@ export interface AdherenceResult {
 }
 
 /**
+ * Las sesiones de un mesociclo que entran en su adherencia. Con
+ * `vencidasAntesDe` (YYYY-MM-DD, normalmente hoy) se quedan fuera las que aún
+ * no han tocado: una sesión de pasado mañana no es una sesión sin hacer.
+ * Exportada para que el cierre cuente «X de Y» con el mismo denominador que
+ * el porcentaje.
+ */
+export function asignacionesDeMesociclo(
+  assignments: WorkoutAssignment[], mesocycleId: string, vencidasAntesDe?: string,
+): WorkoutAssignment[] {
+  const propias = assignments.filter(a => a.mesocycleId === mesocycleId);
+  if (!vencidasAntesDe) return propias;
+  return propias.filter(a => a.status === 'completed' || a.date < vencidasAntesDe);
+}
+
+/**
  * Adherencia de UN mesociclo: sesiones completadas ÷ asignadas.
  *
  * Distinta de `computeAdherenceScore`, que mide una ventana de 28 días
@@ -25,9 +40,17 @@ export interface AdherenceResult {
  *
  * `null` cuando no hay asignaciones de ese mesociclo: sin plan asignado no hay
  * un 0%, hay un "no se sabe".
+ *
+ * `vencidasAntesDe` (17-11-2026) es para el bloque EN CURSO: sin él se dividía
+ * por todas las sesiones del bloque, futuras incluidas, y en la semana 2 de 8
+ * con todo hecho salía un 19 %. Con él solo cuentan las sesiones cuya fecha ya
+ * ha pasado (y las completadas, aunque se adelantaran). Es opcional para no
+ * cambiar la cifra de quien mide un bloque ya terminado.
  */
-export function adherenciaDeMesociclo(assignments: WorkoutAssignment[], mesocycleId: string): number | null {
-  const propias = assignments.filter(a => a.mesocycleId === mesocycleId);
+export function adherenciaDeMesociclo(
+  assignments: WorkoutAssignment[], mesocycleId: string, vencidasAntesDe?: string,
+): number | null {
+  const propias = asignacionesDeMesociclo(assignments, mesocycleId, vencidasAntesDe);
   if (propias.length === 0) return null;
   const completadas = propias.filter(a => a.status === 'completed').length;
   return Math.round((completadas / propias.length) * 100);

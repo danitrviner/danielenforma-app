@@ -6,24 +6,42 @@
  */
 import type { FilaRendimiento } from './seguimiento.js'
 import type { Contexto } from './agujetas.js'
+import { RUIDO_RM } from '../ruidoDeMedida.js'
 
 export interface SemanaParaLectura {
   semana: number
   rendimiento: FilaRendimiento[]
   /** IEM total realizado esa semana (suma de músculos y días). */
   iemTotal: number
+  /** La semana del calendario en curso y aún sin todas sus sesiones: no se compara. */
+  incompleta?: boolean
+  /** Semana de descarga o puente (`semanasDescarga`, `semanasPivot`): la bajada es
+   *  intencionada, así que tampoco se compara. */
+  descarga?: boolean
 }
 
-export type LecturaRendimiento = 'progreso' | 'acumulacion' | 'fatiga-disipada' | 'exceso' | 'sin-cambios' | 'sin-dato'
-export interface Lectura { lectura: LecturaRendimiento; texto: string; tonelaje?: number; rm?: number }
+export type LecturaRendimiento = 'progreso' | 'acumulacion' | 'fatiga-disipada' | 'exceso' | 'posible-exceso' | 'sin-cambios' | 'sin-dato'
+export interface Lectura {
+  lectura: LecturaRendimiento; texto: string; tonelaje?: number; rm?: number
+  /** Las dos semanas que se han comparado (la anterior y la última comparables). */
+  semanas?: [number, number]
+}
 
-const UMBRAL = 0.02 // ±2 %: por debajo es ruido
+// Por debajo del ruido de medida no es ni subir ni bajar (`ruidoDeMedida.ts`,
+// 17-11-2026; antes un ±2 % suelto, menos de lo que mueve una repetición).
+const UMBRAL = RUIDO_RM
+
+/** ¿Vale la semana para comparar? Ni la que está a medias ni una descarga o puente. */
+const comparable = (s: SemanaParaLectura) => !s.incompleta && !s.descarga
 
 /**
  * Tonelaje frente a RM entre dos semanas, solo con los ejercicios que están en
- * las dos (comparar ejercicios distintos no dice nada).
+ * las dos (comparar ejercicios distintos no dice nada). `null` también si alguna
+ * de las dos viene marcada como incompleta o de descarga: media semana o una
+ * semana recortada a propósito no son una caída.
  */
 export function compararSemanas (a: SemanaParaLectura, b: SemanaParaLectura): { tonelaje: number; rm: number } | null {
+  if (!comparable(a) || !comparable(b)) return null
   const porEjercicio = (s: SemanaParaLectura) => {
     const m = new Map<string, { ton: number; rm: number[] }>()
     for (const f of s.rendimiento) {
@@ -43,25 +61,43 @@ export function compararSemanas (a: SemanaParaLectura, b: SemanaParaLectura): { 
   return { tonelaje: tonB / tonA - 1, rm: media(ratios) - 1 }
 }
 
+const sube = (v: number) => v > UMBRAL
+const baja = (v: number) => v < -UMBRAL
+
+/** El tonelaje no sube aunque se acumula más IEM entre esas dos semanas. */
+function sinRespuesta (a: SemanaParaLectura, b: SemanaParaLectura): boolean {
+  const d = compararSemanas(a, b)
+  return !!d && !sube(d.tonelaje) && b.iemTotal > a.iemTotal * (1 + UMBRAL)
+}
+
 /**
- * Los cuatro patrones de la guía, sobre las dos últimas semanas con datos:
- * suben juntos → progreso · tonelaje sube y RM no → acumulación · tonelaje baja
- * y RM sube → fatiga disipada · tonelaje estancado o bajando pese a acumular
- * (más IEM) → exceso, toca descargar.
+ * Los cuatro patrones de la guía, sobre las dos últimas semanas COMPARABLES (con
+ * datos, completas y que no sean de descarga ni puente): suben juntos →
+ * progreso · tonelaje sube y RM no → acumulación · tonelaje baja y RM sube →
+ * fatiga disipada · tonelaje estancado o bajando pese a acumular (más IEM) →
+ * exceso, toca descargar.
+ *
+ * El exceso solo se afirma si se repite dos semanas seguidas (17-11-2026): el
+ * curso dice que una caída de 1-2 semanas no es motivo. Con una sola pareja
+ * queda en «posible exceso», que avisa y no enciende ningún indicador.
  */
 export function leerRendimiento (semanas: SemanaParaLectura[]): Lectura {
-  const conDatos = semanas.filter(s => s.rendimiento.length > 0)
-  if (conDatos.length < 2) return { lectura: 'sin-dato', texto: 'Hacen falta dos semanas con registros para leer el rendimiento.' }
+  const conDatos = semanas.filter(s => s.rendimiento.length > 0 && comparable(s))
+  if (conDatos.length < 2) return { lectura: 'sin-dato', texto: 'Hacen falta dos semanas completas con registros (sin contar descargas) para leer el rendimiento.' }
   const a = conDatos[conDatos.length - 2]; const b = conDatos[conDatos.length - 1]
   const d = compararSemanas(a, b)
   if (!d) return { lectura: 'sin-dato', texto: `S${a.semana} y S${b.semana} no comparten ejercicios: no se pueden comparar.` }
-  const sube = (v: number) => v > UMBRAL; const baja = (v: number) => v < -UMBRAL
-  const acumulando = b.iemTotal > a.iemTotal * (1 + UMBRAL)
-  const base = { tonelaje: d.tonelaje, rm: d.rm }
+  const base = { tonelaje: d.tonelaje, rm: d.rm, semanas: [a.semana, b.semana] as [number, number] }
   if (sube(d.tonelaje) && sube(d.rm)) return { ...base, lectura: 'progreso', texto: 'Tonelaje y RM suben juntos: progreso.' }
   if (baja(d.tonelaje) && sube(d.rm)) return { ...base, lectura: 'fatiga-disipada', texto: 'Baja el tonelaje y sube el RM: se ha disipado fatiga (típico tras una descarga).' }
   if (sube(d.tonelaje) && !sube(d.rm)) return { ...base, lectura: 'acumulacion', texto: 'Sube el tonelaje pero no el RM: fase de acumulación. Normal si es lo buscado; vigila que no se alargue.' }
-  if (!sube(d.tonelaje) && acumulando) return { ...base, lectura: 'exceso', texto: 'El tonelaje no sube aunque se está acumulando más IEM: exceso de carga. Plantéate descargar.' }
+  if (sinRespuesta(a, b)) {
+    const antes = conDatos[conDatos.length - 3]
+    if (antes && sinRespuesta(antes, a)) {
+      return { ...base, lectura: 'exceso', texto: 'Segunda semana seguida en la que el tonelaje no sube aunque se acumula más IEM: exceso de carga. Plantéate descargar.' }
+    }
+    return { ...base, lectura: 'posible-exceso', texto: 'El tonelaje no sube aunque se acumula más IEM, pero es una sola semana: todavía no es motivo. Si se repite la que viene, plantéate descargar.' }
+  }
   return { ...base, lectura: 'sin-cambios', texto: 'Sin cambios claros entre las dos últimas semanas.' }
 }
 
@@ -90,12 +126,14 @@ export function indicadoresCambioDeBloque (o: {
   const fatigaAlta = ultimas(o.fatigaPost, 2).length === 2 && ultimas(o.fatigaPost, 2).every(v => v >= 8)
   const mot = ultimas(o.motivacion, 3)
   const motivacionCae = mot.length === 3 && mot[2] < mot[0] && mot[2] <= 5
+  // «exceso» ya exige dos semanas seguidas (`leerRendimiento`); un «posible-exceso»
+  // de una sola semana no enciende el indicador.
   const estancado = ultimas(o.lecturas, 2).some(l => l === 'exceso')
   const molestias = o.avisosArticulares > 0 && (o.rmUltimaSemana ?? 0) > UMBRAL
   const aFavor: Indicador[] = [
     { clave: 'contexto', cumple: contextoMalo && (fatigaAlta || motivacionCae), texto: 'Contexto malo persistente (4+ semanas) con cansancio alto o motivación cayendo' },
     { clave: 'aburrimiento', cumple: o.semanasHechas >= (o.semanasAburrimiento ?? 8), texto: `Mismos ejercicios ${(o.semanasAburrimiento ?? 8) < 8 ? `${o.semanasAburrimiento}+ semanas (se aburre antes)` : '~2 meses'} (aburrimiento)`, detalle: `${o.semanasHechas} semanas en este bloque` },
-    { clave: 'estancado', cumple: estancado, texto: 'Tonelaje estancado o bajando pese a acumular' },
+    { clave: 'estancado', cumple: estancado, texto: 'Tonelaje estancado o bajando pese a acumular, dos semanas seguidas' },
     { clave: 'molestias', cumple: molestias, texto: 'Molestias: el RM sube a la vez que el estrés articular (la bandera que más pesa)' },
     { clave: 'duracion', cumple: o.semanasHechas >= 12, texto: 'Duración típica superada (8-12 semanas)', detalle: o.semanasHechas >= 8 && o.semanasHechas < 12 ? 'dentro de la ventana 8-12' : undefined },
   ]

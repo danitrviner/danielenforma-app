@@ -24,6 +24,7 @@ import { getWeekStart, addDays } from './trainingWeek.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
 import { rirEfectivo } from './oneRepMax.js';
 import { normalizeText } from './athleteMetrics.js';
+import { esSemanaPuente } from './tipoDeSemana.js';
 
 // ── Nivel ─────────────────────────────────────────────────────────────────────
 
@@ -96,6 +97,10 @@ export interface PlanDeLaSemana {
   contexto?: ContextoDeReto;
   /** Nota del coach del evento de la semana («Entrena en el hotel…»). */
   notaEvento?: string;
+  /** Semana puente (pivot) del bloque: menos series salvo en los grupos
+   *  prioritarios. No se piden retos de progresar (F7c). Es lo mismo que
+   *  `contexto.tipoSemana === 'puente'`, a mano para quien no mira el contexto. */
+  semanaPuente?: boolean;
 }
 
 /** «8-12» → [8, 12]; «10» → [10, 10]; «AMRAP» o vacío → null. */
@@ -180,9 +185,12 @@ export function planDeLaSemana(params: {
   const tipoSemana: ContextoDeReto['tipoSemana'] =
     meso.semanasTest?.includes(semana) ? 'test'
     : meso.semanasDescarga?.includes(semana) ? 'descarga'
+    : esSemanaPuente(meso, semana) ? 'puente'
     : meso.vuelveDeParon && semana === 1 ? 'paron'
     : evento ? 'evento'
     : undefined;
+  // El puente cede ante el test y la descarga, como en `resolverEjercicioDelMeso`.
+  const semanaPuente = tipoSemana === 'puente';
   return {
     meso,
     sesiones,
@@ -193,6 +201,7 @@ export function planDeLaSemana(params: {
       ...(tipoSemana ? { tipoSemana } : {}),
     },
     ...(evento?.nota ? { notaEvento: evento.nota } : {}),
+    ...(semanaPuente ? { semanaPuente } : {}),
   };
 }
 

@@ -5,6 +5,7 @@ import { Icon, Button, Chip } from '../ui';
 import { rmDeSerie } from '../../utils/oneRepMax';
 import { MOTIVOS_DE_PARADA, type MotivoDeParada } from '../../utils/queTeParo';
 import { SetInput } from './setInput';
+import { seriesPrincipales } from '../../utils/seriesPrincipales';
 import Confeti from './Confeti';
 import type { Logro, TipoDeLogro } from '../../utils/logrosDelEjercicio';
 
@@ -58,10 +59,11 @@ const ICONO_DE_LOGRO: Record<TipoDeLogro, string> = {
 
 const CHIPS_RAPIDOS = ['Me sobró una rep', 'Molestia leve', 'Buena técnica', 'Mucho peso'];
 
-function rpeDeSerie(s: SetInput): number | null {
-  if (s.rir === 'fallo') return 10;
+/** El RIR de una serie como número: al fallo cuenta 0. */
+function rirDeSerie(s: SetInput): number | null {
+  if (s.rir === 'fallo') return 0;
   const n = Number(s.rir);
-  return Number.isFinite(n) ? 10 - n : null;
+  return Number.isFinite(n) ? n : null;
 }
 
 /**
@@ -88,8 +90,12 @@ export default function ExerciseCloseCard({
   }
   const esRecord = bestOrm > 0 && priorBestOrm != null && bestOrm > priorBestOrm;
 
-  const rpes = doneSets.map(rpeDeSerie).filter((n): n is number => n != null);
-  const rpeMedio = rpes.length > 0 ? rpes.reduce((a, b) => a + b, 0) / rpes.length : null;
+  // F20b (17-11-2026): aquí ponía «RPE medio» (10 − RIR), una escala que el
+  // atleta no usa en ningún otro sitio de la app: él apunta RIR. Se enseña lo
+  // que apuntó. Solo las series principales: las bajadas y miniseries llevan
+  // un RIR 0 de relleno y hundían la media.
+  const rirs = seriesPrincipales(doneSets).map(rirDeSerie).filter((n): n is number => n != null);
+  const rirMedio = rirs.length > 0 ? rirs.reduce((a, b) => a + b, 0) / rirs.length : null;
 
   const addChip = (texto: string) => {
     onNoteChange(noteValue.trim() ? `${noteValue.trim()}. ${texto}` : texto);
@@ -153,8 +159,8 @@ export default function ExerciseCloseCard({
           <p className="font-mono text-title-m font-bold text-ink">{Math.round(volumen).toLocaleString('es-ES')}</p>
         </div>
         <div className="bg-raised rounded-surface p-3">
-          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">RPE medio</p>
-          <p className="font-mono text-title-m font-bold text-ink">{rpeMedio != null ? rpeMedio.toFixed(1) : '—'}</p>
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">RIR medio</p>
+          <p className="font-mono text-title-m font-bold text-ink">{rirMedio != null ? rirMedio.toFixed(1).replace('.', ',') : '—'}</p>
         </div>
       </div>
 

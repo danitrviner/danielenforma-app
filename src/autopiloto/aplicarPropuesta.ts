@@ -48,6 +48,7 @@ import { nombrePropioDeSesion } from '../utils/draftEjercicios.js';
 import { repartoDelMesociclo, tiposDeEntrenamiento } from '../utils/trainingSplits.js';
 import { distribucionDeMeso } from '../utils/distribucionDeMeso.js';
 import { isoLocal, addDays } from '../utils/trainingWeek.js';
+import { descargaEnSemanaDeCalendario } from '../utils/descargaDelBloque.js';
 
 // ── Lo que hay que poder leer ────────────────────────────────────────────────
 
@@ -207,7 +208,14 @@ export async function aplicarPropuesta(
       // Al aprobar se crea el mesociclo Y toda la cadencia de revisiones de
       // golpe; el carril "Revisiones" las pinta solas en cuanto existen.
       const { mesocycle, reviewCadenceWeeks, reviewType } = p.payload as PeriodizationBlockPayload;
-      ops.push({ tipo: 'crearMesociclo', ref: 'meso', mesociclo: mesocycle });
+      // La descarga que promete la propuesta tiene que recortar el entreno, y
+      // eso solo lo hace `semanasDescarga`. Las propuestas creadas antes del
+      // 17-11-2026 traen solo `deloadWeek` (la marca del calendario): se
+      // completan aquí, al aprobar. Un bloque YA guardado no se toca.
+      const mesociclo = mesocycle.deloadWeek !== undefined && !mesocycle.semanasDescarga?.length
+        ? { ...mesocycle, ...descargaEnSemanaDeCalendario(mesocycle.deloadWeek, cicloDiasDeMeso(mesocycle)) }
+        : mesocycle;
+      ops.push({ tipo: 'crearMesociclo', ref: 'meso', mesociclo });
       const reviewCount = Math.max(1, Math.floor(mesocycle.weeks / reviewCadenceWeeks));
       const reviewTitle = reviewType === 'revision' ? 'Revisión' : reviewType === 'cuestionario' ? 'Cuestionario' : 'Fotos de check-in';
       for (let i = 0; i < reviewCount; i++) {
@@ -595,7 +603,11 @@ export async function aplicarPropuesta(
         ...(st.reparto ? { reparto: st.reparto } : {}),
         ...(st.cycleDays !== undefined ? { cycleDays: st.cycleDays } : {}),
         ...(st.distribution ? { distribution: st.distribution } : {}),
-        ...(st.deloadWeek !== undefined ? { deloadWeek: st.deloadWeek } : {}),
+        // Con `semanasDescarga`, que es lo que viaja al bloque del atleta y
+        // recorta el entreno; `deloadWeek` solo pintaba el calendario.
+        ...(st.deloadWeek !== undefined
+          ? descargaEnSemanaDeCalendario(st.deloadWeek, cicloDiasDeMeso({ daysPerWeek: st.daysPerWeek, cycleDays: st.cycleDays, reparto: st.reparto }))
+          : {}),
         ...(st.reviewCadenceWeeks !== undefined ? { reviewCadenceWeeks: st.reviewCadenceWeeks, reviewType: st.reviewType ?? 'revision' } : {}),
         ...(st.days ? {
           days: st.days.map((d, k) => ({

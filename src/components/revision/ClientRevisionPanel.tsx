@@ -21,8 +21,11 @@ import { useModoPresentacion } from '../../hooks/useModoPresentacion';
 import { HubTab } from '../ClientHub';
 import RevisionCabecera from './RevisionCabecera';
 import MensajesCoachPanel, { type CierrePorFirmar } from './MensajesCoachPanel';
-import { buildCierreMesociclo } from '../../utils/cierreMesociclo';
-import { bloqueCerradoRecientemente, idDeCierre, textoCierre } from '../../utils/cierreParaAtleta';
+import { buildCierreCompleto } from '../../utils/cierreCompleto';
+import { finDeBloque } from '../../utils/finDeBloque';
+import { bloqueCerradoRecientemente, idDeCierre } from '../../utils/cierreParaAtleta';
+import { getBodyMeasurementsForAthlete } from '../../db/bodyMeasurements';
+import { bodyMeasurementsForAthleteKey } from '../../hooks/useBodyMeasurements';
 import DiaRevisionAtleta from './DiaRevisionAtleta';
 import BodyweightPanel from '../BodyweightPanel';
 import SelectorPeriodoRevision from './SelectorPeriodoRevision';
@@ -40,7 +43,6 @@ import BloqueRetosNivel from './BloqueRetosNivel';
 import BloqueCierre from './BloqueCierre';
 import BloqueCambios from './BloqueCambios';
 import CierreDeBloque from './CierreDeBloque';
-import { addDays } from '../../utils/trainingWeek';
 import { nombreDeMeso } from '../../utils/nombresMeso';
 import LineaDeTiempoAsistente from '../autopiloto/LineaDeTiempoAsistente';
 import { Card, Button, Icon, SegmentedControl } from '../ui';
@@ -166,7 +168,7 @@ export default function ClientRevisionPanel({
     if (elegido) return elegido;
     if (recienCerrado) return recienCerrado;
     // Sin bloque recién cerrado: el último terminado y, si no hay, el que está en curso.
-    return bloquesConCierre.find(m => addDays(m.startDate, m.weeks * 7 - 1) < hoy) ?? bloquesConCierre[0] ?? null;
+    return bloquesConCierre.find(m => finDeBloque(m) < hoy) ?? bloquesConCierre[0] ?? null;
   }, [bloquesConCierre, mesoCierreId, recienCerrado, hoy]);
 
   // Clave compartida con MesocycleManager y el panel del asistente: un documento, y
@@ -175,15 +177,6 @@ export default function ClientRevisionPanel({
     queryKey: ['coachVolumeLandmarks'],
     queryFn: getVolumeLandmarks,
   });
-
-  // El cierre del bloque que acabó hace poco, como borrador para firmar
-  // (tanda 8): las cifras del motor de cierre y sus frases para el cliente.
-  const cierrePorFirmar = useMemo<CierrePorFirmar | null>(() => {
-    const meso = bloqueCerradoRecientemente(mesocycles, hoy);
-    if (!meso) return null;
-    const c = buildCierreMesociclo({ meso, mesocycles, logs, assignments, exercises, athleteName: athlete.displayName, hoy });
-    return { id: idDeCierre(meso.id), texto: textoCierre(c, meso.name), fecha: hoy, mesoNombre: meso.name || `#${c.numero}` };
-  }, [mesocycles, logs, assignments, exercises, athlete.displayName, hoy]);
 
   const revision = useMemo(
     () => buildRevisionCoach({
@@ -219,6 +212,25 @@ export default function ClientRevisionPanel({
       : null),
     [programaNutricion, ventana.hasta],
   );
+
+  // El cierre del bloque que acabó hace poco, como borrador para firmar
+  // (tanda 8). Es el mensaje único del cierre (`cierreCompleto`): el mismo
+  // texto que Dani ve en «Cierre de bloque» y en el editor del mesociclo, con
+  // el peso corporal y las sesiones dichas una sola vez. Las medidas se piden
+  // con la misma clave que usa esa pantalla.
+  const { data: medidasDelAtleta } = useQuery({
+    queryKey: bodyMeasurementsForAthleteKey(athlete.email),
+    queryFn: () => getBodyMeasurementsForAthlete(athlete.email),
+    enabled: !!recienCerrado,
+  });
+  const cierrePorFirmar = useMemo<CierrePorFirmar | null>(() => {
+    if (!recienCerrado) return null;
+    const { mensaje } = buildCierreCompleto({
+      meso: recienCerrado, mesocycles, logs, assignments, exercises, athleteName: athlete.displayName, hoy,
+      bodyweightLogs, medidas: medidasDelAtleta, responses, questionnaires, programaNutricion,
+    });
+    return { id: idDeCierre(recienCerrado.id), texto: mensaje, fecha: hoy, mesoNombre: nombreDeMeso(recienCerrado) };
+  }, [recienCerrado, mesocycles, logs, assignments, exercises, athlete.displayName, hoy, bodyweightLogs, medidasDelAtleta, responses, questionnaires, programaNutricion]);
 
   // ── Lo que ha comido ───────────────────────────────────────────────────────
   // Acotado a la ventana desde la propia consulta (`desde`), no leído entero y
@@ -291,7 +303,7 @@ export default function ClientRevisionPanel({
               <Icon name="flag" size="m" className="text-accent-ink shrink-0" />
               <span className="min-w-0 flex-1">
                 <span className="block font-sans text-label font-bold text-ink">
-                  {nombreDeMeso(recienCerrado)} terminó el {addDays(recienCerrado.startDate, recienCerrado.weeks * 7 - 1)}
+                  {nombreDeMeso(recienCerrado)} terminó el {finDeBloque(recienCerrado)}
                 </span>
                 <span className="block font-sans text-caption text-ink-2">
                   Tienes su cierre listo: rendimiento del inicio al final, cuerpo, cuestionarios y qué cambiar en el siguiente.

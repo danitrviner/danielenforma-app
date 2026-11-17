@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { heatmapBg, heatmapText } from './volumeZones';
+import { heatmapBg, heatmapText, zoneLabel, VOLUME_ZONE_LEGEND } from './volumeZones';
 
 
 // 27-10 (revisión del modo claro): la cifra de la celda va en TINTA en todas
@@ -33,5 +33,27 @@ describe('los colores genéricos reproducen los umbrales de siempre', () => {
     const opacidad = (s: string) => Number(s.match(/([\d.]+)%\)/)?.[1] ?? 0);
     expect(opacidad(heatmapBg(9))).toBeGreaterThan(opacidad(heatmapBg(5)));
     expect(opacidad(heatmapBg(14))).toBeGreaterThan(opacidad(heatmapBg(10)));
+  });
+});
+
+describe('el rótulo de cada zona dice lo que es', () => {
+  const pecho = { mv: 4, mev: 6, mavMin: 10, mavMax: 16, mrv: 22 };
+
+  /* La zona azul son las series POR DEBAJO del mínimo efectivo. Se rotulaba
+     «MEV» a secas, y 3 series de un grupo con MEV 6 se leían como «ya está en
+     su mínimo efectivo» (17-11-2026). */
+  it('por debajo del MEV no se llama «MEV»', () => {
+    expect(zoneLabel(3, pecho)).toBe('Bajo MEV');
+    expect(zoneLabel(5, pecho)).toBe('Bajo MEV');
+  });
+
+  it('al llegar al MEV ya es productivo', () => {
+    expect(zoneLabel(6, pecho)).toBe('Productivo');
+    expect(zoneLabel(0, pecho)).toBe('Sin volumen');
+    expect(zoneLabel(12, pecho)).toBe('MAV');
+  });
+
+  it('la leyenda usa los mismos rótulos que las celdas', () => {
+    expect(VOLUME_ZONE_LEGEND.map(z => z.label)).toEqual(['Sin volumen', 'Bajo MEV', 'Productivo', 'MAV', 'MRV']);
   });
 });

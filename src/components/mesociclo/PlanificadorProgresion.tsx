@@ -195,6 +195,16 @@ export default function PlanificadorProgresion(p: Props) {
       </div>
 
       <div className={porIem ? 'grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px] items-start' : ''}>
+      {/* Arriba del todo, antes de la tabla. Lo que frena la propuesta, a la vista: agujetas de 5 (bloquea la zona) y de qué semana parte. */}
+      {propuesta && propuesta.avisos.length > 0 && (
+        <div className="lg:col-start-1 rounded-surface border border-hairline bg-surface px-3 py-2.5 space-y-1" role="status">
+          {propuesta.avisos.map((a, i) => (
+            <p key={i} className={`flex items-start gap-1.5 font-sans text-caption ${a.tono === 'peligro' ? 'text-danger font-bold' : 'text-warning'}`}>
+              <Icon name="warning" size="s" className="mt-0.5" />{a.texto}
+            </p>
+          ))}
+        </div>
+      )}
       {filas.length === 0 ? (
         <div className="bg-surface border border-dashed border-hairline rounded-surface px-4 py-8 text-center space-y-3">
           <p className="font-sans text-label text-ink-2">No has elegido ningún ejercicio.</p>
@@ -377,7 +387,7 @@ export default function PlanificadorProgresion(p: Props) {
               const ctx = q.contexto === 'sin-dato' ? 'sin datos de contexto' : `contexto ${q.contexto}`;
               const datos = [q.sueño != null ? `sueño ${q.sueño.toLocaleString('es-ES', { maximumFractionDigits: 1 })} h` : null, q.estres != null ? `estrés ${q.estres}` : null, q.motivacion != null ? `motivación ${q.motivacion}` : null].filter(Boolean).join(', ');
               const agu = q.agujetasMedias != null ? `agujetas medias ${q.agujetasMedias.toLocaleString('es-ES', { maximumFractionDigits: 1 })}/5` : 'sin agujetas recientes';
-              const zonas = propuesta.zonas.map(z => `${z.nombre} ${z.modo === 'dinamico' ? 'dinámico' : 'estático'} ${z.pct === 0 ? 'se mantiene' : `${z.pct > 0 ? '+' : ''}${z.pct} %`}`).join(' · ');
+              const zonas = propuesta.zonas.map(z => `${z.nombre} ${z.modo === 'dinamico' ? 'dinámico' : 'estático'} ${z.bloqueada && z.pct === 0 ? 'no sube (agujetas de 5)' : z.pct === 0 ? 'se mantiene' : `${z.pct > 0 ? '+' : ''}${z.pct} %`}`).join(' · ');
               return `${agu} y ${ctx}${datos ? ` (${datos})` : ''}${q.motivos.length ? `: ${q.motivos.join(', ')}` : ''}. Velocidad del bloque: ${q.velocidad}. ${zonas}.`;
             })()}
           </p>

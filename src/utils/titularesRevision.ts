@@ -5,6 +5,7 @@ import { PesoVsSemanaPasada } from './revisionCoach.js';
 import { describirCambios } from './comparabilidad.js';
 import { EFECTIVAS_MINIMO_PCT, RIR_EFECTIVO_MAXIMO } from './seriesEfectivas.js';
 import { fechaCorta } from './trainingWeek.js';
+import { superaElRuido } from './ruidoDeMedida.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LOS TITULARES DE LA REVISIÓN — qué decir, en qué orden.
@@ -130,13 +131,16 @@ export function construirTitulares(params: {
   }
   const peor = bajan[0];
   const cambioDelPeor = peor ? revision.cambiosDeTarea?.[peor.exerciseId] : undefined;
-  if (peor && peor.deltaOrmPct != null && peor.deltaOrmPct < 0 && cambioDelPeor) {
+  // «Va a menos» solo si la bajada supera el ruido de medida (17-11-2026): un
+  // −2 % en siete días es una repetición menos un día, no un bajón que contar.
+  const bajaDeVerdad = !!peor && peor.deltaOrmPct != null && peor.deltaOrmPct < 0 && superaElRuido(peor.deltaOrmPct);
+  if (bajaDeVerdad && peor.deltaOrmPct != null && cambioDelPeor) {
     // S3: si la tarea cambió dentro de la ventana, la bajada no es del atleta.
     t.push({
       id: 'baja_no_comparable', tono: 'neutro',
       texto: `${peor.name} marca ${num(peor.deltaOrmPct)} % ${informe.comparisonLabel}, pero el ${fechaCorta(cambioDelPeor.date)} cambió ${describirCambios(cambioDelPeor.cambios)}: no es comparable con lo de antes. Es su referencia nueva.`,
     });
-  } else if (peor && peor.deltaOrmPct != null && peor.deltaOrmPct < 0) {
+  } else if (bajaDeVerdad && peor.deltaOrmPct != null) {
     t.push({
       id: 'baja', tono: 'alarma',
       texto: `${peor.name} va a menos: ${num(peor.deltaOrmPct)} % ${informe.comparisonLabel}.`,
