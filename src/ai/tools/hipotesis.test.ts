@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { CierreDeHipotesis, Mesocycle } from '../../types';
 import { usarFuenteDeDatos, type FuenteDeDatos } from './datos';
-import { hipotesisParaElAsistente, esTipoDeBloque, semanasPorDefectoDe } from './hipotesis';
+import { NOTA_DE_HIPOTESIS, hipotesisParaElAsistente, esTipoDeBloque, semanasPorDefectoDe } from './hipotesis';
 import { leerBloqueDelAsistente, proposeMesocycle, proposePeriodizationBlock } from './propuestas';
 import { cambiosDeMesociclo } from '../cambiosPropuesta';
 
@@ -38,6 +38,26 @@ describe('hipotesisParaElAsistente', () => {
     const anterior = hipotesisParaElAsistente(M1, [M1, M2]);
     expect(anterior.cierreDeHipotesis).toEqual(CIERRE);
     expect(anterior.mapaDeRespuesta).toBe('Pectoral: responde a volumen (1 de 1).');
+  });
+
+  it('el objetivo de RM se cuenta tal cual: 0 es «no perder» (déficit o recuperar), no un 5 %', () => {
+    const deficit = { ...M2, hipotesis: { pectoral: { palanca: 'volumen', rmObjetivoPct: 0, iemFinalAnterior: 58, iemTecho: 58, iemMedioObjetivo: 55.1 }, deltoides: { palanca: 'recuperar' }, dorsal: { palanca: 'volumen', rmObjetivoPct: 8 } } } as unknown as Mesocycle;
+    const r = hipotesisParaElAsistente(deficit, [deficit]);
+    expect(Object.fromEntries(r.hipotesis.map(h => [h.zona, h.rmObjetivoPct]))).toEqual({ pectoral: 0, dorsal: 8, deltoides: 0 });
+  });
+
+  it('la nota explica las cifras nuevas: proceso sobre donde acabó, tres franjas y mejora parcial', () => {
+    expect(NOTA_DE_HIPOTESIS).toContain('donde ACABÓ el bloque anterior');
+    expect(NOTA_DE_HIPOTESIS).toContain('8 en un principiante');
+    expect(NOTA_DE_HIPOTESIS).toContain('0 = no perder');
+    expect(NOTA_DE_HIPOTESIS).toContain('80 de IEM o más');
+    expect(NOTA_DE_HIPOTESIS).toContain('mejora_parcial');
+    expect(NOTA_DE_HIPOTESIS).toContain('NO es «no responde»');
+  });
+
+  it('el mapa de respuesta dice aparte los bloques de mejora parcial', () => {
+    const parcial = { ...M2, cierreDeHipotesis: { firmadoEn: '2026-11-22T10:00:00.000Z', veredictos: [{ zona: 'pectoral', palanca: 'volumen', iemMedio: 17, procesoCumplido: true, rmPct: 4, rmObjetivoPct: 5, resultadoCumplido: false, lectura: 'mejora_parcial' }] } } as unknown as Mesocycle;
+    expect(hipotesisParaElAsistente(parcial, [M1, parcial]).mapaDeRespuesta).toBe('Pectoral: responde a volumen (1 de 1, más 1 con mejora menor de la buscada).');
   });
 
   it('un bloque pasado no ve lo que se firmó después', () => {

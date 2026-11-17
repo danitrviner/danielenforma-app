@@ -119,7 +119,7 @@ describe('1RM del informe con series válidas (D2)', () => {
     const sinMarcaAhora = informe([log('2026-09-01', [s(80, 8)]), log('2026-09-08', [s(80, 8, 4), s(80, 8, 4)])]).perExercise[0];
     expect(sinMarcaAhora).toMatchObject({ bestOrm: 0, deltaOrmPct: null, isPR: false, sets: 2 });
     // Y al revés: sin marca la semana pasada, no hay con qué comparar.
-    const sinMarcaAntes = informe([log('2026-09-01', [s(80, 15)]), log('2026-09-08', [s(80, 8)])]).perExercise[0];
+    const sinMarcaAntes = informe([log('2026-09-01', [s(80, 18)]), log('2026-09-08', [s(80, 8)])]).perExercise[0];
     expect(sinMarcaAntes).toMatchObject({ prevBestOrm: null, deltaOrmPct: null, isPR: false });
   });
 

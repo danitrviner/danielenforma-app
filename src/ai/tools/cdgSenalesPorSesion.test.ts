@@ -52,7 +52,7 @@ const usar = (logs: WorkoutLog[]) => usarFuenteDeDatos({
 
 const zona = (r: { zonas: Array<{ zona: string }> }, clave: string) => r.zonas.find(z => z.zona === clave) as unknown as {
   agujetas: { valor: number; anterior: number | null; origen: string } | null;
-  propuestaSemanaQueViene: { tono: string; pct: number | null; texto: string };
+  propuestaSemanaQueViene: { tono: string; pct: number | null; texto: string; frenadaPorSesion: { sesion: string; cansancio: number } | null };
 };
 
 describe('get_cdg_semana · señales por sesión', () => {
@@ -78,10 +78,28 @@ describe('get_cdg_semana · señales por sesión', () => {
     expect(p.texto).toContain('de esa sesión');
   });
 
-  it('una sesión dura con media por debajo de 8 no veta, pero queda señalada', async () => {
-    usar([log('a', 5, { cansancioAlSalir: 4 }), log('b', 2, { cansancioAlSalir: 9 })]);
+  // Auditoría de cifras (17-11-2026): el freno ya no espera a la media.
+  it('una sesión dura con media por debajo de 8 frena solo las zonas que trabajó, nombrándola', async () => {
+    const hechas = (exerciseId: string) => ({ exerciseId, sets: [{ weight: 10, repsDone: 12, rir: 1 }, { weight: 10, repsDone: 11, rir: 1 }] });
+    // La de hace 5 días (4/10) fue de press; la de hace 2 (9/10), solo de laterales.
+    usar([log('a', 5, { cansancioAlSalir: 4, entries: [hechas('press')] }), log('b', 2, { cansancioAlSalir: 9, entries: [hechas('lat')] })]);
     const r = JSON.parse(await getCdgSemana('ana@x.com'));
     expect(r.contexto).toMatchObject({ fatigaPost: 6.5, sesionMasCansada: { cansancio: 9 } });
+    expect(r.contexto.sesionesDuras).toHaveLength(1);
+    expect(r.contexto.sesionesDuras[0]).toMatchObject({ sesion: 'Hombro', fecha: addDays(HOY, -2), cansancio: 9, zonasFrenadas: ['deltoides'] });
+    expect(r.contexto.sesionesDuras[0].texto).toMatch(/Hombro: 9\/10 — frena deltoides$/);
+    const deltoides = zona(r, 'deltoides').propuestaSemanaQueViene;
+    expect(deltoides).toMatchObject({ tono: 'mantener', pct: null, frenadaPorSesion: { cansancio: 9 } });
+    expect(deltoides.texto).toContain('Hombro: 9/10');
+    expect(deltoides.texto).toContain('de esa sesión');
+    // El pectoral no se tocó en la sesión dura: sigue pudiendo subir.
+    expect(zona(r, 'pectoral').propuestaSemanaQueViene).toMatchObject({ tono: 'acelerar', frenadaPorSesion: null });
+  });
+
+  it('una sesión dura de la que no se sabe qué se hizo queda señalada, pero no frena ninguna zona', async () => {
+    usar([log('a', 5, { cansancioAlSalir: 4 }), log('b', 2, { cansancioAlSalir: 9 })]);
+    const r = JSON.parse(await getCdgSemana('ana@x.com'));
+    expect(r.contexto.sesionesDuras).toMatchObject([{ cansancio: 9, zonasFrenadas: [] }]);
     expect(zona(r, 'deltoides').propuestaSemanaQueViene.tono).toBe('acelerar');
   });
 

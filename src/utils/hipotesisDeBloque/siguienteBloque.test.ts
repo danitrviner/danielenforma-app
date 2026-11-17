@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type {
-  LecturaDeHipotesis, Mesocycle, MuscleGroup, MuscleGroupConfig, PalancaDeHipotesis, Workout, WorkoutExercise,
+  LecturaDeHipotesis, Mesocycle, MuscleGroup, MuscleGroupConfig, NutritionProgram, PalancaDeHipotesis, Workout, WorkoutExercise,
 } from '../../types';
 import { MUSCLE_ORDER } from '../../types';
 import type { EstadoDeEjercicio, EstadoDelBloque } from './estadoDelBloqueAnterior';
@@ -174,8 +174,64 @@ describe('siguienteBloque', () => {
 
   it('confirmada con un límite pasado: misma línea pero sin subir el techo', () => {
     const r = siguienteBloque({ ...base, veredictos: [v('pectoral', 'volumen', 'confirmada', { propuesta: { subirTecho: false } }), VEREDICTOS[1]] });
-    expect(r.meso.hipotesis?.pectoral).toMatchObject({ palanca: 'volumen', iemTecho: 64, iemMedioObjetivo: 61 });
+    // Sin subir, el proceso es sostener: el 95 % de donde acabó (64).
+    expect(r.meso.hipotesis?.pectoral).toMatchObject({ palanca: 'volumen', iemTecho: 64, iemMedioObjetivo: 60.8 });
     expect(r.meso.cdgObjetivosIem?.pectoral).toBe(64);
+  });
+
+  it('el proceso del bloque nuevo se pide sobre donde acabó este (64 + 5 %), no sobre su media (61)', () => {
+    expect(s.meso.hipotesis?.pectoral).toMatchObject({ iemMedioAnterior: 61, iemFinalAnterior: 64, iemMedioObjetivo: 67.2, iemTecho: 70.4 });
+  });
+
+  it('mejora parcial: misma línea SIN subir el techo, y no cuenta para soltar la estrella', () => {
+    const parcial = v('deltoides', 'intensidad', 'mejora_parcial', { rmPct: 4 });
+    const r = siguienteBloque({ ...base, veredictos: [VEREDICTOS[0], parcial] });
+    expect(r.meso.hipotesis?.deltoides).toMatchObject({ palanca: 'intensidad', iemArranque: 44, iemTecho: 44, iemMedioObjetivo: 41.8 });
+    expect(r.meso.cdgObjetivosIem?.deltoides).toBe(44);
+    // Dos seguidas: sigue con su estrella. Con dos «no responde» la soltaría (prueba de más abajo).
+    const previo: Mesocycle = {
+      ...MESO, id: 'm1b', number: 1, startDate: '2026-06-01',
+      cierreDeHipotesis: { firmadoEn: '2026-08-23T10:00:00.000Z', veredictos: [v('pectoral', 'volumen', 'confirmada'), v('deltoides', 'intensidad', 'mejora_parcial', { rmPct: 3.5 })] },
+    };
+    const dos = siguienteBloque({ ...base, mesocycles: [previo, MESO], veredictos: [VEREDICTOS[0], parcial], pideElAtleta: ['dorsal'] });
+    expect(dos.resumen.estrellas).toEqual(['pectoral', 'deltoides']);
+    expect(dos.resumen.rotacion).toEqual([]);
+    expect(dos.meso.hipotesis?.deltoides?.palanca).toBe('intensidad');
+  });
+
+  it('principiante: se le pide un 8 % de RM', () => {
+    const r = siguienteBloque({ ...base, nivel: 'principiante' });
+    expect(r.meso.hipotesis?.pectoral?.rmObjetivoPct).toBe(8);
+    expect(s.meso.hipotesis?.pectoral?.rmObjetivoPct).toBe(5);
+  });
+
+  it('si el bloque NUEVO cae en déficit: no perder (0 %), techo sin subir y se dice', () => {
+    // El bloque nuevo va del 16-11 al 07-02 (12 semanas). Déficit desde el 02-11, 16 semanas.
+    const programa: NutritionProgram = {
+      athleteId: 'ana@x.com', startDate: '2026-06-01',
+      phases: [
+        { id: 'f1', name: 'Volumen', weeks: 22, dietId: 'd', objetivo: 'volumen' },
+        { id: 'f2', name: 'Definición', weeks: 16, dietId: 'd', objetivo: 'deficit' },
+      ],
+    };
+    const r = siguienteBloque({ ...base, programaNutricion: programa });
+    expect(r.resumen.enDeficit).toBe(true);
+    expect(r.meso.hipotesis?.pectoral).toMatchObject({ palanca: 'volumen', rmObjetivoPct: 0, iemTecho: 64, iemMedioObjetivo: 60.8 });
+    expect(r.meso.cdgObjetivosIem).toEqual({ pectoral: 64, deltoides: 44 });
+    expect(r.resumen.notas).toEqual(['Bloque en déficit: se pide no perder fuerza y no se sube el estímulo.']);
+    // El bloque que se CIERRA estaba en volumen: no es eso lo que se mira. Y sin programa, lo de siempre.
+    expect(s.resumen).toMatchObject({ enDeficit: false, notas: [] });
+    // La confirmada con un límite pasado conserva el «no perder».
+    const conLimite = siguienteBloque({ ...base, programaNutricion: programa, veredictos: [v('pectoral', 'volumen', 'confirmada', { propuesta: { subirTecho: false } }), VEREDICTOS[1]] });
+    expect(conLimite.meso.hipotesis?.pectoral).toMatchObject({ rmObjetivoPct: 0, iemTecho: 64 });
+  });
+
+  it('zona que acaba el bloque ya alta (82): el techo no sube, la apuesta deja el volumen y se dice con el nombre de la zona', () => {
+    const alto = { porZona: { ...ESTADO.porZona, pectoral: { zona: 'pectoral' as const, iemMedio: 78, iemFinal: 82, porSemana: [] } } };
+    const r = siguienteBloque({ ...base, estado: alto });
+    expect(r.meso.hipotesis?.pectoral).toMatchObject({ palanca: 'intensidad', iemTecho: 82 });
+    expect(r.meso.cdgObjetivosIem?.pectoral).toBe(82);
+    expect(r.resumen.notas).toEqual(['Pectoral: zona ya alta: acabó en 82 de IEM y de 80 en adelante se va con cuidado. El techo no sube y la apuesta deja de ser volumen (pasa a intensidad).']);
   });
 
   it('candidatos a cambio con su motivo; el resto se queda', () => {

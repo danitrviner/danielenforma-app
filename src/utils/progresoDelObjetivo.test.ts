@@ -126,9 +126,10 @@ describe('progresoDelObjetivo', () => {
     expect(p.detalle).toBe('Vas bien. Falta que arranque hombro.');
   });
 
-  it('si las series del grupo no dan marca (15 repeticiones), no dice «todavía es pronto» semana tras semana', () => {
+  // El tope de la marca pasó de 12 a 15 repeticiones en la auditoría de cifras del 17-11-2026: por encima, sigue sin dar marca.
+  it('si las series del grupo no dan marca (18 repeticiones), no dice «todavía es pronto» semana tras semana', () => {
     const m = meso({ hipotesis: { deltoides: { palanca: 'volumen' } } });
-    const logs = Array.from({ length: 4 }, (_, i) => log(i + 1, { laterales: [serie(10, 15), serie(10, 15)] }));
+    const logs = Array.from({ length: 4 }, (_, i) => log(i + 1, { laterales: [serie(10, 18), serie(10, 18)] }));
     const p = progresoDelObjetivo({ meso: m, logs, exercises: EJERCICIOS, hoy: lunesDe(5) })!;
     expect(p.zonas[0]).toMatchObject({ estado: 'pronto', sinMarcas: true, fraccion: 0, texto: 'Hombro: aún no se puede medir' });
     expect(p.titular).toBe('Aún no se puede medir');
@@ -156,6 +157,36 @@ describe('progresoDelObjetivo', () => {
     const p = progresoDelObjetivo({ meso: meso(), logs: pressPorSemana(4, s => (s <= 2 ? 60 : 62.5)), exercises: EJERCICIOS, hoy: lunesDe(5) })!;
     const todo = [p.frase, p.titular, p.detalle, ...p.zonas.map(z => z.texto)].join(' ');
     expect(todo).not.toMatch(/IEM|índice|hipótesis|veredicto|RM\b|zona|tipo de bloque|\bIA\b/i);
+  });
+});
+
+/* Bloque en déficit (auditoría de cifras, 17-11-2026): el objetivo guardado es
+   0 («no perder») y al atleta se le habla de mantener, sin porcentajes. */
+describe('progresoDelObjetivo · bloque de mantener la fuerza (objetivo 0 %)', () => {
+  const m = meso({ hipotesis: { pectoral: { palanca: 'volumen', rmObjetivoPct: 0 } } });
+
+  it('la frase habla de mantener la fuerza, no de mover más', () => {
+    const p = progresoDelObjetivo({ meso: m, logs: [], exercises: EJERCICIOS, hoy: lunesDe(3) })!;
+    expect(p.frase).toBe('Este bloque va de pecho. En esta fase el objetivo es mantener tu fuerza en esos ejercicios.');
+  });
+
+  it('mueve lo mismo que al empezar: lo está consiguiendo, sin cifras', () => {
+    const p = progresoDelObjetivo({ meso: m, logs: pressPorSemana(6, () => 60), exercises: EJERCICIOS, hoy: lunesDe(7) })!;
+    expect(p.zonas[0]).toMatchObject({ mantener: true, objetivoPct: 0, estado: 'conseguido', fraccion: 1, texto: 'Pecho: mantienes tu fuerza' });
+    expect(p).toMatchObject({ estado: 'conseguido', titular: 'Mantienes tu fuerza', mejoraPct: null, objetivoPct: null });
+    expect(p.detalle).toBe('Mueves lo mismo que al empezar, que es lo que buscamos en esta fase. Sigue así hasta el final del bloque.');
+    expect(`${p.titular} ${p.detalle} ${p.zonas[0].texto}`).not.toMatch(/%|déficit|RM|IEM/);
+  });
+
+  it('si baja más que el ruido de medida, se le dice sin dramatizar', () => {
+    const p = progresoDelObjetivo({ meso: m, logs: pressPorSemana(6, s => (s <= 3 ? 60 : 55)), exercises: EJERCICIOS, hoy: lunesDe(7) })!;
+    expect(p.zonas[0]).toMatchObject({ estado: 'baja', fraccion: 0, texto: 'Pecho: algo por debajo de cuando empezaste' });
+    expect(p.titular).toBe('Ahora mismo mueves algo menos que al empezar');
+  });
+
+  it('un objetivo sin cifra sigue siendo el de siempre (5 %), no «mantener»', () => {
+    const p = progresoDelObjetivo({ meso: meso({ hipotesis: { pectoral: { palanca: 'volumen' } } }), logs: pressPorSemana(6, () => 60), exercises: EJERCICIOS, hoy: lunesDe(7) })!;
+    expect(p.zonas[0]).toMatchObject({ mantener: false, objetivoPct: 5, estado: 'igual' });
   });
 });
 

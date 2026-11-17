@@ -3,21 +3,30 @@ import catalogoPrueba from '../cdg/__fixtures__/catalogoPrueba.json';
 import type { HipotesisDeZona, VeredictoDeHipotesis } from '../../types';
 import { crearMotor, expandirCatalogo, type CdgCatalogoCompacto } from '../cdg/motor';
 import {
-  cierreParaGuardar, lecturaDe, molestiasDeLaZona, rmDeLaZona, veredictoDeHipotesis, veredictosDelBloque,
+  cierreParaGuardar, franjaDeResultado, lecturaDe, molestiasDeLaZona, rmDeLaZona, veredictoDeHipotesis, veredictosDelBloque,
   zonaPrincipalDeEjercicios, type EntradaDeVeredicto,
 } from './veredicto';
 
-/** La hipótesis del ejemplo de Dani: acabó en 16, objetivo medio 15,4, techo 17,6, RM +5 %. */
-const H: HipotesisDeZona = { palanca: 'volumen', iemMedioAnterior: 14, iemFinalAnterior: 16, iemMedioObjetivo: 15.4, iemArranque: 16, iemTecho: 17.6, rmObjetivoPct: 5 };
+/** La hipótesis del ejemplo de Dani: acabó en 16, objetivo medio 16,8 (donde acabó + 5 %), techo 17,6, RM +5 %. */
+const H: HipotesisDeZona = { palanca: 'volumen', iemMedioAnterior: 14, iemFinalAnterior: 16, iemMedioObjetivo: 16.8, iemArranque: 16, iemTecho: 17.6, rmObjetivoPct: 5 };
 const v = (extra: Partial<EntradaDeVeredicto> & { rmPct?: number | null } = {}) => {
   const { rmPct, ...resto } = extra;
-  return veredictoDeHipotesis({ zona: 'pectoral', hipotesis: H, iemMedio: 16, rm: { rmPct: rmPct === undefined ? 6 : rmPct }, ...resto });
+  return veredictoDeHipotesis({ zona: 'pectoral', hipotesis: H, iemMedio: 17, rm: { rmPct: rmPct === undefined ? 6 : rmPct }, ...resto });
 };
 const previo = (lectura: VeredictoDeHipotesis['lectura'], palanca: VeredictoDeHipotesis['palanca'] = 'volumen', rmPct: number | null = 1): VeredictoDeHipotesis =>
   ({ zona: 'pectoral', palanca, iemMedio: 16, procesoCumplido: true, rmPct, rmObjetivoPct: 5, resultadoCumplido: false, lectura });
 
-describe('las cuatro lecturas', () => {
-  it('la tabla: proceso × resultado', () => {
+describe('las lecturas', () => {
+  it('la tabla: proceso × resultado en tres franjas', () => {
+    expect(lecturaDe(true, 'cumplido')).toBe('confirmada');
+    expect(lecturaDe(true, 'parcial')).toBe('mejora_parcial');
+    expect(lecturaDe(true, 'no_cumplido')).toBe('no_responde');
+    expect(lecturaDe(false, 'cumplido')).toBe('responde_con_menos');
+    // No se hizo lo previsto y aun así mejora más que el ruido: responde con menos.
+    expect(lecturaDe(false, 'parcial')).toBe('responde_con_menos');
+    expect(lecturaDe(false, 'no_cumplido')).toBe('sin_probar');
+    expect(lecturaDe(null, 'parcial')).toBe('mejora_parcial');
+    // Con un sí / no, las cuatro de siempre.
     expect(lecturaDe(true, true)).toBe('confirmada');
     expect(lecturaDe(true, false)).toBe('no_responde');
     expect(lecturaDe(false, true)).toBe('responde_con_menos');
@@ -29,18 +38,18 @@ describe('las cuatro lecturas', () => {
   });
 
   it('se hizo y sirvió → confirmada: misma línea y un escalón más de techo', () => {
-    const r = v({ iemMedio: 16, rmPct: 6 });
-    expect(r).toMatchObject({ lectura: 'confirmada', procesoCumplido: true, resultadoCumplido: true, iemMedio: 16, iemMedioObjetivo: 15.4, rmPct: 6, rmObjetivoPct: 5 });
+    const r = v({ iemMedio: 17, rmPct: 6 });
+    expect(r).toMatchObject({ lectura: 'confirmada', procesoCumplido: true, resultadoCumplido: true, resultado: 'cumplido', iemMedio: 17, iemMedioObjetivo: 16.8, rmPct: 6, rmObjetivoPct: 5 });
     expect(r.propuesta).toMatchObject({ accion: 'misma_linea', palanca: 'volumen', subirTecho: true });
     expect(r.texto).toContain('Pectoral: confirmada');
-    expect(r.texto).toContain('IEM medio 16 de 15,4 previstos: se hizo');
+    expect(r.texto).toContain('IEM medio 17 de 16,8 previstos: se hizo');
     expect(r.texto).toContain('RM +6 % (objetivo +5 %)');
     expect(r.causa).toBeUndefined();
   });
 
   it('se hizo y no sirvió → no responde: cambiar de palanca', () => {
-    const r = v({ iemMedio: 16, rmPct: 1 });
-    expect(r).toMatchObject({ lectura: 'no_responde', procesoCumplido: true, resultadoCumplido: false, mejoraSinLlegar: false });
+    const r = v({ iemMedio: 17, rmPct: 1 });
+    expect(r).toMatchObject({ lectura: 'no_responde', procesoCumplido: true, resultadoCumplido: false, resultado: 'no_cumplido', mejoraSinLlegar: false });
     expect(r.propuesta).toMatchObject({ accion: 'cambiar_palanca', palanca: 'intensidad' });
     expect(r.texto).toContain('sin cambio medible');
   });
@@ -59,10 +68,12 @@ describe('las cuatro lecturas', () => {
   });
 });
 
-describe('proceso: cumplido si llega al 95 % del objetivo', () => {
-  it('15,4 × 0,95 = 14,63: con 14,7 se hizo y con 14,6 no', () => {
-    expect(v({ iemMedio: 14.7 }).procesoCumplido).toBe(true);
-    expect(v({ iemMedio: 14.6 }).procesoCumplido).toBe(false);
+describe('proceso: cumplido si llega al objetivo, sin tolerancia', () => {
+  it('con 16,8 se hizo y con 16,7 no (antes bastaba el 95 %: 16)', () => {
+    expect(v({ iemMedio: 16.8 }).procesoCumplido).toBe(true);
+    expect(v({ iemMedio: 16.7 }).procesoCumplido).toBe(false);
+    // Quedarse donde acabó el bloque anterior ya no cumple.
+    expect(v({ iemMedio: 16 }).procesoCumplido).toBe(false);
   });
 
   it('sin objetivo de proceso (bloque sin cifras) se juzga solo por el resultado', () => {
@@ -82,13 +93,59 @@ describe('proceso: cumplido si llega al 95 % del objetivo', () => {
   });
 });
 
-describe('resultado: el RM frente al objetivo y al ruido', () => {
-  it('entre el ruido (3 %) y el objetivo (5 %) NO cumple, pero el texto dice que mejora', () => {
+describe('resultado: tres franjas frente al objetivo y al ruido', () => {
+  // Lo medido (auditoría de cifras, 17-11-2026): con un 5 % real y un ruido del
+  // 3 % por sesión, solo se llega al objetivo la mitad de las veces. Lo que
+  // supera el ruido sin llegar no es «no responde».
+  it.each([
+    [2.9, 'no_cumplido', false, 'no_responde'],
+    [3, 'parcial', false, 'mejora_parcial'],
+    [4.9, 'parcial', false, 'mejora_parcial'],
+    [5, 'cumplido', true, 'confirmada'],
+  ] as const)('con el proceso cumplido, un RM de +%s %% es «%s»', (rmPct, franja, cumplido, lectura) => {
+    expect(franjaDeResultado(rmPct, 5)).toBe(franja);
+    expect(v({ rmPct })).toMatchObject({ resultado: franja, resultadoCumplido: cumplido, lectura, mejoraSinLlegar: franja === 'parcial' });
+  });
+
+  it.each([
+    [2.9, 'sin_probar'],
+    [3, 'responde_con_menos'],
+    [4.9, 'responde_con_menos'],
+    [5, 'responde_con_menos'],
+  ] as const)('con el proceso SIN cumplir, un RM de +%s %% es «%s»', (rmPct, lectura) => {
+    expect(v({ iemMedio: 13, rmPct }).lectura).toBe(lectura);
+  });
+
+  it('el objetivo manda sobre la franja: con un 8 % (principiante) un +5 % es parcial', () => {
+    expect(franjaDeResultado(5, 8)).toBe('parcial');
+    expect(franjaDeResultado(7.9, 8)).toBe('parcial');
+    expect(franjaDeResultado(8, 8)).toBe('cumplido');
+    expect(v({ hipotesis: { ...H, rmObjetivoPct: 8 }, rmPct: 5 }).lectura).toBe('mejora_parcial');
+  });
+
+  it('con objetivo de no perder (0 %) no hay franja intermedia: vale por encima de −3 %', () => {
+    expect(franjaDeResultado(-2.9, 0)).toBe('cumplido');
+    expect(franjaDeResultado(-3, 0)).toBe('no_cumplido');
+    expect(franjaDeResultado(null, 5)).toBeNull();
+  });
+
+  it('bloque en déficit confirmado (sostuvo y no perdió): la propuesta no promete un escalón sin más', () => {
+    const enDeficit: HipotesisDeZona = { palanca: 'volumen', iemFinalAnterior: 16, iemMedioObjetivo: 15.2, iemArranque: 16, iemTecho: 16, rmObjetivoPct: 0 };
+    const r = v({ hipotesis: enDeficit, iemMedio: 15.6, rmPct: -1 });
+    expect(r).toMatchObject({ lectura: 'confirmada', procesoCumplido: true, resultadoCumplido: true });
+    expect(r.propuesta.texto).toBe('Misma línea: sigue con volumen. Sostuvo el estímulo sin perder fuerza; el techo sube un escalón cuando el bloque ya no vaya en déficit.');
+    expect(r.texto).toContain('RM −1 %: se mantiene');
+  });
+
+  it('mejora parcial: misma línea SIN subir el techo, y el texto dice que no cuenta como «no responde»', () => {
     const r = v({ rmPct: 4 });
-    expect(r.resultadoCumplido).toBe(false);
-    expect(r.mejoraSinLlegar).toBe(true);
-    expect(r.lectura).toBe('no_responde');
+    expect(r).toMatchObject({ lectura: 'mejora_parcial', procesoCumplido: true, resultadoCumplido: false, mejoraSinLlegar: true });
+    expect(r.propuesta).toMatchObject({ accion: 'misma_linea', palanca: 'volumen', subirTecho: false });
+    expect(r.propuesta.texto).toContain('sin subir el techo');
+    expect(r.propuesta.texto).toContain('No cuenta como «no responde»');
+    expect(r.texto).toContain('Pectoral: mejora, menos de lo buscado');
     expect(r.texto).toContain('mejora, pero menos de lo buscado (+5 %)');
+    expect(r.causa).toBeUndefined();
   });
 
   it('por debajo del 3 % es ruido; una caída mayor que el ruido se dice', () => {
@@ -125,13 +182,20 @@ describe('a un avanzado se le juzga a dos bloques', () => {
     expect(r).toMatchObject({ rmPctAcumulado: 2, resultadoCumplido: false, lectura: 'no_responde' });
   });
 
+  it('…y si sumados superan el ruido sin llegar, mejora parcial (las mismas tres franjas, a dos bloques)', () => {
+    const r = v({ rmPct: 2, nivel: 'avanzado', anteriores: [previo('sin_probar', 'volumen', 2)] });
+    expect(r).toMatchObject({ rmPctAcumulado: 4, resultado: 'parcial', resultadoCumplido: false, lectura: 'mejora_parcial' });
+    expect(r.propuesta).toMatchObject({ accion: 'misma_linea', subirTecho: false });
+  });
+
   it('un bloque anterior con otra apuesta no se suma', () => {
     expect(v({ rmPct: 3, nivel: 'avanzado', anteriores: [previo('no_responde', 'intensidad', 4)] }).causa).toBe('a_dos_bloques');
   });
 
   it('si llega al 5 % en un bloque, confirmada sin esperar; y a quien no es avanzado no se le espera', () => {
     expect(v({ rmPct: 5.5, nivel: 'avanzado' }).lectura).toBe('confirmada');
-    expect(v({ rmPct: 3, nivel: 'intermedio' }).lectura).toBe('no_responde');
+    expect(v({ rmPct: 3, nivel: 'intermedio' }).lectura).toBe('mejora_parcial');
+    expect(v({ rmPct: 2, nivel: 'intermedio' }).lectura).toBe('no_responde');
   });
 });
 
@@ -205,6 +269,20 @@ describe('no responde: a la segunda seguida, la estrella pasa a otra zona', () =
     const r = v({ rmPct: 1, anteriores: [previo('no_responde', 'intensidad'), previo('confirmada', 'volumen', 6)] });
     expect(r.propuesta).toMatchObject({ accion: 'cambiar_palanca', palanca: 'ejercicios' }); // intensidad ya falló
   });
+
+  it('una mejora parcial en medio tampoco: no cuenta como «no responde» ni marca su palanca como fallida', () => {
+    const r = v({ rmPct: 1, anteriores: [previo('no_responde', 'intensidad'), previo('mejora_parcial', 'volumen', 4)] });
+    expect(r.propuesta).toMatchObject({ accion: 'cambiar_palanca', palanca: 'ejercicios' });
+    // Dos mejoras parciales seguidas y ahora un «no responde»: es el primero, cambia de palanca.
+    const primero = v({ rmPct: 1, anteriores: [previo('mejora_parcial', 'volumen', 4), previo('mejora_parcial', 'volumen', 3.5)] });
+    expect(primero.propuesta).toMatchObject({ accion: 'cambiar_palanca', palanca: 'intensidad' });
+  });
+
+  it('con el bloque anterior en mejora parcial, otra mejora parcial sigue la misma línea: la estrella no se mueve', () => {
+    const r = v({ rmPct: 4, anteriores: [previo('mejora_parcial', 'volumen', 4)] });
+    expect(r.lectura).toBe('mejora_parcial');
+    expect(r.propuesta.accion).toBe('misma_linea');
+  });
 });
 
 describe('qué ejercicios son de la zona', () => {
@@ -247,7 +325,7 @@ describe('veredictosDelBloque y lo que se guarda', () => {
   ];
   const veredictos = veredictosDelBloque({
     hipotesis, progresion, zonaDe: { press: 'pectoral', lat: 'deltoides' },
-    estado: { porZona: { pectoral: { zona: 'pectoral', iemMedio: 16, iemFinal: 17.6, porSemana: [] }, deltoides: { zona: 'deltoides', iemMedio: 10.2, iemFinal: 11, porSemana: [] } } },
+    estado: { porZona: { pectoral: { zona: 'pectoral', iemMedio: 17, iemFinal: 17.6, porSemana: [] }, deltoides: { zona: 'deltoides', iemMedio: 10.2, iemFinal: 11, porSemana: [] } } },
     ejercicios: [{ exerciseId: 'lat', molestia: { veces: 1, maxima: 4, ultima: '2026-02-01' } }],
     cansancioMedio: 6,
   });
@@ -267,7 +345,7 @@ describe('veredictosDelBloque y lo que se guarda', () => {
     });
     expect(cierre.firmadoEn).toBe('2026-03-30T10:00:00.000Z');
     expect(cierre.veredictos[0]).toEqual({
-      zona: 'pectoral', palanca: 'volumen', iemMedio: 16, iemMedioObjetivo: 15.4, procesoCumplido: true,
+      zona: 'pectoral', palanca: 'volumen', iemMedio: 17, iemMedioObjetivo: 16.8, procesoCumplido: true,
       rmPct: 7, rmObjetivoPct: 5, resultadoCumplido: true, lectura: 'confirmada', decision: 'Seguimos con volumen',
     });
     // El coach puede corregir la lectura de la app.
@@ -275,5 +353,6 @@ describe('veredictosDelBloque y lo que se guarda', () => {
     expect(cierre.veredictos[1]).not.toHaveProperty('decision');
     expect(cierre.ficha).toEqual({ contexto: 'neutro', cansancioMedio: 6 });
     expect(JSON.stringify(cierre)).not.toContain('propuesta');
+    expect(cierre.veredictos[0]).not.toHaveProperty('resultado');
   });
 });

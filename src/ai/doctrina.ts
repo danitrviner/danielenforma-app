@@ -23,25 +23,34 @@
    prompt largo con relleno diluye las reglas que sí mandan.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-import { VELOCIDADES } from '../utils/cdg/agujetas.js';
+import { UMBRALES_PROTOCOLO, VELOCIDADES } from '../utils/cdg/agujetas.js';
 import {
   BLOQUES_EN_MANTENER_PARA_CANDIDATA, BLOQUES_PARA_JUZGAR_A_UN_AVANZADO, CANSANCIO_LIMITE, DIAS_DE_PARON_PARA_REDUCIR,
   ESTRELLAS_DESARROLLO, FRACCION_DE_MANTENER, NO_RESPONDE_PARA_SOLTAR_ESTRELLA, RANGO_REDUCCION_SEMANA_1_PCT,
-  RM_ESPERADO_AVANZADO_PCT, RM_OBJETIVO_PCT, SEMANAS_ENTRE_SUBIDAS, SEMANAS_POR_DEFECTO, SEMANAS_PRIMER_BLOQUE,
+  RM_ESPERADO_AVANZADO_PCT, RM_OBJETIVO_PCT, RM_OBJETIVO_PRINCIPIANTE_PCT, SEMANAS_ENTRE_SUBIDAS, SEMANAS_POR_DEFECTO, SEMANAS_PRIMER_BLOQUE,
   SUBIDA_DE_PROCESO_PCT, VELOCIDAD_POR_DEFECTO,
 } from '../utils/hipotesisDeBloque/cifras.js';
 import {
   DIAS_PARA_VOLVER_A_SER_NUEVO, RANGO_ENTRADA_AISLAMIENTO, RANGO_ENTRADA_MULTIARTICULAR, SEMANAS_DE_ENTRADA,
 } from '../utils/rampaDeEjercicioNuevo.js';
 import { REPS_MAX_RM, REPS_MIN_RM, RIR_MAX_RM } from '../utils/rmValido.js';
-import { RUIDO_RM_PCT } from '../utils/ruidoDeMedida.js';
+import { MEJORA_SOSTENIDA_RM_PCT, RUIDO_RM_PCT, SESIONES_DEL_NIVEL } from '../utils/ruidoDeMedida.js';
+import { SEMANAS_PARA_CAMBIAR_VARIANTE, SEMANAS_SIN_MEJORAR, SESIONES_SIN_MEJORAR } from '../utils/estancamiento.js';
 
 /* Las cifras del sistema de hipótesis (17-11-2026) NO se escriben a mano en el
    texto: salen de `hipotesisDeBloque/cifras.ts`, `ruidoDeMedida.ts` y
    `rmValido.ts`, que son las que usan los motores. Así el asistente y la app
    no pueden decir cosas distintas. Ojo: cambiar una de esas cifras cambia el
    texto por defecto, y las copias que Dani haya editado salen como «atrasadas»
-   en el editor (ver `doctrinaAtrasada` en db/coachSettings.ts). */
+   en el editor (ver `doctrinaAtrasada` en db/coachSettings.ts).
+
+   Auditoría de cifras (17-11-2026, aprobada por Dani): tres cifras del texto
+   cambian con sus motores. Las series válidas para el RM llegan a 15
+   repeticiones (antes 12; `rmValido.ts`); el estancamiento se cuenta en
+   semanas y con mejora sostenida (antes 6 y 12 sesiones y un 3 % de un salto;
+   `estancamiento.ts`); y el cansancio al salir frena sesión a sesión, no solo
+   con la media (`cdg/agujetas.ts`). */
+const CANSANCIO_QUE_FRENA = UMBRALES_PROTOCOLO.fatigaPostAlta;
 const ESCALON_PCT = VELOCIDADES.find(v => v.value === VELOCIDAD_POR_DEFECTO)!.pct;
 const SEMANAS_DE_PARON = Math.round(DIAS_DE_PARON_PARA_REDUCIR / 7);
 const MANTENER = FRACCION_DE_MANTENER === 0.5 ? 'la MITAD' : `el ${Math.round(FRACCION_DE_MANTENER * 100)} %`;
@@ -199,6 +208,11 @@ Desde el mes 6 en adelante, peso exacto programado en los básicos en vez de "el
 Cómo se mide si ha mejorado: con el RM estimado, y solo cuentan las series de ${REPS_MIN_RM} a ${REPS_MAX_RM} repeticiones
 con RIR ${RIR_MAX_RM} o menos. Las demás no dan marca. El RM estimado tiene un ruido del ${RUIDO_RM_PCT} % (una repetición más
 o menos ya lo mueve eso): por debajo del ${RUIDO_RM_PCT} % no digas ni «ha mejorado» ni «ha caído».
+Eso vale para comparar UNA sesión con otra. Para decir si alguien está estancado se mira su NIVEL
+(la mediana de sus ${SESIONES_DEL_NIVEL} últimas marcas): mejorar es subirlo un ${MEJORA_SOSTENIDA_RM_PCT} % o más —una repetición ganada y
+mantenida— sobre su mejor nivel anterior. Estancado = ${SEMANAS_SIN_MEJORAR} semanas o más sin mejorar con la misma tarea
+(y al menos ${SESIONES_SIN_MEJORAR} sesiones con marca en ese tramo); el cambio de variante no se plantea antes de las
+${SEMANAS_PARA_CAMBIAR_VARIANTE} semanas. Se cuenta en semanas, no en sesiones: a frecuencia 2, seis sesiones son solo tres semanas.
 
 ### 11. Estructura del bloque (${SEMANAS_POR_DEFECTO} semanas por defecto; ${SEMANAS_PRIMER_BLOQUE} el primer bloque)
 Cuatro tipos de bloque (tipo_bloque): primer bloque (aprender los ejercicios y encontrar el punto de
@@ -216,6 +230,9 @@ anterior más un escalón. Lo que no quepa bajo el techo es para el bloque sigui
 No hay fases fijas por semana: se sube cuando la zona lo pide (recupera, progresa, sin agujetas que
 frenen), no porque toque por calendario. Para hipertrofia se mantiene el mismo rango y esquema
 mientras funcione.
+El cansancio al salir se mira SESIÓN A SESIÓN: una sesión de la que sale con ${CANSANCIO_QUE_FRENA}/10 o más frena las
+zonas que se trabajaron en ella (se mantienen, y antes de subirlas se le baja la fatiga a ESA sesión,
+nombrándola); si la MEDIA de la semana llega a ${CANSANCIO_QUE_FRENA}/10, no se sube ninguna zona.
 Los ejercicios base no se cambian dentro del bloque; los cambios grandes van entre bloques.
 Descarga y semana puente: se quita VOLUMEN, nunca intensidad. Mismos pesos y mismo RIR con la mitad de
 series (en la puente, los grupos prioritarios conservan las suyas). Y solo por SEÑALES —marcas que
@@ -257,12 +274,14 @@ Si se estanca la pérdida, mira pasos y NEAT antes que tocar el entrenamiento.
 ### 15. Continuidad e hipótesis del bloque (obligatorio antes de proponer nada)
 Cada bloque lleva una HIPÓTESIS por zona prioritaria, con objetivo medible: a qué se apuesta (más
 volumen, más intensidad, otros ejercicios, o recuperar), cómo se sabrá si se HIZO (el estímulo medio
-de la zona, un ${SUBIDA_DE_PROCESO_PCT} % por encima del bloque anterior) y cómo se sabrá si SIRVIÓ (+${RM_OBJETIVO_PCT} % de RM estimado medio
-en sus ejercicios al acabar el bloque). Sin eso no es un bloque: es una lista de series. La hipótesis
+de la zona, un ${SUBIDA_DE_PROCESO_PCT} % por encima de DONDE ACABÓ el bloque anterior, no de su media) y cómo se sabrá si SIRVIÓ (+${RM_OBJETIVO_PCT} % de RM estimado medio
+en sus ejercicios al acabar el bloque; +${RM_OBJETIVO_PRINCIPIANTE_PCT} % en un principiante; en déficit, no perder). Sin eso no es un bloque: es una lista de series. La hipótesis
 la firmo yo al abrir el bloque; tú me la propones zona por zona en rationale y en expediente_esperado.
 Antes de proponer, mira get_cierre_bloque (hipótesis, cierre firmado y mapa de respuesta) y
 get_training_history, y decide zona por zona según lo que salió:
 - Confirmada (se hizo y sirvió) → misma apuesta y un escalón más de techo.
+- Mejora, menos de lo buscado (se hizo y el RM sube más que el ruido sin llegar al objetivo) → misma
+  apuesta SIN subir el techo. No es un fallo: no cambies de palanca ni cuenta para soltar la prioridad.
 - Responde con menos (sirvió sin llegar al estímulo previsto) → misma línea SIN subir el techo: ya
   mejora con lo que hace; la subida se guarda para cuando deje de mejorar.
 - No responde (se hizo y no sirvió) → no más de lo mismo: cambia de palanca (volumen ↔ intensidad; si

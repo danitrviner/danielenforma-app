@@ -49,7 +49,7 @@ describe('ewmaDeSeriePorSesion', () => {
   it('una sesión sin ninguna serie válida no tiene punto (ni es un 0)', () => {
     const logs = [
       log('2026-08-01', 'press', [{ weight: 100, repsDone: 5 }]),
-      log('2026-08-08', 'press', [{ weight: 100, repsDone: 5, rir: 5 }, { weight: 60, repsDone: 15 }]),
+      log('2026-08-08', 'press', [{ weight: 100, repsDone: 5, rir: 5 }, { weight: 60, repsDone: 18 }]),
       log('2026-08-15', 'press', [{ weight: 100, repsDone: 5 }]),
     ];
     const ewma = ewmaDeSeriePorSesion(logs, 'press', 0.3);

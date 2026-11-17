@@ -5,9 +5,9 @@ import type { NombreCdgDe } from '../cdg/adaptadores.js';
 import { parsearEsfuerzo, parsearReps, type MotorCdg } from '../cdg/motor.js';
 import { ZONAS_IEM, iemPorZona, type ZonaIem } from '../cdg/zonas.js';
 import type { ProgresionEjercicio } from '../progresionDelBloque.js';
-import { mediana } from '../rmValido.js';
+import { REPS_MAX_RM, REPS_MIN_RM, RIR_MAX_RM, mediana } from '../rmValido.js';
 import {
-  ADHERENCIA_BAJA_PCT, BLOQUES_PARA_JUZGAR_A_UN_AVANZADO, CANSANCIO_LIMITE, FRACCION_DE_PROCESO_CUMPLIDO,
+  ADHERENCIA_BAJA_PCT, BLOQUES_PARA_JUZGAR_A_UN_AVANZADO, CANSANCIO_LIMITE, FRACCION_DE_SOSTENER,
   NO_RESPONDE_PARA_SOLTAR_ESTRELLA, RM_OBJETIVO_PCT, RM_RUIDO_PCT, SEMANAS_DE_FRENO_QUE_EXPLICAN, redondearIem,
 } from './cifras.js';
 import type { EstadoDeEjercicio, EstadoDelBloque } from './estadoDelBloqueAnterior.js';
@@ -20,21 +20,31 @@ import { nombreCortoDeZona } from './tiposDeBloque.js';
 
    Dos preguntas, por separado, y de cruzarlas sale la lectura:
 
-     PROCESO   ¿se hizo?  IEM medio semanal realizado frente al objetivo.
-               Cumplido si llega al 95 %.
+     PROCESO   ¿se hizo?  IEM medio semanal realizado frente al objetivo
+               (`HipotesisDeZona.iemMedioObjetivo`: donde acabó el bloque
+               anterior + medio escalón, o sostenerlo si la zona no sube).
+               Cumplido si llega, sin tolerancia: la del 95 % se quitó en la
+               auditoría de cifras del 17-11-2026 (ver `cifras.ts`).
      RESULTADO ¿sirvió?   Mediana del % de RM estimado de los ejercicios de la
                zona que cuentan (`progresionDelBloque.ts`: mediana de 2
                semanas contra 2, solo ejercicios con marca en más de la mitad
-               de las semanas). Cumplido si llega al objetivo (+5 %).
+               de las semanas). En TRES franjas (auditoría de cifras,
+               17-11-2026): llega al objetivo (+5 %) → cumplido; entre el
+               ruido de medida (3 %) y el objetivo → mejora parcial; por
+               debajo del ruido → no cumplido.
 
-                     │ resultado sí        │ resultado no
-       ──────────────┼─────────────────────┼──────────────
-       proceso sí    │ confirmada          │ no_responde
-       proceso no    │ responde_con_menos  │ sin_probar
+                     │ cumplido            │ mejora parcial      │ no cumplido
+       ──────────────┼─────────────────────┼─────────────────────┼─────────────
+       proceso sí    │ confirmada          │ mejora_parcial      │ no_responde
+       proceso no    │ responde_con_menos  │ responde_con_menos  │ sin_probar
 
    Matices que importan:
-    · Un resultado entre el ruido de medida (3 %) y el objetivo NO es
-      cumplido, pero el texto lo dice: «mejora, pero menos de lo buscado».
+    · Por qué tres franjas: con un ruido realista del 3 % por sesión, una
+      zona que mejora de verdad un 5 % solo llega al objetivo la mitad de las
+      veces. Con dos franjas salían dos «no responde» seguidos por puro azar 1
+      de cada 4 veces, y a la segunda la estrella rotaba. «Mejora parcial» no
+      cuenta como «no responde»: ni cambia la palanca ni suelta la estrella;
+      se sigue la misma línea sin subir el techo.
     · Sin ejercicios con marca suficiente no hay resultado (`null`): la
       hipótesis queda «sin probar» por falta de medida, no «no responde».
     · A un avanzado no se le pide el 5 % en un bloque: si no llega solo, se
@@ -172,7 +182,9 @@ export interface PropuestaSiguiente {
 export interface VeredictoCalculado extends VeredictoDeHipotesis {
   /** Ejercicios de la zona con los que se ha medido el resultado. */
   ejerciciosQueCuentan: number;
-  /** El RM mejora más que el ruido pero menos que el objetivo. */
+  /** La franja del resultado (`null` = sin medida, o avanzado a la espera del segundo bloque). */
+  resultado: FranjaDeResultado | null;
+  /** El RM de ESTE bloque mejora más que el ruido pero menos que el objetivo. */
   mejoraSinLlegar: boolean;
   /** Avanzado: % de RM sumando el bloque anterior de la misma apuesta. */
   rmPctAcumulado?: number;
@@ -207,13 +219,35 @@ export interface EntradaDeVeredicto {
   };
 }
 
-/** La lectura que sale de cruzar proceso y resultado (`null` = no se pudo medir). */
-export function lecturaDe(procesoCumplido: boolean | null, resultadoCumplido: boolean | null): LecturaDeHipotesis {
-  if (resultadoCumplido == null) return 'sin_probar';
-  // Sin objetivo de proceso se juzga solo por el resultado.
-  if (procesoCumplido == null) return resultadoCumplido ? 'confirmada' : 'no_responde';
-  if (procesoCumplido) return resultadoCumplido ? 'confirmada' : 'no_responde';
-  return resultadoCumplido ? 'responde_con_menos' : 'sin_probar';
+/** Las tres franjas del resultado (`null` = no se pudo medir). */
+export type FranjaDeResultado = 'cumplido' | 'parcial' | 'no_cumplido';
+
+/**
+ * En qué franja cae un % de RM frente a su objetivo (auditoría de cifras,
+ * 17-11-2026): llega al objetivo → cumplido; entre el ruido de medida y el
+ * objetivo → parcial («mejora, menos de lo buscado»); por debajo del ruido →
+ * no cumplido. Con objetivo de no perder (0: recuperar o déficit) no hay
+ * franja intermedia: vale mientras no caiga más que el ruido.
+ */
+export function franjaDeResultado(rmPct: number | null | undefined, rmObjetivoPct: number): FranjaDeResultado | null {
+  if (rmPct == null) return null;
+  if (rmObjetivoPct <= 0) return rmPct > -RM_RUIDO_PCT ? 'cumplido' : 'no_cumplido';
+  if (rmPct >= rmObjetivoPct) return 'cumplido';
+  return rmPct >= RM_RUIDO_PCT ? 'parcial' : 'no_cumplido';
+}
+
+/**
+ * La lectura que sale de cruzar proceso y resultado (`null` = no se pudo
+ * medir). El resultado admite un booleano por comodidad (sí / no, sin franja
+ * intermedia).
+ */
+export function lecturaDe(procesoCumplido: boolean | null, resultado: FranjaDeResultado | boolean | null): LecturaDeHipotesis {
+  if (resultado == null) return 'sin_probar';
+  const franja: FranjaDeResultado = resultado === true ? 'cumplido' : resultado === false ? 'no_cumplido' : resultado;
+  // Sin objetivo de proceso se juzga solo por el resultado, como si se hubiera hecho.
+  if (procesoCumplido !== false) return franja === 'cumplido' ? 'confirmada' : franja === 'parcial' ? 'mejora_parcial' : 'no_responde';
+  // No se dio el estímulo previsto: si aun así mejora más que el ruido, responde con menos.
+  return franja === 'no_cumplido' ? 'sin_probar' : 'responde_con_menos';
 }
 
 const acumular = (a: number, b: number) => ((1 + a / 100) * (1 + b / 100) - 1) * 100;
@@ -229,7 +263,7 @@ const ARREGLO: Record<CausaSinProbar, string> = {
   adherencia: 'la causa fue la adherencia: antes de tocar el plan, que las sesiones se hagan (menos días o sesiones más cortas si hace falta)',
   agujetas: 'el freno fueron las agujetas: reparte la carga de la zona en más días o quita trabajo en estiramiento para poder subir',
   contexto: 'el contexto no acompañó (sueño, estrés o motivación): repite cuando acompañe, sin subir el techo',
-  sin_medida: 'no hubo marcas para medirlo: que apunte el RIR y haga alguna serie de 3 a 12 repeticiones a RIR 2 o menos en los ejercicios de la zona',
+  sin_medida: `no hubo marcas para medirlo: que apunte el RIR y haga alguna serie de ${REPS_MIN_RM} a ${REPS_MAX_RM} repeticiones a RIR ${RIR_MAX_RM} o menos en los ejercicios de la zona`,
   a_dos_bloques: 'en un avanzado se juzga a dos bloques: misma apuesta uno más y se suman',
   sin_causa_clara: 'no hay una causa clara: revisa si el techo era realista antes de repetir',
 };
@@ -246,13 +280,14 @@ export function veredictoDeHipotesis(e: EntradaDeVeredicto): VeredictoCalculado 
   let procesoCumplido: boolean | null = null;
   let textoProceso: string;
   if (palanca === 'recuperar') {
-    // Aquí el proceso es BAJAR: cumplido si la media no pasa del techo (con el mismo margen del 5 %).
-    if (iemMedio != null && h.iemTecho != null) procesoCumplido = iemMedio <= h.iemTecho * (2 - FRACCION_DE_PROCESO_CUMPLIDO);
+    // Aquí el proceso es BAJAR: cumplido si la media no pasa del techo (con un margen del 5 %).
+    if (iemMedio != null && h.iemTecho != null) procesoCumplido = iemMedio <= h.iemTecho * (2 - FRACCION_DE_SOSTENER);
     textoProceso = procesoCumplido == null ? 'sin cifra de proceso'
       : `IEM medio ${fmt(iemMedio!)} con tope de ${fmt(h.iemTecho!)}: ${procesoCumplido ? 'se bajó lo previsto' : 'no se bajó lo previsto'}`;
   } else {
     if (iemMedio != null && h.iemMedioObjetivo != null && h.iemMedioObjetivo > 0) {
-      procesoCumplido = iemMedio >= h.iemMedioObjetivo * FRACCION_DE_PROCESO_CUMPLIDO;
+      // Sin tolerancia: el objetivo guardado ya es el umbral (auditoría de cifras, 17-11-2026).
+      procesoCumplido = iemMedio >= h.iemMedioObjetivo;
     }
     textoProceso = procesoCumplido == null ? 'sin objetivo de proceso: se juzga solo por el resultado'
       : `IEM medio ${fmt(iemMedio!)} de ${fmt(h.iemMedioObjetivo!)} previstos: ${procesoCumplido ? 'se hizo' : 'no se llegó'}`;
@@ -260,42 +295,40 @@ export function veredictoDeHipotesis(e: EntradaDeVeredicto): VeredictoCalculado 
 
   // ── Resultado ──────────────────────────────────────────────────────────────
   const rmPct = e.rm.rmPct == null ? null : redondearIem(e.rm.rmPct);
-  let resultadoCumplido: boolean | null = null;
-  let mejoraSinLlegar = false;
+  let franja: FranjaDeResultado | null = franjaDeResultado(rmPct, rmObjetivoPct);
+  const mejoraSinLlegar = franja === 'parcial';
   let rmPctAcumulado: number | undefined;
   let esperaAlSegundo = false;
   let textoResultado: string;
   if (rmPct == null) {
     textoResultado = 'sin marcas suficientes para medir el RM';
   } else if (rmObjetivoPct <= 0) {
-    // Objetivo de no perder (recuperar): vale mientras no caiga más que el ruido.
-    resultadoCumplido = rmPct > -RM_RUIDO_PCT;
-    textoResultado = `RM ${conSigno(rmPct)} %: ${resultadoCumplido ? 'se mantiene' : 'ha bajado'}`;
-  } else if (rmPct >= rmObjetivoPct) {
-    resultadoCumplido = true;
+    // Objetivo de no perder (recuperar o déficit): vale mientras no caiga más que el ruido.
+    textoResultado = `RM ${conSigno(rmPct)} %: ${franja === 'cumplido' ? 'se mantiene' : 'ha bajado'}`;
+  } else if (franja === 'cumplido') {
     textoResultado = `RM ${conSigno(rmPct)} % (objetivo +${fmt(rmObjetivoPct)} %)`;
   } else {
-    resultadoCumplido = false;
-    mejoraSinLlegar = rmPct >= RM_RUIDO_PCT;
     textoResultado = mejoraSinLlegar ? `RM ${conSigno(rmPct)} %: mejora, pero menos de lo buscado (+${fmt(rmObjetivoPct)} %)`
       : rmPct <= -RM_RUIDO_PCT ? `RM ${conSigno(rmPct)} %: ha bajado`
         : `RM ${conSigno(rmPct)} %: sin cambio medible (por debajo del ${RM_RUIDO_PCT} % es ruido)`;
     if (e.nivel === 'avanzado') {
-      // Se juzga a dos bloques: se suma el anterior si fue la misma apuesta.
+      // Se juzga a dos bloques: se suma el anterior si fue la misma apuesta,
+      // y lo sumado se lee con las mismas tres franjas.
       const previo = e.anteriores?.[e.anteriores.length - 1];
       if (BLOQUES_PARA_JUZGAR_A_UN_AVANZADO >= 2 && previo && previo.palanca === palanca && previo.rmPct != null) {
         rmPctAcumulado = redondearIem(acumular(previo.rmPct, rmPct));
-        resultadoCumplido = rmPctAcumulado >= rmObjetivoPct;
+        franja = franjaDeResultado(rmPctAcumulado, rmObjetivoPct);
         textoResultado = `RM ${conSigno(rmPct)} % en este bloque y ${conSigno(rmPctAcumulado)} % sumando el anterior (objetivo +${fmt(rmObjetivoPct)} % a dos bloques)`;
       } else {
-        resultadoCumplido = null;
+        franja = null;
         esperaAlSegundo = true;
         textoResultado = `RM ${conSigno(rmPct)} %: en un avanzado el +${fmt(rmObjetivoPct)} % se juzga a dos bloques`;
       }
     }
   }
+  const resultadoCumplido: boolean | null = franja == null ? null : franja === 'cumplido';
 
-  const lectura = lecturaDe(procesoCumplido, resultadoCumplido);
+  const lectura = lecturaDe(procesoCumplido, franja);
   const causa: CausaSinProbar | undefined = lectura !== 'sin_probar' ? undefined
     : rmPct == null && procesoCumplido !== false ? 'sin_medida'
       : esperaAlSegundo && procesoCumplido !== false ? 'a_dos_bloques'
@@ -305,6 +338,7 @@ export function veredictoDeHipotesis(e: EntradaDeVeredicto): VeredictoCalculado 
   const etiqueta = PALANCAS[palanca].etiqueta;
   const cabecera: Record<LecturaDeHipotesis, string> = {
     confirmada: `${nombre}: confirmada. Se hizo y sirvió: responde a ${etiqueta}.`,
+    mejora_parcial: `${nombre}: mejora, menos de lo buscado. Se hizo lo previsto y el RM sube más que el ruido de medida sin llegar al objetivo.`,
     no_responde: `${nombre}: no responde. Se hizo lo previsto y el RM no acompaña: ${etiqueta} no es su palanca ahora.`,
     responde_con_menos: `${nombre}: responde con menos. No se llegó al estímulo previsto y aun así mejora.`,
     sin_probar: `${nombre}: sin probar. ${causa === 'a_dos_bloques' ? 'Falta el segundo bloque para juzgarla.' : causa === 'sin_medida' ? 'No hay con qué medir el resultado.' : 'No se dio el estímulo previsto, así que no dice nada de la zona.'}`,
@@ -316,11 +350,22 @@ export function veredictoDeHipotesis(e: EntradaDeVeredicto): VeredictoCalculado 
   let propuesta: PropuestaSiguiente;
   if (lectura === 'confirmada') {
     const subirTecho = !limites.algunoPasado && PALANCAS[palanca].sube;
+    // Con objetivo de no perder (bloque en déficit) lo confirmado es que sostuvo
+    // sin perder fuerza: subir o no depende de si el bloque siguiente sigue en déficit.
+    const noPerder = rmObjetivoPct <= 0;
     propuesta = {
       accion: 'misma_linea', palanca, subirTecho,
-      texto: subirTecho ? `Misma línea: sigue con ${etiqueta} y sube el techo un escalón.`
+      texto: subirTecho && noPerder ? `Misma línea: sigue con ${etiqueta}. Sostuvo el estímulo sin perder fuerza; el techo sube un escalón cuando el bloque ya no vaya en déficit.`
+        : subirTecho ? `Misma línea: sigue con ${etiqueta} y sube el techo un escalón.`
         : limites.algunoPasado ? `Misma línea (${etiqueta}), pero sin subir el techo: se pasó un límite (${limites.textos.join(' y ')}).`
           : `Misma línea (${etiqueta}), sin subir el techo.`,
+    };
+  } else if (lectura === 'mejora_parcial') {
+    // Misma línea SIN escalón, y no cuenta como «no responde»: ni cambia la
+    // palanca ni acerca la estrella a soltarse (auditoría de cifras, 17-11-2026).
+    propuesta = {
+      accion: 'misma_linea', palanca, subirTecho: false,
+      texto: `Misma línea (${etiqueta}), sin subir el techo: mejora, pero menos de lo buscado. No cuenta como «no responde»: ni se cambia de palanca ni se mueve la estrella.`,
     };
   } else if (lectura === 'no_responde') {
     const seguidos = seguidosAlFinal(anteriores, 'no_responde') + 1;
@@ -358,6 +403,7 @@ export function veredictoDeHipotesis(e: EntradaDeVeredicto): VeredictoCalculado 
     rmPct, rmObjetivoPct, resultadoCumplido,
     lectura,
     ejerciciosQueCuentan: e.rm.ejercicios?.length ?? 0,
+    resultado: franja,
     mejoraSinLlegar,
     ...(rmPctAcumulado != null ? { rmPctAcumulado } : {}),
     limites,

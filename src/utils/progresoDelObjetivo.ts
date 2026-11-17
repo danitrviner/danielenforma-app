@@ -37,6 +37,9 @@ import { addDays, diasEntreFechas } from './trainingWeek.js';
       de la zona» son los del catálogo cuyo grupo principal cae en ella
       (`gruposDeLasZonas`). El veredicto firmado puede diferir en algún
       ejercicio; esto es un marcador para el atleta, no el veredicto.
+    · Si lo que se pide es no perder (objetivo 0: bloque en déficit,
+      auditoría de cifras del 17-11-2026), no hay «% de %»: el marcador dice
+      si mantiene su fuerza. Por dentro del ruido de medida ya lo cumple.
     · Nunca se promete más de lo que dice el dato: sin dos semanas con marca,
       «todavía es pronto»; por debajo del ruido de medida (3 %) no se dice que
       ha mejorado ni que ha bajado, y la barra no se mueve.
@@ -58,6 +61,8 @@ export interface ProgresoDeZona {
   /** «pecho», «hombro»… como lo dice el atleta. */
   nombre: string;
   objetivoPct: number;
+  /** Lo que se pide es no perder (objetivo 0): se dice «mantienes», sin porcentajes. */
+  mantener: boolean;
   /** % que mueve de más en sus ejercicios; `null` si todavía no se puede medir. */
   mejoraPct: number | null;
   /** Ejercicios con los que se ha medido. */
@@ -180,6 +185,8 @@ export function progresionDelBloqueDelAtleta(o: {
 
 function estadoDe(mejoraPct: number | null, objetivoPct: number): EstadoDelObjetivo {
   if (mejoraPct == null) return 'pronto';
+  // Objetivo de no perder: lo cumple mientras no baje más que el ruido de medida.
+  if (objetivoPct <= 0) return mejoraPct <= -RUIDO_RM_PCT ? 'baja' : 'conseguido';
   if (mejoraPct >= objetivoPct) return 'conseguido';
   if (mejoraPct >= RUIDO_RM_PCT) return 'mejora';
   if (mejoraPct <= -RUIDO_RM_PCT) return 'baja';
@@ -192,7 +199,7 @@ function textoDeZona(nombre: string, estado: EstadoDelObjetivo, mejoraPct: numbe
     case 'pronto': return sinMarcas ? `${n}: aún no se puede medir` : `${n}: todavía es pronto`;
     case 'igual': return `${n}: igual que al empezar`;
     case 'baja': return `${n}: algo por debajo de cuando empezaste`;
-    case 'conseguido': return `${n}: ${conSigno(mejoraPct!)} %, objetivo cubierto`;
+    case 'conseguido': return objetivoPct <= 0 ? `${n}: mantienes tu fuerza` : `${n}: ${conSigno(mejoraPct!)} %, objetivo cubierto`;
     default: return `${n}: ${conSigno(mejoraPct!)} % de ${fmt(objetivoPct)} %`;
   }
 }
@@ -212,13 +219,17 @@ export function progresoDeLasZonas(
     const m = mediana(suyos.map(e => e.deltaPct!));
     const mejoraPct = m == null ? null : r1(m);
     const pedido = meso.hipotesis?.[zona]?.rmObjetivoPct;
-    const objetivoPct = pedido != null && pedido > 0 ? pedido : RM_OBJETIVO_PCT;
+    // Un 0 escrito es «no perder» (bloque en déficit); sin cifra, el objetivo de siempre.
+    const mantener = pedido === 0;
+    const objetivoPct = mantener ? 0 : pedido != null && pedido > 0 ? pedido : RM_OBJETIVO_PCT;
     const estado = estadoDe(mejoraPct, objetivoPct);
     const nombre = ZONA_PARA_EL_ATLETA[zona];
     return {
-      zona, nombre, objetivoPct, mejoraPct, ejercicios: suyos.length, estado, sinMarcas,
+      zona, nombre, objetivoPct, mantener, mejoraPct, ejercicios: suyos.length, estado, sinMarcas,
       // Por debajo del ruido la barra no se mueve: sería decir «has mejorado».
-      fraccion: estado === 'mejora' || estado === 'conseguido' ? Math.min(1, mejoraPct! / objetivoPct) : 0,
+      // Con «no perder», mantenerla ya es tenerla llena.
+      fraccion: mantener ? (estado === 'conseguido' ? 1 : 0)
+        : estado === 'mejora' || estado === 'conseguido' ? Math.min(1, mejoraPct! / objetivoPct) : 0,
       texto: textoDeZona(nombre, estado, mejoraPct, objetivoPct, sinMarcas),
     };
   });
@@ -237,11 +248,11 @@ function titularDe(zonas: readonly ProgresoDeZona[], estado: EstadoDelObjetivo):
   if (estado === 'pronto') return zonas.every(z => z.sinMarcas) ? 'Aún no se puede medir' : 'Todavía es pronto para medirlo';
   if (zonas.length > 1) {
     // Corto: «Pecho +4 % · Hombro: todavía es pronto».
-    return zonas.map(z => (z.estado === 'mejora' || z.estado === 'conseguido' ? `${mayuscula(z.nombre)} ${conSigno(z.mejoraPct!)} %` : z.texto)).join(' · ');
+    return zonas.map(z => (!z.mantener && (z.estado === 'mejora' || z.estado === 'conseguido') ? `${mayuscula(z.nombre)} ${conSigno(z.mejoraPct!)} %` : z.texto)).join(' · ');
   }
   const z = zonas[0];
   switch (estado) {
-    case 'conseguido': return `Vas por encima del objetivo: ${conSigno(z.mejoraPct!)} %`;
+    case 'conseguido': return z.mantener ? 'Mantienes tu fuerza' : `Vas por encima del objetivo: ${conSigno(z.mejoraPct!)} %`;
     case 'mejora': return `Llevas un ${fmt(z.mejoraPct!)} % de ${fmt(z.objetivoPct)} %`;
     case 'baja': return 'Ahora mismo mueves algo menos que al empezar';
     default: return 'De momento mueves lo mismo que al empezar';
@@ -254,7 +265,9 @@ function detalleDe(zonas: readonly ProgresoDeZona[], estado: EstadoDelObjetivo):
     case 'pronto': return zonas.every(z => z.sinMarcas)
       ? 'Con las series de ahora no hay marca que comparar. Apunta cuánto te guardas en cada serie y coméntaselo a tu entrenador.'
       : 'En cuanto tengas dos semanas apuntadas te digo cómo vas. Apunta cada serie.';
-    case 'conseguido': return 'Ya mueves lo que buscábamos. Ahora toca sostenerlo hasta el final del bloque.';
+    case 'conseguido': return zonas.every(z => z.mantener)
+      ? 'Mueves lo mismo que al empezar, que es lo que buscamos en esta fase. Sigue así hasta el final del bloque.'
+      : 'Ya mueves lo que buscábamos. Ahora toca sostenerlo hasta el final del bloque.';
     case 'mejora': {
       const atras = zonas.filter(z => z.estado !== 'mejora' && z.estado !== 'conseguido').map(z => z.nombre);
       return atras.length > 0 ? `Vas bien. Falta que arranque ${enLista(atras)}.` : 'Vas en camino. Sigue apretando en estos ejercicios.';
@@ -369,8 +382,9 @@ export function progresoDelObjetivo(o: {
     semanaTexto: semanas != null ? `Semana ${semana} de ${semanas}` : `Semana ${semana}`,
     zonas, estado,
     fraccion: zonas.length ? zonas.reduce((a, z) => a + z.fraccion, 0) / zonas.length : 0,
-    mejoraPct: sola ? sola.mejoraPct : null,
-    objetivoPct: sola ? sola.objetivoPct : null,
+    // Con «no perder» no hay cifra que enseñar: se dice con palabras (titular).
+    mejoraPct: sola && !sola.mantener ? sola.mejoraPct : null,
+    objetivoPct: sola && !sola.mantener ? sola.objetivoPct : null,
     titular: titularDe(zonas, estado),
     detalle: detalleDe(zonas, estado),
     empujon: o.workouts && exercises ? empujonDelObjetivo({ meso, workouts: o.workouts, logs: o.logs, exercises, hoy: o.hoy }) : null,

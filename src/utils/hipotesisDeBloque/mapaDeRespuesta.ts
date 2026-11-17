@@ -16,17 +16,24 @@ import { nombreCortoDeZona } from './tiposDeBloque.js';
    Las hipótesis «sin probar» se cuentan aparte: no dicen nada de la zona (no
    se hizo lo previsto, o no se pudo medir), así que no entran en el «2 de 2».
 
+   Las de «mejora, menos de lo buscado» (`mejora_parcial`, auditoría de cifras
+   del 17-11-2026) también van aparte: ni a favor ni en contra. No entran en
+   el «2 de 2», pero la frase las dice («más 1 con mejora menor de la
+   buscada»), y no cuentan como «no responde» para soltar la estrella.
+
    Y la rotación de estrellas: una zona que no responde dos bloques seguidos
-   suelta la estrella, y la recogen lo que pide el atleta o las zonas que
+   suelta la estrella (dos «mejora parcial» seguidos NO: rompen la racha), y la recogen lo que pide el atleta o las zonas que
    llevan dos bloques o más en mantener.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export interface CuentaDePalanca {
   confirmada: number;
+  /** Se hizo y mejoró más que el ruido sin llegar al objetivo: ni a favor ni en contra. */
+  mejora_parcial: number;
   no_responde: number;
   responde_con_menos: number;
   sin_probar: number;
-  /** Veces que la palanca se llegó a probar (todo menos «sin probar»). */
+  /** Veces que la palanca dio una respuesta clara (todo menos «sin probar» y «mejora parcial»). */
   probadas: number;
 }
 
@@ -48,15 +55,22 @@ export interface MapaDeRespuesta {
   frase: string;
 }
 
-const cuentaVacia = (): CuentaDePalanca => ({ confirmada: 0, no_responde: 0, responde_con_menos: 0, sin_probar: 0, probadas: 0 });
+const cuentaVacia = (): CuentaDePalanca => ({ confirmada: 0, mejora_parcial: 0, no_responde: 0, responde_con_menos: 0, sin_probar: 0, probadas: 0 });
+
+const bloquesTexto = (n: number) => `${n} ${n === 1 ? 'bloque' : 'bloques'}`;
 
 /** La frase de una palanca: «responde a volumen (2 de 2)». */
 function fraseDePalanca(p: PalancaDeHipotesis, c: CuentaDePalanca): string {
   const etiqueta = PALANCAS[p].etiqueta;
-  if (c.probadas === 0) return `${etiqueta} sin probar (${c.sin_probar} ${c.sin_probar === 1 ? 'bloque' : 'bloques'})`;
-  if (c.confirmada > 0) return `responde a ${etiqueta} (${c.confirmada} de ${c.probadas})`;
-  if (c.responde_con_menos > 0) return `responde a ${etiqueta} con menos estímulo (${c.responde_con_menos} de ${c.probadas})`;
-  return `no responde a ${etiqueta} (${c.no_responde} de ${c.probadas})`;
+  if (c.probadas === 0) {
+    // Solo mejoras parciales: se dice tal cual, sin darla por buena ni por mala.
+    if (c.mejora_parcial > 0) return `mejora con ${etiqueta}, menos de lo buscado (${bloquesTexto(c.mejora_parcial)})`;
+    return `${etiqueta} sin probar (${bloquesTexto(c.sin_probar)})`;
+  }
+  const aparte = c.mejora_parcial > 0 ? `, más ${c.mejora_parcial} con mejora menor de la buscada` : '';
+  if (c.confirmada > 0) return `responde a ${etiqueta} (${c.confirmada} de ${c.probadas}${aparte})`;
+  if (c.responde_con_menos > 0) return `responde a ${etiqueta} con menos estímulo (${c.responde_con_menos} de ${c.probadas}${aparte})`;
+  return `no responde a ${etiqueta} (${c.no_responde} de ${c.probadas}${aparte})`;
 }
 
 export function mapaDeRespuesta(bloques: readonly BloqueConCierre[]): MapaDeRespuesta {
@@ -68,7 +82,7 @@ export function mapaDeRespuesta(bloques: readonly BloqueConCierre[]): MapaDeResp
     for (const { veredicto: v } of veredictos) {
       const c = (porPalanca[v.palanca] ??= cuentaVacia());
       c[v.lectura]++;
-      if (v.lectura !== 'sin_probar') c.probadas++;
+      if (v.lectura !== 'sin_probar' && v.lectura !== 'mejora_parcial') c.probadas++;
     }
     const u = veredictos[veredictos.length - 1];
     const nombre = nombreCortoDeZona(z.clave);

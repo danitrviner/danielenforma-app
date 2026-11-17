@@ -3,7 +3,7 @@ import { ExercisePerf } from '../../utils/trainingReport';
 import { fechaCorta } from '../../utils/trainingWeek';
 import { Delta, Badge, Sparkline } from '../ui';
 import { describirCambios, type CambioEnLaVentana } from '../../utils/comparabilidad';
-import type { Estancamiento } from '../../utils/estancamiento';
+import { textoDeSemanas, type Estancamiento } from '../../utils/estancamiento';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Los ejercicios que hay dentro de un patrón, cuando el coach lo despliega.
@@ -31,7 +31,7 @@ interface Props {
   ultimaSesion?: Record<string, string>;
   /** S3: ejercicios cuya tarea cambió en la ventana (`revision.cambiosDeTarea`). */
   cambios?: Record<string, CambioEnLaVentana>;
-  /** S1: ejercicios con tres o más sesiones comparables sin mejorar. */
+  /** S1: ejercicios con seis semanas o más sin mejorar con la misma tarea (17-11-2026). */
   estancados?: Estancamiento[];
 }
 
@@ -63,7 +63,7 @@ export default function TablaEjerciciosPatron({
                   {e.name}
                   {e.isPR && <Badge tone="success">Récord</Badge>}
                   {estancados?.some(x => x.exerciseId === e.exerciseId) && (
-                    <Badge tone="warning">{estancados.find(x => x.exerciseId === e.exerciseId)!.sesiones} sesiones igual</Badge>
+                    <Badge tone="warning">{textoDeSemanas(estancados.find(x => x.exerciseId === e.exerciseId)!.semanas)} igual</Badge>
                   )}
                 </span>
                 {/* S3: lo de la columna «vs» compara dos tareas distintas. */}

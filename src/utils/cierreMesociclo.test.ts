@@ -393,7 +393,7 @@ describe('semanas no comparables y dato de fuerza del cierre', () => {
     expect(c.progresion.resumen.sinMarca).toEqual({ registros: 8, sinMarca: 4, porMotivo: { rir_sin_apuntar: 4 }, motivoPrincipal: 'rir_sin_apuntar' });
     expect(c.notaDeDatos).toBe(
       'Sin marca de fuerza en 4 de las 8 veces que hizo un ejercicio con peso: ninguna serie válida para estimar el RM '
-      + '(de 3 a 12 repeticiones y RIR 2 o menos, apuntado; lo más frecuente, RIR sin apuntar).',
+      + '(de 3 a 15 repeticiones y RIR 2 o menos, apuntado; lo más frecuente, RIR sin apuntar).',
     );
     // Es para el coach: no va en el mensaje al cliente.
     expect(c.resumenParaCliente).not.toContain('marca');

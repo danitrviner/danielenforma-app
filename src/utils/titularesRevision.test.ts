@@ -186,19 +186,19 @@ describe('construirTitulares · lo que dicen las series (11-11-2026)', () => {
     expect(r.resumenParaCliente).not.toContain('Press banca');
   });
 
-  it('S1: el estancado dice cuántas sesiones y qué hacer; «mantener» no es alarma', () => {
+  it('S1: el estancado dice cuántas semanas (y sesiones) y qué hacer; «mantener» no es alarma', () => {
     const r = construirTitulares({
       revision: revision({
         informe: base,
         estancados: [
-          { exerciseId: 'press', sesiones: 4, veredicto: 'subir_series', accion: 'Súbele 1-2 series' },
-          { exerciseId: 'jalon', sesiones: 3, veredicto: 'mantener', accion: 'Mantén carga' },
+          { exerciseId: 'press', semanas: 7, sesiones: 13, veredicto: 'subir_series', accion: 'Súbele 1-2 series' },
+          { exerciseId: 'jalon', semanas: 6, sesiones: 6, veredicto: 'mantener', accion: 'Mantén carga' },
         ],
       }),
     });
     const press = r.titulares.find(x => x.id === 'estancado_press')!;
     expect(press.tono).toBe('alarma');
-    expect(press.texto).toContain('4 sesiones comparables sin mejorar');
+    expect(press.texto).toMatch(/^Lleva 7 semanas sin mejorar en .+ \(13 sesiones comparables\)\. Súbele 1-2 series\.$/);
     expect(r.titulares.find(x => x.id === 'estancado_jalon')!.tono).toBe('neutro');
     expect(r.resumenParaCliente).toContain('te ajusto el plan');
   });
@@ -234,6 +234,19 @@ describe('construirTitulares · lo que dicen las series (11-11-2026)', () => {
     expect(t.texto).toContain('quita la última serie de Press banca');
     const sin = construirTitulares({ revision: revision({ informe: base, descarga: { recomendada: false, senales: ['x'], recortes: [] } }) });
     expect(ids(sin)).not.toContain('descarga_senales');
+    expect(ids(sin)).not.toContain('sesiones_duras');
+  });
+
+  it('una sesión de 8 o más sin señales de descarga: titular solo del coach, con la sesión y lo que no se sube', () => {
+    const frase = 'salió con 9/10 de la del jueves, Pierna A: no subas cuádriceps e isquiotibiales sin bajarle antes la fatiga a esa sesión';
+    const r = construirTitulares({ revision: revision({ informe: base, descarga: { recomendada: false, senales: [], recortes: [], sesionesDuras: [frase] } }) });
+    const t = r.titulares.find(x => x.id === 'sesiones_duras')!;
+    expect(t).toMatchObject({ tono: 'alarma', texto: `Cansancio al salir: ${frase}.` });
+    expect(t.paraCliente).toBeUndefined();
+    // Si ya se recomienda descarga, manda ese titular y este no se repite.
+    const conDescarga = construirTitulares({ revision: revision({ informe: base, descarga: { recomendada: true, senales: ['a', 'b'], recortes: [], sesionesDuras: [frase] } }) });
+    expect(ids(conDescarga)).toContain('descarga_senales');
+    expect(ids(conDescarga)).not.toContain('sesiones_duras');
   });
 
   it('D5 y D4: una molestia de 4 o más y llegar justo casi siempre son titulares', () => {

@@ -73,4 +73,19 @@ describe('objetivoDelMesoParaElAtleta', () => {
   it('un bloque antiguo, sin tipo ni hipótesis, también tiene frase', () => {
     expect(objetivoDelMesoParaElAtleta({ weeks: 6 })).toContain('en 6 semanas mueves más que ahora');
   });
+
+  it('bloque en déficit (todas sus zonas piden no perder): la frase habla de mantener la fuerza, sin tecnicismos', () => {
+    const meso = { weeks: 12, tipoBloque: 'desarrollo' as const, hipotesis: { deltoides: { palanca: 'volumen' as const, rmObjetivoPct: 0 }, pectoral: { palanca: 'intensidad' as const, rmObjetivoPct: 0 } } };
+    const frase = objetivoDelMesoParaElAtleta(meso, 'avanzado');
+    expect(frase).toBe('Este bloque va de pecho y hombro. En esta fase el objetivo es mantener tu fuerza en esos ejercicios.');
+    expect(frase).not.toMatch(/déficit|RM|IEM|zona|%/i);
+    expect(objetivoParaElAtleta({ tipo: 'especializacion', estrellas: ['pectoral'], mantener: true }))
+      .toBe('Este bloque va todo a pecho: el resto se mantiene para dejarle sitio. En esta fase el objetivo es mantener tu fuerza en esos ejercicios.');
+  });
+
+  it('si alguna zona sí busca mover más, manda esa (y un principiante lee su 8 %)', () => {
+    const mixto = { weeks: 12, tipoBloque: 'desarrollo' as const, hipotesis: { pectoral: { palanca: 'volumen' as const, rmObjetivoPct: 8 }, deltoides: { palanca: 'volumen' as const, rmObjetivoPct: 0 } } };
+    expect(objetivoDelMesoParaElAtleta(mixto, 'principiante'))
+      .toBe('Este bloque va de pecho y hombro. Lo daremos por bueno si en 12 semanas mueves un 8 % más en tus ejercicios de pecho y de hombro.');
+  });
 });

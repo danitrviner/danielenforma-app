@@ -63,7 +63,7 @@ describe('logros con series válidas (D2)', () => {
   });
 
   it('el tonelaje se celebra aunque la sesión no tenga marca', () => {
-    const l = logrosDelEjercicio({ ...base, hechas: [s(60, 15), s(60, 15), s(60, 15)], mejorRmAntes: 50, tonelajeMaxAntes: 2000 });
+    const l = logrosDelEjercicio({ ...base, hechas: [s(60, 18), s(60, 18), s(60, 18)], mejorRmAntes: 50, tonelajeMaxAntes: 2000 });
     expect(l.map(x => x.tipo)).toEqual(['tonelaje']);
   });
 

@@ -1,9 +1,9 @@
-import type { HipotesisDeZona, Mesocycle, PalancaDeHipotesis, TipoDeBloque } from '../../types';
+import type { ExperienceLevel, HipotesisDeZona, Mesocycle, PalancaDeHipotesis, TipoDeBloque } from '../../types';
 import { VELOCIDADES, sensibilidadDeZona, type Sensibilidad, type Velocidad } from '../../utils/cdg/agujetas';
 import type { ZonaIem } from '../../utils/cdg/zonas';
 import { REDUCCION_SEMANA_1_PCT, redondearIem } from '../../utils/hipotesisDeBloque/cifras';
 import type { EstadoDeZona } from '../../utils/hipotesisDeBloque/estadoDelBloqueAnterior';
-import { cifrasDeHipotesis } from '../../utils/hipotesisDeBloque/proponerHipotesis';
+import { cifrasDeHipotesis, rmObjetivoPorDefecto, type NotaDeHipotesis } from '../../utils/hipotesisDeBloque/proponerHipotesis';
 import {
   TIPOS_DE_BLOQUE, aplicarTipoDeBloque, type CampoDeTipo,
 } from '../../utils/hipotesisDeBloque/tiposDeBloque';
@@ -118,14 +118,53 @@ function estadoGuardado(h: HipotesisDeZona): Pick<EstadoDeZona, 'iemMedio' | 'ie
 }
 
 /**
+ * Qué pide el PROCESO respecto a donde acabó el bloque anterior, en palabras:
+ * «un 5 % más» si la zona sube, «sostenerlo (el 95 %)» si no. La referencia
+ * es donde ACABÓ, no la media (auditoría de cifras, 17-11-2026): con un bloque
+ * anterior en rampa la media queda por debajo del arranque y un objetivo
+ * sobre ella nacía cumplido. `null` sin las dos cifras.
+ */
+export function referenciaDeProceso(h: Pick<HipotesisDeZona, 'iemMedioObjetivo' | 'iemFinalAnterior'>): { sube: boolean; texto: string } | null {
+  if (h.iemMedioObjetivo == null || !(h.iemFinalAnterior != null && h.iemFinalAnterior > 0.005)) return null;
+  const razon = h.iemMedioObjetivo / h.iemFinalAnterior;
+  const pct = Math.round(Math.abs(razon - 1) * 1000) / 10;
+  if (razon > 1.0005) return { sube: true, texto: `un ${fmtCifra(pct)} % más` };
+  if (razon >= 0.9995) return { sube: false, texto: 'sostenerlo' };
+  return { sube: false, texto: `sostenerlo, con un ${fmtCifra(pct)} % de margen` };
+}
+
+/**
+ * Las líneas que explican por qué una ficha no propone lo de siempre (bloque
+ * en déficit, zona ya alta). Son sugerencias: si el coach ha cambiado la
+ * ficha a mano y ya no las sigue, la línea lo dice en vez de afirmar algo que
+ * la ficha no hace.
+ */
+export function notasDeLaFicha(h: HipotesisDeZona, notas: readonly NotaDeHipotesis[] | undefined): string[] {
+  const sube = h.iemTecho != null && h.iemFinalAnterior != null && h.iemTecho > h.iemFinalAnterior;
+  return (notas ?? []).map(n => {
+    if (n.clave === 'deficit') {
+      const sigue = !sube && !(h.rmObjetivoPct != null && h.rmObjetivoPct > 0);
+      return sigue ? n.texto : 'Bloque en déficit: la propuesta es no perder fuerza y no subir el estímulo. Esta ficha pide más porque la has cambiado a mano.';
+    }
+    return sube ? `${n.texto.split(': ')[0]}: la propuesta es no subir el techo. Lo has subido a mano.` : n.texto;
+  });
+}
+
+/**
  * Cambiar la palanca de una ficha: las cifras se rehacen para la palanca nueva
  * (recuperar baja a la mitad, otros ejercicios no sube…) desde cómo acabó el
  * bloque anterior. El límite propio se conserva; el objetivo de RM, también,
  * salvo al entrar o salir de «recuperar» (ahí lo que se pide es no perder).
+ * `nivel` y `enDeficit` son los de la propuesta: al rehacer las cifras valen
+ * los mismos valores por defecto (+8 % en un principiante; en déficit, no
+ * perder y techo sin subir).
  */
 export function conPalanca(
   h: HipotesisDeZona, palanca: PalancaDeHipotesis,
-  o: { estado?: Pick<EstadoDeZona, 'iemMedio' | 'iemFinal'> | null; velocidad?: Velocidad; semana1Reducida?: boolean } = {},
+  o: {
+    estado?: Pick<EstadoDeZona, 'iemMedio' | 'iemFinal'> | null; velocidad?: Velocidad; semana1Reducida?: boolean;
+    nivel?: ExperienceLevel; enDeficit?: boolean;
+  } = {},
 ): HipotesisDeZona {
   if (h.palanca === palanca) return h;
   const cambiaDeSentido = (h.palanca === 'recuperar') !== (palanca === 'recuperar');
@@ -135,9 +174,15 @@ export function conPalanca(
     velocidad: o.velocidad,
     semana1Reducida: o.semana1Reducida,
     limite: h.limite,
+    nivel: o.nivel,
+    enDeficit: o.enDeficit,
     rmObjetivoPct: cambiaDeSentido ? undefined : h.rmObjetivoPct,
   });
 }
+
+/** ¿Lo que pide la ficha del RM es no perderlo? (objetivo 0: recuperar o bloque en déficit). */
+export const pideNoPerder = (h: Pick<HipotesisDeZona, 'palanca' | 'rmObjetivoPct'>): boolean =>
+  (h.rmObjetivoPct ?? rmObjetivoPorDefecto({ palanca: h.palanca })) <= 0;
 
 export type CifraEditable = 'iemMedioObjetivo' | 'iemArranque' | 'iemTecho' | 'rmObjetivoPct';
 

@@ -35,7 +35,7 @@ export interface ExercisePerf {
   reps: number;
   tonnage: number;
   // Desde el 17-11-2026 (D2) el 1RM sale solo de las series VÁLIDAS
-  // (`rmValido.ts`: 3-12 reps, RIR 2 o menos, RIR apuntado, sin bajadas).
+  // (`rmValido.ts`: 3-15 reps, RIR 2 o menos, RIR apuntado, sin bajadas).
   bestOrm: number;               // mejor 1RM (CDG) de una serie válida en el periodo; 0 = sin marca
   prevBestOrm: number | null;    // lo mismo en la ventana de comparación; null = sin marca allí
   deltaOrmPct: number | null;    // signed % vs prevBestOrm; null si falta la marca en un lado

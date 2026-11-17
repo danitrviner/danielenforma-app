@@ -1,9 +1,10 @@
-import type { HipotesisDeZona, PalancaDeHipotesis, TipoDeBloque } from '../../types.js';
+import type { ExperienceLevel, HipotesisDeZona, PalancaDeHipotesis, TipoDeBloque } from '../../types.js';
 import { VELOCIDADES, type Sensibilidad, type Velocidad } from '../cdg/agujetas.js';
 import { ZONAS_IEM, type ZonaIem } from '../cdg/zonas.js';
 import {
-  ESCALONES_DE_TECHO, FRACCION_DE_MANTENER, NO_RESPONDE_PARA_SOLTAR_ESTRELLA, REDUCCION_SEMANA_1_PCT,
-  RM_OBJETIVO_PCT, SUBIDA_DE_PROCESO_PCT, redondearIem,
+  ESCALONES_DE_TECHO, FRACCION_DE_ESCALON_DE_PROCESO, FRACCION_DE_MANTENER, FRACCION_DE_SOSTENER, IEM_ZONA_ALTA,
+  NO_RESPONDE_PARA_SOLTAR_ESTRELLA, REDUCCION_SEMANA_1_PCT, RM_OBJETIVO_EN_DEFICIT_PCT, RM_OBJETIVO_PCT,
+  RM_OBJETIVO_PRINCIPIANTE_PCT, redondearIem,
 } from './cifras.js';
 import type { EstadoDeZona, EstadoDelBloque } from './estadoDelBloqueAnterior.js';
 import { seguidosAlFinal, veredictosDeLaZona, type BloqueConCierre } from './historial.js';
@@ -23,8 +24,18 @@ import { TIPOS_DE_BLOQUE, avisoDeEstrellas, modoPorZonaDe, nombreCortoDeZona } f
      arranque  = donde acabó el anterior (un 7 % menos con la semana 1 reducida;
                  la semana 2 vuelve a donde acabó);
      techo     = donde acabó + un escalón de la velocidad (16 → 17,6 en suave);
-     proceso   = media del anterior + 10 %, sin pasar del techo;
-     resultado = +5 % de RM estimado.
+     proceso   = donde ACABÓ + medio escalón (un 5 % en suave), sin tolerancia;
+                 si la zona no sube, sostener: el 95 % de donde acabó;
+     resultado = +5 % de RM estimado (+8 % en un principiante).
+
+   Tres casos en los que, por defecto, el techo NO sube (auditoría de cifras,
+   17-11-2026; los tres son propuestas que el coach edita):
+
+     · la zona ya está alta (acabó en 80 de IEM o más, `IEM_ZONA_ALTA`): además
+       la apuesta deja de ser volumen y pasa a intensidad;
+     · el bloque cae en déficit: y lo que se pide del RM es no perderlo;
+     · el veredicto anterior fue «responde con menos» o «mejora, menos de lo
+       buscado»: misma línea, sin escalón.
 
    El techo es el mismo número que `cdgObjetivosIem[zona]`: lo lee el
    protocolo semanal (`propuestaZona`) y por encima no propone subir. Esto va
@@ -40,28 +51,54 @@ const pctDeVelocidad = (v: Velocidad) => VELOCIDADES.find(x => x.value === v)!.p
 /** Qué se hace con una zona sin estrella. */
 export type TratoDelResto = 'como_estaba' | 'mantener' | 'ignorar';
 
+/** ¿La zona acabó el bloque anterior ya alta? (80 de IEM o más: el techo no sube por defecto). */
+export const esZonaAlta = (iemFinal: number | null | undefined): boolean => iemFinal != null && iemFinal >= IEM_ZONA_ALTA;
+
+/**
+ * El objetivo de RESULTADO por defecto, en % de RM (auditoría de cifras,
+ * 17-11-2026): no perder (0) si la zona se recupera o el bloque cae en
+ * déficit; un 8 % en un principiante (con el 5 % pasaría siempre y el
+ * veredicto no distinguiría nada); un 5 % en el resto. A un avanzado se le
+ * pide el mismo 5 %, pero a dos bloques (`veredicto.ts`).
+ */
+export function rmObjetivoPorDefecto(o: { palanca?: PalancaDeHipotesis; nivel?: ExperienceLevel; enDeficit?: boolean } = {}): number {
+  if (o.palanca === 'recuperar') return 0;
+  if (o.enDeficit) return RM_OBJETIVO_EN_DEFICIT_PCT;
+  return o.nivel === 'principiante' ? RM_OBJETIVO_PRINCIPIANTE_PCT : RM_OBJETIVO_PCT;
+}
+
 /**
  * Las cifras de una hipótesis para una palanca. Sirve también para recalcular
  * cuando el coach cambia la palanca a mano.
  *
  *  · volumen / intensidad: suben el estímulo (las dos mueven el IEM: una por
- *    series y otra por RIR). `subir: false` las deja en el techo anterior.
+ *    series y otra por RIR). No suben si `subir: false`, si el bloque cae en
+ *    déficit o si la zona ya acabó alta (`IEM_ZONA_ALTA`): se quedan en el
+ *    techo anterior.
  *  · ejercicios: el mismo estímulo con otros ejercicios: no se sube.
  *  · recuperar: la zona baja a mantener (la mitad) y lo que se pide del RM es
  *    no perderlo (objetivo 0).
+ *
+ * El objetivo de PROCESO (`iemMedioObjetivo`) es el umbral tal cual: el
+ * veredicto lo compara sin tolerancia. Si la zona sube, donde acabó + medio
+ * escalón de la velocidad; si no sube, sostener (el 95 % de donde acabó).
  */
 export function cifrasDeHipotesis(o: {
   palanca: PalancaDeHipotesis;
   estado?: Pick<EstadoDeZona, 'iemMedio' | 'iemFinal'> | null;
   velocidad?: Velocidad;
   semana1Reducida?: boolean;
-  /** `false` = no subir aunque la palanca suba (la zona respondió con menos). */
+  /** `false` = no subir aunque la palanca suba (respondió con menos, o mejoró menos de lo buscado). */
   subir?: boolean;
+  /** Nivel del atleta: en un principiante el objetivo de RM por defecto es mayor. */
+  nivel?: ExperienceLevel;
+  /** El bloque cae mayoritariamente en déficit: no perder y no subir. */
+  enDeficit?: boolean;
   rmObjetivoPct?: number;
   limite?: string;
 }): HipotesisDeZona {
   const { palanca, estado } = o;
-  const rmObjetivoPct = o.rmObjetivoPct ?? (palanca === 'recuperar' ? 0 : RM_OBJETIVO_PCT);
+  const rmObjetivoPct = o.rmObjetivoPct ?? rmObjetivoPorDefecto({ palanca, nivel: o.nivel, enDeficit: o.enDeficit });
   const limite = o.limite?.trim() ? { limite: o.limite.trim() } : {};
   if (!estado || !(estado.iemFinal > 0.005)) return { palanca, rmObjetivoPct, ...limite };
 
@@ -71,11 +108,13 @@ export function cifrasDeHipotesis(o: {
     const mitad = redondearIem(final * FRACCION_DE_MANTENER);
     return { ...base, iemArranque: mitad, iemTecho: mitad, rmObjetivoPct, ...limite };
   }
-  const sube = PALANCAS[palanca].sube && o.subir !== false;
+  const sube = PALANCAS[palanca].sube && o.subir !== false && !o.enDeficit && !esZonaAlta(final);
   const escalon = pctDeVelocidad(o.velocidad ?? 'suave') * ESCALONES_DE_TECHO;
   const techo = sube ? final * (1 + escalon / 100) : final;
   const arranque = o.semana1Reducida ? final * (1 - REDUCCION_SEMANA_1_PCT / 100) : final;
-  const objetivo = Math.min(sube ? media * (1 + SUBIDA_DE_PROCESO_PCT / 100) : media, techo);
+  // La referencia es donde ACABÓ, no la media: con un bloque anterior en rampa
+  // la media queda muy por debajo del arranque y el objetivo nacía cumplido.
+  const objetivo = sube ? Math.min(final * (1 + (escalon * FRACCION_DE_ESCALON_DE_PROCESO) / 100), techo) : final * FRACCION_DE_SOSTENER;
   return {
     ...base,
     iemMedioObjetivo: redondearIem(objetivo),
@@ -104,7 +143,23 @@ export interface EntradaDeHipotesis {
   /** Qué hacer con zonas sin estrella. Sin decir nada, lo que marque el tipo
    *  (mantenimiento y especialización: mantener; el resto: como estaban). */
   resto?: Partial<Record<ZonaIem, TratoDelResto>>;
+  /** Nivel del atleta (`OnboardingData.experienceLevel`): a un principiante se le pide más RM. */
+  nivel?: ExperienceLevel;
+  /** El bloque cae mayoritariamente en una fase de déficit (`bloqueEnDeficit`):
+   *  por defecto se pide no perder fuerza y el techo no sube. */
+  enDeficit?: boolean;
 }
+
+/** Por qué una ficha no propone lo de siempre: una línea para el coach. */
+export interface NotaDeHipotesis {
+  clave: 'deficit' | 'zona_alta';
+  texto: string;
+}
+
+/** La línea de la ficha con el bloque en déficit (texto de Dani). */
+export const NOTA_DE_DEFICIT = 'Bloque en déficit: se pide no perder fuerza y no se sube el estímulo.';
+
+const fmtIem = (v: number) => redondearIem(v).toLocaleString('es-ES');
 
 export interface PropuestaDeHipotesis {
   /** Una por zona con estrella: lo que iría a `Mesocycle.hipotesis`. */
@@ -122,6 +177,11 @@ export interface PropuestaDeHipotesis {
   iemDelResto: Partial<Record<ZonaIem, number>>;
   /** Por qué esa palanca, zona a zona. */
   porQue: Partial<Record<ZonaIem, string>>;
+  /** Lo que la ficha tiene que explicar en una línea (déficit, zona ya alta). */
+  notas: Partial<Record<ZonaIem, NotaDeHipotesis[]>>;
+  /** Con qué se propuso: lo necesita la ficha para rehacer las cifras al cambiar de palanca. */
+  nivel?: ExperienceLevel;
+  enDeficit: boolean;
   avisos: string[];
 }
 
@@ -133,7 +193,9 @@ export function proponerHipotesis(e: EntradaDeHipotesis): PropuestaDeHipotesis {
   const hipotesis: PropuestaDeHipotesis['hipotesis'] = {};
   const cdgObjetivosIem: PropuestaDeHipotesis['cdgObjetivosIem'] = {};
   const porQue: PropuestaDeHipotesis['porQue'] = {};
+  const notas: PropuestaDeHipotesis['notas'] = {};
   const avisos: string[] = [];
+  const enDeficit = !!e.enDeficit;
 
   const aviso = avisoDeEstrellas(e.tipo, estrellas.length);
   if (aviso) avisos.push(aviso.texto);
@@ -141,6 +203,8 @@ export function proponerHipotesis(e: EntradaDeHipotesis): PropuestaDeHipotesis {
   for (const zona of estrellas) {
     const veredictos = veredictosDeLaZona(historial, zona).map(v => v.veredicto);
     const ultimo = veredictos[veredictos.length - 1];
+    const estado = e.anterior?.porZona[zona];
+    const alta = esZonaAlta(estado?.iemFinal);
     let palanca: PalancaDeHipotesis = PALANCA_POR_DEFECTO;
     let subir = true;
     let motivo = 'Sin veredictos anteriores en esta zona: se empieza por volumen.';
@@ -160,22 +224,48 @@ export function proponerHipotesis(e: EntradaDeHipotesis): PropuestaDeHipotesis {
       } else if (ultimo.lectura === 'responde_con_menos') {
         palanca = misma; subir = false;
         motivo = `Respondió con menos estímulo del previsto (${etiqueta}): no se sube el techo.`;
+      } else if (ultimo.lectura === 'mejora_parcial') {
+        // Mejora de verdad (supera el ruido) aunque no llegue al objetivo: ni
+        // se cambia de palanca ni se sube; se le da otro bloque a la misma línea.
+        palanca = misma; subir = false;
+        motivo = `Mejoró menos de lo buscado con ${etiqueta}: misma línea, sin subir el techo.`;
       } else if (ultimo.lectura === 'confirmada') {
         palanca = misma;
-        motivo = `Confirmada el bloque anterior (${etiqueta}): misma línea, un escalón más.`;
+        motivo = `Confirmada el bloque anterior (${etiqueta}): misma línea${enDeficit || alta ? '' : ', un escalón más'}.`;
       } else {
         palanca = misma;
         motivo = `La hipótesis anterior (${etiqueta}) no se llegó a probar: se repite.`;
       }
     }
+    // Zona ya alta: el techo no sube (lo aplica `cifrasDeHipotesis`) y, si la
+    // apuesta era volumen, pasa a la siguiente palanca que no haya fallado ya.
+    const notasDeZona: NotaDeHipotesis[] = [];
+    let dejaElVolumen = false;
+    if (alta && palanca === 'volumen') {
+      const fallaron = (Object.keys(PALANCAS) as PalancaDeHipotesis[])
+        .filter(p => [...veredictos].reverse().find(v => v.palanca === p)?.lectura === 'no_responde');
+      palanca = otraPalanca('volumen', fallaron);
+      dejaElVolumen = true;
+      motivo = `Zona ya alta: la apuesta pasa de volumen a ${PALANCAS[palanca].etiqueta}.`;
+    }
     const elegida = e.palancas?.[zona];
-    if (elegida && elegida !== palanca) { palanca = elegida; motivo = 'Palanca elegida a mano.'; }
+    if (elegida && elegida !== palanca) { palanca = elegida; dejaElVolumen = false; motivo = 'Palanca elegida a mano.'; }
+    if (alta && palanca !== 'recuperar') {
+      notasDeZona.push({
+        clave: 'zona_alta',
+        texto: `Zona ya alta: acabó en ${fmtIem(estado!.iemFinal)} de IEM y de ${IEM_ZONA_ALTA} en adelante se va con cuidado. `
+          + `El techo no sube${dejaElVolumen ? ` y la apuesta deja de ser volumen (pasa a ${PALANCAS[palanca].etiqueta})` : ''}.`,
+      });
+    }
+    if (enDeficit) notasDeZona.push({ clave: 'deficit', texto: NOTA_DE_DEFICIT });
 
     const h = cifrasDeHipotesis({
-      palanca, estado: e.anterior?.porZona[zona], velocidad, semana1Reducida: e.semana1Reducida, subir, limite: e.limites?.[zona],
+      palanca, estado, velocidad, semana1Reducida: e.semana1Reducida, subir, limite: e.limites?.[zona],
+      nivel: e.nivel, enDeficit,
     });
     hipotesis[zona] = h;
     porQue[zona] = motivo;
+    if (notasDeZona.length) notas[zona] = notasDeZona;
     if (h.iemTecho != null) cdgObjetivosIem[zona] = h.iemTecho;
   }
 
@@ -188,5 +278,8 @@ export function proponerHipotesis(e: EntradaDeHipotesis): PropuestaDeHipotesis {
     else if (trato === 'mantener' && final != null && final > 0.005) iemDelResto[z.clave] = redondearIem(final * FRACCION_DE_MANTENER);
   }
 
-  return { hipotesis, cdgObjetivosIem, cdgModoPorZona: modoPorZonaDe(estrellas, e.tipo), iemDelResto, porQue, avisos };
+  return {
+    hipotesis, cdgObjetivosIem, cdgModoPorZona: modoPorZonaDe(estrellas, e.tipo), iemDelResto, porQue, notas,
+    ...(e.nivel ? { nivel: e.nivel } : {}), enDeficit, avisos,
+  };
 }

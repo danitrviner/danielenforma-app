@@ -18,6 +18,11 @@ import { alCambiarSemana1, camposDeBloqueNuevo } from './hipotesisDelEditor';
    registros ni catálogo del Índice de Hipertrofia, así que el estado del
    bloque anterior va escrito a mano: es el caso de la maqueta (pectoral 52 de
    media, acabó en 58; deltoides 38 y 40). Todo en memoria: nada se guarda.
+
+   Los cuatro últimos escenarios son los de la auditoría de cifras del
+   17-11-2026: el bloque anterior firmado con una «mejora, menos de lo
+   buscado», el bloque en déficit, una zona que ya acabó alta (pectoral en 82)
+   y un principiante.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const HOY = '2026-11-17';
@@ -50,6 +55,18 @@ const ANTERIOR_FIRMADO: Mesocycle = {
   },
 };
 
+/** Con el pectoral en «mejora, menos de lo buscado»: +4 % de RM, entre el ruido (3 %) y el objetivo (5 %). */
+const ANTERIOR_PARCIAL: Mesocycle = {
+  ...ANTERIOR_FIRMADO,
+  cierreDeHipotesis: {
+    firmadoEn: '2026-11-16T10:00:00.000Z',
+    veredictos: [
+      { zona: 'pectoral', palanca: 'volumen', iemMedio: 61.2, iemMedioObjetivo: 60.9, procesoCumplido: true, rmPct: 4, rmObjetivoPct: 5, resultadoCumplido: false, lectura: 'mejora_parcial' },
+      { zona: 'deltoides', palanca: 'volumen', iemMedio: 42.4, iemMedioObjetivo: 42, procesoCumplido: true, rmPct: 5.8, rmObjetivoPct: 5, resultadoCumplido: true, lectura: 'confirmada' },
+    ],
+  },
+};
+
 const zona = (z: ZonaIem, iemMedio: number, iemFinal: number) => ({ zona: z, iemMedio, iemFinal, porSemana: [] });
 const ESTADO: EstadoDelBloque = {
   mesocycleId: 'h1', semanas: [], semanasQueCuentan: 10, semanasSinEntrenar: 0,
@@ -58,6 +75,9 @@ const ESTADO: EstadoDelBloque = {
     biceps: zona('biceps', 21, 22), triceps: zona('triceps', 24, 26), cuadriceps: zona('cuadriceps', 44, 46),
   },
 };
+
+/** El pectoral ya alto: acabó en 82 de IEM (de 80 en adelante el techo no sube). */
+const ESTADO_ALTO: EstadoDelBloque = { ...ESTADO, porZona: { ...ESTADO.porZona, pectoral: zona('pectoral', 76, 82) } };
 
 const ej = (exerciseId: string, muscleGroup: MuscleGroup, sets: number): WorkoutExercise =>
   ({ exerciseId, muscleGroup, sets, order: 0, reps: '8-10', restSeconds: 120, rir: 2 });
@@ -68,16 +88,20 @@ const RUTINAS: { exercises: WorkoutExercise[] }[] = [
 ];
 const GRUPOS_DE_ZONA: Partial<Record<ZonaIem, MuscleGroup[]>> = { pectoral: ['pecho'], deltoides: ['deltoide_ant', 'deltoide_lat', 'deltoide_post'], dorsal: ['dorsal'] };
 
-type Escenario = 'con' | 'firmado' | 'sin' | 'antiguo';
+type Escenario = 'con' | 'firmado' | 'parcial' | 'deficit' | 'alta' | 'principiante' | 'sin' | 'antiguo';
 const ESCENARIOS: { value: Escenario; label: string }[] = [
   { value: 'con', label: 'Con bloque anterior' },
   { value: 'firmado', label: 'Anterior firmado' },
+  { value: 'parcial', label: 'Mejora parcial' },
+  { value: 'deficit', label: 'En déficit' },
+  { value: 'alta', label: 'Zona alta' },
+  { value: 'principiante', label: 'Principiante' },
   { value: 'sin', label: 'Sin bloque anterior' },
   { value: 'antiguo', label: 'Bloque sin tipo' },
 ];
 
 function partida(e: Escenario): { meso: Mesocycle; mesos: Mesocycle[]; anterior: Mesocycle | null } {
-  const anterior = e === 'sin' ? null : e === 'firmado' ? ANTERIOR_FIRMADO : ANTERIOR;
+  const anterior = e === 'sin' ? null : e === 'firmado' ? ANTERIOR_FIRMADO : e === 'parcial' ? ANTERIOR_PARCIAL : ANTERIOR;
   const mesos = anterior ? [anterior] : [];
   const base: Mesocycle = {
     id: 'h2', athleteId: 'dani@enforma.app', number: 4, name: 'Hipertrofia 2', daysPerWeek: 4,
@@ -96,8 +120,13 @@ export default function HipotesisBloqueDevHarness() {
   const cambiarEscenario = (e: string) => { setEscenario(e as Escenario); setMeso(partida(e as Escenario).meso); };
   const cambiar = (cambios: Partial<Mesocycle>) => setMeso(m => ({ ...m, ...cambios }));
 
-  const estado = anterior ? ESTADO : null;
-  const propuesta = useMemo(() => propuestaDelMeso({ meso, anterior: estado, historial: mesos }), [meso, estado, mesos]);
+  const estado = !anterior ? null : escenario === 'alta' ? ESTADO_ALTO : ESTADO;
+  const nivel = escenario === 'principiante' ? 'principiante' : 'intermedio';
+  const enDeficit = escenario === 'deficit';
+  const propuesta = useMemo(
+    () => propuestaDelMeso({ meso, anterior: estado, historial: mesos, nivel, enDeficit }),
+    [meso, estado, mesos, nivel, enDeficit],
+  );
   const mapa = useMemo(() => { const m = mapaDeRespuesta(mesos); return m.zonas.length ? m : null; }, [mesos]);
   const recorte = useMemo(() => planDeSemana1Reducida(RUTINAS, meso.groups), [meso.groups]);
   const sugerencia = sugerirSemana1Reducida({ ejerciciosNuevos: anterior ? 2 : 0 });
@@ -129,7 +158,7 @@ export default function HipotesisBloqueDevHarness() {
             mapa={mapa}
             ejerciciosDeZona={z => [...new Set(RUTINAS.flatMap(r => r.exercises).filter(e => GRUPOS_DE_ZONA[z]?.includes(e.muscleGroup!)).map(e => e.exerciseId))]}
             minutosDeSesion={75}
-            nivel="intermedio"
+            nivel={nivel}
             nombreAtleta="Daniel"
             onCambiar={cambiar}
           />

@@ -13,7 +13,7 @@ import { motivoDeNoValer, REPS_MAX_RM, REPS_MIN_RM, type SerieParaRm } from './r
 
      marca de la sesión = el RM de su mejor serie VÁLIDA
 
-   «Válida» lo decide `rmValido.ts` (3-12 repeticiones, RIR 2 o menos o al
+   «Válida» lo decide `rmValido.ts` (3-15 repeticiones, RIR 2 o menos o al
    fallo, RIR apuntado por el atleta, ni bajadas ni miniseries). La fórmula
    sigue siendo la de `oneRepMax.ts`: aquí solo se elige qué series entran.
 

@@ -1,11 +1,11 @@
-import { MUSCLE_ORDER, type HipotesisDeZona, type Mesocycle, type MuscleGroup, type MuscleGroupConfig, type TipoDeBloque, type WorkoutLog } from '../types.js';
+import { MUSCLE_ORDER, type ExperienceLevel, type HipotesisDeZona, type Mesocycle, type MuscleGroup, type MuscleGroupConfig, type TipoDeBloque, type WorkoutLog } from '../types.js';
 import { ZONAS_IEM, ZONA_POR_CLAVE, esZonaIem, type ZonaIem } from './cdg/zonas.js';
 import { proponerHipotesis, type PropuestaDeHipotesis, type TratoDelResto } from './hipotesisDeBloque/proponerHipotesis.js';
 import { avisoDeEstrellas, estrellasDe, modoPorZonaDe, objetivoDerivado, type AvisoDeEstrellas } from './hipotesisDeBloque/tiposDeBloque.js';
 import type { EstadoDelBloque } from './hipotesisDeBloque/estadoDelBloqueAnterior.js';
 import type { BloqueConCierre } from './hipotesisDeBloque/historial.js';
 import type { Velocidad } from './cdg/agujetas.js';
-import { FRACCION_DE_PROCESO_CUMPLIDO } from './hipotesisDeBloque/cifras.js';
+import { procesoEnCurso } from './hipotesisDeBloque/procesoEnCurso.js';
 import { finDeBloque } from './finDeBloque.js';
 import { addDays, diasEntreFechas } from './trainingWeek.js';
 
@@ -153,6 +153,10 @@ export function propuestaDelMeso(o: {
   meso: MesoParaHipotesis;
   anterior: Pick<EstadoDelBloque, 'porZona'> | null;
   historial?: readonly BloqueConCierre[];
+  /** Nivel del atleta: a un principiante se le pide más RM (auditoría de cifras, 17-11-2026). */
+  nivel?: ExperienceLevel;
+  /** El bloque cae mayoritariamente en déficit (`bloqueEnDeficit`): no perder y techo sin subir. */
+  enDeficit?: boolean;
 }): PropuestaDeHipotesis {
   const { meso } = o;
   const guardadas = meso.hipotesis ?? {};
@@ -173,6 +177,8 @@ export function propuestaDelMeso(o: {
     palancas,
     limites,
     resto: tratoDelRestoPorZona(meso.groups),
+    nivel: o.nivel,
+    enDeficit: o.enDeficit,
   });
 }
 
@@ -302,10 +308,14 @@ export interface HipotesisEnCurso {
 
 /**
  * El estado de la hipótesis de una zona en lo que va de bloque. «En camino»
- * si la media ya llega al 95 % del objetivo (lo mismo que da el proceso por
- * cumplido al cerrar) o si la última semana medida ya está en el objetivo: la
- * media va detrás del nivel porque el bloque arranca más abajo. En una zona que
- * se recupera, «en camino» es estar ya en su nivel bajo.
+ * mientras la media TODAVÍA LLEGUE al objetivo (`procesoEnCurso`: sosteniendo
+ * el nivel de ahora, o subiendo al techo a tiempo); «por debajo» cuando ya no
+ * llega. La media va detrás del nivel porque el bloque arranca más abajo, así
+ * que compararla sin más con el objetivo daría rojo hasta la primera subida.
+ * Sin tolerancia del 95 % (auditoría de cifras, 17-11-2026). Sin las semanas
+ * del bloque (`semanasTotales`) no se puede proyectar: vale si la media o la
+ * última semana medida ya están en el objetivo. En una zona que se recupera,
+ * «en camino» es estar ya en su nivel bajo.
  */
 export function hipotesisEnCurso(o: {
   zona: ZonaIem;
@@ -315,18 +325,22 @@ export function hipotesisEnCurso(o: {
   subidas?: { semanasSostenidas: number | null; enMeseta: boolean } | null;
   /** Agujetas vigentes de la zona (1-5). */
   agujetas?: number | null;
+  /** Semanas del bloque que cuentan para la media (sin descargas, puentes ni test). */
+  semanasTotales?: number;
 }): HipotesisEnCurso {
   const { h, porSemana } = o;
   const iemMedio = porSemana.length ? Math.round((porSemana.reduce((a, b) => a + b, 0) / porSemana.length) * 10) / 10 : null;
   const ultima = porSemana.length ? porSemana[porSemana.length - 1] : null;
   const objetivo = h.iemMedioObjetivo ?? null;
   const techo = h.iemTecho ?? null;
-  let marca: MarcaDeHipotesis = 'sin_dato';
+  let marca: MarcaDeHipotesis;
   if (o.agujetas != null && o.agujetas >= AGUJETAS_QUE_FRENAN) marca = 'frenada';
   else if (iemMedio == null) marca = 'sin_dato';
   else if (h.palanca === 'recuperar') marca = techo == null ? 'sin_dato' : (ultima ?? iemMedio) <= techo * 1.05 ? 'en_camino' : 'por_debajo';
   else if (objetivo == null) marca = 'sin_dato';
-  else marca = iemMedio >= objetivo * FRACCION_DE_PROCESO_CUMPLIDO || (ultima ?? 0) >= objetivo ? 'en_camino' : 'por_debajo';
+  else if (o.semanasTotales != null && o.semanasTotales > 0) {
+    marca = procesoEnCurso({ objetivo, techo, porSemana, semanasTotales: o.semanasTotales })?.ritmo === 'tarde' ? 'por_debajo' : 'en_camino';
+  } else marca = iemMedio >= objetivo || (ultima ?? 0) >= objetivo ? 'en_camino' : 'por_debajo';
   return {
     zona: o.zona, iemMedio, semanasMedidas: porSemana.length, objetivo, techo,
     semanasDesdeSubida: o.subidas?.semanasSostenidas ?? null, enMeseta: !!o.subidas?.enMeseta, marca,

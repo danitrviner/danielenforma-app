@@ -5,13 +5,13 @@ import {
 import type { Velocidad } from '../../utils/cdg/agujetas';
 import type { ZonaIem } from '../../utils/cdg/zonas';
 import {
-  BLOQUES_PARA_JUZGAR_A_UN_AVANZADO, CANSANCIO_LIMITE, RM_ESPERADO_AVANZADO_PCT, RM_RUIDO_PCT,
+  BLOQUES_PARA_JUZGAR_A_UN_AVANZADO, CANSANCIO_LIMITE, RM_ESPERADO_AVANZADO_PCT, RM_OBJETIVO_PCT, RM_RUIDO_PCT,
 } from '../../utils/hipotesisDeBloque/cifras';
 import type { EstadoDelBloque } from '../../utils/hipotesisDeBloque/estadoDelBloqueAnterior';
 import type { MapaDeRespuesta } from '../../utils/hipotesisDeBloque/mapaDeRespuesta';
 import { objetivoDelMesoParaElAtleta } from '../../utils/hipotesisDeBloque/objetivoParaElAtleta';
 import { PALANCAS } from '../../utils/hipotesisDeBloque/palancas';
-import type { PropuestaDeHipotesis } from '../../utils/hipotesisDeBloque/proponerHipotesis';
+import type { NotaDeHipotesis, PropuestaDeHipotesis } from '../../utils/hipotesisDeBloque/proponerHipotesis';
 import { TIPOS_DE_BLOQUE, enLista, nombreCortoDeZona } from '../../utils/hipotesisDeBloque/tiposDeBloque';
 import {
   PRIORIDAD, camposAlConfirmar, hayCambiosSinGuardar, hipotesisEnPantalla, restoPorNivel, seriesDeZona,
@@ -19,8 +19,8 @@ import {
 import { nombreDeMeso } from '../../utils/nombresMeso';
 import { Badge, Button, Chip, Icon, Skeleton } from '../ui';
 import {
-  CHIP_DE_PALANCA, ORDEN_DE_CHIPS, conCifra, conLimite, conPalanca, fmtCifra, leerCifra, modoDeLaZona, pctDeSubida,
-  textoDeModo, type CifraEditable,
+  CHIP_DE_PALANCA, ORDEN_DE_CHIPS, conCifra, conLimite, conPalanca, fmtCifra, leerCifra, modoDeLaZona, notasDeLaFicha,
+  pctDeSubida, pideNoPerder, referenciaDeProceso, textoDeModo, type CifraEditable,
 } from './hipotesisDelEditor';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -31,6 +31,11 @@ import {
    (proceso: IEM medio del bloque), si SIRVIÓ (resultado: RM estimado) y los
    límites que no se pasan. Las cifras con borde continuo se editan; las de
    borde discontinuo son la foto del bloque anterior y no se tocan.
+
+   El proceso se pide sobre donde ACABÓ el bloque anterior, no sobre su media
+   (auditoría de cifras, 17-11-2026), y la fila lo dice. Cuando la propuesta no
+   es la de siempre (bloque en déficit, zona ya alta) la ficha lo explica en
+   una línea; sigue siendo una propuesta y todas las cifras se editan.
 
    Lo que se ve es lo guardado y, para una estrella recién puesta, la
    propuesta del motor (marcada «Propuesta» hasta que el coach confirma).
@@ -99,7 +104,7 @@ function Fila({ titulo, children }: { titulo: string; children: React.ReactNode 
   );
 }
 
-function Ficha({ zona, h, propuesta, meso, mesoAnterior, anterior, porQue, motivoSinCifras, ejercicios, minutosDeSesion, nivel, onEditar }: {
+function Ficha({ zona, h, propuesta, meso, mesoAnterior, anterior, porQue, notas, enDeficit, motivoSinCifras, ejercicios, minutosDeSesion, nivel, onEditar }: {
   key?: React.Key;
   zona: ZonaIem;
   h: HipotesisDeZona;
@@ -108,6 +113,9 @@ function Ficha({ zona, h, propuesta, meso, mesoAnterior, anterior, porQue, motiv
   mesoAnterior: Mesocycle | null;
   anterior: EstadoDelBloque | null;
   porQue?: string;
+  /** Por qué la propuesta no es la de siempre (déficit, zona ya alta). */
+  notas?: readonly NotaDeHipotesis[];
+  enDeficit?: boolean;
   motivoSinCifras: string | null;
   ejercicios: string[];
   minutosDeSesion?: number;
@@ -123,8 +131,12 @@ function Ficha({ zona, h, propuesta, meso, mesoAnterior, anterior, porQue, motiv
     estado: anterior?.porZona[zona] ?? undefined,
     velocidad: meso.cdgVelocidad as Velocidad | undefined,
     semana1Reducida: !!meso.semana1Reducida,
+    nivel, enDeficit,
   }));
   const conCifras = h.iemFinalAnterior != null;
+  const referencia = referenciaDeProceso(h);
+  const noPerder = pideNoPerder(h);
+  const lineas = notasDeLaFicha(h, notas);
   const subida = pctDeSubida(h);
   const seriesAntes = mesoAnterior ? seriesDeZona(mesoAnterior.groups, zona) : null;
   const seriesAhora = seriesDeZona(meso.groups, zona);
@@ -152,6 +164,12 @@ function Ficha({ zona, h, propuesta, meso, mesoAnterior, anterior, porQue, motiv
         ))}
       </div>
       {porQue && <p className="font-sans text-caption text-ink-3 leading-snug">{porQue}</p>}
+      {lineas.map(t => (
+        <p key={t} className="flex items-start gap-1.5 font-sans text-caption text-ink-2 leading-snug">
+          <Icon name="info" size="s" className="text-ink-3 flex-shrink-0 mt-px" />
+          <span>{t}</span>
+        </p>
+      ))}
 
       <Fila titulo="Proceso">
         {conCifras && h.palanca === 'recuperar' ? (
@@ -162,9 +180,11 @@ function Ficha({ zona, h, propuesta, meso, mesoAnterior, anterior, porQue, motiv
           </>
         ) : conCifras ? (
           <>
-            IEM medio del bloque: <Foto valor={h.iemMedioAnterior} /> el anterior →{cifra('iemMedioObjetivo', 'IEM medio objetivo')}o más.{' '}
+            IEM medio del bloque:{cifra('iemMedioObjetivo', 'IEM medio objetivo')}o más. La referencia es donde acabó el
+            anterior,<Foto valor={h.iemFinalAnterior} />, no su media (<Foto valor={h.iemMedioAnterior} />)
+            {referencia ? <>: se pide {referencia.texto}.</> : '.'}{' '}
             Arranca en{cifra('iemArranque', 'IEM de arranque')}
-            ({porDebajo ? 'algo por debajo de donde acabó:' : 'donde acabó:'}<Foto valor={h.iemFinalAnterior} />){' '}
+            ({porDebajo ? 'algo por debajo de donde acabó' : 'donde acabó'}){' '}
             {subida != null && subida > 0 ? 'y sube por escalones hasta un techo de' : 'con un techo de'}{cifra('iemTecho', 'techo de IEM')}
             {subida != null && subida !== 0 && (
               <span className={`font-mono text-caption font-bold ${subida > 0 ? 'text-success' : 'text-ink-3'}`}>{subida > 0 ? '+' : '−'}{Math.abs(subida)} %</span>
@@ -181,10 +201,17 @@ function Ficha({ zona, h, propuesta, meso, mesoAnterior, anterior, porQue, motiv
       </Fila>
 
       <Fila titulo="Resultado">
-        {h.palanca === 'recuperar' && !(h.rmObjetivoPct && h.rmObjetivoPct > 0) ? 'RM estimado medio: no perderlo (' : 'RM estimado medio +'}
-        {cifra('rmObjetivoPct', 'objetivo de RM en %')}%{h.palanca === 'recuperar' && !(h.rmObjetivoPct && h.rmObjetivoPct > 0) ? ')' : ''}{' '}
+        {noPerder ? 'RM estimado medio: no perderlo (' : 'RM estimado medio +'}
+        {cifra('rmObjetivoPct', 'objetivo de RM en %')}%{noPerder ? ')' : ''}{' '}
         {ejercicios.length > 0 ? `en ${enLista(ejercicios.map(e => e.toLowerCase()))}` : 'en los ejercicios de la zona (aún sin rutinas)'},
-        mediana de las 2 primeras semanas contra las 2 últimas. Por debajo del {RM_RUIDO_PCT} % es ruido. El perímetro se apunta como tendencia: no decide.
+        mediana de las 2 primeras semanas contra las 2 últimas.{' '}
+        {noPerder
+          ? `Vale mientras no baje más del ${RM_RUIDO_PCT} %, que es el ruido de medida.`
+          : `Por debajo del ${RM_RUIDO_PCT} % es ruido; entre el ${RM_RUIDO_PCT} % y el objetivo es «mejora, menos de lo buscado» y no cuenta como no responder.`}{' '}
+        El perímetro se apunta como tendencia: no decide.
+        {nivel === 'principiante' && !noPerder && (
+          <> En un principiante el +{RM_OBJETIVO_PCT} % se supera casi siempre: se le pide más para que el veredicto distinga algo.</>
+        )}
         {nivel === 'avanzado' && (
           <> En un avanzado lo normal es +{RM_ESPERADO_AVANZADO_PCT.min}-{RM_ESPERADO_AVANZADO_PCT.max} % por bloque: se juzga sumando {BLOQUES_PARA_JUZGAR_A_UN_AVANZADO} bloques seguidos.</>
         )}
@@ -215,7 +242,7 @@ export default function FichasDeHipotesis({
   const sinConfirmar = hayCambiosSinGuardar(meso, enPantalla);
   const guardar = (nuevas: Partial<Record<ZonaIem, HipotesisDeZona>>) => onCambiar(camposAlConfirmar(meso, nuevas));
   const resto = restoPorNivel(meso.groups, mesoAnterior?.groups);
-  const fraseDelAtleta = objetivoDelMesoParaElAtleta({ weeks: meso.weeks, tipoBloque: meso.tipoBloque, hipotesis: enPantalla }, nivel);
+  const fraseDelAtleta = objetivoDelMesoParaElAtleta({ weeks: meso.weeks, tipoBloque: meso.tipoBloque, hipotesis: enPantalla }, propuesta.nivel ?? nivel);
   const avisos = [...new Set(propuesta.avisos)];
 
   return (
@@ -257,8 +284,9 @@ export default function FichasDeHipotesis({
             <Ficha
               key={z} zona={z} h={enPantalla[z]!} propuesta={!meso.hipotesis?.[z]}
               meso={meso} mesoAnterior={mesoAnterior} anterior={anterior}
-              porQue={propuesta.porQue[z]} motivoSinCifras={motivoSinCifras}
-              ejercicios={ejerciciosDeZona?.(z) ?? []} minutosDeSesion={minutosDeSesion} nivel={nivel}
+              porQue={propuesta.porQue[z]} notas={propuesta.notas?.[z]} enDeficit={propuesta.enDeficit}
+              motivoSinCifras={motivoSinCifras}
+              ejercicios={ejerciciosDeZona?.(z) ?? []} minutosDeSesion={minutosDeSesion} nivel={propuesta.nivel ?? nivel}
               onEditar={h => guardar({ ...enPantalla, [z]: h })}
             />
           ))}

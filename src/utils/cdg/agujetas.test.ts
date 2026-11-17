@@ -123,9 +123,43 @@ describe('propuestaZona · cansancio por sesión (D6r)', () => {
     expect(p.texto).toBe('Sale muy cansado de las sesiones (9/10): no subir el IEM. Si puedes, baja el IF de la sesión manteniendo el IEM.')
   })
 
-  it('por debajo de 8 de media no frena, aunque haya una sesión señalada', () => {
+  it('por debajo de 8 de media, la sesión más cansada de la semana no frena una zona que no trabajó', () => {
+    // `sesionMasCansada` es de toda la semana; lo que frena la zona es `sesionDura`.
     const p = propuestaZona({ ...base, fatigaPost: 6.3, sesionMasCansada: { etiqueta: 'la del jueves, Pierna A', valor: 9 } })
     expect(p.tono).toBe('acelerar')
+    expect(p.sesionDura).toBeUndefined()
+  })
+
+  // Auditoría de cifras (17-11-2026): una sesión en 8 o más frena las zonas que trabajó.
+  it('una sesión de 8 o más que trabajó la zona la frena aunque la media deje margen, y la nombra', () => {
+    const sesionDura = { etiqueta: 'la del jueves, Pierna A', valor: 9 }
+    const p = propuestaZona({ ...base, fatigaPost: 6.3, sesionMasCansada: sesionDura, sesionDura })
+    expect(p).toMatchObject({ tono: 'mantener', sesionDura })
+    expect(p.pct).toBeUndefined()
+    expect(p.texto).toBe('Salió muy cansado de una sesión que trabaja esta zona (la del jueves, Pierna A: 9/10). No subir su IEM: baja antes la fatiga (IF) de esa sesión, manteniendo su IEM.')
+    // Justo en el umbral ya frena; por debajo, no.
+    expect(propuestaZona({ ...base, fatigaPost: 6, sesionDura: { etiqueta: 'la del lunes', valor: 8 } }).tono).toBe('mantener')
+    expect(propuestaZona({ ...base, fatigaPost: 6, sesionDura: { etiqueta: 'la del lunes', valor: 7.9 } }).tono).toBe('acelerar')
+  })
+
+  it('con la media en 8 o más siguen frenándose todas, con el texto de la media', () => {
+    const p = propuestaZona({ ...base, fatigaPost: 8.5, sesionMasCansada: { etiqueta: 'la del jueves, Pierna A', valor: 9 }, sesionDura: { etiqueta: 'la del lunes, Torso A', valor: 8 } })
+    expect(p.tono).toBe('mantener')
+    expect(p.texto).toContain('8,5/10 de media')
+    expect(p.sesionDura).toBeUndefined()
+  })
+
+  it('sin agujetas no propone nada, pero avisa de la sesión dura que trabaja la zona', () => {
+    const p = propuestaZona({ ...base, agujetas: undefined, fatigaPost: 6, sesionDura: { etiqueta: 'la del jueves, Pierna A', valor: 9 } })
+    expect(p.tono).toBe('sin-dato')
+    expect(p.texto).toContain('salió muy cansado de la del jueves, Pierna A (9/10)')
+    expect(propuestaZona({ ...base, agujetas: undefined }).texto).toBe('Sin agujetas registradas: decide con la recuperación entre sesiones y el rendimiento.')
+  })
+
+  it('el freno por sesión va por delante de la meseta y de la subida, y por detrás de las agujetas', () => {
+    const sesionDura = { etiqueta: 'la del jueves', valor: 9 }
+    expect(propuestaZona({ ...base, agujetas: 4, fatigaPost: 6, sesionDura }).tono).toBe('freno')
+    expect(propuestaZona({ ...base, fatigaPost: 6, sesionDura, subidas: { primera: null, semanasSostenidas: 1, enMeseta: true } }).enMeseta).toBeUndefined()
   })
 
   it('las agujetas de 4 o 5 siguen mandando por delante del cansancio', () => {

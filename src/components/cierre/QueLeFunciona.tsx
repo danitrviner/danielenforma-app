@@ -8,7 +8,10 @@ import { fechaCorta } from '../../utils/trainingWeek';
 /* «Qué le funciona» — el mapa de respuesta del atleta en su ficha viva
    (17-11-2026). Sale de los cierres de bloque FIRMADOS (Revisión › Cierre de
    bloque): a qué palanca ha respondido cada zona y cuántas veces. No se edita
-   aquí: es un hecho, no un juicio. Sin ningún bloque con hipótesis no aparece. */
+   aquí: es un hecho, no un juicio. Sin ningún bloque con hipótesis no aparece.
+   Los bloques de «mejora, menos de lo buscado» (auditoría de cifras,
+   17-11-2026) no suman ni restan en el «2 de 2»: la frase los dice aparte y
+   su sello va en gris. */
 
 const TONO = { bien: 'text-success', atencion: 'text-warning', neutro: 'text-ink-3' } as const;
 

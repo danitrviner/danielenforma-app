@@ -6,6 +6,7 @@ import { describirCambios } from './comparabilidad.js';
 import { EFECTIVAS_MINIMO_PCT, RIR_EFECTIVO_MAXIMO } from './seriesEfectivas.js';
 import { fechaCorta } from './trainingWeek.js';
 import { superaElRuido } from './ruidoDeMedida.js';
+import { textoDeSemanas } from './estancamiento.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LOS TITULARES DE LA REVISIÓN — qué decir, en qué orden.
@@ -214,18 +215,30 @@ export function construirTitulares(params: {
     });
   }
 
+  // Una sesión de 8 o más con la media de la semana por debajo (auditoría de
+  // cifras, 17-11-2026): no pide descarga, pero lo que se trabajó ese día no
+  // se sube. Es una decisión de programación: sin versión para el atleta.
+  if (!descarga?.recomendada && (descarga?.sesionesDuras?.length ?? 0) > 0) {
+    const frases = descarga!.sesionesDuras!.slice(0, MAXIMO_POR_TIPO);
+    t.push({
+      id: 'sesiones_duras', tono: 'alarma',
+      texto: `Cansancio al salir: ${frases.join('; ')}.`,
+    });
+  }
+
   // ── Estancamiento honesto (S1) ───────────────────────────────────────────
   const PARA_CLIENTE_ESTANCADO: Partial<Record<string, (n: string) => string>> = {
-    apretar: n => `En ${n} llevas varias sesiones igual y creo que te queda más margen del que apuntas: aprieta un poco más el final de cada serie.`,
-    subir_series: n => `En ${n} llevas varias sesiones igual: te ajusto el plan para desatascarlo.`,
-    cambiar_variante: n => `En ${n} llevas muchas sesiones igual: te lo cambio por una variante nueva.`,
+    apretar: n => `En ${n} llevas varias semanas igual y creo que te queda más margen del que apuntas: aprieta un poco más el final de cada serie.`,
+    subir_series: n => `En ${n} llevas varias semanas igual: te ajusto el plan para desatascarlo.`,
+    cambiar_variante: n => `En ${n} llevas muchas semanas igual: te lo cambio por una variante nueva.`,
   };
   for (const e of (revision.estancados ?? []).slice(0, MAXIMO_POR_TIPO)) {
     t.push({
       id: `estancado_${e.exerciseId}`,
       // «Mantener» no pide tocar nada: es un hecho, no una alarma.
       tono: e.veredicto === 'mantener' ? 'neutro' : 'alarma',
-      texto: `${nombreDe(e.exerciseId)}: ${e.sesiones} sesiones comparables sin mejorar. ${e.accion}.`,
+      // En semanas (17-11-2026): seis sesiones a frecuencia 2 eran tres semanas.
+      texto: `Lleva ${textoDeSemanas(e.semanas)} sin mejorar en ${nombreDe(e.exerciseId).toLowerCase()} (${e.sesiones} sesiones comparables). ${e.accion}.`,
       paraCliente: PARA_CLIENTE_ESTANCADO[e.veredicto]?.(nombreDe(e.exerciseId).toLowerCase()),
     });
   }

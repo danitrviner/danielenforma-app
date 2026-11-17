@@ -1,12 +1,14 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getWorkoutLogs } from '../../dbService';
-import type { Exercise, Mesocycle, WorkoutLog } from '../../types';
+import { getNutritionProgram, getOnboarding, getWorkoutLogs } from '../../dbService';
+import type { Exercise, ExperienceLevel, Mesocycle, NutritionProgram, WorkoutLog } from '../../types';
 import { useMotorCdg } from '../../hooks/useMotorCdg';
 import { iemSemanalPorZona } from '../../utils/cdg/iemSemanal';
 import {
   estadoDelBloqueAnterior, iniciosDeSemanaDelBloque, type EstadoDelBloque,
 } from '../../utils/hipotesisDeBloque/estadoDelBloqueAnterior';
+import { bloqueEnDeficit } from '../../utils/hipotesisDeBloque/bloqueEnDeficit';
+import { finDeBloque } from '../../utils/finDeBloque';
 import { mapaDeRespuesta, type MapaDeRespuesta } from '../../utils/hipotesisDeBloque/mapaDeRespuesta';
 import type { PropuestaDeHipotesis } from '../../utils/hipotesisDeBloque/proponerHipotesis';
 import { sugerirSemana1Reducida } from '../../utils/hipotesisDeBloque/tiposDeBloque';
@@ -33,6 +35,15 @@ import { hoyIsoLocal } from '../../utils/trainingWeek';
    el 17-11-2026 se comparaba con las rutinas del bloque anterior, y un
    ejercicio que el atleta llevaba un año haciendo salía como nuevo solo por
    no estar en el último bloque. Sin registros cargados todavía, ninguno.
+
+   Dos datos más cambian lo que se propone por defecto (auditoría de cifras,
+   17-11-2026): el NIVEL del atleta (a un principiante se le pide un 8 % de RM)
+   y si el bloque cae mayoritariamente en una fase de DÉFICIT de su
+   periodización nutricional (se pide no perder y el techo no sube). Los dos se
+   leen con las claves de caché que ya usa su ficha (`onboarding` y
+   `nutritionProgram`), así que casi nunca cuestan una lectura; quien monta la
+   pantalla puede pasarlos ya cargados. Es una sugerencia: la periodización
+   nutricional no toca el entreno, y el coach edita la ficha como quiera.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export interface HipotesisDelBloque {
@@ -49,6 +60,8 @@ export interface HipotesisDelBloque {
   mapa: MapaDeRespuesta | null;
   /** ¿Conviene la semana 1 reducida? (ejercicios nuevos o parón de más de 3 semanas). */
   sugerenciaSemana1: ReturnType<typeof sugerirSemana1Reducida>;
+  /** El bloque cae mayoritariamente en una fase de déficit de la periodización nutricional. */
+  enDeficit: boolean;
 }
 
 export function useHipotesisDelBloque(o: {
@@ -62,6 +75,10 @@ export function useHipotesisDelBloque(o: {
   ejerciciosDelBloque?: readonly string[];
   /** Apagado en plantillas y en bloques sin tipo: no se pide nada. */
   activo?: boolean;
+  /** Nivel del atleta, si quien monta la pantalla ya lo tiene; si no, se lee del alta. */
+  nivel?: ExperienceLevel;
+  /** Periodización nutricional ya cargada (`null` = no tiene); sin pasarla, se pide aquí. */
+  programaNutricion?: NutritionProgram | null;
 }): HipotesisDelBloque {
   const { meso, mesocycles, athleteEmail, exercises } = o;
   const activo = o.activo !== false && !!meso;
@@ -73,6 +90,25 @@ export function useHipotesisDelBloque(o: {
     enabled: pedirLogs,
   });
   const logs = o.logs ?? registros.data;
+  // Nivel y periodización nutricional: mismas claves que el resto de la ficha
+  // del cliente. Si fallan o aún no han llegado, la propuesta sale con los
+  // valores de siempre (5 % y techo con escalón): no bloquean la pantalla.
+  const alta = useQuery({
+    queryKey: ['onboarding', athleteEmail],
+    queryFn: () => getOnboarding(athleteEmail!),
+    enabled: activo && o.nivel === undefined && !!athleteEmail,
+  });
+  const nivel = o.nivel ?? alta.data?.experienceLevel;
+  const nutricion = useQuery({
+    queryKey: ['nutritionProgram', athleteEmail],
+    queryFn: () => getNutritionProgram(athleteEmail!),
+    enabled: activo && o.programaNutricion === undefined && !!athleteEmail,
+  });
+  const programa = o.programaNutricion !== undefined ? o.programaNutricion : nutricion.data ?? null;
+  const enDeficit = useMemo(
+    () => !!meso && activo && bloqueEnDeficit(programa, meso.startDate, finDeBloque(meso)),
+    [meso, activo, programa],
+  );
   const cargando = activo && ((pedirLogs && registros.isPending) || cargandoMotor);
 
   const mesoAnterior = useMemo(
@@ -98,9 +134,9 @@ export function useHipotesisDelBloque(o: {
   );
 
   const propuesta = useMemo<PropuestaDeHipotesis>(() => {
-    if (!meso) return { hipotesis: {}, cdgObjetivosIem: {}, cdgModoPorZona: {} as PropuestaDeHipotesis['cdgModoPorZona'], iemDelResto: {}, porQue: {}, avisos: [] };
-    return propuestaDelMeso({ meso, anterior, historial: anteriores });
-  }, [meso, anterior, anteriores]);
+    if (!meso) return { hipotesis: {}, cdgObjetivosIem: {}, cdgModoPorZona: {} as PropuestaDeHipotesis['cdgModoPorZona'], iemDelResto: {}, porQue: {}, notas: {}, enDeficit: false, avisos: [] };
+    return propuestaDelMeso({ meso, anterior, historial: anteriores, nivel, enDeficit });
+  }, [meso, anterior, anteriores, nivel, enDeficit]);
 
   const mapa = useMemo(() => {
     const m = mapaDeRespuesta(anteriores);
@@ -118,5 +154,5 @@ export function useHipotesisDelBloque(o: {
     : noSubido || !motor ? 'Sin el catálogo del Índice de Hipertrofia no se puede calcular el estímulo del bloque anterior.'
     : 'El bloque anterior no tiene registros con ejercicios vinculados al catálogo: sin ellos no hay cifras de proceso.';
 
-  return { cargando, mesoAnterior, anterior, motivoSinCifras, propuesta, mapa, sugerenciaSemana1 };
+  return { cargando, mesoAnterior, anterior, motivoSinCifras, propuesta, mapa, sugerenciaSemana1, enDeficit };
 }

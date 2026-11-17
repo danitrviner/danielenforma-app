@@ -349,8 +349,10 @@ export default function CierreDeBloque({
       fin: cierre.fin, hoy, ultimaSesion: logs.reduce<string | null>((u, l) => (l.date <= hoy && (u == null || l.date > u) ? l.date : u), null),
       ownerId: auth.currentUser?.uid ?? '', athleteName: athlete.displayName,
       nombreDe: id => ejercicioDe(id)?.name, grupoDe: id => ejercicioDe(id)?.muscleGroup,
+      // Para el objetivo del bloque siguiente: un principiante pide más y en déficit se pide no perder.
+      nivel: alta?.experienceLevel, programaNutricion: programa,
     });
-  }, [hipotesis, meso, rutinas, mesocycles, firmado, evolucion.voz, cierre.fin, hoy, athlete.displayName, ejercicioDe, logs]);
+  }, [hipotesis, meso, rutinas, mesocycles, firmado, evolucion.voz, cierre.fin, hoy, athlete.displayName, ejercicioDe, logs, alta?.experienceLevel, programa]);
 
   const guardarVeredictos = async (nuevo: CierreDeHipotesis) => {
     setFirmando(true);

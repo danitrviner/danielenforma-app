@@ -21,6 +21,12 @@ import { RUIDO_RM_PCT } from './ruidoDeMedida.js';
    frente a la ventana anterior siendo la misma tarea (S3), o que lleva dos
    sesiones seguidas empezando peor (F1).
 
+   Se queda en el 3 % y no baja al 2 % del estancamiento (auditoría de cifras,
+   17-11-2026): aquí se compara UNA marca con otra —la mejor de la ventana
+   contra la mejor de la ventana anterior (`trainingReport.ts`), que en una
+   revisión semanal es una sesión contra otra—, no dos medianas. Es el ruido
+   de una medida, y una repetición de menos un día suelto no es una caída.
+
    La bajada se mide con la marca de cada ventana: el RM de su mejor serie
    VÁLIDA (`marcaDeSesion.ts`, D2 17-11-2026). Un ejercicio sin marca en
    alguna de las dos ventanas no «cae»: no tiene dato (`deltaOrmPct` nulo en

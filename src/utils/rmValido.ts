@@ -10,9 +10,16 @@ import { rirEfectivo } from './oneRepMax.js';
    que una de 6 a RIR 1. Aquí está el único filtro, para que el seguimiento, el
    cierre de bloque, los informes y los récords hablen del mismo RM.
 
-   · Repeticiones: de 3 a 12. Las fórmulas pierden precisión al alejarse del
-     fallo en repeticiones (R² 0,99 con 5RM, 0,95 con 20RM; Reynolds 2006) y
-     por encima de 10-12 no se recomiendan.
+   · Repeticiones: de 3 a 15. Las fórmulas pierden precisión al alejarse del
+     fallo en repeticiones (R² 0,99 con 5RM, 0,95 con 20RM; Reynolds 2006).
+     El tope era 12 hasta la auditoría de cifras (17-11-2026, decisión de
+     Dani): dejaba sin marca el «aislamiento medio 10-15» de su doctrina y la
+     entrada a 12-14 de los ejercicios nuevos, así que un deltoides, un bíceps
+     o un gemelo podían no tener NUNCA marca (ni progresión, ni estancamiento,
+     ni veredicto de hipótesis). Medido sobre la fórmula real, una repetición
+     entre 12 y 15 mueve el RM lo mismo que a 8 (un 2,2-2,4 %): la serie dice
+     lo mismo. Por encima de 15 no: la fórmula se aplana (de 15 a 16 el RM no
+     cambia), y ahí una repetición ganada no se vería.
    · RIR: 2 o menos. El RIR que se apunta uno mismo falla en torno a una
      repetición y empeora cuanto más lejos del fallo (Halperin 2022).
    · RIR apuntado por el atleta. Una serie guardada con el RIR pautado sin
@@ -29,7 +36,7 @@ import { rirEfectivo } from './oneRepMax.js';
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export const REPS_MIN_RM = 3;
-export const REPS_MAX_RM = 12;
+export const REPS_MAX_RM = 15;
 export const RIR_MAX_RM = 2;
 
 export type SerieParaRm = Pick<WorkoutSetLog, 'repsDone' | 'rir' | 'alFallo' | 'segmento' | 'rirApuntado' | 'fuera'>;

@@ -30,7 +30,12 @@ export function veredictosDeLaZona(bloques: readonly BloqueConCierre[], zona: Zo
   });
 }
 
-/** Cuántos veredictos seguidos, contando desde el último, tienen esa lectura. */
+/**
+ * Cuántos veredictos seguidos, contando desde el último, tienen esa lectura.
+ * Cualquier otra lectura corta la racha: en particular, una «mejora parcial»
+ * no cuenta como «no responde» (auditoría de cifras, 17-11-2026), así que dos
+ * seguidas no sueltan la estrella y una en medio pone la cuenta a cero.
+ */
 export function seguidosAlFinal(veredictos: readonly Pick<VeredictoDeHipotesis, 'lectura'>[], lectura: LecturaDeHipotesis): number {
   let n = 0;
   for (let i = veredictos.length - 1; i >= 0 && veredictos[i].lectura === lectura; i--) n++;

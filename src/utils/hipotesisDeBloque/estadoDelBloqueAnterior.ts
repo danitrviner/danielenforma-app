@@ -159,7 +159,8 @@ export interface EstadoDeEjercicio {
   exerciseId: string;
   /** Sesiones del bloque en las que se hizo. */
   sesiones: number;
-  /** Parado 6 o más sesiones comparables (`detectarEstancamiento`); `null` si no. */
+  /** Parado 6 semanas o más con la misma tarea (`detectarEstancamiento`, que
+   *  desde el 17-11-2026 cuenta semanas y no sesiones); `null` si no. */
   estancamiento: Estancamiento | null;
   molestia: MolestiaDeEjercicio | null;
 }

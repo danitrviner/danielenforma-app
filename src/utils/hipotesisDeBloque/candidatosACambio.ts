@@ -1,4 +1,4 @@
-import { SESIONES_SIN_MEJORAR } from '../estancamiento.js';
+import { SEMANAS_SIN_MEJORAR, SESIONES_SIN_MEJORAR, textoDeSemanas, type Estancamiento } from '../estancamiento.js';
 import type { EstadoDeEjercicio } from './estadoDelBloqueAnterior.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -8,8 +8,11 @@ import type { EstadoDeEjercicio } from './estadoDelBloqueAnterior.js';
    referencia con la que se mide el resultado de la hipótesis. Solo se señalan
    para cambiar los que tienen un motivo:
 
-     · parado     — 6 o más sesiones comparables sin mejorar la marca
-                    (`detectarEstancamiento`, que ya mira esfuerzo y contexto);
+     · parado     — 6 semanas o más sin mejorar su nivel, con la misma tarea
+                    (`detectarEstancamiento`, que ya mira esfuerzo y contexto).
+                    Hasta la auditoría de cifras (17-11-2026) eran 6 SESIONES:
+                    tres semanas a frecuencia 2, y se señalaba para cambiar a
+                    quien solo necesitaba más tiempo;
      · molestia   — el atleta apuntó molestia en él durante el bloque;
      · lo_quitaria — lo marcó «lo quitaría» en el cuestionario de cierre
                     (`utils/cierrePorEjercicio.ts`, `idsConVoto(votos, 'quitar')`).
@@ -26,7 +29,9 @@ export interface CandidatoACambio {
   exerciseId: string;
   nombre?: string;
   motivos: MotivoDeCambio[];
-  /** Sesiones comparables sin mejorar, si está parado. */
+  /** Semanas sin mejorar, si está parado. */
+  semanasParado?: number;
+  /** Sesiones comparables con marca en esas semanas. */
   sesionesParado?: number;
   /** Qué hacer con el parón según `detectarEstancamiento` (no siempre es cambiar el ejercicio). */
   accionDelParon?: string;
@@ -40,6 +45,13 @@ export interface CandidatosACambio {
   cambiar: CandidatoACambio[];
   /** Ids que se clonan tal cual, en el orden recibido. */
   clonar: string[];
+}
+
+/** ¿El parón llega a las seis semanas? Un estancamiento guardado antes del
+ *  17-11-2026 no trae semanas: ahí se sigue mirando por sesiones. */
+function estaParado(e: Estancamiento | null | undefined): e is Estancamiento {
+  if (!e) return false;
+  return e.semanas != null ? e.semanas >= SEMANAS_SIN_MEJORAR : e.sesiones >= SESIONES_SIN_MEJORAR;
 }
 
 export function candidatosACambio(o: {
@@ -58,7 +70,7 @@ export function candidatosACambio(o: {
 
   for (const exerciseId of [...new Set(o.ejercicios)]) {
     const e = estadoDe.get(exerciseId);
-    const parado = e?.estancamiento && e.estancamiento.sesiones >= SESIONES_SIN_MEJORAR ? e.estancamiento : null;
+    const parado = estaParado(e?.estancamiento) ? e!.estancamiento! : null;
     const molestia = e?.molestia ?? null;
     const motivos = ORDEN_DE_MOTIVOS.filter(m => (m === 'parado' ? !!parado : m === 'molestia' ? !!molestia : quitaria.has(exerciseId)));
     if (motivos.length === 0) { clonar.push(exerciseId); continue; }
@@ -67,14 +79,18 @@ export function candidatosACambio(o: {
     if (molestia) {
       frases.push(`molestia apuntada en ${molestia.veces} ${molestia.veces === 1 ? 'sesión' : 'sesiones'}${molestia.maxima != null ? ` (hasta ${molestia.maxima}/10)` : ''}`);
     }
-    if (parado) frases.push(`parado ${parado.sesiones} sesiones comparables`);
+    if (parado) {
+      frases.push(parado.semanas != null
+        ? `parado ${textoDeSemanas(parado.semanas)} (${parado.sesiones} sesiones comparables)`
+        : `parado ${parado.sesiones} sesiones comparables`);
+    }
     if (quitaria.has(exerciseId)) frases.push('el atleta lo quitaría');
     const nombre = o.nombreDe?.(exerciseId);
     cambiar.push({
       exerciseId,
       ...(nombre ? { nombre } : {}),
       motivos,
-      ...(parado ? { sesionesParado: parado.sesiones, accionDelParon: parado.accion } : {}),
+      ...(parado ? { ...(parado.semanas != null ? { semanasParado: parado.semanas } : {}), sesionesParado: parado.sesiones, accionDelParon: parado.accion } : {}),
       ...(molestia ? { molestia: { veces: molestia.veces, maxima: molestia.maxima } } : {}),
       detalle: `${frases.join('; ')[0].toUpperCase()}${frases.join('; ').slice(1)}.`,
     });

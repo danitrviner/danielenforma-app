@@ -2738,8 +2738,10 @@ export interface HipotesisDeZona {
   iemMedioAnterior?: number;
   /** IEM semanal con el que acabó el bloque anterior. */
   iemFinalAnterior?: number;
-  /** PROCESO: IEM medio semanal que se quiere en este bloque (por defecto, la
-   *  media anterior + 10 %). */
+  /** PROCESO: IEM medio semanal que se quiere en este bloque. Es el umbral tal
+   *  cual, sin tolerancia (auditoría de cifras, 17-11-2026): por defecto, donde
+   *  ACABÓ el anterior + medio escalón de la velocidad (un 5 % en suave); si la
+   *  zona no sube, sostener: el 95 % de donde acabó. */
   iemMedioObjetivo?: number;
   /** IEM semanal de arranque (por defecto, donde acabó el anterior; un 5-10 %
    *  menos con `semana1Reducida`). */
@@ -2748,14 +2750,19 @@ export interface HipotesisDeZona {
    *  anterior + un escalón de la velocidad). Es el mismo número que
    *  `cdgObjetivosIem[zona]`, que es el que lee el protocolo semanal. */
   iemTecho?: number;
-  /** RESULTADO: mejora de RM estimado medio que se espera, en % (por defecto 5). */
+  /** RESULTADO: mejora de RM estimado medio que se espera, en % (por defecto 5;
+   *  8 en un principiante). 0 = no perder (zona que se recupera o bloque en
+   *  déficit). */
   rmObjetivoPct?: number;
   /** Límite propio de la zona, en palabras del coach («hombro sin molestias»). */
   limite?: string;
 }
 
-/** Los cuatro desenlaces de una hipótesis: se hizo o no, sirvió o no. */
-export type LecturaDeHipotesis = 'confirmada' | 'no_responde' | 'responde_con_menos' | 'sin_probar';
+/** Los desenlaces de una hipótesis: se hizo o no, sirvió o no. `mejora_parcial`
+ *  (auditoría de cifras, 17-11-2026) es «se hizo y mejora, pero menos de lo
+ *  buscado»: el RM queda entre el ruido de medida y el objetivo. No cuenta como
+ *  «no responde» (ni para rotar la estrella ni para cambiar de palanca). */
+export type LecturaDeHipotesis = 'confirmada' | 'mejora_parcial' | 'no_responde' | 'responde_con_menos' | 'sin_probar';
 
 export interface VeredictoDeHipotesis {
   zona: string;

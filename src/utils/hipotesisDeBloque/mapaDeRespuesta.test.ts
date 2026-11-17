@@ -24,7 +24,7 @@ describe('mapaDeRespuesta', () => {
     ]);
     expect(m.frase).toBe('Pectoral: responde a volumen (2 de 2). Deltoides: no responde a intensidad (1 de 1).');
     expect(m.zonas.map(z => z.zona)).toEqual(['pectoral', 'deltoides']);
-    expect(m.zonas[0].porPalanca.volumen).toEqual({ confirmada: 2, no_responde: 0, responde_con_menos: 0, sin_probar: 0, probadas: 2 });
+    expect(m.zonas[0].porPalanca.volumen).toEqual({ confirmada: 2, mejora_parcial: 0, no_responde: 0, responde_con_menos: 0, sin_probar: 0, probadas: 2 });
     expect(m.zonas[0].ultima).toEqual({ lectura: 'confirmada', palanca: 'volumen', mesocycleId: 'm2', firmadoEn: '2026-02-28T10:00:00.000Z' });
     expect(m.zonas[1].noRespondeSeguidos).toBe(1);
   });
@@ -51,6 +51,24 @@ describe('mapaDeRespuesta', () => {
     const frases = Object.fromEntries(m.zonas.map(z => [z.zona, z.frase]));
     expect(frases.gluteo).toBe('Glúteo: responde a volumen con menos estímulo (1 de 1).');
     expect(frases.isquios).toBe('Isquiotibiales: volumen sin probar (1 bloque).');
+  });
+
+  it('«mejora parcial» también va aparte: ni a favor ni en contra, pero la frase lo dice', () => {
+    const m = mapaDeRespuesta([
+      bloque(1, [['pectoral', 'volumen', 'confirmada'], ['deltoides', 'volumen', 'mejora_parcial'], ['dorsal', 'volumen', 'no_responde']]),
+      bloque(2, [['pectoral', 'volumen', 'mejora_parcial'], ['deltoides', 'volumen', 'mejora_parcial'], ['dorsal', 'volumen', 'mejora_parcial']]),
+    ]);
+    const z = Object.fromEntries(m.zonas.map(x => [x.zona, x]));
+    // No entra en el «de N»: la confirmada sigue siendo 1 de 1, no 1 de 2.
+    expect(z.pectoral.porPalanca.volumen).toEqual({ confirmada: 1, mejora_parcial: 1, no_responde: 0, responde_con_menos: 0, sin_probar: 0, probadas: 1 });
+    expect(z.pectoral.frase).toBe('Pectoral: responde a volumen (1 de 1, más 1 con mejora menor de la buscada).');
+    expect(z.dorsal.frase).toBe('Dorsal: no responde a volumen (1 de 1, más 1 con mejora menor de la buscada).');
+    // Solo mejoras parciales: ni «responde» ni «no responde».
+    expect(z.deltoides.frase).toBe('Deltoides: mejora con volumen, menos de lo buscado (2 bloques).');
+    expect(z.deltoides.ultima?.lectura).toBe('mejora_parcial');
+    expect(z.deltoides.noRespondeSeguidos).toBe(0);
+    // Y corta la racha de «no responde».
+    expect(z.dorsal.noRespondeSeguidos).toBe(0);
   });
 
   it('sin cierres firmados no hay mapa', () => {
@@ -118,6 +136,26 @@ describe('rotacionDeEstrellas', () => {
     });
     expect(r.soltar.map(s => s.zona)).toEqual(['deltoides']);
     expect(r.candidatas.map(c => c.zona)).not.toContain('deltoides');
+  });
+
+  it('dos «mejora parcial» seguidos NO sueltan la estrella; dos «no responde», sí', () => {
+    const parciales = rotacionDeEstrellas({
+      bloques: [bloque(1, [['deltoides', 'volumen', 'mejora_parcial']]), bloque(2, [['deltoides', 'volumen', 'mejora_parcial']])],
+    });
+    expect(parciales.soltar).toEqual([]);
+    const noResponde = rotacionDeEstrellas({
+      bloques: [bloque(1, [['deltoides', 'volumen', 'no_responde']]), bloque(2, [['deltoides', 'intensidad', 'no_responde']])],
+    });
+    expect(noResponde.soltar.map(s => s.zona)).toEqual(['deltoides']);
+    // Una mejora parcial entre dos «no responde» pone la cuenta a cero.
+    const cortada = rotacionDeEstrellas({
+      bloques: [
+        bloque(1, [['deltoides', 'volumen', 'no_responde']]),
+        bloque(2, [['deltoides', 'intensidad', 'mejora_parcial']]),
+        bloque(3, [['deltoides', 'intensidad', 'no_responde']]),
+      ],
+    });
+    expect(cortada.soltar).toEqual([]);
   });
 
   it('los grupos que marca el atleta se traducen a zonas del método', () => {

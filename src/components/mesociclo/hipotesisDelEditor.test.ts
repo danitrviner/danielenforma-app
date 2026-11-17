@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MUSCLE_ORDER, type Mesocycle, type MuscleGroup, type MuscleGroupConfig } from '../../types';
 import {
   alCambiarSemana1, camposDeBloqueNuevo, conCifra, conLimite, conPalanca, elegirTipoDeBloque, fmtCifra, leerCifra,
-  modoDeLaZona, pctDeSubida, resumenDelTipo, textoDeModo,
+  modoDeLaZona, notasDeLaFicha, pctDeSubida, pideNoPerder, referenciaDeProceso, resumenDelTipo, textoDeModo,
 } from './hipotesisDelEditor';
 
 const grupos = (alta: MuscleGroup[] = []) => Object.fromEntries(
@@ -74,7 +74,7 @@ describe('elegir el tipo en la cabecera', () => {
 });
 
 describe('editar una ficha', () => {
-  const h = { palanca: 'volumen' as const, iemMedioAnterior: 52, iemFinalAnterior: 58, iemMedioObjetivo: 57.2, iemArranque: 58, iemTecho: 63.8, rmObjetivoPct: 5, limite: 'hombro sin molestias' };
+  const h = { palanca: 'volumen' as const, iemMedioAnterior: 52, iemFinalAnterior: 58, iemMedioObjetivo: 60.9, iemArranque: 58, iemTecho: 63.8, rmObjetivoPct: 5, limite: 'hombro sin molestias' };
 
   it('el % de subida es el techo sobre donde acabó', () => {
     expect(pctDeSubida(h)).toBe(10);
@@ -83,11 +83,41 @@ describe('editar una ficha', () => {
 
   it('cambiar a «otros ejercicios» deja el techo donde acabó; a «recuperar», en la mitad y sin pedir RM', () => {
     const ejercicios = conPalanca(h, 'ejercicios');
-    expect(ejercicios).toMatchObject({ palanca: 'ejercicios', iemTecho: 58, iemMedioObjetivo: 52, rmObjetivoPct: 5, limite: 'hombro sin molestias' });
+    expect(ejercicios).toMatchObject({ palanca: 'ejercicios', iemTecho: 58, iemMedioObjetivo: 55.1, rmObjetivoPct: 5, limite: 'hombro sin molestias' });
     const recuperar = conPalanca(h, 'recuperar');
     expect(recuperar).toMatchObject({ palanca: 'recuperar', iemArranque: 29, iemTecho: 29, rmObjetivoPct: 0 });
     // Y al volver de recuperar, el objetivo de RM vuelve al de por defecto.
     expect(conPalanca(recuperar, 'intensidad')).toMatchObject({ palanca: 'intensidad', iemTecho: 63.8, rmObjetivoPct: 5 });
+  });
+
+  it('la fila de proceso dice qué se pide sobre donde acabó: un 5 % más, o sostenerlo', () => {
+    expect(referenciaDeProceso(h)).toEqual({ sube: true, texto: 'un 5 % más' });
+    expect(referenciaDeProceso(conPalanca(h, 'ejercicios'))).toEqual({ sube: false, texto: 'sostenerlo, con un 5 % de margen' });
+    expect(referenciaDeProceso({ iemMedioObjetivo: 58, iemFinalAnterior: 58 })).toEqual({ sube: false, texto: 'sostenerlo' });
+    expect(referenciaDeProceso({ iemMedioObjetivo: 60 })).toBeNull();
+  });
+
+  it('con el bloque en déficit, cambiar de palanca conserva el «no perder» y el techo sin subir', () => {
+    const enDeficit = { ...h, iemMedioObjetivo: 55.1, iemTecho: 58, rmObjetivoPct: 0 };
+    expect(pideNoPerder(enDeficit)).toBe(true);
+    expect(pideNoPerder(h)).toBe(false);
+    expect(pideNoPerder({ palanca: 'recuperar' })).toBe(true);
+    expect(conPalanca(enDeficit, 'intensidad', { enDeficit: true })).toMatchObject({ palanca: 'intensidad', iemTecho: 58, iemMedioObjetivo: 55.1, rmObjetivoPct: 0 });
+    // Al volver de «recuperar» el objetivo se rehace con los valores por defecto del caso.
+    const recuperar = conPalanca(enDeficit, 'recuperar', { enDeficit: true });
+    expect(conPalanca(recuperar, 'volumen', { enDeficit: true })).toMatchObject({ rmObjetivoPct: 0, iemTecho: 58 });
+    expect(conPalanca(conPalanca(h, 'recuperar'), 'volumen', { nivel: 'principiante' })).toMatchObject({ rmObjetivoPct: 8, iemTecho: 63.8 });
+  });
+
+  it('las líneas de la ficha (déficit, zona alta) dicen la propuesta, o que el coach la ha cambiado', () => {
+    const deficit = [{ clave: 'deficit' as const, texto: 'Bloque en déficit: se pide no perder fuerza y no se sube el estímulo.' }];
+    const alta = [{ clave: 'zona_alta' as const, texto: 'Zona ya alta: acabó en 82 de IEM y de 80 en adelante se va con cuidado. El techo no sube.' }];
+    expect(notasDeLaFicha({ ...h, iemTecho: 58, rmObjetivoPct: 0 }, deficit)).toEqual([deficit[0].texto]);
+    // Editable: si el coach vuelve a pedir un 5 % o sube el techo, la línea no afirma lo que la ficha ya no hace.
+    expect(notasDeLaFicha(h, deficit)).toEqual(['Bloque en déficit: la propuesta es no perder fuerza y no subir el estímulo. Esta ficha pide más porque la has cambiado a mano.']);
+    expect(notasDeLaFicha({ ...h, iemFinalAnterior: 82, iemTecho: 82 }, alta)).toEqual([alta[0].texto]);
+    expect(notasDeLaFicha({ ...h, iemFinalAnterior: 82, iemTecho: 90 }, alta)).toEqual(['Zona ya alta: la propuesta es no subir el techo. Lo has subido a mano.']);
+    expect(notasDeLaFicha(h, undefined)).toEqual([]);
   });
 
   it('la misma palanca no toca nada (ni las cifras escritas a mano)', () => {

@@ -4,6 +4,7 @@ import { contextoPesoCorporal, pesoDeSerie } from './pesoCorporal.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
 import { addDays, diasEntreFechas } from './trainingWeek.js';
 import { patronesDeEjercicio, PATTERN_LABELS, type MovementPattern } from './movementPatterns.js';
+import { REPS_MAX_RM, REPS_MIN_RM, RIR_MAX_RM } from './rmValido.js';
 import { RUIDO_RM_PCT } from './ruidoDeMedida.js';
 import { mediana as medianaDe } from './rmValido.js';
 import { esSesionFuera } from './sesionFuera.js';
@@ -735,5 +736,5 @@ export function notaDeSesionesSinMarca(sinMarca: ProgresionDelBloque['resumen'][
   if (!sinMarca || sinMarca.sinMarca <= 0) return null;
   const motivo = sinMarca.motivoPrincipal ? `; lo más frecuente, ${ETIQUETA_SIN_MARCA[sinMarca.motivoPrincipal]}` : '';
   return `Sin marca de fuerza en ${sinMarca.sinMarca} de las ${sinMarca.registros} veces que hizo un ejercicio con peso: `
-    + `ninguna serie válida para estimar el RM (de 3 a 12 repeticiones y RIR 2 o menos, apuntado${motivo}).`;
+    + `ninguna serie válida para estimar el RM (de ${REPS_MIN_RM} a ${REPS_MAX_RM} repeticiones y RIR ${RIR_MAX_RM} o menos, apuntado${motivo}).`;
 }

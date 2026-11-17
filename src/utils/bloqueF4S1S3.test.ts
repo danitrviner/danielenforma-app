@@ -3,7 +3,7 @@ import type { WorkoutLog, WorkoutSetLog } from '../types';
 import { cambiosDeTarea, sesionesDelEjercicio, historialComparable, tramoComparable, cambiosEnLaVentana, describirCambios, marcaDelPunto } from './comparabilidad';
 import { comprobarRir, calibracionDelAtleta, calibracionPorEjercicio, lecturaDeCalibracion, textoDeComprobacion } from './calibracionRir';
 import { rmDeSerie } from './oneRepMax';
-import { detectarEstancamiento, sesionesSinMejorar } from './estancamiento';
+import { detectarEstancamiento } from './estancamiento';
 import { addDays } from './trainingWeek';
 
 const s = (weight: number, repsDone: number, rir = 2, extra: Partial<WorkoutSetLog> = {}): WorkoutSetLog => ({ weight, repsDone, rir, ...extra });
@@ -119,60 +119,61 @@ describe('calibración del RIR (F4)', () => {
 
 describe('estancamiento honesto (S1)', () => {
   // Dos sesiones por semana (lunes y jueves), como en un bloque de frecuencia 2.
+  // Desde la auditoría de cifras (17-11-2026) se cuenta en SEMANAS y con mejora
+  // sostenida: la regla y su simulación están en `estancamiento.test.ts`.
   const fecha = (i: number) => addDays('2026-09-01', Math.floor(i / 2) * 7 + (i % 2) * 3);
   const iguales = (k: number, sets = tres(80, 8)) => Array.from({ length: k }, (_, i) => press(fecha(i), sets));
+  /** Trece sesiones a frecuencia 2: de la primera a la última van seis semanas justas. */
+  const SEIS_SEMANAS = 13;
 
-  it('cuenta las sesiones desde la última mejora, y un 3 % o menos no es mejora (ruido)', () => {
-    expect(sesionesSinMejorar([100, 100, 100])).toBe(3);
-    expect(sesionesSinMejorar([100, 104, 104])).toBe(2);
-    expect(sesionesSinMejorar([100, 100, 104])).toBe(1);
-    // +1 % y +2,5 %: una repetición más o menos, no una marca nueva.
-    expect(sesionesSinMejorar([100, 101, 102.5])).toBe(3);
-    // Subiendo poco a poco sí acaba superando la referencia.
-    expect(sesionesSinMejorar([100, 101, 102, 104])).toBe(1);
-  });
-
-  it('tres o cinco sesiones iguales (semana y media o dos y media) no son estancamiento', () => {
-    expect(detectarEstancamiento(iguales(2), 'press')).toBeNull();
+  it('tres, seis o doce sesiones iguales (menos de seis semanas) no son estancamiento', () => {
     expect(detectarEstancamiento(iguales(3), 'press')).toBeNull();
-    expect(detectarEstancamiento(iguales(5), 'press')).toBeNull();
+    // Seis sesiones eran el aviso hasta el 17-11-2026: a frecuencia 2 son tres semanas.
+    expect(detectarEstancamiento(iguales(6), 'press')).toBeNull();
+    expect(detectarEstancamiento(iguales(12), 'press')).toBeNull();
   });
 
-  it('seis iguales (unas tres semanas) con todo en orden: +1-2 series', () => {
-    expect(detectarEstancamiento(iguales(6), 'press')).toMatchObject({ sesiones: 6, veredicto: 'subir_series' });
+  it('seis semanas iguales con todo en orden: +1-2 series', () => {
+    expect(detectarEstancamiento(iguales(SEIS_SEMANAS), 'press')).toMatchObject({ semanas: 6, sesiones: 13, veredicto: 'subir_series' });
   });
 
-  it('si la última mejora, no hay nada que decir', () => {
-    const logs = [...iguales(6), press(fecha(6), tres(80, 10))];
+  it('si mejora y lo mantiene, no hay nada que decir; una sesión buena suelta todavía no es mejora', () => {
+    const una = [...iguales(SEIS_SEMANAS), press(fecha(13), tres(80, 10))];
+    expect(detectarEstancamiento(una, 'press')).toMatchObject({ semanas: 6, sesiones: 14 });
+    const dos = [...una, press(fecha(14), tres(80, 10))];
+    expect(detectarEstancamiento(dos, 'press')).toBeNull();
+  });
+
+  it('una repetición más, mantenida, ya es mejora (antes hacía falta un 3 % de un salto)', () => {
+    const logs = [...iguales(SEIS_SEMANAS), press(fecha(13), tres(80, 9)), press(fecha(14), tres(80, 9))];
     expect(detectarEstancamiento(logs, 'press')).toBeNull();
   });
 
-  it('una mejora por debajo del ruido (un kilo más, +1,25 %) no rompe el estancamiento', () => {
-    const logs = [...iguales(6), press(fecha(6), tres(81, 8))];
-    expect(detectarEstancamiento(logs, 'press')).toMatchObject({ sesiones: 7 });
+  it('una mejora por debajo de una repetición (un kilo más, +1,25 %) no rompe el estancamiento', () => {
+    const logs = [...iguales(SEIS_SEMANAS), press(fecha(13), tres(81, 8)), press(fecha(14), tres(81, 8))];
+    expect(detectarEstancamiento(logs, 'press')).toMatchObject({ semanas: 7, sesiones: 15 });
   });
 
   it('un cambio de tarea reinicia la cuenta', () => {
     const remo = { exerciseId: 'remo', sets: tres(60, 10) };
-    const logs = [...iguales(6), press(fecha(6), tres(80, 7), [remo])];
+    const logs = [...iguales(SEIS_SEMANAS), press(fecha(13), tres(80, 7), [remo])];
     expect(detectarEstancamiento(logs, 'press')).toBeNull();
   });
 
   it('el veredicto sigue el orden: contexto, esfuerzo, limitante, volumen, variante', () => {
-    const logs = iguales(6);
+    const logs = iguales(SEIS_SEMANAS);
     expect(detectarEstancamiento(logs, 'press', { recuperacionMala: true, limitante: 'agarre' })?.veredicto).toBe('mantener');
     expect(detectarEstancamiento(logs, 'press', { desfaseRir: 3, limitante: 'agarre' })?.veredicto).toBe('apretar');
-    expect(detectarEstancamiento(iguales(6, tres(80, 8, 4)), 'press')?.veredicto).toBe('apretar');
     const limitante = detectarEstancamiento(logs, 'press', { limitante: 'agarre', zona: 'mrv' });
     expect(limitante?.veredicto).toBe('arreglar_limitante');
     expect(limitante?.accion).toContain('straps');
     expect(detectarEstancamiento(logs, 'press', { zona: 'mrv' })?.veredicto).toBe('repartir_o_reducir');
-    expect(detectarEstancamiento(iguales(8), 'press', { zona: 'mav' })?.veredicto).toBe('subir_series');
+    expect(detectarEstancamiento(iguales(16), 'press', { zona: 'mav' })?.veredicto).toBe('subir_series');
   });
 
-  it('con once sesiones igual todavía es dosis; con doce (unas seis semanas) toca cambiar la variante', () => {
-    expect(detectarEstancamiento(iguales(11), 'press')?.veredicto).toBe('subir_series');
-    expect(detectarEstancamiento(iguales(12), 'press')?.veredicto).toBe('cambiar_variante');
+  it('con once semanas igual todavía es dosis; con doce toca cambiar la variante', () => {
+    expect(detectarEstancamiento(iguales(24), 'press')).toMatchObject({ semanas: 11, veredicto: 'subir_series' });
+    expect(detectarEstancamiento(iguales(25), 'press')).toMatchObject({ semanas: 12, veredicto: 'cambiar_variante' });
   });
 });
 
@@ -202,37 +203,40 @@ describe('la marca de una sesión del historial (D2)', () => {
 });
 
 describe('estancamiento solo con sesiones con marca (D2)', () => {
+  // Una sesión por semana: seis semanas son siete sesiones.
+  const semana = (i: number) => addDays('2026-09-01', i * 7);
   const fecha = (i: number) => addDays('2026-09-01', Math.floor(i / 2) * 7 + (i % 2) * 3);
 
   it('una sesión sin marca en medio no cuenta ni como mejora ni como sesión parada', () => {
-    // Cinco iguales y, en medio, una guardada con el RIR pautado sin tocar (misma
-    // tarea, pero sin marca): son cinco sesiones medibles, no seis.
+    // Siete semanas iguales con dos sesiones guardadas con el RIR pautado sin
+    // tocar (misma tarea, pero sin marca): son cinco sesiones medibles, no siete.
     const sinApuntar = [0, 1, 2].map(() => s(80, 8, 2, { rirApuntado: false }));
-    const logs = [0, 1, 2, 3, 4, 5].map(i => press(fecha(i), i === 2 ? sinApuntar : tres(80, 8)));
-    expect(tramoComparable(logs, 'press')).toHaveLength(6);
+    const logs = [0, 1, 2, 3, 4, 5, 6].map(i => press(semana(i), i === 2 || i === 4 ? sinApuntar : tres(80, 8)));
+    expect(tramoComparable(logs, 'press')).toHaveLength(7);
     expect(detectarEstancamiento(logs, 'press')).toBeNull();
-    // Con una sexta con marca, ya sí: seis sesiones medibles sin mejorar.
-    expect(detectarEstancamiento([...logs, press(fecha(6), tres(80, 8))], 'press')).toMatchObject({ sesiones: 6, veredicto: 'subir_series' });
+    // Con una sexta con marca, ya sí: seis sesiones medibles en siete semanas.
+    expect(detectarEstancamiento([...logs, press(semana(7), tres(80, 8))], 'press')).toMatchObject({ semanas: 7, sesiones: 6, veredicto: 'subir_series' });
   });
 
   it('una serie de muchas repeticiones no rompe un estancamiento de verdad', () => {
-    // Seis sesiones iguales; en la última añade una serie de 20 a RIR 2, que
-    // sin filtro daba un RM más alto y «mejoraba».
-    const logs = [0, 1, 2, 3, 4].map(i => press(fecha(i), tres(80, 8)));
-    const ultima = press(fecha(5), [...tres(80, 8), s(70, 20, 2)]);
+    // Siete semanas iguales; en las dos últimas añade una serie de 20 a RIR 2,
+    // que sin filtro daba un RM más alto y «mejoraba».
+    const logs = [0, 1, 2, 3, 4].map(i => press(semana(i), tres(80, 8)));
+    const ultimas = [5, 6].map(i => press(semana(i), [...tres(80, 8), s(70, 20, 2)]));
     expect(rmDeSerie(s(70, 20, 2))).toBeGreaterThan(rmDeSerie(s(80, 8)) * 1.03);
-    expect(detectarEstancamiento([...logs, ultima], 'press')).toMatchObject({ sesiones: 6, veredicto: 'subir_series' });
+    expect(detectarEstancamiento([...logs, ...ultimas], 'press')).toMatchObject({ semanas: 6, sesiones: 7, veredicto: 'subir_series' });
   });
 
   it('quien para siempre a 4 del fallo no tiene marcas: solo se le dice que apriete, y si lo apuntado tampoco sube', () => {
     const lejos = (k: number, kg: (i: number) => number) => Array.from({ length: k }, (_, i) => press(fecha(i), tres(kg(i), 8, 4)));
-    expect(detectarEstancamiento(lejos(6, () => 80), 'press')).toMatchObject({ sesiones: 6, veredicto: 'apretar' });
-    expect(detectarEstancamiento(lejos(6, () => 80), 'press', { recuperacionMala: true })?.veredicto).toBe('mantener');
-    expect(detectarEstancamiento(lejos(5, () => 80), 'press')).toBeNull();
+    expect(detectarEstancamiento(lejos(13, () => 80), 'press')).toMatchObject({ semanas: 6, sesiones: 13, veredicto: 'apretar' });
+    expect(detectarEstancamiento(lejos(13, () => 80), 'press', { recuperacionMala: true })?.veredicto).toBe('mantener');
+    // Doce sesiones a frecuencia 2 son cinco semanas y media: todavía no.
+    expect(detectarEstancamiento(lejos(12, () => 80), 'press')).toBeNull();
     // Sube 5 kg cada sesión, aunque lejos del fallo: no está parado.
-    expect(detectarEstancamiento(lejos(6, i => 80 + i * 5), 'press')).toBeNull();
+    expect(detectarEstancamiento(lejos(13, i => 80 + i * 5), 'press')).toBeNull();
     // Con el RIR pautado sin tocar no se sabe si aprieta o no: no se dice nada.
-    const sinApuntar = Array.from({ length: 6 }, (_, i) => press(fecha(i), [0, 1, 2].map(() => s(80, 8, 4, { rirApuntado: false }))));
+    const sinApuntar = Array.from({ length: 13 }, (_, i) => press(fecha(i), [0, 1, 2].map(() => s(80, 8, 4, { rirApuntado: false }))));
     expect(detectarEstancamiento(sinApuntar, 'press')).toBeNull();
   });
 });

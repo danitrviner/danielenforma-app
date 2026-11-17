@@ -285,9 +285,9 @@ describe('buildProgresionDelBloque', () => {
       const p = buildProgresionDelBloque({
         ...base,
         logs: [
-          log('2026-09-07', { press: [{ weight: 80, repsDone: 8 }], remo: [{ weight: 40, repsDone: 15 }], sent: [{ weight: 100, repsDone: 8, rirApuntado: false }] }),
-          log('2026-09-14', { press: [{ weight: 80, repsDone: 8 }], remo: [{ weight: 40, repsDone: 16 }], sent: [{ weight: 100, repsDone: 8, rir: 4 }] }),
-          log('2026-09-21', { press: [{ weight: 80, repsDone: 8 }], remo: [{ weight: 40, repsDone: 15 }], plancha: [{ weight: 0, repsDone: 20 }] }),
+          log('2026-09-07', { press: [{ weight: 80, repsDone: 8 }], remo: [{ weight: 40, repsDone: 18 }], sent: [{ weight: 100, repsDone: 8, rirApuntado: false }] }),
+          log('2026-09-14', { press: [{ weight: 80, repsDone: 8 }], remo: [{ weight: 40, repsDone: 19 }], sent: [{ weight: 100, repsDone: 8, rir: 4 }] }),
+          log('2026-09-21', { press: [{ weight: 80, repsDone: 8 }], remo: [{ weight: 40, repsDone: 18 }], plancha: [{ weight: 0, repsDone: 20 }] }),
         ],
       });
       // 8 registros con peso (el dead bug, sin peso, no entra): 3 con marca y 5 sin ella.
@@ -296,12 +296,12 @@ describe('buildProgresionDelBloque', () => {
       });
       expect(notaDeSesionesSinMarca(p.resumen.sinMarca)).toBe(
         'Sin marca de fuerza en 5 de las 8 veces que hizo un ejercicio con peso: ninguna serie válida para estimar el RM '
-        + '(de 3 a 12 repeticiones y RIR 2 o menos, apuntado; lo más frecuente, más de 12 repeticiones).',
+        + '(de 3 a 15 repeticiones y RIR 2 o menos, apuntado; lo más frecuente, más de 15 repeticiones).',
       );
       // Con peso y sin ninguna serie válida no pasa a compararse por repeticiones: se queda sin marca, y dice por qué.
       const remo = p.ejercicios.find(e => e.exerciseId === 'remo')!;
       expect(remo).toMatchObject({ metrica: 'e1rm', estado: 'sin_referencia', sinComparar: 'sin_marca', deltaPct: null, sesionesSinMarca: 3 });
-      expect(remo.lectura).toBe('Sin marca: ninguna serie válida (más de 12 repeticiones)');
+      expect(remo.lectura).toBe('Sin marca: ninguna serie válida (más de 15 repeticiones)');
       expect(p.resumen.comparables).toBe(1);
     });
 

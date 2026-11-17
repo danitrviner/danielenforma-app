@@ -3,6 +3,7 @@ import { MUSCLE_LABELS } from '../types.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
 import { sesionesDelEjercicio } from './comparabilidad.js';
 import { UMBRALES_PROTOCOLO } from './cdg/agujetas.js';
+import { listarConY } from './cdg/senalesPorSemana.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Descarga por señales y recorte inteligente (S7, 11-11-2026)
@@ -27,6 +28,14 @@ import { UMBRALES_PROTOCOLO } from './cdg/agujetas.js';
    17-11-2026 (D6r): el cansancio al salir puede venir de lo apuntado en cada
    sesión (la media de la semana) en vez del cuestionario semanal. Entonces se
    dice también de qué sesión salió peor: sigue siendo una sola señal.
+
+   Auditoría de cifras (17-11-2026): el freno del protocolo ya mira el
+   cansancio SESIÓN A SESIÓN (una sesión con 8 o más frena las zonas que
+   trabajó; `cdg/senalesPorSemana.ts`). Aquí NO cambia cuándo es señal de
+   descarga: la descarga es de toda la semana y la sigue pidiendo la MEDIA en
+   8 o más, junto a otra señal. Una sesión dura suelta no regala una semana;
+   lo que pide es bajarle la fatiga a ESA sesión y no subir lo que trabajó.
+   Eso se dice aparte (`avisosDeSesionesDuras`), sin contar como señal.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /** Señales que tienen que coincidir para recomendar descarga. */
@@ -53,6 +62,9 @@ export interface SenalesDeDescarga {
   cansancioAlSalir?: number;
   /** Con el cansancio por sesión: de cuál salió peor («la del jueves, Pierna A») y su nota. */
   sesionMasCansada?: { etiqueta: string; valor: number };
+  /** Las sesiones de la semana de las que salió con 8 o más, con las zonas que
+   *  trabajó cada una (nombres). No es señal de descarga: ver `avisosDeSesionesDuras`. */
+  sesionesDuras?: readonly SesionDuraDeLaSemana[];
   /** Agujetas por zona en la escala 1-5 del curso: la de esta semana y la de la
    *  anterior. Señal si alguna zona lleva 4 o más las dos semanas. */
   agujetasPorZona?: readonly { nombre: string; valor: number; anterior?: number }[];
@@ -60,6 +72,9 @@ export interface SenalesDeDescarga {
    *  pasa (zonas, sesiones o «total de la semana»). Vacío = sin aviso. */
   saltoDeCarga?: readonly string[];
 }
+
+/** Una sesión de la que salió con 8 o más y las zonas (por su nombre) que se trabajaron en ella. */
+export interface SesionDuraDeLaSemana { etiqueta: string; valor: number; zonas: readonly string[] }
 
 /** Zonas con agujetas de 4 o más dos semanas seguidas. */
 export function zonasQueNoSeRecuperan(agujetas: SenalesDeDescarga['agujetasPorZona'] = []): string[] {
@@ -87,6 +102,21 @@ export function senalesActivas(s: SenalesDeDescarga): string[] {
   if (zonas.length > 0) t.push(`agujetas de ${AGUJETAS_ALTAS} o más dos semanas seguidas en ${listar(zonas.map(z => z.toLowerCase()))}`);
   if ((s.saltoDeCarga?.length ?? 0) > 0) t.push(`salto de carga frente a su media de las últimas semanas (${listar(s.saltoDeCarga!.map(x => x.toLowerCase()))})`);
   return t;
+}
+
+/**
+ * Lo que hay que decir de las sesiones duras cuando la media de la semana NO
+ * llega a 8 (si llega, ya es señal de descarga y frena todas las zonas): una
+ * frase por sesión, con lo que no se sube y qué bajar. Vacío si no hay ninguna.
+ */
+export function avisosDeSesionesDuras(s: Pick<SenalesDeDescarga, 'cansancioAlSalir' | 'sesionesDuras'>): string[] {
+  if (s.cansancioAlSalir != null && s.cansancioAlSalir >= UMBRALES_PROTOCOLO.fatigaPostAlta) return [];
+  return (s.sesionesDuras ?? [])
+    .filter(d => d.valor >= UMBRALES_PROTOCOLO.fatigaPostAlta)
+    .map(d => {
+      const que = d.zonas.length > 0 ? listarConY(d.zonas.map(z => z.toLowerCase())) : 'lo que trabajó ese día';
+      return `salió con ${d.valor.toLocaleString('es-ES')}/10 de ${d.etiqueta}: no subas ${que} sin bajarle antes la fatiga a esa sesión`;
+    });
 }
 
 export type TipoDeRecorte = 'ultima_serie' | 'redundante' | 'mantenimiento';

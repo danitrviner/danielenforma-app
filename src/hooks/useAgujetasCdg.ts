@@ -31,6 +31,10 @@ const DIAS_DE_LA_SEMANA_QUE_ACABA = 7;
  *    últimos 7 días que lo lleven apuntado (`cansancioSesiones` dice además de
  *    cuál salió peor); sin ninguna, la cifra del cuestionario semanal, que
  *    sigue disponible aparte en `fatigaPostSemanal`.
+ *  · Auditoría de cifras (17-11-2026): `cansancioSesiones.duras` trae las
+ *    sesiones de 8 o más con los ejercicios hechos en cada una. Quien tenga el
+ *    catálogo las reparte por zona con `sesionesDurasPorZona`: una sesión dura
+ *    frena solo lo que se trabajó en ella, sin esperar a la media.
  */
 export function useAgujetasCdg (athleteEmail?: string) {
   const coach = auth.currentUser;

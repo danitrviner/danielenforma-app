@@ -5,7 +5,7 @@ import { crearMotor, expandirCatalogo, type CdgCatalogoCompacto } from '../cdg';
 import { addDays } from '../trainingWeek';
 import {
   contextoMedioDelBloque, fichaDeCierre, fichaEnLinea, lecturaDeVeredicto, logsDelBloque, molestiasEnFrase,
-  semanasFrenadasPorAgujetas, veredictosDelCierre,
+  semanasFrenadasPorAgujetas, veredictosDelCierre, selloDeLectura,
 } from './veredictosDelCierre';
 import { veredictoDeHipotesis } from './veredicto';
 
@@ -205,6 +205,23 @@ describe('lecturaDeVeredicto · las filas de la ficha', () => {
     expect(l.limites).toEqual({ texto: 'Cansancio medio 6,4/10 · molestia en 1 sesión (hasta 4/10).', pasado: true });
   });
 
+  it('mejora parcial: sello propio en gris, el resultado «mejora, sin llegar» y la misma línea sin subir el techo', () => {
+    const v = calc({ rm: { rmPct: 4, ejercicios: [{ exerciseId: 'a', nombre: 'A', deltaPct: 4 }] } });
+    const l = lecturaDeVeredicto(v);
+    expect(v.lectura).toBe('mejora_parcial');
+    expect(l.sello).toEqual({ texto: 'Mejora, menos de lo buscado', tono: 'neutro' });
+    expect(selloDeLectura('mejora_parcial').texto).toBe('Mejora, menos de lo buscado');
+    expect(l.proceso.estado).toBe('Cumplido.');
+    expect(l.resultado).toEqual({ estado: 'Mejora, sin llegar.', tono: 'neutro', texto: 'RM estimado medio +4 % en 1 ejercicio (objetivo +5 %). Supera el ruido de medida (3 %) sin llegar al objetivo.' });
+    expect(l.siguiente).toMatch(/^Misma línea \(volumen\), sin subir el techo/);
+  });
+
+  it('en déficit (objetivo: no perder) el resultado es sí mientras el RM aguante', () => {
+    const l = lecturaDeVeredicto(calc({ hipotesis: { palanca: 'volumen', iemMedioObjetivo: 58, iemTecho: 61, rmObjetivoPct: 0 }, rm: { rmPct: -1.5 } }));
+    expect(l.sello.texto).toBe('Apuesta confirmada');
+    expect(l.resultado).toMatchObject({ estado: 'Sí.', texto: 'RM estimado medio −1,5 % (objetivo: no perder).' });
+  });
+
   it('sin marcas, sin estímulo o sin objetivo de proceso lo dice en vez de dar una cifra', () => {
     expect(lecturaDeVeredicto(calc({ rm: { rmPct: null } })).resultado.estado).toBe('Sin medida.');
     expect(lecturaDeVeredicto(calc({ iemMedio: null })).proceso.estado).toBe('Sin dato.');
@@ -214,10 +231,12 @@ describe('lecturaDeVeredicto · las filas de la ficha', () => {
   it('un veredicto guardado (sin límites ni propuesta) se lee igual, con lo que falta dicho', () => {
     const l = lecturaDeVeredicto({
       zona: 'deltoides', palanca: 'intensidad', iemMedio: 42, iemMedioObjetivo: 41, procesoCumplido: true,
-      rmPct: 3.4, rmObjetivoPct: 5, resultadoCumplido: false, lectura: 'no_responde',
+      rmPct: 3.4, rmObjetivoPct: 5, resultadoCumplido: false, lectura: 'mejora_parcial',
     });
+    expect(l.sello).toEqual({ texto: 'Mejora, menos de lo buscado', tono: 'neutro' });
     expect(l.proceso.texto).toBe('IEM medio 42 (pedía 41 o más).');
-    expect(l.resultado.texto).toBe('RM estimado medio +3,4 % (objetivo +5 %).');
+    // La franja no se guarda: se deduce de las cifras (+3,4 % está entre el ruido y el objetivo).
+    expect(l.resultado).toEqual({ estado: 'Mejora, sin llegar.', tono: 'neutro', texto: 'RM estimado medio +3,4 % (objetivo +5 %). Supera el ruido de medida (3 %) sin llegar al objetivo.' });
     expect(l.limites.texto).toBe('Sin dato de límites en lo guardado.');
     expect(l.siguiente).toBeNull();
   });

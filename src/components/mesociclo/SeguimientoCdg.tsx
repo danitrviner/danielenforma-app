@@ -12,7 +12,7 @@ import {
   leerRendimiento, indicadoresCambioDeBloque, avisosIemIea, type SemanaParaLectura, type Contexto,
   tipoSugerido, semanasHastaAburrirse, avisoDeFiabilidad, referenciasToleradas,
   contextoPorCiclos, rachaFinal, valorEnElCicloDe, esDescargaOPuente,
-  cansancioDeSesiones, origenDeLectura, type LecturaAgujetas,
+  cansancioDeSesiones, sesionesDurasPorZona, zonasDeEjercicios, nombresDeZonas, origenDeLectura, type LecturaAgujetas,
   bandaIEA, BANDAS_IEA, LIMITE_IEA_CON_ANTECEDENTES, articulacionesSobreSuLimite, limitesValidos, type BandaIEA
 } from '../../utils/cdg';
 import { useAgujetasCdg } from '../../hooks/useAgujetasCdg';
@@ -58,6 +58,12 @@ import { ETIQUETA_DE_SEMAFORO, semaforoDelBloque, type ColorDeSemaforo } from '.
    terminar; si no, del cuestionario semanal como antes. Las agujetas mezclan
    las contestadas a las 48 h de cada sesión con las del cuestionario: manda la
    más reciente, y al lado se dice de dónde sale («a 48 h» o «semanal»).
+
+   17-11-2026 (auditoría de cifras): el cansancio frena SESIÓN A SESIÓN. Una
+   sesión de la semana con 8 o más deja en «mantener» las zonas que se
+   trabajaron en ella (por el grupo muscular de sus ejercicios), nombrándola;
+   la media en 8 o más sigue frenando todas. Antes solo contaba la media, que
+   exige que casi todas las sesiones sean de 8.
 
    17-11-2026 (hipótesis del bloque): arriba del todo, el semáforo de cada zona
    con estrella —IEM medio del bloque frente al objetivo, techo, semanas desde
@@ -203,6 +209,9 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
     : undefined;
   const fatigaPost = cansancioSesiones?.media ?? fatigaPostSemanal?.value;
   const sesionMasCansada = cansancioSesiones ? { etiqueta: cansancioSesiones.peor.etiqueta, valor: cansancioSesiones.peor.valor } : undefined;
+  // Las sesiones de 8 o más frenan las zonas que trabajaron, aunque la media deje margen.
+  const grupoDeEjercicio = (id: string) => porId.get(id)?.muscleGroup;
+  const durasPorZona = sesionesDurasPorZona(cansancioSesiones, grupoDeEjercicio);
   // El cansancio solo «falta por caducado» si tampoco hay dato por sesión en esta semana.
   const cansancioCaducado = fatigaPost == null && !!historial?.fatigaPost.some(p => p.date <= hoyIsoLocal());
   const caducadas = [...caducadasDelHook.filter(c => c !== 'cansancio al salir'), ...(cansancioCaducado ? ['cansancio al salir'] : [])];
@@ -291,7 +300,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
             ))}
           </ul>
           <p className="font-sans text-caption text-ink-3">
-            Lo que va de bloque, sin la semana en curso: el IEM medio realizado frente al de la hipótesis y el RM de los ejercicios de la zona frente a lo que tocaría a estas alturas. Es la misma cuenta que hará el cierre; aquí todavía se puede corregir.
+            Lo que va de bloque, sin la semana en curso: el IEM medio realizado frente al de la hipótesis y el RM de los ejercicios de la zona frente a lo que tocaría a estas alturas. El proceso mira si la media del bloque todavía puede llegar al objetivo subiendo a tiempo; el cierre comprobará si llegó. Aquí todavía se puede corregir.
           </p>
         </Seccion>
       )}
@@ -332,7 +341,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
               propuesta: propuestaZona({
                 agujetas: vigente ? lectura?.valor : undefined, anterior: vigente ? lectura?.anterior : undefined, sensible: z.sensible,
                 tipo: { ...tipo, sensibilidad: modo }, esObjetivo: objetivo != null,
-                iem: ahora?.[z.clave] ?? 0, contexto, fatigaPost, sesionMasCansada, objetivo,
+                iem: ahora?.[z.clave] ?? 0, contexto, fatigaPost, sesionMasCansada, sesionDura: durasPorZona[z.clave], objetivo,
                 primeraSemanaTrasParon: !!meso.vuelveDeParon && semanaActiva?.semana === 1,
               })
             };
@@ -381,10 +390,18 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                       : ' — no subir IEM; mejor bajar el IF manteniéndolo.')
                     : (<>
                       {` (0-${UMBRALES_PROTOCOLO.fatigaPostAlta - 1}: hay margen).`}
-                      {/* La media deja margen, pero una sesión concreta pasó del umbral: se dice cuál, sin vetar. */}
-                      {cansancioSesiones && cansancioSesiones.peor.valor >= UMBRALES_PROTOCOLO.fatigaPostAlta && (
-                        <> Ojo con <b className="text-warning">{cansancioSesiones.peor.etiqueta}: {n1(cansancioSesiones.peor.valor)}/10</b>; si se repite, bájale fatiga a esa.</>
-                      )}
+                      {/* La media deja margen, pero una sesión concreta pasó del umbral: frena
+                          las zonas que trabajó (17-11-2026), y se dice cuál y cuáles. */}
+                      {(cansancioSesiones?.duras.length ?? 0) > 0 && ` Pero con ${UMBRALES_PROTOCOLO.fatigaPostAlta} o más una sesión frena lo que se trabajó en ella:`}
+                      {cansancioSesiones?.duras.map(d => {
+                        const frenadas = nombresDeZonas(zonasDeEjercicios(d.ejercicios, grupoDeEjercicio));
+                        return (
+                          <React.Fragment key={d.logId}>
+                            {' '}<b className="text-warning">{d.etiqueta}: {n1(d.valor)}/10</b>
+                            {frenadas ? <> — frena {frenadas}: no se suben sin bajarle antes la fatiga (IF) a esa sesión.</> : <> — bájale la fatiga (IF) a esa sesión antes de subir lo que trabajó.</>}
+                          </React.Fragment>
+                        );
+                      })}
                     </>)}
                 </li>
                 <li>Agujetas de cada zona (a 48 h de la sesión o del cuestionario semanal: la más reciente) contra su IEM (tabla).</li>
@@ -452,7 +469,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
               </>)}
               {!UMBRALES_PROTOCOLO.validados && (
                 <p className="font-sans text-caption text-warning">
-                  Umbrales pendientes de validar: contexto malo con estrés ≥ {UMBRALES_PROTOCOLO.estresMalo}, sueño &lt; {UMBRALES_PROTOCOLO.sueñoMaloHoras} h o motivación ≤ {UMBRALES_PROTOCOLO.motivacionMala}; no subir con cansancio ≥ {UMBRALES_PROTOCOLO.fatigaPostAlta}; con IEM ≥ {UMBRALES_PROTOCOLO.iemBaseAlta}, subir como mucho un {UMBRALES_PROTOCOLO.subidaMaxBaseAlta} %. Agujetas de los últimos {UMBRALES_PROTOCOLO.diasVigenciaAgujetas} días.
+                  Umbrales pendientes de validar: contexto malo con estrés ≥ {UMBRALES_PROTOCOLO.estresMalo}, sueño &lt; {UMBRALES_PROTOCOLO.sueñoMaloHoras} h o motivación ≤ {UMBRALES_PROTOCOLO.motivacionMala}; no subir con cansancio ≥ {UMBRALES_PROTOCOLO.fatigaPostAlta} (de media, todas las zonas; en una sesión, las que trabajó); con IEM ≥ {UMBRALES_PROTOCOLO.iemBaseAlta}, subir como mucho un {UMBRALES_PROTOCOLO.subidaMaxBaseAlta} %. Agujetas de los últimos {UMBRALES_PROTOCOLO.diasVigenciaAgujetas} días.
                 </p>
               )}
               <p className="font-sans text-caption text-ink-3">

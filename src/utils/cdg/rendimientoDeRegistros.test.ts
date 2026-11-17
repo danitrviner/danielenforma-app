@@ -22,11 +22,13 @@ const serie = (kg: number, reps: number, rir: number | string, extra: Partial<Cd
 const semana = (...ejercicios: CdgSerieRealizada[][]): SemanaRealizada => [ejercicios, [], [], [], [], [], []]
 
 describe('qué series valen para el RM en el seguimiento CDG', () => {
-  it('mismo criterio que rmValido: 3-12 repeticiones, RIR 2 o menos, RIR apuntado', () => {
+  it('mismo criterio que rmValido: 3-15 repeticiones, RIR 2 o menos, RIR apuntado', () => {
     expect(esSerieCdgValidaParaRm(serie(80, 8, 2))).toBe(true)
     expect(esSerieCdgValidaParaRm(serie(80, 12, 0))).toBe(true)
     expect(esSerieCdgValidaParaRm(serie(80, 3, 1))).toBe(true)
-    expect(esSerieCdgValidaParaRm(serie(80, 13, 2))).toBe(false) // demasiadas repeticiones
+    expect(esSerieCdgValidaParaRm(serie(80, 13, 2))).toBe(true) // vale desde el 17-11-2026 (el tope era 12)
+    expect(esSerieCdgValidaParaRm(serie(80, 15, 1))).toBe(true)
+    expect(esSerieCdgValidaParaRm(serie(80, 16, 2))).toBe(false) // demasiadas repeticiones
     expect(esSerieCdgValidaParaRm(serie(80, 2, 0))).toBe(false)
     expect(esSerieCdgValidaParaRm(serie(80, 8, 3))).toBe(false) // RIR de 3 o más
     expect(esSerieCdgValidaParaRm(serie(80, 8, 5))).toBe(false) // RIR 5: la tabla de la hoja no le da RPE
@@ -58,8 +60,8 @@ describe('rendimientoSemanaDeRegistros', () => {
   })
 
   it('sin ninguna serie válida el ejercicio no tiene marca (y no es una marca de 0 kg)', () => {
-    const [fila] = rendimientoSemanaDeRegistros('Semana 1', semana([serie(60, 15, 2), serie(60, 15, 2)]))
-    expect(fila).toMatchObject({ rm: 0, sinMarca: true, tonelaje: 1800, ejercicio: 'Press banca', sesion: 'Sesión 1' })
+    const [fila] = rendimientoSemanaDeRegistros('Semana 1', semana([serie(60, 20, 2), serie(60, 20, 2)]))
+    expect(fila).toMatchObject({ rm: 0, sinMarca: true, tonelaje: 2400, ejercicio: 'Press banca', sesion: 'Sesión 1' })
   })
 
   it('con todas las series válidas da exactamente lo que la hoja', () => {
@@ -70,7 +72,7 @@ describe('rendimientoSemanaDeRegistros', () => {
 
 describe('rendimientoCicloDeRegistros', () => {
   const s1 = rendimientoSemanaDeRegistros('Semana 1', semana([serie(80, 8, 2)]))
-  const s2 = rendimientoSemanaDeRegistros('Semana 2', semana([serie(80, 15, 2)])) // sin marca
+  const s2 = rendimientoSemanaDeRegistros('Semana 2', semana([serie(80, 20, 2)])) // sin marca
   const s3 = rendimientoSemanaDeRegistros('Semana 3', semana([serie(84, 8, 2)]))
   const semanas = [{ semana: 'Semana 1', filas: s1 }, { semana: 'Semana 2', filas: s2 }, { semana: 'Semana 3', filas: s3 }]
 

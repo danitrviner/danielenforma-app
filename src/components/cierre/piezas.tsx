@@ -8,6 +8,7 @@ import type {
 import { Sexo } from '../../utils/athleteProfileSignals';
 import { e1rmAlometrico } from '../../utils/allometricScore';
 import { RUIDO_RM_PCT } from '../../utils/ruidoDeMedida';
+import { REPS_MAX_RM, REPS_MIN_RM, RIR_MAX_RM } from '../../utils/rmValido';
 import {
   Icon, Badge, Chip,
   MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA, TOOLTIP_GRAFICA,
@@ -281,7 +282,7 @@ export function ListaEjercicios({ ejercicios, sexo, pesoKg }: {
                   {conSigno(e.deltaPct)}%
                 </span>
               ) : (
-                <span className="font-mono text-caption text-ink-3" title="Hacen falta al menos dos semanas con una serie válida (3-12 repeticiones, RIR 2 o menos)">sin ref.</span>
+                <span className="font-mono text-caption text-ink-3" title={`Hacen falta al menos dos semanas con una serie válida (${REPS_MIN_RM}-${REPS_MAX_RM} repeticiones, RIR ${RIR_MAX_RM} o menos)`}>sin ref.</span>
               )}
               <span className="block font-mono text-caption text-ink-3">{e.metrica === 'e1rm' ? '1RM est.' : 'reps'}</span>
             </div>
@@ -290,7 +291,7 @@ export function ListaEjercicios({ ejercicios, sexo, pesoKg }: {
       </ul>
       <p className="font-mono text-caption text-ink-3">
         Se compara la mediana de las dos primeras semanas de cada ejercicio con la de las dos últimas, sin contar
-        descargas, semanas puente ni de test. Solo entran series de 3 a 12 repeticiones con RIR 2 o menos, y por
+        descargas, semanas puente ni de test. Solo entran series de {REPS_MIN_RM} a {REPS_MAX_RM} repeticiones con RIR {RIR_MAX_RM} o menos, y por
         debajo de un {RUIDO_RM_PCT} % el cambio es ruido. 1RM estimado con la fórmula CDG, que tiene en cuenta el RIR.
         {alometrico ? ` 1RM alométrico con ${pesoKg} kg de peso corporal.` : ''}
       </p>

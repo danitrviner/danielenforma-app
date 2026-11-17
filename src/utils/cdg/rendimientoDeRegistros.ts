@@ -9,8 +9,9 @@
  * repeticiones a RIR 3 la mueve sin decir nada de la fuerza.
  *
  * Esto es el mismo cálculo con las series filtradas ANTES de pasárselas a las
- * funciones de la hoja, con el criterio de `utils/rmValido.ts` (3-12
- * repeticiones, RIR 2 o menos = RPE 8 o más, RIR apuntado por el atleta). El
+ * funciones de la hoja, con el criterio de `utils/rmValido.ts` (3-15
+ * repeticiones desde la auditoría de cifras del 17-11-2026 —antes 3-12—, RIR 2
+ * o menos = RPE 8 o más, RIR apuntado por el atleta). El
  * tonelaje sigue saliendo de todas las series. Un ejercicio sin ninguna serie
  * válida no tiene marca: `rm` 0 con `sinMarca: true`, y no entra en el
  * rendimiento del ciclo.

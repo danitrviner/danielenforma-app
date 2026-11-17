@@ -208,6 +208,9 @@ export interface Propuesta {
   /** Puntos de IEM que se suben cuando la subida repite los de la primera del
    *  bloque en vez del porcentaje (segunda subida y siguientes). */
   puntos?: number
+  /** La zona no sube por UNA sesión de la que salió con 8 o más de cansancio
+   *  (17-11-2026): cuál fue y su nota, para nombrarla y bajarle la fatiga. */
+  sesionDura?: { etiqueta: string; valor: number }
 }
 
 export interface SubidaDeZona {
@@ -300,7 +303,9 @@ export const UMBRALES_PROTOCOLO = {
   estresMalo: 7, sueñoMaloHoras: 6, motivacionMala: 4,
   /** Contexto favorable si estrés ≤, sueño ≥, motivación ≥ (todos los que haya). */
   estresBueno: 4, sueñoBuenoHoras: 7, motivacionBuena: 7,
-  /** Fatiga al salir de las sesiones a partir de la cual no se sube el IEM. */
+  /** Fatiga al salir de las sesiones a partir de la cual no se sube el IEM: la
+   *  media de la semana (todas las zonas) o una sesión suelta (las zonas que
+   *  trabajó; auditoría de cifras, 17-11-2026). */
   fatigaPostAlta: 8,
   /** Con una base de IEM así de alta, la subida no pasa de `subidaMaxBaseAlta` %. */
   iemBaseAlta: 100, subidaMaxBaseAlta: 10,
@@ -360,6 +365,11 @@ export function contextoDeLaSemana (o: { estres?: number; sueñoHoras?: number; 
  *     en el resto, bajar 15-30 %.
  *  3. Fatiga al salir de las sesiones 8-9 o más → no subir IEM: bajar IF manteniéndolo.
  *     Si el cansancio viene por sesión (D6r), se dice de cuál y se baja ESA.
+ *     Dos alcances (auditoría de cifras, 17-11-2026): la MEDIA de la semana en
+ *     8 o más frena todas las zonas, como hasta ahora; y UNA sesión en 8 o más
+ *     frena solo las zonas que se trabajaron en ella (`sesionDura`), aunque la
+ *     media deje margen. Antes solo contaba la media, que pide que casi todas
+ *     las sesiones sean de 8; el curso lo mira sesión a sesión.
  *  4. Contexto desfavorable → el curso no lo veta, lo hace más prudente: la mitad
  *     del %, con aviso (Dani, 27-10). Un mal momento puntual tampoco obliga a bajar.
  *  5. Se sube si lo permite la sensibilidad (estático: 1; dinámico: 1-3), lo que
@@ -382,6 +392,10 @@ export function propuestaZona (o: {
   /** La sesión de la que salió más cansado («la del jueves, Pierna A») y su
    *  nota, cuando el cansancio viene por sesión (D6r): el freno la nombra. */
   sesionMasCansada?: { etiqueta: string; valor: number }
+  /** La sesión de la semana con 8 o más de cansancio que trabajó ESTA zona
+   *  (`sesionesDurasPorZona`, la más dura si hay varias). Frena la zona aunque
+   *  la media de la semana no llegue al umbral. */
+  sesionDura?: { etiqueta: string; valor: number }
   /** IEM semanal objetivo de la zona (`Mesocycle.cdgObjetivosIem`), si lo hay. */
   objetivo?: number
   /** Semana 1 de un bloque tras un parón (`Mesocycle.vuelveDeParon`): el curso
@@ -392,8 +406,17 @@ export function propuestaZona (o: {
   subidas?: Pick<SubidasDeLaZona, 'primera' | 'semanasSostenidas' | 'enMeseta'>
 }): Propuesta {
   const { agujetas: a, anterior, sensible, tipo, esObjetivo, iem = 0, contexto = 'sin-dato', fatigaPost, sesionMasCansada, objetivo, primeraSemanaTrasParon, subidas } = o
+  const nota10 = (v: number) => r1(v).toLocaleString('es-ES')
+  // Solo cuenta si de verdad pasa del umbral: quien llama puede pasar la más cansada sin filtrar.
+  const sesionDura = o.sesionDura && o.sesionDura.valor >= UMBRALES_PROTOCOLO.fatigaPostAlta ? o.sesionDura : undefined
   const con = (pct: number) => (iem > 0.005 ? { pct, iemPropuesto: r1(iem * (1 + pct / 100)) } : { pct })
-  if (a == null) return { tono: 'sin-dato', texto: 'Sin agujetas registradas: decide con la recuperación entre sesiones y el rendimiento.' }
+  if (a == null) {
+    return {
+      tono: 'sin-dato',
+      texto: `Sin agujetas registradas: decide con la recuperación entre sesiones y el rendimiento.${sesionDura ? ` Ojo: salió muy cansado de ${sesionDura.etiqueta} (${nota10(sesionDura.valor)}/10), que trabaja esta zona; no la subas sin bajarle antes la fatiga (IF) a esa sesión.` : ''}`,
+      ...(sesionDura ? { sesionDura } : {}),
+    }
+  }
   if (a >= 4 && primeraSemanaTrasParon) {
     return { tono: 'vigilar', texto: 'Primera semana tras un parón: el pico de agujetas es normal y suele normalizarse solo. No frenes de golpe; espera a la semana que viene y anótalo.' }
   }
@@ -411,6 +434,14 @@ export function propuestaZona (o: {
       return { tono: 'mantener', texto: `Sale muy cansado de las sesiones (${nota}/10 de media; ${sesionMasCansada.etiqueta}: ${r1(sesionMasCansada.valor).toLocaleString('es-ES')}/10). No subir el IEM sin bajar antes la fatiga (IF) de esa sesión, manteniendo su IEM.` }
     }
     return { tono: 'mantener', texto: `Sale muy cansado de las sesiones (${nota}/10): no subir el IEM. Si puedes, baja el IF de la sesión manteniendo el IEM.` }
+  }
+  // La media deja margen, pero de UNA sesión que trabaja esta zona salió con 8
+  // o más: se frena esta zona (y solo las de esa sesión), y se dice cuál bajar.
+  if (sesionDura) {
+    return {
+      tono: 'mantener', sesionDura,
+      texto: `Salió muy cansado de una sesión que trabaja esta zona (${sesionDura.etiqueta}: ${nota10(sesionDura.valor)}/10). No subir su IEM: baja antes la fatiga (IF) de esa sesión, manteniendo su IEM.`,
+    }
   }
   const umbral = tipo.sensibilidad === 'dinamico' ? 3 : 1
   if (a > umbral) return { tono: 'mantener', texto: tipo.sensibilidad === 'estatico' && a <= 3 ? 'Mantener: en un bloque estático solo se sube con agujetas de 1.' : 'Mantener el IEM.' }

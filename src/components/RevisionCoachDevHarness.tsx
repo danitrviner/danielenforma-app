@@ -107,15 +107,43 @@ const MESO_ACTUAL: Mesocycle = {
   }),
   // Hipótesis del bloque (17-11): dos zonas con estrella. Las cifras están
   // puestas para que se vean dos lecturas distintas en Cierre de bloque: el
-  // pectoral llega a su estímulo y el deltoides se queda corto del suyo.
+  // pectoral llega a su estímulo y el deltoides se queda corto del suyo. El
+  // objetivo de proceso es donde acabó el bloque anterior + 5 % (auditoría de
+  // cifras, 17-11-2026): 12,6 → 13,2 y 27,5 → 28,9.
   tipoBloque: 'desarrollo', cdgVelocidad: 'suave',
   hipotesis: {
-    pectoral: { palanca: 'volumen', iemMedioAnterior: 11.8, iemFinalAnterior: 12.6, iemMedioObjetivo: 13, iemArranque: 12.6, iemTecho: 13.9, rmObjetivoPct: 5, limite: 'hombro sin molestias' },
-    deltoides: { palanca: 'intensidad', iemMedioAnterior: 26, iemFinalAnterior: 27.5, iemMedioObjetivo: 28.6, iemArranque: 27.5, iemTecho: 30.3, rmObjetivoPct: 5 },
+    pectoral: { palanca: 'volumen', iemMedioAnterior: 11.8, iemFinalAnterior: 12.6, iemMedioObjetivo: 13.2, iemArranque: 12.6, iemTecho: 13.9, rmObjetivoPct: 5, limite: 'hombro sin molestias' },
+    deltoides: { palanca: 'intensidad', iemMedioAnterior: 26, iemFinalAnterior: 27.5, iemMedioObjetivo: 28.9, iemArranque: 27.5, iemTecho: 30.3, rmObjetivoPct: 5 },
   },
   cdgObjetivosIem: { pectoral: 13.9, deltoides: 30.3 },
   cdgModoPorZona: { pectoral: 'dinamico', deltoides: 'dinamico' },
 } as Mesocycle;
+
+/**
+ * Los casos de la auditoría de cifras (17-11-2026), con `?caso=`:
+ *  · `parcial`: al pectoral se le pide un 8 % de RM (como a un principiante);
+ *    con el +6 % que lleva queda entre el ruido y el objetivo: «Mejora, menos
+ *    de lo buscado».
+ *  · `deficit`: el bloque tal como se propone en déficit (no perder y techo
+ *    donde acabó), y la fase de déficit alargada para que el bloque SIGUIENTE
+ *    también caiga en ella.
+ */
+type CasoDeHipotesis = 'parcial' | 'deficit' | null;
+function mesoActualDe(caso: CasoDeHipotesis): Mesocycle {
+  const h = MESO_ACTUAL.hipotesis!;
+  if (caso === 'parcial') return { ...MESO_ACTUAL, hipotesis: { ...h, pectoral: { ...h.pectoral!, rmObjetivoPct: 8 } } };
+  if (caso === 'deficit') {
+    return {
+      ...MESO_ACTUAL,
+      hipotesis: {
+        pectoral: { ...h.pectoral!, iemMedioObjetivo: 12, iemTecho: 12.6, rmObjetivoPct: 0 },
+        deltoides: { ...h.deltoides!, iemMedioObjetivo: 26.1, iemTecho: 27.5, rmObjetivoPct: 0 },
+      },
+      cdgObjetivosIem: { pectoral: 12.6, deltoides: 27.5 },
+    };
+  }
+  return MESO_ACTUAL;
+}
 
 const MESO_ANTERIOR: Mesocycle = {
   id: 'meso_1', athleteId: EMAIL, number: 1, name: 'Adaptación',
@@ -526,9 +554,14 @@ export default function RevisionCoachDevHarness() {
   // él se ve el objetivo DEDUCIDO de las kcal; `ninguno` quita la periodización
   // entera para ver el selector desde cero.
   const objetivoParam = new URLSearchParams(window.location.search).get('objetivo');
+  // `?caso=parcial|deficit`: los casos de la auditoría de cifras del 17-11-2026
+  // en Cierre de bloque y en el Seguimiento (ver `mesoActualDe`).
+  const casoParam = new URLSearchParams(window.location.search).get('caso');
+  const caso: CasoDeHipotesis = casoParam === 'parcial' || casoParam === 'deficit' ? casoParam : null;
+  const mesoActual = useMemo(() => mesoActualDe(caso), [caso]);
   const mesoDeLaPantalla: Mesocycle = renovar
-    ? { ...MESO_ACTUAL, startDate: haceDias(MESO_ACTUAL.weeks * 7 - 4) }
-    : MESO_ACTUAL;
+    ? { ...mesoActual, startDate: haceDias(mesoActual.weeks * 7 - 4) }
+    : mesoActual;
 
   const client = useMemo(() => {
     const qc = new QueryClient({
@@ -550,6 +583,9 @@ export default function RevisionCoachDevHarness() {
     // ver también el estado sin periodización.
     // Objetivo › Plan (?pantalla=objetivos): el editor de fases sobre este programa.
     qc.setQueryData(['nutritionProgram', EMAIL], anatomia || objetivoParam === 'ninguno' ? null
+      // Déficit largo: la última fase dura 24 semanas y cubre también el bloque siguiente.
+      : caso === 'deficit' ? { ...PROGRAMA, phases: PROGRAMA.phases.map((f, i) =>
+          i === PROGRAMA.phases.length - 1 ? { ...f, weeks: 24, objetivo: 'deficit' as const } : f) }
       : objetivoParam ? { ...PROGRAMA, phases: PROGRAMA.phases.map((f, i) =>
           i === PROGRAMA.phases.length - 1 ? { ...f, objetivo: objetivoParam as NonNullable<typeof f.objetivo> } : f) }
       : PROGRAMA);
@@ -585,7 +621,7 @@ export default function RevisionCoachDevHarness() {
     // Ficha viva y bloques del atleta, para `?pantalla=ficha` y `?pantalla=seguimiento`.
     qc.setQueryData(['dossier', EMAIL], DOSSIER_VACIO);
     qc.setQueryData(['athleteStatusNote', EMAIL], '');
-    qc.setQueryData(['mesocycles', EMAIL], [MESO_ANTERIOR, MESO_ACTUAL]);
+    qc.setQueryData(['mesocycles', EMAIL], [MESO_ANTERIOR, mesoActual]);
     // Dos recordatorios: uno vencido sobre un paso del montaje y una tarea
     // suelta para mañana, para ver los dos estados del aviso.
     qc.setQueryData(['coachClientTasks', EMAIL], [
@@ -600,7 +636,7 @@ export default function RevisionCoachDevHarness() {
       },
     ]);
     return qc;
-  }, [anatomia, objetivoParam]);
+  }, [anatomia, objetivoParam, caso, mesoActual]);
 
   return (
     <QueryClientProvider client={client}>
@@ -613,9 +649,9 @@ export default function RevisionCoachDevHarness() {
             <SeguimientoCdg
               athleteEmail={EMAIL}
               logs={LOGS}
-              meso={MESO_ACTUAL}
+              meso={mesoActual}
               cicloDias={7}
-              vueltas={MESO_ACTUAL.weeks}
+              vueltas={mesoActual.weeks}
               grupos={RUTINAS.map(w => ({ name: w.name, dayIndex: w.dayIndex, workoutIds: [w.id], exercises: w.exercises }))}
               allExercises={EJERCICIOS}
               onGuardarUmbrales={u => console.info('[harness] onGuardarUmbrales', u)}
@@ -656,7 +692,7 @@ export default function RevisionCoachDevHarness() {
             athlete={PERFIL}
             logs={anatomia ? LOGS_ANATOMIA : LOGS}
             exercises={anatomia ? EJERCICIOS_ANATOMIA : EJERCICIOS}
-            mesocycles={anatomia ? [] : [MESO_ANTERIOR, MESO_ACTUAL]}
+            mesocycles={anatomia ? [] : [MESO_ANTERIOR, mesoActual]}
             photos={FOTOS}
             bodyweightLogs={PESOS}
             sexo="hombre"

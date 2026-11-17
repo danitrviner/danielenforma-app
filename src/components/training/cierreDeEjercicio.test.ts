@@ -44,8 +44,8 @@ describe('D9: récords al cerrar el ejercicio', () => {
     expect(logrosDelCierre({ ...base, hechas: [sinTocar(82.5, 8, 1)], mejorRmAntes: ANTES })).toEqual([]);
   });
 
-  it('más de 12 repeticiones no vale para el RM, aunque el número salga más alto', () => {
-    expect(logrosDelCierre({ ...base, hechas: [suya(80, 15, 0)], mejorRmAntes: ANTES })).toEqual([]);
+  it('más de 15 repeticiones no vale para el RM, aunque el número salga más alto', () => {
+    expect(logrosDelCierre({ ...base, hechas: [suya(80, 18, 0)], mejorRmAntes: ANTES })).toEqual([]);
   });
 
   it('la serie no vale, pero hizo más repeticiones que nunca con ese peso: se celebra eso', () => {
@@ -99,7 +99,7 @@ describe('D9: récords al cerrar el ejercicio', () => {
   });
 
   it('mejorRmValido ignora las series que no valen', () => {
-    expect(mejorRmValido([sinTocar(100, 5, 1), suya(80, 8, 4), suya(80, 15, 0)])).toBeNull();
+    expect(mejorRmValido([sinTocar(100, 5, 1), suya(80, 8, 4), suya(80, 18, 0)])).toBeNull();
     expect(mejorRmValido([sinTocar(100, 5, 1), suya(80, 8, 1)])?.serie.weight).toBe(80);
   });
 });

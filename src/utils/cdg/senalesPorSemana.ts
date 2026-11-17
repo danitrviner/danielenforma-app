@@ -14,11 +14,21 @@
  * (`WorkoutLog.cansancioAlSalir`). `cansancioDeSesiones` da la media de las
  * sesiones de la semana que se evalúa y CUÁL fue la más dura; el cuestionario
  * semanal queda de respaldo para quien no lo apunte por sesión.
+ *
+ * Auditoría de cifras (17-11-2026): el freno ya no espera a la MEDIA. Con la
+ * media en 8 hacía falta que casi todas las sesiones de la semana fueran de 8,
+ * y el curso lo mira sesión a sesión: de una sesión de la que se sale con 8 o
+ * más no se sube lo que se trabajó ESE día. `cansancioDeSesiones` da además
+ * las sesiones «duras» con los ejercicios registrados en cada una, y
+ * `sesionesDurasPorZona` las reparte por zona con el grupo muscular de cada
+ * ejercicio (`ZONAS_IEM[].grupos`): no hace falta el motor CDG. La media en 8
+ * o más sigue frenando todas las zonas (`propuestaZona`).
  */
-import type { WorkoutLog } from '../../types.js'
+import type { MuscleGroup, WorkoutLog } from '../../types.js'
 import { aperturaDelCiclo } from '../cicloRevision.js'
 import { addDays } from '../trainingWeek.js'
-import { contextoDeLaSemana, type Contexto, type PuntoSeñal } from './agujetas.js'
+import { contextoDeLaSemana, UMBRALES_PROTOCOLO, type Contexto, type PuntoSeñal } from './agujetas.js'
+import { ZONAS_IEM, type ZonaIem } from './zonas.js'
 
 export interface SeriesDeContexto {
   estres: readonly PuntoSeñal[]
@@ -98,7 +108,23 @@ export interface CansancioDeSesiones {
   fecha: string
   /** La sesión de la que salió más cansado (a igualdad, la más reciente). */
   peor: { logId: string; workoutId: string; fecha: string; valor: number; nombre?: string; /** «la del jueves, Pierna A» */ etiqueta: string }
+  /** Las sesiones de las que salió con 8 o más (`UMBRALES_PROTOCOLO.fatigaPostAlta`),
+   *  de la más antigua a la más reciente. Cada una frena las zonas que trabajó. */
+  duras: SesionDura[]
 }
+
+/** Una sesión de la que salió con 8 o más de cansancio. */
+export interface SesionDura {
+  logId: string; workoutId: string; fecha: string; valor: number; nombre?: string
+  /** «la del jueves, Pierna A» */
+  etiqueta: string
+  /** Ejercicios registrados en ella (con alguna serie hecha). Vacío si el
+   *  registro llegó sin sus ejercicios: entonces no se sabe qué zonas frena. */
+  ejercicios: string[]
+}
+
+/** La sesión dura que frena una zona: lo que `propuestaZona` necesita para nombrarla. */
+export interface SesionDuraDeZona { etiqueta: string; valor: number; fecha: string }
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'] as const
 /** «jueves» de una fecha `YYYY-MM-DD`, sin depender de la zona horaria ni del idioma del entorno. */
@@ -119,7 +145,10 @@ export function etiquetaDeSesion (fecha: string, nombre?: string): string {
  * llama cae entonces al cuestionario semanal.
  */
 export function cansancioDeSesiones (
-  logs: ReadonlyArray<Pick<WorkoutLog, 'id' | 'workoutId' | 'date' | 'cansancioAlSalir'>>,
+  logs: ReadonlyArray<Pick<WorkoutLog, 'id' | 'workoutId' | 'date' | 'cansancioAlSalir'> & {
+    /** Solo hace falta saber qué ejercicios se hicieron: de ahí salen las zonas de una sesión dura. */
+    entries?: ReadonlyArray<{ exerciseId: string; sets?: ReadonlyArray<{ repsDone: number }> }>
+  }>,
   o: { desde?: string; hasta?: string; nombreDe?: (workoutId: string) => string | undefined } = {},
 ): CansancioDeSesiones | undefined {
   const conDato = logs
@@ -130,11 +159,59 @@ export function cansancioDeSesiones (
   const suma = conDato.reduce((a, l) => a + l.cansancioAlSalir!, 0)
   // `>=`: recorriendo de la más antigua a la más reciente, a igualdad gana la última.
   const peor = conDato.reduce((p, l) => (l.cansancioAlSalir! >= p.cansancioAlSalir! ? l : p))
-  const nombre = o.nombreDe?.(peor.workoutId)?.trim() || undefined
+  const nombreDe = (workoutId: string) => o.nombreDe?.(workoutId)?.trim() || undefined
+  const nombre = nombreDe(peor.workoutId)
+  const duras: SesionDura[] = conDato
+    .filter(l => l.cansancioAlSalir! >= UMBRALES_PROTOCOLO.fatigaPostAlta)
+    .map(l => {
+      const n = nombreDe(l.workoutId)
+      // Solo los ejercicios que se hicieron: uno saltado no cansó a nadie.
+      const ejercicios = [...new Set((l.entries ?? []).filter(e => e.sets?.some(s => s.repsDone > 0)).map(e => e.exerciseId))]
+      return { logId: l.id, workoutId: l.workoutId, fecha: l.date, valor: l.cansancioAlSalir!, ...(n ? { nombre: n } : {}), etiqueta: etiquetaDeSesion(l.date, n), ejercicios }
+    })
   return {
     media: Math.round((suma / conDato.length) * 10) / 10,
     sesiones: conDato.length,
     fecha: conDato[conDato.length - 1].date,
     peor: { logId: peor.id, workoutId: peor.workoutId, fecha: peor.date, valor: peor.cansancioAlSalir!, nombre, etiqueta: etiquetaDeSesion(peor.date, nombre) },
+    duras,
   }
+}
+
+/** Las zonas que trabaja una lista de ejercicios, por el grupo muscular PRINCIPAL
+ *  de cada uno (`ZONAS_IEM[].grupos`), en el orden de `ZONAS_IEM`. */
+export function zonasDeEjercicios (ejercicios: readonly string[], grupoDe: (exerciseId: string) => MuscleGroup | undefined): ZonaIem[] {
+  const grupos = new Set(ejercicios.map(grupoDe).filter((g): g is MuscleGroup => g != null))
+  return ZONAS_IEM.filter(z => (z.grupos as readonly MuscleGroup[]).some(g => grupos.has(g))).map(z => z.clave)
+}
+
+/**
+ * Qué sesión dura frena cada zona: la de nota más alta entre las que la
+ * trabajaron (a igualdad, la más reciente). Una zona que no se tocó en
+ * ninguna sesión de 8 o más no sale, y puede subir si lo demás lo permite.
+ */
+export function sesionesDurasPorZona (
+  cansancio: Pick<CansancioDeSesiones, 'duras'> | undefined,
+  grupoDe: (exerciseId: string) => MuscleGroup | undefined,
+): Partial<Record<ZonaIem, SesionDuraDeZona>> {
+  const out: Partial<Record<ZonaIem, SesionDuraDeZona>> = {}
+  // Vienen de la más antigua a la más reciente: con `>=` gana la última a igualdad.
+  for (const d of cansancio?.duras ?? []) {
+    for (const zona of zonasDeEjercicios(d.ejercicios, grupoDe)) {
+      if (!out[zona] || d.valor >= out[zona]!.valor) out[zona] = { etiqueta: d.etiqueta, valor: d.valor, fecha: d.fecha }
+    }
+  }
+  return out
+}
+
+/** «a, b y c», con «e» delante de «i-» o «hi-» («cuádriceps e isquiotibiales»). */
+export function listarConY (cosas: readonly string[]): string {
+  if (cosas.length <= 1) return cosas.join('')
+  const ultima = cosas[cosas.length - 1]
+  return `${cosas.slice(0, -1).join(', ')} ${/^h?i(?!e)/i.test(ultima) ? 'e' : 'y'} ${ultima}`
+}
+
+/** «cuádriceps e isquiotibiales»: las zonas que frena una sesión dura, para decirlo dentro de una frase. */
+export function nombresDeZonas (zonas: readonly ZonaIem[]): string {
+  return listarConY(ZONAS_IEM.filter(z => zonas.includes(z.clave)).map(z => z.nombre.toLowerCase()))
 }

@@ -8,6 +8,7 @@ import { useAgujetasCdg } from '../../hooks/useAgujetasCdg';
 import { resolverEjercicioDelMeso } from '../../utils/progression';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
 import { ZONAS_IEM, type ZonaIem } from '../../utils/cdg/zonas';
+import { sesionesDurasPorZona } from '../../utils/cdg/senalesPorSemana';
 import { resumenSesion } from '../../utils/cdg/programacion';
 import {
   propuestaZona, tipoDeBloque, contextoDeLaSemana, agujetasVigentes, sensibilidadDeZona, pctEfectivo,
@@ -157,6 +158,13 @@ export function usePropuestaIem(p: {
     // Rendimiento: tonelaje de las semanas hechas frente a la carga programada.
     const hechas = Array.from({ length: Math.max(0, (semanaActual ?? 0)) }, (_, i) => i + 1);
 
+    // Cansancio por sesión (auditoría de cifras, 17-11-2026): una sesión de los
+    // últimos 7 días con 8 o más frena las zonas que trabajó. El grupo de cada
+    // ejercicio registrado sale de las rutinas del bloque; uno que ya no esté
+    // en ellas no frena nada.
+    const grupoPorEjercicio = new Map(dias.flatMap(d => d.exercises.map(we => [we.exerciseId, grupoDe(we)] as const)));
+    const durasPorZona = sesionesDurasPorZona(cansancioSesiones, id => grupoPorEjercicio.get(id));
+
     const porZona = zonas.map(z => {
       const lectura = agujetas?.[z.clave];
       const vigente = !!lectura && agujetasVigentes(lectura.fecha, hoy);
@@ -167,6 +175,7 @@ export function usePropuestaIem(p: {
         agujetas: vigente ? lectura!.valor : undefined, anterior: vigente ? lectura!.anterior : undefined, sensible: z.sensible,
         tipo: { sensibilidad: modo, velocidad }, esObjetivo: objetivo != null, iem: iemBase[z.clave], contexto, fatigaPost: fatigaPost?.value, objetivo,
         sesionMasCansada: cansancioSesiones ? { etiqueta: cansancioSesiones.peor.etiqueta, valor: cansancioSesiones.peor.valor } : undefined,
+        sesionDura: durasPorZona[z.clave],
         // Igual que el asistente: tras un parón, el pico de agujetas de las dos primeras semanas no frena de golpe.
         primeraSemanaTrasParon: !!meso.vuelveDeParon && semana <= 2,
         subidas,

@@ -12,10 +12,11 @@
 import type { HipotesisDeZona, MuscleGroup, MuscleGroupConfig, TipoDeBloque } from '../../types.js';
 import { MUSCLE_LABELS, MUSCLE_ORDER } from '../../types.js';
 import { esZonaIem } from '../../utils/cdg/zonas.js';
-import { RM_OBJETIVO_PCT, SEMANAS_POR_DEFECTO } from '../../utils/hipotesisDeBloque/cifras.js';
+import { IEM_ZONA_ALTA, RM_RUIDO_PCT, SEMANAS_POR_DEFECTO } from '../../utils/hipotesisDeBloque/cifras.js';
 import { ordenarBloques, type BloqueConCierre } from '../../utils/hipotesisDeBloque/historial.js';
 import { mapaDeRespuesta } from '../../utils/hipotesisDeBloque/mapaDeRespuesta.js';
 import { PALANCAS } from '../../utils/hipotesisDeBloque/palancas.js';
+import { rmObjetivoPorDefecto } from '../../utils/hipotesisDeBloque/proponerHipotesis.js';
 import { TIPOS_DE_BLOQUE, estrellasDe, nombreCortoDeZona } from '../../utils/hipotesisDeBloque/tiposDeBloque.js';
 
 /** Los cuatro valores que acepta `tipo_bloque` en las propuestas. */
@@ -42,7 +43,8 @@ export interface HipotesisParaElAsistente {
   /** Una por zona con estrella, en el orden del método. */
   hipotesis: Array<{
     zona: string; nombre: string; palanca: HipotesisDeZona['palanca']; apuesta: string;
-    /** RESULTADO que se busca: % de RM estimado medio de los ejercicios de la zona. */
+    /** RESULTADO que se busca: % de RM estimado medio de los ejercicios de la
+     *  zona. 0 = no perder (zona que se recupera o bloque en déficit). */
     rmObjetivoPct: number;
     iemMedioAnterior?: number; iemFinalAnterior?: number; iemMedioObjetivo?: number; iemArranque?: number; iemTecho?: number;
     limite?: string;
@@ -66,7 +68,9 @@ export function hipotesisParaElAsistente(meso: BloqueParaElAsistente, bloques: r
     const h = meso.hipotesis![zona]!;
     return {
       zona, nombre: nombreCortoDeZona(zona), palanca: h.palanca, apuesta: PALANCAS[h.palanca]?.apuesta ?? '',
-      rmObjetivoPct: h.rmObjetivoPct != null && h.rmObjetivoPct > 0 ? h.rmObjetivoPct : RM_OBJETIVO_PCT,
+      // Un 0 guardado es «no perder» (recuperar o déficit) y se cuenta tal cual:
+      // hasta la auditoría de cifras del 17-11-2026 se le decía un 5 %.
+      rmObjetivoPct: h.rmObjetivoPct != null && h.rmObjetivoPct >= 0 ? h.rmObjetivoPct : rmObjetivoPorDefecto({ palanca: h.palanca }),
       ...(h.iemMedioAnterior != null ? { iemMedioAnterior: h.iemMedioAnterior } : {}),
       ...(h.iemFinalAnterior != null ? { iemFinalAnterior: h.iemFinalAnterior } : {}),
       ...(h.iemMedioObjetivo != null ? { iemMedioObjetivo: h.iemMedioObjetivo } : {}),
@@ -91,5 +95,16 @@ export function hipotesisParaElAsistente(meso: BloqueParaElAsistente, bloques: r
   };
 }
 
-/** Cómo leer lo anterior, en una frase para la `note` de la tool. */
-export const NOTA_DE_HIPOTESIS = 'tipoBloque e hipotesis: a qué se apostó en cada zona prioritaria y con qué % de RM se da por buena. cierreDeHipotesis (si Dani lo ha firmado): qué pasó con cada apuesta. mapaDeRespuesta: qué le funciona a cada zona en todos sus bloques; el bloque siguiente parte de ahí.';
+/**
+ * Cómo leer lo anterior, para la `note` de la tool. Desde la auditoría de
+ * cifras del 17-11-2026 explica también las cifras que cambiaron: el proceso
+ * se pide sobre donde acabó el bloque anterior, el resultado se lee en tres
+ * franjas y el objetivo depende del caso.
+ */
+export const NOTA_DE_HIPOTESIS = [
+  'tipoBloque e hipotesis: a qué se apostó en cada zona prioritaria y con qué % de RM se da por buena (rmObjetivoPct: 5 por defecto, 8 en un principiante, 0 = no perder, que es lo que se pide a una zona que se recupera o con el bloque en déficit).',
+  'iemMedioObjetivo es el PROCESO: el IEM medio del bloque que hay que alcanzar, calculado sobre donde ACABÓ el bloque anterior (iemFinalAnterior) y no sobre su media; si la zona no sube, es sostener ese nivel.',
+  `iemTecho igual a iemFinalAnterior significa que la zona NO sube este bloque (déficit, respondió con menos, mejoró menos de lo buscado o zona ya alta: ${IEM_ZONA_ALTA} de IEM o más).`,
+  `cierreDeHipotesis (si Dani lo ha firmado): qué pasó con cada apuesta. Lecturas: confirmada (se hizo y sirvió); mejora_parcial (se hizo y el RM mejora más que el ruido de medida, ${RM_RUIDO_PCT} %, sin llegar al objetivo: NO es «no responde», se sigue la misma línea sin subir el techo y no se cambia de palanca ni se mueve la estrella); no_responde (se hizo y el RM no supera el ruido: cambia la palanca y, a la segunda seguida, la estrella pasa a otra zona); responde_con_menos (no se llegó al estímulo y aun así mejora: no subir); sin_probar (no se hizo o no se pudo medir: no dice nada de la zona).`,
+  'mapaDeRespuesta: qué le funciona a cada zona en todos sus bloques; el bloque siguiente parte de ahí.',
+].join(' ');

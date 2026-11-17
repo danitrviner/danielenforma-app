@@ -91,7 +91,17 @@ describe('propuesta, pantalla y lo que se guarda', () => {
   it('propone las cifras de cada estrella a partir del bloque anterior', () => {
     const p = propuestaDelMeso({ meso: m, anterior: estado });
     expect(Object.keys(p.hipotesis)).toEqual(['pectoral', 'deltoides']);
-    expect(p.hipotesis.pectoral).toMatchObject({ palanca: 'volumen', iemArranque: 58, iemTecho: 63.8, iemMedioObjetivo: 57.2, rmObjetivoPct: 5 });
+    expect(p.hipotesis.pectoral).toMatchObject({ palanca: 'volumen', iemArranque: 58, iemTecho: 63.8, iemMedioObjetivo: 60.9, rmObjetivoPct: 5 });
+  });
+  it('el nivel y el déficit llegan al motor: principiante 8 %; en déficit, no perder y techo sin subir', () => {
+    expect(propuestaDelMeso({ meso: m, anterior: estado, nivel: 'principiante' }).hipotesis.pectoral).toMatchObject({ rmObjetivoPct: 8, iemTecho: 63.8 });
+    const d = propuestaDelMeso({ meso: m, anterior: estado, enDeficit: true });
+    expect(d.hipotesis.pectoral).toMatchObject({ rmObjetivoPct: 0, iemTecho: 58, iemMedioObjetivo: 55.1 });
+    expect(d.enDeficit).toBe(true);
+    expect(d.notas.pectoral?.[0].texto).toBe('Bloque en déficit: se pide no perder fuerza y no se sube el estímulo.');
+    // Lo que el coach ya guardó manda en pantalla: la sugerencia no pisa su ficha.
+    const guardado = { ...m, hipotesis: { pectoral: { palanca: 'volumen' as const, rmObjetivoPct: 5, iemTecho: 63.8 } } };
+    expect(hipotesisEnPantalla(guardado, propuestaDelMeso({ meso: guardado, anterior: estado, enDeficit: true })).pectoral).toEqual(guardado.hipotesis.pectoral);
   });
   it('sin bloque anterior, solo palanca y resultado', () => {
     const p = propuestaDelMeso({ meso: m, anterior: null });
@@ -149,6 +159,17 @@ describe('hipótesis en curso', () => {
   const h = { palanca: 'volumen' as const, iemMedioObjetivo: 57, iemTecho: 64 };
   it('en camino si la última semana ya está en el objetivo aunque la media vaya detrás', () => {
     expect(hipotesisEnCurso({ zona: 'pectoral', h, porSemana: [50, 54, 58] }).marca).toBe('en_camino');
+  });
+  it('sin tolerancia: una media que antes pasaba por el 95 % ya no basta si la última semana tampoco llega', () => {
+    expect(hipotesisEnCurso({ zona: 'pectoral', h, porSemana: [55, 55] }).marca).toBe('por_debajo');
+    expect(hipotesisEnCurso({ zona: 'pectoral', h, porSemana: [57, 57] }).marca).toBe('en_camino');
+  });
+  it('con las semanas del bloque, mira si todavía llega: 58 → 60,9 con techo 63,8 en 12 semanas', () => {
+    const subir = { palanca: 'volumen' as const, iemMedioObjetivo: 60.9, iemTecho: 63.8 };
+    const en58 = (n: number) => Array.from({ length: n }, () => 58);
+    expect(hipotesisEnCurso({ zona: 'pectoral', h: subir, porSemana: en58(3), semanasTotales: 12 }).marca).toBe('en_camino');
+    expect(hipotesisEnCurso({ zona: 'pectoral', h: subir, porSemana: en58(6), semanasTotales: 12 }).marca).toBe('en_camino');
+    expect(hipotesisEnCurso({ zona: 'pectoral', h: subir, porSemana: en58(7), semanasTotales: 12 }).marca).toBe('por_debajo');
   });
   it('por debajo si ni la media ni la última llegan', () => {
     const r = hipotesisEnCurso({ zona: 'pectoral', h, porSemana: [40, 44], subidas: { semanasSostenidas: 1, enMeseta: true } });

@@ -72,7 +72,8 @@ function Empujon({ p, destacado = false }: { p: ProgresoDelObjetivo; destacado?:
 
 /** Una barra por grupo, para cuando el bloque va de más de uno. */
 function BarraDeZona({ z }: { z: ProgresoDeZona }) {
-  const medido = z.estado === 'mejora' || z.estado === 'conseguido';
+  // Con «mantener tu fuerza» (bloque en el que no se busca mover más) no hay «% de %»: se dice con palabras.
+  const medido = !z.mantener && (z.estado === 'mejora' || z.estado === 'conseguido');
   return (
     <div className="space-y-1">
       <div className="flex items-baseline justify-between gap-2">
@@ -108,10 +109,14 @@ export default function ObjetivoDelBloque({ progreso: p, variante = 'franja', cl
 
   if (variante === 'anillo') {
     // Con un solo grupo, su cifra; con varios, cuánto del camino llevan entre todos.
+    // Si todo el bloque va de mantener, ni cifra ni porcentaje: un «=» cuando lo consigue.
+    const soloMantener = medible && p.zonas.every(z => z.mantener);
     const cifra = !medible || p.estado === 'pronto' ? '—'
+      : soloMantener ? (p.estado === 'conseguido' ? '=' : '—')
       : p.mejoraPct != null && (p.estado === 'mejora' || p.estado === 'conseguido') ? `+${fmt(p.mejoraPct)} %`
       : p.zonas.length > 1 ? `${Math.round(p.fraccion * 100)} %` : '0 %';
     const pie = !medible || p.estado === 'pronto' ? 'pronto'
+      : soloMantener ? 'mantener'
       : p.objetivoPct != null ? `de ${fmt(p.objetivoPct)} %` : 'del objetivo';
     return (
       <section className={`rounded-surface border border-hairline bg-surface p-4 space-y-3 ${className}`} aria-label="Tu objetivo del bloque">

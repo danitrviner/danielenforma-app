@@ -71,8 +71,8 @@ describe('bloqueTerminadoParaElAtleta', () => {
   });
 
   it('sin marcas no opina de fuerza: solo la constancia y lo que viene', () => {
-    // Series a 15 repeticiones: no valen para medir.
-    const b = bloqueTerminadoParaElAtleta({ ...base, mesociclos: [meso()], assignments: asignaciones(11), logs: logs(s => ({ press: [serie(40 + s, 15)] })) })!;
+    // Series a 18 repeticiones: no valen para medir (el tope de la marca pasó de 12 a 15 en la auditoría de cifras del 17-11-2026).
+    const b = bloqueTerminadoParaElAtleta({ ...base, mesociclos: [meso()], assignments: asignaciones(11), logs: logs(s => ({ press: [serie(40 + s, 18)] })) })!;
     expect(b.antesDespues).toEqual([]);
     expect(b.constancia).toEqual({ hechas: 11, tocaban: 12, pct: 92, texto: 'Has hecho 11 de las 12 sesiones del bloque.' });
     expect(b.queViene).toBe('Tu entrenador está preparando el siguiente bloque.');

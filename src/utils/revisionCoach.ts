@@ -24,10 +24,10 @@ import { calibracionDelAtleta, type CalibracionDelAtleta } from './calibracionRi
 import { detectarEstancamiento, type Estancamiento } from './estancamiento.js';
 import { clasificarCaida, CAIDA_PCT, type PatronDeCaida } from './patronDeCaida.js';
 import { seriesEfectivas, type SeriesEfectivas } from './seriesEfectivas.js';
-import { senalesActivas, recortesPosibles, SENALES_PARA_DESCARGA, type Recorte, type SenalesDeDescarga } from './descargaPorSenales.js';
+import { senalesActivas, avisosDeSesionesDuras, recortesPosibles, SENALES_PARA_DESCARGA, type Recorte, type SenalesDeDescarga } from './descargaPorSenales.js';
 import { historialDeSeñal } from './signalReading.js';
 import { agujetasPorZona, agujetasVigentes, ultimaVigente } from './cdg/agujetas.js';
-import { cansancioDeSesiones } from './cdg/senalesPorSemana.js';
+import { cansancioDeSesiones, zonasDeEjercicios } from './cdg/senalesPorSemana.js';
 import { ZONA_POR_CLAVE } from './cdg/zonas.js';
 import { computeIRP, historialIRP, IRPResult } from './readinessIndex.js';
 import { domsCronicoDeGrupo, esDomsCronico } from './domsCronico.js';
@@ -285,8 +285,9 @@ export interface RevisionDelAtleta {
    *  · `cambiosDeTarea`: ejercicios cuya tarea cambió dentro de la ventana
    *    (orden, descanso, RIR, rango, técnica o máquina). Lo que baje ahí no es
    *    comparable con lo de antes y no se da como alarma.
-   *  · `estancados`: seis o más sesiones comparables sin mejorar (unas tres
-   *    semanas a frecuencia 2), con qué hacer.
+   *  · `estancados`: seis semanas o más sin mejorar el nivel con la misma
+   *    tarea (auditoría de cifras, 17-11-2026; antes seis sesiones, que a
+   *    frecuencia 2 eran tres semanas), con qué hacer.
    *  · `calibracion`: cuánto se desvía su RIR cuando se comprueba con una
    *    serie al máximo. `null` si nunca se ha comprobado.
    */
@@ -301,7 +302,12 @@ export interface RevisionDelAtleta {
    *    recortar primero.
    */
   caida: PatronDeCaida | null;
-  descarga: { recomendada: boolean; senales: string[]; recortes: Recorte[] };
+  descarga: {
+    recomendada: boolean; senales: string[]; recortes: Recorte[];
+    /** Sesiones de las que salió con 8 o más sin que la media de la semana
+     *  llegue a 8: qué no subir y qué sesión aligerar. No son señal de descarga. */
+    sesionesDuras?: string[];
+  };
   /** S10: cuántas de las series de la ventana llegaron a RIR 4 o menos. */
   efectivas: SeriesEfectivas;
   /** D5: ejercicios con molestia apuntada en la ventana (la más alta y cuántas veces). */
@@ -407,7 +413,10 @@ export function senalesDelProtocolo(params: {
   logs?: readonly WorkoutLog[];
   /** Nombre de la rutina de una sesión, para decir cuál fue la más dura. */
   nombreDeSesion?: (workoutId: string) => string | undefined;
-}): Pick<SenalesDeDescarga, 'cansancioAlSalir' | 'sesionMasCansada' | 'agujetasPorZona'> {
+  /** Grupo muscular principal de un ejercicio: con él, cada sesión de 8 o más
+   *  dice qué zonas frena (auditoría de cifras, 17-11-2026). */
+  grupoDe?: (exerciseId: string) => MuscleGroup | undefined;
+}): Pick<SenalesDeDescarga, 'cansancioAlSalir' | 'sesionMasCansada' | 'agujetasPorZona' | 'sesionesDuras'> {
   const { responses, questionnaires, hasta, logs = [] } = params;
   const serie = (k: string) => historialDeSeñal(k, responses, questionnaires).filter(p => p.date <= hasta);
   const deSesiones = cansancioDeSesiones(logs, { desde: addDays(hasta, -6), hasta, nombreDe: params.nombreDeSesion });
@@ -415,9 +424,15 @@ export function senalesDelProtocolo(params: {
   const zonas = Object.values(agujetasPorZona(serie, logs, hasta))
     .filter(l => !l.deEscala10 && agujetasVigentes(l.fecha, hasta))
     .map(l => ({ nombre: ZONA_POR_CLAVE[l.zona].nombre, valor: l.valor, anterior: l.anterior }));
+  const grupoDe = params.grupoDe ?? (() => undefined);
+  const sesionesDuras = (deSesiones?.duras ?? []).map(d => ({
+    etiqueta: d.etiqueta, valor: d.valor,
+    zonas: zonasDeEjercicios(d.ejercicios, grupoDe).map(z => ZONA_POR_CLAVE[z].nombre),
+  }));
   return {
     cansancioAlSalir,
     ...(deSesiones ? { sesionMasCansada: { etiqueta: deSesiones.peor.etiqueta, valor: deSesiones.peor.valor } } : {}),
+    ...(sesionesDuras.length > 0 ? { sesionesDuras } : {}),
     agujetasPorZona: zonas,
   };
 }
@@ -429,6 +444,10 @@ export interface RevisionParams {
   periodo: PeriodoRevision;
   landmarks?: Record<MuscleGroup, VolumeLandmark>;
   hoy?: string;
+  /** Nombre de la rutina de una sesión (por `workoutId`), para nombrar la
+   *  sesión de la que salió más cansado («la del jueves, Pierna A»). Sin él se
+   *  dice solo el día. */
+  nombreDeSesion?: (workoutId: string) => string | undefined;
   /** Cuestionarios contestados — alimentan el bienestar. Sin ellos sale vacío. */
   responses?: QuestionnaireResponse[];
   questionnaires?: Questionnaire[];
@@ -496,7 +515,7 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
       });
     })
     .filter((e): e is Estancamiento => e != null)
-    .sort((a, b) => b.sesiones - a.sesiones);
+    .sort((a, b) => b.semanas - a.semanas || b.sesiones - a.sesiones);
 
   const molestiasPor = new Map<string, { maxima: number; veces: number }>();
   for (const log of logsVentana) {
@@ -524,19 +543,27 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
   const llegaJusto = llegadas.contestadas >= 2 && llegadas.justo * 2 > llegadas.contestadas;
   const contextoMalo = recuperacionGeneralMala || llegaJusto || (horasSueño != null && horasSueño < 6) || (estres != null && estres >= 7);
   const caida = clasificarCaida(caen, exercises, { enLaVentana: idsDeLaVentana.length, contextoMalo });
+  // R3: cansancio al salir y agujetas 1-5, de los cuestionarios que ya están aquí
+  // y, desde D6r/D7, de lo que apunta en cada sesión (los registros también están).
+  // El salto de carga (aguda:crónica) necesita el catálogo CDG y no se pasa todavía.
+  const delProtocolo = senalesDelProtocolo({
+    responses, questionnaires, hasta: ventana.hasta, logs: logsHastaLaVentana,
+    nombreDeSesion: params.nombreDeSesion, grupoDe: id => grupoDe.get(id),
+  });
   const senales = senalesActivas({
     caidaTransversal: caida?.tipo === 'transversal',
     recuperacionMala: recuperacionGeneralMala,
     ejerciciosConDiasMalos: diasMalos.length,
     gruposConAgujetasCronicas: bienestar.domsCronico.length,
-    // R3: cansancio al salir y agujetas 1-5, de los cuestionarios que ya están aquí
-    // y, desde D6r/D7, de lo que apunta en cada sesión (los registros también están).
-    // El salto de carga (aguda:crónica) necesita el catálogo CDG y no se pasa todavía.
-    ...senalesDelProtocolo({ responses, questionnaires, hasta: ventana.hasta, logs: logsHastaLaVentana }),
+    ...delProtocolo,
   });
+  // Una sesión de 8 o más con la media por debajo: no pide descarga, frena lo
+  // que se trabajó ese día (auditoría de cifras, 17-11-2026).
+  const sesionesDuras = avisosDeSesionesDuras(delProtocolo);
   const descarga = {
     recomendada: senales.length >= SENALES_PARA_DESCARGA,
     senales,
+    ...(sesionesDuras.length > 0 ? { sesionesDuras } : {}),
     recortes: recortesPosibles({
       logs: logsHastaLaVentana, ejercicios: idsDeLaVentana, catalogo: exercises,
       mantenimiento: mapa

@@ -105,15 +105,17 @@ describe('estadoDeLosEjercicios', () => {
   }) as unknown as WorkoutLog;
   const bloque = { id: 'm1', startDate: INICIO, weeks: 8 };
 
-  it('un ejercicio con 7 sesiones iguales está parado; uno que sube, no', () => {
-    const logs = Array.from({ length: 7 }, (_, i) => log(addDays(INICIO, i * 4), [
+  it('un ejercicio con 7 semanas iguales está parado; uno que sube, no', () => {
+    // Una sesión por semana: siete sesiones son seis semanas de la primera a la
+    // última (desde el 17-11-2026 el parón se cuenta en semanas, no en sesiones).
+    const logs = Array.from({ length: 7 }, (_, i) => log(addDays(INICIO, i * 7), [
       { exerciseId: 'press', kg: 80 },
       { exerciseId: 'remo', kg: 60 + i * 5 },
     ]));
     const estado = estadoDeLosEjercicios({ logs, meso: bloque });
     const press = estado.find(e => e.exerciseId === 'press')!;
     expect(press.sesiones).toBe(7);
-    expect(press.estancamiento?.sesiones).toBe(7);
+    expect(press.estancamiento).toMatchObject({ semanas: 6, sesiones: 7 });
     expect(press.molestia).toBeNull();
     expect(estado.find(e => e.exerciseId === 'remo')!.estancamiento).toBeNull();
   });

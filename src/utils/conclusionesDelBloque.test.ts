@@ -74,7 +74,7 @@ describe('buildConclusionesDelBloque', () => {
       const accion = (motivo: Parameters<typeof sinMarca>[1]) =>
         buildConclusionesDelBloque(cierre({ sinMarca: sinMarca(20, motivo) }), evolucion()).acciones.find(x => x.id === 'dato_de_fuerza')!.texto;
       expect(accion('rir_sin_apuntar')).toContain('apunte el RIR real');
-      expect(accion('reps_altas')).toContain('3 a 12 repeticiones');
+      expect(accion('reps_altas')).toContain('3 a 15 repeticiones');
     });
 
     it('por debajo de un tercio no hace ruido (la línea discreta del cierre ya lo cuenta)', () => {

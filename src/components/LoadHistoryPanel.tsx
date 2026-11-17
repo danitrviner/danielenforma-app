@@ -183,8 +183,8 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
 
   // Per-date session aggregation (with best CDG 1RM for activeExId).
   // El 1RM de la sesión es su MARCA: el de la mejor serie válida para estimarlo
-  // (3-12 repeticiones, RIR 2 o menos, RIR apuntado, sin bajadas; D2,
-  // 17-11-2026). Una sesión sin series válidas se queda sin 1RM («—»), no con
+  // (3-15 repeticiones, RIR 2 o menos, RIR apuntado, sin bajadas; D2,
+  // 17-11-2026, y el tope de 15 —antes 12— de la auditoría de cifras). Una sesión sin series válidas se queda sin 1RM («—»), no con
   // el de una serie de 20 a RIR 4: récords, curva y progresión salen de aquí.
   const sessionRows = useMemo<SessionRow[]>(() => {
     const byDate = new Map<string, SessionRow>();
@@ -463,7 +463,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           </select>
         </div>
       )}
-      {/* Con qué series se calcula: sin esto, una sesión a 15 repeticiones o a
+      {/* Con qué series se calcula: sin esto, una sesión a 20 repeticiones o a
           RIR 4 aparece con «—» y parece un fallo. */}
       {ormActive && loggedExercises.length > 0 && (
         <p className="font-sans text-caption text-ink-3">

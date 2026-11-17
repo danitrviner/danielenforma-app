@@ -7,12 +7,13 @@ import { ZONAS_IEM, type ZonaIem } from '../cdg/zonas.js';
 import { buildCierreMesociclo } from '../cierreMesociclo.js';
 import { finDeBloque } from '../finDeBloque.js';
 import { resolverEjercicioDelMeso } from '../progression.js';
-import { FRACCION_DE_PROCESO_CUMPLIDO, RM_OBJETIVO_PCT, RM_RUIDO_PCT, redondearIem } from './cifras.js';
+import { FRACCION_DE_SOSTENER, RM_OBJETIVO_PCT, RM_RUIDO_PCT, redondearIem } from './cifras.js';
 import type { EstadoDelBloque } from './estadoDelBloqueAnterior.js';
 import { PALANCAS } from './palancas.js';
-import { estadoDelBloqueAnterior, iniciosDeSemanaDelBloque } from './estadoDelBloqueAnterior.js';
+import { estadoDelBloqueAnterior, iniciosDeSemanaDelBloque, semanasFueraDelBloque } from './estadoDelBloqueAnterior.js';
+import { procesoEnCurso, type RitmoDeProceso } from './procesoEnCurso.js';
 import { estrellasDe, nombreCortoDeZona } from './tiposDeBloque.js';
-import { rmDeLaZona, zonaPrincipalDeEjercicios } from './veredicto.js';
+import { franjaDeResultado, rmDeLaZona, zonaPrincipalDeEjercicios } from './veredicto.js';
 import { logsDelBloque } from './veredictosDelCierre.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -22,14 +23,23 @@ import { logsDelBloque } from './veredictosDelCierre.js';
    para el Seguimiento semanal: por cada zona con estrella, si va en camino de
    cumplir su hipótesis o se está quedando atrás, cuando aún se puede corregir.
 
-     PROCESO   IEM medio realizado del bloque hasta hoy frente al objetivo, con
-               el mismo 95 % del veredicto (`FRACCION_DE_PROCESO_CUMPLIDO`).
+     PROCESO   IEM medio realizado del bloque hasta hoy frente al objetivo
+               (donde acabó el anterior + medio escalón, sin tolerancia). A
+               medias la media va por detrás del nivel, así que se mira si
+               TODAVÍA LLEGA (`procesoEnCurso.ts`): en camino mientras llegue
+               sosteniendo el nivel de ahora o subiendo al techo a tiempo;
+               por detrás cuando ya no llega ni subiendo. Sin el reparto por
+               semanas, la comparación directa de la media con el objetivo.
      RESULTADO RM estimado medio de los ejercicios de la zona frente a lo que
                tocaría a estas alturas: la parte proporcional del objetivo
                (a mitad de bloque, la mitad). Propio: pedir el +5 % entero en
                la semana 3 pondría todas las zonas en rojo. Mientras lo que
                toca no supere el ruido de medida (3 %) no se pide nada; una
                caída mayor que el ruido va «por detrás» en cualquier semana.
+               Y las tres franjas del veredicto (auditoría de cifras,
+               17-11-2026): un RM que supera el ruido sin llegar a lo que
+               toca no es «por detrás» (al cerrar sería «mejora, menos de lo
+               buscado», que no es un fallo); el texto lo dice.
 
    El color de la fila es el peor de los dos; si falta uno, manda el otro.
    No decide nada ni propone: para eso están el freno/acelerador y el cierre.
@@ -57,6 +67,8 @@ export interface FilaDeSemaforo {
   rmObjetivoPct: number;
   /** Lo que tocaría llevar de RM a estas alturas del bloque. */
   rmEsperadoPct: number;
+  /** Cómo va el proceso a medias (`procesoEnCurso`); `null` sin el reparto por semanas o en una zona que se recupera. */
+  ritmo: RitmoDeProceso | null;
   proceso: ColorDeSemaforo;
   resultado: ColorDeSemaforo;
   color: ColorDeSemaforo;
@@ -78,6 +90,8 @@ export function semaforoDeHipotesis(o: {
   /** Semana del bloque en la que se está (1-indexada) y las que tiene. */
   semanaActual: number;
   semanasTotales: number;
+  /** Semanas del bloque que cuentan para la media del IEM (sin descargas, puentes ni test). Por defecto, `semanasTotales`. */
+  semanasQueCuentan?: number;
 }): FilaDeSemaforo[] {
   const avance = o.semanasTotales > 0 ? Math.min(1, Math.max(0, o.semanaActual / o.semanasTotales)) : 1;
   return ZONAS_IEM.flatMap(z => {
@@ -91,10 +105,24 @@ export function semaforoDeHipotesis(o: {
     const techo = h.iemTecho ?? null;
 
     let proceso: ColorDeSemaforo = 'sin_dato';
+    let ritmo: RitmoDeProceso | null = null;
+    let notaDeProceso = '';
     if (iemMedio != null) {
-      if (recuperar && techo != null) proceso = iemMedio <= techo * (2 - FRACCION_DE_PROCESO_CUMPLIDO) ? 'en_camino' : 'por_detras';
+      if (recuperar && techo != null) proceso = iemMedio <= techo * (2 - FRACCION_DE_SOSTENER) ? 'en_camino' : 'por_detras';
       else if (!recuperar && iemMedioObjetivo != null && iemMedioObjetivo > 0) {
-        proceso = iemMedio >= iemMedioObjetivo * FRACCION_DE_PROCESO_CUMPLIDO ? 'en_camino' : 'por_detras';
+        const porSemana = o.estado?.porZona[zona]?.porSemana ?? [];
+        const p = procesoEnCurso({ objetivo: iemMedioObjetivo, techo, porSemana, semanasTotales: o.semanasQueCuentan ?? o.semanasTotales });
+        if (p) {
+          ritmo = p.ritmo;
+          proceso = p.ritmo === 'tarde' ? 'por_detras' : 'en_camino';
+          notaDeProceso = p.restantes === 0 ? ''
+            : p.ritmo === 'llega' ? ' (llega si sostiene el nivel de ahora)'
+              : p.ritmo === 'a_tiempo' ? (p.semanasDeMargen ? ` (llega si sube en ${p.semanasDeMargen === 1 ? '1 semana' : `${p.semanasDeMargen} semanas`} como tarde)` : ' (para llegar tiene que subir ya)')
+                : p.ritmo === 'tarde' ? ' (ya no llega ni subiendo al techo)' : '';
+        } else {
+          // Sin el reparto por semanas: la cuenta del cierre, tal cual y sin tolerancia.
+          proceso = iemMedio >= iemMedioObjetivo ? 'en_camino' : 'por_detras';
+        }
       }
     }
 
@@ -103,10 +131,12 @@ export function semaforoDeHipotesis(o: {
     const rm = o.rm?.[zona];
     const rmPct = rm == null ? null : redondearIem(rm);
     let resultado: ColorDeSemaforo = 'sin_dato';
+    // Supera el ruido sin llegar a lo que toca: la franja intermedia del veredicto, que no es un fallo.
+    const mejoraParcial = rmPct != null && rmPct < rmEsperadoPct && franjaDeResultado(rmPct, rmObjetivoPct) === 'parcial';
     if (rmPct != null) {
       resultado = rmPct <= -RM_RUIDO_PCT ? 'por_detras'
         // Mientras lo esperado no supere el ruido de medida, cualquier cifra dentro del ruido vale.
-        : rmObjetivoPct <= 0 || rmPct >= rmEsperadoPct || rmEsperadoPct < RM_RUIDO_PCT ? 'en_camino' : 'por_detras';
+        : rmObjetivoPct <= 0 || rmPct >= rmEsperadoPct || rmEsperadoPct < RM_RUIDO_PCT || mejoraParcial ? 'en_camino' : 'por_detras';
     }
 
     const color: ColorDeSemaforo = proceso === 'por_detras' || resultado === 'por_detras' ? 'por_detras'
@@ -117,20 +147,20 @@ export function semaforoDeHipotesis(o: {
     const partes = [
       iemMedio == null ? 'IEM medio sin dato'
         : recuperar ? `IEM medio ${fmt(iemMedio)}${techo != null ? ` (tope ${fmt(techo)})` : ''}`
-          : `IEM medio ${fmt(iemMedio)}${iemMedioObjetivo != null ? ` de ${fmt(iemMedioObjetivo)}` : ''}`,
+          : `IEM medio ${fmt(iemMedio)}${iemMedioObjetivo != null ? ` de ${fmt(iemMedioObjetivo)}` : ''}${notaDeProceso}`,
       !recuperar && techo != null ? `techo ${fmt(techo)}` : null,
       semanasDesdeLaSubida == null ? 'sin subidas todavía'
         : semanasDesdeLaSubida <= 1 ? 'subió esta semana' : `${semanasDesdeLaSubida} semanas desde la última subida`,
       rmPct == null ? 'RM sin medida'
         : rmObjetivoPct <= 0 ? `RM ${conSigno(rmPct)} % (objetivo: no perder)`
-          : `RM ${conSigno(rmPct)} % de +${fmt(rmObjetivoPct)} %${avance < 1 ? ` (a estas alturas, +${fmt(rmEsperadoPct)} %)` : ''}`,
+          : `RM ${conSigno(rmPct)} % de +${fmt(rmObjetivoPct)} %${avance < 1 ? ` (a estas alturas, +${fmt(rmEsperadoPct)} %${mejoraParcial ? ': mejora, menos de lo que toca' : ''})` : mejoraParcial ? ' (mejora, menos de lo buscado)' : ''}`,
     ];
     return [{
       zona, nombre: nombreCortoDeZona(zona), palanca: PALANCAS[h.palanca].etiqueta,
       iemMedio, iemMedioObjetivo, techo,
       subidas: s?.subidas.length ?? 0, semanasDesdeLaSubida,
       rmPct, rmObjetivoPct, rmEsperadoPct,
-      proceso, resultado, color,
+      ritmo, proceso, resultado, color,
       texto: partes.filter((p): p is string => !!p).join(' · '),
     }];
   });
@@ -187,5 +217,6 @@ export function semaforoDelBloque(o: {
     subidas: Object.fromEntries(estrellas.map(z => [z, subidasDeLaZona({ programado: programado.map(p => p[z] ?? 0), destino: hasta + 1, semanasFuera })])),
     rm: Object.fromEntries(estrellas.map(z => [z, rmDeLaZona({ zona: z, ejercicios: progresion, zonaDe }).rmPct])),
     semanaActual: hasta, semanasTotales: o.vueltas,
+    semanasQueCuentan: Math.max(1, meso.weeks - semanasFueraDelBloque(meso).size),
   });
 }

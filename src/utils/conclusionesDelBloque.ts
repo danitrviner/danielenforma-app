@@ -1,4 +1,5 @@
 import type { CierreMesociclo } from './cierreMesociclo.js';
+import { REPS_MAX_RM, REPS_MIN_RM } from './rmValido.js';
 import type { EvolucionDelBloque, EvolucionPregunta } from './evolucionDelBloque.js';
 import { OBJETIVO_LABEL } from './verificacionObjetivo.js';
 import { RUIDO_RM_PCT } from './ruidoDeMedida.js';
@@ -44,7 +45,7 @@ const ARREGLO_SIN_MARCA: Record<MotivoSinMarca, string> = {
   fuera: 'Son sesiones fuera de su gimnasio: no hay nada que corregir. La lectura de fuerza sale de las que hizo en su gimnasio; si casi todas son fuera, mirar el RIR y las series en vez de los kilos.',
   rir_sin_apuntar: 'Pedirle que apunte el RIR real de cada serie: con el RIR pautado sin tocar no se puede estimar su fuerza.',
   rir_lejos: 'Pautar (o pedirle) al menos una serie por ejercicio a RIR 2 o menos: a RIR 3 o más el RM estimado no es fiable.',
-  reps_altas: 'Si se quiere seguir la fuerza de esos ejercicios, llevar alguna serie al rango de 3 a 12 repeticiones: por encima la estimación del RM pierde precisión.',
+  reps_altas: `Si se quiere seguir la fuerza de esos ejercicios, llevar alguna serie al rango de ${REPS_MIN_RM} a ${REPS_MAX_RM} repeticiones: por encima la estimación del RM pierde precisión.`,
   reps_bajas: 'Con menos de 3 repeticiones no se estima el RM: si son series de calentamiento mal apuntadas, revisarlo con él.',
 };
 

@@ -11,7 +11,7 @@ import { mejorSerieValida } from './marcaDeSesion.js';
    sin historial no hay récord (un primer registro no es una mejora).
 
    Desde el 17-11-2026 (D2) la marca es la de la mejor serie VÁLIDA
-   (`marcaDeSesion.ts`: 3-12 repeticiones, RIR 2 o menos, RIR apuntado por el
+   (`marcaDeSesion.ts`: 3-15 repeticiones, RIR 2 o menos, RIR apuntado por el
    atleta, sin bajadas ni miniseries), igual que el récord contra el que se
    compara (`allTimeBestBefore`). Una serie de 20 a RIR 4 ya no es «tu mejor
    marca». El tonelaje sigue contando todo lo levantado.

@@ -7,7 +7,9 @@ import {
 } from './doctrina';
 import { MUSCLE_LABELS, type MuscleGroup } from '../types';
 import { RM_OBJETIVO_PCT, SEMANAS_ENTRE_SUBIDAS, SEMANAS_POR_DEFECTO } from '../utils/hipotesisDeBloque/cifras';
-import { RUIDO_RM_PCT } from '../utils/ruidoDeMedida';
+import { MEJORA_SOSTENIDA_RM_PCT, RUIDO_RM_PCT, SESIONES_DEL_NIVEL } from '../utils/ruidoDeMedida';
+import { SEMANAS_PARA_CAMBIAR_VARIANTE, SEMANAS_SIN_MEJORAR, SESIONES_SIN_MEJORAR } from '../utils/estancamiento';
+import { UMBRALES_PROTOCOLO } from '../utils/cdg/agujetas';
 import { REPS_MAX_RM, REPS_MIN_RM, RIR_MAX_RM } from '../utils/rmValido';
 
 describe('buildDoctrinaBlock', () => {
@@ -148,10 +150,27 @@ describe('decisiones de Dani que no se pueden perder', () => {
     expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).not.toContain('Cuando toca: última semana');
   });
 
-  it('el RM estimado tiene un ruido del 3 % y solo cuentan series de 3 a 12 repeticiones con RIR 2 o menos', () => {
-    expect([RUIDO_RM_PCT, REPS_MIN_RM, REPS_MAX_RM, RIR_MAX_RM]).toEqual([3, 3, 12, 2]);
-    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/series de 3 a 12 repeticiones\s+con RIR 2 o menos/);
+  // Auditoría de cifras (17-11-2026, aprobada por Dani): el tope de repeticiones
+  // válidas para el RM sube de 12 a 15. El ruido (3 %) y el RIR (2) no cambian.
+  it('el RM estimado tiene un ruido del 3 % y solo cuentan series de 3 a 15 repeticiones con RIR 2 o menos', () => {
+    expect([RUIDO_RM_PCT, REPS_MIN_RM, REPS_MAX_RM, RIR_MAX_RM]).toEqual([3, 3, 15, 2]);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/series de 3 a 15 repeticiones\s+con RIR 2 o menos/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).not.toMatch(/3 a 12 repeticiones/);
     expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain('ruido del 3 %');
+  });
+
+  it('el estancamiento se cuenta en semanas y con mejora sostenida: 6 para avisar, 12 para cambiar de variante', () => {
+    expect([SEMANAS_SIN_MEJORAR, SEMANAS_PARA_CAMBIAR_VARIANTE, SESIONES_SIN_MEJORAR, MEJORA_SOSTENIDA_RM_PCT, SESIONES_DEL_NIVEL]).toEqual([6, 12, 6, 2, 3]);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/la mediana de sus 3 últimas marcas\): mejorar es subirlo un 2 % o más/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/Estancado = 6 semanas o más sin mejorar con la misma tarea/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/el cambio de variante no se plantea antes de las\s+12 semanas/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain('Se cuenta en semanas, no en sesiones');
+  });
+
+  it('el cansancio al salir frena sesión a sesión: una sesión de 8 o más, sus zonas; la media, todas', () => {
+    expect(UMBRALES_PROTOCOLO.fatigaPostAlta).toBe(8);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/una sesión de la que sale con 8\/10 o más frena las\s+zonas que se trabajaron en ella/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/si la MEDIA de la semana llega a 8\/10, no se sube ninguna zona/);
   });
 
   it('el grupo prioritario va primero en la sesión', () => {

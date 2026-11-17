@@ -17,7 +17,9 @@ describe('marca de una sesión (D2)', () => {
   });
 
   it('una sesión sin ninguna serie válida no tiene marca: null, no 0', () => {
-    expect(marcaDeSesion([s(60, 15), s(60, 14)])).toBeNull(); // más de 12 repeticiones
+    expect(marcaDeSesion([s(60, 16), s(60, 20)])).toBeNull(); // más de 15 repeticiones
+    // Hasta 15 sí vale (auditoría de cifras, 17-11-2026; antes el tope era 12).
+    expect(marcaDeSesion([s(60, 15), s(60, 14)])).toBe(rmDeSerie(s(60, 15)));
     expect(marcaDeSesion([s(80, 8, 3), s(80, 8, 5)])).toBeNull(); // RIR de 3 o más
     expect(marcaDeSesion([s(80, 8, 2, { rirApuntado: false })])).toBeNull(); // RIR pautado sin tocar
     expect(marcaDeSesion([s(100, 5, 0, { segmento: true })])).toBeNull(); // solo una bajada
@@ -32,7 +34,7 @@ describe('marca de una sesión (D2)', () => {
 
   it('lee las series de la sesión en curso, que vienen como texto', () => {
     expect(rmValidoDeSerie({ weight: '80', repsDone: '8', rir: '2' })).toBe(rmDeSerie(s(80, 8)));
-    expect(rmValidoDeSerie({ weight: '80', repsDone: '15', rir: '2' })).toBeNull();
+    expect(rmValidoDeSerie({ weight: '80', repsDone: '16', rir: '2' })).toBeNull();
   });
 
   it('con `kg` suma el peso corporal de dominadas y fondos', () => {
@@ -43,14 +45,14 @@ describe('marca de una sesión (D2)', () => {
 
 describe('por qué una sesión se queda sin marca', () => {
   it('el motivo más repetido entre sus series con peso', () => {
-    expect(motivoSinMarca([s(60, 15), s(60, 15), s(60, 8, 4)])).toBe('reps_altas');
+    expect(motivoSinMarca([s(60, 20), s(60, 20), s(60, 8, 4)])).toBe('reps_altas');
     expect(motivoSinMarca([s(80, 8, 3), s(80, 8, 4)])).toBe('rir_lejos');
     expect(motivoSinMarca([s(80, 8, 2, { rirApuntado: false }), s(80, 8, 2, { rirApuntado: false })])).toBe('rir_sin_apuntar');
     expect(motivoSinMarca([s(120, 1, 0), s(120, 2, 0)])).toBe('reps_bajas');
   });
 
   it('null si tiene marca o si no hay series con peso', () => {
-    expect(motivoSinMarca([s(60, 15), s(80, 8)])).toBeNull();
+    expect(motivoSinMarca([s(60, 20), s(80, 8)])).toBeNull();
     expect(motivoSinMarca([s(0, 20)])).toBeNull();
     // Las bajadas no cuentan ni a favor ni en contra.
     expect(motivoSinMarca([s(80, 8, 4), s(60, 20, 0, { segmento: true })])).toBe('rir_lejos');

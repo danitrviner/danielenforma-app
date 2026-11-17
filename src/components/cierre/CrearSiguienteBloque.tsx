@@ -142,6 +142,11 @@ export default function CrearSiguienteBloque({ athleteEmail, meso, propuesto, si
       {[...r.rotacion, ...r.avisos].map(t => (
         <p key={t} className="font-sans text-caption text-warning">{t}</p>
       ))}
+      {/* Por qué alguna hipótesis no propone lo de siempre (déficit, zona ya
+          alta). Son propuestas: se cambian en el editor. */}
+      {(r.notas ?? []).map(t => (
+        <p key={t} className="font-sans text-caption text-ink-2">{t}</p>
+      ))}
       {(sinFirmar || sinCifras) && !creado && (
         <p className="font-mono text-caption text-ink-3">
           {sinFirmar && r.estrellas.length > 0 && 'Los veredictos están sin firmar: la propuesta sale de la lectura de la app. '}

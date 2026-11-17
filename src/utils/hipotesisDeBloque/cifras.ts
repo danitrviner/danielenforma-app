@@ -42,11 +42,44 @@ export const RANGO_REDUCCION_SEMANA_1_PCT = { min: 5, max: 10 } as const;
  */
 export const ESCALONES_DE_TECHO = 1;
 
-/** PROCESO: el IEM medio del bloque tiene que ser la media del anterior más
- *  este % (Dani). */
-export const SUBIDA_DE_PROCESO_PCT = 10;
-/** PROCESO cumplido si se llega a esta fracción del objetivo (Dani: 95 %). */
-export const FRACCION_DE_PROCESO_CUMPLIDO = 0.95;
+/**
+ * PROCESO: el IEM medio del bloque tiene que llegar a donde ACABÓ el anterior
+ * más esta fracción del escalón de la velocidad (medio escalón: un 5 % en
+ * suave). Dani, auditoría de cifras del 17-11-2026.
+ *
+ * Hasta entonces era «la MEDIA del anterior + 10 %, cumplido al 95 %», y no
+ * distinguía nada: con un bloque anterior en rampa (media 52, final 58) el
+ * objetivo era 57,2 y se cumplía con 54,3, es decir, ya estaba cumplido al
+ * arrancar en 58 sin subir nada. Ahora, con arranque 58 y techo 63,8, la
+ * media solo llega a 60,9 (+5 %) si el escalón se da antes de la semana 7 de
+ * 12: el proceso se cumple si de verdad se subió, y a tiempo.
+ */
+export const FRACCION_DE_ESCALON_DE_PROCESO = 0.5;
+/**
+ * Lo mismo en % para la velocidad por defecto (suave: 10 % × 0,5). Solo para
+ * textos (lo cita la doctrina del asistente): las cuentas usan la fracción de
+ * arriba con la velocidad de cada bloque.
+ */
+export const SUBIDA_DE_PROCESO_PCT = 5;
+/**
+ * PROCESO de una zona que NO sube (palanca «ejercicios», techo sin subir por
+ * zona alta, por déficit o porque respondió con menos): sostener. La media
+ * tiene que llegar a esta fracción de donde acabó el anterior (Dani, 17-11).
+ * Es también el margen con el que «recuperar» da por bueno que se bajó (un
+ * 5 % por encima de su tope). Ya NO es una tolerancia sobre el objetivo de
+ * subir: ese se cumple entero o no se cumple.
+ */
+export const FRACCION_DE_SOSTENER = 0.95;
+
+/**
+ * IEM semanal de una zona a partir del cual está «alta» y el techo deja de
+ * subir por defecto (Dani, auditoría de cifras del 17-11-2026). Origen: el
+ * curso pide ser conservador con el IEM de una zona por encima de 80-110; se
+ * toma el extremo bajo. Sin tope, cuatro bloques seguidos en suave llevaban
+ * una zona de 58 a 85 (de 14 a unas 20 series). Es una propuesta: el coach
+ * puede subir el techo a mano.
+ */
+export const IEM_ZONA_ALTA = 80;
 
 /** Entre subida y subida, semanas sostenidas como mínimo en el nivel nuevo
  *  (Dani). La semana en la que se sube cuenta como la primera. */
@@ -68,7 +101,30 @@ export const SUBIDA_MINIMA = { puntos: 0.5, pct: 3 } as const;
 /** RESULTADO: mejora del RM estimado medio de los ejercicios de la zona, en %
  *  (Dani). */
 export const RM_OBJETIVO_PCT = 5;
-/** Por debajo de esto un cambio de RM es ruido de medida (`ruidoDeMedida.ts`). */
+/**
+ * RESULTADO en un principiante, en % (propio, aceptado por Dani en la
+ * auditoría de cifras del 17-11-2026): un principiante supera el 5 % casi
+ * siempre, y con ese listón el veredicto diría «confirmada» de cualquier
+ * apuesta sin distinguir nada.
+ */
+export const RM_OBJETIVO_PRINCIPIANTE_PCT = 8;
+/**
+ * RESULTADO con el bloque en déficit: no perder (Dani, 17-11-2026). Un
+ * objetivo de 0 lo trata el veredicto como cumplido mientras el RM no caiga
+ * más que el ruido de medida. Es una sugerencia editable, no un bloqueo: la
+ * periodización nutricional no toca el entreno.
+ */
+export const RM_OBJETIVO_EN_DEFICIT_PCT = 0;
+/**
+ * Por debajo de esto un cambio de RM es ruido de medida (`ruidoDeMedida.ts`).
+ * Es también el suelo de la franja «mejora, menos de lo buscado» (auditoría
+ * de cifras, 17-11-2026). Lo medido con un ruido realista del 3 % por sesión:
+ * una zona que mejora de verdad un 5 % llega al objetivo el 50 % de las veces
+ * (con un 4 % real, el 28-33 %), así que «o llega o no responde» daba dos «no
+ * responde» seguidos por puro azar 1 de cada 4 veces y rotaba la estrella. En
+ * cambio, con un 0 % real solo se pasa del 3 % el 3-8 % de las veces: lo que
+ * supera el ruido es mejora de verdad aunque no llegue al objetivo.
+ */
 export const RM_RUIDO_PCT = RUIDO_RM_PCT;
 /**
  * En un avanzado lo normal es +2-3 % de RM en 12 semanas (Dani): no se le

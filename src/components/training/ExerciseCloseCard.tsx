@@ -79,7 +79,7 @@ const CHIPS_RAPIDOS = ['Me sobró una rep', 'Molestia leve', 'Buena técnica', '
  * vea en el momento, no al final de los 5 ejercicios.
  *
  * D9 (17-11-2026): el récord solo sale con una serie VÁLIDA para el RM
- * (`esSerieValidaParaRm`: 3-12 repeticiones, RIR 2 o menos y apuntado por él).
+ * (`esSerieValidaParaRm`: 3-15 repeticiones, RIR 2 o menos y apuntado por él).
  * Antes bastaba subir el RIR del desplegable para que saliera «Récord personal».
  */
 export default function ExerciseCloseCard({

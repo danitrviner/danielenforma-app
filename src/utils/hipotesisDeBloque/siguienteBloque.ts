@@ -1,5 +1,6 @@
 import type {
-  HipotesisDeZona, Mesocycle, MuscleGroup, TemplateDay, TipoDeBloque, VeredictoDeHipotesis, Workout, WorkoutExercise,
+  ExperienceLevel, HipotesisDeZona, Mesocycle, MuscleGroup, NutritionProgram, TemplateDay, TipoDeBloque, VeredictoDeHipotesis,
+  Workout, WorkoutExercise,
 } from '../../types.js';
 import { MUSCLE_LABELS } from '../../types.js';
 import { cicloDiasDeMeso } from '../asignacionMesociclo.js';
@@ -10,6 +11,7 @@ import { conRampaPendiente } from '../rampaEnRutinas.js';
 import { etapaDesdeMeso, mesoDeAtletaDesdeEtapa, rutinasDeMesoDePlantilla } from '../plantillaMeso.js';
 import { planDeSemana1Reducida, resolveExerciseForWeek, vueltasDelCiclo } from '../progression.js';
 import { addDays, diasEntreFechas } from '../trainingWeek.js';
+import { bloqueEnDeficit } from './bloqueEnDeficit.js';
 import { candidatosACambio, type CandidatoACambio } from './candidatosACambio.js';
 import type { EstadoDeEjercicio, EstadoDelBloque } from './estadoDelBloqueAnterior.js';
 import type { BloqueConCierre } from './historial.js';
@@ -36,9 +38,14 @@ import { cierreParaGuardar, type PropuestaSiguiente } from './veredicto.js';
     · Tipo de bloque: el mismo, salvo «primer bloque», que solo hay uno: el
       siguiente es de desarrollo.
     · Estrellas: las que tenía, menos las que la rotación suelta (dos «no
-      responde» seguidos, `rotacionDeEstrellas`). El hueco lo recoge una zona
+      responde» seguidos, `rotacionDeEstrellas`; una «mejora, menos de lo
+      buscado» no cuenta y sigue la misma línea sin subir el techo). El hueco lo recoge una zona
       que pida el atleta; si no pide ninguna, se queda libre y se le dice al
       coach cuáles llevan dos bloques en mantener.
+    · Objetivo de resultado y techo según el caso (auditoría de cifras,
+      17-11-2026): +8 % de RM en un principiante; con el bloque NUEVO cayendo
+      en déficit, no perder y techo sin subir; con la zona ya alta (80 de IEM
+      o más), techo sin subir. Sale de `proponerHipotesis` y se edita después.
     · NO se heredan descargas, puentes, test, notas de semana ni eventos: eran
       de aquel calendario.
 
@@ -76,6 +83,11 @@ export interface EntradaDeSiguienteBloque {
   athleteName?: string;
   nombreDe?: (exerciseId: string) => string | undefined;
   grupoDe?: (exerciseId: string) => MuscleGroup | undefined;
+  /** Nivel del atleta (`OnboardingData.experienceLevel`): a un principiante se le pide más RM. */
+  nivel?: ExperienceLevel;
+  /** Periodización nutricional del atleta: si el bloque NUEVO cae mayoritariamente
+   *  en déficit, se propone no perder fuerza y no subir el techo. */
+  programaNutricion?: NutritionProgram | null;
 }
 
 export interface SiguienteBloque {
@@ -100,6 +112,10 @@ export interface SiguienteBloque {
     motivoDeArranque: string | null;
     /** Avisos de la propuesta de hipótesis (estrellas de más, zona que debería soltarla…). */
     avisos: string[];
+    /** El bloque nuevo cae mayoritariamente en una fase de déficit. */
+    enDeficit: boolean;
+    /** Por qué alguna hipótesis no propone lo de siempre (déficit, zona ya alta), en frases para el coach. */
+    notas: string[];
     /** Ya hay un bloque que empieza después del que se cierra. */
     hayPosterior: boolean;
   };
@@ -231,9 +247,11 @@ export function siguienteBloque(e: EntradaDeSiguienteBloque): SiguienteBloque {
     const l = meso.hipotesis?.[z]?.limite?.trim();
     return l ? [[z, l]] : [];
   })) as Partial<Record<ZonaIem, string>>;
+  // Déficit: se mira el bloque NUEVO (sus fechas), no el que se cierra.
+  const enDeficit = bloqueEnDeficit(e.programaNutricion, inicio, addDays(inicio, preset.semanas * 7 - 1));
   const propuesta = proponerHipotesis({
     tipo, estrellas: conEstrella, velocidad: meso.cdgVelocidad, semana1Reducida: arranque.semana1Reducida,
-    anterior: e.estado ?? null, historial, limites,
+    anterior: e.estado ?? null, historial, limites, nivel: e.nivel, enDeficit,
   });
   const hipotesis: Partial<Record<string, HipotesisDeZona>> = { ...propuesta.hipotesis };
   const cdgObjetivosIem: Partial<Record<string, number>> = { ...propuesta.cdgObjetivosIem };
@@ -243,11 +261,13 @@ export function siguienteBloque(e: EntradaDeSiguienteBloque): SiguienteBloque {
     if (!h || v.lectura !== 'confirmada' || v.propuesta?.subirTecho !== false) continue;
     const sinSubir = cifrasDeHipotesis({
       palanca: h.palanca, estado: e.estado?.porZona[v.zona as ZonaIem], velocidad: meso.cdgVelocidad ?? preset.velocidad,
-      semana1Reducida: arranque.semana1Reducida, subir: false, limite: h.limite,
+      semana1Reducida: arranque.semana1Reducida, subir: false, limite: h.limite, rmObjetivoPct: h.rmObjetivoPct,
     });
     hipotesis[v.zona] = sinSubir;
     if (sinSubir.iemTecho != null) cdgObjetivosIem[v.zona] = sinSubir.iemTecho;
   }
+  const notas = [...new Set(conEstrella.flatMap(z => (propuesta.notas[z] ?? [])
+    .map(n => (n.clave === 'deficit' ? n.texto : `${nombreCortoDeZona(z)}: ${n.texto.charAt(0).toLowerCase()}${n.texto.slice(1)}`))))];
 
   const nuevo: Omit<Mesocycle, 'id'> = {
     ...clonado,
@@ -289,7 +309,7 @@ export function siguienteBloque(e: EntradaDeSiguienteBloque): SiguienteBloque {
       numero, inicio, semanas: preset.semanas, tipo, estrellas: conEstrella, rotacion,
       seQuedan: clonar.length, candidatos: cambiar,
       semana1Reducida: arranque.semana1Reducida, vuelveDeParon: arranque.vuelveDeParon, motivoDeArranque: arranque.motivo,
-      avisos: propuesta.avisos,
+      avisos: propuesta.avisos, enDeficit, notas,
       hayPosterior: e.mesocycles.some(m => m.id !== meso.id && m.startDate > meso.startDate),
     },
   };

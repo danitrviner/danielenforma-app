@@ -19,6 +19,12 @@ import { Seccion } from './piezas';
    y el recuadro «Bloque siguiente» con lo que propone el motor y un campo
    donde el coach escribe su decisión.
 
+   Cinco sellos posibles. «Mejora, menos de lo buscado» (auditoría de cifras,
+   17-11-2026) es el del RM que supera el ruido de medida sin llegar al
+   objetivo con el proceso cumplido: va en gris, ni verde ni ámbar, porque no
+   cuenta ni a favor ni en contra, y la ficha propone la misma línea sin subir
+   el techo.
+
    La app lee; el coach firma. «Guardar veredictos» escribe el cierre en el
    mesociclo (`Mesocycle.cierreDeHipotesis`); una vez firmado se enseña lo
    guardado, con su fecha, y se puede corregir y volver a guardar.
@@ -180,6 +186,12 @@ export default function VeredictosDeHipotesis({
               );
             })}
           </div>
+          {base.some(v => v.lectura === 'mejora_parcial') && (
+            <p className="font-sans text-caption text-ink-3">
+              «Mejora, menos de lo buscado»: el RM sube más que el ruido de medida sin llegar al objetivo. No cuenta como no responder:
+              ni cambia la palanca ni mueve la estrella.
+            </p>
+          )}
           {haCambiado && !presentando && (
             <p className="font-sans text-caption text-warning">
               Los datos del bloque han cambiado desde que firmaste. Se enseña lo firmado; al guardar otra vez se actualizan las cifras.

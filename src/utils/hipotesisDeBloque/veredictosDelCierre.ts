@@ -16,9 +16,10 @@ import {
   estadoDeLosEjercicios, estadoDelBloqueAnterior, iniciosDeSemanaDelBloque,
   type EstadoDeEjercicio, type EstadoDelBloque,
 } from './estadoDelBloqueAnterior.js';
+import { RM_RUIDO_PCT } from './cifras.js';
 import { ordenarBloques } from './historial.js';
 import { estrellasDe, nombreCortoDeZona } from './tiposDeBloque.js';
-import { veredictosDelBloque, zonaPrincipalDeEjercicios, type VeredictoCalculado } from './veredicto.js';
+import { franjaDeResultado, veredictosDelBloque, zonaPrincipalDeEjercicios, type VeredictoCalculado } from './veredicto.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Los veredictos del bloque, montados para el cierre (17-11-2026)
@@ -256,6 +257,8 @@ export interface LecturaDeVeredicto {
 
 const SELLO: Record<VeredictoCalculado['lectura'], { texto: string; tono: TonoDeLectura }> = {
   confirmada: { texto: 'Apuesta confirmada', tono: 'bien' },
+  // Ni a favor ni en contra: mejora de verdad, pero no lo que se buscaba (auditoría de cifras, 17-11-2026).
+  mejora_parcial: { texto: 'Mejora, menos de lo buscado', tono: 'neutro' },
   no_responde: { texto: 'No responde a esto', tono: 'atencion' },
   responde_con_menos: { texto: 'Responde con menos', tono: 'bien' },
   sin_probar: { texto: 'Sin probar', tono: 'neutro' },
@@ -266,7 +269,7 @@ export const selloDeLectura = (lectura: VeredictoCalculado['lectura']) => SELLO[
 
 type VeredictoParaLeer = Pick<VeredictoCalculado,
   'zona' | 'palanca' | 'iemMedio' | 'iemMedioObjetivo' | 'procesoCumplido' | 'rmPct' | 'rmObjetivoPct' | 'resultadoCumplido' | 'lectura'>
-  & Partial<Pick<VeredictoCalculado, 'ejerciciosQueCuentan' | 'mejoraSinLlegar' | 'rmPctAcumulado' | 'limites' | 'propuesta' | 'causa'>>;
+  & Partial<Pick<VeredictoCalculado, 'ejerciciosQueCuentan' | 'resultado' | 'mejoraSinLlegar' | 'rmPctAcumulado' | 'limites' | 'propuesta' | 'causa'>>;
 
 const conSigno = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmt(Math.abs(v))}`;
 
@@ -316,10 +319,15 @@ export function lecturaDeVeredicto(v: VeredictoParaLeer, o: {
   } else {
     const objetivo = v.rmObjetivoPct > 0 ? `objetivo +${fmt(v.rmObjetivoPct)} %` : 'objetivo: no perder';
     const acumulado = v.rmPctAcumulado != null ? ` ${conSigno(v.rmPctAcumulado)} % sumando el bloque anterior.` : '';
-    const matiz = v.mejoraSinLlegar ? ' Mejora, pero menos de lo buscado.' : '';
+    // Las tres franjas. Un veredicto guardado no trae la franja: se deduce de
+    // sus cifras (en un avanzado, de lo sumado a dos bloques si lo trae).
+    const parcial = v.resultadoCumplido === false
+      && (v.resultado ?? franjaDeResultado(v.rmPctAcumulado ?? v.rmPct, v.rmObjetivoPct)) === 'parcial';
+    const matiz = parcial ? ` Supera el ruido de medida (${RM_RUIDO_PCT} %) sin llegar al objetivo.`
+      : v.mejoraSinLlegar && v.resultadoCumplido == null ? ' Mejora, pero menos de lo buscado.' : '';
     resultado = {
-      estado: v.resultadoCumplido == null ? 'A dos bloques.' : v.resultadoCumplido ? 'Sí.' : 'No.',
-      tono: v.resultadoCumplido == null ? 'neutro' : v.resultadoCumplido ? 'bien' : 'atencion',
+      estado: v.resultadoCumplido == null ? 'A dos bloques.' : v.resultadoCumplido ? 'Sí.' : parcial ? 'Mejora, sin llegar.' : 'No.',
+      tono: v.resultadoCumplido == null || parcial ? 'neutro' : v.resultadoCumplido ? 'bien' : 'atencion',
       texto: `RM estimado medio ${conSigno(v.rmPct)} %${enCuantos} (${objetivo}).${acumulado}${matiz}`,
     };
   }
