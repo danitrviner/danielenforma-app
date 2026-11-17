@@ -9,6 +9,8 @@ import {
 import { WorkoutLog, Exercise } from '../types';
 import { getMesocycles } from '../dbService';
 import { rmValidoDeSerie } from '../utils/marcaDeSesion';
+import { esSesionFuera, kgDeSerie } from '../utils/sesionFuera';
+import EtiquetaFuera from './training/EtiquetaFuera';
 import { REPS_MAX_RM, REPS_MIN_RM, RIR_MAX_RM } from '../utils/rmValido';
 import { addDays } from '../utils/trainingWeek';
 import { ewmaDeSeriePorSesion } from '../utils/loadTrend';
@@ -84,6 +86,9 @@ interface SessionRow {
    *  trae (sesión antigua, de antes del cronómetro general) — se omite en
    *  vez de pintar un "0:00" que no es un dato real. */
   duracionSeg: number | null;
+  /** Alguna sesión de esta fecha se hizo fuera de su gimnasio: sus kilos no
+   *  suman tonelaje ni dan 1RM (utils/sesionFuera.ts). */
+  fuera?: boolean;
 }
 
 interface ChartPoint extends SessionRow {
@@ -190,11 +195,13 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
         byDate.set(log.date, row);
       }
       if (log.duracionSeg != null) row.duracionSeg = (row.duracionSeg ?? 0) + log.duracionSeg;
+      if (esSesionFuera(log)) row.fuera = true;
       for (const entry of log.entries) {
         for (const s of entry.sets) {
           row.sets++;
           row.reps    += Number(s.repsDone);
-          row.tonnage  = Math.round((row.tonnage + Number(s.weight) * Number(s.repsDone)) * 10) / 10;
+          // Una serie fuera de su gimnasio no suma kilos (utils/sesionFuera.ts).
+          row.tonnage  = Math.round((row.tonnage + kgDeSerie(s)) * 10) / 10;
           if (entry.exerciseId === activeExId) {
             const v = rmValidoDeSerie(s);
             if (v != null && v > (row.orm ?? 0)) row.orm = v;
@@ -645,7 +652,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
         <div className="flex flex-col gap-2 sm:hidden">
           {[...sessionRows].reverse().map(row => (
             <div key={row.date} className="bg-bg border border-hairline rounded-surface px-3 py-3 flex items-center justify-between gap-2">
-              <span className="font-sans text-caption text-ink-2 flex-shrink-0">{row.label}</span>
+              <span className="font-sans text-caption text-ink-2 flex-shrink-0">{row.label}{row.fuera && <EtiquetaFuera />}</span>
               <div className="flex items-center gap-3 flex-shrink-0 font-mono text-caption">
                 {row.duracionSeg != null && (
                   <span className="text-ink-2">{formatearDuracion(row.duracionSeg)}</span>
@@ -679,7 +686,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   key={row.date}
                   className={`border-b border-hairline ${i % 2 === 0 ? 'bg-bg' : 'bg-bg'} hover:bg-raised transition-colors`}
                 >
-                  <td className="px-3 py-3 font-sans text-caption text-ink-2">{row.label}</td>
+                  <td className="px-3 py-3 font-sans text-caption text-ink-2">{row.label}{row.fuera && <EtiquetaFuera />}</td>
                   {hayDuracion && (
                     <td className="px-3 py-3 font-mono text-caption text-ink-2">
                       {row.duracionSeg != null ? formatearDuracion(row.duracionSeg) : '—'}

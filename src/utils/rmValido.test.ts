@@ -49,3 +49,11 @@ describe('mediana', () => {
     expect(mediana([])).toBeNull();
   });
 });
+
+describe('fuera de su gimnasio (17-11-2026)', () => {
+  it('una serie hecha fuera no vale para el RM, aunque sea perfecta', () => {
+    expect(motivoDeNoValer(serie(8, 1, { fuera: true }))).toBe('fuera');
+    expect(esSerieValidaParaRm(serie(8, 1, { fuera: true }))).toBe(false);
+    expect(seriesValidasParaRm([serie(8, 1), serie(8, 1, { fuera: true })])).toHaveLength(1);
+  });
+});

@@ -84,3 +84,13 @@ describe('tonelajeMaximoAntesDe', () => {
     expect(m.get('e1')).toBe(600);
   });
 });
+
+describe('fuera de su gimnasio (17-11-2026)', () => {
+  it('el tonelaje máximo de antes no cuenta las sesiones fuera', () => {
+    const l = (date: string, weight: number, fuera = false): WorkoutLog => ({
+      id: date, athleteId: 'a', workoutId: 'w', assignmentId: date, date, completedAt: '',
+      entries: [{ exerciseId: 'press', sets: [{ weight, repsDone: 10, rir: 2, ...(fuera ? { fuera: true } : {}) }] }],
+    });
+    expect(tonelajeMaximoAntesDe([l('2026-11-01', 60), l('2026-11-08', 100, true)], '2026-11-17').get('press')).toBe(600);
+  });
+});

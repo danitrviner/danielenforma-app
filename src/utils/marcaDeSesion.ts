@@ -30,6 +30,8 @@ export interface SerieRegistrada {
   alFallo?: boolean;
   segmento?: boolean;
   rirApuntado?: boolean;
+  /** Hecha fuera del gimnasio habitual (ver utils/sesionFuera.ts). */
+  fuera?: boolean;
 }
 
 const num = (v: number | string | null | undefined) => Number(v) || 0;
@@ -41,6 +43,7 @@ const paraElFiltro = (s: SerieRegistrada): SerieParaRm => ({
   alFallo: s.alFallo,
   segmento: s.segmento,
   rirApuntado: s.rirApuntado,
+  fuera: s.fuera,
 });
 
 /**
@@ -75,14 +78,17 @@ export function marcaDeSesion<T extends SerieRegistrada>(sets: readonly T[], pes
   return mejorSerieValida(sets, pesoDe)?.rm ?? null;
 }
 
-/** Por qué una sesión se queda sin marca. */
-export type MotivoSinMarca = 'reps_altas' | 'reps_bajas' | 'rir_lejos' | 'rir_sin_apuntar';
+/** Por qué una sesión se queda sin marca. `fuera` (17-11-2026): la sesión se
+ *  hizo fuera de su gimnasio y sus kilos no se comparan (utils/sesionFuera.ts). */
+export type MotivoSinMarca = 'fuera' | 'reps_altas' | 'reps_bajas' | 'rir_lejos' | 'rir_sin_apuntar';
 
-/** Orden en el que se desempata y se enseña: primero lo que el atleta arregla antes. */
-export const MOTIVOS_SIN_MARCA: readonly MotivoSinMarca[] = ['rir_sin_apuntar', 'rir_lejos', 'reps_altas', 'reps_bajas'];
+/** Orden en el que se desempata y se enseña: primero lo que el atleta arregla
+ *  antes. `fuera` delante: no es algo que arreglar, y explica la sesión entera. */
+export const MOTIVOS_SIN_MARCA: readonly MotivoSinMarca[] = ['fuera', 'rir_sin_apuntar', 'rir_lejos', 'reps_altas', 'reps_bajas'];
 
 /** Cómo se le dice al coach. */
 export const ETIQUETA_SIN_MARCA: Record<MotivoSinMarca, string> = {
+  fuera: 'fuera de su gimnasio',
   reps_altas: `más de ${REPS_MAX_RM} repeticiones`,
   reps_bajas: `menos de ${REPS_MIN_RM} repeticiones`,
   rir_lejos: 'RIR de 3 o más',
@@ -92,6 +98,7 @@ export const ETIQUETA_SIN_MARCA: Record<MotivoSinMarca, string> = {
 /** Por qué no vale una serie con peso (bajadas y miniseries aparte: nunca son la marca). */
 export function motivoDeSerieSinMarca(s: SerieRegistrada): MotivoSinMarca | null {
   const motivo = motivoDeNoValer(paraElFiltro(s));
+  if (motivo === 'fuera') return 'fuera';
   if (motivo === 'reps') return num(s.repsDone) > REPS_MAX_RM ? 'reps_altas' : 'reps_bajas';
   if (motivo === 'rir') return 'rir_lejos';
   if (motivo === 'rir_sin_apuntar') return 'rir_sin_apuntar';

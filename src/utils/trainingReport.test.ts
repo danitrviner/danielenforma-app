@@ -132,3 +132,18 @@ describe('1RM del informe con series válidas (D2)', () => {
     expect(r.muscleGroups.find(g => g.group === 'dorsal')!.meanOrm).toBeNull();
   });
 });
+
+describe('fuera de su gimnasio (17-11-2026)', () => {
+  it('las series fuera cuentan como series pero no suman tonelaje ni dan 1RM', () => {
+    const l: WorkoutLog = {
+      id: 'f', athleteId: 'a', workoutId: 'w', assignmentId: 'f', date: '2026-11-10', completedAt: '', fuera: true,
+      entries: [{ exerciseId: 'press', sets: [{ weight: 40, repsDone: 10, rir: 1, fuera: true }, { weight: 40, repsDone: 10, rir: 1, fuera: true }] }],
+    };
+    const agg = aggregate([l]);
+    const row = agg.perExercise.get('press')!;
+    expect(row.sets).toBe(2);
+    expect(row.tonnage).toBe(0);
+    expect(row.bestOrm).toBe(0);
+    expect(agg.tonnage).toBe(0);
+  });
+});

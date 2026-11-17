@@ -7,6 +7,7 @@ import { parseTargetReps } from '../../utils/warmup/WarmupEngine';
 import { seriesPrincipales } from '../../utils/seriesPrincipales';
 import { sugerirCarga, consejoEnVivo } from '../../utils/cargaSugerida';
 import { consejoDeDiaMalo } from '../../utils/diaMalo';
+import PistaDePesoFuera from './PistaDePesoFuera';
 import { pausaEntreTurnos, siguienteTurno, turnosDePareja } from '../../utils/seriesAlternas';
 import ExerciseVideoPlayer from '../ExerciseVideoPlayer';
 import RestRing from './RestRing';
@@ -63,12 +64,15 @@ interface Props {
   tipoSemana?: TipoDeSemana | null;
   /** D1c: cómo se le pide el RIR (ver `VarianteRir` en setInput.ts). Sin ella, la de hoy. */
   varianteRir?: VarianteRir;
+  /** Sesión fuera de su gimnasio (utils/sesionFuera.ts): sin lo de la última
+   *  vez, sin subidas y con la pista del peso. */
+  fuera?: boolean;
   key?: React.Key;
 }
 
 const CELDA = 'rounded-control border bg-field px-1 sm:px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed';
 
-export default function ParejaAlternaCard({ lados, restTimer, onSkipRest, onAddRestSeconds, tipoSemana, varianteRir = VARIANTE_RIR_POR_DEFECTO }: Props) {
+export default function ParejaAlternaCard({ lados, restTimer, onSkipRest, onAddRestSeconds, tipoSemana, varianteRir = VARIANTE_RIR_POR_DEFECTO, fuera = false }: Props) {
   const nombres = lados.map(l => l.ex?.name || l.we.exerciseId);
   // F23: una fila sin repeticiones no se marca; se avisa junto a ella. D1c:
   // según la variante, tampoco sin elegir el RIR. Un gancho por ejercicio de
@@ -79,23 +83,25 @@ export default function ParejaAlternaCard({ lados, restTimer, onSkipRest, onAddR
   ];
   const datos = lados.map(l => {
     const expanded = expandSetGroups(l.we);
+    // Fuera de su gimnasio los kilos de la última vez no sirven de nada.
+    const previa = fuera ? undefined : l.prevEntry;
     return {
       expanded,
       // El RIR que ha pautado el coach en cada serie: el objetivo.
       pautados: rirPautadoPorSerie(l.we),
-      previas: l.prevEntry ? seriesPrincipales(l.prevEntry.sets) : [],
+      previas: previa ? seriesPrincipales(previa.sets) : [],
       hechas: l.exSets.filter(s => s.done).length,
       warmup: generateWarmup({
         mode: l.we.warmupMode,
         manualSets: l.we.manualWarmupSets,
         targetWeight: parseFloat(l.exSets[0]?.weight || '') || 0,
         targetReps: parseTargetReps(expanded[0]?.reps ?? l.we.reps),
-        previousSets: l.prevEntry?.sets,
+        previousSets: previa?.sets,
       }),
-      sugerencia: sugerirCarga(l.we, l.prevEntry, l.saltoKg, tipoSemana),
-      consejo: consejoEnVivo(l.we, l.exSets, l.saltoKg, tipoSemana),
+      sugerencia: sugerirCarga(l.we, previa, l.saltoKg, tipoSemana, fuera),
+      consejo: consejoEnVivo(l.we, l.exSets, l.saltoKg, tipoSemana, fuera),
       // Con referencia nueva no se compara con la última vez (es otra tarea).
-      diaMalo: l.nuevaReferencia ? null : consejoDeDiaMalo(l.exSets, l.prevEntry),
+      diaMalo: l.nuevaReferencia || !previa ? null : consejoDeDiaMalo(l.exSets, previa),
     };
   });
 
@@ -202,6 +208,9 @@ export default function ParejaAlternaCard({ lados, restTimer, onSkipRest, onAddR
         return (
           <React.Fragment key={k}>
             {l.esNuevo && d.hechas === 0 && <ConsejoDelCoach texto={`${nombres[k]}: ${TEXTO_EJERCICIO_NUEVO}`} />}
+            {fuera && d.hechas < l.exSets.length && (
+              <PistaDePesoFuera nombre={nombres[k]} reps={d.expanded[0]?.reps ?? l.we.reps} rir={d.pautados[0]} />
+            )}
             {d.sugerencia.resumen && d.hechas === 0 && !l.nuevaReferencia && (
               <ConsejoDelCoach texto={`${nombres[k]}: ${d.sugerencia.resumen}`} />
             )}

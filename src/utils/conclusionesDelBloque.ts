@@ -41,6 +41,7 @@ export const SIN_MARCA_QUE_AVISA = 1 / 3;
 
 /** Qué pedirle al atleta para que sus sesiones vuelvan a dar marca. */
 const ARREGLO_SIN_MARCA: Record<MotivoSinMarca, string> = {
+  fuera: 'Son sesiones fuera de su gimnasio: no hay nada que corregir. La lectura de fuerza sale de las que hizo en su gimnasio; si casi todas son fuera, mirar el RIR y las series en vez de los kilos.',
   rir_sin_apuntar: 'Pedirle que apunte el RIR real de cada serie: con el RIR pautado sin tocar no se puede estimar su fuerza.',
   rir_lejos: 'Pautar (o pedirle) al menos una serie por ejercicio a RIR 2 o menos: a RIR 3 o más el RM estimado no es fiable.',
   reps_altas: 'Si se quiere seguir la fuerza de esos ejercicios, llevar alguna serie al rango de 3 a 12 repeticiones: por encima la estimación del RM pierde precisión.',

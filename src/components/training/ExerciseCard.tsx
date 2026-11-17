@@ -21,6 +21,7 @@ import { sugerirCarga, consejoEnVivo } from '../../utils/cargaSugerida';
 import { consejoDeDiaMalo } from '../../utils/diaMalo';
 import type { TipoDeSemana } from '../../utils/tipoDeSemana';
 import MarcaDeReferencia from './MarcaDeReferencia';
+import PistaDePesoFuera from './PistaDePesoFuera';
 
 interface Props {
   we: WorkoutExercise;
@@ -62,6 +63,9 @@ interface Props {
   tipoSemana?: TipoDeSemana | null;
   /** D1c: cómo se le pide el RIR (ver `VarianteRir` en setInput.ts). Sin ella, la de hoy. */
   varianteRir?: VarianteRir;
+  /** Sesión fuera de su gimnasio (utils/sesionFuera.ts): el peso llega vacío
+   *  con una pista, sin lo de la última vez, sin subidas ni «día malo». */
+  fuera?: boolean;
   /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip.tsx). */
   key?: React.Key;
 }
@@ -85,9 +89,13 @@ export default React.memo(function ExerciseCard({
   restTimer, onSkipRest, onAddRestSeconds,
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, cambios,
   onCerrarEjercicio, nuevaReferencia = false, onToggleReferencia, saltoKg, esNuevo = false, tipoSemana,
-  varianteRir = VARIANTE_RIR_POR_DEFECTO,
+  varianteRir = VARIANTE_RIR_POR_DEFECTO, fuera = false,
 }: Props) {
   const expanded = expandSetGroups(we);
+  // Fuera de su gimnasio los kilos de la última vez son de otras máquinas: no
+  // se usan ni de pista ni para comparar. La nota de la última vez y lo que le
+  // contestó el coach sí se enseñan (van con `prevEntry`).
+  const previa = fuera ? undefined : prevEntry;
   // El RIR que ha pautado el coach en cada serie: el objetivo. Lo que apunte
   // el atleta no lo cambia.
   const pautados = React.useMemo(() => rirPautadoPorSerie(we), [we]);
@@ -101,11 +109,11 @@ export default React.memo(function ExerciseCard({
     manualSets: we.manualWarmupSets,
     targetWeight: set1Weight,
     targetReps: parseTargetReps(expanded[0]?.reps ?? we.reps),
-    previousSets: prevEntry?.sets,
+    previousSets: previa?.sets,
   });
 
-  const sugerencia = React.useMemo(() => sugerirCarga(we, prevEntry, saltoKg, tipoSemana), [we, prevEntry, saltoKg, tipoSemana]);
-  const consejo = React.useMemo(() => consejoEnVivo(we, exSets, saltoKg, tipoSemana), [we, exSets, saltoKg, tipoSemana]);
+  const sugerencia = React.useMemo(() => sugerirCarga(we, previa, saltoKg, tipoSemana, fuera), [we, previa, saltoKg, tipoSemana, fuera]);
+  const consejo = React.useMemo(() => consejoEnVivo(we, exSets, saltoKg, tipoSemana, fuera), [we, exSets, saltoKg, tipoSemana, fuera]);
   // F23: una fila sin repeticiones no se marca; se avisa junto a ella. D1c:
   // según la variante, tampoco sin elegir el RIR.
   const { sinReps, sinRir, eligiendo, marcar, elegirRir } = useMarcarSerie(exSets, onMarkDone, { variante: varianteRir, onUpdateSet });
@@ -114,8 +122,8 @@ export default React.memo(function ExerciseCard({
   // F1: la primera serie ha salido claramente peor que la última vez. Con
   // referencia nueva no se compara (es otra tarea).
   const diaMalo = React.useMemo(
-    () => (nuevaReferencia ? null : consejoDeDiaMalo(exSets, prevEntry)),
-    [exSets, prevEntry, nuevaReferencia],
+    () => (nuevaReferencia || !previa ? null : consejoDeDiaMalo(exSets, previa)),
+    [exSets, previa, nuevaReferencia],
   );
   // El botón se ofrece mientras alguna serie pendiente esté sin peso (se
   // rellenaría con el de siempre) o con más del propuesto.
@@ -326,6 +334,8 @@ export default React.memo(function ExerciseCard({
       )}
       {/* F6 + P5: ejercicio que estrena. Semana de entrada, sin tocar lo pautado. */}
       {esNuevo && doneSets === 0 && <ConsejoDelCoach texto={TEXTO_EJERCICIO_NUEVO} />}
+      {/* Fuera de su gimnasio: el peso llega vacío y esto dice cómo elegirlo. */}
+      {fuera && doneSets < totalSets && <PistaDePesoFuera reps={expanded[0]?.reps ?? we.reps} rir={pautados[0]} />}
       {/* Con «otra máquina o recorrido» marcado, la subida de peso
           que sale de la sesión anterior ya no aplica: era otra tarea. */}
       {sugerencia.resumen && doneSets === 0 && !nuevaReferencia && (
@@ -354,7 +364,7 @@ export default React.memo(function ExerciseCard({
       {esDropset || esMyoreps || esRestpause ? (
         <>
           <NormalTable
-            we={we} exSets={exSets.slice(0, nPrincipales)} expanded={expanded} warmup={warmup} prevEntry={prevEntry}
+            we={we} exSets={exSets.slice(0, nPrincipales)} expanded={expanded} warmup={warmup} prevEntry={previa}
             onUpdateSet={onUpdateSet} onMarkDone={marcar} sinReps={sinReps}
             variante={varianteRir} pautados={pautados} sinRir={sinRir} eligiendo={eligiendo} onElegirRir={elegirRirDeFila}
             firstSetRowTargetRef={firstSetRowTargetRef} setEditorTargetRef={setEditorTargetRef}
@@ -400,7 +410,7 @@ export default React.memo(function ExerciseCard({
         </>
       ) : (
         <NormalTable
-          we={we} exSets={exSets} expanded={expanded} warmup={warmup} prevEntry={prevEntry}
+          we={we} exSets={exSets} expanded={expanded} warmup={warmup} prevEntry={previa}
           onUpdateSet={onUpdateSet} onMarkDone={marcar} sinReps={sinReps}
           variante={varianteRir} pautados={pautados} sinRir={sinRir} eligiendo={eligiendo} onElegirRir={elegirRirDeFila}
           firstSetRowTargetRef={firstSetRowTargetRef} setEditorTargetRef={setEditorTargetRef}

@@ -6,6 +6,7 @@ import { Icon, Skeleton } from './ui';
 import StatTile from './StatTile';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 import { addDays } from '../utils/trainingWeek';
+import { kgDeSerie, seriesDeFuerza } from '../utils/sesionFuera';
 
 interface Props {
   athleteEmail: string;
@@ -95,7 +96,7 @@ export default function AthleteHighlightsPanel({ athleteEmail }: Props) {
     const best = new Map<string, PersonalRecord>();
     for (const log of workoutLogs) {
       for (const entry of log.entries) {
-        for (const set of entry.sets) {
+        for (const set of seriesDeFuerza(entry.sets)) {
           if (!set.weight || !set.repsDone) continue;
           const current = best.get(entry.exerciseId);
           if (!current || set.weight > current.weight) {
@@ -125,7 +126,8 @@ export default function AthleteHighlightsPanel({ athleteEmail }: Props) {
       const bucket = log.date >= recentStart ? recentTonnage : (log.date >= previousStart ? previousTonnage : null);
       if (!bucket) continue;
       for (const entry of log.entries) {
-        const tonnage = entry.sets.reduce((s, set) => s + (set.weight || 0) * (set.repsDone || 0), 0);
+        // Fuera de su gimnasio los kilos no cuentan (utils/sesionFuera.ts).
+        const tonnage = entry.sets.reduce((s, set) => s + kgDeSerie(set), 0);
         bucket.set(entry.exerciseId, (bucket.get(entry.exerciseId) ?? 0) + tonnage);
       }
     }

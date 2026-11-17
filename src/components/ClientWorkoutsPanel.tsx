@@ -5,6 +5,9 @@ import {
   WorkoutAssignment, Workout, RespuestaCoach,
 } from '../types';
 import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile, reprogramarAsignacionesDelMeso, createNotificationDeduped } from '../dbService';
+import { cambioDeFuera, esSesionFuera } from '../utils/sesionFuera';
+import { logDeAsignacion } from '../utils/sesionHecha';
+import EtiquetaFuera from './training/EtiquetaFuera';
 import { COACH_NOMBRE } from '../utils/coach';
 import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMesociclo';
 import { hoyIsoLocal, getWeekStart, addDays } from '../utils/trainingWeek';
@@ -70,6 +73,27 @@ export default function ClientWorkoutsPanel({
   const [respondiendo, setRespondiendo] = useState<string | null>(null);
   const [respuestaTexto, setRespuestaTexto] = useState('');
   const [enviandoRespuesta, setEnviandoRespuesta] = useState(false);
+  /* Marcar o desmarcar una sesión ya guardada como hecha fuera de su gimnasio
+     (17-11-2026), por si el atleta se olvidó de hacerlo. La marca va en el
+     registro y en cada serie (utils/sesionFuera.ts). */
+  const [cambiandoFuera, setCambiandoFuera] = useState<string | null>(null);
+  const marcarFuera = async (log: WorkoutLog, valor: boolean) => {
+    const cambio = cambioDeFuera(log, valor);
+    setCambiandoFuera(log.id);
+    try {
+      await updateWorkoutLog(log.id, cambio);
+      setAthleteLogs(prev => prev.map(l => (l.id === log.id ? { ...l, ...cambio } : l)));
+      showToast(valor
+        ? 'Sesión marcada como fuera de su gimnasio: sus kilos ya no cuentan para la fuerza.'
+        : 'Sesión devuelta a su gimnasio: sus kilos vuelven a contar.', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo cambiar la sesión. Inténtalo otra vez.', 'error');
+    } finally {
+      setCambiandoFuera(null);
+    }
+  };
+
   const enviarRespuesta = async (logId: string, exerciseId: string | null, contexto: string) => {
     const texto = respuestaTexto.trim();
     const log = athleteLogs.find(l => l.id === logId);
@@ -549,9 +573,9 @@ export default function ClientWorkoutsPanel({
               // Duración real de la sesión (cronómetro general, cabecera del
               // player del atleta) — solo existe si el log ya la trae; los
               // anteriores a ese cronómetro se quedan sin este dato.
-              const duracionSeg = a.status === 'completed'
-                ? athleteLogs.find(l => l.assignmentId === a.id)?.duracionSeg
-                : undefined;
+              const logHecho = a.status === 'completed' ? logDeAsignacion(athleteLogs, a) : undefined;
+              const duracionSeg = logHecho?.duracionSeg;
+              const esFuera = !!logHecho && esSesionFuera(logHecho);
               return (
                 <div key={a.id} className="flex items-center justify-between gap-3 p-3 bg-surface border border-hairline rounded-surface">
                   <div className="flex items-center gap-3 min-w-0">
@@ -562,6 +586,7 @@ export default function ClientWorkoutsPanel({
                         {wo?.exercises.some(e => e.recordVideoSet) && (
                           <span className="material-symbols-outlined text-accent-ink text-body-s flex-shrink-0" title="Esta rutina pide grabar vídeo">videocam</span>
                         )}
+                        {esFuera && <EtiquetaFuera className="ml-0" />}
                       </p>
                       <p className="font-mono text-caption text-ink-2">
                         {a.date}{wo ? ` · ${wo.exercises.length} ejercicios` : ''}{duracionSeg != null ? ` · ${formatearDuracion(duracionSeg)}` : ''}
@@ -570,6 +595,19 @@ export default function ClientWorkoutsPanel({
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <Badge tone={STATUS_TONE[a.status]}>{STATUS_LABEL[a.status]}</Badge>
+                    {logHecho && (
+                      <button
+                        type="button"
+                        onClick={() => void marcarFuera(logHecho, !esFuera)}
+                        disabled={cambiandoFuera === logHecho.id}
+                        aria-pressed={esFuera}
+                        aria-label={esFuera ? 'Quitar «fuera de su gimnasio»' : 'Marcar como hecha fuera de su gimnasio'}
+                        title={esFuera ? 'Quitar «fuera de su gimnasio»' : 'Marcar como hecha fuera de su gimnasio'}
+                        className={`p-1 rounded-control transition-colors disabled:opacity-40 ${esFuera ? 'text-accent-ink' : 'text-ink-2 hover:text-accent-ink'}`}
+                      >
+                        <span className="material-symbols-outlined text-body-s">route</span>
+                      </button>
+                    )}
                     <button onClick={() => handleDeleteAssignment(a.id)} className="text-ink-2 hover:text-danger p-1 rounded-control transition-colors" title="Eliminar">
                       <span className="material-symbols-outlined text-body-s">delete</span>
                     </button>

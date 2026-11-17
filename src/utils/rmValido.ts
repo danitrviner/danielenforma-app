@@ -19,6 +19,10 @@ import { rirEfectivo } from './oneRepMax.js';
      tocar (`rirApuntado === false`) no dice nada de su esfuerzo. Los registros
      antiguos no llevan la marca y se dan por buenos: no hay forma de saberlo.
    · Bajadas y miniseries fuera: se hacen con fatiga encima.
+   · Series hechas FUERA del gimnasio habitual (`fuera`, 17-11-2026): otras
+     poleas, otras máquinas, otros pesos. Su RIR vale; sus kilos no se
+     comparan con los de siempre (ver utils/sesionFuera.ts). Va la primera:
+     es lo que explica la sesión entera.
 
    La FÓRMULA no cambia (utils/oneRepMax.ts, decisión de Dani del 16-10): esto
    solo decide qué series se le pasan.
@@ -28,10 +32,14 @@ export const REPS_MIN_RM = 3;
 export const REPS_MAX_RM = 12;
 export const RIR_MAX_RM = 2;
 
-export type SerieParaRm = Pick<WorkoutSetLog, 'repsDone' | 'rir' | 'alFallo' | 'segmento' | 'rirApuntado'>;
+export type SerieParaRm = Pick<WorkoutSetLog, 'repsDone' | 'rir' | 'alFallo' | 'segmento' | 'rirApuntado' | 'fuera'>;
+
+/** Por qué una serie no vale para el RM. */
+export type MotivoDeNoValer = 'fuera' | 'segmento' | 'reps' | 'rir' | 'rir_sin_apuntar';
 
 /** Por qué una serie no vale para el RM, o `null` si vale. */
-export function motivoDeNoValer(s: SerieParaRm): 'segmento' | 'reps' | 'rir' | 'rir_sin_apuntar' | null {
+export function motivoDeNoValer(s: SerieParaRm): MotivoDeNoValer | null {
+  if (s.fuera === true) return 'fuera';
   if (s.segmento) return 'segmento';
   if (!(s.repsDone >= REPS_MIN_RM && s.repsDone <= REPS_MAX_RM)) return 'reps';
   if (s.rirApuntado === false && !s.alFallo) return 'rir_sin_apuntar';

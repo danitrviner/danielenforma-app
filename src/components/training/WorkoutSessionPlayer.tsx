@@ -33,6 +33,8 @@ import { ListaDeNovedades } from './NovedadesDeSemana';
 import type { NovedadesDeLaSesion } from '../../utils/planificadorProgresion';
 import type { TipoDeSemana } from '../../utils/tipoDeSemana';
 import { tieneSeriesValidas, rirPautadoPorSerie } from '../../utils/setPrefill';
+import { mensajeDeCierreFuera, rirCumplidoDeFilas } from '../../utils/sesionFuera';
+import InterruptorFuera, { VARIANTE_FUERA_POR_DEFECTO, type VarianteFuera } from './InterruptorFuera';
 
 const COMO_LLEGA: { clave: NonNullable<WorkoutLog['comoLlega']>; etiqueta: string }[] = [
   { clave: 'bien', etiqueta: 'Con energía' },
@@ -110,6 +112,16 @@ interface Props {
    *  Ausente `onCansancioAlSalir` = no se pregunta. */
   cansancioAlSalir?: number;
   onCansancioAlSalir?: (valor: number) => void;
+  /** Sesión fuera de su gimnasio (utils/sesionFuera.ts). Ausente `onFuera` =
+   *  no se ofrece el interruptor. */
+  fuera?: boolean;
+  onFuera?: (valor: boolean) => void;
+  /** El coach marcó esta semana como semana fuera: el interruptor llega
+   *  encendido y lo dice. */
+  semanaFuera?: boolean;
+  /** Cómo se enseña el interruptor (ver InterruptorFuera.tsx). Solo el banco
+   *  de pruebas pasa otra. */
+  varianteFuera?: VarianteFuera;
 }
 
 const CANSANCIO = Array.from({ length: 11 }, (_, i) => i);
@@ -133,6 +145,7 @@ export default function WorkoutSessionPlayer({
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, onMarkActionDone,
   avisoSesion, onAvisoSesion, tipoSemana,
   varianteRir = VARIANTE_RIR_POR_DEFECTO, cansancioAlSalir, onCansancioAlSalir,
+  fuera = false, onFuera, semanaFuera = false, varianteFuera = VARIANTE_FUERA_POR_DEFECTO,
 }: Props) {
   const orderedExercises = activeWorkout.exercises.slice().sort((a, b) => a.order - b.order);
   const doneSetsTotal = playerSets.flat().filter(s => s.done).length;
@@ -350,7 +363,8 @@ export default function WorkoutSessionPlayer({
     const we = orderedExercises[exIdx];
     if (!we) return null;
     const fila = exSets[setIdx];
-    const prev = prevEntries.find(e => e.exerciseId === we.exerciseId);
+    // Fuera de su gimnasio los kilos de la última vez no se enseñan ni en el bloqueo.
+    const prev = fuera ? undefined : prevEntries.find(e => e.exerciseId === we.exerciseId);
     // Última vez: la mejor referencia que existe de verdad. Si no hay
     // histórico, se dejan sin definir — el handoff prohíbe rellenar la línea
     // «arranca desde lo de la última vez» con nada inventado.
@@ -372,7 +386,7 @@ export default function WorkoutSessionPlayer({
       lastReps: ultima?.repsDone == null ? undefined : Number(ultima.repsDone),
       lastWeight: ultima?.weight == null ? undefined : Number(ultima.weight),
     };
-  }, [serieEnCurso, orderedExercises, prevEntries, activeAssignment.id, restTimer, getExercise]);
+  }, [serieEnCurso, orderedExercises, prevEntries, activeAssignment.id, restTimer, getExercise, fuera]);
 
   useEffect(() => {
     if (!estadoEnVivo) return;
@@ -504,7 +518,9 @@ export default function WorkoutSessionPlayer({
   const logrosDe = (exIdx: number): Logro[] | undefined => {
     if (isEditingCompleted || cerradosAlAbrir.current?.has(exIdx)) return undefined;
     // Con referencia nueva no se celebra nada contra las marcas de antes (D3).
-    if (referenciasNuevas?.[exIdx]) return undefined;
+    // Fuera de su gimnasio tampoco: ni récords ni confeti con kilos de otras
+    // máquinas. Lo que se celebra es el RIR (ver `mensajeDe`).
+    if (referenciasNuevas?.[exIdx] || fuera) return undefined;
     const we = orderedExercises[exIdx];
     // D9: el récord de RM solo con una serie válida; si no, las repeticiones.
     return logrosDelCierre({
@@ -555,6 +571,11 @@ export default function WorkoutSessionPlayer({
   // F3: cuando sale igual que la última vez, que no se lea como un fracaso.
   // «Hoy ha salido por debajo» solo si el RIR de esas series lo apuntó él (D1d).
   const mensajeDe = (exIdx: number): string | undefined => {
+    // Fuera de su gimnasio no se compara con la última vez: se cuentan las
+    // series hechas y cuántas a su RIR.
+    if (fuera) {
+      return mensajeDeCierreFuera(rirCumplidoDeFilas(playerSets[exIdx] || [], rirPautadoPorSerie(orderedExercises[exIdx])));
+    }
     if (isEditingCompleted || referenciasNuevas?.[exIdx]) return undefined;
     const previa = prevEntries.find(e => e.exerciseId === orderedExercises[exIdx].exerciseId);
     if (!previa) return undefined;
@@ -567,7 +588,7 @@ export default function WorkoutSessionPlayer({
   // que apuntó él: del pautado sin tocar no se opina (D1d).
   const comprobacionDe = (exIdx: number) => {
     const hechas = seriesPrincipales(playerSets[exIdx] || []).filter(x => x.done).map(x => filaASerie(x, isEditingCompleted));
-    const previa = referenciasNuevas?.[exIdx] ? undefined : prevEntries.find(e => e.exerciseId === orderedExercises[exIdx].exerciseId);
+    const previa = referenciasNuevas?.[exIdx] || fuera ? undefined : prevEntries.find(e => e.exerciseId === orderedExercises[exIdx].exerciseId);
     return comprobacionDelRir(hechas, previa ? seriesPrincipales(previa.sets) : undefined);
   };
 
@@ -587,6 +608,14 @@ export default function WorkoutSessionPlayer({
       onElegir: (valor: string) => apuntarRir((sIdx, field, value) => updateSet(exIdx, sIdx, field, value), idx, valor),
     };
   };
+
+  // Fuera de su gimnasio, en el diálogo de fin de sesión: cuántas series a su RIR.
+  const rirDeLaSesion = celebration && fuera
+    ? orderedExercises.reduce((acc, we, exIdx) => {
+      const r = rirCumplidoDeFilas(playerSets[exIdx] || [], rirPautadoPorSerie(we));
+      return { aTuRir: acc.aTuRir + r.aTuRir, hechas: acc.hechas + r.hechas };
+    }, { aTuRir: 0, hechas: 0 })
+    : null;
 
   const nombreDePagina = (pg: number[] | undefined) => pg?.map(i => getExercise(orderedExercises[i]?.exerciseId)?.name).filter(Boolean).join(' + ') || undefined;
   const irALaSiguiente = () => setPageIdx(i => Math.min(i + 1, paginas.length - 1));
@@ -611,8 +640,9 @@ export default function WorkoutSessionPlayer({
           we={we}
           ex={ex}
           exSets={exSets}
-          // Con referencia nueva no hay marca anterior con la que comparar (D3).
-          priorBestOrm={referenciasNuevas?.[exIdx] ? undefined : priorBestByExercise.get(we.exerciseId)}
+          // Con referencia nueva no hay marca anterior con la que comparar (D3),
+          // ni fuera de su gimnasio.
+          priorBestOrm={referenciasNuevas?.[exIdx] || fuera ? undefined : priorBestByExercise.get(we.exerciseId)}
           noteValue={exerciseNoteInputs[exIdx] || ''}
           onNoteChange={cb.onNoteChange}
           queParo={quePararon?.[exIdx]}
@@ -632,13 +662,16 @@ export default function WorkoutSessionPlayer({
           festejar={festejando === exIdx}
           rirUltima={rirUltimaDe(exIdx)}
           esCorreccion={isEditingCompleted}
+          fuera={fuera}
         />
       );
     }
 
     return (
       <div key={`${we.exerciseId}-${exIdx}`} className="space-y-3">
-      <AvisoDeRetoEnSesion athleteEmail={profile.email} exerciseId={we.exerciseId} workoutId={activeWorkout.id} />
+      {/* Los retos de la sesión son de carga o de repeticiones con un peso:
+          fuera de su gimnasio no aplican. */}
+      {!fuera && <AvisoDeRetoEnSesion athleteEmail={profile.email} exerciseId={we.exerciseId} workoutId={activeWorkout.id} />}
       <ExerciseCard
         we={we}
         exIdx={exIdx}
@@ -670,6 +703,7 @@ export default function WorkoutSessionPlayer({
         firstSetRowTargetRef={exIdx === 0 ? firstSetRowTargetRef : undefined}
         cambios={avisoSesion?.datos.porEjercicio[exIdx]}
         onCerrarEjercicio={estadoDelEjercicio(exSets) === 'tecnica-pendiente' ? cb.onCerrarEjercicio : undefined}
+        fuera={fuera}
       />
       </div>
     );
@@ -713,7 +747,7 @@ export default function WorkoutSessionPlayer({
     };
     return (
       <div key={`pareja-${a}-${b}`} className="space-y-3">
-        {pg.map(i => (
+        {!fuera && pg.map(i => (
           <React.Fragment key={i}>
             <AvisoDeRetoEnSesion athleteEmail={profile.email} exerciseId={orderedExercises[i].exerciseId} workoutId={activeWorkout.id} />
           </React.Fragment>
@@ -727,6 +761,7 @@ export default function WorkoutSessionPlayer({
           onAddRestSeconds={addRestSecondsStable}
           tipoSemana={tipoSemana}
           varianteRir={varianteRir}
+          fuera={fuera}
         />
       </div>
     );
@@ -820,6 +855,13 @@ export default function WorkoutSessionPlayer({
         </div>
       )}
 
+      {/* «Hoy entreno fuera de mi gimnasio» (17-11-2026): a diferencia de
+          «¿cómo llegas?», se puede cambiar durante toda la sesión y al
+          corregirla. Ver InterruptorFuera.tsx. */}
+      {onFuera && (
+        <InterruptorFuera activo={fuera} onCambiar={onFuera} semanaMarcada={semanaFuera} variante={varianteFuera} />
+      )}
+
       {avisoSesion && onAvisoSesion && !isEditingCompleted && (
         <Dialog
           open={avisoSesion.leido === null}
@@ -897,10 +939,18 @@ export default function WorkoutSessionPlayer({
                 <p className="font-mono text-title-l font-bold text-ink tabular-nums">{celebration.totalSets}</p>
                 <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Series</p>
               </div>
-              <div className="bg-raised rounded-surface p-3">
-                <p className="font-mono text-title-l font-bold text-ink tabular-nums">{Math.round(celebration.tonnage).toLocaleString('es-ES')}</p>
-                <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">kg movidos</p>
-              </div>
+              {/* Fuera de su gimnasio los kilos no cuentan: se enseñan las series a su RIR. */}
+              {rirDeLaSesion ? (
+                <div className="bg-raised rounded-surface p-3">
+                  <p className="font-mono text-title-l font-bold text-ink tabular-nums">{rirDeLaSesion.aTuRir}/{rirDeLaSesion.hechas}</p>
+                  <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">A tu RIR</p>
+                </div>
+              ) : (
+                <div className="bg-raised rounded-surface p-3">
+                  <p className="font-mono text-title-l font-bold text-ink tabular-nums">{Math.round(celebration.tonnage).toLocaleString('es-ES')}</p>
+                  <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">kg movidos</p>
+                </div>
+              )}
               {celebration.durationSeg != null && (
                 <div className="bg-raised rounded-surface p-3">
                   <p className="font-mono text-title-l font-bold text-ink tabular-nums">{formatearDuracion(celebration.durationSeg)}</p>
@@ -970,7 +1020,7 @@ export default function WorkoutSessionPlayer({
                   <div className="space-y-1.5">
                     {sessions.map(s => (
                       <div key={s.date} className="flex items-center justify-between gap-3 py-1.5 border-b border-hairline last:border-b-0">
-                        <span className="font-mono text-caption text-ink-3">{s.date}</span>
+                        <span className="font-mono text-caption text-ink-3">{s.date}{s.fuera ? ' · fuera' : ''}</span>
                         <span className="font-mono text-label text-ink text-right">
                           {s.sets.map(set => `${set.weight}×${set.reps}`).join(' · ')}
                         </span>

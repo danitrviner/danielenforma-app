@@ -8,6 +8,8 @@ import { mejorRmValido, rirMedioApuntado } from './cierreDeEjercicio';
 import { SelectorRapidoDeRir } from './ExerciseCard';
 import Confeti from './Confeti';
 import type { Logro, TipoDeLogro } from '../../utils/logrosDelEjercicio';
+import { rirCumplidoDeFilas } from '../../utils/sesionFuera';
+import { rirPautadoPorSerie } from '../../utils/setPrefill';
 
 interface Props {
   we: WorkoutExercise;
@@ -53,6 +55,9 @@ interface Props {
   /** Se está corrigiendo una sesión ya guardada: el RIR de sus series se da por
    *  bueno salvo que el registro diga lo contrario (ver `rirApuntadoAlGuardar`). */
   esCorreccion?: boolean;
+  /** Sesión fuera de su gimnasio (utils/sesionFuera.ts): los kilos no cuentan,
+   *  así que en vez del volumen se enseñan las series hechas a su RIR. */
+  fuera?: boolean;
   /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip.tsx). */
   key?: React.Key;
 }
@@ -80,7 +85,7 @@ const CHIPS_RAPIDOS = ['Me sobró una rep', 'Molestia leve', 'Buena técnica', '
 export default function ExerciseCloseCard({
   we, ex, exSets, priorBestOrm, noteValue, onNoteChange, queParo, onQueParo, isLast, nextExerciseName,
   onNext, onReopen, sameDayCardio, logros, festejar, sinSiguiente, comprobacion, molestia, onMolestia, mensaje,
-  rirUltima, esCorreccion = false,
+  rirUltima, esCorreccion = false, fuera = false,
 }: Props) {
   const idNota = React.useId();
   const doneSets = exSets.filter(s => s.done);
@@ -97,6 +102,8 @@ export default function ExerciseCloseCard({
   // un RIR 0 de relleno y hundían la media. Y solo las que apuntó ÉL (D1d): la
   // media de un RIR pautado sin tocar no dice nada de cómo ha ido.
   const rirMedio = rirMedioApuntado(series);
+  // Fuera de su gimnasio lo que se cuenta es el RIR, no los kilos.
+  const aTuRir = fuera ? rirCumplidoDeFilas(exSets, rirPautadoPorSerie(we)) : null;
 
   const addChip = (texto: string) => {
     onNoteChange(noteValue.trim() ? `${noteValue.trim()}. ${texto}` : texto);
@@ -155,10 +162,19 @@ export default function ExerciseCloseCard({
       )}
 
       <div className="mx-4 mt-4 grid grid-cols-2 gap-3">
-        <div className="bg-raised rounded-surface p-3">
-          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Volumen</p>
-          <p className="font-mono text-title-m font-bold text-ink">{Math.round(volumen).toLocaleString('es-ES')}</p>
-        </div>
+        {aTuRir ? (
+          <div className="bg-raised rounded-surface p-3">
+            <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">A tu RIR</p>
+            <p className="font-mono text-title-m font-bold text-ink">
+              {aTuRir.aTuRir}<span className="text-label font-normal text-ink-2">/{aTuRir.hechas}</span>
+            </p>
+          </div>
+        ) : (
+          <div className="bg-raised rounded-surface p-3">
+            <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Volumen</p>
+            <p className="font-mono text-title-m font-bold text-ink">{Math.round(volumen).toLocaleString('es-ES')}</p>
+          </div>
+        )}
         <div className="bg-raised rounded-surface p-3">
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">RIR medio</p>
           <p className="font-mono text-title-m font-bold text-ink">{rirMedio != null ? rirMedio.toFixed(1).replace('.', ',') : '—'}</p>

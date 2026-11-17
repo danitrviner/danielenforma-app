@@ -2,6 +2,7 @@ import { WorkoutExercise, WorkoutEntryLog, WorkoutLog } from '../types.js';
 import { expandSetGroups } from './setGroups.js';
 import { seriesPrincipales } from './tecnicaDeSerie.js';
 import type { TipoDeSemana } from './tipoDeSemana.js';
+import { esSerieFuera } from './sesionFuera.js';
 
 /* Doble progresión: se sube la carga cuando el atleta llegó al TOPE del rango
    de repeticiones A RIR PAUTADO. Si no llegó, se repite la carga y se busca
@@ -48,14 +49,15 @@ export function repsExtraAntesDeSubir(peso: number, paso: number, rango: { min: 
 /**
  * El salto de carga que el atleta usa de verdad en un ejercicio: la diferencia
  * más repetida entre pesos consecutivos de su historial (a igualdad, la menor).
- * `null` si solo ha usado un peso: no hay con qué saberlo.
+ * `null` si solo ha usado un peso: no hay con qué saberlo. Las series hechas
+ * fuera de su gimnasio no cuentan: sus kilos son de otras máquinas.
  */
 export function saltoReal(logs: readonly Pick<WorkoutLog, 'entries'>[], exerciseId: string): number | null {
   const pesos = new Set<number>();
   for (const log of logs) {
     for (const e of log.entries) {
       if (e.exerciseId !== exerciseId) continue;
-      for (const s of seriesPrincipales(e.sets)) if (s.weight > 0) pesos.add(s.weight);
+      for (const s of seriesPrincipales(e.sets)) if (s.weight > 0 && !esSerieFuera(s)) pesos.add(s.weight);
     }
   }
   const orden = [...pesos].sort((a, b) => a - b);
@@ -168,12 +170,16 @@ export function sugerirCarga(
   salto?: number | null,
   /** Semana de descarga, puente o vuelta de parón (`tipoDeSemana`), si lo es. */
   semana?: TipoDeSemana | null,
+  /** Sesión fuera del gimnasio habitual (utils/sesionFuera.ts). */
+  fuera = false,
 ): CargaSugerida {
   const filas = expandSetGroups(we);
   // F7a: en descarga, puente y vuelta de parón no se sube. La semana es para
   // recuperar o readaptarse, y una frase de «hoy prueba con más» iba justo en
   // contra de lo que el coach ha programado: se repite lo de la última vez.
-  if (!previa || semana) return { series: filas.map(() => null), resumen: null };
+  // Fuera de su gimnasio tampoco: los kilos de allí no son los de aquí, y lo
+  // que se le pide es el RIR.
+  if (!previa || semana || fuera) return { series: filas.map(() => null), resumen: null };
   const previas = seriesPrincipales(previa.sets);
   // Series que llegaron al tope con margen pero no suben porque el salto es grande.
   let esperando: { peso: number; reps: number; paso: number } | null = null;
@@ -221,9 +227,12 @@ export function consejoEnVivo(
   salto?: number | null,
   /** Semana de descarga, puente o vuelta de parón (`tipoDeSemana`), si lo es. */
   semana?: TipoDeSemana | null,
+  /** Sesión fuera del gimnasio habitual (utils/sesionFuera.ts). */
+  fuera = false,
 ): ConsejoEnVivo | null {
   // F7a: en las semanas de aflojar tampoco se pide más peso a mitad de sesión.
-  if (semana) return null;
+  // Ni fuera de su gimnasio: allí el peso lo elige él para llegar al RIR.
+  if (semana || fuera) return null;
   const filas = expandSetGroups(we);
   const principales = sets.map((s, i) => ({ s, i })).filter(x => !x.s.segmento);
   const siguiente = principales.findIndex(x => !x.s.done);

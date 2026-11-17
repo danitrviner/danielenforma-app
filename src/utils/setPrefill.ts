@@ -1,6 +1,7 @@
 import { Workout, WorkoutEntryLog, WorkoutExercise, WorkoutLog } from '../types.js';
 import { expandSetGroups } from './setGroups.js';
-import { sugerirCarga, serieDeReferencia, repsAlRirPautado } from './cargaSugerida.js';
+import { sugerirCarga, serieDeReferencia, repsAlRirPautado, rangoDeReps } from './cargaSugerida.js';
+import { esSesionFuera } from './sesionFuera.js';
 import { segmentosProgramados, seriesPrincipales, seriesConTecnica } from './tecnicaDeSerie.js';
 import type { TipoDeSemana } from './tipoDeSemana.js';
 import type { ExpandedSet } from './setGroups.js';
@@ -55,6 +56,12 @@ export interface SetPrefill {
  * con «fallo» y las repeticiones vacías (`seriesAlMaximo`). Antes traían el
  * RIR del ejercicio y las repeticiones de la última vez: un toque en «Hecha»
  * guardaba un test que no se había hecho.
+ *
+ * Fuera de su gimnasio (`fuera`, 17-11-2026, ver utils/sesionFuera.ts): el
+ * PESO llega vacío —los kilos de la última vez son de otras máquinas y no le
+ * dicen nada— y las repeticiones, con el mínimo del rango, igual que cuando
+ * toca un peso nuevo. Ni carga sugerida ni lo de la última vez: lo que se le
+ * pide es el RIR. Las series al máximo, como siempre.
  */
 export function prefillWorkoutSets(
   workout: Workout, prevEntries: WorkoutEntryLog[],
@@ -62,6 +69,8 @@ export function prefillWorkoutSets(
   saltoDe?: (exerciseId: string) => number | null,
   /** Semana de descarga, puente o vuelta de parón (`tipoDeSemana`), si lo es. */
   semana?: TipoDeSemana | null,
+  /** Sesión fuera del gimnasio habitual. */
+  fuera = false,
 ): SetPrefill[][] {
   return workout.exercises
     .slice()
@@ -82,6 +91,10 @@ export function prefillWorkoutSets(
         // D5: en una serie al máximo no se sabe cuántas saldrán; se apuntan después.
         const tope = alMaximo.has(sIdx);
         const rir = tope ? 'fallo' : String(row.rir);
+        if (fuera) {
+          const rango = rangoDeReps(row.reps ?? '');
+          return { weight: '', repsDone: !tope && rango ? String(rango.min) : '', rir, done: false };
+        }
         if (sube) return { weight: String(sube.peso), repsDone: tope ? '' : String(sube.reps), rir, done: false };
         // D1a: lo de la última vez, llevado al RIR que pide el coach hoy.
         const reps = prev ? repsAlRirPautado(prev, row.rir) : 0;
@@ -152,6 +165,12 @@ export function tieneSeriesValidas(entry: Pick<WorkoutEntryLog, 'sets'>): boolea
  * (la tabla llega vacía, como siempre que no hay historial).
  *
  * `sinLogId`: al corregir una sesión ya hecha, su propio registro no cuenta.
+ *
+ * Fuera de su gimnasio (17-11-2026, utils/sesionFuera.ts): las series de una
+ * sesión fuera NUNCA son «la última vez» —sus kilos son de otras máquinas—.
+ * Se toman las de la última sesión en su gimnasio, aunque sea antigua; si no
+ * hay ninguna, el ejercicio llega sin series (sin referencia). La nota sigue
+ * siendo la de la entrada más reciente, fuera o no.
  */
 export function entradasDeLaUltimaVez(
   logs: readonly WorkoutLog[], antesDe: string, sinLogId?: string,
@@ -161,15 +180,20 @@ export function entradasDeLaUltimaVez(
     .sort((a, b) => b.date.localeCompare(a.date));
   const recientes = new Map<string, WorkoutEntryLog>();
   const conSeries = new Map<string, WorkoutEntryLog>();
+  const deFuera = new Set<WorkoutEntryLog>();
   for (const log of anteriores) {
+    const fuera = esSesionFuera(log);
     for (const entry of log.entries) {
+      if (fuera) deFuera.add(entry);
       if (!recientes.has(entry.exerciseId)) recientes.set(entry.exerciseId, entry);
-      if (!conSeries.has(entry.exerciseId) && tieneSeriesValidas(entry)) conSeries.set(entry.exerciseId, entry);
+      if (!fuera && !conSeries.has(entry.exerciseId) && tieneSeriesValidas(entry)) conSeries.set(entry.exerciseId, entry);
     }
   }
   return [...recientes.entries()].map(([exerciseId, reciente]) => {
     const valida = conSeries.get(exerciseId);
-    if (!valida || valida === reciente) return reciente;
+    // Solo hay sesiones fuera con series: sin referencia, pero con su nota.
+    if (!valida) return deFuera.has(reciente) ? { ...reciente, sets: [] } : reciente;
+    if (valida === reciente) return reciente;
     // Las series (y lo que va con ellas) de la sesión que las tiene; la nota,
     // de la más reciente.
     return { ...valida, note: reciente.note, noteCoachSeen: reciente.noteCoachSeen, noteReply: reciente.noteReply };

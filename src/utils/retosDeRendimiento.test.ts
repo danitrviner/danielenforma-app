@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { recordDeReps } from './planDeLaSemana';
 import type {
   Exercise, Mesocycle, Workout, WorkoutAssignment, WorkoutLog, WorkoutSetLog, WeeklyChallenge, StepLog,
 } from '../types';
@@ -486,5 +487,24 @@ describe('avisoDeReto', () => {
 
   it('los retos que no van de entreno no avisan', () => {
     expect(avisoDeReto(reto({ kind: 'pasos_media', metric: { unit: 'pasos', target: 8000 } }), 'prensa')).toBeNull();
+  });
+});
+
+describe('fuera de su gimnasio (17-11-2026)', () => {
+  const l = (id: string, date: string, weight: number, repsDone: number, fuera = false): WorkoutLog => ({
+    id, athleteId: 'a', workoutId: 'w', assignmentId: id, date, completedAt: '',
+    entries: [{ exerciseId: 'ex1', sets: [{ weight, repsDone, rir: 2, ...(fuera ? { fuera: true } : {}) }] }],
+  });
+
+  it('«la última vez» de los retos se salta las sesiones fuera', () => {
+    const logs = [l('a', '2026-11-01', 80, 8), l('b', '2026-11-08', 30, 15, true)];
+    expect(ultimaVez(logs, 'ex1', '2026-11-17')).toMatchObject({ date: '2026-11-01', series: [{ weight: 80, reps: 8 }] });
+  });
+
+  it('los récords ni se baten ni se cuentan con sesiones fuera', () => {
+    const logs = [l('a', '2026-11-01', 80, 8), l('b', '2026-11-08', 80, 15, true)];
+    expect(recordDeReps(logs, 'ex1', 80, '2026-11-17')).toBe(8);
+    expect(tablaDeRecords(logs, 'ex1', '2026-11-17')).toEqual([{ weight: 80, reps: 8 }]);
+    expect(recordsBatidos(logs, '2026-11-05', '2026-11-17')).toBe(0);
   });
 });

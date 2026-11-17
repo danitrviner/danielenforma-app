@@ -252,3 +252,24 @@ describe('D1a: la referencia al RIR pautado', () => {
     });
   });
 });
+
+describe('fuera de su gimnasio (17-11-2026)', () => {
+  const we: WorkoutExercise = { exerciseId: 'ex1', order: 0, sets: 2, reps: '8-10', rir: 2, restSeconds: 90 };
+  const previa: WorkoutEntryLog = { exerciseId: 'ex1', sets: [{ weight: 80, repsDone: 10, rir: 2 }, { weight: 80, repsDone: 10, rir: 2 }] };
+
+  it('no se sugiere subir carga, ni al empezar ni a mitad de sesión', () => {
+    expect(sugerirCarga(we, previa).resumen).not.toBeNull();
+    expect(sugerirCarga(we, previa, null, null, true)).toEqual({ series: [null, null], resumen: null });
+    const filas = [{ weight: '80', repsDone: '12', rir: '2', done: true }, { weight: '80', repsDone: '', rir: '2', done: false }];
+    expect(consejoEnVivo(we, filas)).not.toBeNull();
+    expect(consejoEnVivo(we, filas, null, null, true)).toBeNull();
+  });
+
+  it('el salto real de carga no mira los pesos de las sesiones fuera', () => {
+    const logs = [
+      { entries: [{ exerciseId: 'ex1', sets: [{ weight: 80, repsDone: 8, rir: 2 }, { weight: 85, repsDone: 8, rir: 2 }] }] },
+      { entries: [{ exerciseId: 'ex1', sets: [{ weight: 81, repsDone: 8, rir: 2, fuera: true }, { weight: 82, repsDone: 8, rir: 2, fuera: true }] }] },
+    ];
+    expect(saltoReal(logs, 'ex1')).toBe(5);
+  });
+});

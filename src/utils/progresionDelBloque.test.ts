@@ -537,3 +537,20 @@ describe('buildProgresionDelBloque', () => {
     });
   });
 });
+
+describe('fuera de su gimnasio (17-11-2026)', () => {
+  it('las series fuera cuentan como series pero no suman tonelaje, y su motivo sin marca es «fuera»', () => {
+    const p = buildProgresionDelBloque({
+      ...base,
+      logs: [
+        log('2026-09-07', { press: [{ weight: 80, repsDone: 8 }] }),
+        log('2026-09-14', { press: [{ weight: 30, repsDone: 10, fuera: true } as S] }, { fuera: true }),
+      ],
+    });
+    expect(p.semanas[0].tonelaje).toBe(640);
+    expect(p.semanas[1].tonelaje).toBe(0);
+    expect(p.semanas[1].series).toBe(1);
+    expect(p.resumen.sinMarca).toMatchObject({ registros: 2, sinMarca: 1, porMotivo: { fuera: 1 }, motivoPrincipal: 'fuera' });
+    expect(notaDeSesionesSinMarca(p.resumen.sinMarca)).toContain('fuera de su gimnasio');
+  });
+});

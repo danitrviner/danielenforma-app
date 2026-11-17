@@ -2,6 +2,7 @@ import type { WorkoutEntryLog, WorkoutLog, WorkoutSetLog } from '../types.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
 import { descansoRealDelEjercicio } from './tiemposDeSerie.js';
 import { marcaDeSesion } from './marcaDeSesion.js';
+import { esSesionFuera } from './sesionFuera.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Comparabilidad automática (S3, 11-11-2026)
@@ -63,10 +64,14 @@ export function marcaDelPunto(p: Pick<SesionDeEjercicio, 'entry'>): number | nul
   return marcaDeSesion(p.entry.sets);
 }
 
-/** Sesiones del ejercicio con alguna serie válida, de la más antigua a la más nueva. */
+/** Sesiones del ejercicio con alguna serie válida, de la más antigua a la más nueva.
+ *  Las sesiones fuera de su gimnasio no entran (utils/sesionFuera.ts): sus kilos
+ *  son de otras máquinas, no son la misma tarea, y tampoco deben cortar el tramo
+ *  comparable de las de su gimnasio. */
 export function sesionesDelEjercicio(logs: readonly WorkoutLog[], exerciseId: string): SesionDeEjercicio[] {
   const salida: SesionDeEjercicio[] = [];
   for (const log of logs) {
+    if (esSesionFuera(log)) continue;
     const idx = log.entries.findIndex(e => e.exerciseId === exerciseId);
     if (idx < 0 || validas(log.entries[idx].sets).length === 0) continue;
     const seriesPrevias = log.entries.slice(0, idx).reduce((n, e) => n + validas(e.sets).length, 0);

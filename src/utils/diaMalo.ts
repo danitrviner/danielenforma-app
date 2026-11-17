@@ -1,6 +1,7 @@
 import type { WorkoutEntryLog, WorkoutLog, WorkoutSetLog } from '../types.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
 import { incrementoDe } from './cargaSugerida.js';
+import { sinSesionesFuera } from './sesionFuera.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El día malo (F1, 11-11-2026)
@@ -92,10 +93,11 @@ export function consejoDeDiaMalo(
 /**
  * Sesiones SEGUIDAS (las más recientes) en las que la primera serie del
  * ejercicio salió claramente peor que la de la sesión anterior. 2 o más es un
- * patrón que merece que el coach lo mire.
+ * patrón que merece que el coach lo mire. Las sesiones fuera de su gimnasio no
+ * cuentan: con otras máquinas, sacar menos no es un día malo.
  */
 export function diasMalosSeguidos(logs: readonly WorkoutLog[], exerciseId: string): number {
-  const primeras = [...logs]
+  const primeras = sinSesionesFuera(logs)
     .sort((a, b) => b.date.localeCompare(a.date))
     .map(l => l.entries.find(e => e.exerciseId === exerciseId))
     .filter((e): e is WorkoutEntryLog => !!e)

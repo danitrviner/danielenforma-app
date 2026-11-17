@@ -37,13 +37,14 @@ const num = (v: number | string) => (typeof v === 'number' ? v : parseFloat(v) |
 const kg = (n: number) => `${String(Math.round(n * 10) / 10).replace('.', ',')}\u00a0kg`;
 const miles = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
-/** Tonelaje más alto de cada ejercicio en una sola sesión, antes de `fecha`. */
+/** Tonelaje más alto de cada ejercicio en una sola sesión, antes de `fecha`.
+ *  Las series hechas fuera de su gimnasio no suman (utils/sesionFuera.ts). */
 export function tonelajeMaximoAntesDe(logs: readonly WorkoutLog[], fecha: string): Map<string, number> {
   const out = new Map<string, number>();
   for (const log of logs) {
     if (log.date >= fecha) continue;
     for (const e of log.entries) {
-      const t = e.sets.reduce((s, x) => s + num(x.weight) * num(x.repsDone), 0);
+      const t = e.sets.reduce((s, x) => s + (x.fuera ? 0 : num(x.weight) * num(x.repsDone)), 0);
       if (t > (out.get(e.exerciseId) ?? 0)) out.set(e.exerciseId, t);
     }
   }

@@ -1,5 +1,6 @@
 import type { WorkoutEntryLog, WorkoutLog, WorkoutSetLog } from '../types.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
+import { esSesionFuera } from './sesionFuera.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Calibración del RIR (F4, 11-11-2026)
@@ -157,11 +158,15 @@ export function calibracionPorEjercicio(logs: readonly WorkoutLog[], ejercicios?
   const previa = new Map<string, { date: string; entry: WorkoutEntryLog; antes?: WorkoutEntryLog }>();
   const muestras = new Map<string, { desfases: number[]; ultima: string }>();
   for (const log of ordenados) {
+    // Fuera de su gimnasio (utils/sesionFuera.ts) los mismos kilos no son la
+    // misma carga: ni se compara con la anterior ni sirve de estimación para la
+    // siguiente. Como «otra máquina o recorrido», pero para toda la sesión.
+    const fuera = esSesionFuera(log);
     for (const entry of log.entries) {
       const id = entry.exerciseId;
       const ant = previa.get(id);
       // Con «otra máquina o recorrido» la sesión anterior ya no vale de estimación.
-      const comparable = ant && !entry.nuevaReferencia && dias(ant.date, log.date) <= DIAS_ENTRE_SESIONES;
+      const comparable = ant && !fuera && !entry.nuevaReferencia && dias(ant.date, log.date) <= DIAS_ENTRE_SESIONES;
       const c = comprobarRir(
         seriesPrincipales(entry.sets),
         comparable ? seriesPrincipales(ant.entry.sets) : undefined,
@@ -172,7 +177,7 @@ export function calibracionPorEjercicio(logs: readonly WorkoutLog[], ejercicios?
         m.desfases.push(c.desfase); m.ultima = log.date;
         muestras.set(id, m);
       }
-      if (seriesPrincipales(entry.sets).some(valida)) {
+      if (!fuera && seriesPrincipales(entry.sets).some(valida)) {
         // Con referencia nueva, o si queda lejos en el tiempo, lo de antes no vale de tendencia.
         const cerca = ant && dias(ant.date, log.date) <= DIAS_ENTRE_SESIONES;
         previa.set(id, { date: log.date, entry, antes: cerca && !entry.nuevaReferencia ? ant.entry : undefined });

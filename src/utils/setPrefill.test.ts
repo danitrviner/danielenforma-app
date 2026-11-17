@@ -282,3 +282,48 @@ describe('entradasDeLaUltimaVez (F19)', () => {
     expect(entradasDeLaUltimaVez(logs, '2026-11-11', 'l2')[0].sets[0].weight).toBe(50);
   });
 });
+
+describe('fuera de su gimnasio (17-11-2026)', () => {
+  const ANTERIOR: WorkoutEntryLog[] = [{ exerciseId: 'ex1', sets: [80, 80, 80].map(w => ({ weight: w, repsDone: 10, rir: 2 })) }];
+
+  it('el peso llega vacío y las repeticiones con el mínimo del rango; sin subida aunque tocara', () => {
+    // 10 a RIR 2 en 8-10 tocaría subir a 82,5; fuera, nada de eso.
+    expect(prefillWorkoutSets(WORKOUT, ANTERIOR)[0][0].weight).toBe('82.5');
+    expect(prefillWorkoutSets(WORKOUT, ANTERIOR, undefined, null, true)[0])
+      .toEqual([0, 1, 2].map(() => ({ weight: '', repsDone: '8', rir: '2', done: false })));
+  });
+
+  it('las series al máximo siguen llegando con «fallo» y sin repeticiones', () => {
+    const amrap: Workout = { ...WORKOUT, exercises: [{ ...EX, sets: 2, technique: 'amrap' }] };
+    expect(prefillWorkoutSets(amrap, ANTERIOR, undefined, null, true)[0][1]).toEqual({ weight: '', repsDone: '', rir: 'fallo', done: false });
+  });
+
+  const log = (id: string, date: string, weight: number, extra: Partial<WorkoutLog> = {}, note?: string): WorkoutLog => ({
+    id, athleteId: 'a', workoutId: 'w1', assignmentId: id, date, completedAt: '',
+    entries: [{ exerciseId: 'ex1', sets: [{ weight, repsDone: 8, rir: 2, ...(extra.fuera ? { fuera: true } : {}) }], ...(note ? { note } : {}) }],
+    ...extra,
+  });
+
+  it('la sesión siguiente en su gimnasio toma la última NO fuera, aunque sea antigua; la nota, la más reciente', () => {
+    const logs = [
+      log('gym', '2026-10-01', 80),
+      log('f1', '2026-11-03', 30, { fuera: true }),
+      log('f2', '2026-11-10', 25, { fuera: true }, 'Hotel sin barra'),
+    ];
+    const [e] = entradasDeLaUltimaVez(logs, '2026-11-17');
+    expect(e.sets[0].weight).toBe(80);
+    expect(e.note).toBe('Hotel sin barra');
+  });
+
+  it('si solo hay sesiones fuera, sin referencia (pero con su nota)', () => {
+    const [e] = entradasDeLaUltimaVez([log('f1', '2026-11-10', 25, { fuera: true }, 'Mancuernas de 12')], '2026-11-17');
+    expect(e.sets).toEqual([]);
+    expect(e.note).toBe('Mancuernas de 12');
+    expect(prefillWorkoutSets(WORKOUT, [e])[0][0].weight).toBe('');
+  });
+
+  it('también vale con la marca solo en las series (registro marcado a medias)', () => {
+    const logs = [log('gym', '2026-11-01', 80), { ...log('f', '2026-11-10', 25), entries: [{ exerciseId: 'ex1', sets: [{ weight: 25, repsDone: 8, rir: 2, fuera: true }] }] }];
+    expect(entradasDeLaUltimaVez(logs, '2026-11-17')[0].sets[0].weight).toBe(80);
+  });
+});

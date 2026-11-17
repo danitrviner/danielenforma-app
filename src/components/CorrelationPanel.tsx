@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import { WorkoutLog, Exercise, QuestionnaireResponse, Questionnaire, BodyweightLog, WorkoutAssignment, BodyMetricKey, BODY_METRIC_LABELS } from '../types';
 import { rmDeSerie } from '../utils/oneRepMax';
+import { kgDeSerie, seriesDeFuerza } from '../utils/sesionFuera';
 import { getStepsForAthlete } from '../dbService';
 import { useBodyMeasurements } from '../hooks/useBodyMeasurements';
 import { DataPoint, Aggregation, Granularity, weekKey, toWeeklyBuckets, pearsonAligned } from '../utils/seriesCorrelation';
@@ -176,9 +177,8 @@ export default function CorrelationPanel({
       for (const log of logs) {
         let tonnage = 0;
         for (const entry of log.entries) {
-          for (const set of entry.sets) {
-            tonnage += (set.weight || 0) * (set.repsDone || 0);
-          }
+          // Fuera de su gimnasio los kilos no cuentan (utils/sesionFuera.ts).
+          for (const set of entry.sets) tonnage += kgDeSerie(set);
         }
         if (!byDate[log.date]) byDate[log.date] = 0;
         byDate[log.date] += tonnage;
@@ -347,7 +347,7 @@ export default function CorrelationPanel({
     for (const log of logs) {
       for (const entry of log.entries) {
         const eid = entry.exerciseId;
-        for (const set of entry.sets) {
+        for (const set of seriesDeFuerza(entry.sets)) {
           if (!set.weight || !set.repsDone) continue;
           const orm = rmDeSerie(set);
           if (!ormMap[eid]) ormMap[eid] = {};

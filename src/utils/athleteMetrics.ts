@@ -11,6 +11,7 @@ import { rmDeSerie, rirEfectivo } from './oneRepMax.js';
 import { weightedGroupsOf } from './trainingReport.js';
 import { adherenciaPorKcal } from './diaDeDieta.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
+import { esSesionFuera, seriesDeFuerza } from './sesionFuera.js';
 
 // Normaliza para comparar nombres de ejercicio: minúsculas y sin acentos.
 export function normalizeText(s: string): string {
@@ -45,6 +46,9 @@ export interface BestSet {
 
 // Mejor serie (por e1RM estimado) entre los logs dados, opcionalmente acotada a
 // un conjunto de ejercicios y/o a un rango de fechas [from, to] inclusivo.
+// Las series hechas fuera de su gimnasio (utils/sesionFuera.ts) no cuentan
+// aquí ni en la curva de pesos ni en las repeticiones a un peso: sus kilos son
+// de otras máquinas (17-11-2026).
 export function bestSet(
   logs: WorkoutLog[],
   opts: { exerciseIds?: Set<string>; from?: string; to?: string } = {},
@@ -55,7 +59,7 @@ export function bestSet(
     if (opts.to && log.date > opts.to) continue;
     for (const entry of log.entries) {
       if (opts.exerciseIds && !opts.exerciseIds.has(entry.exerciseId)) continue;
-      for (const set of entry.sets) {
+      for (const set of seriesDeFuerza(entry.sets)) {
         const e1rm = rmDeSerie(set);
         if (e1rm > 0 && (!best || e1rm > best.e1rm)) {
           best = { exerciseId: entry.exerciseId, weight: set.weight, reps: set.repsDone, rir: rirEfectivo(set.rir, set.alFallo), e1rm, date: log.date };
@@ -91,6 +95,8 @@ export function exerciseBestProgress(logs: WorkoutLog[], exerciseId: string): Ex
 export interface ExerciseSessionEntry {
   date: string;
   sets: { weight: number; reps: number }[];
+  /** Hecha fuera de su gimnasio: sus kilos no se comparan (utils/sesionFuera.ts). */
+  fuera?: boolean;
 }
 
 // Lista sesión a sesión (más reciente primero) de lo que el atleta levantó en
@@ -106,7 +112,10 @@ export function exerciseSessionHistory(
   for (const log of logs) {
     const entry = log.entries.find(e => e.exerciseId === exerciseId);
     if (!entry || entry.sets.length === 0) continue;
-    bySession.push({ date: log.date, sets: entry.sets.map(s => ({ weight: s.weight, reps: s.repsDone })) });
+    bySession.push({
+      date: log.date, sets: entry.sets.map(s => ({ weight: s.weight, reps: s.repsDone })),
+      ...(esSesionFuera(log) ? { fuera: true } : {}),
+    });
   }
   return bySession.sort((a, b) => b.date.localeCompare(a.date)).slice(0, limit);
 }
@@ -119,7 +128,7 @@ export function exerciseWeightTrend(logs: WorkoutLog[], exerciseId: string, sess
   for (const log of logs) {
     const entry = log.entries.find(e => e.exerciseId === exerciseId);
     if (!entry) continue;
-    const topWeight = entry.sets.reduce((max, s) => Math.max(max, s.weight), 0);
+    const topWeight = seriesDeFuerza(entry.sets).reduce((max, s) => Math.max(max, s.weight), 0);
     if (topWeight > 0) bySession.push({ date: log.date, weight: topWeight });
   }
   return bySession.sort((a, b) => a.date.localeCompare(b.date)).slice(-sessionsBack).map(s => s.weight);
@@ -206,7 +215,7 @@ export function bestRepsAtWeight(
     if (log.date < from || log.date > to) continue;
     for (const entry of log.entries) {
       if (entry.exerciseId !== exerciseId) continue;
-      for (const set of entry.sets) {
+      for (const set of seriesDeFuerza(entry.sets)) {
         // Tolerancia de 0,01 kg: los discos se registran con decimales y un
         // 79,999 no debe descalificar una serie hecha a 80.
         if (set.weight + 0.01 >= atWeight && set.repsDone > best) best = set.repsDone;

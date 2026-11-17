@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ETIQUETA_SIN_MARCA } from './marcaDeSesion';
 import { rmDeSerie } from './oneRepMax';
 import {
   marcaDeSesion, mejorSerieValida, motivoPrincipal, motivoSinMarca, rmValidoDeSerie,
@@ -59,5 +60,19 @@ describe('por qué una sesión se queda sin marca', () => {
     expect(motivoPrincipal({ reps_altas: 2, rir_sin_apuntar: 2 })).toBe('rir_sin_apuntar');
     expect(motivoPrincipal({ reps_altas: 3, rir_lejos: 1 })).toBe('reps_altas');
     expect(motivoPrincipal({})).toBeNull();
+  });
+});
+
+describe('fuera de su gimnasio (17-11-2026)', () => {
+  it('una sesión fuera no tiene marca, y el motivo para el coach es «fuera de su gimnasio»', () => {
+    const sets = [s(80, 8, 1, { fuera: true }), s(80, 8, 2, { fuera: true })];
+    expect(marcaDeSesion(sets)).toBeNull();
+    expect(rmValidoDeSerie(sets[0])).toBeNull();
+    expect(motivoSinMarca(sets)).toBe('fuera');
+    expect(ETIQUETA_SIN_MARCA.fuera).toBe('fuera de su gimnasio');
+  });
+
+  it('a igualdad de veces, «fuera» se enseña antes que cualquier otro motivo', () => {
+    expect(motivoPrincipal({ fuera: 1, reps_altas: 1 })).toBe('fuera');
   });
 });

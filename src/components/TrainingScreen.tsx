@@ -11,6 +11,7 @@ import { MONTHS_ES, addDays, formatDate, hoyIsoLocal } from '../utils/trainingWe
 import { bloquesDelCiclo, bloqueActual, BloqueDelCiclo, DiaDelCiclo, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { prefillWorkoutSets, entradasDeLaUltimaVez } from '../utils/setPrefill';
 import { tipoDeSemana } from '../utils/tipoDeSemana';
+import { cambiarPrerrelleno, esSesionFuera, semanaMarcadaFuera, serieConFuera } from '../utils/sesionFuera';
 import { saltoReal } from '../utils/cargaSugerida';
 import { conEstadoReal } from '../utils/estadoDeAsignacion';
 import { mesocycleWeekNumber, resolverEjercicioDelMeso } from '../utils/progression';
@@ -229,6 +230,11 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
   // D5: molestia de 1 a 10 por ejercicio. D4: cómo llega hoy.
   const [molestias, setMolestias] = useState<(number | undefined)[]>([]);
   const [comoLlega, setComoLlega] = useState<WorkoutLog['comoLlega']>(undefined);
+  // «Hoy entreno fuera de mi gimnasio» (utils/sesionFuera.ts). Se cambia en
+  // toda la sesión; `prerrellenosRef` guarda la tabla de los dos modos para
+  // pasar de uno a otro las filas que el atleta aún no ha tocado.
+  const [fuera, setFuera] = useState(false);
+  const prerrellenosRef = useRef<{ normal: SetInput[][]; fuera: SetInput[][] } | null>(null);
   // D6: cansancio al salir (0-10). Se contesta en el diálogo de fin de sesión,
   // con el entreno ya guardado: `logGuardadoId` es el registro al que se añade.
   const [cansancioAlSalir, setCansancioAlSalir] = useState<number | undefined>(undefined);
@@ -397,6 +403,10 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
     // carga subida; se repite lo de la última vez.
     const semana = meso ? mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso)) : 0;
     const prerrellenadas = prefillWorkoutSets(wo, entries, id => saltoReal(logs, id), tipoDeSemana(meso, semana));
+    // Fuera de su gimnasio: peso vacío y el objetivo del rango. Si el coach
+    // marcó la semana como semana fuera (viaje o vacaciones), llega encendido.
+    const prerrellenadasFuera = prefillWorkoutSets(wo, entries, id => saltoReal(logs, id), tipoDeSemana(meso, semana), true);
+    const semanaFuera = semanaMarcadaFuera(meso, semana);
 
     if (meso) {
       const base = baseWorkout.exercises.slice().sort((a, b) => a.order - b.order);
@@ -441,7 +451,10 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
 
     setActiveAssignment(assignment);
     setActiveWorkout(wo);
-    setPlayerSets(borrador?.playerSets ?? prerrellenadas);
+    const fueraAlAbrir = typeof borrador?.fuera === 'boolean' ? borrador.fuera : semanaFuera;
+    prerrellenosRef.current = { normal: prerrellenadas, fuera: prerrellenadasFuera };
+    setFuera(fueraAlAbrir);
+    setPlayerSets(borrador?.playerSets ?? (fueraAlAbrir ? prerrellenadasFuera : prerrellenadas));
     setExerciseNoteInputs(borrador?.exerciseNoteInputs
       ?? wo.exercises.slice().sort((a, b) => a.order - b.order).map(() => ''));
     setReferenciasNuevas(Array.isArray(borrador?.referenciasNuevas) ? borrador.referenciasNuevas : []);
@@ -528,6 +541,9 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
     }));
     setMolestias(orderedExercises.map(we => existingLog.entries.find(e => e.exerciseId === we.exerciseId)?.molestia));
     setComoLlega(existingLog.comoLlega);
+    // Al corregir, las filas son lo guardado: no hay prerrelleno que cambiar.
+    setFuera(esSesionFuera(existingLog));
+    prerrellenosRef.current = null;
     setWorkoutNoteInput(existingLog.note ?? '');
     setCelebration(null);
     setPrevEntries(prevEntriesForEdit);
@@ -554,6 +570,8 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
     setQuePararon([]);
     setMolestias([]);
     setComoLlega(undefined);
+    setFuera(false);
+    prerrellenosRef.current = null;
     setCansancioAlSalir(undefined);
     setLogGuardadoId(null);
     setWorkoutNoteInput('');
@@ -605,6 +623,14 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
     });
   };
 
+  /** Enciende o apaga «fuera». Las filas sin hacer y sin tocar pasan al
+   *  prerrelleno del otro modo; lo que el atleta ya escribió no se toca. */
+  const cambiarFuera = (valor: boolean) => {
+    setFuera(valor);
+    const p = prerrellenosRef.current;
+    if (p) setPlayerSets(prev => cambiarPrerrelleno(prev, valor ? p.normal : p.fuera, valor ? p.fuera : p.normal));
+  };
+
   const marcarReferenciaNueva = (exIdx: number, marcada: boolean) => {
     setReferenciasNuevas(prev => {
       const next = [...prev];
@@ -628,6 +654,13 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
     const meso = activeAssignment?.mesocycleId ? mesocycles.find(m => m.id === activeAssignment.mesocycleId) : undefined;
     if (!activeAssignment || !meso) return null;
     return tipoDeSemana(meso, mesocycleWeekNumber(meso.startDate, activeAssignment.date, cicloDiasDeMeso(meso)));
+  }, [activeAssignment, mesocycles]);
+
+  // ¿El coach marcó esta semana como semana fuera? El interruptor lo dice.
+  const semanaFueraActiva = useMemo(() => {
+    const meso = activeAssignment?.mesocycleId ? mesocycles.find(m => m.id === activeAssignment.mesocycleId) : undefined;
+    if (!activeAssignment || !meso) return false;
+    return semanaMarcadaFuera(meso, mesocycleWeekNumber(meso.startDate, activeAssignment.date, cicloDiasDeMeso(meso)));
   }, [activeAssignment, mesocycles]);
 
   const marcarQueParo = (exIdx: number, motivo: MotivoDeParada | undefined) => {
@@ -693,11 +726,12 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
       quePararon:        quePararon.map(m => m ?? null),
       molestias:         molestias.map(m => m ?? null),
       comoLlega,
+      fuera,
       workoutNoteInput,
       guardadoEn:        new Date().toISOString(),
       formaPrescrita:    formaPrescritaRef.current,
     });
-  }, [activeAssignment, activeWorkout, playerSets, exerciseNoteInputs, referenciasNuevas, quePararon, molestias, comoLlega, workoutNoteInput,
+  }, [activeAssignment, activeWorkout, playerSets, exerciseNoteInputs, referenciasNuevas, quePararon, molestias, comoLlega, fuera, workoutNoteInput,
       celebration, canFinish, profile.email]);
 
   const handleFinish = async () => {
@@ -711,7 +745,9 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
           // F23: marcada Y con repeticiones. Una fila marcada en blanco (de un
           // borrador anterior al arreglo) se guardaba como 0 kg × 0 reps.
           // D1b: cada serie guarda si el RIR lo eligió el atleta (`rirApuntado`).
-          sets: seriesHechas<SetInput>(playerSets[exIdx] || []).map(s => filaASerie(s, !!editingLogId)),
+          // Fuera de su gimnasio, la marca va en cada serie (utils/sesionFuera.ts);
+          // al apagarlo en una corrección, se quita.
+          sets: seriesHechas<SetInput>(playerSets[exIdx] || []).map(s => serieConFuera(filaASerie(s, !!editingLogId), fuera)),
           note: (exerciseNoteInputs[exIdx] || '').trim() || undefined,
           ...(referenciasNuevas[exIdx] ? { nuevaReferencia: true } : {}),
           ...(quePararon[exIdx] ? { queParo: quePararon[exIdx] } : {}),
@@ -731,13 +767,17 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
       // (nada de PRs/celebración — es una corrección, no un entreno nuevo; y
       // comparar la sesión contra sí misma daría un "récord" falso).
       if (editingLogId) {
+        // `fuera: false` solo si antes lo estaba: así una corrección cualquiera
+        // no le añade el campo a un registro que nunca lo tuvo.
+        const marcaFuera = fuera || logs.find(l => l.id === editingLogId)?.fuera ? { fuera } : {};
         await updateWorkoutLog(editingLogId, {
           entries,
           note: workoutNoteInput.trim() || undefined,
           completedAt: now,
+          ...marcaFuera,
         });
         queryClient.setQueryData<WorkoutLog[]>(logsKey, prev => prev?.map(l =>
-          l.id === editingLogId ? { ...l, entries, note: workoutNoteInput.trim() || undefined, completedAt: now } : l
+          l.id === editingLogId ? { ...l, entries, note: workoutNoteInput.trim() || undefined, completedAt: now, ...marcaFuera } : l
         ));
         void haptics.success();
         showToast('Cambios guardados.');
@@ -787,6 +827,7 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
         comoLlega,
         // Para el coach: si la sesión traía cambios, si el atleta leyó el aviso.
         novedadesVistas: avisoSesion ? avisoSesion.leido === true : undefined,
+        ...(fuera ? { fuera: true } : {}),
       });
 
       // El entrenamiento ya está a salvo en `workoutLogs` en este punto. Marcar
@@ -1079,6 +1120,9 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
           setAvisoSesion(a => a ? { ...a, leido } : a);
         }}
         tipoSemana={tipoSemanaActiva}
+        fuera={fuera}
+        onFuera={cambiarFuera}
+        semanaFuera={semanaFueraActiva}
         cansancioAlSalir={cansancioAlSalir}
         onCansancioAlSalir={logGuardadoId ? apuntarCansancio : undefined}
       />

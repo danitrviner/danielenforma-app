@@ -66,3 +66,15 @@ describe('diasMalosSeguidos', () => {
     expect(diasMalosSeguidos([log('2026-11-01', 10)], 'remo')).toBe(0);
   });
 });
+
+describe('fuera de su gimnasio (17-11-2026)', () => {
+  it('una sesión fuera con menos repeticiones no cuenta como día malo', () => {
+    const l = (date: string, repsDone: number, fuera = false): WorkoutLog => ({
+      id: date, athleteId: 'a', workoutId: 'w', assignmentId: date, date, completedAt: '',
+      ...(fuera ? { fuera: true } : {}),
+      entries: [{ exerciseId: 'ex1', sets: [{ weight: 80, repsDone, rir: 2, ...(fuera ? { fuera: true } : {}) } as WorkoutSetLog] }],
+    });
+    expect(diasMalosSeguidos([l('2026-11-01', 10), l('2026-11-08', 5)], 'ex1')).toBe(1);
+    expect(diasMalosSeguidos([l('2026-11-01', 10), l('2026-11-08', 5, true)], 'ex1')).toBe(0);
+  });
+});

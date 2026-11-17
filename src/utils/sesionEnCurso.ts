@@ -58,6 +58,9 @@ export interface SesionEnCurso {
   molestias?: (number | null)[];
   /** D4: «¿cómo llegas hoy?». */
   comoLlega?: string;
+  /** «Hoy entreno fuera de mi gimnasio» (utils/sesionFuera.ts). Ausente en los
+   *  borradores de antes: ahí se decide como al abrir (semana fuera o no). */
+  fuera?: boolean;
   workoutNoteInput: string;
   /** ISO. Sirve para caducar el borrador, no para mostrarlo. */
   guardadoEn: string;

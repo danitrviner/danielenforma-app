@@ -8,6 +8,8 @@ import {
   nuevaSerieVacia, seriesHechas, filaASerie, VARIANTES_RIR, VARIANTE_RIR_POR_DEFECTO, type SetInput, type VarianteRir,
 } from './setInput';
 import WorkoutSessionPlayer, { type SessionCelebration } from './WorkoutSessionPlayer';
+import { VARIANTES_FUERA, VARIANTE_FUERA_POR_DEFECTO, type VarianteFuera } from './InterruptorFuera';
+import { cambiarPrerrelleno, serieConFuera } from '../../utils/sesionFuera';
 
 /* Banco de pruebas del reproductor de entreno (`/dev/entreno`, solo en
    desarrollo). Un entreno inventado con un ejercicio normal, uno con drop set
@@ -18,7 +20,13 @@ import WorkoutSessionPlayer, { type SessionCelebration } from './WorkoutSessionP
    (D1c) para que Dani elija viéndolas; la tabla llega prerrellenada como en la
    sesión real (`prefillWorkoutSets`), hay un ejercicio con la última serie a
    AMRAP (D5) y «Terminar sesión» abre el diálogo de fin de sesión con la
-   pregunta del cansancio (D6). Abajo se ve lo que se guardaría de cada serie. */
+   pregunta del cansancio (D6). Abajo se ve lo que se guardaría de cada serie.
+
+   17-11-2026 (tarde): «Hoy entreno fuera de mi gimnasio». Segundo conmutador
+   con sus dos variantes (chip / fila) y otro para simular que el coach marcó
+   la semana como semana fuera (llega encendido). Encendido, la tabla pasa a
+   peso vacío con la pista, sin subidas ni récords, y cada serie se guarda con
+   la marca `fuera`. */
 
 const HOY = hoyIsoLocal();
 const EJERCICIOS = [
@@ -61,12 +69,21 @@ const LOGS = [{
 }] as unknown as WorkoutLog[];
 
 /** La tabla como llega en la sesión real: prerrellenada con la última vez y el RIR pautado. */
-function setsIniciales(): SetInput[][] {
-  return prefillWorkoutSets(WORKOUT, ANTERIOR);
+function setsIniciales(fuera = false): SetInput[][] {
+  return prefillWorkoutSets(WORKOUT, ANTERIOR, undefined, null, fuera);
 }
 
 export default function EntrenoDevHarness() {
-  const [sets, setSets] = useState(setsIniciales);
+  const [sets, setSets] = useState(() => setsIniciales());
+  // Sesión fuera de su gimnasio: la variante del interruptor, si está
+  // encendido y si el coach marcó la semana.
+  const [varianteFuera, setVarianteFuera] = useState<VarianteFuera>(VARIANTE_FUERA_POR_DEFECTO);
+  const [fuera, setFuera] = useState(false);
+  const [semanaFuera, setSemanaFuera] = useState(false);
+  const cambiarFuera = (valor: boolean) => {
+    setFuera(valor);
+    setSets(prev => cambiarPrerrelleno(prev, setsIniciales(!valor), setsIniciales(valor)));
+  };
   const [notas, setNotas] = useState<string[]>(WORKOUT.exercises.map(() => ''));
   // D3: «otra máquina o recorrido» por ejercicio.
   const [referencias, setReferencias] = useState<boolean[]>([]);
@@ -82,7 +99,7 @@ export default function EntrenoDevHarness() {
   const [cansancio, setCansancio] = useState<number | undefined>(undefined);
   const guardadas = WORKOUT.exercises.map((we, i) => ({
     nombre: EJERCICIOS.find(e => e.id === we.exerciseId)?.name ?? we.exerciseId,
-    series: seriesHechas<SetInput>(sets[i] || []).map(s => filaASerie(s, false, variante)),
+    series: seriesHechas<SetInput>(sets[i] || []).map(s => serieConFuera(filaASerie(s, false, variante), fuera)),
   })).filter(e => e.series.length > 0);
   const terminar = () => {
     const todas = guardadas.flatMap(e => e.series);
@@ -93,7 +110,8 @@ export default function EntrenoDevHarness() {
     });
   };
   const reiniciar = () => {
-    setSets(setsIniciales());
+    setSets(setsIniciales(semanaFuera));
+    setFuera(semanaFuera);
     setNotas(WORKOUT.exercises.map(() => ''));
     setReferencias([]); setQuePararon([]); setMolestias([]); setComoLlega(undefined);
     setCelebracion(null); setCansancio(undefined);
@@ -116,6 +134,22 @@ export default function EntrenoDevHarness() {
           className="w-full"
         />
         <p className="font-sans text-caption text-ink-2">{VARIANTES_RIR.find(v => v.clave === variante)?.explicacion}</p>
+        <p className="pt-2 font-mono text-caption font-bold uppercase tracking-wide text-accent-ink">Fuera de su gimnasio</p>
+        <SegmentedControl
+          label="Cómo se enseña «fuera de mi gimnasio»"
+          value={varianteFuera}
+          onChange={v => setVarianteFuera(v as VarianteFuera)}
+          options={VARIANTES_FUERA.map(v => ({ value: v.clave, label: v.etiqueta }))}
+          className="w-full"
+        />
+        <p className="font-sans text-caption text-ink-2">{VARIANTES_FUERA.find(v => v.clave === varianteFuera)?.explicacion}</p>
+        <label className="flex items-center gap-2 font-sans text-caption text-ink-2">
+          <input
+            type="checkbox" checked={semanaFuera}
+            onChange={e => { setSemanaFuera(e.target.checked); if (e.target.checked && !fuera) cambiarFuera(true); }}
+          />
+          El coach marcó esta semana como semana fuera (viaje)
+        </label>
       </div>
       <WorkoutSessionPlayer
         profile={{ userId: 'dev', email: 'dev@example.com', displayName: 'Dev' } as UserProfile}
@@ -153,6 +187,10 @@ export default function EntrenoDevHarness() {
         varianteRir={variante}
         cansancioAlSalir={cansancio}
         onCansancioAlSalir={setCansancio}
+        fuera={fuera}
+        onFuera={cambiarFuera}
+        semanaFuera={semanaFuera}
+        varianteFuera={varianteFuera}
       />
 
       {/* Lo que se guardaría: para comprobar `rirApuntado` (D1b) y el cansancio (D6). */}
@@ -166,7 +204,7 @@ export default function EntrenoDevHarness() {
               <span key={i} className="whitespace-nowrap">
                 {i > 0 && ' · '}
                 {s.weight}×{s.repsDone} {s.alFallo ? 'FALLO' : `RIR ${s.rir}`}{' '}
-                <span className={s.rirApuntado ? 'text-success' : 'text-ink-3'}>({s.segmento ? 'bajada' : s.rirApuntado ? 'apuntado' : 'sin apuntar'})</span>
+                <span className={s.rirApuntado ? 'text-success' : 'text-ink-3'}>({s.segmento ? 'bajada' : s.rirApuntado ? 'apuntado' : 'sin apuntar'}{s.fuera ? ', fuera' : ''})</span>
               </span>
             ))}
           </p>

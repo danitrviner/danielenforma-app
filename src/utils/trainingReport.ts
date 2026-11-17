@@ -107,7 +107,9 @@ export function aggregate(
         const r = Number(s.repsDone) || 0;
         if (!s.segmento) row.sets++;
         row.reps += r;
-        const t = w * r;
+        // Fuera de su gimnasio (utils/sesionFuera.ts) la serie cuenta como
+        // serie, pero sus kilos no suman tonelaje: son de otras máquinas.
+        const t = s.fuera ? 0 : w * r;
         row.tonnage = round1(row.tonnage + t);
         tonnage = round1(tonnage + t);
         // Cambió de máquina o de recorrido después: esta marca es de otra tarea.

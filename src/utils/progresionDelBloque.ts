@@ -428,7 +428,12 @@ export function buildProgresionDelBloque(params: {
       for (const s of entry.sets ?? []) {
         const kg = pesoDeSerie(s.weight, entry.exerciseId, ctx);
         const reps = Number(s.repsDone) || 0;
-        const t = kg * reps;
+        // Una serie hecha fuera de su gimnasio (utils/sesionFuera.ts) cuenta
+        // como serie y para el RIR medio, pero sus kilos no son los de siempre:
+        // no suman tonelaje ni pueden ser la marca de repeticiones. El RM ya la
+        // deja fuera `rmValidoDeSerie`, con el motivo «fuera de su gimnasio».
+        const fuera = s.fuera === true;
+        const t = fuera ? 0 : kg * reps;
         acc.tonelaje = r1(acc.tonelaje + t);
         if (fila) fila.tonelaje = r1(fila.tonelaje + t);
         if (s.segmento || reps <= 0) continue;
@@ -449,7 +454,7 @@ export function buildProgresionDelBloque(params: {
           acc.conPeso.set(log.date, motivos);
         }
         if (serie.e1rm > 0 && mejorQue(serie, acc.marcaRm.get(log.date) ?? null, 'e1rm')) acc.marcaRm.set(log.date, serie);
-        if (mejorQue(serie, acc.marcaReps.get(log.date) ?? null, 'reps')) acc.marcaReps.set(log.date, serie);
+        if (!fuera && mejorQue(serie, acc.marcaReps.get(log.date) ?? null, 'reps')) acc.marcaReps.set(log.date, serie);
       }
     }
   }
