@@ -22,18 +22,43 @@ import { seriesPrincipales } from './seriesPrincipales.js';
 
    `desfase` = repeticiones reales − repeticiones que creía posibles.
    Positivo: se queda lejos. Negativo: aprieta más de lo que apunta.
+
+   Dos correcciones del 17-11-2026 (D4b):
+
+     · Solo vale de ESTIMACIÓN una serie cuyo RIR apuntó el atleta. Una serie
+       guardada con el RIR pautado sin tocar (`rirApuntado === false`) no es
+       una estimación suya: comprobarla medía el plan, no al atleta. Tampoco
+       vale de serie «al máximo» un RIR 0 que venía pautado y no se tocó (al
+       fallo marcado sí: eso lo marca él). Los registros antiguos no llevan
+       la marca y se dan por buenos.
+     · Mejorar no es calibrar mal. Entre sesiones pueden pasar hasta tres
+       semanas, y quien progresa saca más repeticiones con el mismo peso sin
+       haberse quedado lejos. Eso SÍ se puede ver cuando hay una sesión más
+       atrás con el mismo peso en la primera serie y RIR apuntado: si de
+       aquella a la última sus «posibles» ya subían (10 → 11), se espera que
+       hoy vuelvan a subir lo mismo, y solo lo que pase de ahí es desfase.
+       Sin esa tercera sesión (otro peso, RIR sin apuntar, ejercicio nuevo)
+       no hay forma de separar las dos cosas con lo que se registra y el
+       desfase se deja como está: la comprobación dentro de la misma sesión
+       no tiene este problema, y la media de varias comprobaciones lo diluye.
+       Lo contrario (un mal día leído como «aprietas más de lo que apuntas»)
+       tampoco se puede separar y se deja.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-type Serie = Pick<WorkoutSetLog, 'weight' | 'repsDone' | 'rir' | 'alFallo'>;
+type Serie = Pick<WorkoutSetLog, 'weight' | 'repsDone' | 'rir' | 'alFallo' | 'rirApuntado'>;
 
 /** Repeticiones de desfase a partir de las cuales ya no se considera calibrado. */
 export const DESFASE_QUE_IMPORTA = 2;
 /** Días como mucho entre la estimación y la comprobación. */
 export const DIAS_ENTRE_SESIONES = 21;
 
-const alMaximo = (s: Serie) => !!s.alFallo || s.rir === 0;
+/** ¿El RIR de la serie lo eligió el atleta? (sin la marca, registro antiguo: se da por bueno). */
+const rirSuyo = (s: Serie) => s.rirApuntado !== false;
+const alMaximo = (s: Serie) => !!s.alFallo || (s.rir === 0 && rirSuyo(s));
 const valida = (s: Serie) => s.weight > 0 && s.repsDone > 0;
 const posibles = (s: Serie) => s.repsDone + (s.rir ?? 0);
+/** ¿Vale de estimación? No fue al máximo y el RIR es suyo. */
+const esEstimacion = (s: Serie) => !alMaximo(s) && rirSuyo(s);
 
 export interface Comprobacion {
   /** Lo que se hizo en la serie de la estimación. */
@@ -45,22 +70,36 @@ export interface Comprobacion {
   desfase: number;
   /** `false` = sale de la misma sesión: el desfase es un mínimo. */
   entreSesiones: boolean;
+  /** Repeticiones del exceso que ya explicaba su progresión y no cuentan como desfase (solo entre sesiones). */
+  mejoraDescontada?: number;
 }
 
 /**
  * La comprobación que deja la sesión de un ejercicio, o `null`. `anterior` es
- * la sesión previa del mismo ejercicio (si es reciente y de la misma tarea).
+ * la sesión previa del mismo ejercicio (si es reciente y de la misma tarea), y
+ * `antesDeLaAnterior` la de antes: con ella se descuenta la mejora que ya se
+ * veía venir (ver la cabecera). Sin ella, el desfase se deja como sale.
  */
-export function comprobarRir(hoy: readonly Serie[], anterior?: readonly Serie[]): Comprobacion | null {
+export function comprobarRir(
+  hoy: readonly Serie[], anterior?: readonly Serie[], antesDeLaAnterior?: readonly Serie[],
+): Comprobacion | null {
   const sets = hoy.filter(valida);
   if (sets.length === 0) return null;
 
   const primera = sets[0];
   const previa = anterior?.filter(valida)[0];
-  if (previa && alMaximo(primera) && !alMaximo(previa) && previa.weight === primera.weight) {
+  if (previa && alMaximo(primera) && esEstimacion(previa) && previa.weight === primera.weight) {
+    const bruto = primera.repsDone - posibles(previa);
+    // Mejorar no es calibrar mal: lo que sus «posibles» ya subían de la sesión
+    // de antes a la última, con este mismo peso, se espera también hoy.
+    const masAtras = antesDeLaAnterior?.filter(valida)[0];
+    const tendencia = masAtras && esEstimacion(masAtras) && masAtras.weight === previa.weight
+      ? Math.max(0, posibles(previa) - posibles(masAtras)) : 0;
+    const mejoraDescontada = bruto > 0 ? Math.min(bruto, tendencia) : 0;
     return {
       repsEstimacion: previa.repsDone, rirEstimado: previa.rir, repsReales: primera.repsDone,
-      peso: primera.weight, desfase: primera.repsDone - posibles(previa), entreSesiones: true,
+      peso: primera.weight, desfase: bruto - mejoraDescontada, entreSesiones: true,
+      ...(mejoraDescontada > 0 ? { mejoraDescontada } : {}),
     };
   }
 
@@ -68,7 +107,7 @@ export function comprobarRir(hoy: readonly Serie[], anterior?: readonly Serie[])
   sets.forEach((tope, j) => {
     if (!alMaximo(tope)) return;
     for (const est of sets.slice(0, j)) {
-      if (alMaximo(est) || est.weight !== tope.weight) continue;
+      if (!esEstimacion(est) || est.weight !== tope.weight) continue;
       const desfase = tope.repsDone - posibles(est);
       if (desfase >= 1 && (!mejor || desfase > mejor.desfase)) {
         mejor = { repsEstimacion: est.repsDone, rirEstimado: est.rir, repsReales: tope.repsDone, peso: tope.weight, desfase, entreSesiones: false };
@@ -113,7 +152,9 @@ export interface CalibracionDeEjercicio {
 /** Las comprobaciones que hay en el historial, por ejercicio. De más desfase a menos. */
 export function calibracionPorEjercicio(logs: readonly WorkoutLog[], ejercicios?: readonly string[]): CalibracionDeEjercicio[] {
   const ordenados = [...logs].sort((a, b) => a.date.localeCompare(b.date));
-  const previa = new Map<string, { date: string; entry: WorkoutEntryLog }>();
+  // Las dos últimas sesiones de cada ejercicio: la anterior (la estimación) y
+  // la de antes (para descontar la mejora que ya se veía venir).
+  const previa = new Map<string, { date: string; entry: WorkoutEntryLog; antes?: WorkoutEntryLog }>();
   const muestras = new Map<string, { desfases: number[]; ultima: string }>();
   for (const log of ordenados) {
     for (const entry of log.entries) {
@@ -121,13 +162,21 @@ export function calibracionPorEjercicio(logs: readonly WorkoutLog[], ejercicios?
       const ant = previa.get(id);
       // Con «otra máquina o recorrido» la sesión anterior ya no vale de estimación.
       const comparable = ant && !entry.nuevaReferencia && dias(ant.date, log.date) <= DIAS_ENTRE_SESIONES;
-      const c = comprobarRir(seriesPrincipales(entry.sets), comparable ? seriesPrincipales(ant.entry.sets) : undefined);
+      const c = comprobarRir(
+        seriesPrincipales(entry.sets),
+        comparable ? seriesPrincipales(ant.entry.sets) : undefined,
+        comparable && ant.antes ? seriesPrincipales(ant.antes.sets) : undefined,
+      );
       if (c && (!ejercicios || ejercicios.includes(id))) {
         const m = muestras.get(id) ?? { desfases: [], ultima: log.date };
         m.desfases.push(c.desfase); m.ultima = log.date;
         muestras.set(id, m);
       }
-      if (seriesPrincipales(entry.sets).some(valida)) previa.set(id, { date: log.date, entry });
+      if (seriesPrincipales(entry.sets).some(valida)) {
+        // Con referencia nueva, o si queda lejos en el tiempo, lo de antes no vale de tendencia.
+        const cerca = ant && dias(ant.date, log.date) <= DIAS_ENTRE_SESIONES;
+        previa.set(id, { date: log.date, entry, antes: cerca && !entry.nuevaReferencia ? ant.entry : undefined });
+      }
     }
   }
   return [...muestras.entries()]

@@ -14,23 +14,25 @@ import { segundosTranscurridos, formatearDuracion } from '../../utils/duracionSe
 import { haptics } from '../../services/haptics';
 import { formatDate } from '../../utils/trainingWeek';
 import { useEstable } from '../../hooks/useEstable';
-import { SetInput, tieneReps } from './setInput';
+import {
+  SetInput, tieneReps, filaASerie, apuntarRir, opcionRapidaDe, rirDesdeElBloqueo, VARIANTE_RIR_POR_DEFECTO, type VarianteRir,
+} from './setInput';
 import { estadoDelEjercicio, seriesPrincipales } from '../../utils/seriesPrincipales';
-import { logrosDelEjercicio, tonelajeMaximoAntesDe, type Logro } from '../../utils/logrosDelEjercicio';
+import { tonelajeMaximoAntesDe, type Logro } from '../../utils/logrosDelEjercicio';
+import { logrosDelCierre, mensajeTrasCerrar, comprobacionDelRir } from './cierreDeEjercicio';
+import { recordDeReps } from '../../utils/planDeLaSemana';
 import ExerciseCard from './ExerciseCard';
 import type { MotivoDeParada } from '../../utils/queTeParo';
 import ExerciseCloseCard from './ExerciseCloseCard';
 import ParejaAlternaCard, { type LadoDePareja } from './ParejaAlternaCard';
 import { paginasDeSesion, siguienteTurno, descansoTrasTurno } from '../../utils/seriesAlternas';
 import { llevaSegmentos } from '../../utils/tecnicaDeSerie';
-import { comprobarRir } from '../../utils/calibracionRir';
 import { saltoReal } from '../../utils/cargaSugerida';
-import { rmDeSerie } from '../../utils/oneRepMax';
 import AvisoDeRetoEnSesion from './AvisoDeRetoEnSesion';
 import { ListaDeNovedades } from './NovedadesDeSemana';
 import type { NovedadesDeLaSesion } from '../../utils/planificadorProgresion';
 import type { TipoDeSemana } from '../../utils/tipoDeSemana';
-import { tieneSeriesValidas } from '../../utils/setPrefill';
+import { tieneSeriesValidas, rirPautadoPorSerie } from '../../utils/setPrefill';
 
 const COMO_LLEGA: { clave: NonNullable<WorkoutLog['comoLlega']>; etiqueta: string }[] = [
   { clave: 'bien', etiqueta: 'Con energía' },
@@ -101,7 +103,16 @@ interface Props {
   /** F7a: la sesión cae en semana de descarga, puente o vuelta de parón. En
    *  ellas las tarjetas no sugieren subir carga. */
   tipoSemana?: TipoDeSemana | null;
+  /** D1c: cómo se le pide el RIR al atleta (ver `VarianteRir` en setInput.ts).
+   *  Sin ella, la de hoy. Solo el banco de pruebas pasa otra. */
+  varianteRir?: VarianteRir;
+  /** D6: cansancio al salir, 0-10, contestado en el diálogo de fin de sesión.
+   *  Ausente `onCansancioAlSalir` = no se pregunta. */
+  cansancioAlSalir?: number;
+  onCansancioAlSalir?: (valor: number) => void;
 }
+
+const CANSANCIO = Array.from({ length: 11 }, (_, i) => i);
 
 /**
  * Sesión de entrenamiento activa — "Entreno · Serie en curso v2" del mockup.
@@ -121,6 +132,7 @@ export default function WorkoutSessionPlayer({
   celebration, dismissCelebration, cerrarPlayer, sameDayCardio,
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, onMarkActionDone,
   avisoSesion, onAvisoSesion, tipoSemana,
+  varianteRir = VARIANTE_RIR_POR_DEFECTO, cansancioAlSalir, onCansancioAlSalir,
 }: Props) {
   const orderedExercises = activeWorkout.exercises.slice().sort((a, b) => a.order - b.order);
   const doneSetsTotal = playerSets.flat().filter(s => s.done).length;
@@ -387,7 +399,15 @@ export default function WorkoutSessionPlayer({
     for (const t of toques) {
       if (t.reps != null) updateSet(t.exIdx, t.setIdx, 'repsDone', String(t.reps));
       if (t.weight != null) updateSet(t.exIdx, t.setIdx, 'weight', String(t.weight));
-      if (t.rir != null) updateSet(t.exIdx, t.setIdx, 'rir', String(t.rir));
+      if (t.rir != null) {
+        // Un 0 sobre una serie «al fallo» es como el bloqueo enseña el fallo,
+        // no un cambio; y si el número es otro, lo ha cambiado él (D1b).
+        const rir = rirDesdeElBloqueo(playerSets[t.exIdx]?.[t.setIdx]?.rir, Number(t.rir));
+        if (rir) {
+          updateSet(t.exIdx, t.setIdx, 'rir', rir.valor);
+          if (rir.apuntado) updateSet(t.exIdx, t.setIdx, 'rirApuntado', true);
+        }
+      }
       if (t.done) updateSet(t.exIdx, t.setIdx, 'done', true);
       if (t.restEndsAt != null) {
         setRestTimer(r => (r ? { ...r, restEndsAt: t.restEndsAt as number } : r));
@@ -486,12 +506,14 @@ export default function WorkoutSessionPlayer({
     // Con referencia nueva no se celebra nada contra las marcas de antes (D3).
     if (referenciasNuevas?.[exIdx]) return undefined;
     const we = orderedExercises[exIdx];
-    return logrosDelEjercicio({
+    // D9: el récord de RM solo con una serie válida; si no, las repeticiones.
+    return logrosDelCierre({
       nombre: getExercise(we.exerciseId)?.name || 'este ejercicio',
-      hechas: (playerSets[exIdx] || []).filter(x => x.done),
+      hechas: (playerSets[exIdx] || []).filter(x => x.done).map(x => filaASerie(x)),
       mejorRmAntes: priorBestByExercise.get(we.exerciseId),
       tonelajeMaxAntes: tonelajeMaxAntes.get(we.exerciseId),
       ultimaVez: prevEntries.find(e => e.exerciseId === we.exerciseId)?.sets,
+      repsMaximasAntes: peso => recordDeReps(logs, we.exerciseId, peso, activeAssignment.date),
     });
   };
   const [festejando, setFestejando] = useState<number | null>(null);
@@ -531,31 +553,39 @@ export default function WorkoutSessionPlayer({
   );
 
   // F3: cuando sale igual que la última vez, que no se lea como un fracaso.
+  // «Hoy ha salido por debajo» solo si el RIR de esas series lo apuntó él (D1d).
   const mensajeDe = (exIdx: number): string | undefined => {
     if (isEditingCompleted || referenciasNuevas?.[exIdx]) return undefined;
     const previa = prevEntries.find(e => e.exerciseId === orderedExercises[exIdx].exerciseId);
     if (!previa) return undefined;
-    const hoy = Math.max(0, ...seriesPrincipales(playerSets[exIdx] || []).filter(x => x.done).map(x => rmDeSerie({ weight: x.weight, repsDone: x.repsDone, rir: x.rir === 'fallo' ? 0 : x.rir, alFallo: x.rir === 'fallo' })));
-    const antes = Math.max(0, ...seriesPrincipales(previa.sets).map(rmDeSerie));
-    if (!(hoy > 0) || !(antes > 0)) return undefined;
-    const cambio = (hoy - antes) / antes;
-    if (Math.abs(cambio) <= 0.01) return 'Igual que la última vez. Una sesión igual no es estancarse: lo que cuenta es cómo vas en varias semanas.';
-    if (cambio < 0) return 'Hoy ha salido un poco por debajo de la última vez. Una sesión suelta no dice nada: sueño, comida y cansancio mueven el número de un día para otro.';
-    return undefined;
+    return mensajeTrasCerrar((playerSets[exIdx] || []).filter(x => x.done).map(x => filaASerie(x)), previa.sets);
   };
 
   // F4: si hoy hay una serie al máximo comparable con lo que venía apuntando,
   // se le enseña al cerrar el ejercicio cuánto se desviaba su RIR. Con
-  // referencia nueva la sesión anterior no vale de estimación.
+  // referencia nueva la sesión anterior no vale de estimación. Y solo con RIR
+  // que apuntó él: del pautado sin tocar no se opina (D1d).
   const comprobacionDe = (exIdx: number) => {
-    const hechas = seriesPrincipales(playerSets[exIdx] || []).filter(x => x.done).map(x => ({
-      weight: parseFloat(x.weight) || 0,
-      repsDone: parseInt(x.repsDone) || 0,
-      rir: x.rir === 'fallo' ? 0 : Number(x.rir) || 0,
-      alFallo: x.rir === 'fallo',
-    }));
+    const hechas = seriesPrincipales(playerSets[exIdx] || []).filter(x => x.done).map(x => filaASerie(x, isEditingCompleted));
     const previa = referenciasNuevas?.[exIdx] ? undefined : prevEntries.find(e => e.exerciseId === orderedExercises[exIdx].exerciseId);
-    return comprobarRir(hechas, previa ? seriesPrincipales(previa.sets) : undefined);
+    return comprobacionDelRir(hechas, previa ? seriesPrincipales(previa.sets) : undefined);
+  };
+
+  // D1c, variante «última»: al cerrar el ejercicio se pregunta el RIR solo de
+  // la última serie principal. Esa queda como apuntada; las demás, no.
+  const rirUltimaDe = (exIdx: number) => {
+    if (varianteRir !== 'ultima' || isEditingCompleted) return undefined;
+    const filas = playerSets[exIdx] || [];
+    let idx = -1;
+    filas.forEach((f, i) => { if (!f.segmento && f.done) idx = i; });
+    if (idx < 0) return undefined;
+    const fila = filas[idx];
+    const serie = filas.slice(0, idx + 1).filter(f => !f.segmento).length - 1;
+    return {
+      pautado: rirPautadoPorSerie(orderedExercises[exIdx])[serie],
+      elegido: fila.rirApuntado === true ? opcionRapidaDe(fila.rir) : null,
+      onElegir: (valor: string) => apuntarRir((sIdx, field, value) => updateSet(exIdx, sIdx, field, value), idx, valor),
+    };
   };
 
   const nombreDePagina = (pg: number[] | undefined) => pg?.map(i => getExercise(orderedExercises[i]?.exerciseId)?.name).filter(Boolean).join(' + ') || undefined;
@@ -600,6 +630,8 @@ export default function WorkoutSessionPlayer({
           mensaje={mensajeDe(exIdx)}
           logros={logrosDe(exIdx)}
           festejar={festejando === exIdx}
+          rirUltima={rirUltimaDe(exIdx)}
+          esCorreccion={isEditingCompleted}
         />
       );
     }
@@ -625,6 +657,7 @@ export default function WorkoutSessionPlayer({
         saltoKg={saltos.get(we.exerciseId)}
         esNuevo={!isEditingCompleted && !yaHechos.has(we.exerciseId)}
         tipoSemana={tipoSemana}
+        varianteRir={varianteRir}
         nuevaReferencia={referenciasNuevas?.[exIdx] ?? false}
         onToggleReferencia={marcarReferenciaNueva && !isEditingCompleted ? cb.onToggleReferencia : undefined}
         restTimer={pageIdx === pIdx && restTimer && restSecondsLeft
@@ -693,6 +726,7 @@ export default function WorkoutSessionPlayer({
           onSkipRest={onSkipRestStable}
           onAddRestSeconds={addRestSecondsStable}
           tipoSemana={tipoSemana}
+          varianteRir={varianteRir}
         />
       </div>
     );
@@ -874,6 +908,30 @@ export default function WorkoutSessionPlayer({
                 </div>
               )}
             </div>
+            {/* D6: cansancio al salir. Opcional, pero a la vista y de un toque:
+                sin texto que escribir. Lo usa el coach de freno antes de subir. */}
+            {onCansancioAlSalir && (
+              <div className="text-left">
+                <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">¿Cómo de cansado sales?</p>
+                <p className="font-sans text-caption text-ink-3 mb-2">Un toque: 0 es como si nada y 10, no puedo más.</p>
+                <div role="group" aria-label="Cansancio al salir, de 0 a 10" className="grid grid-cols-6 gap-1.5">
+                  {CANSANCIO.map(v => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => onCansancioAlSalir(v)}
+                      aria-pressed={cansancioAlSalir === v}
+                      aria-label={`Cansancio ${v} de 10`}
+                      className={`h-11 rounded-control border font-mono text-title-s transition-colors duration-(--duration-state) active:scale-95 ${
+                        cansancioAlSalir === v ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-2 hover:border-accent-line hover:text-accent-ink'
+                      }`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {celebration.prs.length > 0 && (
               <div className="bg-accent/10 border border-accent/30 rounded-surface p-3 space-y-2 text-left">
                 {celebration.prs.map(pr => (

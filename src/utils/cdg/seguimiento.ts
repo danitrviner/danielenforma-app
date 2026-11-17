@@ -16,6 +16,13 @@ export interface CdgSerieRealizada extends CdgSerie {
   weight: number | string;
   intensification: string; // técnica tal cual ('' o '-' = Normal)
   intensificationList?: Array<{ intensificationReps: number | string; intensificationWeight: number | string }>;
+  /**
+   * Solo en el camino de los registros de la app (la hoja no lo tiene): `false`
+   * si la serie se guardó con el RIR pautado sin tocar (`WorkoutSetLog.rirApuntado`).
+   * Lo rellena quien convierte los registros (una serie al fallo va como
+   * apuntada); lo lee `rendimientoDeRegistros.ts`.
+   */
+  rirApuntado?: boolean;
 }
 
 export interface EntradaSerieHoja { reps: string | number; kg: string | number; rir: string | number; tecnica?: string }
@@ -229,7 +236,11 @@ export function calcularTonelaje (sets: CdgSerieRealizada[]) {
   return t
 }
 
-export interface FilaRendimiento { semana: string; sesion: string; ejercicio: string; rm: number; tonelaje: number }
+export interface FilaRendimiento {
+  semana: string; sesion: string; ejercicio: string; rm: number; tonelaje: number
+  /** Solo en `rendimientoSemanaDeRegistros` (`rendimientoDeRegistros.ts`): ninguna serie válida para el RM (`rm` es 0, y no es una marca de 0 kg). */
+  sinMarca?: boolean
+}
 
 export function rendimientoSemana (nombreSemana: string, semana: SemanaRealizada): FilaRendimiento[] {
   const filas: FilaRendimiento[] = []

@@ -1,14 +1,24 @@
 import { useState } from 'react';
 import type { Exercise, UserProfile, Workout, WorkoutAssignment, WorkoutEntryLog, WorkoutLog } from '../../types';
 import { hoyIsoLocal, addDays } from '../../utils/trainingWeek';
-import { segmentosProgramados } from '../../utils/tecnicaDeSerie';
-import { nuevaSerieVacia, type SetInput } from './setInput';
-import WorkoutSessionPlayer from './WorkoutSessionPlayer';
+import { prefillWorkoutSets } from '../../utils/setPrefill';
+import { formatearDuracion } from '../../utils/duracionSesion';
+import { SegmentedControl } from '../ui';
+import {
+  nuevaSerieVacia, seriesHechas, filaASerie, VARIANTES_RIR, VARIANTE_RIR_POR_DEFECTO, type SetInput, type VarianteRir,
+} from './setInput';
+import WorkoutSessionPlayer, { type SessionCelebration } from './WorkoutSessionPlayer';
 
 /* Banco de pruebas del reproductor de entreno (`/dev/entreno`, solo en
    desarrollo). Un entreno inventado con un ejercicio normal, uno con drop set
    en la última serie y uno con myo-reps, con una sesión anterior para que haya
-   récords y consejos que enseñar. No lee ni escribe nada de Firestore. */
+   récords y consejos que enseñar. No lee ni escribe nada de Firestore.
+
+   17-11-2026: arriba, el conmutador de las cuatro formas de apuntar el RIR
+   (D1c) para que Dani elija viéndolas; la tabla llega prerrellenada como en la
+   sesión real (`prefillWorkoutSets`), hay un ejercicio con la última serie a
+   AMRAP (D5) y «Terminar sesión» abre el diálogo de fin de sesión con la
+   pregunta del cansancio (D6). Abajo se ve lo que se guardaría de cada serie. */
 
 const HOY = hoyIsoLocal();
 const EJERCICIOS = [
@@ -17,6 +27,7 @@ const EJERCICIOS = [
   { id: 'elev', name: 'Elevaciones laterales' },
   { id: 'curl', name: 'Curl en polea baja con barra' },
   { id: 'tri', name: 'Extensión de tríceps en polea alta' },
+  { id: 'jalon', name: 'Jalón al pecho' },
 ] as unknown as Exercise[];
 const WORKOUT: Workout = {
   id: 'w', ownerId: '', name: 'Torso de prueba',
@@ -27,6 +38,8 @@ const WORKOUT: Workout = {
     // Series alternas (P4): comparten página y se hacen por turnos.
     { exerciseId: 'curl', order: 3, sets: 3, reps: '10-12', rir: 1, restSeconds: 120, alterna: 'p1' },
     { exerciseId: 'tri', order: 4, sets: 3, reps: '10-15', rir: 1, restSeconds: 120, alterna: 'p1' },
+    // Test (D5): la última serie va a AMRAP y llega con «fallo» y sin repeticiones.
+    { exerciseId: 'jalon', order: 5, sets: 2, reps: '8-10', rir: 2, restSeconds: 0, technique: 'amrap' },
   ],
 };
 const ANTERIOR: WorkoutEntryLog[] = [
@@ -37,19 +50,19 @@ const ANTERIOR: WorkoutEntryLog[] = [
   },
   { exerciseId: 'remo', sets: [60, 60].map(w => ({ weight: w, repsDone: 10, rir: 1 })) },
   { exerciseId: 'elev', sets: [10, 10].map(w => ({ weight: w, repsDone: 12, rir: 1 })) },
-  { exerciseId: 'curl', sets: [25, 25, 25].map(w => ({ weight: w, repsDone: 11, rir: 1 })) },
+  // D1a: la primera serie se apuntó a RIR 0 con RIR 1 pautado → hoy llega con 10, no con 11.
+  { exerciseId: 'curl', sets: [25, 25, 25].map((w, i) => ({ weight: w, repsDone: 11, rir: i === 0 ? 0 : 1, ...(i === 0 ? { rirApuntado: true } : {}) })) },
   { exerciseId: 'tri', sets: [30, 30, 30].map(w => ({ weight: w, repsDone: 13, rir: 1 })) },
+  { exerciseId: 'jalon', sets: [55, 55].map(w => ({ weight: w, repsDone: 9, rir: 2 })) },
 ];
 const LOGS = [{
   id: 'l1', athleteId: 'dev@example.com', workoutId: 'w', assignmentId: 'a0',
   date: addDays(HOY, -7), completedAt: '', entries: ANTERIOR,
 }] as unknown as WorkoutLog[];
 
+/** La tabla como llega en la sesión real: prerrellenada con la última vez y el RIR pautado. */
 function setsIniciales(): SetInput[][] {
-  return WORKOUT.exercises.map(we => {
-    const principales = Array.from({ length: we.sets }, () => nuevaSerieVacia());
-    return [...principales, ...segmentosProgramados(we, we.sets).map(k => nuevaSerieVacia(true, k))];
-  });
+  return prefillWorkoutSets(WORKOUT, ANTERIOR);
 }
 
 export default function EntrenoDevHarness() {
@@ -62,12 +75,48 @@ export default function EntrenoDevHarness() {
   // D5 y D4: molestia por ejercicio y cómo llega hoy.
   const [molestias, setMolestias] = useState<(number | undefined)[]>([]);
   const [comoLlega, setComoLlega] = useState<WorkoutLog['comoLlega']>(undefined);
-  const [terminado, setTerminado] = useState(false);
+  // D1c: la forma de apuntar el RIR que se está probando.
+  const [variante, setVariante] = useState<VarianteRir>(VARIANTE_RIR_POR_DEFECTO);
+  // D6: el diálogo de fin de sesión y el cansancio contestado en él.
+  const [celebracion, setCelebracion] = useState<SessionCelebration | null>(null);
+  const [cansancio, setCansancio] = useState<number | undefined>(undefined);
+  const guardadas = WORKOUT.exercises.map((we, i) => ({
+    nombre: EJERCICIOS.find(e => e.id === we.exerciseId)?.name ?? we.exerciseId,
+    series: seriesHechas<SetInput>(sets[i] || []).map(s => filaASerie(s, false, variante)),
+  })).filter(e => e.series.length > 0);
+  const terminar = () => {
+    const todas = guardadas.flatMap(e => e.series);
+    setCansancio(undefined);
+    setCelebracion({
+      isFirstEver: false, totalSets: todas.length, prs: [], durationSeg: 52 * 60,
+      tonnage: todas.reduce((t, s) => t + s.weight * s.repsDone, 0),
+    });
+  };
+  const reiniciar = () => {
+    setSets(setsIniciales());
+    setNotas(WORKOUT.exercises.map(() => ''));
+    setReferencias([]); setQuePararon([]); setMolestias([]); setComoLlega(undefined);
+    setCelebracion(null); setCansancio(undefined);
+  };
   const assignment: WorkoutAssignment = { id: 'dev', workoutId: 'w', athleteId: 'dev@example.com', date: HOY, status: 'pending' };
 
   return (
     <div className="min-h-screen bg-bg px-4 py-6">
-      {terminado && <p className="mb-4 rounded-control bg-success/10 p-3 font-sans text-body-s text-success">Terminar sesión pulsado.</p>}
+      {/* Conmutador de variantes del RIR (D1c). Cambiar de una a otra no toca lo ya apuntado. */}
+      <div className="mb-4 rounded-surface border border-dashed border-accent-line bg-surface p-3 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-mono text-caption font-bold uppercase tracking-wide text-accent-ink">Banco de pruebas · cómo se apunta el RIR</p>
+          <button type="button" onClick={reiniciar} className="font-mono text-caption font-bold uppercase tracking-wide text-ink-2 hover:text-accent-ink">Reiniciar</button>
+        </div>
+        <SegmentedControl
+          label="Forma de apuntar el RIR"
+          value={variante}
+          onChange={v => setVariante(v as VarianteRir)}
+          options={VARIANTES_RIR.map(v => ({ value: v.clave, label: v.etiqueta }))}
+          className="w-full"
+        />
+        <p className="font-sans text-caption text-ink-2">{VARIANTES_RIR.find(v => v.clave === variante)?.explicacion}</p>
+      </div>
       <WorkoutSessionPlayer
         profile={{ userId: 'dev', email: 'dev@example.com', displayName: 'Dev' } as UserProfile}
         activeAssignment={assignment}
@@ -92,16 +141,42 @@ export default function EntrenoDevHarness() {
         getPersonalNote={() => undefined}
         logs={LOGS}
         exerciseProgressById={new Map()}
-        handleFinish={() => setTerminado(true)}
+        handleFinish={terminar}
         isFinishing={false}
         canFinish={sets.some(ex => ex.some(s => s.done))}
         sessionStartedAt={null}
-        celebration={null}
-        dismissCelebration={() => {}}
+        celebration={celebracion}
+        dismissCelebration={() => setCelebracion(null)}
         cerrarPlayer={() => {}}
         sameDayCardio={null}
         onMarkActionDone={() => {}}
+        varianteRir={variante}
+        cansancioAlSalir={cansancio}
+        onCansancioAlSalir={setCansancio}
       />
+
+      {/* Lo que se guardaría: para comprobar `rirApuntado` (D1b) y el cansancio (D6). */}
+      <div className="mt-6 rounded-surface border border-dashed border-hairline bg-surface p-3 space-y-1.5">
+        <p className="font-mono text-caption font-bold uppercase tracking-wide text-ink-2">Lo que se guardaría</p>
+        {guardadas.length === 0 && <p className="font-sans text-caption text-ink-3">Marca alguna serie para verlo.</p>}
+        {guardadas.map(e => (
+          <p key={e.nombre} className="font-sans text-caption text-ink-2">
+            <span className="font-bold text-ink">{e.nombre}: </span>
+            {e.series.map((s, i) => (
+              <span key={i} className="whitespace-nowrap">
+                {i > 0 && ' · '}
+                {s.weight}×{s.repsDone} {s.alFallo ? 'FALLO' : `RIR ${s.rir}`}{' '}
+                <span className={s.rirApuntado ? 'text-success' : 'text-ink-3'}>({s.segmento ? 'bajada' : s.rirApuntado ? 'apuntado' : 'sin apuntar'})</span>
+              </span>
+            ))}
+          </p>
+        ))}
+        <p className="font-sans text-caption text-ink-2">
+          <span className="font-bold text-ink">Cansancio al salir: </span>
+          {cansancio != null ? `${cansancio} de 10` : 'sin contestar'}
+          {celebracion?.durationSeg != null && ` · duración de ejemplo ${formatearDuracion(celebracion.durationSeg)}`}
+        </p>
+      </div>
     </div>
   );
 }

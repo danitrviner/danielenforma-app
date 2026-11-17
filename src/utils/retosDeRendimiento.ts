@@ -3,10 +3,10 @@
 // PROGRAMADO esta semana en su mesociclo activo y de lo que hizo la última vez
 // en cada ejercicio — nunca de un ejercicio que no le toca.
 //
-//   · Semanas especiales mandan: test → «bate 3 récords»; descarga o vuelta de
-//     un parón → «ninguna serie por debajo de RIR 3»; vacaciones/viaje →
-//     «mínimo 2 sesiones»; semana puente → «haz tus sesiones, sin marcas».
-//     En descarga, parón y puente no se propone ningún reto de progresar.
+//   · Semanas especiales mandan: test → «bate 3 récords»; vuelta de un parón →
+//     «ninguna serie por debajo de RIR 3»; vacaciones/viaje → «mínimo 2
+//     sesiones»; descarga y semana puente → «haz tus sesiones». En descarga,
+//     parón y puente no se propone ningún reto de progresar.
 //   · El resto de semanas compiten por score y rotan con la memoria del motor:
 //     doble progresión, supera tu sesión, AMRAP en la última serie, grupo
 //     estancado, mismo peso con más reserva y récord de repeticiones.
@@ -104,26 +104,45 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
     }
   }
 
-  if (tipo === 'descarga' || tipo === 'paron') {
-    const descarga = tipo === 'descarga';
+  // Descarga (D10, 17-11-2026): se quita VOLUMEN, no intensidad — menos
+  // series, con la misma carga y el mismo RIR. El reto pedía «ninguna serie
+  // por debajo de RIR 3», justo lo contrario: mandaba alejarse del fallo en
+  // una semana en la que el coach no ha tocado el RIR. Ahora el reto es hacer
+  // las sesiones tal y como vienen, igual que en la semana puente.
+  if (tipo === 'descarga') {
+    const n = plan.sesiones.length;
+    if (n > 0) {
+      options.push(meta({
+        kind: 'entrenos_completados',
+        score: SCORE_RENDIMIENTO.semanaEspecial,
+        difficulty: 'justo',
+        title: n === 1 ? 'Semana de descarga: haz tu sesión' : `Semana de descarga: haz tus ${n} sesiones`,
+        description: `Semana de descarga: menos series, con las mismas cargas y el mismo esfuerzo de siempre. El reto es ${n === 1 ? 'hacer tu sesión' : `hacer las ${n} sesiones`} tal y como vienen. Recuperar también es entrenar.`,
+        reason: 'Semana de descarga del bloque — el reto es cumplirla tal y como viene (menos series, misma carga y mismo RIR)',
+        metric: { unit: 'sesiones', target: n, ...(plan.meso ? { mesocycleId: plan.meso.id } : {}) },
+      }));
+    }
+    // En descarga no se pide progresar: ni AMRAP, ni récords, ni dobles.
+    return options;
+  }
+
+  // Vuelta de un parón: aquí sí manda el RIR (la primera semana va a RIR 3 o
+  // más, y el entreno ya llega así pautado).
+  if (tipo === 'paron') {
     options.push(meta({
       kind: 'rir_minimo',
       score: SCORE_RENDIMIENTO.semanaEspecial,
       difficulty: 'justo',
-      title: descarga ? 'Descarga de verdad' : 'Vuelve con cabeza',
-      description: descarga
-        ? 'Semana de descarga: ninguna serie por debajo de RIR 3 y nada al fallo. Recuperar también es entrenar, y la semana que viene lo notarás.'
-        : 'Vuelves de un parón: esta semana ni una serie por debajo de RIR 3 ni al fallo. Primero se readapta el cuerpo; apretar viene después.',
-      reason: descarga
-        ? 'Semana de descarga del bloque — el reto es no convertirla en una semana normal'
-        : 'Primera semana tras un parón (RPE 6-7)',
+      title: 'Vuelve con cabeza',
+      description: 'Vuelves de un parón: esta semana ni una serie por debajo de RIR 3 ni al fallo. Primero se readapta el cuerpo; apretar viene después.',
+      reason: 'Primera semana tras un parón (RPE 6-7)',
       metric: {
         unit: '%', target: 100, minRir: 3,
         sesiones: plan.sesiones.length,
         ...(plan.meso ? { mesocycleId: plan.meso.id } : {}),
       },
     }));
-    // En estas semanas no se pide progresar: ni AMRAP, ni récords, ni dobles.
+    // En esta semana no se pide progresar: ni AMRAP, ni récords, ni dobles.
     return options;
   }
 
@@ -170,17 +189,17 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
   // ── Doble progresión ────────────────────────────────────────────────────────
   {
     // «Toca subir» lo decide la MISMA función que la tarjeta de la sesión
-    // (`veredictoDeSerie`, F7c 17-11-2026): tope del rango, con el RIR pautado
-    // o más, sin fallo, y con el salto real de carga del ejercicio. Antes aquí
-    // bastaba con las repeticiones, y el reto decía «sube» el mismo día que la
-    // tarjeta dejaba el peso de siempre.
+    // (`veredictoDeSerie`, F7c 17-11-2026): tope del rango a RIR pautado y con
+    // el salto real de carga del ejercicio. Antes aquí bastaba con las
+    // repeticiones, y el reto decía «sube» el mismo día que la tarjeta dejaba
+    // el peso de siempre.
     const conRango = candidatos
       .filter(c => c.ej.rango && c.ej.rango[1] > c.ej.rango[0])
       .map(c => ({
         c,
         falta: c.ej.rango![1] - c.top.reps,
         veredicto: veredictoDeSerie(
-          { weight: c.top.weight, repsDone: c.top.reps, rir: c.top.rir, alFallo: c.top.alFallo },
+          { weight: c.top.weight, repsDone: c.top.reps, rir: c.top.rir, alFallo: c.top.alFallo, rirApuntado: c.top.rirApuntado },
           { reps: c.ej.prescripcion.reps, rir: c.ej.prescripcion.rir },
           saltoReal(workoutLogs, c.ej.exerciseId),
         ),
@@ -195,13 +214,16 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
       const { c, veredicto } = elegido;
       const [lo, hi] = c.ej.rango!;
       const tuning = difficultyFor('doble_progresion', memory);
+      // Con el RIR apuntado puede tocar subir sin haber hecho el tope (9 a RIR 3
+      // con RIR 1 pautado son 11): ahí «ya en el tope» no sería verdad.
+      const enElTope = c.top.reps >= hi ? 'ya en el tope' : 'y te sobraban repeticiones para el tope';
       if (veredicto?.que === 'subir') {
         options.push(meta({
           kind: 'doble_progresion',
           score: SCORE_RENDIMIENTO.dobleProgresion,
           difficulty: tuning.label,
           title: `${c.ej.nombre}: toca subir de ${fmtKg(c.top.weight)}`,
-          description: `Rango ${lo}-${hi}. La última vez: ${fmtKg(c.top.weight)} × ${c.top.reps}, ya en el tope. Esta semana sube al siguiente peso y saca al menos ${lo} repeticiones. Así se progresa.`,
+          description: `Rango ${lo}-${hi}. La última vez: ${fmtKg(c.top.weight)} × ${c.top.reps}, ${enElTope}. Esta semana sube al siguiente peso y saca al menos ${lo} repeticiones. Así se progresa.`,
           reason: `Doble progresión: llegó al tope del rango en ${c.ej.nombre} (${c.sesion.nombre})`,
           metric: {
             unit: 'reps', target: lo, baseline: c.top.reps, subirDe: c.top.weight,
@@ -222,7 +244,7 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
           difficulty: tuning.label,
           title: `${c.ej.nombre}: ${target} con ${fmtKg(c.top.weight)}`,
           description: espera
-            ? `Rango ${lo}-${hi}. La última vez: ${fmtKg(c.top.weight)} × ${c.top.reps}, ya en el tope, pero el siguiente peso son ${fmtKg(espera.paso)} más de golpe. Antes de subir, saca ${target} repeticiones con ${fmtKg(c.top.weight)}. ${cierre}`
+            ? `Rango ${lo}-${hi}. La última vez: ${fmtKg(c.top.weight)} × ${c.top.reps}, ${enElTope}, pero el siguiente peso son ${fmtKg(espera.paso)} más de golpe. Antes de subir, saca ${target} repeticiones con ${fmtKg(c.top.weight)}. ${cierre}`
             : `Rango ${lo}-${hi}. La última vez: ${fmtKg(c.top.weight)} × ${c.top.reps}. Saca ${target} repeticiones con ${fmtKg(c.top.weight)}${target === hi ? ' y la próxima vez toca subir peso' : ''}. ${cierre}`,
           reason: espera
             ? `Doble progresión: en el tope del rango en ${c.ej.nombre}, pero el salto de carga es grande — abrir el rango antes de subir`

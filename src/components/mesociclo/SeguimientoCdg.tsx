@@ -11,7 +11,8 @@ import {
   type TipoDeBloque, type Sensibilidad, type Velocidad, type TonoPropuesta,
   leerRendimiento, indicadoresCambioDeBloque, avisosIemIea, type SemanaParaLectura, type Contexto,
   tipoSugerido, semanasHastaAburrirse, avisoDeFiabilidad, referenciasToleradas,
-  contextoPorCiclos, rachaFinal, valorEnElCicloDe, esDescargaOPuente
+  contextoPorCiclos, rachaFinal, valorEnElCicloDe, esDescargaOPuente,
+  cansancioDeSesiones, origenDeLectura, type LecturaAgujetas
 } from '../../utils/cdg';
 import { useAgujetasCdg } from '../../hooks/useAgujetasCdg';
 import { addDays, hoyIsoLocal } from '../../utils/trainingWeek';
@@ -42,6 +43,12 @@ import { Button, Collapsible, Select } from '../ui';
    caducan a los 10 días y su historial se alinea por semana de revisión, no
    por posición (F16). La lectura del rendimiento no compara con la semana en
    curso a medias ni con una descarga (R1).
+
+   17-11-2026 (D6r, D7): el cansancio al salir sale de las sesiones de la semana
+   que se evalúa (media, y cuál fue la más dura) cuando el atleta lo apunta al
+   terminar; si no, del cuestionario semanal como antes. Las agujetas mezclan
+   las contestadas a las 48 h de cada sesión con las del cuestionario: manda la
+   más reciente, y al lado se dice de dónde sale («a 48 h» o «semanal»).
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
@@ -71,6 +78,8 @@ const ETIQUETA_TONO: Record<TonoPropuesta, string> = {
 const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('es-ES');
 const n2 = (v: number) => (Math.round(v * 100) / 100).toLocaleString('es-ES');
 const pct = (v: number | null) => (v == null ? '—' : `${v >= 0 ? '+' : ''}${(Math.round(v * 1000) / 10).toLocaleString('es-ES')} %`);
+/** De dónde sale una lectura de agujetas, dicho en corto al lado de la nota. */
+const origenCorto = (l: LecturaAgujetas) => (origenDeLectura(l) === '48h' ? 'a 48 h' : 'semanal');
 
 function Seccion ({ titulo, children, abierta = false }: { titulo: string; children: React.ReactNode; abierta?: boolean }) {
   return (
@@ -87,7 +96,7 @@ const Th = ({ children, derecha }: { children?: React.ReactNode; derecha?: boole
 );
 
 export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, vueltas, grupos, allExercises, umbrales, onGuardarUmbrales, onCambiarTipo, onCambiarModo }: Props) {
-  const { agujetas, sueño, estres, motivacion, fatigaPost, historial, caducadas } = useAgujetasCdg(athleteEmail);
+  const { agujetas, sueño, estres, motivacion, fatigaPostSemanal, historial, caducadas: caducadasDelHook } = useAgujetasCdg(athleteEmail);
   const tipo = tipoDeBloque(meso);
   // Tipificación del cliente (ficha viva): misma caché que la ficha.
   const { data: ficha } = useQuery({ queryKey: dossierKey(athleteEmail), queryFn: () => getDossier(athleteEmail), enabled: !!athleteEmail, staleTime: 60_000 });
@@ -148,6 +157,22 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
   const sesionesPorCiclo = Math.max(1, grupos.length);
   const semanaActiva = datos?.semanas.find(s => String(s.semana) === semanaSel) ?? (datos ? semanaPorDefecto(datos.semanas, sesionesPorCiclo) : undefined);
   const semanaIncompleta = !!semanaActiva && semanaActiva.logs < sesionesPorCiclo;
+
+  // D6r: el cansancio al salir de las sesiones de la semana que se evalúa (las
+  // del bloque que caen en esa vuelta), con el nombre de la más dura. Si no lo
+  // apuntó en ninguna, vale el cuestionario semanal, como hasta ahora.
+  const nombreDeRutina = (workoutId: string) => grupos.find(g => g.workoutIds.includes(workoutId))?.name;
+  const cansancioSesiones = semanaActiva
+    ? cansancioDeSesiones(
+      logs.filter(l => l.mesocycleId === meso.id && l.date >= meso.startDate && mesocycleWeekNumber(meso.startDate, l.date, cicloDias) === semanaActiva.semana),
+      { nombreDe: nombreDeRutina },
+    )
+    : undefined;
+  const fatigaPost = cansancioSesiones?.media ?? fatigaPostSemanal?.value;
+  const sesionMasCansada = cansancioSesiones ? { etiqueta: cansancioSesiones.peor.etiqueta, valor: cansancioSesiones.peor.valor } : undefined;
+  // El cansancio solo «falta por caducado» si tampoco hay dato por sesión en esta semana.
+  const cansancioCaducado = fatigaPost == null && !!historial?.fatigaPost.some(p => p.date <= hoyIsoLocal());
+  const caducadas = [...caducadasDelHook.filter(c => c !== 'cansancio al salir'), ...(cansancioCaducado ? ['cansancio al salir'] : [])];
 
   const [inf, setInf] = useState(String((umbrales ?? UMBRALES_CARGA_POR_DEFECTO).inferior));
   const [sup, setSup] = useState(String((umbrales ?? UMBRALES_CARGA_POR_DEFECTO).superior));
@@ -237,7 +262,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
               propuesta: propuestaZona({
                 agujetas: vigente ? lectura?.valor : undefined, anterior: vigente ? lectura?.anterior : undefined, sensible: z.sensible,
                 tipo: { ...tipo, sensibilidad: modo }, esObjetivo: objetivo != null,
-                iem: ahora?.[z.clave] ?? 0, contexto, fatigaPost: fatigaPost?.value, objetivo,
+                iem: ahora?.[z.clave] ?? 0, contexto, fatigaPost, sesionMasCansada, objetivo,
                 primeraSemanaTrasParon: !!meso.vuelveDeParon && semanaActiva?.semana === 1,
               })
             };
@@ -276,15 +301,28 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                   {caducadas && caducadas.length > 0 && ` Sin dato reciente de ${caducadas.join(', ')}: su última respuesta tiene más de ${UMBRALES_PROTOCOLO.diasVigenciaContexto} días y ya no cuenta.`}
                 </li>
                 <li>
-                  Al salir de las sesiones: {fatigaPost ? <b className={fatigaPost.value >= UMBRALES_PROTOCOLO.fatigaPostAlta ? 'text-warning' : 'text-ink'}>{fatigaPost.value}/10</b> : 'sin dato'}
-                  {fatigaPost && fatigaPost.value >= UMBRALES_PROTOCOLO.fatigaPostAlta ? ' — no subir IEM; mejor bajar el IF manteniéndolo.' : ` (0-${UMBRALES_PROTOCOLO.fatigaPostAlta - 1}: hay margen).`}
+                  Al salir de las sesiones: {fatigaPost != null ? <b className={fatigaPost >= UMBRALES_PROTOCOLO.fatigaPostAlta ? 'text-warning' : 'text-ink'}>{n1(fatigaPost)}/10</b> : 'sin dato'}
+                  {cansancioSesiones
+                    ? <span className="text-ink-3"> de media en {cansancioSesiones.sesiones} {cansancioSesiones.sesiones === 1 ? 'sesión' : 'sesiones'} de la S{semanaActiva?.semana}</span>
+                    : fatigaPost != null && <span className="text-ink-3"> · cuestionario semanal</span>}
+                  {fatigaPost != null && fatigaPost >= UMBRALES_PROTOCOLO.fatigaPostAlta
+                    ? (cansancioSesiones
+                      ? <> — la más dura, <b className="text-warning">{cansancioSesiones.peor.etiqueta}: {n1(cansancioSesiones.peor.valor)}/10</b>. No subir IEM sin bajar antes la fatiga (IF) de esa sesión.</>
+                      : ' — no subir IEM; mejor bajar el IF manteniéndolo.')
+                    : (<>
+                      {` (0-${UMBRALES_PROTOCOLO.fatigaPostAlta - 1}: hay margen).`}
+                      {/* La media deja margen, pero una sesión concreta pasó del umbral: se dice cuál, sin vetar. */}
+                      {cansancioSesiones && cansancioSesiones.peor.valor >= UMBRALES_PROTOCOLO.fatigaPostAlta && (
+                        <> Ojo con <b className="text-warning">{cansancioSesiones.peor.etiqueta}: {n1(cansancioSesiones.peor.valor)}/10</b>; si se repite, bájale fatiga a esa.</>
+                      )}
+                    </>)}
                 </li>
-                <li>Agujetas de la semana (DOM's 0-10, convertidas a 1-5) contra el IEM de cada zona (tabla).</li>
+                <li>Agujetas de cada zona (a 48 h de la sesión o del cuestionario semanal: la más reciente) contra su IEM (tabla).</li>
                 <li>Rendimiento: RM y tonelaje (abajo).</li>
               </ol>
-              {(!estres && !motivacion && !fatigaPost) && (
+              {(!estres && !motivacion && fatigaPost == null) && (
                 <p className="font-sans text-caption text-ink-3">
-                  El contexto y el cansancio salen del DOM's semanal (motivación y cansancio al salir, si las preguntas están) y de la revisión semanal (estrés y sueño).
+                  El contexto sale de la revisión semanal (estrés, sueño y motivación). El cansancio, de lo que apunta al terminar cada sesión o, si no, de la pregunta semanal.
                 </p>
               )}
               {filas.length === 0 ? <p className="font-sans text-caption text-ink-3">Sin estímulo registrado ni agujetas todavía.</p> : (<>
@@ -301,7 +339,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                         </button>
                       </div>
                       <p className="font-mono text-caption text-ink-2 tabular-nums">
-                        Agujetas {f.lectura ? (f.vigente ? <b className={f.lectura.valor >= 5 ? 'text-danger' : f.lectura.valor >= 4 ? 'text-warning' : 'text-ink'}>{f.lectura.valor}/5</b> : `${f.lectura.valor}/5 · antigua`) : '—'}
+                        Agujetas {f.lectura ? (f.vigente ? <><b className={f.lectura.valor >= 5 ? 'text-danger' : f.lectura.valor >= 4 ? 'text-warning' : 'text-ink'}>{f.lectura.valor}/5</b><span className="font-sans text-ink-3"> {origenCorto(f.lectura)}</span></> : `${f.lectura.valor}/5 · antigua`) : '—'}
                         {' · '}IEM {f.iem > 0.005 ? n1(f.iem) : '·'}{f.vs != null ? ` (${pct(f.vs)})` : ''}{f.objetivo != null ? ` · objetivo ${n1(f.objetivo)}` : ''}
                       </p>
                       <p className={`font-sans text-caption ${TONO[f.propuesta.tono]}`}>
@@ -325,8 +363,8 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                               {SENSIBILIDADES.find(a => a.value === f.modo)?.label}
                             </button>
                           </td>
-                          <td className="py-1 px-2 text-right font-mono tabular-nums" title={f.lectura ? `${f.lectura.fecha}${f.lectura.deEscala10 ? ' · cuestionario 0-10 convertido' : ''}` : undefined}>
-                            {f.lectura && !f.vigente ? <span className="text-ink-3" title={`Última lectura: ${f.lectura.fecha}`}>{f.lectura.valor} · antigua</span> : f.lectura ? <>{f.lectura.anterior != null && <span className="text-ink-3">{f.lectura.anterior} → </span>}<b className={f.lectura.valor >= 5 ? 'text-danger' : f.lectura.valor >= 4 ? 'text-warning' : 'text-ink'}>{f.lectura.valor}</b></> : <span className="text-ink-3">—</span>}
+                          <td className="py-1 px-2 text-right font-mono tabular-nums whitespace-nowrap" title={f.lectura ? `${f.lectura.fecha} · ${origenDeLectura(f.lectura) === '48h' ? 'contestada a las 48 h de la sesión' : 'cuestionario semanal'}${f.lectura.deEscala10 ? ' · 0-10 convertido' : ''}` : undefined}>
+                            {f.lectura && !f.vigente ? <span className="text-ink-3" title={`Última lectura: ${f.lectura.fecha}`}>{f.lectura.valor} · antigua</span> : f.lectura ? <>{f.lectura.anterior != null && <span className="text-ink-3">{f.lectura.anterior} → </span>}<b className={f.lectura.valor >= 5 ? 'text-danger' : f.lectura.valor >= 4 ? 'text-warning' : 'text-ink'}>{f.lectura.valor}</b><span className="block font-sans text-ink-3">{origenCorto(f.lectura)}</span></> : <span className="text-ink-3">—</span>}
                           </td>
                           <td className="py-1 px-2 text-right font-mono tabular-nums text-ink">{f.iem > 0.005 ? n1(f.iem) : '·'}</td>
                           <td className="py-1 px-2 text-right font-mono tabular-nums text-ink-2">{pct(f.vs)}</td>
@@ -348,7 +386,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                 </p>
               )}
               <p className="font-sans text-caption text-ink-3">
-                Agujetas del DOM's semanal (0-10) convertidas a la escala 1-5 del curso; solo cuentan las de los últimos {UMBRALES_PROTOCOLO.diasVigenciaAgujetas} días. No se leen a ciegas: los ejercicios en estiramiento y los tempos excéntricos largos dan más agujetas con el mismo IEM.
+                Agujetas en la escala 1-5 del curso: «a 48 h» es lo que contestó a los dos días de la sesión; «semanal», el recuerdo del cuestionario (el DOM's 0-10 antiguo va convertido). De cada zona se usa la más reciente y solo cuentan las de los últimos {UMBRALES_PROTOCOLO.diasVigenciaAgujetas} días. No se leen a ciegas: los ejercicios en estiramiento y los tempos excéntricos largos dan más agujetas con el mismo IEM.
               </p>
             </>
           );

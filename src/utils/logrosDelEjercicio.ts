@@ -1,5 +1,5 @@
 import type { WorkoutLog } from '../types.js';
-import { rmDeSerie } from './oneRepMax.js';
+import { mejorSerieValida } from './marcaDeSesion.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Lo que se celebra al cerrar un ejercicio en plena sesión (28-10-2026)
@@ -9,9 +9,21 @@ import { rmDeSerie } from './oneRepMax.js';
    ejercicio y no al final de los cinco. Mismo criterio de récord que el resto
    de la app: mejor 1RM estimado contra el mejor histórico ANTES de la fecha, y
    sin historial no hay récord (un primer registro no es una mejora).
+
+   Desde el 17-11-2026 (D2) la marca es la de la mejor serie VÁLIDA
+   (`marcaDeSesion.ts`: 3-12 repeticiones, RIR 2 o menos, RIR apuntado por el
+   atleta, sin bajadas ni miniseries), igual que el récord contra el que se
+   compara (`allTimeBestBefore`). Una serie de 20 a RIR 4 ya no es «tu mejor
+   marca». El tonelaje sigue contando todo lo levantado.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-interface SerieHecha { weight: number | string; repsDone: number | string; rir?: string | number; alFallo?: boolean }
+interface SerieHecha {
+  weight: number | string; repsDone: number | string; rir?: string | number; alFallo?: boolean;
+  /** Bajada o miniserie: cuenta en el tonelaje, no puede ser la marca. */
+  segmento?: boolean;
+  /** `false` = se guardó con el RIR pautado sin tocar: tampoco vale de marca. */
+  rirApuntado?: boolean;
+}
 
 export type TipoDeLogro = 'record' | 'tonelaje' | 'progreso';
 
@@ -38,14 +50,8 @@ export function tonelajeMaximoAntesDe(logs: readonly WorkoutLog[], fecha: string
   return out;
 }
 
-function mejorSerie<T extends SerieHecha>(sets: readonly T[]): { serie: T; rm: number } | null {
-  let mejor: { serie: T; rm: number } | null = null;
-  for (const s of sets) {
-    const rm = rmDeSerie(s);
-    if (rm > 0 && (!mejor || rm > mejor.rm)) mejor = { serie: s, rm };
-  }
-  return mejor;
-}
+/** La marca de la sesión: su mejor serie válida. Sin ninguna, no hay marca que celebrar. */
+const mejorSerie = <T extends SerieHecha>(sets: readonly T[]) => mejorSerieValida(sets);
 
 /**
  * Lo conseguido en el ejercicio, de más a menos importante. Vacío si no hay
@@ -62,12 +68,13 @@ export function logrosDelEjercicio(params: {
 }): Logro[] {
   const { nombre, hechas, mejorRmAntes, tonelajeMaxAntes, ultimaVez } = params;
   const logros: Logro[] = [];
+  // Sin ninguna serie válida no hay marca: ni récord ni «sigues progresando».
+  // El tonelaje sí se puede celebrar, cuenta todo lo levantado.
   const mejor = mejorSerie(hechas);
-  if (!mejor) return logros;
-  const peso = num(mejor.serie.weight);
-  const reps = num(mejor.serie.repsDone);
+  const peso = mejor ? num(mejor.serie.weight) : 0;
+  const reps = mejor ? num(mejor.serie.repsDone) : 0;
 
-  if (mejorRmAntes != null && mejor.rm > mejorRmAntes) {
+  if (mejor && mejorRmAntes != null && mejor.rm > mejorRmAntes) {
     logros.push({ tipo: 'record', titulo: '¡Récord personal!', detalle: `${kg(peso)} × ${reps} — tu mejor marca en ${nombre}` });
   }
 
@@ -81,7 +88,7 @@ export function logrosDelEjercicio(params: {
   }
 
   const antes = ultimaVez ? mejorSerie(ultimaVez) : null;
-  if (antes && mejor.rm > antes.rm && !logros.some(l => l.tipo === 'record')) {
+  if (mejor && antes && mejor.rm > antes.rm && !logros.some(l => l.tipo === 'record')) {
     const pesoAntes = num(antes.serie.weight);
     const repsAntes = num(antes.serie.repsDone);
     const detalle = peso > pesoAntes

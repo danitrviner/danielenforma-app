@@ -1,8 +1,9 @@
-import { Workout, WorkoutEntryLog, WorkoutLog } from '../types.js';
+import { Workout, WorkoutEntryLog, WorkoutExercise, WorkoutLog } from '../types.js';
 import { expandSetGroups } from './setGroups.js';
-import { sugerirCarga, serieDeReferencia } from './cargaSugerida.js';
-import { segmentosProgramados, seriesPrincipales } from './tecnicaDeSerie.js';
+import { sugerirCarga, serieDeReferencia, repsAlRirPautado } from './cargaSugerida.js';
+import { segmentosProgramados, seriesPrincipales, seriesConTecnica } from './tecnicaDeSerie.js';
 import type { TipoDeSemana } from './tipoDeSemana.js';
+import type { ExpandedSet } from './setGroups.js';
 
 /** Fila de entrada del editor de series — mismo shape que `SetInput` en
  * TrainingScreen.tsx, extraído aquí para poder testear el prerelleno sin
@@ -44,6 +45,16 @@ export interface SetPrefill {
  * copian la última serie con repeticiones (`serieDeReferencia`) en vez de
  * llegar vacías. Es la misma referencia que usa `sugerirCarga`, así que si esa
  * serie sube, las de más suben con ella y la tabla no mezcla dos pesos.
+ *
+ * D1a (17-11-2026): las repeticiones llegan A RIR PAUTADO. Si la última vez el
+ * atleta apuntó un RIR distinto del que tenía pautado, se le pone lo que
+ * habría hecho con el esfuerzo que pide el coach (`repsAlRirPautado`): 10 a
+ * RIR 0 con RIR 1 pautado → 9. Sin el RIR apuntado, lo hecho tal cual.
+ *
+ * D5 (17-11-2026): las series de test (AMRAP) y las pautadas al fallo llegan
+ * con «fallo» y las repeticiones vacías (`seriesAlMaximo`). Antes traían el
+ * RIR del ejercicio y las repeticiones de la última vez: un toque en «Hecha»
+ * guardaba un test que no se había hecho.
  */
 export function prefillWorkoutSets(
   workout: Workout, prevEntries: WorkoutEntryLog[],
@@ -64,14 +75,20 @@ export function prefillWorkoutSets(
       // bajadas de una técnica en otra serie que no sea la última van en medio.
       const previas = prevEntry ? seriesPrincipales(prevEntry.sets) : [];
       const filas = expandSetGroups(we);
+      const alMaximo = seriesAlMaximo(we, filas);
       const principales: SetPrefill[] = filas.map((row, sIdx) => {
         const prev = serieDeReferencia(previas, sIdx);
         const sube = sugerida[sIdx];
-        if (sube) return { weight: String(sube.peso), repsDone: String(sube.reps), rir: String(row.rir), done: false };
+        // D5: en una serie al máximo no se sabe cuántas saldrán; se apuntan después.
+        const tope = alMaximo.has(sIdx);
+        const rir = tope ? 'fallo' : String(row.rir);
+        if (sube) return { weight: String(sube.peso), repsDone: tope ? '' : String(sube.reps), rir, done: false };
+        // D1a: lo de la última vez, llevado al RIR que pide el coach hoy.
+        const reps = prev ? repsAlRirPautado(prev, row.rir) : 0;
         return {
           weight: prev && prev.weight > 0 ? String(prev.weight) : '',
-          repsDone: prev && prev.repsDone > 0 ? String(prev.repsDone) : '',
-          rir: String(row.rir),
+          repsDone: !tope && reps > 0 ? String(reps) : '',
+          rir,
           done: false,
         };
       });
@@ -81,6 +98,33 @@ export function prefillWorkoutSets(
         .map(segmentoDe => ({ weight: '', repsDone: '', rir: '0', done: false, segmento: true, segmentoDe }));
       return [...principales, ...segmentos];
     });
+}
+
+/**
+ * Las series (índice, 0 = la primera) que se hacen AL MÁXIMO (D5): las que
+ * llevan la técnica AMRAP o «al fallo» —la última, o las que haya marcado el
+ * coach—, y las que tienen «AMRAP» escrito como repeticiones. En la semana de
+ * test `resolverEjercicioDelMeso` ya pone la técnica AMRAP, así que salen aquí.
+ */
+export function seriesAlMaximo(
+  we: Pick<WorkoutExercise, 'technique' | 'tecnicaAjustes'>, filas: readonly Pick<ExpandedSet, 'reps'>[],
+): Set<number> {
+  const out = new Set<number>();
+  if (we.technique === 'amrap' || we.technique === 'fallo') {
+    for (const n of seriesConTecnica(we, filas.length)) out.add(n - 1);
+  }
+  filas.forEach((f, i) => { if (/amrap/i.test(f.reps ?? '')) out.add(i); });
+  return out;
+}
+
+/** El RIR pautado de cada serie como lo ve el atleta: '0'-'5', o 'fallo' en las
+ *  series al máximo. Es el objetivo de la serie; lo que él apunte no lo cambia. */
+export function rirPautadoPorSerie(
+  we: Pick<WorkoutExercise, 'technique' | 'tecnicaAjustes' | 'sets' | 'reps' | 'rir' | 'setGroups'>,
+): string[] {
+  const filas = expandSetGroups(we);
+  const alMaximo = seriesAlMaximo(we, filas);
+  return filas.map((f, i) => (alMaximo.has(i) ? 'fallo' : String(f.rir)));
 }
 
 /** ¿Tiene esta entrada alguna serie de verdad (con repeticiones)? Un ejercicio

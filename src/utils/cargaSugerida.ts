@@ -4,10 +4,15 @@ import { seriesPrincipales } from './tecnicaDeSerie.js';
 import type { TipoDeSemana } from './tipoDeSemana.js';
 
 /* Doble progresión: se sube la carga cuando el atleta llegó al TOPE del rango
-   de repeticiones con el esfuerzo pautado (su RIR igual o mayor que el del
-   coach, sin fallo). Si no llegó, se repite la carga y se busca una rep más.
-   Es lo que el coach haría mirando la sesión anterior; aquí la tabla ya llega
-   con ese peso puesto y una frase que dice por qué. */
+   de repeticiones A RIR PAUTADO. Si no llegó, se repite la carga y se busca
+   una rep más. Es lo que el coach haría mirando la sesión anterior; aquí la
+   tabla ya llega con ese peso puesto y una frase que dice por qué.
+
+   «A RIR pautado» (17-11-2026): lo hecho se lleva al esfuerzo que pidió el
+   coach antes de compararlo con el rango (`repsAlRirPautado`). Si el RIR no lo
+   apuntó el atleta —se guardó el pautado sin tocar, o es un registro antiguo—
+   vale el criterio de siempre: las repeticiones tal cual, con su RIR igual o
+   mayor que el del coach y sin fallo. */
 
 export function rangoDeReps(reps: string): { min: number; max: number } | null {
   const nums = (reps.match(/\d+/g) ?? []).map(Number).filter(n => n > 0);
@@ -75,7 +80,34 @@ export interface CargaSugerida {
 const kg = (n: number) => `${n.toLocaleString('es-ES', { maximumFractionDigits: 2 })} kg`;
 
 /** Una serie ya hecha, en lo que importa para decidir la carga. */
-export interface SerieHecha { weight: number; repsDone: number; rir: number; alFallo?: boolean }
+export interface SerieHecha {
+  weight: number; repsDone: number; rir: number; alFallo?: boolean;
+  /** ¿El RIR lo eligió el atleta? Ver `WorkoutSetLog.rirApuntado`. */
+  rirApuntado?: boolean;
+}
+
+/**
+ * Las repeticiones de una serie ya hecha, llevadas al RIR PAUTADO (D1a,
+ * 17-11-2026): repeticiones hechas + (RIR hecho − RIR pautado), con el mismo
+ * peso y un mínimo de 1. Al fallo cuenta como RIR 0.
+ *
+ * Dani: «si hago 10 repeticiones y marco RIR 0 cuando tenía que haber hecho
+ * RIR 1, en la siguiente sesión me tiene que marcar 9». Y al revés: 10 a RIR 3
+ * con RIR 1 pautado son 12. El RIR del coach no se toca; lo que se mueve es la
+ * referencia con la que se calcula la sesión siguiente.
+ *
+ * Solo se normaliza si el RIR lo apuntó el atleta (`rirApuntado === true`). Si
+ * se guardó el pautado sin tocar, o el registro es de antes de que existiera la
+ * marca, no se sabe cuánto apretó: se usa lo hecho tal cual.
+ */
+export function repsAlRirPautado(
+  serie: Pick<SerieHecha, 'repsDone' | 'rir' | 'alFallo' | 'rirApuntado'>, rirPautado: number,
+): number {
+  if (serie.rirApuntado !== true || !(serie.repsDone > 0)) return serie.repsDone;
+  const rirHecho = serie.alFallo ? 0 : Number(serie.rir);
+  if (!Number.isFinite(rirHecho) || !Number.isFinite(rirPautado)) return serie.repsDone;
+  return Math.max(1, serie.repsDone + (rirHecho - rirPautado));
+}
 
 /** Lo que toca con una serie que llegó al tope del rango con margen. */
 export type Veredicto =
@@ -86,9 +118,13 @@ export type Veredicto =
 
 /**
  * EL criterio de «toca subir», uno solo para toda la app (F7c, 17-11-2026):
- * llegó al tope del rango, con el RIR pautado o más y sin ir al fallo; y si el
- * salto de carga es grande, además con las repeticiones de margen que pide.
- * `null` = se repite la carga.
+ * llegó al tope del rango A RIR PAUTADO; y si el salto de carga es grande,
+ * además con las repeticiones de margen que pide. `null` = se repite la carga.
+ *
+ * Con el RIR apuntado por el atleta, las repeticiones se llevan antes al RIR
+ * del coach (`repsAlRirPautado`): 10 a RIR 3 con RIR 1 pautado son 12, y 10 al
+ * fallo son 9. Sin apuntar, lo de siempre: las repeticiones hechas, con el RIR
+ * pautado o más y sin ir al fallo.
  *
  * Lo usan la tarjeta de la sesión (`sugerirCarga`) y el reto «toca subir»
  * (retosDeRendimiento). Antes el reto solo miraba las repeticiones: al atleta
@@ -99,11 +135,15 @@ export function veredictoDeSerie(
   prev: SerieHecha | undefined, pauta: { reps: string; rir: number }, salto?: number | null,
 ): Veredicto | null {
   const rango = rangoDeReps(pauta.reps);
-  if (!prev || !rango || prev.weight <= 0 || prev.alFallo) return null;
-  if (prev.repsDone < rango.max || prev.rir < pauta.rir) return null;
+  if (!prev || !rango || prev.weight <= 0) return null;
+  // Sin el RIR apuntado no hay con qué normalizar: no sube quien fue al fallo
+  // ni quien se guardó con menos margen del pautado.
+  if (prev.rirApuntado !== true && (prev.alFallo || prev.rir < pauta.rir)) return null;
+  const reps = repsAlRirPautado(prev, pauta.rir);
+  if (reps < rango.max) return null;
   const paso = salto ?? incrementoDe(prev.weight);
   const extra = repsExtraAntesDeSubir(prev.weight, paso, rango);
-  if (prev.repsDone < rango.max + extra) return { que: 'esperar', peso: prev.weight, reps: rango.max + extra, paso };
+  if (reps < rango.max + extra) return { que: 'esperar', peso: prev.weight, reps: rango.max + extra, paso };
   return { que: 'subir', peso: Math.round((prev.weight + paso) * 100) / 100, reps: rango.min };
 }
 

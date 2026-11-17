@@ -226,6 +226,11 @@ const AutopilotoHarness = import.meta.env.DEV
   ? pantallaDiferida('AutopilotoDevHarness', () => import('./components/AutopilotoDevHarness'))
   : null;
 
+// Banco de pruebas de las agujetas a las 48 h en Inicio: variantes tarjeta y hoja (ruta /dev/agujetas).
+const AgujetasHarness = import.meta.env.DEV
+  ? pantallaDiferida('Agujetas48hDevHarness', () => import('./components/training/Agujetas48hDevHarness'))
+  : null;
+
 /* La pantalla de espera de la app, con marca. Existe como componente y no como
    un `<div className="min-h-screen bg-bg" />` suelto por un motivo concreto:
    ese div es NEGRO Y VACÍO, exactamente igual que una app colgada. Cuando un
@@ -1008,6 +1013,13 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <AutopilotoHarness />
+      </Suspense>
+    );
+  }
+  if (AgujetasHarness && location.pathname === '/dev/agujetas') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <AgujetasHarness />
       </Suspense>
     );
   }

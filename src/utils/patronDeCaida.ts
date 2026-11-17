@@ -20,6 +20,11 @@ import { RUIDO_RM_PCT } from './ruidoDeMedida.js';
    `ruidoDeMedida.ts`; antes un 2,5 %, que es lo que mueve una sola repetición)
    frente a la ventana anterior siendo la misma tarea (S3), o que lleva dos
    sesiones seguidas empezando peor (F1).
+
+   La bajada se mide con la marca de cada ventana: el RM de su mejor serie
+   VÁLIDA (`marcaDeSesion.ts`, D2 17-11-2026). Un ejercicio sin marca en
+   alguna de las dos ventanas no «cae»: no tiene dato (`deltaOrmPct` nulo en
+   `trainingReport.ts`), y aquí no llega.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export type TipoDeCaida = 'local' | 'regional' | 'transversal';

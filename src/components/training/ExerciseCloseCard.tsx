@@ -2,10 +2,10 @@ import React from 'react';
 import { lecturaDeCalibracion, textoDeComprobacion, type Comprobacion } from '../../utils/calibracionRir';
 import { CardioAssignment, Exercise, WorkoutExercise } from '../../types';
 import { Icon, Button, Chip } from '../ui';
-import { rmDeSerie } from '../../utils/oneRepMax';
 import { MOTIVOS_DE_PARADA, type MotivoDeParada } from '../../utils/queTeParo';
-import { SetInput } from './setInput';
-import { seriesPrincipales } from '../../utils/seriesPrincipales';
+import { SetInput, filaASerie } from './setInput';
+import { mejorRmValido, rirMedioApuntado } from './cierreDeEjercicio';
+import { SelectorRapidoDeRir } from './ExerciseCard';
 import Confeti from './Confeti';
 import type { Logro, TipoDeLogro } from '../../utils/logrosDelEjercicio';
 
@@ -47,6 +47,12 @@ interface Props {
   onMolestia?: (valor: number | undefined) => void;
   /** F3: una frase que pone en contexto el resultado cuando no hay nada que celebrar. */
   mensaje?: string;
+  /** D1c, variante `ultima`: se pregunta el RIR solo de la última serie.
+   *  `elegido` = la opción que ya contestó (ver `opcionRapidaDe`), si la hay. */
+  rirUltima?: { pautado: string | undefined; elegido: string | null; onElegir: (valor: string) => void };
+  /** Se está corrigiendo una sesión ya guardada: el RIR de sus series se da por
+   *  bueno salvo que el registro diga lo contrario (ver `rirApuntadoAlGuardar`). */
+  esCorreccion?: boolean;
   /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip.tsx). */
   key?: React.Key;
 }
@@ -59,13 +65,6 @@ const ICONO_DE_LOGRO: Record<TipoDeLogro, string> = {
 
 const CHIPS_RAPIDOS = ['Me sobró una rep', 'Molestia leve', 'Buena técnica', 'Mucho peso'];
 
-/** El RIR de una serie como número: al fallo cuenta 0. */
-function rirDeSerie(s: SetInput): number | null {
-  if (s.rir === 'fallo') return 0;
-  const n = Number(s.rir);
-  return Number.isFinite(n) ? n : null;
-}
-
 /**
  * Cierre de ejercicio (mockup "Serie en curso v2", frame 06) — se muestra en
  * vez de `ExerciseCard` en cuanto todas las series de la página están
@@ -73,29 +72,31 @@ function rirDeSerie(s: SetInput): number | null {
  * la sesión, en `handleFinish`), aquí se calcula por ejercicio con el mismo
  * criterio (`rmDeSerie` + mejor histórico ANTES de la fecha) para que el atleta lo
  * vea en el momento, no al final de los 5 ejercicios.
+ *
+ * D9 (17-11-2026): el récord solo sale con una serie VÁLIDA para el RM
+ * (`esSerieValidaParaRm`: 3-12 repeticiones, RIR 2 o menos y apuntado por él).
+ * Antes bastaba subir el RIR del desplegable para que saliera «Récord personal».
  */
 export default function ExerciseCloseCard({
   we, ex, exSets, priorBestOrm, noteValue, onNoteChange, queParo, onQueParo, isLast, nextExerciseName,
   onNext, onReopen, sameDayCardio, logros, festejar, sinSiguiente, comprobacion, molestia, onMolestia, mensaje,
+  rirUltima, esCorreccion = false,
 }: Props) {
   const idNota = React.useId();
   const doneSets = exSets.filter(s => s.done);
   const volumen = doneSets.reduce((sum, s) => sum + (parseFloat(s.weight) || 0) * (parseInt(s.repsDone) || 0), 0);
 
-  let bestSet: SetInput | null = null;
-  let bestOrm = 0;
-  for (const s of doneSets) {
-    const orm = rmDeSerie(s);
-    if (orm > bestOrm) { bestOrm = orm; bestSet = s; }
-  }
-  const esRecord = bestOrm > 0 && priorBestOrm != null && bestOrm > priorBestOrm;
+  const series = doneSets.map(s => filaASerie(s, esCorreccion));
+  const mejor = mejorRmValido(series);
+  const bestSet = mejor?.serie ?? null;
+  const esRecord = mejor != null && priorBestOrm != null && mejor.rm > priorBestOrm;
 
   // F20b (17-11-2026): aquí ponía «RPE medio» (10 − RIR), una escala que el
   // atleta no usa en ningún otro sitio de la app: él apunta RIR. Se enseña lo
   // que apuntó. Solo las series principales: las bajadas y miniseries llevan
-  // un RIR 0 de relleno y hundían la media.
-  const rirs = seriesPrincipales(doneSets).map(rirDeSerie).filter((n): n is number => n != null);
-  const rirMedio = rirs.length > 0 ? rirs.reduce((a, b) => a + b, 0) / rirs.length : null;
+  // un RIR 0 de relleno y hundían la media. Y solo las que apuntó ÉL (D1d): la
+  // media de un RIR pautado sin tocar no dice nada de cómo ha ido.
+  const rirMedio = rirMedioApuntado(series);
 
   const addChip = (texto: string) => {
     onNoteChange(noteValue.trim() ? `${noteValue.trim()}. ${texto}` : texto);
@@ -143,7 +144,7 @@ export default function ExerciseCloseCard({
             <span className="font-mono text-caption font-bold text-on-accent bg-accent px-2 py-0.5 rounded-control">Nuevo</span>
           </div>
           <p className="font-mono text-title-l font-bold text-ink">
-            {bestSet.weight}<span className="text-label font-sans font-normal text-ink-2"> kg × {bestSet.repsDone}</span>
+            {String(bestSet.weight).replace('.', ',')}<span className="text-label font-sans font-normal text-ink-2"> kg × {bestSet.repsDone}</span>
           </p>
         </div>
       )}
@@ -163,6 +164,18 @@ export default function ExerciseCloseCard({
           <p className="font-mono text-title-m font-bold text-ink">{rirMedio != null ? rirMedio.toFixed(1).replace('.', ',') : '—'}</p>
         </div>
       </div>
+
+      {/* D1c, variante «última»: el RIR se pregunta solo aquí, y solo de la
+          última serie. Un toque; el pautado va resaltado hasta que contesta. */}
+      {rirUltima && (
+        <div className="mx-4 mt-4">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide mb-2">¿Cuántas te quedaban en la última?</p>
+          <SelectorRapidoDeRir
+            pautado={rirUltima.pautado} elegido={rirUltima.elegido} onElegir={rirUltima.onElegir}
+            etiqueta="Repeticiones que te quedaban en la última serie"
+          />
+        </div>
+      )}
 
       {/* F4: el RIR, comprobado. Solo sale cuando una serie al máximo permite
           compararlo con lo que apuntó; el resto de días no hay nada que decir. */}

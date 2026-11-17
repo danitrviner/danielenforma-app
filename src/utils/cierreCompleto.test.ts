@@ -4,6 +4,8 @@ import {
 } from '../types';
 import { buildCierreCompleto, mensajeDeCierre } from './cierreCompleto';
 import { buildCierreMesociclo } from './cierreMesociclo';
+import { RUIDO_RM_PCT } from './ruidoDeMedida';
+import { addDays } from './trainingWeek';
 
 /* El mensaje del cierre es UNO (F8): el editor del mesociclo, Revisión › Cierre
    de bloque, el borrador que se firma y el asistente llaman a
@@ -88,5 +90,87 @@ describe('buildCierreCompleto', () => {
     expect(c.evolucion.semanas).toBe(5);
     expect(c.evolucion.peso!.semanal).toHaveLength(5);
     expect(c.pesoCorporalKg).toBe(77);
+  });
+});
+
+// ── El sesgo del cierre, de punta a punta (D2b-D4c, 17-11-2026) ─────────────
+// Fuerza constante con ±1 repetición de ruido: antes el cierre decía «mejora»
+// (dato único de la semana 1 contra el máximo de las dos últimas). Ahora ni el
+// titular, ni las conclusiones, ni el mensaje al cliente lo dicen.
+describe('un bloque de 8 semanas sin mejora real no «funciona»', () => {
+  const azar = (semilla: number) => {
+    let a = semilla >>> 0;
+    return () => {
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  };
+  const SEIS: Exercise[] = ['Press banca', 'Remo', 'Sentadilla', 'Curl', 'Press militar', 'Peso muerto'].map((name, i) => ({
+    id: `e${i}`, ownerId: 'c', name, primaryFocus: '', muscleGroup: (['pecho', 'dorsal', 'cuadriceps', 'biceps', 'deltoide_ant', 'isquios'] as MuscleGroup[])[i],
+    type: 'fuerza', isCustom: false,
+  }));
+  const OCHO: Mesocycle = { ...MESO, weeks: 8, groups: grupos({ pecho: 4, dorsal: 4 }) };
+  // Dos sesiones por semana, dos series por ejercicio, siempre el mismo peso a RIR 1 y 7-9 repeticiones.
+  const bloque = (semilla: number, kgSemana1 = 1): WorkoutLog[] => {
+    const r = azar(semilla);
+    return Array.from({ length: 16 }, (_, k) => {
+      const date = addDays('2026-06-01', Math.floor(k / 2) * 7 + (k % 2) * 3);
+      return {
+        id: `l-${date}`, athleteId: 'a@b.c', workoutId: 'w', assignmentId: 'as', date, completedAt: `${date}T10:00:00.000Z`,
+        entries: SEIS.map((e, i) => ({
+          exerciseId: e.id,
+          sets: [0, 1].map(() => ({ weight: (40 + i * 15) * (k < 2 ? kgSemana1 : 1), repsDone: 8 + Math.floor(r() * 3) - 1, rir: 1 })),
+        })),
+      };
+    });
+  };
+  const cerrar = (logs: WorkoutLog[], meso: Mesocycle = OCHO) => buildCierreCompleto({
+    meso, mesocycles: [meso], logs, assignments: [], exercises: SEIS, athleteName: 'Marta López', hoy: '2026-08-15',
+  });
+
+  it('la mediana queda por debajo del ruido y no se dice que mejora', () => {
+    for (const semilla of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+      const { cierre, conclusiones, mensaje } = cerrar(bloque(semilla));
+      const res = cierre.progresion.resumen;
+      expect(res.comparables).toBe(6);
+      expect(Math.abs(res.medianaPct!)).toBeLessThan(RUIDO_RM_PCT);
+      expect(res.mejoran).toBeLessThanOrEqual(1);
+      expect(cierre.titulares[0]).toContain(`dentro del ±${RUIDO_RM_PCT}% de error de medida, la fuerza se mantiene`);
+      const ids = conclusiones.hallazgos.map(h => h.id);
+      expect(ids).not.toContain('funciona');
+      expect(ids).not.toContain('progreso_lento');
+      expect(ids).toContain('estancado');
+      expect(conclusiones.hallazgos.find(h => h.id === 'estancado')!.texto).toMatch(/^La fuerza se mantiene/);
+      expect(mensaje).toContain('En conjunto, tu fuerza se mantiene.');
+      expect(mensaje).not.toContain('más fuerte');
+      expect(cierre.notaDeDatos).toBeNull(); // todas las sesiones dieron marca
+    }
+  });
+
+  it('con la semana 1 de descarga o de vuelta de un parón tampoco', () => {
+    for (const semilla of [1, 2, 3, 4, 5]) {
+      const logs = bloque(semilla, 0.8); // la semana 1, con el 80 % del peso
+      for (const marca of [{ semanasDescarga: [1] }, { vuelveDeParon: true }]) {
+        const { cierre, conclusiones, mensaje } = cerrar(logs, { ...OCHO, ...marca });
+        expect(cierre.progresion.semanas[0].comparable).toBe(false);
+        expect(Math.abs(cierre.progresion.resumen.medianaPct!)).toBeLessThan(RUIDO_RM_PCT);
+        expect(conclusiones.hallazgos.map(h => h.id)).not.toContain('funciona');
+        expect(mensaje).not.toContain('más fuerte');
+        // Ni en los kg por semana: la semana recortada no es la referencia.
+        expect(Math.abs(cierre.progresion.resumen.tonelajeSemanal!.deltaPct!)).toBeLessThan(5);
+        expect(mensaje).not.toContain('más de kilos por semana');
+      }
+    }
+  });
+
+  it('una mejora de verdad (+2,5 kg cada dos semanas) sí se dice', () => {
+    const logs = bloque(3).map((l, k) => ({
+      ...l, entries: l.entries.map(e => ({ ...e, sets: e.sets.map(s => ({ ...s, weight: s.weight * (1 + 0.03 * Math.floor(k / 4)) })) })),
+    }));
+    const { cierre, conclusiones } = cerrar(logs);
+    expect(cierre.progresion.resumen.medianaPct!).toBeGreaterThan(5);
+    expect(conclusiones.hallazgos.map(h => h.id)).toContain('funciona');
   });
 });

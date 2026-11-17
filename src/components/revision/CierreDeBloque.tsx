@@ -11,6 +11,7 @@ import { appendDossierFacts, getDossier } from '../../db/dossier';
 import type { CierreMesociclo } from '../../utils/cierreMesociclo';
 import { buildCierreCompleto } from '../../utils/cierreCompleto';
 import { finDeBloque } from '../../utils/finDeBloque';
+import { notaDePocasSemanas, notaDeSemanasFuera } from '../../utils/progresionDelBloque';
 import { EvolucionDelBloque, EvolucionPregunta } from '../../utils/evolucionDelBloque';
 import { Conclusion, TonoConclusion, hechosDeCierre, hechosDeCierrePorGuardar } from '../../utils/conclusionesDelBloque';
 import { nombreDeMeso } from '../../utils/nombresMeso';
@@ -104,7 +105,9 @@ function filasComparadas(c: CierreMesociclo, ev: EvolucionDelBloque): FilaCompar
   const filas: FilaComparada[] = [];
   const res = c.progresion.resumen;
   const semanas = c.progresion.semanas;
-  const conIndice = semanas.filter(s => s.indiceFuerza != null);
+  // El «al terminar» del índice es el de la última semana comparable: el de una
+  // descarga o un test al final no es cómo acaba el bloque.
+  const conIndice = semanas.filter(s => s.indiceFuerza != null && s.comparable);
   if (res.medianaPct != null && conIndice.length >= 2) {
     filas.push({
       clave: 'fuerza', grupo: 'Rendimiento', metrica: 'Fuerza estimada (índice)',
@@ -321,6 +324,11 @@ export default function CierreDeBloque({
 
   const sinDatos = cierre.informe.sessions === 0;
   const res = cierre.progresion.resumen;
+  const notasDeFuerza = [
+    cierre.notaDeDatos,
+    notaDePocasSemanas(res),
+    notaDeSemanasFuera(cierre.progresion.semanas),
+  ].filter((n): n is string => !!n);
   const adh = cierre.sesiones.adherenciaPct;
   const vol = cierre.volumen.pct;
   const r = evolucion.registro;
@@ -407,13 +415,20 @@ export default function CierreDeBloque({
               sub={res.tonelajeSemanal ? `${fmt(Math.round(res.tonelajeSemanal.inicio), 0)} → ${fmt(Math.round(res.tonelajeSemanal.final), 0)} kg` : '—'}
               color={colorDelta(res.tonelajeSemanal?.deltaPct)} />
           </div>
+          {/* Con qué dato se ha decidido la fuerza (D4c): sesiones sin marca,
+              ejercicios que no cuentan y semanas que quedan fuera. Discreto, y
+              solo para el coach: al presentárselo al atleta no sale. */}
+          {!presentando && notasDeFuerza.length > 0 && (
+            <p className="font-mono text-caption text-ink-3">{notasDeFuerza.join(' ')}</p>
+          )}
 
           {/* ── 3. Al empezar vs al terminar ── */}
           <Seccion titulo="Al empezar vs al terminar" icon="swap_horiz">
             <TablaInicioFinal filas={filas} />
             <p className="font-mono text-caption text-ink-3">
               Nunca un dato suelto: el peso es la mediana de la primera y la última semana con pesajes; los cuestionarios, la media
-              del primer y el último tercio de sus respuestas; la fuerza, la mediana de lo que sube cada ejercicio.
+              del primer y el último tercio de sus respuestas; la fuerza, la mediana de lo que sube cada ejercicio entre sus
+              dos primeras y sus dos últimas semanas comparables (la marca de cada sesión es su mejor serie válida).
             </p>
           </Seccion>
 

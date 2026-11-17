@@ -326,6 +326,20 @@ describe('buildRevisionCoach', () => {
     expect(r.ejerciciosPorPatron.traccion.map(e => e.exerciseId)).toEqual(['remo']);
   });
 
+  // D2 (17-11-2026): sin series válidas en la ventana no hay marca, y sin marca no hay caída.
+  it('un ejercicio sin marca en la ventana no «cae un 100 %» ni entra en el patrón de la caída', () => {
+    const conRir = (date: string, rir: number) => log(date, [{ exerciseId: 'press', series: [[80, 8], [80, 8], [80, 8]], rir }]);
+    const r = buildRevisionCoach({
+      // La quincena anterior, a RIR 2; esta, todo a RIR 4 (la vuelta de un parón, por ejemplo).
+      logs: [conRir('2026-08-25', 2), conRir('2026-08-28', 2), conRir('2026-09-08', 4), conRir('2026-09-11', 4)],
+      exercises, mesocycles: [], periodo: { tipo: '14d' }, hoy: HOY,
+    });
+    const press = r.informe.perExercise.find(e => e.exerciseId === 'press')!;
+    expect(press).toMatchObject({ bestOrm: 0, deltaOrmPct: null });
+    expect(r.caida).toBeNull();
+    expect(r.bajan).toEqual([]);
+  });
+
   it('sin logs no revienta: devuelve la ventana y todo a cero', () => {
     const r = buildRevisionCoach({
       logs: [], exercises, mesocycles: [m], periodo: { tipo: 'meso', mesoId: 'm2' }, hoy: HOY,

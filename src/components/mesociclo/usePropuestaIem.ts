@@ -86,7 +86,7 @@ export function usePropuestaIem(p: {
   landmarks?: Partial<Record<MuscleGroup, VolumeLandmark>>;
 }) {
   const { motor } = useMotorCdg();
-  const { agujetas, sueño, estres, motivacion, fatigaPost } = useAgujetasCdg(p.activo ? p.meso.athleteId : undefined);
+  const { agujetas, sueño, estres, motivacion, fatigaPost, cansancioSesiones } = useAgujetasCdg(p.activo ? p.meso.athleteId : undefined);
   const { data: alta } = useQuery({
     queryKey: ['onboarding', p.meso.athleteId],
     queryFn: () => getOnboarding(p.meso.athleteId),
@@ -147,6 +147,7 @@ export function usePropuestaIem(p: {
       const propuesta = propuestaZona({
         agujetas: vigente ? lectura!.valor : undefined, anterior: vigente ? lectura!.anterior : undefined, sensible: z.sensible,
         tipo: { sensibilidad: modo, velocidad }, esObjetivo: objetivo != null, iem: iemBase[z.clave], contexto, fatigaPost: fatigaPost?.value, objetivo,
+        sesionMasCansada: cansancioSesiones ? { etiqueta: cansancioSesiones.peor.etiqueta, valor: cansancioSesiones.peor.valor } : undefined,
         // Igual que el asistente: tras un parón, el pico de agujetas de las dos primeras semanas no frena de golpe.
         primeraSemanaTrasParon: !!meso.vuelveDeParon && semana <= 2,
       });
@@ -230,7 +231,7 @@ export function usePropuestaIem(p: {
     ];
     return { zonas: zonasFinal, cambios: r.cambios, marcados, casillas, borrador, tiempo, ref, porQue, avisos };
   }, [activo, motor, nombreCdgDeP, semana, dias, meso, grupoDe, elegidos, logs, cicloDias, vueltas, semanaActual, landmarks,
-    agujetas, sueño, estres, motivacion, fatigaPost, alta, pctManual, modoLocal, palancas, descartados]);
+    agujetas, sueño, estres, motivacion, fatigaPost, cansancioSesiones, alta, pctManual, modoLocal, palancas, descartados]);
 
   /** Incluir o quitar todos los cambios propuestos de un ejercicio (tocar su casilla). */
   const alternarEjercicio = (clave: string) => {

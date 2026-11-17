@@ -80,7 +80,10 @@ export function seriesRealizadas (
       repetitions: { min: s.repsDone, max: s.repsDone, raw: String(s.repsDone) },
       weight: kg,
       rpe: rirARpe(s.alFallo ? 0 : s.rir),
-      intensification: ''
+      intensification: '',
+      // RIR pautado sin tocar: la serie cuenta para el estímulo y el tonelaje,
+      // pero no para el RM (rendimientoDeRegistros.ts).
+      ...(s.rirApuntado === false && !s.alFallo ? { rirApuntado: false } : {})
     })
   }
   if (tecnica && out.length) out[out.length - 1].intensification = tecnica

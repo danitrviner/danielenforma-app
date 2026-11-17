@@ -7,7 +7,7 @@ import { buildMovementPatternReport, PatternPerf } from './movementPatterns.js';
 import { hoyIsoLocal, diasEntreFechas } from './trainingWeek.js';
 import { adherenciaDeMesociclo, asignacionesDeMesociclo } from './adherence.js';
 import { seriesRealizadasPorGrupo } from './programacion.js';
-import { buildProgresionDelBloque, ProgresionDelBloque, ProgresionEjercicio } from './progresionDelBloque.js';
+import { buildProgresionDelBloque, notaDeSesionesSinMarca, ProgresionDelBloque, ProgresionEjercicio } from './progresionDelBloque.js';
 import { finDeBloque } from './finDeBloque.js';
 import { cicloDiasDeMeso } from './asignacionMesociclo.js';
 import { nombreDeMeso } from './nombresMeso.js';
@@ -81,8 +81,15 @@ export interface CierreMesociclo {
   informe: TrainingReport;
   /** Variación de 1RM/tonelaje por patrón de movimiento — bloque "Rendimiento" del protocolo de mediciones. */
   patrones: PatternPerf[];
-  /** Progresión DENTRO del bloque (semana 1 → final) — responde aunque no haya mesociclo anterior. */
+  /** Progresión DENTRO del bloque (primeras semanas → últimas) — responde aunque no haya mesociclo anterior. */
   progresion: ProgresionDelBloque;
+  /**
+   * Con qué dato se ha decidido la fuerza del bloque (D4c, 17-11-2026): cuántas
+   * veces un ejercicio se quedó sin marca por no tener series válidas y el
+   * motivo más frecuente. `null` si todas dieron marca. Es para el coach: no
+   * va en el mensaje al cliente.
+   */
+  notaDeDatos: string | null;
   /** Frases para el coach, ya masticadas. */
   titulares: string[];
   /**
@@ -206,16 +213,22 @@ export function buildCierreMesociclo(params: {
 
   // ── Progresión dentro del bloque ────────────────────────────────────────
   // Las descargas se marcan por VUELTA del ciclo y la progresión va por
-  // semanas de 7 días: se traducen (con ciclo de 7 es la misma semana).
-  const semanasDescarga = semanasDeCalendarioEnDescarga(
+  // semanas de 7 días: se traducen (con ciclo de 7 es la misma semana). Lo
+  // mismo con las demás semanas que no se comparan (D3): puente, test y la
+  // primera vuelta cuando vuelve de un parón.
+  const aSemanasDeCalendario = (vueltas: number[]) => semanasDeCalendarioEnDescarga(vueltas, cicloDiasDeMeso(meso), diasDelBloque);
+  const semanasDescarga = aSemanasDeCalendario(
     [...new Set([...(meso.semanasDescarga ?? []), ...(meso.deloadWeek ? [meso.deloadWeek] : [])])],
-    cicloDiasDeMeso(meso), diasDelBloque,
   );
   const progresion = buildProgresionDelBloque({
     logs: logsMeso, exercises, inicio, fin, semanas: semanasDeCalendario, semanasDescarga,
+    semanasPuente: aSemanasDeCalendario(meso.semanasPivot ?? []),
+    semanasTest: aSemanasDeCalendario(meso.semanasTest ?? []),
+    semanasVueltaDeParon: meso.vuelveDeParon ? aSemanasDeCalendario([1]) : [],
     assignments: asigMeso, pesoCorporalKg: params.pesoCorporalKg, hoy,
   });
   const res = progresion.resumen;
+  const notaDeDatos = notaDeSesionesSinMarca(res.sinMarca);
   const destacados = progresion.ejercicios.filter(e => e.estado === 'mejora').slice(0, 3);
   const flojos = progresion.ejercicios
     .filter(e => e.estado === 'baja' || (e.estado === 'estable' && e.semanasConDatos >= 3))
@@ -258,6 +271,13 @@ export function buildCierreMesociclo(params: {
       ` (mediana ${conSigno(res.medianaPct)}% de 1RM estimado` +
       // Por debajo del ruido de medida la mediana no es una subida ni una bajada.
       `${superaElRuido(res.medianaPct) ? '' : `: dentro del ±${RUIDO_RM_PCT}% de error de medida, la fuerza se mantiene`}).`
+    );
+  }
+  // Los que no cuentan (D4) se nombran, para que no parezca que faltan.
+  if (res.pocasSemanas.length > 0) {
+    titulares.push(
+      `Pocas semanas para comparar (no cuentan a favor ni en contra): ${res.pocasSemanas.slice(0, 4).map(e => e.nombre).join(', ')}` +
+      `${res.pocasSemanas.length > 4 ? ` y ${res.pocasSemanas.length - 4} más` : ''}.`
     );
   }
   if (destacados.length > 0) {
@@ -404,6 +424,7 @@ export function buildCierreMesociclo(params: {
     informe,
     patrones,
     progresion,
+    notaDeDatos,
     titulares,
     resumenParaCliente: lineas.join('\n'),
   };

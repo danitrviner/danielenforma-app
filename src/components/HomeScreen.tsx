@@ -31,6 +31,7 @@ import { debePedirseConsentimiento, haSidoAplazado, marcarAplazado } from '../ai
 import StepsWidget from './StepsWidget';
 import TarjetaPeso from './home/TarjetaPeso';
 import RegistrarPesoSheet from './home/RegistrarPesoSheet';
+import Agujetas48hInicio from './training/Agujetas48hInicio';
 import WeeklyChallengeCard, { ChallengePendingCard } from './roadmap/WeeklyChallengeCard';
 import { useRetoDeLaSemana } from '../hooks/useRetoDeLaSemana';
 import AthleteReportsPanel from './AthleteReportsPanel';
@@ -340,6 +341,14 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         respuestas={respuestasRevision}
         notaDeHoy={coachDayNote}
         onNavigate={onNavigate}
+      />
+
+      {/* Agujetas a las 48 h (17-11): solo si hay una sesión terminada hace
+          36-72 h sin contestar. Un toque por zona; si no toca, no pinta nada. */}
+      <Agujetas48hInicio
+        athleteEmail={profile.email}
+        workouts={workouts}
+        enEspera={pedirConsentimiento || mostrarNovedades}
       />
 
       {/* «Lo que viniste a buscar» (29-10): su frase del alta y el antes → ahora. */}

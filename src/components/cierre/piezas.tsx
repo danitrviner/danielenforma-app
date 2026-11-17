@@ -185,7 +185,7 @@ export function Podio({ ejercicios }: { ejercicios: ProgresionEjercicio[] }) {
       <Seccion titulo="Lo que más ha subido" icon="military_tech">
         {mejores.length > 0
           ? <ul>{mejores.map(fila)}</ul>
-          : <p className="font-sans text-caption text-ink-3">Ningún ejercicio sube más de un 2 % todavía.</p>}
+          : <p className="font-sans text-caption text-ink-3">Ningún ejercicio sube más de un {RUIDO_RM_PCT} % todavía.</p>}
       </Seccion>
       <Seccion titulo="Parado o a la baja" icon="report">
         {parados.length > 0
@@ -281,7 +281,7 @@ export function ListaEjercicios({ ejercicios, sexo, pesoKg }: {
                   {conSigno(e.deltaPct)}%
                 </span>
               ) : (
-                <span className="font-mono text-caption text-ink-3" title="Hace falta que aparezca en dos semanas distintas">1 sem.</span>
+                <span className="font-mono text-caption text-ink-3" title="Hacen falta al menos dos semanas con una serie válida (3-12 repeticiones, RIR 2 o menos)">sin ref.</span>
               )}
               <span className="block font-mono text-caption text-ink-3">{e.metrica === 'e1rm' ? '1RM est.' : 'reps'}</span>
             </div>
@@ -289,9 +289,9 @@ export function ListaEjercicios({ ejercicios, sexo, pesoKg }: {
         ))}
       </ul>
       <p className="font-mono text-caption text-ink-3">
-        Se compara la mejor serie de la primera semana en que aparece cada ejercicio con la mejor de sus dos últimas
-        semanas (sin contar descargas). 1RM estimado con la fórmula CDG, que tiene en cuenta el RIR: subir reps o
-        dejar más margen con el mismo peso también cuenta como mejora.
+        Se compara la mediana de las dos primeras semanas de cada ejercicio con la de las dos últimas, sin contar
+        descargas, semanas puente ni de test. Solo entran series de 3 a 12 repeticiones con RIR 2 o menos, y por
+        debajo de un {RUIDO_RM_PCT} % el cambio es ruido. 1RM estimado con la fórmula CDG, que tiene en cuenta el RIR.
         {alometrico ? ` 1RM alométrico con ${pesoKg} kg de peso corporal.` : ''}
       </p>
     </div>

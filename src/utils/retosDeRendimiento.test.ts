@@ -270,13 +270,22 @@ describe('retos de rendimiento — generación', () => {
     expect(opt.title).toBe('Semana 2 de 9: 1 de 1');
   });
 
-  it('descarga: solo «RIR mínimo», nada de progresar', () => {
+  const DE_PROGRESAR = ['doble_progresion', 'amrap_serie', 'supera_sesion', 'grupo_estancado', 'mas_reserva', 'record_reps'];
+
+  it('D10: descarga — el reto es hacer las sesiones; ni RIR mínimo ni progresar', () => {
     const opts = generateChallengeOptions(input({ mesocycles: [{ ...MESO, semanasDescarga: [2] } as Mesocycle] }));
-    expect(opts[0].kind).toBe('rir_minimo');
-    expect(opts.some(o => o.kind === 'amrap_serie' || o.kind === 'doble_progresion')).toBe(false);
+    expect(opts[0]).toMatchObject({ kind: 'entrenos_completados', title: 'Semana de descarga: haz tu sesión', metric: { target: 1, mesocycleId: 'm1' } });
+    // En descarga se quita volumen, no intensidad: nada que pida alejarse del fallo.
+    expect(opts.some(o => o.kind === 'rir_minimo')).toBe(false);
+    expect(opts.some(o => DE_PROGRESAR.includes(o.kind))).toBe(false);
   });
 
-  const DE_PROGRESAR = ['doble_progresion', 'amrap_serie', 'supera_sesion', 'grupo_estancado', 'mas_reserva', 'record_reps'];
+  it('D10: lo que lee el atleta en descarga no le pide alejarse del fallo ni bajar peso', () => {
+    const opt = generateChallengeOptions(input({ mesocycles: [{ ...MESO, semanasDescarga: [2] } as Mesocycle] }))[0];
+    const texto = `${opt.title} ${opt.description}`;
+    expect(texto).toContain('menos series, con las mismas cargas');
+    expect(texto).not.toMatch(/RIR|fallo|menos peso|baja/i);
+  });
 
   it('F7c: semana puente — el reto es hacer las sesiones, nada de progresar', () => {
     const opts = generateChallengeOptions(input({ mesocycles: [{ ...MESO, semanasPivot: [2] } as Mesocycle] }));
@@ -309,6 +318,16 @@ describe('retos de rendimiento — generación', () => {
     expect(conPrensa([s(120, 12, 1)])?.metric).toMatchObject({ exerciseId: 'prensa', subirDe: 120 });
     expect(conPrensa([s(120, 12, 0, true)])).toBeUndefined();
     expect(conPrensa([s(120, 12, 0)])).toBeUndefined();
+  });
+
+  it('D1a: con el RIR apuntado, «toca subir» se decide a RIR pautado, igual que la tarjeta', () => {
+    const apuntada = (weight: number, repsDone: number, rir: number): WorkoutSetLog => ({ ...s(weight, repsDone, rir), rirApuntado: true });
+    // 11 a RIR 3 con RIR 1 pautado son 13: pasa del tope (12) sin haberlo hecho.
+    const sube = conPrensa([apuntada(120, 11, 3)])!;
+    expect(sube.metric).toMatchObject({ exerciseId: 'prensa', subirDe: 120 });
+    expect(sube.description).toContain('120 kg × 11, y te sobraban repeticiones para el tope');
+    // 12 a RIR 0 con RIR 1 pautado son 11: en el tope, pero apretando de más.
+    expect(conPrensa([apuntada(120, 12, 0)])).toBeUndefined();
   });
 
   it('F7c: en el tope con un salto de carga grande, el reto pide abrir el rango, como la tarjeta', () => {

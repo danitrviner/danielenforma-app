@@ -217,10 +217,16 @@ export interface Marca {
   reps: number;
   rir: number;        // efectivo: al fallo = 0
   alFallo: boolean;
+  /** ¿El RIR lo apuntó el atleta? (`WorkoutSetLog.rirApuntado`). Ausente en
+   *  los registros anteriores. Lo usa el criterio de «toca subir». */
+  rirApuntado?: boolean;
 }
 
 function aMarca(s: WorkoutSetLog): Marca {
-  return { weight: Number(s.weight) || 0, reps: Number(s.repsDone) || 0, rir: rirEfectivo(s.rir, s.alFallo), alFallo: !!s.alFallo };
+  return {
+    weight: Number(s.weight) || 0, reps: Number(s.repsDone) || 0, rir: rirEfectivo(s.rir, s.alFallo), alFallo: !!s.alFallo,
+    ...(s.rirApuntado != null ? { rirApuntado: s.rirApuntado } : {}),
+  };
 }
 
 // Una marca de hace más de tres meses ya no dice lo que el atleta mueve hoy.

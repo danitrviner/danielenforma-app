@@ -1195,6 +1195,8 @@ export async function getCierreBloque(email: string, mesocycleId?: string): Prom
       semanas: c.progresion.semanas.map(s => ({ semana: s.semana, sesiones: `${s.sesionesHechas}/${s.sesionesProgramadas}`, tonelaje: s.tonelaje, rirMedio: s.rirMedio, indiceFuerza: s.indiceFuerza })),
     },
     titulares: c.titulares,
+    // Con qué dato se ha decidido: sesiones sin marca de RM y por qué.
+    ...(c.notaDeDatos ? { notaDeDatos: c.notaDeDatos } : {}),
     // Las reglas del cierre, con la cifra que dispara cada una. La que cita al
     // atleta literal se queda fuera: su texto va abajo, marcado como dato.
     conclusiones: {

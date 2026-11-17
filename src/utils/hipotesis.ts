@@ -1,7 +1,5 @@
 import type { WorkoutLog } from '../types.js';
-import { rmDeSerie } from './oneRepMax.js';
-import { seriesPrincipales } from './seriesPrincipales.js';
-import { sesionesDelEjercicio } from './comparabilidad.js';
+import { marcaDelPunto, sesionesDelEjercicio } from './comparabilidad.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Cambios con hipótesis (S5, 11-11-2026)
@@ -40,21 +38,30 @@ export function estadoDeHipotesis(h: Pick<Hipotesis, 'revisarEl' | 'cierre'>, ho
 const SESIONES_POR_LADO = 3;
 
 export interface AntesYDespues {
-  /** 1RM estimado medio de las últimas sesiones antes del cambio. `null` sin datos. */
+  /** 1RM estimado medio de las últimas sesiones con marca antes del cambio. `null` sin datos. */
   antes: number | null;
   /** Lo mismo desde el cambio. */
   despues: number | null;
+  /** Sesiones CON MARCA desde el cambio (las que no tienen series válidas no cuentan). */
   sesionesDespues: number;
   cambioPct: number | null;
 }
 
-/** El antes y el después de un ejercicio alrededor de una fecha. */
+/**
+ * El antes y el después de un ejercicio alrededor de una fecha.
+ *
+ * Cada sesión entra con su marca: el RM de su mejor serie VÁLIDA
+ * (`marcaDeSesion.ts`, D2 17-11-2026). Una sesión sin series válidas no tiene
+ * marca y no entra en ninguna de las dos medias: antes contaba como un 0 (o
+ * con el RM de una serie a RIR 5) y hundía el lado en el que cayera.
+ */
 export function antesYDespues(logs: readonly WorkoutLog[], exerciseId: string, desde: string): AntesYDespues {
-  const marca = (s: ReturnType<typeof sesionesDelEjercicio>[number]) => Math.max(0, ...seriesPrincipales(s.entry.sets).map(rmDeSerie));
   const media = (xs: number[]) => (xs.length === 0 ? null : Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10);
-  const sesiones = sesionesDelEjercicio(logs, exerciseId);
-  const previas = sesiones.filter(s => s.date < desde).slice(-SESIONES_POR_LADO).map(marca);
-  const posteriores = sesiones.filter(s => s.date >= desde).map(marca);
+  const sesiones = sesionesDelEjercicio(logs, exerciseId)
+    .map(s => ({ date: s.date, marca: marcaDelPunto(s) }))
+    .filter((s): s is { date: string; marca: number } => s.marca != null);
+  const previas = sesiones.filter(s => s.date < desde).slice(-SESIONES_POR_LADO).map(s => s.marca);
+  const posteriores = sesiones.filter(s => s.date >= desde).map(s => s.marca);
   const antes = media(previas);
   const despues = media(posteriores.slice(-SESIONES_POR_LADO));
   return {

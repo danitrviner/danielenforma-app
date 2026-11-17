@@ -39,6 +39,13 @@ const comparable = (s: SemanaParaLectura) => !s.incompleta && !s.descarga
  * las dos (comparar ejercicios distintos no dice nada). `null` también si alguna
  * de las dos viene marcada como incompleta o de descarga: media semana o una
  * semana recortada a propósito no son una caída.
+ *
+ * El RM de un ejercicio en una semana es la media de sus filas CON MARCA
+ * (`rm` > 0). Una fila sin series válidas para el RM (`rendimientoSemanaDeRegistros`
+ * la deja a 0 con `sinMarca`) no es una marca de 0 kg: antes entraba en la
+ * media y un día a RIR 5 se leía como una caída (D2, 17-11-2026). El ejercicio
+ * que no tiene marca en alguna de las dos semanas sigue contando para el
+ * tonelaje, pero no para el RM.
  */
 export function compararSemanas (a: SemanaParaLectura, b: SemanaParaLectura): { tonelaje: number; rm: number } | null {
   if (!comparable(a) || !comparable(b)) return null
@@ -56,7 +63,11 @@ export function compararSemanas (a: SemanaParaLectura, b: SemanaParaLectura): { 
   const tonA = comunes.reduce((x, k) => x + A.get(k)!.ton, 0)
   const tonB = comunes.reduce((x, k) => x + B.get(k)!.ton, 0)
   const media = (l: number[]) => l.reduce((x, y) => x + y, 0) / l.length
-  const ratios = comunes.map(k => media(B.get(k)!.rm) / media(A.get(k)!.rm)).filter(r => isFinite(r) && r > 0)
+  const conMarca = (l: number[]) => l.filter(v => v > 0)
+  const ratios = comunes
+    .filter(k => conMarca(A.get(k)!.rm).length > 0 && conMarca(B.get(k)!.rm).length > 0)
+    .map(k => media(conMarca(B.get(k)!.rm)) / media(conMarca(A.get(k)!.rm)))
+    .filter(r => isFinite(r) && r > 0)
   if (tonA <= 0 || ratios.length === 0) return null
   return { tonelaje: tonB / tonA - 1, rm: media(ratios) - 1 }
 }

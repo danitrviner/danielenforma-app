@@ -27,6 +27,7 @@ import { seriesEfectivas, type SeriesEfectivas } from './seriesEfectivas.js';
 import { senalesActivas, recortesPosibles, SENALES_PARA_DESCARGA, type Recorte, type SenalesDeDescarga } from './descargaPorSenales.js';
 import { historialDeSeñal } from './signalReading.js';
 import { agujetasPorZona, agujetasVigentes, ultimaVigente } from './cdg/agujetas.js';
+import { cansancioDeSesiones } from './cdg/senalesPorSemana.js';
 import { ZONA_POR_CLAVE } from './cdg/zonas.js';
 import { computeIRP, historialIRP, IRPResult } from './readinessIndex.js';
 import { domsCronicoDeGrupo, esDomsCronico } from './domsCronico.js';
@@ -393,19 +394,32 @@ export function construirBienestar(params: {
  *
  * El aviso de salto de carga NO sale de aquí: necesita el catálogo CDG, que
  * esta función pura no tiene. `senalesActivas` ya lo acepta (`saltoDeCarga`).
+ *
+ * Con `logs` (D6r y D7, 17-11-2026) se lee además lo que el atleta apunta por
+ * sesión: el cansancio al salir es la media de las sesiones de los 7 días que
+ * acaban en `hasta` (y se dice de cuál salió peor), y las agujetas contestadas
+ * a las 48 h se mezclan con las del cuestionario. Sin nada por sesión, lo de siempre.
  */
 export function senalesDelProtocolo(params: {
   responses: QuestionnaireResponse[];
   questionnaires: Questionnaire[];
   hasta: string;
-}): Pick<SenalesDeDescarga, 'cansancioAlSalir' | 'agujetasPorZona'> {
-  const { responses, questionnaires, hasta } = params;
+  logs?: readonly WorkoutLog[];
+  /** Nombre de la rutina de una sesión, para decir cuál fue la más dura. */
+  nombreDeSesion?: (workoutId: string) => string | undefined;
+}): Pick<SenalesDeDescarga, 'cansancioAlSalir' | 'sesionMasCansada' | 'agujetasPorZona'> {
+  const { responses, questionnaires, hasta, logs = [] } = params;
   const serie = (k: string) => historialDeSeñal(k, responses, questionnaires).filter(p => p.date <= hasta);
-  const cansancioAlSalir = ultimaVigente(serie('wellness.fatigue_post_weekly'), hasta)?.value;
-  const zonas = Object.values(agujetasPorZona(serie))
+  const deSesiones = cansancioDeSesiones(logs, { desde: addDays(hasta, -6), hasta, nombreDe: params.nombreDeSesion });
+  const cansancioAlSalir = deSesiones?.media ?? ultimaVigente(serie('wellness.fatigue_post_weekly'), hasta)?.value;
+  const zonas = Object.values(agujetasPorZona(serie, logs, hasta))
     .filter(l => !l.deEscala10 && agujetasVigentes(l.fecha, hasta))
     .map(l => ({ nombre: ZONA_POR_CLAVE[l.zona].nombre, valor: l.valor, anterior: l.anterior }));
-  return { cansancioAlSalir, agujetasPorZona: zonas };
+  return {
+    cansancioAlSalir,
+    ...(deSesiones ? { sesionMasCansada: { etiqueta: deSesiones.peor.etiqueta, valor: deSesiones.peor.valor } } : {}),
+    agujetasPorZona: zonas,
+  };
 }
 
 export interface RevisionParams {
@@ -515,9 +529,10 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
     recuperacionMala: recuperacionGeneralMala,
     ejerciciosConDiasMalos: diasMalos.length,
     gruposConAgujetasCronicas: bienestar.domsCronico.length,
-    // R3: cansancio al salir y agujetas 1-5, de los cuestionarios que ya están aquí.
+    // R3: cansancio al salir y agujetas 1-5, de los cuestionarios que ya están aquí
+    // y, desde D6r/D7, de lo que apunta en cada sesión (los registros también están).
     // El salto de carga (aguda:crónica) necesita el catálogo CDG y no se pasa todavía.
-    ...senalesDelProtocolo({ responses, questionnaires, hasta: ventana.hasta }),
+    ...senalesDelProtocolo({ responses, questionnaires, hasta: ventana.hasta, logs: logsHastaLaVentana }),
   });
   const descarga = {
     recomendada: senales.length >= SENALES_PARA_DESCARGA,

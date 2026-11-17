@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Workout, WorkoutEntryLog, WorkoutExercise, WorkoutLog } from '../types';
-import { prefillWorkoutSets, entradasDeLaUltimaVez, tieneSeriesValidas } from './setPrefill';
+import { prefillWorkoutSets, entradasDeLaUltimaVez, tieneSeriesValidas, seriesAlMaximo, rirPautadoPorSerie } from './setPrefill';
 
 const EX: WorkoutExercise = {
   exerciseId: 'ex1', order: 0, sets: 3, reps: '8-10', restSeconds: 90, rir: 2,
@@ -9,6 +9,86 @@ const EX: WorkoutExercise = {
 const WORKOUT: Workout = {
   id: 'w1', ownerId: 'coach1', name: 'Empuje', exercises: [EX],
 };
+
+describe('D1a: las repeticiones llegan a RIR pautado', () => {
+  const UNA: Workout = { ...WORKOUT, exercises: [{ ...EX, sets: 1, reps: '8-12', rir: 1 }] };
+  const ultima = (repsDone: number, rir: number, extra: object = { rirApuntado: true }): WorkoutEntryLog[] =>
+    [{ exerciseId: 'ex1', sets: [{ weight: 80, repsDone, rir, ...extra }] }];
+
+  it('el ejemplo de Dani: 10 a RIR 0 con RIR 1 pautado → hoy le marca 9', () => {
+    expect(prefillWorkoutSets(UNA, ultima(10, 0))[0][0]).toEqual({ weight: '80', repsDone: '9', rir: '1', done: false });
+  });
+
+  it('8 a RIR 1 con RIR 1 pautado → 8, y con RIR 3 → 10', () => {
+    expect(prefillWorkoutSets(UNA, ultima(8, 1))[0][0].repsDone).toBe('8');
+    expect(prefillWorkoutSets(UNA, ultima(8, 3))[0][0].repsDone).toBe('10');
+  });
+
+  it('10 a RIR 3 con RIR 1 pautado son 12: llega al tope del rango y la fila sube de carga', () => {
+    expect(prefillWorkoutSets(UNA, ultima(10, 3))[0][0]).toEqual({ weight: '82.5', repsDone: '8', rir: '1', done: false });
+  });
+
+  it('el RIR que llega es siempre el del coach, no el que apuntó el atleta', () => {
+    expect(prefillWorkoutSets(UNA, ultima(10, 0))[0][0].rir).toBe('1');
+    expect(prefillWorkoutSets(UNA, ultima(9, 0, { alFallo: true, rirApuntado: true }))[0][0]).toMatchObject({ repsDone: '8', rir: '1' });
+  });
+
+  it('sin el RIR apuntado (pautado sin tocar, o registro antiguo) llegan las repeticiones hechas', () => {
+    expect(prefillWorkoutSets(UNA, ultima(10, 0, { rirApuntado: false }))[0][0].repsDone).toBe('10');
+    expect(prefillWorkoutSets(UNA, ultima(10, 0, {}))[0][0].repsDone).toBe('10');
+  });
+
+  it('en descarga también: mismas cargas, repeticiones a RIR pautado, sin subir', () => {
+    expect(prefillWorkoutSets(UNA, ultima(10, 3), undefined, 'descarga')[0][0]).toEqual({ weight: '80', repsDone: '12', rir: '1', done: false });
+  });
+});
+
+describe('D5: las series al máximo llegan con «fallo» y sin repeticiones', () => {
+  const prev: WorkoutEntryLog[] = [{
+    exerciseId: 'ex1',
+    sets: [{ weight: 60, repsDone: 9, rir: 2 }, { weight: 60, repsDone: 9, rir: 2 }, { weight: 60, repsDone: 8, rir: 2 }],
+  }];
+  const con = (extra: Partial<WorkoutExercise>) => prefillWorkoutSets({ ...WORKOUT, exercises: [{ ...EX, ...extra }] }, prev)[0];
+
+  it('AMRAP en la última serie (lo normal en la semana de test): solo esa', () => {
+    const rows = con({ technique: 'amrap' });
+    expect(rows[0]).toEqual({ weight: '60', repsDone: '9', rir: '2', done: false });
+    expect(rows[1]).toEqual({ weight: '60', repsDone: '9', rir: '2', done: false });
+    expect(rows[2]).toEqual({ weight: '60', repsDone: '', rir: 'fallo', done: false });
+  });
+
+  it('pautadas al fallo en todas las series: todas', () => {
+    const rows = con({ technique: 'fallo', tecnicaAjustes: { series: 'todas' } });
+    expect(rows.map(r => `${r.weight}|${r.repsDone}|${r.rir}`)).toEqual(['60||fallo', '60||fallo', '60||fallo']);
+  });
+
+  it('«AMRAP» escrito como repeticiones también cuenta', () => {
+    const rows = con({ setGroups: [{ sets: 2, reps: '8-10', rir: 2 }, { sets: 1, reps: 'AMRAP', rir: 0 }] });
+    expect(rows.map(r => r.rir)).toEqual(['2', '2', 'fallo']);
+    expect(rows[2].repsDone).toBe('');
+  });
+
+  it('sin historial llega igual: «fallo», y peso y repeticiones vacíos', () => {
+    const rows = prefillWorkoutSets({ ...WORKOUT, exercises: [{ ...EX, technique: 'amrap' }] }, [])[0];
+    expect(rows[2]).toEqual({ weight: '', repsDone: '', rir: 'fallo', done: false });
+  });
+
+  it('si esa serie sube de carga, llega con el peso nuevo y las repeticiones vacías', () => {
+    const tope: WorkoutEntryLog[] = [{ exerciseId: 'ex1', sets: [60, 60, 60].map(weight => ({ weight, repsDone: 10, rir: 2 })) }];
+    const rows = prefillWorkoutSets({ ...WORKOUT, exercises: [{ ...EX, technique: 'amrap' }] }, tope)[0];
+    expect(rows[2]).toEqual({ weight: '62.5', repsDone: '', rir: 'fallo', done: false });
+  });
+
+  it('drop set y myo-reps no son series al máximo: conservan su RIR', () => {
+    expect(con({ technique: 'dropset' }).slice(0, 3).map(r => r.rir)).toEqual(['2', '2', '2']);
+    expect(seriesAlMaximo({ technique: 'myoreps' }, [{ reps: '12-15' }, { reps: '12-15' }]).size).toBe(0);
+  });
+
+  it('`rirPautadoPorSerie` da el objetivo de cada serie tal y como se enseña', () => {
+    expect(rirPautadoPorSerie({ ...EX, technique: 'amrap' })).toEqual(['2', '2', 'fallo']);
+    expect(rirPautadoPorSerie(EX)).toEqual(['2', '2', '2']);
+  });
+});
 
 describe('prefillWorkoutSets', () => {
   it('sin histórico previo: reps/rir salen de la prescripción, la carga queda vacía', () => {

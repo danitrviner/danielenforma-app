@@ -23,6 +23,20 @@ describe('cambios con hipótesis (S5)', () => {
     expect(r.cambioPct!).toBeGreaterThan(0);
   });
 
+  it('una sesión sin series válidas no tiene marca y no entra en ninguna media (D2)', () => {
+    const lejos = (date: string): WorkoutLog => ({
+      id: `l${n++}`, athleteId: 'a', workoutId: 'w', assignmentId: 'x', date, completedAt: '',
+      entries: [{ exerciseId: 'press', sets: [{ weight: 80, repsDone: 8, rir: 5 }, { weight: 60, repsDone: 20, rir: 2 }] }],
+    }) as WorkoutLog;
+    const limpio = [sesion('2026-10-01', 80, 8), sesion('2026-10-08', 80, 8), sesion('2026-10-20', 80, 8), sesion('2026-10-27', 80, 8)];
+    const conRuido = [...limpio, lejos('2026-10-05'), lejos('2026-10-23')];
+    // Antes: la de RIR 5 y la de 20 repeticiones movían la media de su lado.
+    expect(antesYDespues(conRuido, 'press', '2026-10-15')).toEqual(antesYDespues(limpio, 'press', '2026-10-15'));
+    expect(antesYDespues(conRuido, 'press', '2026-10-15')).toMatchObject({ cambioPct: 0, sesionesDespues: 2 });
+    // Y si después del cambio solo hay sesiones sin marca, no hay «después».
+    expect(antesYDespues([sesion('2026-10-01', 80, 8), lejos('2026-10-20')], 'press', '2026-10-15')).toMatchObject({ despues: null, sesionesDespues: 0, cambioPct: null });
+  });
+
   it('sin sesiones a un lado no inventa el porcentaje', () => {
     const r = antesYDespues([sesion('2026-10-01', 80, 8)], 'press', '2026-10-15');
     expect(r).toMatchObject({ despues: null, sesionesDespues: 0, cambioPct: null });

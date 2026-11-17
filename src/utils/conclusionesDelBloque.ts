@@ -2,6 +2,7 @@ import type { CierreMesociclo } from './cierreMesociclo.js';
 import type { EvolucionDelBloque, EvolucionPregunta } from './evolucionDelBloque.js';
 import { OBJETIVO_LABEL } from './verificacionObjetivo.js';
 import { RUIDO_RM_PCT } from './ruidoDeMedida.js';
+import { ETIQUETA_SIN_MARCA, type MotivoSinMarca } from './marcaDeSesion.js';
 import type { DossierFact } from '../types.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -32,6 +33,19 @@ export interface ConclusionesDelBloque {
   /** Frases para el mensaje al cliente (segunda persona), además de las del rendimiento. */
   paraElCliente: string[];
 }
+
+/** Mediana de fuerza a partir de la cual se dice que el bloque ha funcionado. */
+export const FUNCIONA_PCT = 5;
+/** Parte de las sesiones de ejercicio sin marca a partir de la cual se avisa de que el dato de fuerza es flojo. */
+export const SIN_MARCA_QUE_AVISA = 1 / 3;
+
+/** Qué pedirle al atleta para que sus sesiones vuelvan a dar marca. */
+const ARREGLO_SIN_MARCA: Record<MotivoSinMarca, string> = {
+  rir_sin_apuntar: 'Pedirle que apunte el RIR real de cada serie: con el RIR pautado sin tocar no se puede estimar su fuerza.',
+  rir_lejos: 'Pautar (o pedirle) al menos una serie por ejercicio a RIR 2 o menos: a RIR 3 o más el RM estimado no es fiable.',
+  reps_altas: 'Si se quiere seguir la fuerza de esos ejercicios, llevar alguna serie al rango de 3 a 12 repeticiones: por encima la estimación del RM pierde precisión.',
+  reps_bajas: 'Con menos de 3 repeticiones no se estima el RM: si son series de calentamiento mal apuntadas, revisarlo con él.',
+};
 
 const fmt = (n: number, d = 1) => n.toLocaleString('es-ES', { maximumFractionDigits: d });
 const signo = (n: number, d = 1) => `${n > 0 ? '+' : ''}${fmt(n, d)}`;
@@ -64,9 +78,13 @@ export function buildConclusionesDelBloque(cierre: CierreMesociclo, ev: Evolucio
   const recuperacionPeor = [sueno, estres, cansancio, agujetas].filter(p => p?.lectura === 'empeora') as EvolucionPregunta[];
 
   // ── 1. ¿Ha funcionado el bloque? ─────────────────────────────────────────
+  // La mediana sale de comparar la mediana de las marcas de las primeras
+  // semanas con la de las últimas, solo con los ejercicios que cuentan
+  // (`progresionDelBloque.ts`, D2b-D4). «Ha funcionado» exige `FUNCIONA_PCT`;
+  // por debajo del ruido de medida, la fuerza se mantiene (D4c, 17-11-2026).
   const enDeficit = ev.peso?.objetivo === 'deficit' || ev.peso?.objetivo === 'deficit_acelerado';
   if (fuerza != null && res.comparables >= 3) {
-    if (fuerza >= 5) {
+    if (fuerza >= FUNCIONA_PCT) {
       hallazgos.push({ id: 'funciona', tono: 'bien', texto: `El bloque ha funcionado: mejora en ${res.mejoran} de ${res.comparables} ejercicios, con una mediana de ${signo(fuerza)}% de fuerza estimada.` });
       // Solo si de verdad se hizo lo programado: con la mitad del volumen, «lo que funciona» no se sabe qué es.
       if ((adh ?? 100) >= 80 && (vol ?? 100) >= 80) {
@@ -88,9 +106,22 @@ export function buildConclusionesDelBloque(cierre: CierreMesociclo, ev: Evolucio
     } else if (enDeficit) {
       hallazgos.push({ id: 'mantiene_deficit', tono: 'bien', texto: `En déficit mantiene la fuerza (mediana ${signo(fuerza)}%, dentro del ±${RUIDO_RM_PCT}% de error de medida): es lo que se busca en esta fase.` });
     } else {
-      hallazgos.push({ id: 'estancado', tono: 'atencion', texto: `El bloque no ha movido la fuerza: mediana de ${signo(fuerza)}%, dentro del ±${RUIDO_RM_PCT}% de error de medida (${res.mejoran} de ${res.comparables} ejercicios mejoran).` });
+      hallazgos.push({ id: 'estancado', tono: 'atencion', texto: `La fuerza se mantiene: mediana de ${signo(fuerza)}%, dentro del ±${RUIDO_RM_PCT}% de error de medida (${res.mejoran} de ${res.comparables} ejercicios mejoran). El bloque no la ha movido.` });
       acciones.push({ id: 'cambiar_estimulo', tono: 'atencion', texto: 'Cambiar el estímulo en el siguiente bloque: variantes nuevas en los principales, otro rango de repeticiones o más frecuencia en lo prioritario.' });
     }
+  }
+
+  // Con qué dato se ha decidido (D4c): si muchas sesiones se quedan sin marca,
+  // la lectura de fuerza sale de pocos datos y el coach tiene que saberlo.
+  const sm = res.sinMarca;
+  if (sm && sm.registros > 0 && sm.sinMarca / sm.registros >= SIN_MARCA_QUE_AVISA) {
+    const motivo = sm.motivoPrincipal;
+    hallazgos.push({
+      id: 'dato_de_fuerza', tono: 'neutro',
+      texto: `Dato de fuerza escaso: en ${sm.sinMarca} de las ${sm.registros} veces que hizo un ejercicio con peso no hubo ninguna serie válida para estimar el RM`
+        + `${motivo ? ` (lo más frecuente: ${ETIQUETA_SIN_MARCA[motivo]})` : ''}. La lectura de fuerza del bloque sale de ${res.comparables} ${res.comparables === 1 ? 'ejercicio' : 'ejercicios'}.`,
+    });
+    if (motivo) acciones.push({ id: 'dato_de_fuerza', tono: 'neutro', texto: ARREGLO_SIN_MARCA[motivo] });
   }
 
   // ── 2. Lo que se ha quedado parado ───────────────────────────────────────
@@ -165,7 +196,7 @@ export function buildConclusionesDelBloque(cierre: CierreMesociclo, ev: Evolucio
 
   // Percibe menos progreso del que hay: la conversación del cierre es justo eso.
   const sensacion = pregunta(ev, /progres/);
-  if (sensacion?.lectura === 'empeora' && fuerza != null && fuerza >= 5) {
+  if (sensacion?.lectura === 'empeora' && fuerza != null && fuerza >= FUNCIONA_PCT) {
     acciones.push({ id: 'ensenar_numeros', tono: 'atencion', texto: `Enseñarle estos números en la llamada: su sensación de progreso baja (${fmt(sensacion.inicio)} → ${fmt(sensacion.final)}) mientras su fuerza sube un ${signo(fuerza)}%.` });
   }
 

@@ -21,7 +21,6 @@ import { useToast } from '../hooks/useToast';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import { exerciseBestProgress, exerciseWeightTrend, ExerciseBestProgress } from '../utils/athleteMetrics';
-import { rmDeSerie } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
 import { Skeleton } from './ui';
 import { useBotonAtras } from '../services/botonAtras';
@@ -37,7 +36,8 @@ import NovedadesDeSemana from './training/NovedadesDeSemana';
 import { novedadesDeSemana, hayNovedades } from '../utils/semanasDelBloque';
 import { novedadesDeLaSesion, type NovedadesDeLaSesion } from '../utils/planificadorProgresion';
 import { cargarAvisoSesion, guardarAvisoSesion, borrarAvisoSesion } from '../utils/avisoDeSesion';
-import { SetInput, nuevaSerieVacia, tieneReps, seriesHechas } from './training/setInput';
+import { SetInput, nuevaSerieVacia, tieneReps, seriesHechas, filaASerie } from './training/setInput';
+import { mejorRmValido } from './training/cierreDeEjercicio';
 import { AL_VOLVER_A_LA_APP } from '../utils/refrescoDelAtleta';
 import { dondePreguntar, esMotivoDeParada, type MotivoDeParada } from '../utils/queTeParo';
 
@@ -225,6 +225,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // D5: molestia de 1 a 10 por ejercicio. D4: cómo llega hoy.
   const [molestias, setMolestias] = useState<(number | undefined)[]>([]);
   const [comoLlega, setComoLlega] = useState<WorkoutLog['comoLlega']>(undefined);
+  // D6: cansancio al salir (0-10). Se contesta en el diálogo de fin de sesión,
+  // con el entreno ya guardado: `logGuardadoId` es el registro al que se añade.
+  const [cansancioAlSalir, setCansancioAlSalir] = useState<number | undefined>(undefined);
+  const [logGuardadoId, setLogGuardadoId] = useState<string | null>(null);
   const [workoutNoteInput, setWorkoutNoteInput] = useState('');
   // Cambios que el coach ha programado para ESTA sesión respecto a la misma
   // sesión la semana anterior, y qué contestó el atleta al aviso (null = aún
@@ -496,6 +500,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         ...(s.segmento && s.segmentoDe ? { segmentoDe: s.segmentoDe } : {}),
         // Al corregir una sesión se conserva la hora original de cada serie.
         ...(s.hechaEn ? { hechaEn: s.hechaEn } : {}),
+        // Y si el RIR lo apuntó el atleta o no (D1b). Un registro antiguo no
+        // lleva la marca y sigue sin ella salvo que ahora lo cambie.
+        ...(s.rirApuntado != null ? { rirApuntado: s.rirApuntado } : {}),
       }));
     });
     const exerciseNoteInputsFromLog = orderedExercises.map(we =>
@@ -543,6 +550,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     setQuePararon([]);
     setMolestias([]);
     setComoLlega(undefined);
+    setCansancioAlSalir(undefined);
+    setLogGuardadoId(null);
     setWorkoutNoteInput('');
     setEditingLogId(null);
     // Solo se limpia el estado de React, no el inicio guardado en
@@ -697,16 +706,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           exerciseId: we.exerciseId,
           // F23: marcada Y con repeticiones. Una fila marcada en blanco (de un
           // borrador anterior al arreglo) se guardaba como 0 kg × 0 reps.
-          sets: seriesHechas<SetInput>(playerSets[exIdx] || [])
-            .map(s => ({
-              weight: parseFloat(s.weight) || 0,
-              repsDone: parseInt(s.repsDone) || 0,
-              rir: s.rir === 'fallo' ? 0 : parseInt(s.rir) || 0,
-              alFallo: s.rir === 'fallo',
-              ...(s.segmento ? { segmento: true } : {}),
-              ...(s.segmento && s.segmentoDe ? { segmentoDe: s.segmentoDe } : {}),
-              ...(s.hechaEn ? { hechaEn: s.hechaEn } : {}),
-            })),
+          // D1b: cada serie guarda si el RIR lo eligió el atleta (`rirApuntado`).
+          sets: seriesHechas<SetInput>(playerSets[exIdx] || []).map(s => filaASerie(s, !!editingLogId)),
           note: (exerciseNoteInputs[exIdx] || '').trim() || undefined,
           ...(referenciasNuevas[exIdx] ? { nuevaReferencia: true } : {}),
           ...(quePararon[exIdx] ? { queParo: quePararon[exIdx] } : {}),
@@ -749,7 +750,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         // Con referencia nueva (otra máquina u otro recorrido) no hay marca
         // anterior con la que comparar: no puede ser récord (D3).
         if (entry.nuevaReferencia) continue;
-        const newBest = entry.sets.reduce((max, s) => Math.max(max, rmDeSerie(s)), 0);
+        // D9: el récord de RM solo se celebra con una serie válida para estimarlo.
+        const newBest = mejorRmValido(entry.sets)?.rm ?? 0;
         const prevBest = priorBest.get(entry.exerciseId);
         if (newBest > 0 && prevBest != null && newBest > prevBest) {
           prs.push({ exerciseId: entry.exerciseId, name: getExercise(entry.exerciseId)?.name || entry.exerciseId, newBest });
@@ -801,6 +803,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       }
 
       queryClient.setQueryData<WorkoutLog[]>(logsKey, prev => [...(prev ?? []), newLog]);
+      // D6: el diálogo de fin de sesión pregunta el cansancio y lo añade a este registro.
+      setCansancioAlSalir(undefined);
+      setLogGuardadoId(newLog.id);
       /* El reto de la semana puede haberse movido con este entreno —«sentadilla
          a 100 kg», «12 series de pecho»— así que se marca para reevaluar. Sin
          esto, Inicio seguiría enseñando el progreso de la última evaluación
@@ -835,6 +840,23 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const dismissCelebration = () => {
     setCelebration(null);
     cerrarPlayer();
+  };
+
+  // D6: «¿Cómo de cansado sales?». El entreno ya está guardado cuando sale el
+  // diálogo, así que la respuesta se añade a ese registro en el mismo toque,
+  // sin esperar a «Genial»: si cierra la app antes, ya está guardada.
+  const apuntarCansancio = async (valor: number) => {
+    setCansancioAlSalir(valor);
+    if (!logGuardadoId) return;
+    try {
+      await updateWorkoutLog(logGuardadoId, { cansancioAlSalir: valor });
+      queryClient.setQueryData<WorkoutLog[]>(logsKey, prev => prev?.map(l =>
+        l.id === logGuardadoId ? { ...l, cansancioAlSalir: valor } : l
+      ));
+    } catch (err) {
+      console.error('No se pudo guardar el cansancio al salir:', err);
+      showToast('No se pudo guardar cómo de cansado sales.');
+    }
   };
 
   // ── Tarjeta de un día del ciclo (la usan tanto la vuelta en curso como el
@@ -968,6 +990,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           setAvisoSesion(a => a ? { ...a, leido } : a);
         }}
         tipoSemana={tipoSemanaActiva}
+        cansancioAlSalir={cansancioAlSalir}
+        onCansancioAlSalir={logGuardadoId ? apuntarCansancio : undefined}
       />
     );
   }

@@ -9,7 +9,13 @@
  * ciclo de revisión al que pertenece (`aperturaDelCiclo`: con revisión el
  * lunes, de martes a lunes, identificado por su viernes), y una semana sin
  * respuestas es «sin dato», no un hueco que se salta.
+ *
+ * D6r (17-11-2026): el cansancio al salir ya se apunta en cada sesión
+ * (`WorkoutLog.cansancioAlSalir`). `cansancioDeSesiones` da la media de las
+ * sesiones de la semana que se evalúa y CUÁL fue la más dura; el cuestionario
+ * semanal queda de respaldo para quien no lo apunte por sesión.
  */
+import type { WorkoutLog } from '../../types.js'
 import { aperturaDelCiclo } from '../cicloRevision.js'
 import { addDays } from '../trainingWeek.js'
 import { contextoDeLaSemana, type Contexto, type PuntoSeñal } from './agujetas.js'
@@ -80,4 +86,55 @@ export function rachaFinal<T> (valores: ReadonlyArray<T | undefined>): T[] {
 export function valorEnElCicloDe (filas: readonly ContextoDeCiclo[], fecha: string, campo: 'estres' | 'sueñoHoras' | 'motivacion' | 'fatigaPost', diaRevision?: number | null): number | undefined {
   const ciclo = aperturaDelCiclo(fecha, diaRevision)
   return filas.find(f => f.ciclo === ciclo)?.[campo]
+}
+
+/** El cansancio al salir de las sesiones de una semana, apuntado sesión a sesión (D6r). */
+export interface CansancioDeSesiones {
+  /** Media de las sesiones con dato, con un decimal. */
+  media: number
+  /** Cuántas sesiones lo llevan apuntado. */
+  sesiones: number
+  /** Día de la última sesión con dato (`YYYY-MM-DD`). */
+  fecha: string
+  /** La sesión de la que salió más cansado (a igualdad, la más reciente). */
+  peor: { logId: string; workoutId: string; fecha: string; valor: number; nombre?: string; /** «la del jueves, Pierna A» */ etiqueta: string }
+}
+
+const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'] as const
+/** «jueves» de una fecha `YYYY-MM-DD`, sin depender de la zona horaria ni del idioma del entorno. */
+const diaDeLaSemana = (iso: string) => {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
+  return DIAS[new Date(Date.UTC(y, (m || 1) - 1, d || 1)).getUTCDay()]
+}
+
+/** «la del jueves, Pierna A» (o «la del jueves», sin nombre de rutina). */
+export function etiquetaDeSesion (fecha: string, nombre?: string): string {
+  return `la del ${diaDeLaSemana(fecha)}${nombre?.trim() ? `, ${nombre.trim()}` : ''}`
+}
+
+/**
+ * Media del cansancio al salir (0-10) de las sesiones entre `desde` y `hasta`
+ * (por `date`, los dos incluidos; sin límites, todas las que se pasen) y la
+ * sesión con la nota más alta. Sin ninguna sesión con dato, `undefined`: quien
+ * llama cae entonces al cuestionario semanal.
+ */
+export function cansancioDeSesiones (
+  logs: ReadonlyArray<Pick<WorkoutLog, 'id' | 'workoutId' | 'date' | 'cansancioAlSalir'>>,
+  o: { desde?: string; hasta?: string; nombreDe?: (workoutId: string) => string | undefined } = {},
+): CansancioDeSesiones | undefined {
+  const conDato = logs
+    .filter(l => typeof l.cansancioAlSalir === 'number' && l.cansancioAlSalir >= 0 && l.cansancioAlSalir <= 10
+      && (o.desde == null || l.date >= o.desde) && (o.hasta == null || l.date <= o.hasta))
+    .sort((a, b) => a.date.localeCompare(b.date))
+  if (conDato.length === 0) return undefined
+  const suma = conDato.reduce((a, l) => a + l.cansancioAlSalir!, 0)
+  // `>=`: recorriendo de la más antigua a la más reciente, a igualdad gana la última.
+  const peor = conDato.reduce((p, l) => (l.cansancioAlSalir! >= p.cansancioAlSalir! ? l : p))
+  const nombre = o.nombreDe?.(peor.workoutId)?.trim() || undefined
+  return {
+    media: Math.round((suma / conDato.length) * 10) / 10,
+    sesiones: conDato.length,
+    fecha: conDato[conDato.length - 1].date,
+    peor: { logId: peor.id, workoutId: peor.workoutId, fecha: peor.date, valor: peor.cansancioAlSalir!, nombre, etiqueta: etiquetaDeSesion(peor.date, nombre) },
+  }
 }

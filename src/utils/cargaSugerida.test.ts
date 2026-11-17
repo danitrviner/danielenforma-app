@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { WorkoutExercise, WorkoutEntryLog } from '../types';
-import { sugerirCarga, consejoEnVivo, rangoDeReps, saltoReal, repsExtraAntesDeSubir, veredictoDeSerie, serieDeReferencia } from './cargaSugerida';
+import { sugerirCarga, consejoEnVivo, rangoDeReps, saltoReal, repsExtraAntesDeSubir, veredictoDeSerie, serieDeReferencia, repsAlRirPautado } from './cargaSugerida';
 
 const we: WorkoutExercise = { exerciseId: 'press', order: 0, sets: 3, reps: '8-12', rir: 2, restSeconds: 120 };
 const log = (sets: [number, number, number][]): WorkoutEntryLog => ({
@@ -164,5 +164,91 @@ describe('salto real de carga (P12)', () => {
     expect(justo.series).toEqual([null, null]);
     expect(justo.resumen).toContain('llega a 20 repeticiones con 8 kg');
     expect(sugerirCarga(we, previa(20), 2).series[0]).toEqual({ peso: 10, reps: 12 });
+  });
+});
+
+describe('D1a: la referencia al RIR pautado', () => {
+  const hecha = (repsDone: number, rir: number, extra: { alFallo?: boolean; rirApuntado?: boolean } = { rirApuntado: true }) =>
+    ({ weight: 80, repsDone, rir, ...extra });
+
+  it('el ejemplo de Dani: 10 a RIR 0 con RIR 1 pautado son 9', () => {
+    expect(repsAlRirPautado(hecha(10, 0), 1)).toBe(9);
+  });
+
+  it('10 a RIR 3 con RIR 1 pautado son 12', () => {
+    expect(repsAlRirPautado(hecha(10, 3), 1)).toBe(12);
+  });
+
+  it('8 a RIR 1 con RIR 1 pautado se quedan en 8', () => {
+    expect(repsAlRirPautado(hecha(8, 1), 1)).toBe(8);
+  });
+
+  it('al fallo cuenta como RIR 0, ponga lo que ponga el número', () => {
+    expect(repsAlRirPautado(hecha(10, 2, { alFallo: true, rirApuntado: true }), 1)).toBe(9);
+  });
+
+  it('nunca baja de 1 repetición', () => {
+    expect(repsAlRirPautado(hecha(2, 0), 4)).toBe(1);
+  });
+
+  it('sin el RIR apuntado por el atleta no se normaliza: lo hecho tal cual', () => {
+    expect(repsAlRirPautado(hecha(10, 0, { rirApuntado: false }), 1)).toBe(10);
+    // Registro antiguo, sin la marca.
+    expect(repsAlRirPautado(hecha(10, 0, {}), 1)).toBe(10);
+    expect(repsAlRirPautado(hecha(10, 0, { alFallo: true }), 1)).toBe(10);
+  });
+
+  it('una serie sin repeticiones no se inventa ninguna', () => {
+    expect(repsAlRirPautado(hecha(0, 3), 1)).toBe(0);
+  });
+
+  describe('«toca subir» se decide a RIR pautado', () => {
+    const pauta = { reps: '8-10', rir: 1 };
+
+    it('10 a RIR 3 (pautado 1) son 12: supera el tope del rango y toca subir carga', () => {
+      expect(veredictoDeSerie(hecha(10, 3), pauta)).toEqual({ que: 'subir', peso: 82.5, reps: 8 });
+    });
+
+    it('9 a RIR 2 (pautado 1) son 10: llega al tope sin haberlo hecho, y sube', () => {
+      expect(veredictoDeSerie(hecha(9, 2), pauta)).toEqual({ que: 'subir', peso: 82.5, reps: 8 });
+    });
+
+    it('10 a RIR 0 (pautado 1) son 9: en el tope, pero apretando de más — no sube', () => {
+      expect(veredictoDeSerie(hecha(10, 0), pauta)).toBeNull();
+    });
+
+    it('10 al fallo son 9, no sube; 11 al fallo son 10 a RIR 1, sí', () => {
+      expect(veredictoDeSerie(hecha(10, 0, { alFallo: true, rirApuntado: true }), pauta)).toBeNull();
+      expect(veredictoDeSerie(hecha(11, 0, { alFallo: true, rirApuntado: true }), pauta)).toEqual({ que: 'subir', peso: 82.5, reps: 8 });
+    });
+
+    it('8 a RIR 1 (pautado 1) son 8: se repite la carga', () => {
+      expect(veredictoDeSerie(hecha(8, 1), pauta)).toBeNull();
+    });
+
+    it('sin apuntar, el criterio de siempre: tope hecho, RIR pautado o más y sin fallo', () => {
+      expect(veredictoDeSerie(hecha(10, 1, { rirApuntado: false }), pauta)).toEqual({ que: 'subir', peso: 82.5, reps: 8 });
+      // 9 a RIR 3 sin apuntar NO se convierte en 11: se queda en 9, por debajo del tope.
+      expect(veredictoDeSerie(hecha(9, 3, { rirApuntado: false }), pauta)).toBeNull();
+      expect(veredictoDeSerie(hecha(9, 3, {}), pauta)).toBeNull();
+      expect(veredictoDeSerie(hecha(10, 0, {}), pauta)).toBeNull();
+      expect(veredictoDeSerie(hecha(12, 0, { alFallo: true }), pauta)).toBeNull();
+    });
+
+    it('con un salto de carga grande, las repeticiones de margen también se cuentan a RIR pautado', () => {
+      // 10 kg con saltos de 2 kg (20 %): pide 8 de margen; el rango 8-10 abre 2, faltan 6 → 16.
+      const ligera = (repsDone: number, rir: number) => ({ weight: 10, repsDone, rir, rirApuntado: true });
+      expect(veredictoDeSerie(ligera(13, 2), pauta, 2)).toEqual({ que: 'esperar', peso: 10, reps: 16, paso: 2 });
+      expect(veredictoDeSerie(ligera(13, 4), pauta, 2)).toEqual({ que: 'subir', peso: 12, reps: 8 });
+    });
+
+    it('la tarjeta lo aplica serie a serie', () => {
+      const ej: WorkoutExercise = { exerciseId: 'press', order: 0, sets: 2, reps: '8-10', rir: 1, restSeconds: 120 };
+      const previa: WorkoutEntryLog = { exerciseId: 'press', sets: [
+        { weight: 80, repsDone: 10, rir: 3, rirApuntado: true },
+        { weight: 80, repsDone: 10, rir: 0, rirApuntado: true },
+      ] };
+      expect(sugerirCarga(ej, previa).series).toEqual([{ peso: 82.5, reps: 8 }, null]);
+    });
   });
 });

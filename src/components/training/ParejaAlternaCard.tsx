@@ -10,8 +10,12 @@ import { consejoDeDiaMalo } from '../../utils/diaMalo';
 import { pausaEntreTurnos, siguienteTurno, turnosDePareja } from '../../utils/seriesAlternas';
 import ExerciseVideoPlayer from '../ExerciseVideoPlayer';
 import RestRing from './RestRing';
-import { SetInput, RIR_OPCIONES, rirTexto, rirClaseColor, resumenRangosPautados } from './setInput';
-import { BotonSerieHecha, ConsejoDelCoach, PieDeEjercicio, TEXTO_EJERCICIO_NUEVO, useMarcarSerie, AvisoSinReps } from './ExerciseCard';
+import { SetInput, resumenRangosPautados, resumenRirPautado, apuntarRir, VARIANTE_RIR_POR_DEFECTO, type VarianteRir } from './setInput';
+import {
+  BotonSerieHecha, ConsejoDelCoach, PieDeEjercicio, TEXTO_EJERCICIO_NUEVO, useMarcarSerie, AvisoSinReps,
+  AvisoSinRir, PreguntaDeRir, SelectRir,
+} from './ExerciseCard';
+import { rirPautadoPorSerie } from '../../utils/setPrefill';
 import type { TipoDeSemana } from '../../utils/tipoDeSemana';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -57,23 +61,28 @@ interface Props {
   onAddRestSeconds: (seconds: number) => void;
   /** F7a: semana de descarga, puente o vuelta de parón. En ellas no se sugiere subir carga. */
   tipoSemana?: TipoDeSemana | null;
+  /** D1c: cómo se le pide el RIR (ver `VarianteRir` en setInput.ts). Sin ella, la de hoy. */
+  varianteRir?: VarianteRir;
   key?: React.Key;
 }
 
 const CELDA = 'rounded-control border bg-field px-1 sm:px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed';
 
-export default function ParejaAlternaCard({ lados, restTimer, onSkipRest, onAddRestSeconds, tipoSemana }: Props) {
+export default function ParejaAlternaCard({ lados, restTimer, onSkipRest, onAddRestSeconds, tipoSemana, varianteRir = VARIANTE_RIR_POR_DEFECTO }: Props) {
   const nombres = lados.map(l => l.ex?.name || l.we.exerciseId);
-  // F23: una fila sin repeticiones no se marca; se avisa junto a ella. Un
-  // gancho por ejercicio de la pareja (siempre son dos).
+  // F23: una fila sin repeticiones no se marca; se avisa junto a ella. D1c:
+  // según la variante, tampoco sin elegir el RIR. Un gancho por ejercicio de
+  // la pareja (siempre son dos).
   const marcado = [
-    useMarcarSerie(lados[0].exSets, lados[0].onMarkDone),
-    useMarcarSerie(lados[1].exSets, lados[1].onMarkDone),
+    useMarcarSerie(lados[0].exSets, lados[0].onMarkDone, { variante: varianteRir, onUpdateSet: lados[0].onUpdateSet }),
+    useMarcarSerie(lados[1].exSets, lados[1].onMarkDone, { variante: varianteRir, onUpdateSet: lados[1].onUpdateSet }),
   ];
   const datos = lados.map(l => {
     const expanded = expandSetGroups(l.we);
     return {
       expanded,
+      // El RIR que ha pautado el coach en cada serie: el objetivo.
+      pautados: rirPautadoPorSerie(l.we),
       previas: l.prevEntry ? seriesPrincipales(l.prevEntry.sets) : [],
       hechas: l.exSets.filter(s => s.done).length,
       warmup: generateWarmup({
@@ -140,6 +149,11 @@ export default function ParejaAlternaCard({ lados, restTimer, onSkipRest, onAddR
                 {resumenRangosPautados(datos[k].expanded) && (
                   <span title="Repeticiones pautadas por tu entrenador" className="text-caption font-mono px-2 rounded-control bg-hairline text-ink-3 whitespace-nowrap">
                     {resumenRangosPautados(datos[k].expanded)}
+                  </span>
+                )}
+                {resumenRirPautado(datos[k].pautados) && (
+                  <span title="RIR pautado por tu entrenador" className="text-caption font-mono px-2 rounded-control bg-hairline text-ink-3 whitespace-nowrap">
+                    {resumenRirPautado(datos[k].pautados)}
                   </span>
                 )}
               </div>
@@ -290,15 +304,12 @@ export default function ParejaAlternaCard({ lados, restTimer, onSkipRest, onAddR
                     />
                   </td>
                   <td className="px-1.5 sm:px-3 py-2">
-                    <select
-                      value={setInput.rir}
-                      onChange={e => l.onUpdateSet(sIdx, 'rir', e.target.value)}
-                      disabled={setInput.done}
-                      aria-label={`RIR de ${nombres[t.ej]}, serie ${sIdx + 1}`}
-                      className={`w-12 sm:w-16 appearance-none bg-field border border-control-line rounded-control px-1 sm:px-2 py-2 text-center font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${rirClaseColor(setInput.rir)}`}
-                    >
-                      {RIR_OPCIONES.map(v => <option key={v} value={v}>{rirTexto(v)}</option>)}
-                    </select>
+                    <SelectRir
+                      fila={setInput} variante={varianteRir} pautado={d.pautados[sIdx]}
+                      onApuntar={valor => apuntarRir(l.onUpdateSet, sIdx, valor)}
+                      ancho="w-12 sm:w-16"
+                      etiqueta={`RIR de ${nombres[t.ej]}, serie ${sIdx + 1}`}
+                    />
                   </td>
                   <td className="px-2 sm:px-4 py-2 text-center">
                     <BotonSerieHecha hecha={setInput.done} onClick={() => marcado[t.ej].marcar(sIdx, !setInput.done)} />
@@ -307,6 +318,18 @@ export default function ParejaAlternaCard({ lados, restTimer, onSkipRest, onAddR
                 {marcado[t.ej].sinReps === sIdx && (
                   <tr className="border-b border-hairline">
                     <td colSpan={5} className="px-2 sm:px-4 pb-2"><AvisoSinReps /></td>
+                  </tr>
+                )}
+                {marcado[t.ej].sinRir === sIdx && (
+                  <tr className="border-b border-hairline">
+                    <td colSpan={5} className="px-2 sm:px-4 pb-2"><AvisoSinRir /></td>
+                  </tr>
+                )}
+                {marcado[t.ej].eligiendo === sIdx && (
+                  <tr className="border-b border-hairline bg-accent/[.03]">
+                    <td colSpan={5} className="px-2 sm:px-4 pt-1 pb-3">
+                      <PreguntaDeRir pautado={d.pautados[sIdx]} onElegir={valor => marcado[t.ej].elegirRir(sIdx, valor)} />
+                    </td>
                   </tr>
                 )}
                 </React.Fragment>

@@ -23,6 +23,10 @@ import { UMBRALES_PROTOCOLO } from './cdg/agujetas.js';
    usaba y aquí no se leían: salir muy cansado de las sesiones, agujetas de 4 o
    más dos semanas seguidas en una zona (escala 1-5) y el aviso de salto de
    carga. Cada una cuenta como UNA señal, igual que las demás.
+
+   17-11-2026 (D6r): el cansancio al salir puede venir de lo apuntado en cada
+   sesión (la media de la semana) en vez del cuestionario semanal. Entonces se
+   dice también de qué sesión salió peor: sigue siendo una sola señal.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /** Señales que tienen que coincidir para recomendar descarga. */
@@ -43,9 +47,12 @@ export interface SenalesDeDescarga {
   ejerciciosConDiasMalos?: number;
   /** Grupos con agujetas que no se van. */
   gruposConAgujetasCronicas?: number;
-  /** Cansancio al salir de las sesiones (0-10), la última respuesta vigente.
-   *  Señal con 8 o más (`UMBRALES_PROTOCOLO.fatigaPostAlta`). */
+  /** Cansancio al salir de las sesiones (0-10): la media de las sesiones de la
+   *  semana que lo lleven apuntado o, si no, la última respuesta vigente del
+   *  cuestionario. Señal con 8 o más (`UMBRALES_PROTOCOLO.fatigaPostAlta`). */
   cansancioAlSalir?: number;
+  /** Con el cansancio por sesión: de cuál salió peor («la del jueves, Pierna A») y su nota. */
+  sesionMasCansada?: { etiqueta: string; valor: number };
   /** Agujetas por zona en la escala 1-5 del curso: la de esta semana y la de la
    *  anterior. Señal si alguna zona lleva 4 o más las dos semanas. */
   agujetasPorZona?: readonly { nombre: string; valor: number; anterior?: number }[];
@@ -71,7 +78,10 @@ export function senalesActivas(s: SenalesDeDescarga): string[] {
   if ((s.ejerciciosConDiasMalos ?? 0) >= 2) t.push(`${s.ejerciciosConDiasMalos} ejercicios con sesiones seguidas empezando peor`);
   if ((s.gruposConAgujetasCronicas ?? 0) >= 2) t.push(`agujetas que no se van en ${s.gruposConAgujetasCronicas} grupos`);
   if (s.cansancioAlSalir != null && s.cansancioAlSalir >= UMBRALES_PROTOCOLO.fatigaPostAlta) {
-    t.push(`sale muy cansado de las sesiones (${s.cansancioAlSalir.toLocaleString('es-ES')}/10)`);
+    const nota = s.cansancioAlSalir.toLocaleString('es-ES');
+    t.push(s.sesionMasCansada
+      ? `sale muy cansado de las sesiones (${nota}/10 de media; ${s.sesionMasCansada.etiqueta}: ${s.sesionMasCansada.valor.toLocaleString('es-ES')}/10)`
+      : `sale muy cansado de las sesiones (${nota}/10)`);
   }
   const zonas = zonasQueNoSeRecuperan(s.agujetasPorZona);
   if (zonas.length > 0) t.push(`agujetas de ${AGUJETAS_ALTAS} o más dos semanas seguidas en ${listar(zonas.map(z => z.toLowerCase()))}`);

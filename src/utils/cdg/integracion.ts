@@ -13,10 +13,12 @@ import { cargaProgramada, semanaRealizadaDesdeLogs, type NombreCdgDe } from './a
 import type { ContextoPesoCorporal } from '../pesoCorporal.js'
 import { semanaRecortada } from './semanaBase.js'
 import {
-  avisosCarga, cargaAgudaCronica, calcularSemana, filasGestion, rendimientoCiclo, rendimientoSemana,
+  avisosCarga, cargaAgudaCronica, calcularSemana, filasGestion,
   SEMANAS_CARGA_CRONICA, SEMANAS_CARGA_MINIMAS, colapsarSemana, colapsarCarga, incrementosAntropometria,
   type CalculoSemana, type FilaGestion, type FilaRendimiento, type SemanaRealizada
 } from './seguimiento.js'
+// El RM de los registros de la app sale solo de las series válidas (rmValido.ts, 17-11-2026).
+import { rendimientoCicloDeRegistros, rendimientoSemanaDeRegistros } from './rendimientoDeRegistros.js'
 
 export interface UmbralesCarga { inferior: number; superior: number }
 export const UMBRALES_CARGA_POR_DEFECTO: UmbralesCarga = { inferior: 0.8, superior: 1.6 }
@@ -70,7 +72,7 @@ export function semanasRealizadasDelMeso (e: EntradaSemanas) {
       semana, realizada, logs: logs.length,
       calculo: calcularSemana(e.motor, realizada),
       gestion: filasGestion(semana, calcularSemana(e.motor, realizada)),
-      rendimiento: rendimientoSemana(`Semana ${semana}`, realizada)
+      rendimiento: rendimientoSemanaDeRegistros(`Semana ${semana}`, realizada)
     }
   })
   return { semanas, descartados }
@@ -228,7 +230,7 @@ export function semanasAnterioresAlBloque (e: {
 
 /** Mejora del ciclo por ejercicio y por categoría (Empuje, Tracción, Brazo, Pierna, Cadera). */
 export function rendimientoDelCiclo (motor: MotorCdg, semanas: SemanaSeguimiento[]) {
-  return rendimientoCiclo(
+  return rendimientoCicloDeRegistros(
     semanas.map(s => ({ semana: `Semana ${s.semana}`, filas: s.rendimiento })),
     nombre => motor.descripcion(nombre)?.category
   )

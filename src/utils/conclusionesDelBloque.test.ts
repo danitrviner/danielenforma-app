@@ -10,6 +10,7 @@ function cierre(over: {
   rirFinal?: number; ejercicios?: Partial<ProgresionEjercicio>[]; volumenPct?: number | null;
   patrones?: { clave: string; label: string; deltaMedioPct: number }[];
   gruposVolumen?: { label: string; pct: number; programadas: number }[];
+  sinMarca?: CierreMesociclo['progresion']['resumen']['sinMarca'];
 } = {}): CierreMesociclo {
   return {
     sesiones: { adherenciaPct: 'adherencia' in over ? over.adherencia : 90, completadas: 18, programadas: 20, registradas: 18 },
@@ -22,6 +23,8 @@ function cierre(over: {
         medianaPct: over.mediana === undefined ? 8 : over.mediana,
         mejoran: over.mejoran ?? 8, comparables: over.comparables ?? 10, estables: 1, bajan: 1,
         tonelajeSemanal: null, rir: over.rirFinal != null ? { inicio: 2, final: over.rirFinal } : null, kgMedioAnadido: null,
+        semanasComparables: 4, pocasSemanas: [],
+        sinMarca: over.sinMarca ?? { registros: 40, sinMarca: 0, porMotivo: {}, motivoPrincipal: null },
       },
       ejercicios: (over.ejercicios ?? []) as ProgresionEjercicio[],
       porPatron: (over.patrones ?? []).map(p => ({ ...p, ejercicios: 2, mejoran: 1, mejor: null })),
@@ -50,6 +53,43 @@ describe('buildConclusionesDelBloque', () => {
     const k = buildConclusionesDelBloque(cierre({ mediana: 9 }), evolucion());
     expect(ids(k.hallazgos)).toContain('funciona');
     expect(ids(k.acciones)).toContain('mantener');
+  });
+
+  // ── D4c (17-11-2026): el coach tiene que saber con qué dato se ha decidido ──
+  describe('dato de fuerza escaso (D4c)', () => {
+    const sinMarca = (n: number, motivo: 'rir_lejos' | 'rir_sin_apuntar' | 'reps_altas') =>
+      ({ registros: 40, sinMarca: n, porMotivo: { [motivo]: n }, motivoPrincipal: motivo });
+
+    it('con un tercio o más de las sesiones sin marca lo dice, con la cifra y el motivo', () => {
+      const k = buildConclusionesDelBloque(cierre({ mediana: 9, comparables: 4, sinMarca: sinMarca(16, 'rir_lejos') }), evolucion());
+      const h = k.hallazgos.find(x => x.id === 'dato_de_fuerza')!;
+      expect(h.tono).toBe('neutro');
+      expect(h.texto).toContain('en 16 de las 40 veces');
+      expect(h.texto).toContain('lo más frecuente: RIR de 3 o más');
+      expect(h.texto).toContain('sale de 4 ejercicios');
+      expect(k.acciones.find(x => x.id === 'dato_de_fuerza')!.texto).toContain('RIR 2 o menos');
+    });
+
+    it('la acción depende del motivo', () => {
+      const accion = (motivo: Parameters<typeof sinMarca>[1]) =>
+        buildConclusionesDelBloque(cierre({ sinMarca: sinMarca(20, motivo) }), evolucion()).acciones.find(x => x.id === 'dato_de_fuerza')!.texto;
+      expect(accion('rir_sin_apuntar')).toContain('apunte el RIR real');
+      expect(accion('reps_altas')).toContain('3 a 12 repeticiones');
+    });
+
+    it('por debajo de un tercio no hace ruido (la línea discreta del cierre ya lo cuenta)', () => {
+      const k = buildConclusionesDelBloque(cierre({ sinMarca: sinMarca(5, 'rir_lejos') }), evolucion());
+      expect(ids(k.hallazgos)).not.toContain('dato_de_fuerza');
+      expect(ids(k.acciones)).not.toContain('dato_de_fuerza');
+    });
+  });
+
+  it('por debajo del ruido la fuerza «se mantiene», y «ha funcionado» sigue pidiendo un 5 % (D4c)', () => {
+    const texto = (mediana: number) => buildConclusionesDelBloque(cierre({ mediana }), evolucion()).hallazgos;
+    expect(texto(2.9).find(h => h.id === 'estancado')!.texto).toMatch(/^La fuerza se mantiene: mediana de \+2,9%/);
+    expect(ids(texto(4.9))).toContain('progreso_lento');
+    expect(ids(texto(4.9))).not.toContain('funciona');
+    expect(ids(texto(5))).toContain('funciona');
   });
 
   it('sin progreso fuera de déficit: cambiar el estímulo', () => {

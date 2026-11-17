@@ -1,6 +1,7 @@
 import type { WorkoutEntryLog, WorkoutLog, WorkoutSetLog } from '../types.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
 import { descansoRealDelEjercicio } from './tiemposDeSerie.js';
+import { marcaDeSesion } from './marcaDeSesion.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Comparabilidad automática (S3, 11-11-2026)
@@ -47,6 +48,21 @@ export interface SesionDeEjercicio {
 
 const validas = (sets: readonly WorkoutSetLog[]) => seriesPrincipales(sets).filter(s => s.weight > 0 && s.repsDone > 0);
 
+/**
+ * La marca de una sesión del historial: el RM de su mejor serie VÁLIDA para
+ * estimarlo (`marcaDeSesion.ts`, D2 17-11-2026), o `null` si no tiene ninguna.
+ * Es la única definición para todo lo que compara sesiones (estancamiento,
+ * hipótesis): antes cada uno cogía el máximo de todas las series, y una
+ * sesión entera a RIR 4 daba «marca» igual.
+ *
+ * Ojo: las `validas` de arriba son otra cosa (series con peso y repeticiones,
+ * para saber si la TAREA es la misma); una sesión puede estar en el historial
+ * y no tener marca.
+ */
+export function marcaDelPunto(p: Pick<SesionDeEjercicio, 'entry'>): number | null {
+  return marcaDeSesion(p.entry.sets);
+}
+
 /** Sesiones del ejercicio con alguna serie válida, de la más antigua a la más nueva. */
 export function sesionesDelEjercicio(logs: readonly WorkoutLog[], exerciseId: string): SesionDeEjercicio[] {
   const salida: SesionDeEjercicio[] = [];
@@ -78,8 +94,15 @@ export function cambiosDeTarea(antes: SesionDeEjercicio, ahora: SesionDeEjercici
 
   const sA = validas(antes.entry.sets);
   const sB = validas(ahora.entry.sets);
+  // Solo con el RIR que apuntó el atleta: una serie guardada con el RIR
+  // pautado sin tocar (`rirApuntado === false`) no dice a cuánto paró, y
+  // compararla con una apuntada marcaba un «cambio de RIR» que no existía.
+  // Si en alguna de las dos sesiones no hay ninguno apuntado, no se compara.
   const rir = (s: WorkoutSetLog) => (s.alFallo ? 0 : s.rir ?? 0);
-  if (Math.abs(media(sA.map(rir)) - media(sB.map(rir))) >= 1) cambios.push('rir');
+  const conRir = (ss: WorkoutSetLog[]) => ss.filter(s => s.alFallo || s.rirApuntado !== false).map(rir);
+  const rA = conRir(sA);
+  const rB = conRir(sB);
+  if (rA.length > 0 && rB.length > 0 && Math.abs(media(rA) - media(rB)) >= 1) cambios.push('rir');
 
   // Otro rango: las reps se van 3 o más para un lado y el peso para el otro.
   // Mismas reps de menos con el mismo peso es rendir peor, no otro rango.
