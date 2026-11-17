@@ -5,6 +5,7 @@ import {
   labelIncludesAny, nombreVetadoPorCondicion,
 } from './menuComplements.js';
 import { normalizeStr } from './foodPrefs.js';
+import { fueraDeTemporada, mesDe } from './temporadaDeFruta.js';
 import { sinNegativos, restarMacros } from './macros.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -132,6 +133,16 @@ export interface OpcionesDeExtras {
   allergies?: readonly string[];
   conditions?: readonly number[];
   dietType?: DietType;
+  /** Extras que el atleta ha puesto ÉL en sus menús (`extrasElegidos` de
+   *  gustosDelAtleta): el que cambió el plátano por la manzana ve manzana más
+   *  veces. alimentoId → veces. */
+  elegidos?: Readonly<Record<string, number>>;
+  /** Solo estos alimentos (ids): el coach ha elegido qué frutas valen en esa
+   *  ingesta. Vacío o ausente = las que haya. */
+  soloEstos?: readonly string[];
+  /** Mes (1-12) para el que se genera: la fruta de temporada sale antes
+   *  (temporadaDeFruta.ts). Por defecto, el de hoy. */
+  mes?: number;
 }
 
 const nombreTiene = (nombre: string, lista: readonly string[] | undefined): boolean => {
@@ -139,7 +150,15 @@ const nombreTiene = (nombre: string, lista: readonly string[] | undefined): bool
   return !!lista?.some(x => { const q = normalizeStr(x); return !!q && n.includes(q); });
 };
 
-export interface CandidatoAExtra { a: AlimentoCatalogo; familia: FamiliaDeExtra; gusta: boolean }
+export interface CandidatoAExtra {
+  a: AlimentoCatalogo;
+  familia: FamiliaDeExtra;
+  gusta: boolean;
+  /** Veces que el atleta lo ha puesto él en sus menús. */
+  elegido?: number;
+  /** Fruta que no toca este mes (sandía en enero). */
+  fuera?: boolean;
+}
 
 /** Los alimentos del catálogo que pueden ser extra de este atleta, ordenados:
  *  primero los que le gustan, luego por nombre (mismo menú, mismos extras). */
@@ -151,7 +170,9 @@ export function alimentosParaExtras(catalogo: readonly AlimentoCatalogo[], o: Op
     if (o.dietType === 'vegano' && familia === 'lacteo' && !/soja|vegetal|coco|almendra|avena/i.test(a.nombre)) continue;
     if (nombreTiene(a.nombre, o.allergies) || nombreTiene(a.nombre, o.disliked)) continue;
     if (nombreVetadoPorCondicion(a.nombre, o.conditions)) continue;
-    out.push({ a, familia, gusta: nombreTiene(a.nombre, o.liked) });
+    const elegido = o.elegidos?.[a.id] ?? 0;
+    const fuera = fueraDeTemporada(a.nombre, o.mes ?? mesDe());
+    out.push({ a, familia, gusta: nombreTiene(a.nombre, o.liked), ...(elegido > 0 ? { elegido } : {}), ...(fuera ? { fuera: true } : {}) });
   }
   return out.sort((x, y) => Number(y.gusta) - Number(x.gusta) || x.a.nombre.localeCompare(y.a.nombre, 'es'));
 }
@@ -165,6 +186,20 @@ const FAMILIAS_POR_MACRO: Record<Macro, FamiliaDeExtra[]> = {
 const KCAL_G: Record<Macro, number> = { p: 4, hc: 4, g: 9 };
 const CASTIGO_MEDIA_PIEZA = 15;
 const BONO_GUSTA = 25;
+/** Lo que pesa haber servido ya ese alimento (por vez). Sin esto el mismo
+ *  alimento gana siempre —«siempre el puto plátano» (Dani, 17-11-2026)— porque
+ *  la elección es determinista y la pieza que mejor tapa el hueco no cambia. */
+const CASTIGO_POR_VEZ_SERVIDA = 40;
+/** Lo que pesa que el atleta haya puesto ÉL ese extra, por vez y hasta dos. */
+const BONO_ELEGIDO_POR_EL = 30;
+const MAX_VECES_ELEGIDO = 2;
+/** Lo que pesa que la fruta no sea de este mes. No es un veto —si no cabe
+ *  ninguna de temporada, mejor fruta de invernadero que ninguna—, pero pesa
+ *  más que repetir toda la semana: antes manzana siete días que sandía en
+ *  enero. */
+const CASTIGO_FUERA_DE_TEMPORADA = 400;
+/** Lo que pesa estrenar otra fruta cuando la semana ya llega a su tope. */
+const CASTIGO_FRUTA_DE_MAS = 250;
 
 /**
  * Elige hasta `max` extras del catálogo para tapar `hueco`, macro a macro
@@ -174,11 +209,29 @@ const BONO_GUSTA = 25;
  * piezas enteras. Si ninguna cantidad cabe, esa macro se deja: el que llama
  * la arrastra a otra comida.
  */
+export interface OpcionesDeEleccion {
+  /** Veces que ya se ha servido cada alimento (alimentoId → veces), para que
+   *  el menú no repita el mismo. Se muta al elegir, así que el día siguiente
+   *  ve lo que llevan los anteriores. */
+  veces?: Map<string, number>;
+  /** Frutas DISTINTAS como mucho en la semana: con 2, el resto de días repiten
+   *  las que ya están (la compra no se llena de fruta que se estropea). */
+  topeDeFrutas?: number;
+}
+
 export function elegirExtras(
   hueco: Macros,
   candidatos: readonly CandidatoAExtra[],
   max = 2,
+  opts: OpcionesDeEleccion = {},
 ): MenuComplement[] {
+  const { veces, topeDeFrutas } = opts;
+  // Frutas distintas que lleva ya la semana (de las que conoce esta llamada).
+  const frutasYa = new Set<string>();
+  if (veces) for (const id of veces.keys()) {
+    if (candidatos.find(c => c.a.id === id)?.familia === 'fruta') frutasYa.add(id);
+  }
+  const topeLleno = topeDeFrutas != null && frutasYa.size >= topeDeFrutas;
   const out: MenuComplement[] = [];
   let resto = sinNegativos(hueco);
   const usados = new Set<string>();
@@ -195,13 +248,20 @@ export function elegirExtras(
         const faltaTras = (resto[m] - mac[m]) * KCAL_G[m];
         const piezas = cand.a.unidad ? gramos / cand.a.unidad.gramos : null;
         const media = piezas != null && Math.abs(piezas - Math.round(piezas)) > 1e-6;
-        const orden = faltaTras + (media ? CASTIGO_MEDIA_PIEZA : 0) - (cand.gusta ? BONO_GUSTA : 0);
+        const orden = faltaTras
+          + (media ? CASTIGO_MEDIA_PIEZA : 0)
+          - (cand.gusta ? BONO_GUSTA : 0)
+          + CASTIGO_POR_VEZ_SERVIDA * (veces?.get(cand.a.id) ?? 0)
+          - BONO_ELEGIDO_POR_EL * Math.min(MAX_VECES_ELEGIDO, cand.elegido ?? 0)
+          + (cand.fuera ? CASTIGO_FUERA_DE_TEMPORADA : 0)
+          + (topeLleno && cand.familia === 'fruta' && !frutasYa.has(cand.a.id) ? CASTIGO_FRUTA_DE_MAS : 0);
         if (!mejor || orden < mejor.orden) mejor = { c: extraDeCatalogo(cand.a, gramos), orden };
       }
     }
     if (!mejor) continue;
     out.push(mejor.c);
     usados.add(mejor.c.alimentoId!);
+    if (veces) veces.set(mejor.c.alimentoId!, (veces.get(mejor.c.alimentoId!) ?? 0) + 1);
     resto = sinNegativos(restarMacros(resto, mejor.c.macros!));
   }
   return out;

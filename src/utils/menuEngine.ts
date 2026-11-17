@@ -1,5 +1,5 @@
 import { type ListaDeMenu } from './accesoARecetas.js';
-import { complementoDeExtraFijo, idsCerrados, tocaElDia, type ExtraFijo, type RecetasDeIngesta } from './ingestaPersonalizada.js';
+import { complementoDeExtraFijo, extraDelDia, idsCerrados, type ExtraFijo, type RecetasDeIngesta } from './ingestaPersonalizada.js';
 import { aplicarSeleccion, type PaqueteDeRecetas, type SeleccionDeRecetas } from './seleccionDeRecetas.js';
 import { recetasOcultas, type AmbitoDeRegla, type ReglaDeReceta } from './reglasDeReceta.js';
 import {
@@ -208,8 +208,13 @@ export interface MealSlotSpec {
   fruta?: FrutaEnIngesta;
   /** De qué recetas tira esta ingesta (ingestaPersonalizada.ts). Ausente = su lista. */
   recetas?: RecetasDeIngesta;
-  /** Algo fijo además del plato, los días que diga el coach. */
+  /** Qué frutas admite el coach en esa ingesta (ids del catálogo). Ausente o
+   *  vacío = cualquiera. Solo cuenta con «plato + fruta» y «solo fruta». */
+  frutas?: string[];
+  /** Algo fijo además del plato, los días que diga el coach. `extra` es el
+   *  legado (uno solo); `extras` son varios que van rotando. */
   extra?: ExtraFijo;
+  extras?: ExtraFijo[];
 }
 
 export type FrutaEnIngesta = 'mas' | 'solo';
@@ -249,6 +254,11 @@ export interface GeneratorPrefs {
   /** Lo que el atleta ha cambiado en sus menús (`senalesDeCambios`): recetas
    *  que quita, que elige y alimentos que sustituye siempre. */
   cambios?: SenalesDeCambios;
+  /** Frutas DISTINTAS como mucho en la semana (`ReglasDeReceta.topeDeFrutas`). */
+  topeDeFrutas?: number;
+  /** Mes (1-12) para el que se genera; por defecto el de hoy. Lo fijan los
+   *  tests, para que la fruta de temporada no dependa del día que corran. */
+  mes?: number;
   /** Lo que contestó en el arranque de gustos (`RecipeFavorites.arranque`). */
   arranque?: { si: readonly string[]; no: readonly string[] };
 }
@@ -870,7 +880,14 @@ function acotarAcompanamientos(propuestos: MenuComplement[], topeKcal = MAX_KCAL
    Con el catálogo de alimentos a mano, los acompañamientos salen de ahí en
    gramos reales y piezas (utils/extrasDelCatalogo.ts). Sin catálogo (tests,
    sin red) se sigue con el banco de intercambios. */
-export interface ExtrasDelCatalogo { candidatos: CandidatoAExtra[] }
+export interface ExtrasDelCatalogo {
+  candidatos: CandidatoAExtra[];
+  /** Veces que lleva servido cada alimento en lo que va de semana. Se muta: así
+   *  el menú no repite siempre la misma fruta (Dani, 17-11-2026). */
+  veces: Map<string, number>;
+  /** Frutas distintas como mucho en la semana (`GeneratorPrefs.topeDeFrutas`). */
+  topeDeFrutas?: number;
+}
 
 /** Lo que hace falta de las preferencias para elegir extras (una interfaz, no
  *  un `Pick`: el comprobador de iconos lee los literales de tipo). */
@@ -880,18 +897,30 @@ export interface PrefsDeExtras {
   allergies: readonly string[];
   conditions?: readonly number[];
   dietType?: DietType;
+  /** Lo que el atleta ha hecho con sus menús: de aquí salen los extras que se
+   *  pone él (`extrasElegidos`), que le salen más veces. */
+  cambios?: Pick<SenalesDeCambios, 'extrasElegidos'>;
+  /** Frutas distintas como mucho en la semana. Ausente = sin tope. */
+  topeDeFrutas?: number;
+  /** Mes (1-12) para el que se genera; por defecto el de hoy. Solo los tests
+   *  lo fijan: así la fruta de temporada no depende del día que se ejecuten. */
+  mes?: number;
 }
 
 /** Los alimentos del catálogo que pueden ser extra de este atleta. Null si no hay catálogo o no sale ninguno. */
 export function prepararExtras(
   catalogo: readonly AlimentoCatalogo[] | undefined,
   prefs: PrefsDeExtras,
+  /** Contador de la SEMANA (lo crea `generateWeek`): sin él, cada día empieza
+   *  de cero y vuelve a salir la misma fruta todos los días. */
+  veces?: Map<string, number>,
 ): ExtrasDelCatalogo | null {
   if (!catalogo || catalogo.length === 0) return null;
   const candidatos = alimentosParaExtras(catalogo, {
     liked: prefs.liked, disliked: prefs.disliked, allergies: prefs.allergies, conditions: prefs.conditions, dietType: prefs.dietType,
+    elegidos: prefs.cambios?.extrasElegidos, mes: prefs.mes,
   });
-  return candidatos.length > 0 ? { candidatos } : null;
+  return candidatos.length > 0 ? { candidatos, veces: veces ?? new Map(), ...(prefs.topeDeFrutas ? { topeDeFrutas: prefs.topeDeFrutas } : {}) } : null;
 }
 
 /** Más ración del mismo ingrediente se suma a la que ya había, no se duplica la línea. */
@@ -944,8 +973,14 @@ const MAX_FRUTAS_SOLO = 3;
 export function frutaParaComida(
   hueco: Macros, cuantas: number, extras: ExtrasDelCatalogo | null,
   foods: MealItem[], mode: DietMode, conditions?: readonly number[],
+  /** Las frutas que el coach admite en esa ingesta (`MealSlotSpec.frutas`).
+   *  Vacío = las que haya. Si ninguna de las suyas cabe, se cae a todas: más
+   *  vale una fruta distinta que ninguna. */
+  soloEstas?: readonly string[],
 ): MenuComplement[] {
-  const frutas = extras?.candidatos.filter(c => c.familia === 'fruta') ?? [];
+  const todas = extras?.candidatos.filter(c => c.familia === 'fruta') ?? [];
+  const suyas = soloEstas && soloEstas.length > 0 ? todas.filter(c => soloEstas.includes(c.a.id)) : todas;
+  const frutas = suyas.length > 0 ? suyas : todas;
   if (frutas.length === 0) {
     const delBanco = foods.filter(f => ES_FRUTA.test(f.label));
     return fillComplements(hueco, delBanco, mode, conditions).slice(0, cuantas).map(c => ({ ...c, obligatoria: true }));
@@ -954,7 +989,7 @@ export function frutaParaComida(
   const usadas = new Set<string>();
   let resto = sinNegativos(hueco);
   for (let n = 0; n < cuantas; n++) {
-    const [c] = elegirExtras(resto, frutas.filter(f => !usadas.has(f.a.id)), 1);
+    const [c] = elegirExtras(resto, frutas.filter(f => !usadas.has(f.a.id)), 1, { veces: extras?.veces, topeDeFrutas: extras?.topeDeFrutas });
     if (!c) break;
     out.push({ ...c, obligatoria: true });
     usadas.add(c.alimentoId!);
@@ -964,14 +999,17 @@ export function frutaParaComida(
 }
 
 /** La pieza de postre de «plato + fruta»: lo que quepa hasta ~20 g de hidratos. */
-function postreDeFruta(objetivo: Macros, extras: ExtrasDelCatalogo | null, foods: MealItem[], mode: DietMode, conditions?: readonly number[]): MenuComplement[] {
+function postreDeFruta(objetivo: Macros, extras: ExtrasDelCatalogo | null, foods: MealItem[], mode: DietMode, conditions?: readonly number[], frutas?: readonly string[]): MenuComplement[] {
   const hueco = conKcal({ p: objetivo.p, hc: Math.min(objetivo.hc, HC_FRUTA_DE_POSTRE), g: objetivo.g });
-  return frutaParaComida(hueco, 1, extras, foods, mode, conditions);
+  return frutaParaComida(hueco, 1, extras, foods, mode, conditions, frutas);
 }
 
-/** El extra fijo del coach para esa ingesta, si toca ese día. */
-export function extraFijoDelDia(slot: Pick<MealSlotSpec, 'extra' | 'fruta'>, day: WeekDay): MenuComplement[] {
-  return slot.extra && slot.fruta !== 'solo' && tocaElDia(slot.extra, day) ? [complementoDeExtraFijo(slot.extra)] : [];
+/** El extra fijo del coach para esa ingesta, si toca ese día. Con varios
+ *  caprichos, el que le toca el turno (ingestaPersonalizada.ts). */
+export function extraFijoDelDia(slot: Pick<MealSlotSpec, 'extra' | 'extras' | 'fruta'>, day: WeekDay): MenuComplement[] {
+  if (slot.fruta === 'solo') return [];
+  const extra = extraDelDia(slot, day);
+  return extra ? [complementoDeExtraFijo(extra)] : [];
 }
 
 /** Lo que la ingesta lleva sí o sí además del plato: la fruta de postre y el
@@ -981,7 +1019,7 @@ function fijosDeLaIngesta(
   foods: MealItem[], mode: DietMode, conditions?: readonly number[],
 ): MenuComplement[] {
   const extra = extraFijoDelDia(slot, day);
-  const fruta = slot.fruta === 'mas' ? postreDeFruta(sinLaFruta(objetivo, extra), extras, foods, mode, conditions) : [];
+  const fruta = slot.fruta === 'mas' ? postreDeFruta(sinLaFruta(objetivo, extra), extras, foods, mode, conditions, slot.frutas) : [];
   return [...fruta, ...extra];
 }
 
@@ -1103,7 +1141,7 @@ function finalizeDay(
     let puesto: Macros = { ...VACIO };
     if (conExtras) {
       const propuestos = extras
-        ? elegirExtras(quiere, extras.candidatos, MAX_ACOMPANAMIENTOS_POR_COMIDA)
+        ? elegirExtras(quiere, extras.candidatos, MAX_ACOMPANAMIENTOS_POR_COMIDA, { veces: extras.veces, topeDeFrutas: extras.topeDeFrutas })
         : fillComplements(quiere, foods, mode, conditions);
       const nuevos = acotarAcompanamientos(propuestos, MAX_KCAL_ACOMPANAMIENTOS_DIA - kcalAcompDia);
       meal.complements.push(...nuevos);
@@ -1180,6 +1218,8 @@ export interface GenerateDayArgs {
   catalogo?: readonly AlimentoCatalogo[];
   /** Se muta: veces que ha salido cada receta de una ingesta cerrada (rotación). */
   vecesCerradas?: Map<string, number>;
+  /** Se muta: veces que lleva servido cada extra del catálogo esta semana. */
+  vecesExtras?: Map<string, number>;
 }
 
 function bumpDishType(map: Map<DishType, number>, dt: DishType): void {
@@ -1198,14 +1238,14 @@ export function generateDay(args: GenerateDayArgs): MenuDay {
   // Franja a franja, recalculando lo que QUEDA del día: el pico que deja una
   // comida (la escala va de 0,25 en 0,25) lo absorbe la siguiente en vez de
   // sumarse. Nunca por debajo de cero.
-  const extras = prepararExtras(args.catalogo, prefs);
+  const extras = prepararExtras(args.catalogo, prefs, args.vecesExtras);
   let restante: Macros = { ...target };
   const meals: MenuMeal[] = slots.map((slot, i) => {
     const disponible = sinNegativos(restante);
     const objetivoFranja = slotTargets(conKcal(disponible), slots.slice(i))[0] ?? targets[i];
     const id = `${day}_m${i + 1}`;
     if (slot.fruta === 'solo') {
-      const meal = comidaDeFruta(id, slot, frutaParaComida(objetivoFranja, MAX_FRUTAS_SOLO, extras, foods, mode, prefs.conditions));
+      const meal = comidaDeFruta(id, slot, frutaParaComida(objetivoFranja, MAX_FRUTAS_SOLO, extras, foods, mode, prefs.conditions, slot.frutas));
       restante = restarMacros(restante, macrosDeLaComida(meal));
       return meal;
     }
@@ -1315,7 +1355,7 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
 
     const meals: MenuMeal[] = slots.map((slot, i) => {
       const id = `${day}_m${i + 1}`;
-      if (slot.fruta === 'solo') return comidaDeFruta(id, slot, frutaParaComida(targets[i], MAX_FRUTAS_SOLO, extras, foods, mode, prefs.conditions));
+      if (slot.fruta === 'solo') return comidaDeFruta(id, slot, frutaParaComida(targets[i], MAX_FRUTAS_SOLO, extras, foods, mode, prefs.conditions, slot.frutas));
       // La de tanda lleva su ración de siempre; la fruta de postre va aparte.
       const postre = fijosDeLaIngesta(slot, day, targets[i], extras, foods, mode, prefs.conditions);
       const fija = fijasDelDia[i];
@@ -1352,6 +1392,9 @@ export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
   const globalDishTypes = new Map<DishType, number>();
   const perDietDishTypes = new Map<string, Map<DishType, number>>();
   const vecesCerradas = new Map<string, number>();
+  // Un solo contador de extras para toda la semana: si cada día empezara de
+  // cero, la misma pieza de fruta ganaría los siete días.
+  const vecesExtras = new Map<string, number>();
   // Qué ingestas llevan extra fijo cada día: el postre puede tocar solo algunos.
   const patronDeFijos = (d: WeekDay) => slots.map(sl => (extraFijoDelDia(sl, d).length > 0 ? '1' : '0')).join('');
   const cuantosFijos = (d: WeekDay) => slots.filter(sl => extraFijoDelDia(sl, d).length > 0).length;
@@ -1371,7 +1414,7 @@ export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
         // demás se les rellena lo que el extra deja libre; al revés habría que
         // quitarle plato a un día ya hecho.
         const modelo = WEEK_DAYS.filter(d => schedule[d] === diet.id).reduce((mejor, d) => (cuantosFijos(d) > cuantosFijos(mejor) ? d : mejor), day);
-        template = generateDay({ day: modelo, diet, slots, pools, foods, prefs, usedIds: new Set(), mode, balanceSemana, catalogo: args.catalogo, vecesCerradas });
+        template = generateDay({ day: modelo, diet, slots, pools, foods, prefs, usedIds: new Set(), mode, balanceSemana, catalogo: args.catalogo, vecesCerradas, vecesExtras });
         perDietTemplate.set(diet.id, template);
       }
       const clon: MenuDay = { ...template, day, meals: template.meals.map((m, i) => ({ ...m, id: `${day}_m${i + 1}` })) };
@@ -1388,9 +1431,9 @@ export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
       perDietUsed.set(diet.id, usedIds);
       const usedDishTypes = perDietDishTypes.get(diet.id) ?? new Map<DishType, number>();
       perDietDishTypes.set(diet.id, usedDishTypes);
-      return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds, usedDishTypes, mode, balanceSemana, catalogo: args.catalogo, vecesCerradas }));
+      return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds, usedDishTypes, mode, balanceSemana, catalogo: args.catalogo, vecesCerradas, vecesExtras }));
     }
-    return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds: globalUsed, usedDishTypes: globalDishTypes, mode, balanceSemana, catalogo: args.catalogo, vecesCerradas }));
+    return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds: globalUsed, usedDishTypes: globalDishTypes, mode, balanceSemana, catalogo: args.catalogo, vecesCerradas, vecesExtras }));
   });
 }
 

@@ -11,6 +11,7 @@ import {
 import { macrosDelPlato } from './menuMacros';
 import { buildShoppingList } from './menuShoppingList';
 import { computeMenuAdherenceRate } from './nutritionAnalysis';
+import { SIN_SENALES } from './gustosDelAtleta';
 
 function recipe(overrides: Partial<Recipe>): Recipe {
   return {
@@ -917,7 +918,7 @@ describe('fidelidad de la receta, extras y gustos (Dani, 27-10-2026)', () => {
     const b = recipe({ id: 'b', name: 'Plato B', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
     const c = recipe({ id: 'c', name: 'Plato C', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
     const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
-    const cambios = { evitadas: { a: 2 }, elegidas: { c: 1 }, sustituciones: {} };
+    const cambios = { evitadas: { a: 2 }, elegidas: { c: 1 }, sustituciones: {}, extrasElegidos: {} };
     const ranked = rankCandidates([a, b, c], mx(target), { ...basePrefs, cambios }, new Set());
     expect(ranked.map(r => r.recipe.id)).toEqual(['c', 'b', 'a']);
   });
@@ -937,7 +938,7 @@ describe('fidelidad de la receta, extras y gustos (Dani, 27-10-2026)', () => {
     const day = generateDay({
       day: 'mon', diet: diet({ budget: { HC: 2, PROT: 2, GRASA: 1, MIX_HC: 0, MIX_GRASA: 0 } }), slots,
       pools: { 1: [conLeche] }, foods: [], usedIds: new Set(),
-      prefs: { ...basePrefs, cambios: { evitadas: {}, elegidas: {}, sustituciones: { leche: 'Bebida de avena' } } },
+      prefs: { ...basePrefs, cambios: { evitadas: {}, elegidas: {}, sustituciones: { leche: 'Bebida de avena' }, extrasElegidos: {} } },
     });
     expect(day.meals[0].ingredientSwaps).toEqual([{ from: 'Leche', to: 'Bebida de avena' }]);
   });
@@ -1153,5 +1154,127 @@ describe('ingesta a medida: recetas cerradas y extra fijo (Dani, 11-2026)', () =
     const alternativas = findSwapAlternatives(day, day.meals[0].id, pools[1], basePrefs, Infinity, 'OMNIVORO', [], new Set(['a', 'b', 'c']));
     expect(alternativas.length).toBeGreaterThan(0);
     expect(alternativas.every(c => ['a', 'b', 'c'].includes(c.recipe.id))).toBe(true);
+  });
+});
+
+describe('la fruta no es siempre la misma (Dani, 17-11-2026)', () => {
+  const fruta = (id: string, nombre: string, kcal: number, hc: number, gramos: number) =>
+    ({ id, nombre, estado: 'listo' as const, porCien: { kcal, p: 0.8, hc, g: 0.3 }, unidad: { nombre: 'unidad', gramos } });
+  const PLATANO = fruta('platano', 'Plátano', 89, 22.8, 100);
+  const MANZANA = fruta('manzana', 'Manzana', 52, 13.8, 150);
+  const NARANJA = fruta('naranja', 'Naranja', 47, 11.8, 180);
+  const PERA = fruta('pera', 'Pera', 57, 15.2, 170);
+  const catalogo = [PLATANO, MANZANA, NARANJA, PERA];
+  const SEMANA = { mon: 'd1', tue: 'd1', wed: 'd1', thu: 'd1', fri: 'd1', sat: 'd1', sun: 'd1' };
+  const plato = (id: string) => recipe({ id, name: id, exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+  const pools = { 1: ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map(plato), 3: ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7'].map(plato) };
+  const dieta = diet({ budget: { HC: 8, PROT: 6, GRASA: 3, MIX_HC: 0, MIX_GRASA: 0 } });
+  const slots: MealSlotSpec[] = [{ slot: 1, name: 'Desayuno', pct: 40 }, { slot: 3, name: 'Comida', pct: 60, fruta: 'mas' }];
+  const postres = (week: MenuDay[]) => week.map(d => d.meals[1].complements.filter(c => c.obligatoria).map(c => c.alimentoId).join());
+
+  it('reparte la fruta del postre por la semana en vez de repetir el plátano', () => {
+    const week = generateWeek({ schedule: SEMANA, diets: [dieta], slots, pools, foods: [], prefs: { ...basePrefs, variety: 4, mes: 12 }, catalogo });
+    const servidas = postres(week);
+    expect(servidas.every(Boolean)).toBe(true);
+    expect(new Set(servidas).size).toBeGreaterThan(1);
+    // Ninguna fruta se lleva la semana entera.
+    for (const id of catalogo.map(f => f.id)) expect(servidas.filter(x => x === id).length).toBeLessThanOrEqual(3);
+  });
+
+  it('con las frutas que elige el coach, solo salen esas', () => {
+    const soloDos: MealSlotSpec[] = [slots[0], { ...slots[1], frutas: ['manzana', 'naranja'] }];
+    const week = generateWeek({ schedule: SEMANA, diets: [dieta], slots: soloDos, pools, foods: [], prefs: { ...basePrefs, variety: 4, mes: 12 }, catalogo });
+    const servidas = postres(week);
+    expect(servidas.every(x => x === 'manzana' || x === 'naranja')).toBe(true);
+    expect(new Set(servidas).size).toBe(2);
+  });
+
+  it('una sola fruta elegida sale todos los días', () => {
+    const soloUna: MealSlotSpec[] = [slots[0], { ...slots[1], frutas: ['pera'] }];
+    const week = generateWeek({ schedule: SEMANA, diets: [dieta], slots: soloUna, pools, foods: [], prefs: { ...basePrefs, mes: 12 }, catalogo });
+    expect(postres(week).every(x => x === 'pera')).toBe(true);
+  });
+
+  it('si la fruta elegida no está en el catálogo, sale otra antes que ninguna', () => {
+    const fantasma: MealSlotSpec[] = [slots[0], { ...slots[1], frutas: ['chirimoya'] }];
+    const week = generateWeek({ schedule: SEMANA, diets: [dieta], slots: fantasma, pools, foods: [], prefs: { ...basePrefs, mes: 12 }, catalogo });
+    expect(postres(week).every(Boolean)).toBe(true);
+  });
+
+  it('la fruta que se pone el atleta le sale más veces', () => {
+    const cambios = { ...SIN_SENALES, extrasElegidos: { naranja: 2 } };
+    const week = generateWeek({ schedule: SEMANA, diets: [dieta], slots, pools, foods: [], prefs: { ...basePrefs, variety: 4, cambios, mes: 12 }, catalogo });
+    const servidas = postres(week);
+    const naranjas = servidas.filter(x => x === 'naranja').length;
+    expect(naranjas).toBeGreaterThanOrEqual(2);
+    expect(naranjas).toBeLessThan(servidas.length);
+  });
+});
+
+describe('temporada, tope de frutas y caprichos que rotan (Dani, 17-11-2026)', () => {
+  const alimento = (id: string, nombre: string, kcal: number, hc: number, gramos: number) =>
+    ({ id, nombre, estado: 'listo' as const, porCien: { kcal, p: 0.8, hc, g: 0.3 }, unidad: { nombre: 'unidad', gramos } });
+  const SANDIA = alimento('sandia', 'Sandía', 30, 7.6, 300);
+  const MANZANA = alimento('manzana', 'Manzana', 52, 13.8, 150);
+  const PLATANO = alimento('platano', 'Plátano', 89, 22.8, 100);
+  const PERA = alimento('pera', 'Pera', 57, 15.2, 170);
+  const NARANJA = alimento('naranja', 'Naranja', 47, 11.8, 180);
+  const SEMANA = { mon: 'd1', tue: 'd1', wed: 'd1', thu: 'd1', fri: 'd1', sat: 'd1', sun: 'd1' };
+  const plato = (id: string) => recipe({ id, name: id, exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+  const pools = { 1: ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map(plato), 3: ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7'].map(plato) };
+  const dieta = diet({ budget: { HC: 8, PROT: 6, GRASA: 3, MIX_HC: 0, MIX_GRASA: 0 } });
+  const conFruta: MealSlotSpec[] = [{ slot: 1, name: 'Desayuno', pct: 40 }, { slot: 3, name: 'Comida', pct: 60, fruta: 'mas' }];
+  const postres = (week: MenuDay[]) => week.map(d => d.meals[1].complements.filter(c => c.obligatoria).map(c => c.alimentoId).join());
+
+  it('en enero no pone sandía', () => {
+    const week = generateWeek({ schedule: SEMANA, diets: [dieta], slots: conFruta, pools, foods: [], prefs: { ...basePrefs, variety: 4, mes: 1 }, catalogo: [SANDIA, MANZANA] });
+    // La de temporada gana siempre que quepa; la sandía solo asoma los días
+    // en los que la manzana no entra en el hueco (mejor eso que quedarse sin).
+    const enero = postres(week).filter(x => x.includes('sandia')).length;
+    const julio = postres(generateWeek({ schedule: SEMANA, diets: [dieta], slots: conFruta, pools, foods: [], prefs: { ...basePrefs, variety: 4, mes: 7 }, catalogo: [SANDIA, MANZANA] })).filter(x => x.includes('sandia')).length;
+    expect(enero).toBeLessThanOrEqual(2);
+    expect(julio).toBeGreaterThan(enero);
+  });
+
+  it('con tope de 2, la semana no estrena una tercera fruta', () => {
+    const week = generateWeek({
+      schedule: SEMANA, diets: [dieta], slots: conFruta, pools, foods: [],
+      prefs: { ...basePrefs, variety: 4, mes: 12, topeDeFrutas: 2 }, catalogo: [PLATANO, MANZANA, PERA, NARANJA],
+    });
+    const distintas = new Set(postres(week).filter(Boolean));
+    expect(distintas.size).toBeLessThanOrEqual(2);
+    expect(distintas.size).toBeGreaterThan(0);
+  });
+
+  it('sin tope salen más frutas distintas', () => {
+    const week = generateWeek({
+      schedule: SEMANA, diets: [dieta], slots: conFruta, pools, foods: [],
+      prefs: { ...basePrefs, variety: 4, mes: 12 }, catalogo: [PLATANO, MANZANA, PERA, NARANJA],
+    });
+    expect(new Set(postres(week).filter(Boolean)).size).toBeGreaterThan(2);
+  });
+
+  it('dos caprichos en la misma comida van rotando por días', () => {
+    const capricho = (id: string, nombre: string, kcal: number) =>
+      ({ alimentoId: id, nombre, porCien: { kcal, p: 5, hc: 20, g: 10 }, piezas: 1, unidad: 'onza', gramosPorPieza: 10 });
+    const slots: MealSlotSpec[] = [
+      { slot: 1, name: 'Desayuno', pct: 40 },
+      { slot: 3, name: 'Comida', pct: 60, extras: [capricho('choco', 'Chocolate', 600), capricho('helado', 'Helado', 200)] },
+    ];
+    const week = generateWeek({ schedule: SEMANA, diets: [dieta], slots, pools, foods: [], prefs: { ...basePrefs, variety: 4, mes: 12 } });
+    const fijos = week.map(d => d.meals[1].complements.filter(c => c.fijo).map(c => c.alimentoId).join());
+    expect(fijos.every(Boolean)).toBe(true);
+    expect(new Set(fijos)).toEqual(new Set(['choco', 'helado']));
+    // Lunes y martes no llevan el mismo.
+    expect(fijos[0]).not.toBe(fijos[1]);
+  });
+
+  it('el capricho de siempre (un solo extra) sigue saliendo todos sus días', () => {
+    const slots: MealSlotSpec[] = [
+      { slot: 1, name: 'Desayuno', pct: 40 },
+      { slot: 3, name: 'Comida', pct: 60, extra: { alimentoId: 'choco', nombre: 'Chocolate', porCien: { kcal: 600, p: 5, hc: 20, g: 50 }, piezas: 1, unidad: 'onza', gramosPorPieza: 10, dias: ['mon', 'tue'] } },
+    ];
+    const week = generateWeek({ schedule: SEMANA, diets: [dieta], slots, pools, foods: [], prefs: { ...basePrefs, mes: 12 } });
+    expect(week.map(d => d.meals[1].complements.filter(c => c.fijo).length)).toEqual([1, 1, 0, 0, 0, 0, 0]);
   });
 });

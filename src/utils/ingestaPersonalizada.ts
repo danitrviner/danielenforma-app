@@ -1,5 +1,6 @@
 import type { FoodCategory, Macros, MenuComplement, WeekDay } from '../types.js';
 import { nombreDeAlimento, type AlimentoCatalogo } from './catalogoAlimentos.js';
+import { familiaDeExtra } from './extrasDelCatalogo.js';
 import type { FrutaEnIngesta, MealSlotSpec } from './menuEngine.js';
 import type { PaqueteDeRecetas } from './seleccionDeRecetas.js';
 
@@ -189,7 +190,15 @@ export function idsCerrados(r: RecetasDeIngesta | undefined, paquetes: readonly 
 
 /* ── Lo que se guarda por atleta ───────────────────────────────────────────── */
 
-export interface IngestaAMedida { fruta?: FrutaEnIngesta; recetas?: RecetasDeIngesta; extra?: ExtraFijo }
+export interface IngestaAMedida {
+  fruta?: FrutaEnIngesta;
+  frutas?: string[];
+  recetas?: RecetasDeIngesta;
+  /** Legado: un solo extra fijo. Lo nuevo es `extras` (varios que rotan); se
+   *  sigue leyendo para los atletas configurados antes del 17-11-2026. */
+  extra?: ExtraFijo;
+  extras?: ExtraFijo[];
+}
 /** Por posición y franja (`claveDeIngesta`): si el atleta cambia de número de
  *  comidas, lo guardado para una comida que ya no existe deja de aplicarse. */
 export type IngestasAMedida = Record<string, IngestaAMedida>;
@@ -202,8 +211,9 @@ export function ingestasDeSlots(slots: readonly MealSlotSpec[]): IngestasAMedida
   slots.forEach((sl, i) => {
     const una: IngestaAMedida = {
       ...(sl.fruta ? { fruta: sl.fruta } : {}),
+      ...(sl.frutas?.length ? { frutas: sl.frutas } : {}),
       ...(sl.recetas ? { recetas: sl.recetas } : {}),
-      ...(sl.extra ? { extra: sl.extra } : {}),
+      ...(sl.extras?.length ? { extras: sl.extras } : sl.extra ? { extra: sl.extra } : {}),
     };
     if (Object.keys(una).length > 0) out[claveDeIngesta(sl, i)] = una;
   });
@@ -217,4 +227,47 @@ export function conIngestasAMedida<T extends MealSlotSpec>(slots: T[], guardadas
     const g = guardadas[claveDeIngesta(sl, i)];
     return g ? { ...sl, ...g } : sl;
   });
+}
+
+/* ── Qué frutas admite una ingesta ─────────────────────────────────────────── */
+
+/** Las frutas del catálogo que pueden salir de postre, como las ve el coach. */
+export function frutasDelCatalogo(catalogo: readonly AlimentoCatalogo[]): AlimentoCatalogo[] {
+  return catalogo.filter(a => familiaDeExtra(a) === 'fruta').sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+}
+
+/** «Cualquier fruta», «Solo plátano», «3 frutas a elegir». */
+export function resumenDeFrutas(frutas: readonly string[] | undefined, nombreDe: (id: string) => string | undefined): string {
+  if (!frutas || frutas.length === 0) return 'Cualquier fruta';
+  if (frutas.length === 1) return `Solo ${(nombreDe(frutas[0]) ?? 'una fruta').toLowerCase()}`;
+  return `${frutas.length} frutas a elegir`;
+}
+
+export function conFrutaAlternada(frutas: readonly string[] | undefined, id: string): string[] {
+  const actuales = frutas ?? [];
+  return actuales.includes(id) ? actuales.filter(x => x !== id) : [...actuales, id];
+}
+
+/* ── Varios caprichos que rotan ────────────────────────────────────────────── */
+
+/** Los extras fijos de la ingesta, vengan del campo nuevo o del de antes. */
+export function extrasDeIngesta(sl: Pick<MealSlotSpec, 'extra' | 'extras'>): ExtraFijo[] {
+  if (sl.extras?.length) return sl.extras;
+  return sl.extra ? [sl.extra] : [];
+}
+
+/** El capricho que toca ese día: de los que van ese día, uno por turno. Así
+ *  «chocolate, helado, natillas» no sale siempre el mismo (Dani, 17-11-2026). */
+export function extraDelDia(sl: Pick<MealSlotSpec, 'extra' | 'extras'>, dia: WeekDay): ExtraFijo | null {
+  const tocan = extrasDeIngesta(sl).filter(e => tocaElDia(e, dia));
+  if (tocan.length === 0) return null;
+  return tocan[DIAS_SEMANA.indexOf(dia) % tocan.length];
+}
+
+/** «1 onza de chocolate», «3 caprichos que van rotando». */
+export function resumenDeExtras(sl: Pick<MealSlotSpec, 'extra' | 'extras'>, diasConDieta: readonly WeekDay[]): string {
+  const lista = extrasDeIngesta(sl);
+  if (lista.length === 0) return 'Sin extra fijo';
+  if (lista.length === 1) return `${textoDeExtraFijo(lista[0])} · ${textoDeDias(lista[0].dias, diasConDieta).toLowerCase()}`;
+  return `${lista.length} caprichos que rotan · ${textoDeDias(lista[0].dias, diasConDieta).toLowerCase()}`;
 }
