@@ -201,6 +201,11 @@ const PlanSemanaHarness = import.meta.env.DEV
   ? pantallaDiferida('PlanSemanaDevHarness', () => import('./components/PlanSemanaDevHarness'))
   : null;
 
+// Banco de pruebas del cierre por ejercicio, «mídete igual» y saltar sesión (ruta /dev/cierre-atleta).
+const CierreAtletaHarness = import.meta.env.DEV
+  ? pantallaDiferida('CierreAtletaDevHarness', () => import('./components/CierreAtletaDevHarness'))
+  : null;
+
 // Banco de pruebas de «El atleta ve ahora» + estado del bloque (ruta /dev/bloque-atleta).
 const BloqueAtletaHarness = import.meta.env.DEV
   ? pantallaDiferida('BloqueAtletaDevHarness', () => import('./components/mesociclo/BloqueAtletaDevHarness'))
@@ -978,6 +983,13 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <NutricionHarness />
+      </Suspense>
+    );
+  }
+  if (CierreAtletaHarness && location.pathname === '/dev/cierre-atleta') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <CierreAtletaHarness />
       </Suspense>
     );
   }
