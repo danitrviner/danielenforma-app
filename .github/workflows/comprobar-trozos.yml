@@ -15,7 +15,9 @@ concurrency:
 
 jobs:
   trozos:
-    runs-on: ubuntu-latest
+    # Fija la versión: ubuntu-latest pasó a 26.04 y Playwright 1.58 no instala
+    # Chromium ahí («does not support chromium on ubuntu26.04-x64»).
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
