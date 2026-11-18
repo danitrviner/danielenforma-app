@@ -11,7 +11,7 @@ function revision(parcial: Record<string, unknown> = {}): RevisionDelAtleta {
     mapa: [],
     suben: [],
     bajan: [],
-    bienestar: { irp: { valor: 4.2 }, domsCronico: [] },
+    bienestar: { domsCronico: [] },
     ...parcial,
   } as unknown as RevisionDelAtleta;
 }
@@ -37,16 +37,15 @@ describe('construirTitulares', () => {
     expect(ids(r)).toContain('records');
   });
 
-  it('ya no habla de grupos musculares ni de la disposición para entrenar (Dani, 18-11-2026)', () => {
+  it('ya no habla de grupos musculares (Dani, 18-11-2026)', () => {
     const r = construirTitulares({
       revision: revision({
         mapa: [{ label: 'Pecho', prioridad: 'alta', zona: 'sin_volumen' }],
-        bienestar: { irp: { valor: -0.6 }, domsCronico: [] },
+        bienestar: { domsCronico: [] },
       }),
     });
     expect(ids(r)).not.toContain('prioritarios_sin_volumen');
-    expect(ids(r)).not.toContain('irp_negativo');
-    expect(r.titulares.map(t => t.texto).join(' ')).not.toMatch(/mínimo efectivo|margen de recuperación/);
+    expect(r.titulares.map(t => t.texto).join(' ')).not.toMatch(/mínimo efectivo/);
   });
 
   it('sin sesiones lo canta como alarma', () => {
@@ -136,7 +135,7 @@ describe('el borrador solo dice lo que se le puede decir al atleta', () => {
         // Este titular es una decisión de programación: no tiene versión para él.
         limitantes: [{ exerciseId: 'press', motivo: 'agarre', veces: 3, de: 4, arreglo: 'usa straps' }],
         mapa: [], suben: [], bajan: [],
-        bienestar: { irp: { valor: 4 }, domsCronico: [] },
+        bienestar: { domsCronico: [] },
       } as unknown as RevisionDelAtleta,
     });
     const coach = r.titulares.find(t => t.id === 'limitante_press');
@@ -155,7 +154,7 @@ describe('el borrador solo dice lo que se le puede decir al atleta', () => {
           perExercise: [{ isPR: true }],
         },
         mapa: [], suben: [], bajan: [],
-        bienestar: { irp: { valor: 4 }, domsCronico: [{ grupo: 'cuadriceps', media: 7.7 }] },
+        bienestar: { domsCronico: [{ grupo: 'cuadriceps', media: 7.7 }] },
       } as unknown as RevisionDelAtleta,
     });
     expect(r.resumenParaCliente).toContain('Has hecho 1 récord personal.');
@@ -238,11 +237,11 @@ describe('construirTitulares · lo que dicen las series (11-11-2026)', () => {
     const r = construirTitulares({
       revision: revision({
         informe: base,
-        descarga: { recomendada: true, senales: ['sueño y estrés sin margen', 'agujetas que no se van en 2 grupos'], recortes: [{ tipo: 'ultima_serie', ejercicios: ['press'], texto: 'quita la última serie de Press banca' }] },
+        descarga: { recomendada: true, senales: ['contexto desfavorable (estrés 8/10)', 'agujetas que no se van en 2 grupos'], recortes: [{ tipo: 'ultima_serie', ejercicios: ['press'], texto: 'quita la última serie de Press banca' }] },
       }),
     });
     const t = r.titulares.find(x => x.id === 'descarga_senales')!;
-    expect(t.texto).toContain('sueño y estrés sin margen y agujetas');
+    expect(t.texto).toContain('contexto desfavorable (estrés 8/10) y agujetas');
     expect(t.texto).toContain('quita la última serie de Press banca');
     const sin = construirTitulares({ revision: revision({ informe: base, descarga: { recomendada: false, senales: ['x'], recortes: [] } }) });
     expect(ids(sin)).not.toContain('descarga_senales');

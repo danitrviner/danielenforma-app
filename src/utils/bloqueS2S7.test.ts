@@ -48,8 +48,8 @@ describe('patrón de la caída (S2)', () => {
 
 describe('descarga por señales (S7)', () => {
   it('una señal sola no llega; dos, sí', () => {
-    expect(senalesActivas({ recuperacionMala: true }).length).toBeLessThan(SENALES_PARA_DESCARGA);
-    expect(senalesActivas({ recuperacionMala: true, caidaTransversal: true })).toHaveLength(2);
+    expect(senalesActivas({ contextoDesfavorable: ['estrés 8/10'] }).length).toBeLessThan(SENALES_PARA_DESCARGA);
+    expect(senalesActivas({ contextoDesfavorable: ['estrés 8/10'], caidaTransversal: true })).toHaveLength(2);
     expect(senalesActivas({ ejerciciosConDiasMalos: 1, gruposConAgujetasCronicas: 1 })).toEqual([]);
     expect(senalesActivas({ ejerciciosConDiasMalos: 2, gruposConAgujetasCronicas: 3 })).toHaveLength(2);
   });
@@ -82,7 +82,12 @@ describe('descarga por señales (S7)', () => {
   it('R3 · las señales nuevas suman como las demás: dos piden descarga, una no', () => {
     expect(senalesActivas({ cansancioAlSalir: 9 }).length).toBeLessThan(SENALES_PARA_DESCARGA);
     expect(senalesActivas({ cansancioAlSalir: 9, agujetasPorZona: [{ nombre: 'Glúteo', valor: 4, anterior: 4 }] }).length).toBe(SENALES_PARA_DESCARGA);
-    expect(senalesActivas({ recuperacionMala: true, saltoDeCarga: ['Total de la semana'] }).length).toBe(SENALES_PARA_DESCARGA);
+    expect(senalesActivas({ contextoDesfavorable: ['estrés 8/10'], saltoDeCarga: ['Total de la semana'] }).length).toBe(SENALES_PARA_DESCARGA);
+  });
+
+  it('el contexto desfavorable dice sus motivos; vacío no es señal (sustituye a la disposición, 18-11-2026)', () => {
+    expect(senalesActivas({ contextoDesfavorable: ['estrés 8/10', '5,5 h de sueño'] })).toEqual(['contexto desfavorable (estrés 8/10 y 5,5 h de sueño)']);
+    expect(senalesActivas({ contextoDesfavorable: [] })).toEqual([]);
   });
 
   const s = (weight: number, repsDone: number): WorkoutSetLog => ({ weight, repsDone, rir: 1 });

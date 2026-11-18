@@ -60,8 +60,8 @@ export function esDomsCronico(mediaCronica: number | null): boolean {
   return mediaCronica != null && mediaCronica >= DOMS_CRONICO_UMBRAL;
 }
 
-/** Como domsCronicoGlobal pero solo con lecturas hasta `fecha` (inclusive) — para construir una serie histórica de IRP sin mirar al futuro. */
-export function domsCronicoGlobalEn(
+/** Como domsCronicoGlobal pero solo con lecturas hasta `fecha` (inclusive), sin mirar al futuro. */
+function domsCronicoGlobalEn(
   fecha: string,
   responses: QuestionnaireResponse[],
   questionnaires: Questionnaire[],
@@ -73,7 +73,7 @@ export function domsCronicoGlobalEn(
   return round1(medias.reduce((s, v) => s + v, 0) / medias.length);
 }
 
-/** Escalar único (media sobre los grupos con datos suficientes) para alimentar IRP — null si ningún grupo tiene aún N lecturas. */
+/** Escalar único (media sobre los grupos con datos suficientes): las «agujetas» de Cómo ha llegado — null si ningún grupo tiene aún N lecturas. */
 export function domsCronicoGlobal(
   responses: QuestionnaireResponse[],
   questionnaires: Questionnaire[],

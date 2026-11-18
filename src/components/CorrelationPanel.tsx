@@ -14,7 +14,6 @@ import { computeAnthropometricIndices, ANTHROPOMETRIC_INDEX_LABELS } from '../ut
 import { pctGrasaUSNavy, masaMagraEstimadaKg, computeIRC } from '../utils/bodyFatUSNavy';
 import { e1rmAlometrico, pesoCorporalEn } from '../utils/allometricScore';
 import { ewmaDeSeñal } from '../utils/wellnessTrend';
-import { historialIRP } from '../utils/readinessIndex';
 import { seriesTonelajePorPatron } from '../utils/stimulusSeries';
 import { useMotorCdg } from '../hooks/useMotorCdg';
 import { seriesIEMPorSemana } from '../utils/cdg';
@@ -94,9 +93,9 @@ const TITULARES: { id: string; mejorSiSube: boolean | null }[] = [
   { id: 'bw_weekly',          mejorSiSube: null },
   { id: 'irc',                mejorSiSube: true },
   { id: 'adherence_weekly',   mejorSiSube: true },
-  // Fuera del resumen (Dani, 18-11-2026): el IRP («disposición para entrenar»,
-  // no lo usa y no tiene escala) y el «1RM: <ejercicio>» suelto que iba
-  // detrás. Los dos siguen en «Explorar los datos».
+  // Fuera del resumen (Dani, 18-11-2026): el «1RM: <ejercicio>» suelto que iba
+  // detrás (sigue en «Explorar los datos»). El índice de disposición para
+  // entrenar (IRP) se quitó del todo, también de «Explorar los datos».
 ];
 
 const TONO_DIRECCION: Record<ResumenMetrica['direccion'], string> = {
@@ -329,12 +328,9 @@ export default function CorrelationPanel({
     if (estresEwma.length > 0) {
       result.push({ id: 'estres_ewma', label: 'Estrés semanal (EWMA)', points: estresEwma, agg: 'avg' });
     }
-
-    // 9. IRP (Índice de Readiness) — sueño × (10 − estrés − DOMS crónico) / 10.
-    const irpPoints = historialIRP({ responses, questionnaires });
-    if (irpPoints.length > 0) {
-      result.push({ id: 'irp', label: 'IRP (readiness)', points: irpPoints, agg: 'avg' });
-    }
+    // (El índice de disposición para entrenar, sueño × (10 − estrés − DOMS
+    // crónico) / 10, se quitó el 18-11-2026: sin escala, con negativos y
+    // mezclando estas mismas series, que ya están aquí por separado.)
 
     return result;
   }, [logs, responses, questionnaires, bodyweightLogs, bodyMeasurements, latestBodyMeasurements, stepLogs, assignments, sexo]);

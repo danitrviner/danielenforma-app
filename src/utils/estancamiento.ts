@@ -86,7 +86,9 @@ export type VeredictoDeEstancamiento =
   | 'mantener' | 'apretar' | 'arreglar_limitante' | 'repartir_o_reducir' | 'cambiar_variante' | 'subir_series';
 
 export interface ContextoDeEstancamiento {
-  /** Sueño, estrés o agujetas malos en la ventana. */
+  /** Recuperación mala en la ventana: contexto de la semana desfavorable
+   *  (estrés, sueño o motivación), salir de las sesiones con 8 o más, o
+   *  agujetas que no se van en el grupo (lo decide `buildRevisionCoach`). */
   recuperacionMala?: boolean;
   /** Desfase medio del RIR comprobado (F4). */
   desfaseRir?: number;

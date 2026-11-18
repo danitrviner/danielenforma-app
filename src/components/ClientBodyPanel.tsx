@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
   UserProfile, ProgressPhoto, PhotoAssignment,
   Questionnaire, QuestionnaireResponse, BodyweightLog,
@@ -6,7 +6,6 @@ import {
 import { deactivatePhotoAssignment } from '../dbService';
 import { scheduleLabel } from '../utils/scheduleEngine';
 import { leerSexo } from '../utils/athleteProfileSignals';
-import { computeIRP } from '../utils/readinessIndex';
 import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
 import BodyweightPanel from './BodyweightPanel';
@@ -39,11 +38,6 @@ export default function ClientBodyPanel({
   athleteQResponses, coachQuestionnaires, bodyweightLogs = [],
 }: Props) {
   const { showToast } = useToast();
-
-  const irp = useMemo(
-    () => computeIRP({ responses: athleteQResponses, questionnaires: coachQuestionnaires }),
-    [athleteQResponses, coachQuestionnaires],
-  );
 
   const handleDeactivatePhoto = async (id: string) => {
     await deactivatePhotoAssignment(id).catch(err => { console.error(err); showToast('No se pudo desactivar el check-in de fotos.'); });
@@ -121,25 +115,9 @@ export default function ClientBodyPanel({
         />
       </div>
 
-      {/* ── Readiness (IRP) ──────────────────────────────────────────── */}
-      {irp.valor != null && (
-        <div className="bg-surface border border-hairline rounded-surface p-5 space-y-2">
-          <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent-ink text-body-s">battery_charging_full</span>
-            Readiness (IRP)
-          </h3>
-          <p className={`font-mono font-black text-display leading-none ${irp.valor < 0 ? 'text-danger' : irp.valor < 3 ? 'text-warning' : 'text-ink'}`}>
-            {irp.valor}
-          </p>
-          <p className="font-mono text-caption text-ink-2">
-            Sueño {irp.horasSueño}h · Estrés {irp.estres}/10 · DOMS crónico {irp.domsCronico}/10 (tendencia suavizada)
-          </p>
-          <p className="font-mono text-caption text-ink-3">
-            IRP = Sueño × (10 − Estrés − DOMS crónico) / 10. Bajo o negativo indica poca capacidad de recuperación
-            esta semana — no es diagnóstico, es una señal para revisar volumen/intensidad con el cliente.
-          </p>
-        </div>
-      )}
+      {/* La tarjeta «Readiness (IRP)» se quitó el 18-11-2026 (Dani): el índice
+          no tenía escala, daba negativos y mezclaba sueño, estrés y agujetas,
+          que ya se ven por separado en las gráficas de abajo. */}
 
       {/* ── Gráficas de evolución ────────────────────────────────────── */}
       {athleteQResponses.length > 0 && coachQuestionnaires.length > 0 && (

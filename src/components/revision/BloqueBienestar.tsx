@@ -16,8 +16,9 @@ import { Sparkline, Icon } from '../ui';
    que pedirle. Cada cosa por separado y con su evolución.
 
    18-11-2026 (Dani): fuera el índice «Disposición para entrenar» (sueño × (10 −
-   estrés − agujetas) ÷ 10). No lo usa, no tiene escala y daba negativos que en
-   un vídeo parecían un fallo. Se quedan sus tres piezas, que sí se entienden.
+   estrés − agujetas) ÷ 10), aquí y en los cálculos de dentro. No tenía escala,
+   daba negativos y mezclaba tres señales que ya se leen por separado. Se
+   quedan sus tres piezas, que sí se entienden.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
@@ -35,9 +36,9 @@ function unDecimal(n: number): string {
 }
 
 export default function BloqueBienestar({ bienestar }: Props) {
-  const { irp, sueño, estres, domsCronico } = bienestar;
+  const { actual, sueño, estres, domsCronico } = bienestar;
 
-  if (irp.valor == null && sueño.length === 0 && estres.length === 0) {
+  if (actual.domsCronico == null && sueño.length === 0 && estres.length === 0) {
     return (
       <p className="font-sans text-label text-ink-3">
         Todavía no ha contestado ningún cuestionario con preguntas de sueño, estrés o agujetas.
@@ -51,19 +52,19 @@ export default function BloqueBienestar({ bienestar }: Props) {
       <div className="grid grid-cols-3 gap-3">
         <Componente
           label="Sueño"
-          valor={irp.horasSueño != null ? `${unDecimal(irp.horasSueño)} h` : '—'}
+          valor={actual.horasSueño != null ? `${unDecimal(actual.horasSueño)} h` : '—'}
           serie={ultimos8(sueño)}
           etiquetaSerie="Evolución del sueño"
         />
         <Componente
           label="Estrés"
-          valor={irp.estres != null ? `${unDecimal(irp.estres)}/10` : '—'}
+          valor={actual.estres != null ? `${unDecimal(actual.estres)}/10` : '—'}
           serie={ultimos8(estres)}
           etiquetaSerie="Evolución del estrés"
         />
         <Componente
           label="Agujetas"
-          valor={irp.domsCronico != null ? `${unDecimal(irp.domsCronico)}/10` : '—'}
+          valor={actual.domsCronico != null ? `${unDecimal(actual.domsCronico)}/10` : '—'}
           sub="media de sus zonas"
           serie={[]}
           etiquetaSerie=""

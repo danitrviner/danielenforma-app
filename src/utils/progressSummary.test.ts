@@ -79,9 +79,9 @@ describe('resumirSerie', () => {
     expect(r.delta).toBe(5);
   });
 
-  it('el % se calcula sobre el valor absoluto del primero (IRP puede ser negativo)', () => {
+  it('el % se calcula sobre el valor absoluto del primero (una serie puede ser negativa)', () => {
     const r = resumirSerie({
-      id: 'irp', label: 'IRP', mejorSiSube: true,
+      id: 'neg', label: 'Negativa', mejorSiSube: true,
       points: pts(['2026-01-01', -2], ['2026-03-01', 0]),
     })!;
     expect(r.delta).toBe(2);

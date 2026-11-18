@@ -1527,7 +1527,7 @@ export async function addCoachTask(email: string, title: string, phase: string |
 }
 
 /* El mismo progreso que pintan los titulares de Revisión › El cuerpo, en texto.
-   Se reutilizan las utilidades de esa pantalla (US Navy, índices, IRP,
+   Se reutilizan las utilidades de esa pantalla (US Navy, índices,
    resumirSerie con el margen de error de cada perímetro) para que lo que lea
    la IA y lo que vea Dani no puedan contarse distinto. */
 /* Lo que Dani le ha dicho a una propuesta sin llegar a aprobarla. Es la

@@ -34,8 +34,8 @@ import { Skeleton, Collapsible, Button, Icon, Sheet } from '../ui';
 
    ── Lo que se tragó de «Análisis › Correlaciones» ──────────────────────────
    Los titulares (%grasa, masa magra, cintura, peso, IRC y adherencia, cada
-   uno con su cambio y su sparkline; el IRP y el «1RM: <ejercicio>» suelto se
-   quitaron el 18-11-2026 a petición de Dani) eran
+   uno con su cambio y su sparkline; el índice de disposición y el «1RM:
+   <ejercicio>» suelto se quitaron el 18-11-2026 a petición de Dani) eran
    la mitad «Resumen» de aquella pestaña, y son exactamente lo que se cuenta en
    el vídeo: entran aquí, arriba del todo, sin cabecera propia. La otra mitad
    —elegir series, cruzarlas, mirar el Pearson— pide clicar y comparar, así que

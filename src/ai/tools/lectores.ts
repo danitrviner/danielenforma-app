@@ -11,7 +11,8 @@ import { repartoParaAsistente, sesionesDelReparto, diasSemanaDesdeAsistente, cal
 import { frecuenciaPorDefecto } from '../../utils/calculadoraReparto.js';
 import { computeAnthropometricIndices, ANTHROPOMETRIC_INDEX_LABELS } from '../../utils/anthropometricIndices.js';
 import { pctGrasaUSNavy, masaMagraEstimadaKg, computeIRC } from '../../utils/bodyFatUSNavy.js';
-import { historialIRP } from '../../utils/readinessIndex.js';
+import { ewmaDeSeñal } from '../../utils/wellnessTrend.js';
+import { domsCronicoGlobal } from '../../utils/domsCronico.js';
 import { resumirSerie } from '../../utils/progressSummary.js';
 import { mdcDeMetrica } from '../../utils/mdc.js';
 import { leerSexo } from '../../utils/athleteProfileSignals.js';
@@ -1079,8 +1080,12 @@ export async function getProgressMetrics(email: string): Promise<string> {
     });
   }
 
-  const irp = historialIRP({ responses, questionnaires });
-  const resumenIrp = resumirSerie({ id: 'irp', label: 'IRP (readiness)', points: irp, mejorSiSube: true });
+  // Sueño, estrés y agujetas por separado (18-11-2026): el índice de
+  // disposición para entrenar (IRP) que los mezclaba se quitó de la app.
+  const resumenDe = (id: string, label: string, clave: string, mejorSiSube: boolean) => {
+    const r = resumirSerie({ id, label, points: ewmaDeSeñal(clave, responses, questionnaires), mejorSiSube });
+    return r ? { ultimo: r.ultimo, cambio: r.delta, desde: r.desde, mediciones: r.puntos } : null;
+  };
 
   return toResult({
     sexoConocido: sexo ?? null,
@@ -1088,7 +1093,11 @@ export async function getProgressMetrics(email: string): Promise<string> {
     perimetros,
     composicionCorporal: composicion.slice(-6),
     indicesAntropometricos: ultimosIndices,
-    readiness: resumenIrp ? { ultimo: resumenIrp.ultimo, cambio: resumenIrp.delta, desde: resumenIrp.desde, mediciones: resumenIrp.puntos } : null,
+    recuperacion: {
+      sueñoHoras: resumenDe('sueño', 'Horas de sueño', 'wellness.sleep_hours_weekly', true),
+      estres: resumenDe('estres', 'Estrés', 'wellness.stress_weekly', false),
+      agujetasCronicasMedia: domsCronicoGlobal(responses, questionnaires),
+    },
     note: composicion.length === 0
       ? 'Sin % de grasa: hace falta sexo (de la anamnesis), altura, cuello y cintura en la misma medición. Si falta, díselo a Dani con add_coach_task en vez de estimarlo a ojo.'
       : 'El % de grasa es una estimación US Navy por perímetros, no una analítica. Un cambio marcado como ruido de medición NO es progreso.',
@@ -1282,10 +1291,11 @@ export async function getRevisionEngine(email: string, periodoPedido: string): P
         agujetasCronicas: bienestar.domsPorGrupo[c.group] ?? null,
       })),
     comoHaLlegado: {
-      disposicion: bienestar.irp.valor,
-      sueñoHoras: bienestar.irp.horasSueño,
-      estres: bienestar.irp.estres,
+      sueñoHoras: bienestar.actual.horasSueño,
+      estres: bienestar.actual.estres,
       agujetasCronicas: bienestar.domsCronico.map(d => ({ grupo: d.grupo, media: d.media })),
+      contexto: bienestar.contexto.contexto,
+      motivosDelContexto: bienestar.contexto.motivos,
     },
     comida: {
       diasRegistrados: comida.patrones.diasRegistrados,

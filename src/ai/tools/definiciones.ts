@@ -1048,7 +1048,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'get_progress_metrics',
     description:
-      'El PROGRESO medido del atleta, lo mismo que Dani ve en Cliente › Revisión › El cuerpo: perímetros corporales con su cambio desde la primera medición (y si ese cambio supera el error de medición o es ruido), % de grasa y masa magra estimados (US Navy), índices antropométricos, y el índice de readiness (sueño y estrés). El entrenamiento y las marcas van en get_training_history; esto es el CUERPO. Míralo en una revisión antes de decir si algo está funcionando: el peso solo no distingue perder grasa de perder músculo.',
+      'El PROGRESO medido del atleta, lo mismo que Dani ve en Cliente › Revisión › El cuerpo: perímetros corporales con su cambio desde la primera medición (y si ese cambio supera el error de medición o es ruido), % de grasa y masa magra estimados (US Navy), índices antropométricos, y sueño, estrés y agujetas crónicas por separado. El entrenamiento y las marcas van en get_training_history; esto es el CUERPO. Míralo en una revisión antes de decir si algo está funcionando: el peso solo no distingue perder grasa de perder músculo.',
     input_schema: {
       type: 'object',
       properties: { athlete_email: { type: 'string' } },

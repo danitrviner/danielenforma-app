@@ -26,11 +26,10 @@ import { clasificarCaida, CAIDA_PCT, type PatronDeCaida } from './patronDeCaida.
 import { seriesEfectivas, type SeriesEfectivas } from './seriesEfectivas.js';
 import { senalesActivas, avisosDeSesionesDuras, recortesPosibles, SENALES_PARA_DESCARGA, type Recorte, type SenalesDeDescarga } from './descargaPorSenales.js';
 import { historialDeSeñal } from './signalReading.js';
-import { agujetasPorZona, agujetasVigentes, ultimaVigente } from './cdg/agujetas.js';
+import { agujetasPorZona, agujetasVigentes, ultimaVigente, contextoDeLaSemana, UMBRALES_PROTOCOLO, type Contexto } from './cdg/agujetas.js';
 import { cansancioDeSesiones, zonasDeEjercicios } from './cdg/senalesPorSemana.js';
 import { ZONA_POR_CLAVE } from './cdg/zonas.js';
-import { computeIRP, historialIRP, IRPResult } from './readinessIndex.js';
-import { domsCronicoDeGrupo, esDomsCronico } from './domsCronico.js';
+import { domsCronicoDeGrupo, domsCronicoGlobal, esDomsCronico } from './domsCronico.js';
 import { DataPoint } from './seriesCorrelation.js';
 import { pesoRepresentativo } from './verificacionObjetivo.js';
 import { RUIDO_RM_PCT } from './ruidoDeMedida.js';
@@ -320,19 +319,25 @@ export interface RevisionDelAtleta {
  * Cómo ha dormido, cuánto estrés arrastra y qué grupos le siguen doliendo.
  *
  * Todo sale de los cuestionarios que el atleta ya contesta: nada nuevo que
- * pedirle. El IRP (sueño × (10 − estrés − DOMS crónico) / 10) es el titular, y
- * `historial` es su serie para poder decir «venía de 5,8 y está en 4,1» en vez
- * de soltar un número suelto que no significa nada por sí solo.
+ * pedirle. Cada pieza por separado y con su evolución; lo que falta sale
+ * `null`, nunca un 0 ni una media inventada.
  *
- * Un componente que falta NO se rellena con un 0 ni con una media: `irp.valor`
- * sale `null` y la pantalla dice que falta, porque un IRP con un trozo
- * inventado engaña más que no enseñar ninguno.
+ * 18-11-2026 (Dani): fuera el índice «Disposición para entrenar» (IRP, sueño ×
+ * (10 − estrés − agujetas crónicas) ÷ 10). No tenía escala, daba negativos en
+ * cuanto estrés y agujetas sumaban 10 y mezclaba tres señales que ya se leen
+ * por separado. Lo que decidía (estancamiento, caída, descarga) pasa a las
+ * señales del protocolo: `contexto` (estrés, sueño, motivación con los
+ * umbrales de `UMBRALES_PROTOCOLO`), las agujetas que no se van y el cansancio
+ * al salir de las sesiones.
  */
 export interface BienestarDeLaVentana {
-  irp: IRPResult;
-  /** IRP al empezar la ventana, para poder contar el cambio. null si no había. */
-  irpAlInicio: number | null;
-  historial: DataPoint[];
+  /** Lo último de cada pieza: sueño y estrés suavizados (EWMA) y la media de
+   *  las agujetas crónicas de sus zonas. `null` si no hay lecturas. */
+  actual: { horasSueño: number | null; estres: number | null; domsCronico: number | null };
+  /** Contexto de la semana del protocolo (`contextoDeLaSemana`) a fecha del
+   *  final de la ventana, con la última respuesta vigente de estrés, sueño y
+   *  motivación (sin suavizar, como en el protocolo semanal). */
+  contexto: { contexto: Contexto; motivos: string[] };
   sueño: DataPoint[];
   estres: DataPoint[];
   /** Grupos con agujetas crónicas (media ≥ 6/10 sostenida), de más a menos. */
@@ -346,23 +351,17 @@ export interface BienestarDeLaVentana {
   domsPorGrupo: Partial<Record<MuscleGroup, number>>;
 }
 
-/** El último punto de una serie en o antes de `fecha`, o null si no hay ninguno. */
-function valorEn(puntos: DataPoint[], fecha: string): number | null {
-  let ultimo: number | null = null;
-  for (const p of puntos) {
-    if (p.date > fecha) break;
-    ultimo = p.value;
-  }
-  return ultimo;
-}
-
 export function construirBienestar(params: {
   responses: QuestionnaireResponse[];
   questionnaires: Questionnaire[];
   ventana: Pick<VentanaRevision, 'desde' | 'hasta'>;
 }): BienestarDeLaVentana {
   const { responses, questionnaires, ventana } = params;
-  const historial = historialIRP({ responses, questionnaires });
+  const sueño = ewmaDeSeñal('wellness.sleep_hours_weekly', responses, questionnaires);
+  const estres = ewmaDeSeñal('wellness.stress_weekly', responses, questionnaires);
+  const ultimo = (puntos: DataPoint[]) => (puntos.length > 0 ? puntos[puntos.length - 1].value : null);
+  const vigente = (clave: string) =>
+    ultimaVigente(historialDeSeñal(clave, responses, questionnaires).filter(p => p.date <= ventana.hasta), ventana.hasta)?.value;
 
   const medias = MUSCLE_ORDER
     .map(grupo => ({ grupo, media: domsCronicoDeGrupo(grupo, responses, questionnaires) }))
@@ -374,14 +373,13 @@ export function construirBienestar(params: {
     .sort((a, b) => b.media - a.media);
 
   return {
-    irp: computeIRP({ responses, questionnaires }),
-    // El valor de referencia es el del día ANTERIOR a la ventana: el del primer
-    // día ya es parte de lo que se está revisando, y compararlo consigo mismo
-    // daría siempre «sin cambios».
-    irpAlInicio: valorEn(historial, addDays(ventana.desde, -1)),
-    historial,
-    sueño: ewmaDeSeñal('wellness.sleep_hours_weekly', responses, questionnaires),
-    estres: ewmaDeSeñal('wellness.stress_weekly', responses, questionnaires),
+    actual: { horasSueño: ultimo(sueño), estres: ultimo(estres), domsCronico: domsCronicoGlobal(responses, questionnaires) },
+    contexto: contextoDeLaSemana({
+      estres: vigente('wellness.stress_weekly'),
+      sueñoHoras: vigente('wellness.sleep_hours_weekly'),
+      motivacion: vigente('wellness.motivation_weekly'),
+    }),
+    sueño, estres,
     domsCronico, domsPorGrupo,
   };
 }
@@ -502,8 +500,23 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
 
   const limitantes = avisosDeLimitante(logsHastaLaVentana, idsDeLaVentana);
   const calibracion = calibracionDelAtleta(logsHastaLaVentana);
-  const recuperacionGeneralMala = bienestar.irp.valor != null && bienestar.irp.valor <= 0;
   const grupoDe = new Map(exercises.map(e => [e.id, e.muscleGroup]));
+  // R3: cansancio al salir y agujetas 1-5, de los cuestionarios que ya están aquí
+  // y, desde D6r/D7, de lo que apunta en cada sesión (los registros también están).
+  // El salto de carga (aguda:crónica) necesita el catálogo CDG y no se pasa todavía.
+  const delProtocolo = senalesDelProtocolo({
+    responses, questionnaires, hasta: ventana.hasta, logs: logsHastaLaVentana,
+    nombreDeSesion: params.nombreDeSesion, grupoDe: id => grupoDe.get(id),
+  });
+  // Recuperación general mala (18-11-2026, sustituye a «disposición ≤ 0», que
+  // en la práctica saltaba cuando estrés y agujetas crónicas sumaban 10): el
+  // contexto de la semana desfavorable del protocolo (estrés ≥ 7, menos de 6 h
+  // de sueño o motivación ≤ 4) o salir de las sesiones con 8 o más de media,
+  // que el protocolo ya usa para no subir. Las agujetas crónicas siguen
+  // contando por grupo, abajo, como antes.
+  const contextoDesfavorable = bienestar.contexto.contexto === 'desfavorable';
+  const cansancioAlto = delProtocolo.cansancioAlSalir != null && delProtocolo.cansancioAlSalir >= UMBRALES_PROTOCOLO.fatigaPostAlta;
+  const recuperacionGeneralMala = contextoDesfavorable || cansancioAlto;
   const estancados = idsDeLaVentana
     .map(exerciseId => {
       const grupo = grupoDe.get(exerciseId);
@@ -538,21 +551,18 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
       .map(e => e.exerciseId),
     ...diasMalos.map(d => d.exerciseId),
   ])];
-  const { horasSueño, estres } = bienestar.irp;
   // También cuenta lo que dice él al empezar: si llega justo a la mayoría de las sesiones.
+  // El sueño < 6 h y el estrés ≥ 7 que se miraban aquí aparte ya van dentro del
+  // contexto desfavorable (mismos umbrales, `UMBRALES_PROTOCOLO`).
   const llegaJusto = llegadas.contestadas >= 2 && llegadas.justo * 2 > llegadas.contestadas;
-  const contextoMalo = recuperacionGeneralMala || llegaJusto || (horasSueño != null && horasSueño < 6) || (estres != null && estres >= 7);
+  const contextoMalo = recuperacionGeneralMala || llegaJusto;
   const caida = clasificarCaida(caen, exercises, { enLaVentana: idsDeLaVentana.length, contextoMalo });
-  // R3: cansancio al salir y agujetas 1-5, de los cuestionarios que ya están aquí
-  // y, desde D6r/D7, de lo que apunta en cada sesión (los registros también están).
-  // El salto de carga (aguda:crónica) necesita el catálogo CDG y no se pasa todavía.
-  const delProtocolo = senalesDelProtocolo({
-    responses, questionnaires, hasta: ventana.hasta, logs: logsHastaLaVentana,
-    nombreDeSesion: params.nombreDeSesion, grupoDe: id => grupoDe.get(id),
-  });
   const senales = senalesActivas({
     caidaTransversal: caida?.tipo === 'transversal',
-    recuperacionMala: recuperacionGeneralMala,
+    // Para la descarga solo el contexto: el cansancio al salir y las agujetas
+    // ya son señales propias (vienen en `delProtocolo` y `gruposConAgujetasCronicas`)
+    // y contarlos otra vez aquí haría una descarga de una sola fuente.
+    ...(contextoDesfavorable ? { contextoDesfavorable: bienestar.contexto.motivos } : {}),
     ejerciciosConDiasMalos: diasMalos.length,
     gruposConAgujetasCronicas: bienestar.domsCronico.length,
     ...delProtocolo,

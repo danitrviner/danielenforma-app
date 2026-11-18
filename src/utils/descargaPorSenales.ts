@@ -50,8 +50,12 @@ const SESIONES_QUE_COINCIDEN = 2;
 export interface SenalesDeDescarga {
   /** S2: caída transversal. */
   caidaTransversal?: boolean;
-  /** Índice de recuperación en negativo. */
-  recuperacionMala?: boolean;
+  /** Contexto de la semana desfavorable (`contextoDeLaSemana`: estrés, sueño o
+   *  motivación pasados de umbral): sus motivos, para decirlos. Vacío o ausente
+   *  = no es señal. Sustituye el 18-11-2026 a «índice de recuperación en
+   *  negativo» (la disposición para entrenar, quitada por Dani): el cansancio
+   *  al salir y las agujetas ya son señales propias y no se cuentan aquí. */
+  contextoDesfavorable?: readonly string[];
   /** Ejercicios con dos o más sesiones seguidas empezando peor (F1). */
   ejerciciosConDiasMalos?: number;
   /** Grupos con agujetas que no se van. */
@@ -89,7 +93,7 @@ function listar(cosas: readonly string[]): string {
 export function senalesActivas(s: SenalesDeDescarga): string[] {
   const t: string[] = [];
   if (s.caidaTransversal) t.push('cae el rendimiento en ejercicios sin relación');
-  if (s.recuperacionMala) t.push('sueño y estrés sin margen');
+  if ((s.contextoDesfavorable?.length ?? 0) > 0) t.push(`contexto desfavorable (${listar(s.contextoDesfavorable!)})`);
   if ((s.ejerciciosConDiasMalos ?? 0) >= 2) t.push(`${s.ejerciciosConDiasMalos} ejercicios con sesiones seguidas empezando peor`);
   if ((s.gruposConAgujetasCronicas ?? 0) >= 2) t.push(`agujetas que no se van en ${s.gruposConAgujetasCronicas} grupos`);
   if (s.cansancioAlSalir != null && s.cansancioAlSalir >= UMBRALES_PROTOCOLO.fatigaPostAlta) {
