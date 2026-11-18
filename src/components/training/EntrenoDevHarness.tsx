@@ -40,7 +40,7 @@ const EJERCICIOS = [
   { id: 'elev', name: 'Elevaciones laterales' },
   { id: 'curl', name: 'Curl en polea baja con barra' },
   { id: 'tri', name: 'Extensión de tríceps en polea alta' },
-  { id: 'jalon', name: 'Jalón al pecho' },
+  { id: 'jalon', name: 'Jalón al pecho con agarre neutro estrecho en máquina' },
 ] as unknown as Exercise[];
 const WORKOUT: Workout = {
   id: 'w', ownerId: '', name: 'Torso de prueba',

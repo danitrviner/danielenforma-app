@@ -20,8 +20,8 @@ import { Icon } from '../ui';
 export type ComoLlega = NonNullable<WorkoutLog['comoLlega']>;
 export type VarianteComoLlega = 'tres' | 'escala';
 
-/** La que queda en producción hasta que Dani elija. */
-export const VARIANTE_COMO_LLEGA_POR_DEFECTO: VarianteComoLlega = 'tres';
+/** Dani eligió la escala del 1 al 10 el 18-11-2026. */
+export const VARIANTE_COMO_LLEGA_POR_DEFECTO: VarianteComoLlega = 'escala';
 
 /** Para el conmutador del banco de pruebas. */
 export const VARIANTES_COMO_LLEGA: { clave: VarianteComoLlega; etiqueta: string; explicacion: string }[] = [
