@@ -46,11 +46,9 @@ Dani graba un vídeo sobre Cliente › Revisión y se lo manda al atleta: la pan
 - También propuesto y sin objeción: quitar el % agregado por patrón cuando mezcla ejercicios, la proyección de peso por fórmula cuando hay gasto real medido, los macros del plan contra el objetivo, el «1RM de curl» de El cuerpo y la etiqueta «OVERREACHING» del cardio; comparación fija semana contra semana anterior.
 - Siguiente paso: maquetas en 2-3 versiones calcando la pantalla real (`/dev/revision-coach`), y luego construir.
 
-## 4. Elecciones que faltan
+## 4. Elecciones
 
-- Cuestionario final, «qué ejercicios quitarías»: filas o tarjetas (`EjerciciosDelBloquePaso.tsx`, prop `variante`).
-- Saltar sesión: hoja o botones en la tarjeta (`SaltarSesion.tsx`, prop `variante`).
-- Capturas enviadas a Dani el 18-11 (`~/Desktop/App enforma/maquetas-hipotesis-bloque/capturas/`). Cuando elija, borrar la descartada.
+Hechas (18-11): cierre por ejercicio en filas y saltar sesión con hoja; las otras versiones, borradas (commit a52e46de).
 
 ## 5. Menores, sin hacer
 
