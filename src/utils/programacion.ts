@@ -5,7 +5,9 @@ import { frecuenciaPorSemana } from './progression.js';
 import { rankMuscleGroups } from './muscleGroupRanking.js';
 import { DAY_TYPE_MUSCLES } from './trainingSplits.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
-import { SERIES_POR_SESION } from './volumeSuggestion.js';
+// De la hoja, no de volumeSuggestion.ts: ese importa el motor de hipótesis, que
+// importa este archivo, y leer la constante en el ciclo rompía la web (18-11-2026).
+import { SERIES_POR_SESION } from './topesDeVolumen.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Ayudas de PROGRAMACIÓN — lo que el coach necesita ver mientras monta un
