@@ -2777,9 +2777,31 @@ export interface VeredictoDeHipotesis {
   decision?: string;
 }
 
+/** Lo que se hizo en una zona durante un bloque y lo que se obtuvo. */
+export interface DosisDeZona {
+  zona: string;
+  /** Series por semana, de media, en ejercicios cuya zona principal es esta. */
+  seriesSemana: number;
+  /** Sesiones por semana, de media, en las que se trabajó la zona. */
+  frecuencia: number;
+  /** RIR medio de esas series (`null` si no hay RIR fiable). */
+  rirMedio: number | null;
+  /** IEM medio semanal realizado. `null` sin motor CDG. */
+  iemMedio: number | null;
+  /** % de RM estimado medio de sus ejercicios. `null` sin marcas suficientes. */
+  rmPct: number | null;
+  /** Ejercicios con marca que entran en `rmPct`. */
+  ejercicios: number;
+}
+
 export interface CierreDeHipotesis {
   firmadoEn: string; // ISO
   veredictos: VeredictoDeHipotesis[];
+  /** Foto de «dosis y respuesta» de cada zona con marca en este bloque
+   *  (18-11-2026): con qué volumen, frecuencia y cercanía al fallo se trabajó y
+   *  cuánto mejoró. De aquí salen los indicios de a qué responde el atleta
+   *  (utils/hipotesisDeBloque/respuestaADosis.ts). Ausente en cierres anteriores. */
+  dosis?: DosisDeZona[];
   /** Ficha de cierre del método: con qué contexto se hizo el bloque. */
   ficha?: {
     contexto?: 'favorable' | 'neutro' | 'desfavorable';
