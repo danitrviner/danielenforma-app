@@ -597,6 +597,17 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
     });
   }
 
+  // En descarga, puente y vuelta de parón el plan pide aflojar (F7c,
+  // 17-11-2026): fuera los retos de mover más carga, más repeticiones o más
+  // series. Los del plan (abajo) ya saben qué semana es y traen el suyo.
+  const tipoDeSemana = plan?.contexto?.tipoSemana;
+  if (plan?.semanaPuente || tipoDeSemana === 'descarga' || tipoDeSemana === 'paron') {
+    for (let i = options.length - 1; i >= 0; i--) {
+      const k = options[i].kind;
+      if (k === 'carga_ejercicio' || k === 'reps_ejercicio' || k === 'series_grupo') options.splice(i, 1);
+    }
+  }
+
   // ── Retos de rendimiento y peso de cada tipo según el nivel ──────────────
   if (plan && nivel !== 'arranque') {
     const rendimiento = opcionesDeRendimiento({

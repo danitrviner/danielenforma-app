@@ -20,6 +20,9 @@
  *  4. Tope de series por zona (MRV): se puede superar, pero el cambio lo avisa
  *     (Dani, 23-10).
  *  RIR mínimo 0: nunca propone «al fallo» (eso es una técnica aparte).
+ *  5. Zonas bloqueadas (`zonasSinSubida`, F6): con agujetas de 5 la zona no
+ *     recibe ninguna subida, tampoco de rebote por un ejercicio que se sube
+ *     para otra zona. Bajarla sí se puede (lo decide el coach con su %).
  */
 import type { MuscleGroup, WorkoutExercise } from '../../types.js'
 import type { MotorCdg } from './motor.js'
@@ -88,6 +91,8 @@ export interface EntradaProgresionIem {
   rirMinimo?: number
   /** Series máximas recuperables por grupo muscular (por defecto, VOLUME_LANDMARKS_DEFAULT). */
   mrvPorGrupo?: Partial<Record<MuscleGroup, number>>
+  /** Zonas con aviso bloqueante (agujetas de 5): ningún cambio puede subirles el IEM. */
+  zonasSinSubida?: readonly ZonaIem[]
 }
 
 const RIR_MAXIMO = 4 // el motor no admite RIR 5
@@ -187,12 +192,16 @@ export function proponerProgresionIem (e: EntradaProgresionIem): { cambios: Camb
   const cambios: CambioIem[] = []
   const resumen: ResumenZonaIem[] = []
 
+  const bloqueadas = new Set<ZonaIem>(e.zonasSinSubida ?? [])
+  // Una zona bloqueada no sube ni aunque llegue con % positivo.
+  const pctDe = (z: ZonaIem) => { const p = e.pctPorZona[z] ?? 0; return bloqueadas.has(z) && p > 0 ? 0 : p }
   const zonasOrdenadas = ZONAS_IEM
-    .filter(z => (e.pctPorZona[z.clave] ?? 0) !== 0)
-    .sort((a, b) => Math.abs(e.pctPorZona[b.clave]!) - Math.abs(e.pctPorZona[a.clave]!))
+    .filter(z => pctDe(z.clave) !== 0)
+    .sort((a, b) => Math.abs(pctDe(b.clave)) - Math.abs(pctDe(a.clave)))
 
   for (const z of zonasOrdenadas) {
-    const pct = e.pctPorZona[z.clave]!
+    const pct = pctDe(z.clave)
+    let frenadoPorBloqueo = false
     const base = e.iemBase[z.clave] ?? 0
     const antes = totalZona(z.clave)
     if (base <= 0.005) {
@@ -227,6 +236,8 @@ export function proponerProgresionIem (e: EntradaProgresionIem): { cambios: Camb
           const dz = cn.zonas[z.clave] - c.zonas[z.clave]
           const dIF = cn.IF - c.IF
           if (dz * dir <= 0.005) continue
+          // De rebote tampoco: si el cambio sube una zona bloqueada, no vale.
+          if (dir > 0 && [...bloqueadas].some(b => cn.zonas[b] - c.zonas[b] > 0.005)) { frenadoPorBloqueo = true; continue }
           // No vale pasarse más de lo que faltaba.
           if (Math.abs(falta - dz) >= Math.abs(falta)) continue
           // Subir: menos IF por punto de IEM. Frenar: más IF quitado por punto de IEM quitado.
@@ -257,7 +268,11 @@ export function proponerProgresionIem (e: EntradaProgresionIem): { cambios: Camb
     const alcanzado = Math.abs(objetivo - despues) <= tol
     resumen.push({
       zona: z.clave, nombre: z.nombre, pct, base: r1(base), objetivo: r1(objetivo), antes: r1(antes), despues: r1(despues), alcanzado,
-      ...(alcanzado ? {} : { nota: pct > 0 ? 'No llega con las palancas permitidas.' : 'No baja lo suficiente con las palancas permitidas.' }),
+      ...(alcanzado ? {} : {
+        nota: pct > 0
+          ? (frenadoPorBloqueo ? 'No llega: lo que falta subiría también una zona con agujetas de 5, y esa no se toca.' : 'No llega con las palancas permitidas.')
+          : 'No baja lo suficiente con las palancas permitidas.',
+      }),
     })
   }
   return { cambios, zonas: resumen }

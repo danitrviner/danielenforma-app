@@ -331,7 +331,7 @@ function TemplateEditor({
 // card can rank the 3 muscle groups the plantilla emphasizes overall (not just
 // within a single stage). Series are summed across stages; priority keeps the
 // highest ('alta' beats 'media' beats 'baja') seen for that group in any stage.
-const PRIO_RANK: Record<MuscleGroupConfig['priority'], number> = { alta: 0, media: 1, baja: 2 };
+const PRIO_RANK: Record<MuscleGroupConfig['priority'], number> = { alta: 0, media: 1, baja: 2, ignorar: 3 };
 function mergeStageGroups(stages: MesocycleTemplate['stages']): Record<MuscleGroup, MuscleGroupConfig> {
   const merged = {} as Record<MuscleGroup, MuscleGroupConfig>;
   for (const st of stages) {

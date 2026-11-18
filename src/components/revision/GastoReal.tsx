@@ -32,7 +32,12 @@ function kcal(n: number): string {
   return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-export default function GastoReal({ athleteEmail }: { athleteEmail: string }) {
+/**
+ * El gasto real y el de la fórmula, con las mismas consultas (y claves de
+ * caché) que la tarjeta. Lo usa también «El cuerpo» para decidir si la
+ * proyección de peso por fórmula se enseña (18-11-2026: solo sin gasto real).
+ */
+export function useGastoReal(athleteEmail: string) {
   const hoy = hoyIsoLocal();
   // Hasta AYER: el día de hoy está a medio registrar y sacaría el gasto bajo.
   const hasta = addDays(hoy, -1);
@@ -68,11 +73,21 @@ export default function GastoReal({ athleteEmail }: { athleteEmail: string }) {
     [pesos, registros, diets, hasta],
   );
 
-  if (cargandoPesos || cargandoRegistros || cargandoDietas) {
+  const esReal = gasto.kcal != null && !gasto.sospechaInfraRegistro;
+  return {
+    hoy, hasta, pesos, registros, diets, program, formula, gasto, evolucion, esReal,
+    cargando: cargandoPesos || cargandoRegistros || cargandoDietas,
+  };
+}
+
+export default function GastoReal({ athleteEmail }: { athleteEmail: string }) {
+  const { hoy, pesos, program, formula, gasto, evolucion, esReal, cargando } = useGastoReal(athleteEmail);
+  const pesoKg = pesos.length ? pesos[pesos.length - 1].weight : null;
+
+  if (cargando) {
     return <Skeleton className="w-full h-40 rounded-surface" />;
   }
 
-  const esReal = gasto.kcal != null && !gasto.sospechaInfraRegistro;
   const mostrado = esReal ? gasto.kcal : formula;
   const enCurso = faseEnCurso(program, hoy);
   const objetivo = enCurso?.objetivo?.tipo ?? null;

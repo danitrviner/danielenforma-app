@@ -2,11 +2,16 @@ import { describe, it, expect } from 'vitest';
 import { validateMesocyclePayload, validateNutritionPhases, validateDietPayload, leerDietaPropuesta, revisarObjetivoNutricional, avisosDeMesociclo, SEMANAS_POR_DEFECTO, type MesocycleProposalPayload } from './validators';
 import { macrosDesdeGramos } from '../utils/macros';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
+import { SERIES_POR_DIA_TOPE, suggestVolume } from '../utils/volumeSuggestion';
+import { VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
+import { MUSCLE_ORDER, type MuscleGroup } from '../types';
 
 /* El tope de volumen total era days × 12 y rechazaba repartos normales: con el
    criterio de Dani (8-12 series por músculo y sesión), un día de torso que toca
    tres músculos ya son ~30 series. Subido a days × 25 el 2026-09-02, y sigue
-   BLOQUEANDO por encima — un error del modelo no debe colar 200 series. */
+   BLOQUEANDO por encima — un error del modelo no debe colar 200 series.
+   Desde el 17-11-2026 es el mismo tope que el sugeridor de volumen
+   (`SERIES_POR_DIA_TOPE`, 23 por sesión): un solo número para los dos. */
 
 const base = (groups: MesocycleProposalPayload['groups'], daysPerWeek = 4): MesocycleProposalPayload => ({
   weeks: 8,
@@ -17,7 +22,7 @@ const base = (groups: MesocycleProposalPayload['groups'], daysPerWeek = 4): Meso
 
 describe('validateMesocyclePayload — tope de volumen', () => {
   it('acepta un reparto realista que el tope viejo (días × 12) habría rechazado', () => {
-    // 76 series/semana en 4 días: imposible con el tope de 12 (48), normal con 25 (100).
+    // 76 series/semana en 4 días: imposible con el tope de 12 (48), normal con 23 (92).
     const payload = base({
       pecho: { series: 12, priority: 'alta' },
       dorsal: { series: 16, priority: 'alta' },
@@ -34,7 +39,30 @@ describe('validateMesocyclePayload — tope de volumen', () => {
     const issues = validateMesocyclePayload(payload);
     expect(issues).toHaveLength(1);
     expect(issues[0].field).toBe('groups');
-    expect(issues[0].message).toContain('máx ≈ 50');
+    expect(issues[0].message).toContain(`máx ≈ ${2 * SERIES_POR_DIA_TOPE}`);
+  });
+
+  it('el tope por sesión es el del sugeridor de volumen, no uno propio', () => {
+    // 4 días: justo en el tope del sugeridor pasa; una serie más, no. Con el
+    // 25 de antes, las 93-100 series pasaban aquí y el sugeridor las recortaba.
+    const reparto = (total: number): MesocycleProposalPayload['groups'] => ({
+      pecho: { series: 20 }, dorsal: { series: 20 }, cuadriceps: { series: 20 }, isquios: { series: 20 },
+      gluteo: { series: total - 80 },
+    });
+    const tope = 4 * SERIES_POR_DIA_TOPE;
+    expect(validateMesocyclePayload(base(reparto(tope)))).toEqual([]);
+    const issues = validateMesocyclePayload(base(reparto(tope + 1)));
+    expect(issues).toHaveLength(1);
+    expect(issues[0].message).toContain(`máx ≈ ${tope}`);
+  });
+
+  it('lo que propone el sugeridor de volumen siempre pasa el validador', () => {
+    // Todo en prioridad alta y dial agresivo: el caso que más aprieta el techo.
+    const priorities = Object.fromEntries(MUSCLE_ORDER.map(g => [g, 'alta' as const])) as Record<MuscleGroup, 'alta'>;
+    for (const daysPerWeek of [2, 3, 4, 5, 6]) {
+      const r = suggestVolume({ landmarks: VOLUME_LANDMARKS_DEFAULT, daysPerWeek, level: 'avanzado', intent: 'agresivo', priorities });
+      expect(validateMesocyclePayload(base(r.groups, daysPerWeek))).toEqual([]);
+    }
   });
 
   it('el límite por grupo sigue en 25', () => {
@@ -53,6 +81,14 @@ describe('validateMesocyclePayload — tope de volumen', () => {
    a una dieta, y una fase sin dieta no le enseña nada al atleta. Se rechaza aquí
    con el motivo, para que el modelo se corrija solo en vez de que Dani apruebe
    un plan roto. */
+// Dani, 18-11-2026: «con 4 que avise, pero que me permita hacer lo que quiera».
+describe('validateMesocyclePayload — las zonas prioritarias no tienen tope', () => {
+  it('cinco grupos en alta, de cinco zonas distintas, no dan ningún issue', () => {
+    const groups = Object.fromEntries(['pecho', 'dorsal', 'cuadriceps', 'gluteo', 'isquios'].map(g => [g, { series: 10, priority: 'alta' }])) as MesocycleProposalPayload['groups'];
+    expect(validateMesocyclePayload({ weeks: 12, daysPerWeek: 4, objective: 'Desarrollo', groups })).toEqual([]);
+  });
+});
+
 describe('validateNutritionPhases', () => {
   const DIETAS = ['d1', 'd2'];
 

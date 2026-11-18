@@ -1,9 +1,10 @@
 import {
-  MuscleGroup, MuscleGroupConfig, ExperienceLevel, MUSCLE_LABELS, MUSCLE_ORDER,
+  MuscleGroup, MuscleGroupConfig, ExperienceLevel, MUSCLE_LABELS, MUSCLE_ORDER, TipoDeBloque,
 } from '../types.js';
 import type { VolumeLandmark } from '../data/volumeLandmarks.js';
 import type { VolumeHistory } from './volumeHistory.js';
 import { TRAINING_SPLITS, frecuenciaSemanalDeSplit, RepartoResuelto } from './trainingSplits.js';
+import { avisoDeEstrellasDelMeso } from './hipotesisDelMeso.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SUGERIDOR DE VOLUMEN — propone las series semanales de los 17 grupos.
@@ -34,8 +35,11 @@ export interface VolumeSuggestionInput {
   reparto?: Pick<RepartoResuelto, 'dayTypes' | 'gruposPorDia'>;
   level: ExperienceLevel;
   intent: VolumeIntent;
-  priorities: Record<MuscleGroup, 'alta' | 'media' | 'baja'>;
+  /** Cuatro niveles (17-11-2026): un grupo en 'ignorar' sale con 0 series y no entra en nada. */
+  priorities: Record<MuscleGroup, MuscleGroupConfig['priority']>;
   history?: VolumeHistory;
+  /** Tipo de bloque: decide cuántas estrellas admite el aviso. Sin él, desarrollo. */
+  tipoBloque?: TipoDeBloque;
 }
 
 export interface VolumeSuggestionResult {
@@ -197,6 +201,13 @@ export function suggestVolume(input: VolumeSuggestionInput): VolumeSuggestionRes
     const razones: string[] = [];
     const prioridad = priorities[g] ?? 'media';
 
+    // ── 0. Ignorado: 0 series y fuera de todo lo de abajo (17-11-2026) ──────
+    if (prioridad === 'ignorar') {
+      groups[g] = { series: 0, priority: 'ignorar' };
+      reasons[g] = ['Ignorado: 0 series, fuera de la sugerencia, del reparto y de los avisos.'];
+      continue;
+    }
+
     // ── 1. Base por nivel ────────────────────────────────────────────────
     let idx = ESCALON_BASE[level];
     razones.push(`Nivel ${level}: parte del ${NOMBRE_ESCALON[idx]} (${pasos[idx]} series).`);
@@ -204,10 +215,10 @@ export function suggestVolume(input: VolumeSuggestionInput): VolumeSuggestionRes
     // ── 2. Prioridad ─────────────────────────────────────────────────────
     if (prioridad === 'alta') {
       idx += 1;
-      razones.push('Prioridad alta: sube un escalón dentro de su rango.');
+      razones.push('⭐ Especializar: sube un escalón dentro de su rango.');
     } else if (prioridad === 'baja') {
       idx = 0;
-      razones.push('Prioridad baja: al mínimo que mantiene (MV), para dejar sitio a lo prioritario.');
+      razones.push('⚪ Mantener: al mínimo que mantiene (MV), para dejar sitio a lo prioritario.');
     }
 
     // ── 3. Feedback del atleta ───────────────────────────────────────────
@@ -234,6 +245,21 @@ export function suggestVolume(input: VolumeSuggestionInput): VolumeSuggestionRes
       const antes = series;
       series = Math.round(series * FACTOR_INTENT[intent]);
       if (series !== antes) razones.push(`Dial ${ETIQUETA_INTENT[intent]}: ${antes} → ${series}.`);
+    }
+
+    // ── 4b. Mantener ≈ la mitad de lo que le hacía crecer (P6) ───────────
+    // El mínimo de la tabla es genérico. Si en el bloque anterior este grupo
+    // estaba creciendo con N series, para conservarlo hace falta alrededor de
+    // la mitad, que puede ser más que el mínimo de la tabla. Solo sube: nunca
+    // deja el mantenimiento por debajo de ese mínimo. Si ya venía en
+    // mantenimiento, lo que hacía ya era «la mitad» y no se vuelve a partir.
+    const previo = history?.groups?.[g];
+    if (prioridad === 'baja' && previo && previo.performed > 0 && history?.previous?.groups?.[g]?.priority !== 'baja') {
+      const mitad = Math.ceil(previo.performed / 2);
+      if (mitad > series) {
+        razones.push(`Venía haciendo ${previo.performed} series/semana: para mantener hace falta en torno a la mitad (${mitad}), más que el mínimo de la tabla (${series}).`);
+        series = mitad;
+      }
     }
 
     // ── 5. Historial del bloque anterior ─────────────────────────────────
@@ -276,6 +302,13 @@ export function suggestVolume(input: VolumeSuggestionInput): VolumeSuggestionRes
     reasons[g] = razones;
   }
 
+  // ── 6b. Demasiadas estrellas (17-11-2026) ──────────────────────────────
+  // Especializar es redistribuir: si casi todo es prioritario, nada lo es. Se
+  // cuentan ZONAS con estrella (los tres deltoides son una), y el número que
+  // admite depende del tipo de bloque: en especialización, una.
+  const aviso = avisoDeEstrellasDelMeso({ groups, tipoBloque: input.tipoBloque });
+  if (aviso) warnings.push(aviso.texto);
+
   // ── 7. Tope global, protegiendo los prioritarios ───────────────────────
   const limite = sesionesPorSemana * SERIES_POR_DIA_TOPE;
   const totalCrudo = MUSCLE_ORDER.reduce((s, g) => s + groups[g].series, 0);
@@ -287,7 +320,7 @@ export function suggestVolume(input: VolumeSuggestionInput): VolumeSuggestionRes
     // marcado con ⭐. El recorte es proporcional y no "de arriba abajo": bajar
     // siempre al grupo más grande acabaría igualando dorsal con antebrazo, que
     // es justo la forma que el rango por grupo existe para evitar.
-    const noPrioritarios = MUSCLE_ORDER.filter(g => groups[g].priority !== 'alta');
+    const noPrioritarios = MUSCLE_ORDER.filter(g => groups[g].priority !== 'alta' && groups[g].priority !== 'ignorar');
     const prioritarios   = MUSCLE_ORDER.filter(g => groups[g].priority === 'alta');
     const sumaAlta = prioritarios.reduce((s, g) => s + groups[g].series, 0);
     const sumaResto = noPrioritarios.reduce((s, g) => s + groups[g].series, 0);
@@ -314,7 +347,7 @@ export function suggestVolume(input: VolumeSuggestionInput): VolumeSuggestionRes
   // La razón de un grupo que acaba en 0 se resume: la lista de pasos no aporta
   // nada cuando el resultado es «no se entrena».
   for (const g of MUSCLE_ORDER) {
-    if (groups[g].series === 0) reasons[g] = ['Sin volumen: prioridad baja y rango de mantenimiento en 0.'];
+    if (groups[g].series === 0 && groups[g].priority !== 'ignorar') reasons[g] = ['Sin volumen: prioridad baja y rango de mantenimiento en 0.'];
   }
 
   return {

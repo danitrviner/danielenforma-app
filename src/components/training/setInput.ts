@@ -1,3 +1,5 @@
+import type { WorkoutSetLog } from '../../types';
+
 /** Fila editable de una serie en el player de sesión — mismo shape que
  * `SerieBorrador` (utils/sesionEnCurso.ts) y `SetPrefill` (utils/setPrefill.ts),
  * declarado una sola vez aquí para que TrainingScreen y los componentes de
@@ -14,6 +16,82 @@ export interface SetInput {
   segmento?: boolean;
   /** Serie principal (1 = la primera) a la que pertenece el segmento. */
   segmentoDe?: number;
+  /** Instante (ISO) en que se marcó como hecha. Ver `WorkoutSetLog.hechaEn`. */
+  hechaEn?: string;
+  /** D1b: el RIR de esta fila lo ha elegido el atleta (lo cambió o marcó
+   *  fallo). Sin la marca, el RIR que hay es el prerrelleno con el pautado.
+   *  Ver `WorkoutSetLog.rirApuntado`. */
+  rirApuntado?: boolean;
+}
+
+type Actualizar = (sIdx: number, field: keyof SetInput, value: string | boolean) => void;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Cómo se apunta el RIR (D1, 17-11-2026)
+
+   El RIR llega prerrellenado con el pautado y el atleta lo puede cambiar. Un
+   toque en «Hecha» lo guardaba como si fuera suyo: ese dato entraba en el RM
+   estimado y en la carga de la sesión siguiente. Ahora cada serie guarda si el
+   RIR lo eligió él (`rirApuntado`): si lo cambia o marca fallo, queda apuntado;
+   si no lo toca, se guarda sin marca, como siempre.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * El RIR pautado de toda la tabla en una etiqueta, agrupando series seguidas
+ * con el mismo — «RIR 1» si todas piden lo mismo, «RIR 2x2, 1xFALLO» si la
+ * última va al máximo. Va junto al rango de repeticiones (ver
+ * `resumenRangosPautados`): es el objetivo del coach y sigue a la vista aunque
+ * el atleta apunte otro en la fila.
+ */
+export function resumenRirPautado(pautados: readonly string[]): string | null {
+  const grupos: { rir: string; count: number }[] = [];
+  for (const p of pautados) {
+    if (p == null || p === '') continue;
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && ultimo.rir === p) ultimo.count++;
+    else grupos.push({ rir: p, count: 1 });
+  }
+  if (grupos.length === 0) return null;
+  if (grupos.length === 1) return grupos[0].rir === 'fallo' ? 'Al fallo' : `RIR ${grupos[0].rir}`;
+  return `RIR ${grupos.map(g => `${g.count}x${rirTexto(g.rir)}`).join(', ')}`;
+}
+
+/** El atleta elige el RIR de una fila: se guarda el valor y que lo eligió él. */
+export function apuntarRir(actualizar: Actualizar, sIdx: number, valor: string): void {
+  actualizar(sIdx, 'rir', valor);
+  actualizar(sIdx, 'rirApuntado', true);
+}
+
+/**
+ * Una fila de la tabla como la serie que se guarda en el registro. La marca
+ * `rirApuntado` (D1b) solo va si el atleta eligió o cambió el RIR (o marcó
+ * fallo): un RIR sin tocar se guarda SIN marca, como siempre. Al corregir una
+ * sesión ya guardada la fila trae la marca que tuviera el registro y se respeta.
+ */
+export function filaASerie(s: SetInput): WorkoutSetLog {
+  return {
+    weight: parseFloat(s.weight) || 0,
+    repsDone: parseInt(s.repsDone) || 0,
+    rir: s.rir === 'fallo' ? 0 : parseInt(s.rir) || 0,
+    alFallo: s.rir === 'fallo',
+    ...(s.segmento ? { segmento: true } : {}),
+    ...(s.segmento && s.segmentoDe ? { segmentoDe: s.segmentoDe } : {}),
+    ...(s.hechaEn ? { hechaEn: s.hechaEn } : {}),
+    ...(s.rirApuntado != null ? { rirApuntado: s.rirApuntado } : {}),
+  };
+}
+
+/**
+ * El RIR que llega de la pantalla de bloqueo. Allí «fallo» se enseña como 0, y
+ * el toque vuelve con ese 0: no es que el atleta haya cambiado nada, así que la
+ * fila se deja como estaba (`null`). Si el número es otro que el que tenía, lo
+ * ha cambiado él y cuenta como apuntado.
+ */
+export function rirDesdeElBloqueo(rirDeLaFila: string | undefined, rirDelToque: number): { valor: string; apuntado: boolean } | null {
+  if (!Number.isFinite(rirDelToque)) return null;
+  if (rirDeLaFila === 'fallo' && rirDelToque === 0) return null;
+  const valor = String(rirDelToque);
+  return { valor, apuntado: valor !== rirDeLaFila };
 }
 
 /** Orden de ciclo del selector compacto de la tabla: el valor más bajo (serie
@@ -35,6 +113,26 @@ export function rirClaseColor(valor: string): string {
   if (n <= 1) return 'text-accent-ink';
   if (n <= 3) return 'text-accent-ink/70';
   return 'text-ink-2';
+}
+
+/**
+ * ¿Se puede dar esta fila por hecha? Solo con repeticiones (F23, 17-11-2026).
+ * Antes se podía marcar «Hecha» una fila vacía y se guardaba una serie de
+ * 0 kg × 0 repeticiones: contaba como serie, bajaba las medias y pasaba a ser
+ * «la última vez». El peso NO se exige: 0 kg es lo normal en un ejercicio con
+ * el peso del cuerpo.
+ */
+export function tieneReps(fila: Pick<SetInput, 'repsDone'> | undefined): boolean {
+  return !!fila && parseInt(fila.repsDone, 10) > 0;
+}
+
+/** Lo que se le dice junto a la fila cuando intenta marcarla sin repeticiones. */
+export const AVISO_SIN_REPS = 'Apunta las repeticiones para marcarla como hecha.';
+
+/** Las filas que se guardan como series: marcadas y con repeticiones. Una fila
+ *  marcada sin repeticiones (un borrador de antes de F23) no es una serie. */
+export function seriesHechas<T extends Pick<SetInput, 'repsDone' | 'done'>>(filas: readonly T[]): T[] {
+  return filas.filter(s => s.done && tieneReps(s));
 }
 
 /** Fila vacía por defecto para una bajada (dropset) o miniserie (myoreps)

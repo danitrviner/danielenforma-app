@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { calcularAutoRellenos, cumplimientoDeSesiones, zonasEntrenadas } from './cuestionarioAuto';
+import {
+  bloqueQueSeCierra, calcularAutoRellenos, cumplimientoDeSesiones, ejerciciosDelBloque, zonasEntrenadas,
+} from './cuestionarioAuto';
 
 const hoy = '2026-10-30';
 
@@ -47,5 +49,99 @@ describe('zonasEntrenadas', () => {
       { zona: 'cuadriceps', fecha: '2026-10-29' },
       { zona: 'isquios', fecha: '2026-10-27' },
     ]);
+  });
+});
+
+describe('bloqueQueSeCierra', () => {
+  const m1 = { id: 'm1', startDate: '2026-09-07', weeks: 4 }; // acaba el 04-10
+  const m2 = { id: 'm2', startDate: '2026-10-05', weeks: 4 }; // acaba el 01-11
+  it('el que está en curso', () => {
+    expect(bloqueQueSeCierra([m1, m2], '2026-10-30')?.id).toBe('m2');
+  });
+  it('recién terminado y sin siguiente: sigue siendo ese', () => {
+    expect(bloqueQueSeCierra([m1], '2026-10-10')?.id).toBe('m1');
+  });
+  it('si el siguiente acaba de empezar, el cierre es del anterior', () => {
+    expect(bloqueQueSeCierra([m1, m2], '2026-10-07')?.id).toBe('m1');
+    expect(bloqueQueSeCierra([m1, m2], '2026-10-12')?.id).toBe('m2');
+  });
+  it('mandado a mitad de bloque (o con el cierre adelantado), el bloque en curso', () => {
+    // «Mandar ahora» o un cierre en la semana 2: el bloque anterior acabó hace
+    // menos de 14 días, pero el de ahora ya lleva más de una semana.
+    expect(bloqueQueSeCierra([m1, m2], '2026-10-14')?.id).toBe('m2');
+    const largo = { id: 'm3', startDate: '2026-11-02', weeks: 8 };
+    expect(bloqueQueSeCierra([m1, m2, largo], '2026-11-25')?.id).toBe('m3');
+  });
+  it('sin bloques, o con el último ya lejos, ninguno', () => {
+    expect(bloqueQueSeCierra([], hoy)).toBeNull();
+    expect(bloqueQueSeCierra(undefined, hoy)).toBeNull();
+    expect(bloqueQueSeCierra([m1], '2026-11-20')).toBeNull();
+  });
+});
+
+describe('ejerciciosDelBloque', () => {
+  const exercises = [
+    { id: 'sent', name: 'Sentadilla', muscleGroup: 'cuadriceps' as const },
+    { id: 'press', name: 'Press banca', muscleGroup: 'pecho' as const },
+    { id: 'curl', name: 'Curl en polea', muscleGroup: 'biceps' as const },
+  ];
+  const serie = { weight: 50, repsDone: 8, rir: 2 };
+  const mesocycles = [{ id: 'm2', startDate: '2026-10-05', weeks: 4 }];
+
+  it('solo los del bloque, en el orden en que aparecieron y con sus días', () => {
+    const r = ejerciciosDelBloque({
+      hoy, mesocycles, exercises,
+      logs: [
+        { date: '2026-10-20', mesocycleId: 'm2', entries: [{ exerciseId: 'press', sets: [serie] }] },
+        { date: '2026-10-06', mesocycleId: 'm2', entries: [{ exerciseId: 'sent', sets: [serie] }, { exerciseId: 'press', sets: [serie] }] },
+        // De otro bloque: fuera, aunque la fecha caiga dentro.
+        { date: '2026-10-08', mesocycleId: 'm1', entries: [{ exerciseId: 'curl', sets: [serie] }] },
+      ],
+    });
+    expect(r).toEqual([
+      { id: 'sent', nombre: 'Sentadilla', grupo: 'cuadriceps', sesiones: 1 },
+      { id: 'press', nombre: 'Press banca', grupo: 'pecho', sesiones: 2 },
+    ]);
+  });
+
+  it('un registro antiguo sin mesociclo entra por fechas', () => {
+    const r = ejerciciosDelBloque({
+      hoy, mesocycles, exercises,
+      logs: [
+        { date: '2026-10-10', entries: [{ exerciseId: 'curl', sets: [serie] }] },
+        { date: '2026-09-20', entries: [{ exerciseId: 'sent', sets: [serie] }] },
+      ],
+    });
+    expect(r.map(e => e.id)).toEqual(['curl']);
+  });
+
+  it('no sale el que se saltó siempre ni el que no tiene nombre', () => {
+    const r = ejerciciosDelBloque({
+      hoy, mesocycles, exercises,
+      logs: [{
+        date: '2026-10-10', mesocycleId: 'm2',
+        entries: [
+          { exerciseId: 'press', sets: [], note: 'No lo hice: máquina ocupada' },
+          { exerciseId: 'borrado', sets: [serie] },
+          { exerciseId: 'sent', sets: [serie] },
+        ],
+      }],
+    });
+    expect(r.map(e => e.id)).toEqual(['sent']);
+  });
+
+  it('sin bloque que cerrar, lo de las últimas seis semanas', () => {
+    const r = ejerciciosDelBloque({
+      hoy, exercises,
+      logs: [
+        { date: '2026-10-25', entries: [{ exerciseId: 'press', sets: [serie] }] },
+        { date: '2026-08-01', entries: [{ exerciseId: 'sent', sets: [serie] }] },
+      ],
+    });
+    expect(r.map(e => e.id)).toEqual(['press']);
+  });
+
+  it('sin datos, lista vacía', () => {
+    expect(ejerciciosDelBloque({ hoy })).toEqual([]);
   });
 });

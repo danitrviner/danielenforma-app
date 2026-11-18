@@ -11,6 +11,8 @@ import { distribucionDeMeso } from '../../utils/distribucionDeMeso.js';
 import { totalSemanas as totalSemanasNutri } from '../../utils/semanasNutricion.js';
 import { normalizarTexto as normTexto } from '../../utils/busqueda.js';
 import { nombreDeMeso } from '../../utils/nombresMeso.js';
+import { siguienteNumeroDeBloque } from '../../utils/numeroDeBloque.js';
+import { descargaEnSemanaDeCalendario } from '../../utils/descargaDelBloque.js';
 import type { LevelLadder, LadderLevel, LevelCriterionKind, WorkoutDayProposal, WorkoutDaysProposalPayload, RoadmapItem, NutritionPhaseProposal, NutritionProgramProposalPayload, RoadmapProposalPayload, SpecialDayProposalPayload, SpecialDayKind, WeekPlanProposalPayload, MacroAjustable, MensajeAtletaProposalPayload } from '../../types.js';
 import { PROTOCOLOS_VO2MAX } from '../../utils/cardioProgression.js';
 import type { SetupConfigProposalPayload, PublishBlockProposalPayload, WeeklyChallengeProposalPayload, WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload, MesocycleTemplateStageProposal, WorkoutDayExerciseProposal, QSchedule, WeekDay, ChallengeKind } from '../../types.js';
@@ -26,6 +28,11 @@ import { leerDietaPropuesta, DietUpdatePayload, validateMesocyclePayload, avisos
 import { Diet, Macros, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, PeriodizationBlockPayload, ProposalExpediente, DossierFact, DossierPatch } from '../../types.js';
 import { cambiosDeMesociclo, cambiosDeDieta, cambiosDePeriodizacion } from '../cambiosPropuesta.js';
 import { alimentosDelBancoDelCoach, contextoNutricional, findProfile, textoDeObjetivo, toResult } from './comunes.js';
+import { esTipoDeBloque, TIPOS_DE_BLOQUE_VALIDOS } from './hipotesis.js';
+import { TIPOS_DE_BLOQUE, avisoDeEstrellas, enLista, nombreCortoDeZona, tipoDeBloqueNuevo } from '../../utils/hipotesisDeBloque/tiposDeBloque.js';
+import { SEMANAS_POR_DEFECTO } from '../../utils/hipotesisDeBloque/cifras.js';
+import { zonasDeGrupos } from '../../utils/hipotesisDeBloque/mapaDeRespuesta.js';
+import { entradaYaPasada, entradasPrevistas } from '../../utils/rampaEnRutinas.js';
 
 export async function generateReportDraft(email: string, periodDaysInput: number, introOverride?: string): Promise<string> {
   const profile = await findProfile(email);
@@ -693,19 +700,140 @@ export async function proposeDietUpdate(
   });
 }
 
+/* ── Tipo de bloque, cuatro niveles y semana 1 reducida (H11, 17-11-2026) ─────
+   `propose_mesocycle` y `propose_periodization_block` aceptan `tipo_bloque`,
+   la prioridad `ignorar` y `semana1_reducida`. Aquí se separa lo que se le
+   pasa a validar a `validateMesocyclePayload` (un grupo ignorado es un grupo a
+   0 series: así vale con el validador conozca o no el cuarto nivel) de lo que
+   se guarda (0 series y `priority: 'ignorar'`, que es lo que el editor y los
+   motores leen para dejarlo fuera de sugerencias, avisos y reparto).
+
+   18-11-2026 (decisiones de Dani):
+    · Las zonas prioritarias no tienen tope. Con 4 o más en desarrollo (2 o más
+      en especialización) la propuesta lleva un AVISO y se crea igual: el
+      asistente puede proponerlo, y quien decide es Dani al revisarla. Nada de
+      esto es un `issue`.
+    · Sin `tipo_bloque`, el primer bloque de un atleta nace como «primer
+      bloque» con lo que marca su preset (ver `primerBloqueSiNoSeIndica`). */
+
+/** Los grupos tal y como los manda el asistente: con el cuarto nivel. */
+export type GruposDelAsistente = Partial<Record<MuscleGroup, { series: number; priority?: MuscleGroupConfig['priority'] }>>;
+
+/** Lo que el asistente puede decir de más sobre un bloque. Sin validar todavía. */
+export interface OpcionesDeBloque {
+  tipoBloque?: unknown;
+  semana1Reducida?: unknown;
+  /** ¿Mandó `weeks` el asistente? El despachador rellena las del bloque
+   *  estándar cuando faltan y aquí ya no se distingue. Sin decirlo, unas
+   *  semanas iguales a las del estándar se toman por «no indicadas». */
+  semanasIndicadas?: boolean;
+}
+
+/**
+ * El primer bloque de un atleta cuando el asistente no indica tipo (Dani,
+ * 18-11-2026: «no me parece mal que salga como primer bloque; de 8 semanas,
+ * aunque luego se pueda estirar»). Sin `tipo_bloque` y sin ningún bloque
+ * anterior, nace como «primer bloque» con lo que marca su preset: 8 semanas
+ * —salvo que el asistente haya dicho otras— y la semana 1 reducida. Con algún
+ * bloque anterior no se inventa nada: sigue como venía. Es una propuesta: Dani
+ * la cambia al revisarla.
+ */
+export function primerBloqueSiNoSeIndica(
+  opciones: OpcionesDeBloque, weeks: number, existentes: readonly unknown[],
+): { opciones: OpcionesDeBloque; weeks: number; aviso: string | null } {
+  if (opciones.tipoBloque !== undefined || tipoDeBloqueNuevo(existentes) !== 'primer') return { opciones, weeks, aviso: null };
+  const preset = TIPOS_DE_BLOQUE.primer;
+  const sinIndicar = opciones.semanasIndicadas === false || (opciones.semanasIndicadas === undefined && weeks === SEMANAS_POR_DEFECTO);
+  const semanas = sinIndicar ? preset.semanas : weeks;
+  return {
+    opciones: { ...opciones, tipoBloque: 'primer' },
+    weeks: semanas,
+    aviso: `Es el primer bloque de este atleta y no indicabas tipo_bloque: nace como «${preset.etiqueta}» (${semanas} semanas, semana 1 reducida). Dani lo puede cambiar al revisarlo; si no es un primer bloque, vuelve a proponerlo con su tipo_bloque.`,
+  };
+}
+
+export interface BloqueDelAsistente {
+  /** Los grupos, como los entiende `validateMesocyclePayload`. */
+  paraValidar: MesocycleProposalPayload['groups'];
+  /** Los 17 grupos, con los omitidos a 0 series (lo que espera el editor). */
+  groups: Record<MuscleGroup, MuscleGroupConfig>;
+  /** Lo que el tipo de bloque escribe en el mesociclo. Vacío sin tipo. */
+  campos: Partial<Pick<Mesocycle, 'tipoBloque' | 'semana1Reducida' | 'phaseType' | 'cdgVelocidad'>>;
+  issues: { field: string; message: string }[];
+  avisos: string[];
+}
+
+export function leerBloqueDelAsistente(groupsInput: GruposDelAsistente | null | undefined, opciones: OpcionesDeBloque = {}): BloqueDelAsistente {
+  const entrada = groupsInput && typeof groupsInput === 'object' ? groupsInput : {};
+  const issues: BloqueDelAsistente['issues'] = [];
+  const avisos: string[] = [];
+
+  const paraValidar = Object.fromEntries(Object.entries(entrada).map(([g, cfg]) =>
+    [g, cfg?.priority === 'ignorar' ? { series: 0 } : cfg])) as MesocycleProposalPayload['groups'];
+
+  const groups = Object.fromEntries(
+    (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).map(g => {
+      const cfg = entrada[g];
+      if (cfg?.priority === 'ignorar') {
+        if (Number(cfg.series) > 0) avisos.push(`${MUSCLE_LABELS[g]}: «ignorar» son 0 series; las ${cfg.series} que mandabas no se han guardado. Si lo quieres con la mitad, es «baja».`);
+        return [g, { series: 0, priority: 'ignorar' }];
+      }
+      return [g, { series: cfg?.series ?? 0, priority: cfg?.priority ?? 'media' }];
+    }),
+  ) as Record<MuscleGroup, MuscleGroupConfig>;
+
+  const campos: BloqueDelAsistente['campos'] = {};
+  const { tipoBloque, semana1Reducida } = opciones;
+  if (tipoBloque !== undefined && !esTipoDeBloque(tipoBloque)) {
+    issues.push({ field: 'tipo_bloque', message: `tipo_bloque debe ser uno de: ${TIPOS_DE_BLOQUE_VALIDOS.join(', ')} (recibido: ${JSON.stringify(tipoBloque)})` });
+  }
+  if (semana1Reducida !== undefined && typeof semana1Reducida !== 'boolean') {
+    issues.push({ field: 'semana1_reducida', message: 'semana1_reducida debe ser true o false' });
+  }
+  const tipo = esTipoDeBloque(tipoBloque) ? tipoBloque : undefined;
+  if (tipo) {
+    const preset = TIPOS_DE_BLOQUE[tipo];
+    campos.tipoBloque = tipo;
+    // Derivados, como en el editor: el calendario lee `phaseType` y el
+    // protocolo semanal, la velocidad.
+    campos.phaseType = preset.phaseType;
+    campos.cdgVelocidad = preset.velocidad;
+    // Solo el primer bloque la trae encendida; en el resto, apagada salvo que se pida.
+    if (preset.semana1Reducida) campos.semana1Reducida = true;
+
+    // Informativo, nunca un rechazo: con 4 o más zonas prioritarias (2 o más en
+    // especialización) se avisa y la propuesta se crea igual (Dani, 18-11-2026).
+    const prioritarias = zonasDeGrupos((Object.keys(groups) as MuscleGroup[]).filter(g => groups[g].priority === 'alta' && groups[g].series > 0));
+    const aviso = avisoDeEstrellas(tipo, prioritarias.length);
+    if (aviso) avisos.push(`Los grupos en «alta» son ${prioritarias.length} ${prioritarias.length === 1 ? 'zona prioritaria' : 'zonas prioritarias'} (${enLista(prioritarias.map(z => nombreCortoDeZona(z).toLowerCase()))}). ${aviso.texto}`);
+  }
+  if (typeof semana1Reducida === 'boolean') {
+    campos.semana1Reducida = semana1Reducida;
+    if (semana1Reducida && tipo !== 'primer') avisos.push('Semana 1 reducida: solo con ejercicios nuevos o tras un parón de más de 3 semanas. Di cuál de las dos en rationale.');
+  }
+  return { paraValidar, groups, campos, issues, avisos };
+}
+
+/** « · Desarrollo» y « · semana 1 reducida» para el resumen de la tarjeta. */
+function textoDeTipo(campos: BloqueDelAsistente['campos']): string {
+  return (campos.tipoBloque ? ` · ${TIPOS_DE_BLOQUE[campos.tipoBloque].etiqueta}` : '') + (campos.semana1Reducida ? ' · semana 1 reducida' : '');
+}
+
 export async function proposeMesocycle(
   athleteEmail: string,
-  weeks: number,
+  semanasPedidas: number,
   daysPerWeek: number,
   objective: string,
-  groupsInput: MesocycleProposalPayload['groups'],
+  groupsInput: GruposDelAsistente,
   startDate: string | undefined,
   rationale: string,
   chatId: string,
   expediente?: ProposalExpediente,
   repartoInput?: unknown,
+  opciones: OpcionesDeBloque = {},
 ): Promise<string> {
-  const issues = validateMesocyclePayload({ weeks, daysPerWeek, objective, groups: groupsInput });
+  const comoLlega = leerBloqueDelAsistente(groupsInput, opciones);
+  const issues = [...validateMesocyclePayload({ weeks: semanasPedidas, daysPerWeek, objective, groups: comoLlega.paraValidar }), ...comoLlega.issues];
   const { reparto, issues: issuesReparto } = repartoDesdeAsistente(repartoInput);
   issues.push(...issuesReparto);
   if (reparto && sesionesDelReparto(reparto) !== daysPerWeek) {
@@ -714,23 +842,25 @@ export async function proposeMesocycle(
   if (issues.length > 0) {
     return toResult({ valid: false, issues, note: 'Corrige estos problemas y vuelve a llamar a propose_mesocycle.' });
   }
-  const avisos = avisosDeMesociclo({ weeks, daysPerWeek, objective, groups: groupsInput });
 
   const profile = await findProfile(athleteEmail);
   if (!profile) return toResult({ valid: false, issues: [{ field: 'athlete_email', message: `No existe ningún cliente con email ${athleteEmail}` }] });
 
   const existing = await getMesocycles(athleteEmail);
   // Tras borrar un mesociclo, `length + 1` repetía número (B14, 26-10-2026).
-  const number = Math.max(0, ...existing.map(m => m.number ?? 0)) + 1;
+  const number = siguienteNumeroDeBloque(existing);
+  // Sin tipo y sin bloques anteriores: es su primer bloque (Dani, 18-11-2026).
+  const primero = primerBloqueSiNoSeIndica(opciones, semanasPedidas, existing);
+  const bloque = primero.aviso ? leerBloqueDelAsistente(groupsInput, primero.opciones) : comoLlega;
+  const weeks = primero.weeks;
+  const avisos = [
+    ...avisosDeMesociclo({ weeks, daysPerWeek, objective, groups: bloque.paraValidar }), ...bloque.avisos,
+    ...(primero.aviso ? [primero.aviso] : []),
+  ];
 
-  // Rellena todos los grupos: los omitidos van a 0 series (shape completo que
-  // espera el editor de la app).
-  const groups = Object.fromEntries(
-    (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).map(g => {
-      const cfg = groupsInput[g];
-      return [g, { series: cfg?.series ?? 0, priority: cfg?.priority ?? 'media' }];
-    })
-  ) as Record<MuscleGroup, MuscleGroupConfig>;
+  // Todos los grupos: los omitidos van a 0 series (shape completo que espera
+  // el editor de la app) y los ignorados, a 0 con su nivel.
+  const { groups } = bloque;
 
   const payload: Omit<Mesocycle, 'id'> = {
     athleteId: athleteEmail,
@@ -740,6 +870,7 @@ export async function proposeMesocycle(
     objective,
     daysPerWeek,
     groups,
+    ...bloque.campos,
   };
   // Con reparto: el calendario sale de él y la distribución se calcula ya, la
   // misma que daría «Distribución automática» en el editor.
@@ -756,7 +887,7 @@ export async function proposeMesocycle(
   const totalSeries = trained.length > 0
     ? (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).reduce((s, g) => s + groups[g].series, 0)
     : 0;
-  const summary = `Mesociclo #${number} · ${objective} · ${weeks} sem × ${daysPerWeek} días · ${totalSeries} series/sem${reparto ? ` · ${reparto.nombre}` : ''}`;
+  const summary = `Mesociclo #${number} · ${objective} · ${weeks} sem × ${daysPerWeek} días · ${totalSeries} series/sem${reparto ? ` · ${reparto.nombre}` : ''}${textoDeTipo(bloque.campos)}`;
   const anterior = [...existing].sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
   const cambios = cambiosDeMesociclo(anterior, payload);
 
@@ -857,6 +988,25 @@ export async function proposeWorkoutDays(
     .filter(x => (x.plan > 0 || x.sesiones > 0) && Math.abs(x.plan - x.sesiones) >= 2)
     .map(x => `${x.grupo}: mesociclo ${x.plan} / sesiones ${x.sesiones}`);
 
+  // Norma de ejercicio nuevo (17-11-2026): los que el atleta no ha hecho nunca
+  // (o no en más de 8 semanas) entran con más repeticiones las semanas 1-3. La
+  // entrada no va en la propuesta —ahí se pauta el rango de verdad—: la pone
+  // la app al guardar las sesiones o, si en ese momento no puede leer los
+  // registros, la primera vez que Dani abre el bloque en el editor. Aquí solo
+  // se avisa de cuáles son, para que el asistente se lo cuente. Si los
+  // registros no se pueden leer, no se avisa de nada.
+  let nuevos: string[] = [];
+  if (!entradaYaPasada(meso.startDate, cicloDiasDeMeso(meso), hoyIsoLocal())) {
+    try {
+      const registros = await getWorkoutLogs(athleteEmail);
+      const porId = new Map(exercises.map(e => [e.id, e]));
+      nuevos = entradasPrevistas(
+        days.flatMap(d => d.exercises),
+        { registros, inicio: meso.startDate, ejercicio: id => porId.get(id) },
+      ).map(n => `${porId.get(n.exerciseId)?.name ?? n.exerciseId}: ${n.entrada} las semanas 1-3 y desde la 4 su ${n.pautado}`);
+    } catch { /* sin registros no se avisa: la entrada se decide al guardar o en el editor */ }
+  }
+
   const totalSeries = days.reduce((s, d) => s + d.exercises.reduce((t, e) => t + e.sets, 0), 0);
   const summary = `Sesiones de ${nombreDeMeso(meso)} · ${days.length} ${days.length === 1 ? 'día' : 'días'} · ${totalSeries} series`;
 
@@ -880,6 +1030,10 @@ export async function proposeWorkoutDays(
     mesocycle: `${nombreDeMeso(meso)} (${meso.id})`,
     dias: days.map(d => `${d.dayIndex}: ${d.exercises.length} ejercicios`),
     desviacionRespectoAlMesociclo: desvios.length ? desvios : undefined,
+    ...(nuevos.length ? {
+      ejerciciosNuevos: nuevos,
+      normaEjercicioNuevo: 'Estos ejercicios son nuevos para el atleta: la app les pone esa entrada de repeticiones al guardar las sesiones (o cuando Dani abra el bloque en el editor, donde puede quitarla). No cambies el rango pautado; díselo a Dani en una línea.',
+    } : {}),
     note: 'Propuesta creada. Dani puede editar series, reps, RIR y quitar ejercicios antes de aprobarla.',
   });
 }
@@ -890,10 +1044,10 @@ export async function proposeWorkoutDays(
 // (Bloque H) las pinta solas en cuanto existen, sin nada más que hacer.
 export async function proposePeriodizationBlock(
   athleteEmail: string,
-  weeks: number,
+  semanasPedidas: number,
   daysPerWeek: number,
   objective: string,
-  groupsInput: MesocycleProposalPayload['groups'],
+  groupsInput: GruposDelAsistente,
   startDate: string | undefined,
   deloadWeek: number | undefined,
   reviewCadenceWeeks: number,
@@ -901,10 +1055,12 @@ export async function proposePeriodizationBlock(
   rationale: string,
   chatId: string,
   expediente?: ProposalExpediente,
+  opciones: OpcionesDeBloque = {},
 ): Promise<string> {
-  const issues = validateMesocyclePayload({ weeks, daysPerWeek, objective, groups: groupsInput });
-  if (deloadWeek !== undefined && (deloadWeek < 1 || deloadWeek > weeks)) {
-    issues.push({ field: 'deload_week', message: `deload_week debe estar entre 1 y ${weeks}` });
+  const comoLlega = leerBloqueDelAsistente(groupsInput, opciones);
+  const issues = [...validateMesocyclePayload({ weeks: semanasPedidas, daysPerWeek, objective, groups: comoLlega.paraValidar }), ...comoLlega.issues];
+  if (deloadWeek !== undefined && (deloadWeek < 1 || deloadWeek > semanasPedidas)) {
+    issues.push({ field: 'deload_week', message: `deload_week debe estar entre 1 y ${semanasPedidas}` });
   }
   if (!Number.isFinite(reviewCadenceWeeks) || reviewCadenceWeeks < 1) {
     issues.push({ field: 'review_cadence_weeks', message: 'review_cadence_weeks debe ser un número >= 1' });
@@ -918,14 +1074,30 @@ export async function proposePeriodizationBlock(
 
   const existing = await getMesocycles(athleteEmail);
   // Tras borrar un mesociclo, `length + 1` repetía número (B14, 26-10-2026).
-  const number = Math.max(0, ...existing.map(m => m.number ?? 0)) + 1;
-  const groups = Object.fromEntries(
-    (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).map(g => {
-      const cfg = groupsInput[g];
-      return [g, { series: cfg?.series ?? 0, priority: cfg?.priority ?? 'media' }];
-    })
-  ) as Record<MuscleGroup, MuscleGroupConfig>;
+  const number = siguienteNumeroDeBloque(existing);
+  // Sin tipo y sin bloques anteriores: es su primer bloque (Dani, 18-11-2026).
+  // Si al acortarlo a sus semanas la descarga pedida cae fuera, se conservan
+  // las semanas que venían: no se rechaza una propuesta por un valor por defecto.
+  const primerBloque = primerBloqueSiNoSeIndica(opciones, semanasPedidas, existing);
+  const primero = deloadWeek !== undefined && deloadWeek > primerBloque.weeks
+    ? primerBloqueSiNoSeIndica({ ...opciones, semanasIndicadas: true }, semanasPedidas, existing)
+    : primerBloque;
+  const bloque = primero.aviso ? leerBloqueDelAsistente(groupsInput, primero.opciones) : comoLlega;
+  const weeks = primero.weeks;
+  const { groups } = bloque;
+  // La descarga por calendario ya no se ofrece (17-11-2026): va por señales.
+  // El campo se sigue aceptando para no romper a quien lo mande, y se avisa.
+  const avisos = [
+    ...avisosDeMesociclo({ weeks, daysPerWeek, objective, groups: bloque.paraValidar }),
+    ...bloque.avisos,
+    ...(primero.aviso ? [primero.aviso] : []),
+    ...(deloadWeek !== undefined ? [`deload_week está en desuso: la descarga se decide por señales (marcas que caen, cansancio alto sostenido), no por calendario. Se ha guardado en la semana ${deloadWeek} porque la has mandado; si no hay una señal que la pida, quítala.`] : []),
+  ];
 
+  // La descarga se guarda en `semanasDescarga`, que es lo que recorta el
+  // entreno; `deloadWeek` solo pinta el calendario. Guardando solo `deloadWeek`
+  // el asistente prometía una descarga («descarga en sem. 8») que el atleta
+  // nunca hacía. Ver utils/descargaDelBloque.ts.
   const mesocycle: Omit<Mesocycle, 'id'> = {
     athleteId: athleteEmail,
     number,
@@ -934,7 +1106,8 @@ export async function proposePeriodizationBlock(
     objective,
     daysPerWeek,
     groups,
-    ...(deloadWeek !== undefined ? { deloadWeek } : {}),
+    ...bloque.campos,
+    ...(deloadWeek !== undefined ? descargaEnSemanaDeCalendario(deloadWeek, cicloDiasDeMeso({ daysPerWeek })) : {}),
   };
 
   const reviewCount = Math.max(1, Math.floor(weeks / reviewCadenceWeeks));
@@ -942,7 +1115,7 @@ export async function proposePeriodizationBlock(
     .filter(g => groups[g].series > 0)
     .map(g => `${MUSCLE_LABELS[g]} ${groups[g].series}`);
   const totalSeries = (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).reduce((s, g) => s + groups[g].series, 0);
-  const summary = `Bloque #${number} · ${objective} · ${weeks} sem × ${daysPerWeek} días · ${totalSeries} series/sem`
+  const summary = `Bloque #${number} · ${objective} · ${weeks} sem × ${daysPerWeek} días · ${totalSeries} series/sem${textoDeTipo(bloque.campos)}`
     + (deloadWeek ? ` · descarga en sem. ${deloadWeek}` : '')
     + ` · revisión cada ${reviewCadenceWeeks} sem (${reviewCount})`;
 
@@ -969,6 +1142,7 @@ export async function proposePeriodizationBlock(
     number,
     trainedGroups: trained,
     reviewCount,
+    ...(avisos.length ? { avisos } : {}),
     note: 'Propuesta de bloque completo creada. Dani la revisa y aprueba desde el panel — al aprobar se crean el mesociclo y todas las revisiones de golpe; los entrenamientos por día y la progresión por ejercicio los configura después en la app.',
   });
 }
@@ -1353,7 +1527,7 @@ export async function addCoachTask(email: string, title: string, phase: string |
 }
 
 /* El mismo progreso que pintan los titulares de Revisión › El cuerpo, en texto.
-   Se reutilizan las utilidades de esa pantalla (US Navy, índices, IRP,
+   Se reutilizan las utilidades de esa pantalla (US Navy, índices,
    resumirSerie con el margen de error de cada perímetro) para que lo que lea
    la IA y lo que vea Dani no puedan contarse distinto. */
 /* Lo que Dani le ha dicho a una propuesta sin llegar a aprobarla. Es la

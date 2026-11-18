@@ -16,6 +16,13 @@ export interface CdgSerieRealizada extends CdgSerie {
   weight: number | string;
   intensification: string; // técnica tal cual ('' o '-' = Normal)
   intensificationList?: Array<{ intensificationReps: number | string; intensificationWeight: number | string }>;
+  /**
+   * Solo en el camino de los registros de la app (la hoja no lo tiene): `false`
+   * si la serie se guardó con el RIR pautado sin tocar (`WorkoutSetLog.rirApuntado`).
+   * Lo rellena quien convierte los registros (una serie al fallo va como
+   * apuntada); lo lee `rendimientoDeRegistros.ts`.
+   */
+  rirApuntado?: boolean;
 }
 
 export interface EntradaSerieHoja { reps: string | number; kg: string | number; rir: string | number; tecnica?: string }
@@ -100,7 +107,11 @@ export interface CargaPorSesion { IF: number[]; IEM: number[][]; estresArticular
  * semanasPrevias = las últimas semanas REALIZADAS, la más reciente primero:
  * 6 como el original; con `minimo` se admiten menos (E-10) y la crónica es la
  * media simple de las que haya. Fuera de [minimo, 6] devuelve null.
- * IF: crónica 0 → 0. IEM/estrés articular: crónica 0 → 1.
+ * IF: crónica 0 → 0. IEM/estrés articular: crónica 0 → 1 (así lo hace la hoja).
+ * Ese «1» esconde lo que se estrena: un músculo sin historia y con carga esta
+ * semana parece «igual que siempre». Por eso se devuelve también la `aguda`, y
+ * `avisosCarga` saca aparte lo NUEVO (crónica 0, aguda > 0) en vez de fiarse
+ * del ratio (F15, 17-11-2026).
  */
 export function cargaAgudaCronica (aguda: CargaPorSesion, semanasPrevias: CalculoSemana[], minimo = SEMANAS_CARGA_CRONICA) {
   if (semanasPrevias.length < minimo || semanasPrevias.length > SEMANAS_CARGA_CRONICA) return null
@@ -117,7 +128,7 @@ export function cargaAgudaCronica (aguda: CargaPorSesion, semanasPrevias: Calcul
   }
   const cronica = { IF: cIF.map(v => v / n), IEM: cIEM!.map(r => r.map(v => v / n)), estresArticular: cEA!.map(r => r.map(v => v / n)) }
   return {
-    cronica,
+    cronica, aguda,
     IF: cronica.IF.map((c, i) => (c === 0 ? 0 : aguda.IF[i] / c)),
     IEM: cronica.IEM.map((r, i) => r.map((c, k) => (c === 0 ? 1 : aguda.IEM[i][k] / c))),
     estresArticular: cronica.estresArticular.map((r, i) => r.map((c, k) => (c === 0 ? 1 : aguda.estresArticular[i][k] / c)))
@@ -146,14 +157,48 @@ export function colapsarCarga (a: CargaPorSesion): CargaPorSesion {
   return { IF: [...dias.IF, a.IF[7]], IEM: [...dias.IEM, a.IEM[7]], estresArticular: [...dias.estresArticular, a.estresArticular[7]] }
 }
 
-/** Avisos fuera de [inferior, superior] (en la hoja: Presentación M14/M13, por defecto 0.8 / 1.6). */
-export function avisosCarga (ac: NonNullable<ReturnType<typeof cargaAgudaCronica>>, motor: MotorCdg, { superior = 1.6, inferior = 0.8 } = {}) {
+/** Carga de esta semana en algo que no tiene historia en la crónica: informativo, no es un ratio. */
+export interface AvisoDeCargaNueva { sesion: string; tipo: 'musculo' | 'articulacion'; nombre: string; aguda: number }
+
+/** Sin historia (crónica exactamente 0) y con carga esta semana. */
+const esNuevo = (cronica: number, aguda: number) => cronica === 0 && aguda > 0.005
+
+/**
+ * Avisos fuera de [inferior, superior] (en la hoja: Presentación M14/M13, por defecto 0.8 / 1.6).
+ *
+ * Dos cosas que la hoja no hace (F15, 17-11-2026):
+ *  - `nuevos`: músculos y articulaciones con crónica 0 y carga esta semana. La
+ *    hoja les da ratio 1 y nunca avisan; aquí salen aparte, como estado propio
+ *    («zona nueva»), solo en el TOTAL de la semana: que algo cambie de sesión no
+ *    lo hace nuevo. Una sesión que antes no existía lleva `nueva` en vez de `fuera`.
+ *  - `sinAvisoPorDebajo`: en una semana de descarga o puente, quedar por debajo
+ *    de la media es lo que se busca; solo se avisa por encima.
+ */
+export function avisosCarga (
+  ac: NonNullable<ReturnType<typeof cargaAgudaCronica>>, motor: MotorCdg,
+  { superior = 1.6, inferior = 0.8, sinAvisoPorDebajo = false }: { superior?: number; inferior?: number; sinAvisoPorDebajo?: boolean } = {},
+) {
   const ses = (i: number) => (i === 7 ? 'Total de sesiones' : `Sesión ${i + 1}`)
-  const fuera = (v: number) => v > superior || v < inferior
+  const fuera = (v: number) => v > superior || (!sinAvisoPorDebajo && v < inferior)
+  const TOTAL = 7
+  const nuevos: AvisoDeCargaNueva[] = [
+    ...(ac.cronica.IEM[TOTAL] ?? []).flatMap((c, k): AvisoDeCargaNueva[] => {
+      const a = ac.aguda.IEM[TOTAL]?.[k] ?? 0
+      return esNuevo(c, a) ? [{ sesion: ses(TOTAL), tipo: 'musculo', nombre: motor.musculos[k], aguda: a }] : []
+    }),
+    ...(ac.cronica.estresArticular[TOTAL] ?? []).flatMap((c, k): AvisoDeCargaNueva[] => {
+      const a = ac.aguda.estresArticular[TOTAL]?.[k] ?? 0
+      return esNuevo(c, a) ? [{ sesion: ses(TOTAL), tipo: 'articulacion', nombre: motor.articulaciones[k], aguda: a }] : []
+    }),
+  ]
   return {
-    sesionesIF: ac.IF.map((v, i) => ({ sesion: ses(i), valor: v, fuera: fuera(v) })),
+    sesionesIF: ac.IF.map((v, i) => {
+      const nueva = esNuevo(ac.cronica.IF[i], ac.aguda.IF[i] ?? 0)
+      return { sesion: ses(i), valor: v, fuera: !nueva && fuera(v), ...(nueva ? { nueva: true } : {}) }
+    }),
     musculos: ac.IEM.flatMap((r, i) => r.map((v, k) => ({ sesion: ses(i), nombre: motor.musculos[k], valor: v })).filter(x => fuera(x.valor))),
-    articulaciones: ac.estresArticular.flatMap((r, i) => r.map((v, k) => ({ sesion: ses(i), nombre: motor.articulaciones[k], valor: v })).filter(x => fuera(x.valor)))
+    articulaciones: ac.estresArticular.flatMap((r, i) => r.map((v, k) => ({ sesion: ses(i), nombre: motor.articulaciones[k], valor: v })).filter(x => fuera(x.valor))),
+    nuevos,
   }
 }
 
@@ -191,7 +236,11 @@ export function calcularTonelaje (sets: CdgSerieRealizada[]) {
   return t
 }
 
-export interface FilaRendimiento { semana: string; sesion: string; ejercicio: string; rm: number; tonelaje: number }
+export interface FilaRendimiento {
+  semana: string; sesion: string; ejercicio: string; rm: number; tonelaje: number
+  /** Solo en `rendimientoSemanaDeRegistros` (`rendimientoDeRegistros.ts`): ninguna serie válida para el RM (`rm` es 0, y no es una marca de 0 kg). */
+  sinMarca?: boolean
+}
 
 export function rendimientoSemana (nombreSemana: string, semana: SemanaRealizada): FilaRendimiento[] {
   const filas: FilaRendimiento[] = []

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Questionnaire } from '../types';
 import {
@@ -8,6 +8,9 @@ import QuestionnaireEditor, { FormState, blankForm, formFromQuestionnaire } from
 import { QUESTIONNAIRE_PRESETS, buildQuestionnaireFromPreset } from '../data/questionnairePresets';
 import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, ListRow, Badge } from './ui';
+import { anadirPreguntasDelPaquete, insertarEnSuSeccion } from '../utils/preguntasDelPaquete';
+import { useToast } from '../hooks/useToast';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 
 interface Props { coachId: string }
 
@@ -24,6 +27,35 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
   const [saving, setSaving]             = useState(false);
   const [deleting, setDeleting]         = useState<string | null>(null);
   const [loadingPresets, setLoadingPresets] = useState(false);
+  const { showToast } = useToast();
+
+  // Preguntas que el paquete oficial ganó después de que el coach creara este
+  // cuestionario (18-11-2026). Se mira la versión GUARDADA: es la que tienen
+  // sus atletas. Nada se añade solo: lo hace el botón «Añadirlas».
+  const guardado = editingId ? questionnaires.find(q => q.id === editingId) : undefined;
+  const previa = useMemo(() => (guardado ? anadirPreguntasDelPaquete(guardado, i => `previa-${i}`) : null), [guardado]);
+  const [anadiendo, setAnadiendo] = useState(false);
+  const anadirLasDelPaquete = async () => {
+    if (!guardado) return;
+    const { cuestionario, anadidas } = anadirPreguntasDelPaquete(guardado);
+    if (anadidas.length === 0) return;
+    setAnadiendo(true);
+    try {
+      await updateQuestionnaire(guardado.id, { questions: cuestionario.questions });
+      queryClient.setQueryData<Questionnaire[]>(queryKey, prev => prev?.map(q => q.id === guardado.id ? { ...q, questions: cuestionario.questions } : q));
+      // Al formulario abierto, las mismas (sin pisar lo que esté editando).
+      setForm(f => ({
+        ...f,
+        questions: insertarEnSuSeccion(f.questions, anadidas.filter(n => !f.questions.some(p => p.signalKey === n.signalKey))),
+      }));
+      showToast(`${anadidas.length === 1 ? 'Añadida 1 pregunta' : `Añadidas ${anadidas.length} preguntas`} del paquete oficial.`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast(mensajeDeErrorFirestore(err, 'añadir las preguntas'));
+    } finally {
+      setAnadiendo(false);
+    }
+  };
 
   const openEditor = (q?: Questionnaire) => {
     setEditingId(q?.id ?? null);
@@ -95,6 +127,15 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
         onCancel={() => setView('list')}
         saving={saving}
         isNew={!editingId}
+        aviso={previa && previa.anadidas.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-3 rounded-control border border-accent-line bg-accent-bg/40 px-4 py-3">
+            <Icon name="library_add" size="m" className="text-accent-ink shrink-0" />
+            <p className="flex-1 min-w-[14rem] font-sans text-body-s text-ink-2 text-pretty">{previa.resumen}</p>
+            <Button size="s" variant="secondary" onClick={anadirLasDelPaquete} loading={anadiendo} loadingLabel="Añadiendo">
+              Añadirlas
+            </Button>
+          </div>
+        ) : undefined}
       />
     );
   }

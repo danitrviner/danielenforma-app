@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { crearPaqueteOficial, itemsPendientes } from './paqueteOficial';
+import { claveDeItem, crearPaqueteOficial, itemsPendientes } from './paqueteOficial';
 import { PAQUETE_OFICIAL } from '../data/questionnairePresets';
 import type { Questionnaire, QuestionnairePack } from '../types';
 
@@ -27,5 +27,14 @@ describe('paquete oficial', () => {
     const pend = itemsPendientes(pack, activas, [{ id: 'm' }]);
     expect(pend).toHaveLength(1);
     expect(pend[0].schedule.semanaDelBloque).toBe('mitad');
+  });
+});
+
+describe('claveDeItem con semana concreta (18-11-2026)', () => {
+  it('dos «semana del bloque» con semanas distintas no son la misma', () => {
+    const tres = { questionnaireId: 'm', schedule: { type: 'mesocycle_week' as const, semanaNumero: 3 } };
+    const cinco = { questionnaireId: 'm', schedule: { type: 'mesocycle_week' as const, semanaNumero: 5 } };
+    expect(claveDeItem(tres)).not.toBe(claveDeItem(cinco));
+    expect(itemsPendientes({ items: [tres, cinco] }, [tres], [{ id: 'm' }])).toEqual([cinco]);
   });
 });

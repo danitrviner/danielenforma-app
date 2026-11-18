@@ -1,14 +1,23 @@
 import React, { useMemo, useState } from 'react';
-import type { Mesocycle, NutritionProgram, WeeklyChallenge, WorkoutAssignment, WorkoutLog } from '../types';
+import type { Exercise, Mesocycle, NutritionProgram, WeeklyChallenge, Workout, WorkoutAssignment, WorkoutLog } from '../types';
 import { addDays, getWeekStart, hoyIsoLocal } from '../utils/trainingWeek';
 import { semanasDelPlan, evaluarPlan, calcularGastoReal } from '../utils/seguimientoPlan';
 import { construirRoadmap } from '../utils/roadmapDelAtleta';
 import RoadmapDelAtletaVista from './roadmap/RoadmapDelAtletaVista';
 import WeeklyChallengeCard from './roadmap/WeeklyChallengeCard';
+import ObjetivoDelBloque from './training/ObjetivoDelBloque';
+import BloqueTerminado from './training/BloqueTerminado';
+import { progresoDelObjetivo } from '../utils/progresoDelObjetivo';
+import { bloqueTerminadoParaElAtleta } from '../utils/bloqueTerminado';
 
 /* Banco de pruebas del Road map del atleta (29-10) — `/dev/roadmap`.
    Sin Firestore: el programa, los pesos y el bloque están en memoria. Enseña
-   el camino con fases y el arranque sin ellas; `?v=plan|arranque` una sola. */
+   el camino con fases y el arranque sin ellas; `?v=plan|arranque` una sola.
+
+   17-11-2026: el bloque en curso lleva hipótesis (pecho), así que el paso de
+   entreno enseña el objetivo del bloque. `?v=objetivo` enseña la franja en
+   varios momentos del bloque y `?v=cierre` la celebración de «Bloque
+   terminado» (con marcas y sin ellas). */
 
 const HOY = hoyIsoLocal();
 const EMAIL = 'dev.atleta@example.com';
@@ -31,7 +40,7 @@ const PESOS = Array.from({ length: 40 }, (_, i) => {
 const PASOS = PESOS.map(p => ({ id: `s_${p.date}`, athleteId: EMAIL, date: p.date, steps: 8600 + (p.date.charCodeAt(9) % 5) * 300, source: 'manual' as const, createdAt: '' }));
 const MESOS: Mesocycle[] = [
   { id: 'm0', athleteId: EMAIL, name: 'Adaptación', startDate: addDays(INICIO, -6 * 7), weeks: 6 } as Mesocycle,
-  { id: 'm1', athleteId: EMAIL, name: 'Hipertrofia 1', startDate: addDays(INICIO, 7), weeks: 9 } as Mesocycle,
+  { id: 'm1', athleteId: EMAIL, name: 'Hipertrofia 1', startDate: addDays(INICIO, 7), weeks: 9, daysPerWeek: 3, tipoBloque: 'desarrollo', hipotesis: { pectoral: { palanca: 'volumen', rmObjetivoPct: 8 } } } as unknown as Mesocycle,
   { id: 'm2', athleteId: EMAIL, name: 'Hipertrofia 2', startDate: addDays(INICIO, 7 + 9 * 7), weeks: 8 } as Mesocycle,
 ];
 // Seis semanas cerradas y la actual hasta hoy, todas hechas.
@@ -53,20 +62,133 @@ const LOGS: WorkoutLog[] = ASIGNACIONES.map((a, i) => ({
   entries: [{ exerciseId: 'press', sets: [0, 1, 2].map(() => ({ weight: 60 + Math.floor(i / 3) * 2, repsDone: 8, rir: 2 })) }],
 }));
 
+/* ── Objetivo del bloque y bloque terminado (17-11) ─────────────────────── */
+
+const EJERCICIOS = [
+  { id: 'press', name: 'Press inclinado', muscleGroup: 'pecho' },
+  { id: 'aperturas', name: 'Aperturas en polea', muscleGroup: 'pecho' },
+  { id: 'laterales', name: 'Elevaciones laterales', muscleGroup: 'deltoide_lat' },
+  { id: 'remo', name: 'Remo con barra', muscleGroup: 'dorsal' },
+  { id: 'prensa', name: 'Prensa', muscleGroup: 'cuadriceps' },
+] as unknown as Exercise[];
+/** La rutina del bloque en curso, para el empujón. */
+const RUTINAS = [{ id: 'w', mesocycleId: 'm1', name: 'Torso', dayIndex: 0, exercises: [{ exerciseId: 'press', order: 0, sets: 3, reps: '8-10', restSeconds: 120, rir: 2 }] }] as unknown as Workout[];
+
+/** Un bloque de mentira que empezó hace `semanasHechas` semanas (o que acabó hace 3 días, con `terminado`). */
+function bloqueDeMuestra(o: {
+  semanasHechas: number; semanas?: number; terminado?: boolean; hipotesis: Mesocycle['hipotesis'];
+  /** kg × repeticiones de cada ejercicio en la semana `s` (1 = la primera). */
+  marcas: (s: number) => Record<string, [number, number]>;
+  sesionesHechas?: number;
+}) {
+  const semanas = o.semanas ?? 12;
+  const inicio = o.terminado ? addDays(HOY, -(semanas * 7 + 2)) : addDays(getWeekStart(HOY), -7 * o.semanasHechas);
+  const meso = { id: 'demo', athleteId: EMAIL, number: 2, name: 'Hipertrofia 2', startDate: inicio, weeks: semanas, daysPerWeek: 2, tipoBloque: 'desarrollo', hipotesis: o.hipotesis } as unknown as Mesocycle;
+  const n = o.terminado ? semanas : o.semanasHechas;
+  const logs: WorkoutLog[] = Array.from({ length: n }, (_, i) => {
+    const date = addDays(inicio, i * 7);
+    return {
+      id: `d_${date}`, athleteId: EMAIL, workoutId: 'wd', mesocycleId: 'demo', date, completedAt: `${date}T19:00:00.000Z`,
+      entries: Object.entries(o.marcas(i + 1)).map(([exerciseId, [weight, repsDone]]) => ({ exerciseId, sets: [0, 1].map(() => ({ weight, repsDone, rir: 1, rirApuntado: true })) })),
+    } as unknown as WorkoutLog;
+  });
+  const total = semanas * 2;
+  const asignaciones: WorkoutAssignment[] = Array.from({ length: total }, (_, i) => {
+    const date = addDays(inicio, Math.floor(i / 2) * 7 + (i % 2) * 3);
+    return { id: `da_${i}`, athleteId: EMAIL, workoutId: 'wd', mesocycleId: 'demo', date, status: i < (o.sesionesHechas ?? total) ? 'completed' : 'perdido' } as unknown as WorkoutAssignment;
+  });
+  const rutinas = [{ id: 'wd', mesocycleId: 'demo', name: 'Torso', dayIndex: 0, exercises: Object.keys(o.marcas(1)).map((exerciseId, i) => ({ exerciseId, order: i, sets: 2, reps: exerciseId === 'laterales' ? '12-15' : '8-10', restSeconds: 120, rir: 1 })) }] as unknown as Workout[];
+  return { meso, logs, asignaciones, rutinas };
+}
+
+const PECHO_Y_HOMBRO = { pectoral: { palanca: 'volumen' }, deltoides: { palanca: 'intensidad' } } as Mesocycle['hipotesis'];
+const SOLO_PECHO = { pectoral: { palanca: 'volumen' } } as Mesocycle['hipotesis'];
+
+/** Los momentos del bloque que se enseñan, cada uno con sus datos de mentira. */
+const MOMENTOS: { titulo: string; nota: string; datos: ReturnType<typeof bloqueDeMuestra> }[] = [
+  {
+    titulo: 'Semana 5 · dos grupos, uno ya mejora', nota: 'Pecho sube un 4,3 %; el hombro sigue igual. El empujón sale de la última sesión.',
+    datos: bloqueDeMuestra({ semanasHechas: 4, hipotesis: PECHO_Y_HOMBRO, marcas: s => ({ press: [s <= 2 ? 60 : 62.5, 9], laterales: [10, 12] }) }),
+  },
+  {
+    titulo: 'Semana 2 · todavía es pronto', nota: 'Con una sola semana cerrada no se dice nada de fuerza.',
+    datos: bloqueDeMuestra({ semanasHechas: 1, hipotesis: SOLO_PECHO, marcas: () => ({ press: [60, 8] }) }),
+  },
+  {
+    titulo: 'Semana 9 · objetivo cubierto', nota: 'Ya mueve más de lo que se buscaba: toca sostenerlo. Y le toca subir de peso.',
+    datos: bloqueDeMuestra({ semanasHechas: 8, hipotesis: SOLO_PECHO, marcas: s => ({ press: [s <= 2 ? 60 : s <= 6 ? 62.5 : 65, s === 8 ? 10 : 8] }) }),
+  },
+  {
+    titulo: 'Semana 5 · igual que al empezar', nota: 'Un +1,7 % es ruido de medida: la barra no se mueve y no se dice «has mejorado».',
+    datos: bloqueDeMuestra({ semanasHechas: 4, hipotesis: SOLO_PECHO, marcas: s => ({ press: [s <= 2 ? 60 : 61, 8] }) }),
+  },
+];
+
+const CIERRES: { titulo: string; nota: string; datos: ReturnType<typeof bloqueDeMuestra> }[] = [
+  {
+    titulo: 'Con marcas', nota: 'Los tres ejercicios que más han subido; la prensa (+1,3 %) no sale: es ruido.',
+    datos: bloqueDeMuestra({
+      semanasHechas: 0, semanas: 8, terminado: true, hipotesis: SOLO_PECHO, sesionesHechas: 14,
+      marcas: s => ({ press: [s <= 3 ? 60 : s <= 6 ? 65 : 67.5, 8], remo: [70, s <= 4 ? 8 : 10], laterales: [s <= 4 ? 8 : 9, 12], prensa: [s <= 4 ? 150 : 152, 10] }),
+    }),
+  },
+  {
+    titulo: 'Sin marcas', nota: 'Series a 15 repeticiones: no valen para medir, así que no se opina de fuerza.',
+    datos: bloqueDeMuestra({ semanasHechas: 0, semanas: 8, terminado: true, hipotesis: SOLO_PECHO, sesionesHechas: 16, marcas: s => ({ press: [40 + s, 15] }) }),
+  },
+];
+
+const VISTAS = ['todas', 'plan', 'arranque', 'objetivo', 'cierre'] as const;
+type Vista = typeof VISTAS[number];
+
+function Objetivos() {
+  return (
+    <section className="space-y-6">
+      <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">Objetivo del bloque · la franja de Rutinas y del Road map</p>
+      {MOMENTOS.map(m => {
+        const progreso = progresoDelObjetivo({ meso: m.datos.meso, logs: m.datos.logs, exercises: EJERCICIOS, workouts: m.datos.rutinas, assignments: m.datos.asignaciones, hoy: HOY });
+        return (
+          <div key={m.titulo} className="space-y-2">
+            <p className="font-sans text-body-s font-bold text-ink">{m.titulo} <span className="font-normal text-ink-3">· {m.nota}</span></p>
+            <div className="max-w-sm"><ObjetivoDelBloque progreso={progreso} /></div>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
+function Cierres() {
+  return (
+    <section className="space-y-6">
+      <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">Bloque terminado · la celebración</p>
+      {CIERRES.map(c => {
+        const cierre = bloqueTerminadoParaElAtleta({ mesociclos: [c.datos.meso], assignments: c.datos.asignaciones, logs: c.datos.logs, exercises: EJERCICIOS, hoy: HOY });
+        return (
+          <div key={c.titulo} className="space-y-2">
+            <p className="font-sans text-body-s font-bold text-ink">{c.titulo} <span className="font-normal text-ink-3">· {c.nota}</span></p>
+            <div className="max-w-sm"><BloqueTerminado cierre={cierre} sinRecordar /></div>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
 export default function RoadmapDevHarness() {
-  const [vista, setVista] = useState<'todas' | 'plan' | 'arranque'>(() => {
+  const [vista, setVista] = useState<Vista>(() => {
     const v = new URLSearchParams(window.location.search).get('v');
-    return v === 'plan' || v === 'arranque' ? v : 'todas';
+    return (VISTAS as readonly string[]).includes(v ?? '') ? v as Vista : 'todas';
   });
   const roadmap = useMemo(() => {
     const semanas = semanasDelPlan({ program: PROGRAMA, diets: DIETAS, pesos: PESOS, registros: [], pasos: PASOS, pasosBase: 9000, hoy: HOY });
     const evaluacion = evaluarPlan(PROGRAMA, semanas, calcularGastoReal({ pesos: PESOS, registros: [], diets: DIETAS, hasta: HOY }));
-    return construirRoadmap({ program: PROGRAMA, semanas, evaluacion, mesociclos: MESOS, assignments: ASIGNACIONES, workoutLogs: LOGS, respuestas: RESPUESTAS, stepLogs: PASOS, stepGoal: 9000, hoy: HOY, planPublishedAt: `${INICIO}T10:00:00.000Z`, pesos: PESOS });
+    return construirRoadmap({ program: PROGRAMA, semanas, evaluacion, mesociclos: MESOS, assignments: ASIGNACIONES, workoutLogs: LOGS, respuestas: RESPUESTAS, stepLogs: PASOS, stepGoal: 9000, hoy: HOY, planPublishedAt: `${INICIO}T10:00:00.000Z`, pesos: PESOS, exercises: EJERCICIOS, workouts: RUTINAS });
   }, []);
   // Sin fases del programa: el arranque, montado con el bloque, la dieta y lo registrado.
   const arranque = useMemo(() => construirRoadmap({
     program: null, semanas: [], mesociclos: [MESOS[1]], assignments: ASIGNACIONES, workoutLogs: LOGS, respuestas: RESPUESTAS.slice(0, 1), stepLogs: PASOS, stepGoal: 9000, hoy: HOY,
-    planPublishedAt: `${addDays(HOY, -16)}T10:00:00.000Z`, pesos: PESOS, kcalDieta: 2100,
+    planPublishedAt: `${addDays(HOY, -16)}T10:00:00.000Z`, pesos: PESOS, kcalDieta: 2100, exercises: EJERCICIOS, workouts: RUTINAS,
   }), []);
   const reto = <WeeklyChallengeCard challenge={RETO} progress={{ progressValue: 8800, pct: 98, achieved: false }} />;
   const ver = (v: 'plan' | 'arranque') => vista === 'todas' || vista === v;
@@ -77,11 +199,11 @@ export default function RoadmapDevHarness() {
       <div className="mx-auto max-w-6xl space-y-4">
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-mono text-caption text-ink-3 uppercase tracking-widest flex-1">/dev/roadmap — datos de mentira · semana 6 de 20</p>
-          {(['todas', 'plan', 'arranque'] as const).map(v => (
+          {VISTAS.map(v => (
             <button key={v} type="button" onClick={() => setVista(v)} className={`font-mono text-caption uppercase ${vista === v ? 'text-accent-ink' : 'text-ink-3'}`}>{v}</button>
           ))}
         </div>
-        <div className={`grid gap-6 ${columnas > 1 ? 'md:grid-cols-2' : 'max-w-sm'}`}>
+        {columnas > 0 && <div className={`grid gap-6 ${columnas > 1 ? 'md:grid-cols-2' : 'max-w-sm'}`}>
           {ver('plan') && (
             <div className="space-y-2">
               <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">Con fases</p>
@@ -94,7 +216,9 @@ export default function RoadmapDevHarness() {
               <div className="max-w-sm"><RoadmapDelAtletaVista roadmap={arranque} frase={FRASE} reto={reto} /></div>
             </div>
           )}
-        </div>
+        </div>}
+        {(vista === 'todas' || vista === 'objetivo') && <Objetivos />}
+        {(vista === 'todas' || vista === 'cierre') && <Cierres />}
       </div>
     </div>
   );

@@ -45,6 +45,10 @@ export type NotificationType =
   | 'revision_alerta'
   // El coach ha contestado la revisión del atleta (texto, audio o vídeo).
   | 'revision_respondida'
+  // Al atleta se le abre un cuestionario fuera del día de su revisión: un
+  // «Mandar ahora» del coach, una fecha movida o un hito que cae otro día
+  // (18-11-2026). Ver `avisoDeCuestionarioNuevo` en utils/recordatoriosRevision.ts.
+  | 'cuestionario_nuevo'
   // Un mensaje del coach en su canal (29-10): cambio explicado, acuse de un
   // problema, hito, línea suelta. Ver `MensajeCoach`.
   | 'coach_mensaje';
@@ -111,8 +115,13 @@ export interface UserProfile {
    * escritores no coincidían en cuántos puntos vale un nivel.
    */
   level: number;
-  /** Umbrales de aviso de la carga aguda/crónica (CDG) de ESTE atleta. Ausente = 0,8 – 1,6. */
-  cdgUmbralesCarga?: { inferior: number; superior: number };
+  /** Umbrales de aviso de la carga aguda/crónica (CDG) de ESTE atleta. Ausente = 0,8 – 1,6.
+   *  `limitesArticulares` (X1, 17-11-2026): estrés articular semanal máximo de
+   *  este atleta por articulación (clave = nombre de la articulación en el
+   *  motor CDG, p. ej. «Hombro Articular»). Va aquí dentro, junto a sus otros
+   *  umbrales, para guardarse por el mismo camino (Seguimiento › «Guardar para
+   *  este atleta»). Ausente, o sin una articulación = sin límite en ella. */
+  cdgUmbralesCarga?: { inferior: number; superior: number; limitesArticulares?: Partial<Record<string, number>> };
   currentStreak: number;
   maxStreak: number;
   initialWeight: number;
@@ -711,6 +720,10 @@ export interface WorkoutExercise {
   // first group's RIR) purely so summary views that just print "3×8-10" keep working
   // without knowing about groups. See src/utils/setGroups.ts.
   setGroups?: WorkoutSetGroup[];
+  /** Series alternas (P4): clave de pareja. Los dos ejercicios de la sesión
+   *  que la comparten se hacen por turnos (A1, B1, A2, B2…). Una clave suelta
+   *  no significa nada. Ver src/utils/seriesAlternas.ts. */
+  alterna?: string;
   // Progresión automática por semana del mesociclo (periodización) — cada regla es un
   // escalón que entra en `atWeek` y se mantiene hasta que una regla posterior lo
   // sustituye (acumulativo, no un delta de una sola semana). Se aplica en el momento de
@@ -808,6 +821,10 @@ export interface TemplateStage {
   nombresSesion?: string[];
   ejerciciosClave?: string[];
   notasSemana?: Record<string, string>;
+  /** Tipo de bloque y semana 1 reducida (17-11-2026): viajan con la plantilla.
+   *  Las hipótesis no, porque dependen del atleta. Ver `Mesocycle.tipoBloque`. */
+  tipoBloque?: TipoDeBloque;
+  semana1Reducida?: boolean;
 }
 
 export interface Workout {
@@ -849,6 +866,26 @@ export interface WorkoutSetLog {
   /** Serie principal (1 = la primera) tras la que se hizo el segmento. Ausente
    *  en los registros anteriores a E-06: entonces es la última principal. */
   segmentoDe?: number;
+  /** Instante (ISO) en que el atleta marcó la serie como hecha (D1,
+   *  11-11-2026). De la diferencia entre dos series seguidas sale el descanso
+   *  REAL, que hasta ahora no se guardaba (solo el pautado). Ausente en los
+   *  registros anteriores y en las series añadidas al corregir una sesión ya
+   *  terminada: ahí «ahora» no es cuando se hizo. Ver utils/tiemposDeSerie.ts. */
+  hechaEn?: string;
+  /** ¿El RIR lo eligió el atleta? (17-11-2026). `true` = lo apuntó él (lo
+   *  cambió o marcó fallo). Ausente = se guardó con el RIR pautado sin tocar o
+   *  es un registro anterior: no se sabe y se da por bueno. Al guardar una
+   *  sesión no se escribe `false`; los motores lo siguen tratando por si acaso
+   *  (un `false` no dice nada de su esfuerzo y no entra en el RM ni en la
+   *  calibración). */
+  rirApuntado?: boolean;
+  /** La serie se hizo FUERA del gimnasio habitual (17-11-2026): otras poleas,
+   *  otras máquinas, otros pesos. Cuenta para el volumen y el estímulo (el RIR
+   *  sí se cumple), pero no para la fuerza: ni RM, ni récords, ni tonelaje, ni
+   *  referencia de carga para la sesión siguiente. Se copia de
+   *  `WorkoutLog.fuera` en cada serie para que cualquier motor que filtre por
+   *  serie (rmValido.ts) la deje fuera sin saber de dónde viene. */
+  fuera?: boolean;
 }
 
 /** Respuesta del coach a una nota del atleta (28-10-2026). */
@@ -865,6 +902,17 @@ export interface WorkoutEntryLog {
   /** Lo que el coach contestó a `note`. El atleta lo ve la próxima vez que
    *  hace el ejercicio (tarjeta de la sesión) y le llega como notificación. */
   noteReply?: RespuestaCoach;
+  /** El atleta marcó «Otra máquina o recorrido» (D3): desde esta
+   *  sesión el 1RM, los récords y la tendencia de este ejercicio no se
+   *  comparan con lo anterior. Ver utils/referenciaDeEjercicio.ts. */
+  nuevaReferencia?: boolean;
+  /** Qué paró la última serie, contestado por el atleta al cerrar el ejercicio
+   *  (D2): 'musculo' | 'agarre' | 'aire' | 'ardor' | 'tecnica' | 'molestia'.
+   *  Ver utils/queTeParo.ts (`MotivoDeParada`). */
+  queParo?: string;
+  /** Molestia de 1 a 10 en este ejercicio (D5, 11-11-2026). Solo se pregunta
+   *  si el atleta dice que lo que le paró fue una molestia. */
+  molestia?: number;
 }
 
 export interface WorkoutLog {
@@ -878,6 +926,17 @@ export interface WorkoutLog {
   entries: WorkoutEntryLog[];
   note?: string;         // athlete's note on the workout as a whole
   noteCoachSeen?: boolean;
+  /** «¿Cómo llegas hoy?», contestado en un toque al empezar (D4, 11-11-2026).
+   *  Da contexto a un día malo: no es lo mismo rendir peor habiendo llegado
+   *  justo que habiendo llegado bien. */
+  comoLlega?: 'bien' | 'normal' | 'justo';
+  /** Cansancio al salir de ESTA sesión, 0-10 (17-11-2026). El protocolo del
+   *  Índice de Hipertrofia lo usa de freno (8-9: no subir sin bajar antes la
+   *  fatiga de la sesión) y hasta ahora solo existía como pregunta semanal. */
+  cansancioAlSalir?: number;
+  /** Sesión hecha fuera del gimnasio habitual (viaje, hotel, otro gimnasio),
+   *  marcada por el atleta o por el coach (17-11-2026). Ver `WorkoutSetLog.fuera`. */
+  fuera?: boolean;
   /** Respuesta del coach a la nota del entreno completo. */
   noteReply?: RespuestaCoach;
   /** Instante en que se ABRIÓ el player por primera vez (ISO), no en que se
@@ -937,6 +996,24 @@ export interface QSchedule {
   /** (for 'mesocycle_week') solo en bloques de al menos N semanas: «mitad» de
    *  las mediciones solo tiene sentido en bloques largos. */
   minSemanasBloque?: number;
+  /** (for 'mesocycle_week', 18-11-2026) una semana CONCRETA del bloque, de
+   *  calendario (1 = la primera). Manda sobre `semanaDelBloque` y nunca pasa
+   *  de las semanas que tenga cada bloque. Ver `semanaPedida` en
+   *  utils/cicloRevision.ts. */
+  semanaNumero?: number;
+}
+
+/**
+ * Una ocasión puntual de un cuestionario asignado que no cae cuando dice su
+ * cadencia (18-11-2026). Con `ocurrencia`, la ocasión de esa fecha (la que la
+ * cadencia daba, AAAA-MM-DD) se abre y caduca según `nuevaFecha`; las demás no
+ * cambian. Sin `ocurrencia` es una ocasión EXTRA («Mandar ahora»): pendiente
+ * desde `nuevaFecha` durante 7 días o hasta que la conteste. Ver
+ * utils/excepcionesCuestionario.ts.
+ */
+export interface ExcepcionDeFecha {
+  ocurrencia?: string;
+  nuevaFecha: string;
 }
 
 // Perímetros y peso corporal recogidos vía preguntas tipo 'metric'. El peso
@@ -1048,6 +1125,9 @@ export interface QuestionnaireAssignment {
   active: boolean;
   createdAt: string;
   overrides?: QuestionnaireOverrides;
+  /** Fechas movidas y ocasiones extra («Mandar ahora»). Las ya pasadas se
+   *  limpian al guardar (`limpiarExcepciones`). */
+  excepciones?: ExcepcionDeFecha[];
 }
 
 // Un paquete es un CONJUNTO de cuestionarios con su cadencia ya decidida:
@@ -1594,6 +1674,12 @@ export interface PlanSemanal {
   /** Lunes de la semana (YYYY-MM-DD). */
   semana: string;
   platos: PlatoDelPlan[];
+  /** Sesiones de esta semana que el atleta va a hacer FUERA de su gimnasio
+   *  (ids de `WorkoutAssignment`), marcadas por él desde Rutinas (17-11-2026).
+   *  Al empezar una de ellas, la sesión arranca ya como «fuera». Ver
+   *  `WorkoutLog.fuera`. Va aquí porque el atleta puede escribir este documento
+   *  sin reglas nuevas: en `workoutAssignments` solo puede cambiar el estado. */
+  sesionesFuera?: string[];
   updatedAt?: string;
 }
 
@@ -1948,7 +2034,10 @@ export interface ContextoDeReto {
   bloque: string;              // «Hipertrofia 1»
   semana: number;              // vuelta del ciclo, 1-indexada
   semanas: number;             // vueltas totales del bloque
-  tipoSemana?: 'test' | 'descarga' | 'paron' | 'evento';
+  tipoSemana?: 'test' | 'descarga' | 'puente' | 'paron' | 'evento';
+  /** El ejercicio (o el grupo) del reto es de una zona con estrella del bloque
+   *  (17-11-2026): la tarjeta añade «va con tu objetivo del bloque». */
+  conObjetivo?: boolean;
 }
 
 // De qué registro habla un reto de racha (kind 'racha_registro').
@@ -2420,7 +2509,13 @@ export const MUSCLE_LABELS_SHORT: Record<MuscleGroup, string> = {
 
 export interface MuscleGroupConfig {
   series: number;          // 0..25 series semanales
-  priority: 'alta' | 'media' | 'baja';
+  /**
+   * Cuatro niveles (17-11-2026). En pantalla: ⭐ Especializar ('alta'),
+   * ◑ Desarrollar ('media'), ⚪ Mantener ('baja', la mitad de lo que hacía) y
+   * ⊘ Ignorar ('ignorar': 0 series y fuera de sugerencias, avisos y reparto).
+   * Los tres primeros conservan su valor guardado de siempre: no hay migración.
+   */
+  priority: 'alta' | 'media' | 'baja' | 'ignorar';
 }
 
 export interface DayAssignment {
@@ -2590,6 +2685,13 @@ export interface Mesocycle {
   /** Algo del cliente que cae esa semana de ciclo (vacaciones, viaje,
    *  competición). El atleta ve la nota en sus novedades. */
   eventosSemana?: Record<string, EventoDeSemana>;
+  /** Semana DE CICLO (la S de la barra de semanas, 1-indexada) en la que se
+   *  pide el cuestionario de cierre (18-11-2026). Sin valor = la última. Solo
+   *  la lee la asignación del cuestionario de CIERRE («semana del bloque =
+   *  última» con señales `meso_end.*`); las mediciones siguen al final del
+   *  bloque. Ver `semanaPedida` y `esCuestionarioDeCierre` en
+   *  utils/cicloRevision.ts. */
+  semanaDeCierre?: number;
   /** Ejercicios que el coach eligió para planificar su progresión semana a
    *  semana («Planificar progresión»): `d<dayIndex>::<exerciseId>` (o
    *  `n:<nombre del día>::<exerciseId>` en rutinas sin `dayIndex`). Se
@@ -2618,6 +2720,129 @@ export interface Mesocycle {
    *  zonas con objetivo de IEM van en dinámico y el resto en estático. Manda
    *  sobre `cdgSensibilidad`, que queda para bloques antiguos. */
   cdgModoPorZona?: Partial<Record<string, 'estatico' | 'dinamico'>>;
+  /** Tipo de bloque (17-11-2026): un preset EDITABLE que rellena duración,
+   *  velocidad, modo por zona y estrellas; no un catálogo cerrado. Sustituye en
+   *  pantalla a `objective` y a `phaseType`, que se siguen escribiendo
+   *  derivados para el calendario y las plantillas. Ver utils/hipotesisDeBloque/tiposDeBloque.ts. */
+  tipoBloque?: TipoDeBloque;
+  /** Empezar con la semana 1 reducida. Opcional y APAGADA por defecto (Dani,
+   *  17-11): la app solo la sugiere con ejercicios nuevos o tras un parón de
+   *  más de 3 semanas. Apagada, el bloque arranca donde acabó el anterior. */
+  semana1Reducida?: boolean;
+  /** Con `semana1Reducida`: series que pierde cada ejercicio (clave =
+   *  `exerciseId`) en cada sesión de la semana 1 en la que aparece. Lo calcula
+   *  el editor con todas las rutinas delante (`planDeSemana1Reducida`, en
+   *  utils/progression.ts: un 7 % menos por grupo, en series enteras) y lo
+   *  aplica `resolverEjercicioDelMeso`. Sin él, la semana 1 no recorta nada. */
+  semana1Recorte?: Record<string, number>;
+  /** Hipótesis del bloque, una por zona con estrella (clave = `ZonaIem`).
+   *  Solo coach: la pantalla del atleta no la enseña. */
+  hipotesis?: Partial<Record<string, HipotesisDeZona>>;
+  /** Qué pasó con cada hipótesis, firmado por el coach al cerrar el bloque. De
+   *  aquí sale el mapa de respuesta del atleta (qué le funciona a cada zona). */
+  cierreDeHipotesis?: CierreDeHipotesis;
+}
+
+/** Los cuatro tipos de bloque acordados con Dani (17-11-2026). Las semanas
+ *  puente no son un tipo: son una transición (`semanasPivot`). */
+export type TipoDeBloque = 'primer' | 'desarrollo' | 'especializacion' | 'mantenimiento';
+
+/** A qué se apuesta en una zona: más estímulo subiendo series, más estímulo
+ *  acercándose al fallo, el mismo estímulo con otros ejercicios, o menos para
+ *  recuperar. */
+export type PalancaDeHipotesis = 'volumen' | 'intensidad' | 'ejercicios' | 'recuperar';
+
+/**
+ * La hipótesis de una zona en un bloque (17-11-2026): qué se apuesta, cómo se
+ * sabrá si se HIZO (proceso) y cómo se sabrá si SIRVIÓ (resultado).
+ *
+ * Los IEM son semanales, de la zona. Todo lo «anterior» es una foto del bloque
+ * previo tomada al crear este: se guarda para que el cierre compare contra lo
+ * que se sabía entonces, no contra un cálculo que puede cambiar.
+ */
+export interface HipotesisDeZona {
+  palanca: PalancaDeHipotesis;
+  /** IEM medio semanal realizado del bloque anterior. */
+  iemMedioAnterior?: number;
+  /** IEM semanal con el que acabó el bloque anterior. */
+  iemFinalAnterior?: number;
+  /** PROCESO: IEM medio semanal que se quiere en este bloque. Es el umbral tal
+   *  cual, sin tolerancia (auditoría de cifras, 17-11-2026): por defecto, donde
+   *  ACABÓ el anterior + medio escalón de la velocidad (un 5 % en suave); si la
+   *  zona no sube, sostener: el 95 % de donde acabó. */
+  iemMedioObjetivo?: number;
+  /** IEM semanal de arranque (por defecto, donde acabó el anterior; un 5-10 %
+   *  menos con `semana1Reducida`). */
+  iemArranque?: number;
+  /** Techo del bloque: hasta dónde puede subir (por defecto, donde acabó el
+   *  anterior + un escalón de la velocidad). Es el mismo número que
+   *  `cdgObjetivosIem[zona]`, que es el que lee el protocolo semanal. */
+  iemTecho?: number;
+  /** RESULTADO: mejora de RM estimado medio que se espera, en % (por defecto 5;
+   *  8 en un principiante). 0 = no perder (zona que se recupera o bloque en
+   *  déficit). */
+  rmObjetivoPct?: number;
+  /** Límite propio de la zona, en palabras del coach («hombro sin molestias»). */
+  limite?: string;
+}
+
+/** Los desenlaces de una hipótesis: se hizo o no, sirvió o no. `mejora_parcial`
+ *  (auditoría de cifras, 17-11-2026) es «se hizo y mejora, pero menos de lo
+ *  buscado»: el RM queda entre el ruido de medida y el objetivo. No cuenta como
+ *  «no responde» (ni para rotar la estrella ni para cambiar de palanca). */
+export type LecturaDeHipotesis = 'confirmada' | 'mejora_parcial' | 'no_responde' | 'responde_con_menos' | 'sin_probar';
+
+export interface VeredictoDeHipotesis {
+  zona: string;
+  palanca: PalancaDeHipotesis;
+  /** PROCESO: IEM medio semanal realizado y si llegó al objetivo. */
+  iemMedio: number | null;
+  iemMedioObjetivo?: number;
+  procesoCumplido: boolean | null;
+  /** RESULTADO: % de RM estimado medio de los ejercicios de la zona. `null`
+   *  si no hubo marcas suficientes para medirlo. */
+  rmPct: number | null;
+  rmObjetivoPct: number;
+  resultadoCumplido: boolean | null;
+  lectura: LecturaDeHipotesis;
+  /** Lo que el coach decide para el bloque siguiente, en sus palabras. */
+  decision?: string;
+}
+
+/** Lo que se hizo en una zona durante un bloque y lo que se obtuvo. */
+export interface DosisDeZona {
+  zona: string;
+  /** Series por semana, de media, en ejercicios cuya zona principal es esta. */
+  seriesSemana: number;
+  /** Sesiones por semana, de media, en las que se trabajó la zona. */
+  frecuencia: number;
+  /** RIR medio de esas series (`null` si no hay RIR fiable). */
+  rirMedio: number | null;
+  /** IEM medio semanal realizado. `null` sin motor CDG. */
+  iemMedio: number | null;
+  /** % de RM estimado medio de sus ejercicios. `null` sin marcas suficientes. */
+  rmPct: number | null;
+  /** Ejercicios con marca que entran en `rmPct`. */
+  ejercicios: number;
+}
+
+export interface CierreDeHipotesis {
+  firmadoEn: string; // ISO
+  veredictos: VeredictoDeHipotesis[];
+  /** Foto de «dosis y respuesta» de cada zona con marca en este bloque
+   *  (18-11-2026): con qué volumen, frecuencia y cercanía al fallo se trabajó y
+   *  cuánto mejoró. De aquí salen los indicios de a qué responde el atleta
+   *  (utils/hipotesisDeBloque/respuestaADosis.ts). Ausente en cierres anteriores. */
+  dosis?: DosisDeZona[];
+  /** Ficha de cierre del método: con qué contexto se hizo el bloque. */
+  ficha?: {
+    contexto?: 'favorable' | 'neutro' | 'desfavorable';
+    cansancioMedio?: number;
+    molestias?: string;
+    motivacion?: string;
+    faseNutricional?: string;
+    pesoDeltaKg?: number;
+  };
 }
 
 // Tipos de fase de un mesociclo, para el color/icono del Roadmap → Calendario.
@@ -3388,6 +3613,9 @@ export interface KnowledgeNote {
 export interface CoachInstructions {
   text: string;
   updatedAt: string; // ISO
+  /** Solo en las doctrinas: huella del texto por defecto del que partió esta
+   *  copia, para poder avisar cuando se queda atrás (utils/doctrinaAtrasada.ts). */
+  base?: string;
 }
 
 // Frases reutilizables para el feedback de revisiones (check-ins) — el coach

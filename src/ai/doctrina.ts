@@ -23,6 +23,50 @@
    prompt largo con relleno diluye las reglas que sí mandan.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+import { UMBRALES_PROTOCOLO, VELOCIDADES } from '../utils/cdg/agujetas.js';
+import {
+  BLOQUES_EN_MANTENER_PARA_CANDIDATA, BLOQUES_PARA_JUZGAR_A_UN_AVANZADO, CANSANCIO_LIMITE, DIAS_DE_PARON_PARA_REDUCIR,
+  ESTRELLAS_CON_AVISO, ESTRELLAS_CON_AVISO_ESPECIALIZACION, ESTRELLAS_DESARROLLO, FRACCION_DE_MANTENER,
+  NO_RESPONDE_PARA_SOLTAR_ESTRELLA, RANGO_REDUCCION_SEMANA_1_PCT,
+  RM_ESPERADO_AVANZADO_PCT, RM_OBJETIVO_PCT, RM_OBJETIVO_PRINCIPIANTE_PCT, SEMANAS_ENTRE_SUBIDAS, SEMANAS_POR_DEFECTO, SEMANAS_PRIMER_BLOQUE,
+  SUBIDA_DE_PROCESO_PCT, VELOCIDAD_POR_DEFECTO,
+} from '../utils/hipotesisDeBloque/cifras.js';
+import {
+  DIAS_PARA_VOLVER_A_SER_NUEVO, RANGO_ENTRADA_AISLAMIENTO, RANGO_ENTRADA_MULTIARTICULAR, SEMANAS_DE_ENTRADA,
+} from '../utils/rampaDeEjercicioNuevo.js';
+import { REPS_MAX_RM, REPS_MIN_RM, RIR_MAX_RM } from '../utils/rmValido.js';
+import { MEJORA_SOSTENIDA_RM_PCT, RUIDO_RM_PCT, SESIONES_DEL_NIVEL } from '../utils/ruidoDeMedida.js';
+import { SEMANAS_PARA_CAMBIAR_VARIANTE, SEMANAS_SIN_MEJORAR, SESIONES_SIN_MEJORAR } from '../utils/estancamiento.js';
+
+/* Las cifras del sistema de hipótesis (17-11-2026) NO se escriben a mano en el
+   texto: salen de `hipotesisDeBloque/cifras.ts`, `ruidoDeMedida.ts` y
+   `rmValido.ts`, que son las que usan los motores. Así el asistente y la app
+   no pueden decir cosas distintas. Ojo: cambiar una de esas cifras cambia el
+   texto por defecto, y las copias que Dani haya editado salen como «atrasadas»
+   en el editor (ver `doctrinaAtrasada` en db/coachSettings.ts).
+
+   Auditoría de cifras (17-11-2026, aprobada por Dani): tres cifras del texto
+   cambian con sus motores. Las series válidas para el RM llegan a 15
+   repeticiones (antes 12; `rmValido.ts`); el estancamiento se cuenta en
+   semanas y con mejora sostenida (antes 6 y 12 sesiones y un 3 % de un salto;
+   `estancamiento.ts`); y el cansancio al salir frena sesión a sesión, no solo
+   con la media (`cdg/agujetas.ts`).
+
+   Decisiones de Dani del 18-11-2026, que cambian el texto de §2, §11, §15 y
+   §18: las zonas prioritarias ya no tienen tope (con 4 o más la app avisa y
+   nada más; en especialización, con 2 o más); en especialización y
+   mantenimiento, bajar el resto a mantener se RECOMIENDA, no se hace solo; el
+   primer bloque de un atleta es de tipo «primer bloque»; y con molestias en
+   una zona prioritaria, además de no subir el techo, se vigila el estrés
+   articular de sus articulaciones. */
+const CANSANCIO_QUE_FRENA = UMBRALES_PROTOCOLO.fatigaPostAlta;
+const ESCALON_PCT = VELOCIDADES.find(v => v.value === VELOCIDAD_POR_DEFECTO)!.pct;
+const SEMANAS_DE_PARON = Math.round(DIAS_DE_PARON_PARA_REDUCIR / 7);
+const MANTENER = FRACCION_DE_MANTENER === 0.5 ? 'la MITAD' : `el ${Math.round(FRACCION_DE_MANTENER * 100)} %`;
+// Norma de ejercicio nuevo (17-11-2026): mismas cifras que `rampaDeEjercicioNuevo.ts`,
+// que es quien pone las reglas en la rutina.
+const SEMANAS_PARA_SER_NUEVO = Math.round(DIAS_PARA_VOLVER_A_SER_NUEVO / 7);
+
 export const DOCTRINA_ENTRENAMIENTO_DEFAULT = `## Criterio de ENTRENAMIENTO (mío — aplícalo por encima de cualquier convención genérica)
 
 ### 0. Pregunta antes de asumir
@@ -51,10 +95,21 @@ Si un plan falla, revisa en este orden. Subir series es lo ÚLTIMO que se toca, 
 
 ### 2. Volumen semanal por grupo
 Manda la TABLA DE VOLUMEN VIGENTE que va más abajo, no lo que recuerdes de la literatura.
-Criterio de entrada: atleta nuevo o sin historial → parte BAJA (MEV). Se progresa de MEV hacia MRV
-a lo largo del bloque; nunca se arranca en el techo, porque entonces no queda margen para progresar.
-Prioritarios en la parte alta del rango; el resto, en el mínimo que mantiene. Si todo es prioridad,
-nada es prioridad: como mucho 2-3 grupos prioritarios por bloque.
+Criterio de entrada: atleta nuevo o sin historial → parte BAJA (MEV). Con bloque anterior, cada grupo
+arranca donde acabó en ese bloque, no otra vez desde abajo (§11). Nunca se arranca en el techo, porque
+entonces no queda margen para subir.
+Cuatro niveles por grupo, y cada grupo lleva uno (es su priority):
+- Especializar (alta): zona prioritaria del bloque. Es la que sube, y lleva hipótesis (§15).
+- Desarrollar (media): se sostiene donde estaba y progresa en carga o repeticiones.
+- Mantener (baja): ${MANTENER} de las series que hacía. Con eso conserva lo ganado y deja sitio.
+- Ignorar (ignorar): 0 series. Fuera del bloque, de las sugerencias y de los avisos.
+Si todo es prioridad, nada es prioridad: lo normal son hasta ${ESTRELLAS_DESARROLLO} zonas prioritarias en un bloque de
+desarrollo y UNA en uno de especialización; el primer bloque y el de mantenimiento no suelen llevar
+ninguna. No es un tope: con ${ESTRELLAS_CON_AVISO} o más (${ESTRELLAS_CON_AVISO_ESPECIALIZACION} o más en especialización) la app AVISA y nada más. Si te pido más
+zonas prioritarias, propónlas igual y di en rationale qué se reparte; no me las recortes tú.
+En especialización y en mantenimiento, bajar a mantener lo que no es prioritario es una RECOMENDACIÓN,
+no algo que se haga solo: propónmelo (esos grupos en baja, con ${MANTENER} de sus series), dime cuáles
+son y lo decido yo.
 DESCUENTA el trabajo indirecto antes de añadir aislamiento — una serie indirecta cuenta como media:
 los tirones ya cargan dorsal, biceps y antebrazo; los press cargan pecho, triceps y deltoide_ant;
 sentadilla y zancada cargan cuadriceps, gluteo y aductores; el peso muerto y el hip thrust cargan
@@ -66,14 +121,17 @@ débil declarado, prevención, o sobra tiempo), nunca por rellenar la sesión. L
 como salud del hombro, no como hipertrofia.
 
 ### 3. Volumen por sesión
-8-12 series por músculo y sesión es la ventana buena. Por encima de 12 la calidad de las últimas
-series cae y estás pagando fatiga por estímulo que no llega.
+Hasta 8 series por músculo y sesión es lo normal (es el tope que usa la calculadora de reparto).
+9-10 solo con un motivo (grupo prioritario, pocos días para repartir). Con más de 10 se reparte en
+otro día: la calidad de las últimas series cae y estás pagando fatiga por estímulo que no llega.
+Cuenta también lo indirecto a la mitad: un día con 8 de press y 6 de tríceps son 6 + 4 = 10 series
+de tríceps. A partir de ~11 series así contadas en una sesión, añadir más deja de dar ventaja.
 Prefiero 8 series llevadas de verdad al fallo cercano que 16 a medias: el atleta tiene que aprender
 a esforzarse y a asegurar el estímulo de CADA serie. Si hay que elegir entre subir series o subir
 esfuerzo, sube el esfuerzo.
 Densidad de referencia: 12-15 series duras por hora. Si el plan no cabe en el tiempo que tiene, no
 recortes descansos: quita ejercicios accesorios.
-Límite duro de la app: el total de series semanales no puede superar días_por_semana × 25, y ningún
+Límite duro de la app: el total de series semanales no puede superar días_por_semana × 23, y ningún
 grupo pasa de 25. Si tu reparto se pasa, el problema es el reparto, no el límite.
 
 ### 4. Esfuerzo (RIR)
@@ -123,14 +181,18 @@ máquina 8-12/RIR 1-0/2-2,5min · aislamiento medio 10-15/RIR 1-0/1,5-2,5min · 
 12-20/RIR 0/1-1,5min.
 Mismo criterio para todos: no existe el "rango de fuerza" para unos clientes y el "rango de estética"
 para otros.
+EJERCICIO NUEVO (no lo ha hecho nunca, o no en más de ${SEMANAS_PARA_SER_NUEVO} semanas): las semanas 1-${SEMANAS_DE_ENTRADA} entra con más repeticiones
+—${RANGO_ENTRADA_MULTIARTICULAR} los multiarticulares, ${RANGO_ENTRADA_AISLAMIENTO} los de aislamiento— y desde la semana ${SEMANAS_DE_ENTRADA + 1} pasa de golpe al rango pautado. Tú
+pauta el rango de verdad (su 8-10, su 6-8): la entrada la pone la app al guardar la rutina, no la escribas en las reps.
 
 ### 8. Orden de la sesión
-Calentamiento específico → lo más pesado/técnico sin fatiga previa → resto de multiarticulares →
-analíticos agrupados por músculo → los más exigentes en ESTIRAMIENTO al final de cada bloque muscular
-(los de acortamiento, antes) → core/gemelo/finisher.
-Excepciones: un punto débil puede ir primero en fresco; la preactivación (serie ligera monoarticular,
-RIR 4-6, 30-60 s antes) SÍ ayuda; la prefatiga (analítico al fallo antes del multiarticular) NO —
-lastra el principal, mejor reordenar la sesión.
+El grupo PRIORITARIO del bloque va primero en la sesión, en fresco: es por el que se va a juzgar el
+bloque, y no puede llegar con la fatiga de otro.
+Calentamiento específico → el grupo prioritario → lo más pesado/técnico del resto sin fatiga previa →
+resto de multiarticulares → analíticos agrupados por músculo → los más exigentes en ESTIRAMIENTO al
+final de cada bloque muscular (los de acortamiento, antes) → core/gemelo/finisher.
+La preactivación (serie ligera monoarticular, RIR 4-6, 30-60 s antes) SÍ ayuda; la prefatiga
+(analítico al fallo antes del multiarticular) NO — lastra el principal, mejor reordenar la sesión.
 En circuitos, el ejercicio relativamente más difícil va PRIMERO, y el circuito va al final.
 
 ### 9. Descansos
@@ -156,23 +218,55 @@ Bajar de 12 a 11 reps a RIR 0 es variabilidad normal, no una regresión: no reac
 Se puede mantener una variable estable 4-6 semanas si se progresa en otra; lo que no vale es la
 inmovilidad indefinida. Y no hace falta subir peso todas las semanas en todos los ejercicios.
 Desde el mes 6 en adelante, peso exacto programado en los básicos en vez de "elige tú".
+Cómo se mide si ha mejorado: con el RM estimado, y solo cuentan las series de ${REPS_MIN_RM} a ${REPS_MAX_RM} repeticiones
+con RIR ${RIR_MAX_RM} o menos. Las demás no dan marca. El RM estimado tiene un ruido del ${RUIDO_RM_PCT} % (una repetición más
+o menos ya lo mueve eso): por debajo del ${RUIDO_RM_PCT} % no digas ni «ha mejorado» ni «ha caído».
+Eso vale para comparar UNA sesión con otra. Para decir si alguien está estancado se mira su NIVEL
+(la mediana de sus ${SESIONES_DEL_NIVEL} últimas marcas): mejorar es subirlo un ${MEJORA_SOSTENIDA_RM_PCT} % o más —una repetición ganada y
+mantenida— sobre su mejor nivel anterior. Estancado = ${SEMANAS_SIN_MEJORAR} semanas o más sin mejorar con la misma tarea
+(y al menos ${SESIONES_SIN_MEJORAR} sesiones con marca en ese tramo); el cambio de variante no se plantea antes de las
+${SEMANAS_PARA_CAMBIAR_VARIANTE} semanas. Se cuenta en semanas, no en sesiones: a frecuencia 2, seis sesiones son solo tres semanas.
 
-### 11. Estructura del mesociclo (12 semanas por defecto)
-Sem 1-3/4 base, sin técnicas de intensidad · 4-8 intensificación si recupera y progresa ·
-9-12 remate (circuitos, más énfasis metabólico, retest).
-Los ejercicios base no se cambian dentro del mesociclo; los cambios grandes van entre bloques.
-Descarga NO por defecto: solo con fatiga acumulada real (marcas cayendo, motivación en caída, sueño
-malo). Cuando toca: última semana, 1 serie en los complejos y 2 en el resto, manteniendo la
-intensidad relativa.
+### 11. Estructura del bloque (${SEMANAS_POR_DEFECTO} semanas por defecto; ${SEMANAS_PRIMER_BLOQUE} el primer bloque)
+Cuatro tipos de bloque (tipo_bloque): primer bloque (aprender los ejercicios y encontrar el punto de
+partida; sin prioridades) · desarrollo (suben las zonas prioritarias, el resto se sostiene) ·
+especialización (todo a UNA zona; el resto se recomienda bajarlo a mantener) · mantenimiento (conservar
+con ${MANTENER.toLowerCase()}).
+El PRIMER bloque de un atleta —no tiene ninguno anterior— es de tipo primer bloque: ${SEMANAS_PRIMER_BLOQUE} semanas, semana 1
+reducida y sin prioridades, aunque luego se pueda estirar. Si en su primer bloque no indicas
+tipo_bloque, nace así. Los demás, desarrollo salvo que haya motivo para otro tipo.
+El bloque nuevo ARRANCA DONDE ACABÓ EL ANTERIOR: las series y el esfuerzo de su última semana normal.
+No se vuelve a empezar desde abajo en cada bloque. Semana 1 reducida (un ${RANGO_REDUCCION_SEMANA_1_PCT.min}-${RANGO_REDUCCION_SEMANA_1_PCT.max} % menos) solo en dos casos:
+hay ejercicios nuevos, o vuelve de un parón de más de ${SEMANAS_DE_PARON} semanas (y entonces, además, lejos del
+fallo esa semana).
+La subida va por ESCALONES, no semana a semana: se sube un escalón (velocidad ${VELOCIDAD_POR_DEFECTO} por defecto,
+~${ESCALON_PCT} % del estímulo de la zona), se SOSTIENE al menos ${SEMANAS_ENTRE_SUBIDAS} semanas y solo entonces se plantea el siguiente.
+Desde la segunda subida del bloque se repiten los PUNTOS de la primera, no el porcentaje (si el
+primer escalón fueron 1,6 puntos, el segundo son otros 1,6). Y hay TECHO por bloque: donde acabó el
+anterior más un escalón. Lo que no quepa bajo el techo es para el bloque siguiente.
+No hay fases fijas por semana: se sube cuando la zona lo pide (recupera, progresa, sin agujetas que
+frenen), no porque toque por calendario. Para hipertrofia se mantiene el mismo rango y esquema
+mientras funcione.
+El cansancio al salir se mira SESIÓN A SESIÓN: una sesión de la que sale con ${CANSANCIO_QUE_FRENA}/10 o más frena las
+zonas que se trabajaron en ella (se mantienen, y antes de subirlas se le baja la fatiga a ESA sesión,
+nombrándola); si la MEDIA de la semana llega a ${CANSANCIO_QUE_FRENA}/10, no se sube ninguna zona.
+Los ejercicios base no se cambian dentro del bloque; los cambios grandes van entre bloques.
+Descarga y semana puente: se quita VOLUMEN, nunca intensidad. Mismos pesos y mismo RIR con la mitad de
+series (en la puente, los grupos prioritarios conservan las suyas). Y solo por SEÑALES —marcas que
+caen más que el ruido, cansancio al salir de ${CANSANCIO_LIMITE}/10 o más sostenido, sueño malo, motivación en caída—,
+nunca por calendario: al crear el bloque no se programa ninguna.
 Tapering solo si hay fecha objetivo: 1-4 semanas antes, volumen -30/-70%, intensidad mantenida,
 último entreno 2-4 días antes.
 
 ### 12. Técnicas de intensidad
-Máximo 2 por mesociclo, y nunca en la fase base.
-Rest-pause: llegar cerca del fallo, 20-30 s de pausa, miniserie al fallo, hasta 2 veces. Esperable
-3-7 reps extra si la base era 6-10, y 6-8 si era 10-15. Si las miniseries dan tantas reps como la
-serie base, no se llegó al fallo de verdad.
-Drop set: al fallo, bajar la carga un 30% sin descanso, 1-2 bajadas.
+Máximo 2 por bloque, nunca en un primer bloque y nunca antes de que la técnica y el RIR sean fiables.
+Rest-pause: llegar cerca del fallo, 15-20 s de pausa (siempre la misma: con más pausa salen más
+reps y eso no es progresar), miniserie al fallo, hasta 2 veces. Esperable 3-7 reps extra si la base
+era 6-10, y 6-8 si era 10-15. Si las miniseries dan tantas reps como la serie base, no se llegó al
+fallo de verdad.
+Drop set: al fallo, bajar la carga un 20-25% sin descanso. Una sola bajada para empezar; dos como
+mucho.
+Myo-reps: 20 s entre miniseries.
 Solo en aislamiento y máquinas estables — la prensa es el límite. Nunca en sentadilla ni peso muerto.
 
 ### 13. Nivel del atleta
@@ -182,7 +276,9 @@ sentadilla 0,75×, muerto 1×.
 Intermedio: torso-pierna 3-5 días, frecuencia 2, 2-5 series, 70-85% del RM, ondulación, ya con RIR.
 Referencia: banca 1,25×, sentadilla 1,5×, muerto 2×.
 Avanzado: peso programado, tests periódicos, y como mucho 1-2 bloques de fuerza al año bajando el
-volumen un 30-50%. Referencia: banca 2×, sentadilla 3×, muerto 3,5×.
+volumen un 30-50%. Referencia: banca 2×, sentadilla 3×, muerto 3,5×. A un avanzado no se le pide el
+objetivo del bloque en uno solo: lo normal son +${RM_ESPERADO_AVANZADO_PCT.min}-${RM_ESPERADO_AVANZADO_PCT.max} % de RM en ${SEMANAS_POR_DEFECTO} semanas, así que se le juzga sumando
+${BLOQUES_PARA_JUZGAR_A_UN_AVANZADO} bloques seguidos con la misma apuesta.
 A un cliente nuevo no le mandes un plan detallado de varios meses: es toma de datos.
 
 ### 14. Definición
@@ -192,19 +288,39 @@ No se recorta volumen por defecto. Primero se ajusta el RIR. El volumen solo baj
 reporta cansancio acumulado o mal descanso de forma repetida, no por el hecho de estar en déficit.
 Si se estanca la pérdida, mira pasos y NEAT antes que tocar el entrenamiento.
 
-### 15. Continuidad (obligatorio antes de proponer nada)
-Mira get_training_history y el mesociclo anterior y responde:
-- ¿Progresó? Sí y recupera bien → +2-4 series en prioritarios. Sí pero justo → mantén volumen y
-  progresa por carga/reps. No, con adherencia alta y RIR bajo real → NO subas series: cambia el
-  estímulo (variantes, rangos, esquema); si viene de mucho volumen acumulado, baja volumen 30-50% y
-  sube intensidad un bloque. No, con adherencia baja o RIR alto real → el problema es ejecución o
-  adherencia: simplifica y arregla eso antes de tocar la programación.
+### 15. Continuidad e hipótesis del bloque (obligatorio antes de proponer nada)
+Cada bloque lleva una HIPÓTESIS por zona prioritaria, con objetivo medible: a qué se apuesta (más
+volumen, más intensidad, otros ejercicios, o recuperar), cómo se sabrá si se HIZO (el estímulo medio
+de la zona, un ${SUBIDA_DE_PROCESO_PCT} % por encima de DONDE ACABÓ el bloque anterior, no de su media) y cómo se sabrá si SIRVIÓ (+${RM_OBJETIVO_PCT} % de RM estimado medio
+en sus ejercicios al acabar el bloque; +${RM_OBJETIVO_PRINCIPIANTE_PCT} % en un principiante; en déficit, no perder). Sin eso no es un bloque: es una lista de series. La hipótesis
+la firmo yo al abrir el bloque; tú me la propones zona por zona en rationale y en expediente_esperado.
+Antes de proponer, mira get_cierre_bloque (hipótesis, cierre firmado y mapa de respuesta) y
+get_training_history, y decide zona por zona según lo que salió:
+- Confirmada (se hizo y sirvió) → misma apuesta y un escalón más de techo.
+- Mejora, menos de lo buscado (se hizo y el RM sube más que el ruido sin llegar al objetivo) → misma
+  apuesta SIN subir el techo. No es un fallo: no cambies de palanca ni cuenta para soltar la prioridad.
+- Responde con menos (sirvió sin llegar al estímulo previsto) → misma línea SIN subir el techo: ya
+  mejora con lo que hace; la subida se guarda para cuando deje de mejorar.
+- No responde (se hizo y no sirvió) → no más de lo mismo: cambia de palanca (volumen ↔ intensidad; si
+  las dos han fallado, cambia los ejercicios). ${NO_RESPONDE_PARA_SOLTAR_ESTRELLA} bloques seguidos sin responder → la zona suelta la
+  prioridad y pasa a mantener; la recoge lo que pide el atleta o una zona que lleve ${BLOQUES_EN_MANTENER_PARA_CANDIDATA} bloques o más
+  en mantener.
+- Sin probar (no se hizo lo previsto, o no hubo marcas para medirlo) → se repite la apuesta arreglando
+  la causa (adherencia, agujetas que frenaron, RIR sin apuntar). No cuenta ni a favor ni en contra.
+Si el cierre de las hipótesis está sin firmar, no des ninguna por confirmada ni por fallida: pídeme
+que lo firme. Y si el bloque anterior no llevaba hipótesis (bloques antiguos), decide igual con lo
+que haya: ¿mejoró más que el ruido con adherencia alta? → una zona prioritaria y un escalón. ¿No, con
+adherencia alta y RIR bajo real? → cambia el estímulo (variantes, rangos, esquema), no subas series.
+¿No, con adherencia baja o RIR alto real? → el problema es ejecución o adherencia: simplifica y
+arregla eso antes de tocar la programación.
+Antes de subir un escalón revisa seis cosas (RIR real, ejecución, selección de ejercicios, descansos,
+recuperación y tiempo de sesión); la serie nueva va al día o a la variante donde mejor rinde.
 - ¿Qué días se saltaba? No repitas igual un día que siempre se salta.
 - ¿Qué cambio visible aporta este bloque? Obligatorio al menos uno.
-El reparto nuevo es un delta sobre el anterior, no un plan desde cero.
+El bloque nuevo es un delta sobre el anterior, no un plan desde cero.
 
 ### 16. Adherencia y valor percibido
-Cada bloque de 4 semanas tiene que traer al menos un elemento visiblemente nuevo (ejercicio,
+Cada 4 semanas tiene que haber al menos un elemento visiblemente nuevo (ejercicio,
 esquema, finisher, test). Si el atleta siente que podría hacer esto solo, el plan ha fallado aunque
 los números sean correctos.
 Y que se NOTE: si un atleta lleva 4 semanas sin un solo día señalado, propónmelo tú sin que te lo
@@ -225,6 +341,10 @@ las ve el atleta.
 
 ### 18. Seguridad y dolor
 Lesión activa declarada → nunca el gesto que duele; sustituye por un patrón equivalente y anótalo.
+Molestia apuntada en una zona prioritaria durante el bloque → es un límite pasado: aunque la apuesta se
+confirme, el techo de esa zona NO sube. Y en el bloque siguiente se vigila el estrés articular de las
+articulaciones que carga esa zona: que no pase por semana de lo que cargó de media en el bloque
+anterior. Dímelo en rationale con la articulación por su nombre.
 Dolor recurrente en la misma articulación y siempre en la misma posición → introduce la variante de
 posición contraria del mismo patrón, no te limites a bajar volumen.
 Lo que rompe tejidos es la exposición de golpe y sin progresión, no la técnica imperfecta: prioriza
@@ -240,7 +360,10 @@ para revisión mía.
 - No intento maximizar dos capacidades a la vez con el mismo volumen.
 - No mando planes cerrados de varios meses a un cliente nuevo.
 - No presento el fallo muscular como sinónimo del mejor estímulo posible.
-- No aplico escaleras de volumen fijas y genéricas a todo el mundo.
+- No aplico escaleras de volumen fijas y genéricas a todo el mundo: cada escalón sale de donde acabó
+  ESE atleta.
+- No programo descargas por calendario, y en una descarga no bajo la intensidad.
+- No empiezo cada bloque desde abajo.
 - No recorto el volumen de alguien en definición solo porque esté en definición.`;
 
 export const DOCTRINA_NUTRICION_DEFAULT = `## Criterio de NUTRICIÓN (mío — aplícalo por encima de cualquier convención genérica)

@@ -71,7 +71,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'get_client_overview',
     description:
-      'Resumen completo de un cliente: perfil, onboarding relevante, tendencia de peso (28 días), kcal de mantenimiento estimadas, adherencia (entrenos + check-ins, 4 semanas), dietas activas y mesociclo actual. Punto de partida antes de analizar o proponer nada.',
+      'Resumen completo de un cliente: perfil, onboarding relevante, tendencia de peso (28 días), kcal de mantenimiento estimadas, adherencia (entrenos + check-ins, 4 semanas), dietas activas y mesociclo actual (con su tipo de bloque, la hipótesis de cada zona prioritaria y el mapa de respuesta del atleta si hay cierres firmados). Punto de partida antes de analizar o proponer nada.',
     input_schema: {
       type: 'object',
       properties: {
@@ -307,27 +307,32 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'propose_mesocycle',
     description:
-      'Crea una PROPUESTA de mesociclo (bloque de entrenamiento) con series semanales objetivo por grupo muscular. Se valida automáticamente (grupos válidos, series 0–25, volumen razonable para los días). NUNCA se crea el mesociclo real: Dani lo aprueba o rechaza desde el panel. Antes conviene mirar get_training_history para respetar la progresión de volumen del bloque anterior. Solo defines el reparto de volumen; los entrenamientos concretos (ejercicios por día) los materializa Dani después en la app.',
+      'Crea una PROPUESTA de mesociclo (bloque de entrenamiento) con series semanales objetivo por grupo muscular. Se valida automáticamente (grupos válidos, series 0–25, volumen razonable para los días). NUNCA se crea el mesociclo real: Dani lo aprueba o rechaza desde el panel. Antes conviene mirar get_training_history y, si hubo bloque anterior, get_cierre_bloque (qué se apostó en cada zona y qué salió): el bloque nuevo arranca donde acabó el anterior. Cada grupo lleva uno de cuatro niveles en priority (alta = especializar, media = desarrollar, baja = mantener a la mitad, ignorar = fuera). La hipótesis de cada zona prioritaria (a qué se apuesta y con qué mejora medible se dará por buena) la fija Dani al abrir el bloque: escríbesela tú en rationale y en expediente_esperado. Aquí no se programan descargas: van por señales, no por calendario. Solo defines el reparto de volumen; los entrenamientos concretos (ejercicios por día) los materializa Dani después en la app.',
     input_schema: {
       type: 'object',
       properties: {
         athlete_email: { type: 'string' },
-        weeks: { type: 'number', description: 'Duración en semanas (1–12). Por defecto 12, el bloque estándar de Dani; menos de 8 solo con un motivo que digas en rationale.' },
+        weeks: { type: 'number', description: 'Duración en semanas (1–12). Por defecto 12, el bloque estándar de Dani (8 en un primer bloque); menos de 8 solo con un motivo que digas en rationale.' },
         days_per_week: { type: 'number', description: 'Sesiones por ciclo (1–14). Hasta 7 es una semana normal; por encima, el ciclo se repite cada N días. Con reparto, las sesiones de su ciclo (10 en uno de 14 días con 5 días/semana).' },
         objective: { type: 'string', description: 'Objetivo del bloque, ej. "Hipertrofia — énfasis espalda"' },
         start_date: { type: 'string', description: 'Fecha de inicio YYYY-MM-DD (opcional; por defecto hoy)' },
+        tipo_bloque: {
+          type: 'string', enum: ['primer', 'desarrollo', 'especializacion', 'mantenimiento'],
+          description: 'Tipo de bloque. "primer": el primero del atleta, para aprender los ejercicios y encontrar el punto de partida (8 semanas, sin grupos en "alta"). "desarrollo": sube el estímulo de las zonas prioritarias (lo normal, hasta 3; con 4 o más la app avisa pero no lo impide) y sostiene el resto. "especializacion": todo a UNA zona; lo habitual es llevar el resto a "baja" para dejarle sitio, pero eso lo decide Dani: recomiéndalo en rationale, no lo des por hecho. "mantenimiento": conservar lo ganado con la mitad de trabajo, sin prioridades. Ponlo siempre y di en rationale por qué ese.',
+        },
+        semana1_reducida: { type: 'boolean', description: 'Empezar con la semana 1 reducida (un 5-10 % por debajo de donde acabó el bloque anterior). Por defecto NO: el bloque arranca donde acabó el anterior. Ponla a true solo si hay ejercicios nuevos o vuelve de un parón de más de 3 semanas, y dilo en rationale. En un primer bloque va encendida sola.' },
         reparto: {
           type: 'object',
           description: 'Opcional pero recomendado: el reparto de días, tal cual lo devuelven calcular_reparto o list_mis_repartos: {"nombre":"…","dias":[{"tipo":"Empuje","grupos":["pecho","triceps"]},{"tipo":"Descanso"},…],"frecuencias":{…}}. Un elemento por día del ciclo, en orden; los libres con tipo "Descanso". Con él, days_per_week tiene que ser su número de sesiones, el ciclo dura sus días y la distribución de series sale ya hecha.',
         },
         groups: {
           type: 'object',
-          description: 'Series semanales objetivo por grupo muscular. Solo incluye los grupos que se entrenan. Ej: {"pecho":{"series":12,"priority":"alta"},"dorsal":{"series":16,"priority":"alta"}}. Grupos válidos: pecho, dorsal, trapecio, deltoide_ant, deltoide_lat, deltoide_post, biceps, triceps, antebrazo, cuadriceps, isquios, gluteo, aductores, gemelo, core, lumbares, rotadores.',
+          description: 'Series semanales objetivo por grupo muscular. Solo incluye los grupos que se entrenan. Ej: {"pecho":{"series":12,"priority":"alta"},"dorsal":{"series":14,"priority":"media"},"gemelo":{"series":4,"priority":"baja"},"antebrazo":{"series":0,"priority":"ignorar"}}. Grupos válidos: pecho, dorsal, trapecio, deltoide_ant, deltoide_lat, deltoide_post, biceps, triceps, antebrazo, cuadriceps, isquios, gluteo, aductores, gemelo, core, lumbares, rotadores.',
           additionalProperties: {
             type: 'object',
             properties: {
               series: { type: 'number' },
-              priority: { type: 'string', enum: ['alta', 'media', 'baja'] },
+              priority: { type: 'string', enum: ['alta', 'media', 'baja', 'ignorar'], description: 'alta = especializar (zona prioritaria del bloque) · media = desarrollar · baja = mantener, con la MITAD de las series que hacía · ignorar = 0 series, fuera del bloque.' },
             },
             required: ['series'],
           },
@@ -389,31 +394,36 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'propose_periodization_block',
     description:
-      'Crea una PROPUESTA de bloque completo periodizado (Bloque H2.1): el mesociclo (igual que propose_mesocycle, incluyendo semana de descarga si aplica) MÁS la cadencia de revisiones (check-ins) que se programarán automáticamente durante el bloque. Al aprobar, Dani obtiene de golpe el mesociclo y todas sus revisiones ya en el calendario — nada se aplica sin su aprobación. NO incluye las reglas de progresión por ejercicio ni cambios de dieta: esos se configuran después, cuando el mesociclo ya tiene entrenamientos generados. Usa get_training_history y get_questionnaire_trends antes de proponer, para que la cadencia de revisiones y la semana de descarga respondan a cómo le ha ido al atleta, no a un patrón genérico.',
+      'Crea una PROPUESTA de bloque completo periodizado (Bloque H2.1): el mesociclo (igual que propose_mesocycle: tipo de bloque, cuatro niveles por grupo y semana 1 reducida solo si toca) MÁS la cadencia de revisiones (check-ins) que se programarán automáticamente durante el bloque. Al aprobar, Dani obtiene de golpe el mesociclo y todas sus revisiones ya en el calendario — nada se aplica sin su aprobación. NO incluye las reglas de progresión por ejercicio ni cambios de dieta: esos se configuran después, cuando el mesociclo ya tiene entrenamientos generados. Usa get_training_history y get_questionnaire_trends antes de proponer, para que la cadencia de revisiones responda a cómo le ha ido al atleta, no a un patrón genérico. Las descargas y las semanas puente NO se programan aquí por calendario: se deciden por señales cuando aparecen (propose_week_plan) y quitan volumen, nunca intensidad.',
     input_schema: {
       type: 'object',
       properties: {
         athlete_email: { type: 'string' },
-        weeks: { type: 'number', description: 'Duración en semanas (1–12). Por defecto 12, el bloque estándar de Dani; menos de 8 solo con un motivo que digas en rationale.' },
+        weeks: { type: 'number', description: 'Duración en semanas (1–12). Por defecto 12, el bloque estándar de Dani (8 en un primer bloque); menos de 8 solo con un motivo que digas en rationale.' },
         days_per_week: { type: 'number', description: 'Sesiones por ciclo (1–14). Hasta 7 es una semana normal; por encima, el ciclo se repite cada N días. Con reparto, las sesiones de su ciclo (10 en uno de 14 días con 5 días/semana).' },
         objective: { type: 'string', description: 'Objetivo del bloque, ej. "Hipertrofia — énfasis espalda"' },
         start_date: { type: 'string', description: 'Fecha de inicio YYYY-MM-DD (opcional; por defecto hoy)' },
-        deload_week: { type: 'number', description: 'Semana (1-indexada) de descarga dentro del bloque, si el bloque debe incluir una. Omitir si no aplica.' },
+        deload_week: { type: 'number', description: 'En desuso: se sigue aceptando por compatibilidad, pero NO lo uses al crear un bloque. La descarga no va por calendario.' },
+        tipo_bloque: {
+          type: 'string', enum: ['primer', 'desarrollo', 'especializacion', 'mantenimiento'],
+          description: 'Tipo de bloque. "primer": el primero del atleta, para aprender los ejercicios y encontrar el punto de partida (8 semanas, sin grupos en "alta"). "desarrollo": sube el estímulo de las zonas prioritarias (lo normal, hasta 3; con 4 o más la app avisa pero no lo impide) y sostiene el resto. "especializacion": todo a UNA zona; lo habitual es llevar el resto a "baja" para dejarle sitio, pero eso lo decide Dani: recomiéndalo en rationale, no lo des por hecho. "mantenimiento": conservar lo ganado con la mitad de trabajo, sin prioridades. Ponlo siempre y di en rationale por qué ese.',
+        },
+        semana1_reducida: { type: 'boolean', description: 'Empezar con la semana 1 reducida (un 5-10 % por debajo de donde acabó el bloque anterior). Por defecto NO: el bloque arranca donde acabó el anterior. Ponla a true solo si hay ejercicios nuevos o vuelve de un parón de más de 3 semanas, y dilo en rationale. En un primer bloque va encendida sola.' },
         review_cadence_weeks: { type: 'number', description: 'Cada cuántas semanas se programa una revisión durante el bloque (ej. 2 = una cada 2 semanas). La primera cae en esa misma semana, la última no más tarde que el fin del bloque.' },
         review_type: { type: 'string', enum: ['revision', 'cuestionario', 'foto'], description: 'Tipo de revisión a programar en la cadencia.' },
         groups: {
           type: 'object',
-          description: 'Series semanales objetivo por grupo muscular. Solo incluye los grupos que se entrenan. Grupos válidos: pecho, dorsal, trapecio, deltoide_ant, deltoide_lat, deltoide_post, biceps, triceps, antebrazo, cuadriceps, isquios, gluteo, aductores, gemelo, core, lumbares, rotadores.',
+          description: 'Series semanales objetivo por grupo muscular y su nivel (priority). Incluye los grupos que se entrenan y los que el bloque ignora a propósito. Grupos válidos: pecho, dorsal, trapecio, deltoide_ant, deltoide_lat, deltoide_post, biceps, triceps, antebrazo, cuadriceps, isquios, gluteo, aductores, gemelo, core, lumbares, rotadores.',
           additionalProperties: {
             type: 'object',
             properties: {
               series: { type: 'number' },
-              priority: { type: 'string', enum: ['alta', 'media', 'baja'] },
+              priority: { type: 'string', enum: ['alta', 'media', 'baja', 'ignorar'], description: 'alta = especializar (zona prioritaria del bloque) · media = desarrollar · baja = mantener, con la MITAD de las series que hacía · ignorar = 0 series, fuera del bloque.' },
             },
             required: ['series'],
           },
         },
-        rationale: { type: 'string', description: 'Justificación breve para Dani, incluyendo cómo debería progresar el volumen semana a semana (Dani lo configurará por ejercicio después) — no la ve el atleta.' },
+        rationale: { type: 'string', description: 'Justificación breve para Dani, incluyendo la hipótesis de cada zona prioritaria (a qué se apuesta y con qué mejora medible se dará por buena) y cómo debería subir el estímulo por escalones — no la ve el atleta.' },
         expediente_datos: { type: 'string', description: 'En qué datos concretos te has apoyado (qué has mirado y qué has visto). Se guarda con la propuesta.' },
         expediente_huecos: { type: 'string', description: 'Qué NO sabías al proponer esto y has tenido que asumir.' },
         expediente_preguntas: { type: 'array', items: { type: 'string' }, description: 'Preguntas que quedan abiertas después de esta propuesta.' },
@@ -479,7 +489,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'get_cdg_semana',
     description:
-      'Lee el bloque en CDG (Índice de Hipertrofia): por zona, el IEM programado esta semana, el realizado la semana pasada, las agujetas vigentes (1-5), el contexto de la semana (sueño, estrés, motivación, fatiga al salir) y la PROPUESTA del protocolo freno/acelerador para la semana que viene. Son los números de Mesociclo › Seguimiento: no los recalcules. Úsala antes de propose_progresion_iem y cuando haya una molestia o agujetas altas.',
+      'Lee el bloque en CDG (Índice de Hipertrofia): por zona, el IEM programado esta semana, el realizado la semana pasada, las agujetas vigentes (1-5), el contexto de la semana (sueño, estrés, motivación, fatiga al salir) y la PROPUESTA del protocolo freno/acelerador para la semana que viene. Con el tipo de bloque y la hipótesis de cada zona prioritaria (su techo del bloque incluido). Son los números de Mesociclo › Seguimiento: no los recalcules. Úsala antes de propose_progresion_iem y cuando haya una molestia o agujetas altas.',
     input_schema: {
       type: 'object',
       properties: {
@@ -525,7 +535,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'get_cierre_bloque',
     description:
-      'Lee el CIERRE de un bloque (por defecto el en curso o el último): sesiones programadas/completadas, series por grupo programadas vs realizadas, tonelaje y 1RM frente al bloque anterior, patrones de movimiento, récords, titulares y el borrador para el cliente. Son los números de Mesociclo › Cierre. Úsala al acabar un bloque antes de proponer el siguiente, y en la revisión de fin de bloque.',
+      'Lee el CIERRE de un bloque (por defecto el en curso o el último): sesiones programadas/completadas, series por grupo programadas vs realizadas, tonelaje y 1RM frente al bloque anterior, patrones de movimiento, récords, titulares y el borrador para el cliente. Trae también el tipo de bloque, la hipótesis de cada zona prioritaria (a qué se apostó y con qué % de RM se da por buena) y, si Dani ya firmó el cierre, qué pasó con cada una y el mapa de respuesta del atleta (qué le funciona a cada zona). Son los números de Mesociclo › Cierre. Úsala al acabar un bloque antes de proponer el siguiente, y en la revisión de fin de bloque.',
     input_schema: {
       type: 'object',
       properties: {
@@ -1038,7 +1048,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'get_progress_metrics',
     description:
-      'El PROGRESO medido del atleta, lo mismo que Dani ve en Cliente › Revisión › El cuerpo: perímetros corporales con su cambio desde la primera medición (y si ese cambio supera el error de medición o es ruido), % de grasa y masa magra estimados (US Navy), índices antropométricos, y el índice de readiness (sueño y estrés). El entrenamiento y las marcas van en get_training_history; esto es el CUERPO. Míralo en una revisión antes de decir si algo está funcionando: el peso solo no distingue perder grasa de perder músculo.',
+      'El PROGRESO medido del atleta, lo mismo que Dani ve en Cliente › Revisión › El cuerpo: perímetros corporales con su cambio desde la primera medición (y si ese cambio supera el error de medición o es ruido), % de grasa y masa magra estimados (US Navy), índices antropométricos, y sueño, estrés y agujetas crónicas por separado. El entrenamiento y las marcas van en get_training_history; esto es el CUERPO. Míralo en una revisión antes de decir si algo está funcionando: el peso solo no distingue perder grasa de perder músculo.',
     input_schema: {
       type: 'object',
       properties: { athlete_email: { type: 'string' } },

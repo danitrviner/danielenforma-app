@@ -3,6 +3,7 @@ import { WorkoutExercise } from '../types';
 import {
   mesocycleWeekNumber, resolveExerciseForWeek, diasDeCiclo, offsetsDeSesiones, frecuenciaPorSemana,
   vueltasDelCiclo, resolverEjercicioDelMeso,
+  seriesQueSeQuitanEnSemana1, planDeSemana1Reducida, aplicarSemana1Reducida,
 } from './progression';
 
 describe('mesocycleWeekNumber', () => {
@@ -301,5 +302,77 @@ describe('vuelve de un parón (guía del IH)', () => {
     expect(resolverEjercicioDelMeso({ ...we, rir: 4 }, { vuelveDeParon: true }, 1).rir).toBe(4);
     expect(resolverEjercicioDelMeso({ ...we }, { vuelveDeParon: true }, 2).rir).toBe(1);
     expect(resolverEjercicioDelMeso({ ...we }, {}, 1).rir).toBe(1);
+  });
+});
+
+describe('semana 1 reducida (17-11-2026)', () => {
+  const ej = (exerciseId: string, muscleGroup: WorkoutExercise['muscleGroup'], sets: number): WorkoutExercise =>
+    ({ ...BASE, exerciseId, muscleGroup, sets });
+
+  it('quita el 7 % de las series del grupo, en series enteras', () => {
+    expect(seriesQueSeQuitanEnSemana1(14, false)).toBe(1); // 13,02 → 13
+    expect(seriesQueSeQuitanEnSemana1(22, false)).toBe(2); // 20,46 → 20
+    expect(seriesQueSeQuitanEnSemana1(6, false)).toBe(0);  // 5,58 → 6: nada
+    expect(seriesQueSeQuitanEnSemana1(0, true)).toBe(0);
+  });
+
+  it('un grupo con estrella pierde al menos una serie, pero no se queda sin ninguna', () => {
+    expect(seriesQueSeQuitanEnSemana1(6, true)).toBe(1);
+    expect(seriesQueSeQuitanEnSemana1(1, true)).toBe(0);
+  });
+
+  it('el recorte del grupo sale del ejercicio con más series; a igualdad, del último de la semana', () => {
+    const rutinas = [
+      { exercises: [ej('press', 'pecho', 4), ej('fondos', 'pecho', 3), ej('remo', 'dorsal', 3)] },
+      { exercises: [ej('inclinado', 'pecho', 4), ej('cruces', 'pecho', 3), ej('jalon', 'dorsal', 3)] },
+    ];
+    // Pecho: 14 → 13. Dorsal: 6, sin estrella → nada.
+    expect(planDeSemana1Reducida(rutinas, { pecho: { priority: 'alta' } })).toEqual({ inclinado: 1 });
+    // Con estrella, el dorsal pierde una aunque el 7 % no llegue a una serie.
+    expect(planDeSemana1Reducida(rutinas, { dorsal: { priority: 'alta' } })).toEqual({ inclinado: 1, jalon: 1 });
+  });
+
+  it('ningún ejercicio baja de una serie', () => {
+    const rutinas = [{ exercises: [ej('a', 'gemelo', 1), ej('b', 'gemelo', 1)] }];
+    expect(planDeSemana1Reducida(rutinas, { gemelo: { priority: 'alta' } })).toEqual({});
+  });
+
+  it('un ejercicio repetido en dos sesiones solo se elige si sus dos series caben en el recorte', () => {
+    const repetido = [
+      { exercises: [ej('press', 'pecho', 4), ej('cruces', 'pecho', 3)] },
+      { exercises: [ej('press', 'pecho', 4), ej('fondos', 'pecho', 3)] },
+    ];
+    // 14 → 13: una serie. El press (dos sesiones) serían dos: sale de un accesorio.
+    expect(planDeSemana1Reducida(repetido, {})).toEqual({ fondos: 1 });
+    const todoRepetido = [
+      { exercises: [ej('press', 'pecho', 4), ej('cruces', 'pecho', 3)] },
+      { exercises: [ej('press', 'pecho', 4), ej('cruces', 'pecho', 3)] },
+    ];
+    // Sin estrella no se recorta de más; con estrella, el mínimo de una serie menos manda.
+    expect(planDeSemana1Reducida(todoRepetido, {})).toEqual({});
+    expect(planDeSemana1Reducida(todoRepetido, { pecho: { priority: 'alta' } })).toEqual({ press: 1 });
+  });
+
+  it('solo recorta la semana 1 y no toca reps, RIR ni descanso', () => {
+    const meso = { semana1Reducida: true, semana1Recorte: { ex1: 1 } };
+    expect(resolverEjercicioDelMeso(BASE, meso, 1)).toEqual({ ...BASE, sets: 2 });
+    expect(resolverEjercicioDelMeso(BASE, meso, 2)).toEqual(BASE);
+    expect(resolverEjercicioDelMeso(BASE, { ...meso, semana1Reducida: false }, 1)).toEqual(BASE);
+    expect(resolverEjercicioDelMeso({ ...BASE, exerciseId: 'otro' }, meso, 1).sets).toBe(3);
+  });
+
+  it('con bloques de series, quita del último y conserva el RIR de cada uno', () => {
+    const we: WorkoutExercise = { ...BASE, setGroups: [{ sets: 1, reps: '6-8', rir: 1 }, { sets: 2, reps: '10-12', rir: 2 }] };
+    const r = aplicarSemana1Reducida(we, 1);
+    expect(r.setGroups).toEqual([{ sets: 1, reps: '6-8', rir: 1 }, { sets: 1, reps: '10-12', rir: 2 }]);
+    expect(r.sets).toBe(2);
+    // Nunca por debajo de una serie, se pida lo que se pida.
+    expect(aplicarSemana1Reducida(we, 9).sets).toBe(1);
+    expect(aplicarSemana1Reducida({ ...BASE, sets: 1 }, 1).sets).toBe(1);
+  });
+
+  it('si la semana 1 es de descarga, manda la descarga y no se recorta dos veces', () => {
+    const meso = { semana1Reducida: true, semana1Recorte: { ex1: 1 }, semanasDescarga: [1] };
+    expect(resolverEjercicioDelMeso({ ...BASE, sets: 4 }, meso, 1).sets).toBe(2);
   });
 });

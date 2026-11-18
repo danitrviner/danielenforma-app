@@ -61,6 +61,7 @@ cleaning_services
 close
 cloud_off
 cloud_sync
+code
 coffee
 contacts
 content_copy

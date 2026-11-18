@@ -22,8 +22,10 @@ import { cicloDiasDeMeso } from './asignacionMesociclo.js';
 import { nombreDeMeso, nombreCortoDeSesion } from './nombresMeso.js';
 import { getWeekStart, addDays } from './trainingWeek.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
+import { seriesDeFuerza } from './sesionFuera.js';
 import { rirEfectivo } from './oneRepMax.js';
 import { normalizeText } from './athleteMetrics.js';
+import { esSemanaPuente } from './tipoDeSemana.js';
 
 // ── Nivel ─────────────────────────────────────────────────────────────────────
 
@@ -96,6 +98,10 @@ export interface PlanDeLaSemana {
   contexto?: ContextoDeReto;
   /** Nota del coach del evento de la semana («Entrena en el hotel…»). */
   notaEvento?: string;
+  /** Semana puente (pivot) del bloque: menos series salvo en los grupos
+   *  prioritarios. No se piden retos de progresar (F7c). Es lo mismo que
+   *  `contexto.tipoSemana === 'puente'`, a mano para quien no mira el contexto. */
+  semanaPuente?: boolean;
 }
 
 /** «8-12» → [8, 12]; «10» → [10, 10]; «AMRAP» o vacío → null. */
@@ -180,9 +186,12 @@ export function planDeLaSemana(params: {
   const tipoSemana: ContextoDeReto['tipoSemana'] =
     meso.semanasTest?.includes(semana) ? 'test'
     : meso.semanasDescarga?.includes(semana) ? 'descarga'
+    : esSemanaPuente(meso, semana) ? 'puente'
     : meso.vuelveDeParon && semana === 1 ? 'paron'
     : evento ? 'evento'
     : undefined;
+  // El puente cede ante el test y la descarga, como en `resolverEjercicioDelMeso`.
+  const semanaPuente = tipoSemana === 'puente';
   return {
     meso,
     sesiones,
@@ -193,6 +202,7 @@ export function planDeLaSemana(params: {
       ...(tipoSemana ? { tipoSemana } : {}),
     },
     ...(evento?.nota ? { notaEvento: evento.nota } : {}),
+    ...(semanaPuente ? { semanaPuente } : {}),
   };
 }
 
@@ -202,16 +212,26 @@ export function sesionesPendientes(plan: PlanDeLaSemana, today: string): SesionP
 }
 
 // ── Marcas ────────────────────────────────────────────────────────────────────
+//
+// Las series hechas fuera de su gimnasio (`fuera`, utils/sesionFuera.ts) no son
+// marcas: ni «la última vez», ni récords, ni cuentan para superarlos. Sus kilos
+// son de otras máquinas (17-11-2026).
 
 export interface Marca {
   weight: number;
   reps: number;
   rir: number;        // efectivo: al fallo = 0
   alFallo: boolean;
+  /** ¿El RIR lo apuntó el atleta? (`WorkoutSetLog.rirApuntado`). Ausente en
+   *  los registros anteriores. Lo usa el criterio de «toca subir». */
+  rirApuntado?: boolean;
 }
 
 function aMarca(s: WorkoutSetLog): Marca {
-  return { weight: Number(s.weight) || 0, reps: Number(s.repsDone) || 0, rir: rirEfectivo(s.rir, s.alFallo), alFallo: !!s.alFallo };
+  return {
+    weight: Number(s.weight) || 0, reps: Number(s.repsDone) || 0, rir: rirEfectivo(s.rir, s.alFallo), alFallo: !!s.alFallo,
+    ...(s.rirApuntado != null ? { rirApuntado: s.rirApuntado } : {}),
+  };
 }
 
 // Una marca de hace más de tres meses ya no dice lo que el atleta mueve hoy.
@@ -231,7 +251,7 @@ export function ultimaVez(
     if (mejor && log.date <= mejor.date) continue;
     const series = log.entries
       .filter(e => e.exerciseId === exerciseId)
-      .flatMap(e => seriesPrincipales(e.sets))
+      .flatMap(e => seriesDeFuerza(seriesPrincipales(e.sets)))
       .map(aMarca)
       .filter(m => m.reps > 0);
     if (series.length > 0) mejor = { date: log.date, series };
@@ -280,7 +300,7 @@ export function ejerciciosMejorados(
     const mejorado = logs.some(log =>
       log.date >= from && log.date <= to && (!workoutId || log.workoutId === workoutId)
       && log.entries.some(e => e.exerciseId === ref.exerciseId
-        && seriesPrincipales(e.sets).some(s => superaA(ref, { weight: Number(s.weight) || 0, reps: Number(s.repsDone) || 0 }))));
+        && seriesDeFuerza(seriesPrincipales(e.sets)).some(s => superaA(ref, { weight: Number(s.weight) || 0, reps: Number(s.repsDone) || 0 }))));
     if (mejorado) n++;
   }
   return n;
@@ -293,7 +313,7 @@ export function recordDeReps(logs: WorkoutLog[], exerciseId: string, weight: num
     if (log.date >= antesDe) continue;
     for (const e of log.entries) {
       if (e.exerciseId !== exerciseId) continue;
-      for (const s of e.sets) {
+      for (const s of seriesDeFuerza(e.sets)) {
         if ((Number(s.weight) || 0) + 0.01 >= weight && (Number(s.repsDone) || 0) > best) best = Number(s.repsDone) || 0;
       }
     }
@@ -312,7 +332,7 @@ export function tablaDeRecords(logs: WorkoutLog[], exerciseId: string, antesDe: 
     if (log.date >= antesDe) continue;
     for (const e of log.entries) {
       if (e.exerciseId !== exerciseId) continue;
-      for (const s of e.sets) {
+      for (const s of seriesDeFuerza(e.sets)) {
         const w = Number(s.weight) || 0;
         const r = Number(s.repsDone) || 0;
         if (r > 0 && r > (porPeso.get(w) ?? 0)) porPeso.set(w, r);
@@ -343,9 +363,9 @@ export function recordsBatidos(
     for (const e of log.entries) {
       if (exerciseId && e.exerciseId !== exerciseId) continue;
       if (conRecord.has(e.exerciseId)) continue;
-      const tieneHistorial = logs.some(l => l.date < from && l.entries.some(x => x.exerciseId === e.exerciseId && x.sets.length > 0));
+      const tieneHistorial = logs.some(l => l.date < from && l.entries.some(x => x.exerciseId === e.exerciseId && seriesDeFuerza(x.sets).length > 0));
       if (!tieneHistorial) continue;
-      for (const s of seriesPrincipales(e.sets)) {
+      for (const s of seriesDeFuerza(seriesPrincipales(e.sets))) {
         const w = Number(s.weight) || 0;
         const r = Number(s.repsDone) || 0;
         if (r > 0 && r > recordDeReps(logs, e.exerciseId, w, from)) { conRecord.add(e.exerciseId); break; }

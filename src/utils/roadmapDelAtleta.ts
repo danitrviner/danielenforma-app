@@ -1,4 +1,4 @@
-import type { BodyweightLog, Mesocycle, NutritionProgram, QuestionnaireResponse, StepLog, WorkoutAssignment, WorkoutLog } from '../types.js';
+import type { BodyweightLog, Exercise, ExperienceLevel, Mesocycle, NutritionProgram, QuestionnaireResponse, StepLog, Workout, WorkoutAssignment, WorkoutLog } from '../types.js';
 import type { SemanaDelPlan, EvaluacionDelPlan } from './seguimientoPlan.js';
 import { objetivoDeFase } from './objetivoDeFase.js';
 import { OBJETIVO_LABEL, type ObjetivoCorporalTipo } from './verificacionObjetivo.js';
@@ -6,6 +6,9 @@ import { conEstadoReal } from './estadoDeAsignacion.js';
 import { addDays, diasEntreFechas, getWeekStart } from './trainingWeek.js';
 import { aggregate, allTimeBestBefore } from './trainingReport.js';
 import type { ContextoPesoCorporal } from './pesoCorporal.js';
+import { semanaDelBloque, totalDeSemanasDelBloque } from './semanaDelBloque.js';
+import { mesoDelObjetivo, progresoDelObjetivo, type ProgresoDelObjetivo } from './progresoDelObjetivo.js';
+import { bloqueTerminadoParaElAtleta, type BloqueTerminado } from './bloqueTerminado.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El Road map del atleta, derivado de los objetivos (29-10-2026)
@@ -85,8 +88,15 @@ export interface DondeEstas {
 export interface BloqueDelCamino {
   id: string;
   nombre: string;
+  /** Semana del bloque por la que va: la VUELTA del microciclo, la misma cuenta
+   *  que Rutinas (F5, 17-11-2026; ver `semanaDelBloque.ts`). Antes era días/7 y
+   *  con un ciclo de 14 días decía «semana 4» donde Rutinas decía «semana 2». */
   semana: number;
+  /** De cuántas: las vueltas del bloque, en la misma unidad que `semana`. */
   semanas: number;
+  /** Lo que dura en semanas de calendario (`Mesocycle.weeks`). Coincide con
+   *  `semanas` salvo en los ciclos que no duran 7 días. */
+  semanasCalendario: number;
   desde: string;
   hasta: string;
 }
@@ -125,6 +135,11 @@ export interface RoadmapDelAtleta {
   proximoCambio: ProximoCambio | null;
   /** Sin fases del programa: el camino es la fase de arranque. */
   arranque: boolean;
+  /** El objetivo del bloque en curso y cuánto le falta (A1, 17-11-2026). `null`
+   *  si el bloque no lleva hipótesis. Ver `progresoDelObjetivo.ts`. */
+  objetivoDelBloque?: ProgresoDelObjetivo | null;
+  /** El cierre del bloque que acabó hace 14 días o menos (A2). Ver `bloqueTerminado.ts`. */
+  bloqueTerminado?: BloqueTerminado | null;
 }
 
 const kg = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -224,7 +239,7 @@ export function bloqueEnCurso(mesociclos: readonly Mesocycle[], hoy: string): Bl
   if (!m) return null;
   return {
     id: m.id, nombre: m.name || 'Bloque de entreno',
-    semana: Math.floor(diasEntreFechas(m.startDate, hoy) / 7) + 1, semanas: m.weeks,
+    semana: semanaDelBloque(m, hoy), semanas: totalDeSemanasDelBloque(m) ?? m.weeks, semanasCalendario: m.weeks,
     desde: m.startDate, hasta: addDays(m.startDate, m.weeks * 7 - 1),
   };
 }
@@ -234,8 +249,9 @@ export function bloquesDelCamino(mesociclos: readonly Mesocycle[], hoy: string):
   return [...mesociclos].filter(m => !!m.startDate).sort((a, b) => a.startDate.localeCompare(b.startDate)).map(m => {
     const hasta = addDays(m.startDate, m.weeks * 7 - 1);
     return {
-      id: m.id, nombre: m.name || 'Bloque de entreno', semanas: m.weeks, desde: m.startDate, hasta,
-      semana: Math.min(m.weeks, Math.max(1, Math.floor(diasEntreFechas(m.startDate, hoy) / 7) + 1)),
+      id: m.id, nombre: m.name || 'Bloque de entreno', desde: m.startDate, hasta,
+      // Misma cuenta que `bloqueEnCurso`: 1 en un bloque que aún no ha empezado y la última en uno terminado.
+      semana: semanaDelBloque(m, hoy), semanas: totalDeSemanasDelBloque(m) ?? m.weeks, semanasCalendario: m.weeks,
       estado: hasta < hoy ? 'pasada' : m.startDate > hoy ? 'futura' : 'actual',
     };
   });
@@ -433,6 +449,13 @@ export function construirRoadmap(e: {
   /** kcal y pasos de cada semana del programa (índice = semana), para el próximo cambio. */
   kcalSemana?: (number | null)[];
   pasosSemana?: (number | null)[];
+  /** El catálogo de ejercicios: con él, el objetivo del bloque lleva su barra de
+   *  progreso y el cierre sus «antes → después». Sin él, solo la frase. */
+  exercises?: readonly Exercise[];
+  /** Las rutinas del atleta, para el empujón del objetivo. */
+  workouts?: readonly Workout[];
+  /** Nivel del atleta (`OnboardingData.experienceLevel`), para la frase del objetivo. */
+  nivel?: ExperienceLevel;
 }): RoadmapDelAtleta {
   const bloque = bloqueEnCurso(e.mesociclos, e.hoy);
   const deFases = e.program ? caminoDeFases(e.program, e.semanas, e.hoy) : [];
@@ -458,5 +481,12 @@ export function construirRoadmap(e: {
       pasosSemana: e.pasosSemana ?? [null, ...e.semanas.map(s => s.pasosPlan)],
     }),
     arranque: arranque && camino.length > 0,
+    objetivoDelBloque: progresoDelObjetivo({
+      meso: mesoDelObjetivo(e.mesociclos, e.hoy), logs: e.workoutLogs, exercises: e.exercises, workouts: e.workouts,
+      assignments: e.assignments, hoy: e.hoy, nivel: e.nivel,
+    }),
+    bloqueTerminado: bloqueTerminadoParaElAtleta({
+      mesociclos: e.mesociclos, assignments: e.assignments, logs: e.workoutLogs, exercises: e.exercises, hoy: e.hoy,
+    }),
   };
 }

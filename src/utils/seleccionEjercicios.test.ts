@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   elegirEjercicios, ordenarCandidatos, bloquesSeguidosCon,
-  ESQUEMA_POR_DEFECTO, BLOQUES_PARA_ROTAR, EntradaSeleccion,
+  ESQUEMA_POR_TIPO, esquemaPorDefecto, tipoDeEjercicio, BLOQUES_PARA_ROTAR, EntradaSeleccion,
 } from './seleccionEjercicios';
 import type { Exercise, Workout, WorkoutLog } from '../types';
 
@@ -63,11 +63,38 @@ describe('elegirEjercicios · el criterio de Dani manda', () => {
 
   it('un ejercicio que no está en ninguna rutina suya cae al esquema por defecto, y lo dice', () => {
     const r = elegirEjercicios(entrada({ rutinasDelCoach: [] }));
-    expect(r[0]).toMatchObject({
-      reps: ESQUEMA_POR_DEFECTO.reps, rir: ESQUEMA_POR_DEFECTO.rir,
-      restSeconds: ESQUEMA_POR_DEFECTO.restSeconds,
-    });
-    expect(r[0].razones.join(' ')).toContain('esquema por defecto');
+    // «Aperturas en polea» no tiene secundarios: es un analítico.
+    expect(r[0]).toMatchObject(ESQUEMA_POR_TIPO.analitico);
+    expect(r[0].razones.join(' ')).toContain('esquema por defecto de un analítico');
+  });
+
+  it('el esquema por defecto depende del tipo de ejercicio, no es el mismo para todos', () => {
+    const catalogo = [
+      { ...ej('curl', 'Curl'), secondaryMuscleGroups: [] },
+      { ...ej('prensa', 'Prensa', ['máquina']), secondaryMuscleGroups: ['gluteo', 'aductores'], guiado: true },
+      { ...ej('rumano', 'Peso muerto rumano', ['barra']), secondaryMuscleGroups: ['gluteo', 'lumbares'], guiado: false },
+    ] as Exercise[];
+    const r = elegirEjercicios(entrada({ catalogo, trozos: [3, 3, 3] }));
+    const porId = Object.fromEntries(r.map(x => [x.exerciseId, x]));
+    expect(porId.curl).toMatchObject({ reps: '10-15', rir: 1, restSeconds: 90 });
+    expect(porId.prensa).toMatchObject({ reps: '8-12', rir: 2, restSeconds: 150 });
+    expect(porId.rumano).toMatchObject({ reps: '6-10', rir: 3, restSeconds: 180 });
+  });
+
+  it('a un principiante le deja una repetición más de margen, sin pasar de RIR 4', () => {
+    const rumano = { secondaryMuscleGroups: ['gluteo'], guiado: false, equipment: ['barra'] } as Pick<Exercise, 'secondaryMuscleGroups' | 'guiado' | 'equipment'>;
+    expect(esquemaPorDefecto(rumano).rir).toBe(3);
+    expect(esquemaPorDefecto(rumano, 'principiante').rir).toBe(4);
+    expect(esquemaPorDefecto({ secondaryMuscleGroups: [] }, 'principiante').rir).toBe(2);
+    expect(esquemaPorDefecto(rumano, 'avanzado').rir).toBe(3);
+  });
+
+  it('el nivel no toca los números que salen de las rutinas del coach', () => {
+    const r = elegirEjercicios(entrada({
+      rutinasDelCoach: rutinas([{ id: 'banca', veces: 2, reps: '5-8', rir: 1, rest: 180 }]),
+      nivel: 'principiante',
+    }));
+    expect(r[0]).toMatchObject({ exerciseId: 'banca', reps: '5-8', rir: 1, restSeconds: 180 });
   });
 
   it('las series que se le pasan se respetan: el motor elige el QUÉ, no el cuánto', () => {
@@ -238,5 +265,21 @@ describe('inicio (reparto de un draft entre días)', () => {
   it('sin `inicio` se comporta como siempre', () => {
     expect(elegirEjercicios(entrada({ trozos: [3, 3] })))
       .toEqual(elegirEjercicios(entrada({ trozos: [3, 3], inicio: 0 })));
+  });
+});
+
+describe('tipoDeEjercicio', () => {
+  it('sin secundarios es analítico, tenga el material que tenga', () => {
+    expect(tipoDeEjercicio({ secondaryMuscleGroups: [], guiado: true, equipment: ['máquina'] })).toBe('analitico');
+    expect(tipoDeEjercicio({})).toBe('analitico');
+  });
+  it('con secundarios es guiado si es máquina, multipower o polea (la polea no viene marcada como guiada)', () => {
+    expect(tipoDeEjercicio({ secondaryMuscleGroups: ['biceps'], guiado: false, equipment: ['polea'] })).toBe('guiado');
+    expect(tipoDeEjercicio({ secondaryMuscleGroups: ['gluteo'], guiado: true })).toBe('guiado');
+    expect(tipoDeEjercicio({ secondaryMuscleGroups: ['triceps'], guiado: false, equipment: ['Multipower'] })).toBe('guiado');
+  });
+  it('con secundarios y sin guía es libre', () => {
+    expect(tipoDeEjercicio({ secondaryMuscleGroups: ['gluteo', 'lumbares'], guiado: false, equipment: ['barra'] })).toBe('libre');
+    expect(tipoDeEjercicio({ secondaryMuscleGroups: ['biceps'], equipment: ['mancuernas'] })).toBe('libre');
   });
 });

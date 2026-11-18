@@ -2,6 +2,8 @@ import React from 'react';
 import type { RoadmapDelAtleta, FaseDelCamino, HitoAutomatico, SemanaDeFase } from '../../utils/roadmapDelAtleta';
 import { COACH_NOMBRE } from '../../utils/coach';
 import { Icon } from '../ui';
+import ObjetivoDelBloque from '../training/ObjetivoDelBloque';
+import BloqueTerminado from '../training/BloqueTerminado';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El Road map del atleta — la vista (29-10-2026)
@@ -16,6 +18,11 @@ import { Icon } from '../ui';
    Mejoras del 29-10 (tarde): abre con SU frase del alta en una tarjeta
    encima del plan (Dani eligió esta entre dos), nunca se queda vacío (fase «Tu arranque» sin fases del programa),
    los hitos del primer mes y la cifra de fuerza en «Esta semana».
+
+   17-11-2026: en el paso de entreno, el objetivo del bloque con cuánto le
+   falta (`ObjetivoDelBloque`); y, los 14 días siguientes a acabar un bloque,
+   su cierre encima del plan (`BloqueTerminado`). Los dos salen de
+   `construirRoadmap` y no se pintan si no hay nada que decir.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const kg = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -36,22 +43,26 @@ interface Props {
   reto?: React.ReactNode;
   /** Logros que no salen del plan (retos conseguidos), para la tira de abajo. */
   logrosExtra?: HitoAutomatico[];
+  /** Bancos de pruebas: el cierre no recuerda el «Entendido». */
+  cierreSinRecordar?: boolean;
 }
 
-export default function RoadmapDelAtletaVista({ roadmap, frase, reto, logrosExtra = [] }: Props) {
+export default function RoadmapDelAtletaVista({ roadmap, frase, reto, logrosExtra = [], cierreSinRecordar = false }: Props) {
   const logros = [...roadmap.hitos, ...logrosExtra].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 10);
   const laFrase = frase?.trim() || null;
+  const cierre = <BloqueTerminado cierre={roadmap.bloqueTerminado} sinRecordar={cierreSinRecordar} />;
   if (roadmap.camino.length === 0) {
     return (
       <div className="space-y-4">
         <CabeceraCita frase={laFrase} roadmap={roadmap} />
+        {cierre}
         <SinPlan />
         {reto}
         <Logros logros={logros} />
       </div>
     );
   }
-  return <Camino roadmap={roadmap} frase={laFrase} reto={reto} logros={logros} />;
+  return <Camino roadmap={roadmap} frase={laFrase} reto={reto} logros={logros} cierre={cierre} />;
 }
 
 /* ── Cabecera: su frase, en una tarjeta encima del plan ─────────────────── */
@@ -225,9 +236,12 @@ function Logros({ logros }: { logros: HitoAutomatico[] }) {
 function PasoEntreno({ roadmap }: { roadmap: RoadmapDelAtleta }) {
   const actual = roadmap.bloques.find(b => b.estado === 'actual');
   const siguientes = roadmap.bloques.filter(b => b.estado === 'futura').slice(0, 2);
-  if (!actual && siguientes.length === 0) return null;
+  // El objetivo del bloque (17-11): de qué va y cuánto le falta. Sin hipótesis no sale.
+  const objetivo = <ObjetivoDelBloque progreso={roadmap.objetivoDelBloque} className="mt-2" />;
+  if (!actual && siguientes.length === 0) return roadmap.objetivoDelBloque ? objetivo : null;
   const cadena = [actual, ...siguientes].filter((b): b is NonNullable<typeof b> => !!b).map(b => b.nombre).join(' → ');
   return (
+    <>
     <div className="mt-3 flex items-start gap-2 rounded-field border border-hairline bg-raised px-3 py-2" style={{ borderColor: 'color-mix(in oklab, var(--color-data) 40%, transparent)' }}>
       <Icon name="fitness_center" size="s" className="shrink-0 mt-0.5" style={{ color: 'var(--color-data)' }} />
       <div className="min-w-0">
@@ -238,17 +252,23 @@ function PasoEntreno({ roadmap }: { roadmap: RoadmapDelAtleta }) {
         </p>
       </div>
     </div>
+    {objetivo}
+    </>
   );
 }
 
 /* ── El camino ──────────────────────────────────────────────────────────── */
 
-function Camino({ roadmap, frase, reto, logros }: { roadmap: RoadmapDelAtleta; frase: string | null; reto?: React.ReactNode; logros: HitoAutomatico[] }) {
+function Camino({ roadmap, frase, reto, logros, cierre }: {
+  roadmap: RoadmapDelAtleta; frase: string | null; reto?: React.ReactNode; logros: HitoAutomatico[];
+  cierre: React.ReactNode;
+}) {
   const d = roadmap.dondeEstas;
   const titulo = roadmap.arranque ? 'Tu arranque' : `Tu plan · ${roadmap.camino.length} ${roadmap.camino.length === 1 ? 'fase' : 'fases'}`;
   return (
     <div className="space-y-4">
       <CabeceraCita frase={frase} roadmap={roadmap} />
+      {cierre}
       <section className="rounded-canvas border border-hairline bg-surface p-5">
         <p className="font-sans text-caption uppercase tracking-widest text-ink-2 mb-4">{titulo}</p>
         <div className="flex flex-col gap-0">

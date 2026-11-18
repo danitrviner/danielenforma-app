@@ -10,8 +10,17 @@ import { bodyweightForAthleteKey, pesoPrimeroKey, pesoUltimoKey } from '../hooks
 import { VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
 import { isoWeekKey, isoWeekBounds } from '../utils/challengeOptions';
 import ClientRevisionPanel from './revision/ClientRevisionPanel';
+import { cdgCatalogoKey } from '../hooks/useMotorCdg';
+import catalogoCdgPrueba from '../utils/cdg/__fixtures__/catalogoPrueba.json';
 import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import ClientImplantacionPanel from './implantacion/ClientImplantacionPanel';
+import SeguimientoCdg from './mesociclo/SeguimientoCdg';
+import DossierPanel from './DossierPanel';
+import { DOSSIER_VACIO } from '../db/dossier';
+import { EscriturasDelCierreContext, type EscriturasDelCierre } from './cierre/escriturasDelCierre';
+import type { QuestionnaireAssignment } from '../types';
+import type { CambioAtleta } from '../utils/cambiosAtleta';
+import type { Hipotesis } from '../utils/hipotesis';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Banco de pruebas de Cliente › Revisión — ruta `/dev/revision-coach`, solo en
@@ -28,9 +37,13 @@ import ClientImplantacionPanel from './implantacion/ClientImplantacionPanel';
 
    El fixture no es decorativo, ejercita los casos que el motor tiene que
    resolver bien: un bloque EN CURSO (para que la normalización por semanas
-   transcurridas se vea), un grupo prioritario al que no se le está dando
-   volumen, un ejercicio que se estrena (no debe salir como «el que más sube»)
-   y otro que baja.
+   transcurridas se vea), un ejercicio que se estrena (no debe salir como «el
+   que más sube») y otro que baja.
+
+   Revisión de la semana (18-11-2026). Para «La semana que viene» hay un cambio programado en la semana
+   4 (sentadilla 3 → 4 series), cargas pautadas con rango y un cuestionario
+   semanal asignado; para «Lo que pide decisión», cambios con hipótesis (uno
+   ya por mirar) y el peso yendo más lento de lo que pide la fase.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const EMAIL = 'dev.coach@example.com';
@@ -46,8 +59,22 @@ const PERFIL: UserProfile = {
 
 // ── Ejercicios ──────────────────────────────────────────────────────────────
 function ej(id: string, name: string, muscleGroup: MuscleGroup, secundarios?: MuscleGroup[]): Exercise {
-  return { id, ownerId: 'coach', name, primaryFocus: '', muscleGroup, secondaryMuscleGroups: secundarios, type: 'fuerza' } as Exercise;
+  return { id, ownerId: 'coach', name, primaryFocus: '', muscleGroup, secondaryMuscleGroups: secundarios, type: 'fuerza', cdgNombre: CDG_DE[id] } as Exercise;
 }
+
+// Vínculo con el catálogo CDG de prueba (src/utils/cdg/__fixtures__), para que
+// el bloque «Estímulo por semana (IEM)» tenga algo que calcular.
+const CDG_DE: Record<string, string> = {
+  press_banca: 'Press banca plano con mancuernas (caja torácica amplia) - Pectoral, deltoides anterior, tríceps',
+  press_inclinado: 'Press inclinado en máquina pendular - Pectoral, deltoides anterior, tríceps',
+  remo_barra: 'Remo en multipower - Dorsal, trapecio, deltoides posterior',
+  jalon: 'Jalón estable en polea alta agarre ancho prono - Dorsal, deltoides posterior',
+  elevaciones: 'Elevaciones laterales con mancuernas - Deltoides medial',
+  curl_polea: 'Curl de bíceps en polea - Bíceps',
+  frances: 'Press francés con mancuernas - Tríceps',
+  sentadilla: 'Sentadilla en multipower (dominante rodilla) - Cuádriceps, aductores, glúteo',
+  peso_muerto_rumano: 'Curl femoral en máquina sentado - Isquios',
+};
 
 const EJERCICIOS: Exercise[] = [
   ej('press_banca', 'Press banca', 'pecho', ['triceps', 'deltoide_ant']),
@@ -85,7 +112,52 @@ const MESO_ACTUAL: Mesocycle = {
     isquios:       { series: 8,  priority: 'media' },
     core:          { series: 6,  priority: 'baja' },
   }),
+  // Hipótesis del bloque (17-11): dos zonas con estrella. Las cifras están
+  // puestas para que se vean dos lecturas distintas en Cierre de bloque: el
+  // pectoral llega a su estímulo y el deltoides se queda corto del suyo. El
+  // objetivo de proceso es donde acabó el bloque anterior + 5 % (auditoría de
+  // cifras, 17-11-2026): 12,6 → 13,2 y 27,5 → 28,9.
+  tipoBloque: 'desarrollo', cdgVelocidad: 'suave',
+  hipotesis: {
+    pectoral: { palanca: 'volumen', iemMedioAnterior: 11.8, iemFinalAnterior: 12.6, iemMedioObjetivo: 13.2, iemArranque: 12.6, iemTecho: 13.9, rmObjetivoPct: 5, limite: 'hombro sin molestias' },
+    deltoides: { palanca: 'intensidad', iemMedioAnterior: 26, iemFinalAnterior: 27.5, iemMedioObjetivo: 28.9, iemArranque: 27.5, iemTecho: 30.3, rmObjetivoPct: 5 },
+  },
+  cdgObjetivosIem: { pectoral: 13.9, deltoides: 30.3 },
+  cdgModoPorZona: { pectoral: 'dinamico', deltoides: 'dinamico' },
 } as Mesocycle;
+
+/**
+ * Los casos de la auditoría de cifras (17-11-2026), con `?caso=`:
+ *  · `parcial`: al pectoral se le pide un 8 % de RM (como a un principiante);
+ *    con el +6 % que lleva queda entre el ruido y el objetivo: «Mejora, menos
+ *    de lo buscado».
+ *  · `deficit`: el bloque tal como se propone en déficit (no perder y techo
+ *    donde acabó), y la fase de déficit alargada para que el bloque SIGUIENTE
+ *    también caiga en ella.
+ *  · `primer` (18-11-2026): el bloque en curso es el PRIMERO del atleta (sin
+ *    estrellas ni bloque anterior): «A qué responde» pasa a ser su «Punto de
+ *    partida», con una molestia en el press francés (zona con poco volumen).
+ */
+type CasoDeHipotesis = 'parcial' | 'deficit' | 'primer' | null;
+function mesoActualDe(caso: CasoDeHipotesis): Mesocycle {
+  const h = MESO_ACTUAL.hipotesis!;
+  if (caso === 'primer') {
+    const { hipotesis: _h, cdgObjetivosIem: _o, cdgModoPorZona: _m, ...resto } = MESO_ACTUAL;
+    return { ...resto, number: 1, name: 'Primer bloque', objective: 'Primer bloque', tipoBloque: 'primer' };
+  }
+  if (caso === 'parcial') return { ...MESO_ACTUAL, hipotesis: { ...h, pectoral: { ...h.pectoral!, rmObjetivoPct: 8 } } };
+  if (caso === 'deficit') {
+    return {
+      ...MESO_ACTUAL,
+      hipotesis: {
+        pectoral: { ...h.pectoral!, iemMedioObjetivo: 12, iemTecho: 12.6, rmObjetivoPct: 0 },
+        deltoides: { ...h.deltoides!, iemMedioObjetivo: 26.1, iemTecho: 27.5, rmObjetivoPct: 0 },
+      },
+      cdgObjetivosIem: { pectoral: 12.6, deltoides: 27.5 },
+    };
+  }
+  return MESO_ACTUAL;
+}
 
 const MESO_ANTERIOR: Mesocycle = {
   id: 'meso_1', athleteId: EMAIL, number: 1, name: 'Adaptación',
@@ -96,6 +168,35 @@ const MESO_ANTERIOR: Mesocycle = {
     triceps: { series: 6, priority: 'baja' }, cuadriceps: { series: 9, priority: 'media' },
     isquios: { series: 6, priority: 'media' }, core: { series: 6, priority: 'baja' },
   }),
+  // Bloque ya cerrado y FIRMADO: de él sale el mapa de respuesta («Qué le
+  // funciona») y es el caso «firmado» de la sección de veredictos.
+  tipoBloque: 'desarrollo',
+  hipotesis: { dorsal: { palanca: 'volumen', iemMedioObjetivo: 20, iemTecho: 22, rmObjetivoPct: 5 } },
+  cierreDeHipotesis: {
+    firmadoEn: `${haceDias(15)}T10:00:00.000Z`,
+    veredictos: [{
+      zona: 'dorsal', palanca: 'volumen', iemMedio: 21.2, iemMedioObjetivo: 20, procesoCumplido: true,
+      rmPct: 5.6, rmObjetivoPct: 5, resultadoCumplido: true, lectura: 'confirmada',
+      decision: 'Misma línea; la estrella pasa a pecho y hombro.',
+    }],
+    ficha: { contexto: 'neutro', cansancioMedio: 6.2, faseNutricional: 'Mantenimiento', pesoDeltaKg: -0.8 },
+    // La foto de «dosis y respuesta» que se guardó al firmar (18-11-2026).
+    // Contra la del bloque en curso (que se calcula en vivo) da un indicio de
+    // cada tipo en «A qué responde»: pectoral y deltoides con más series y
+    // mejor RM («se repite»), dorsal más cerca del fallo sin diferencia,
+    // cuádriceps con series y frecuencia cambiadas a la vez (no se atribuye) y,
+    // dentro de este bloque, la mitad con más series contra la mitad con menos.
+    dosis: [
+      { zona: 'pectoral', seriesSemana: 2, frecuencia: 1, rirMedio: 2, iemMedio: 10.6, rmPct: 2.5, ejercicios: 1 },
+      { zona: 'dorsal', seriesSemana: 3, frecuencia: 1, rirMedio: 3, iemMedio: 21.2, rmPct: 3, ejercicios: 1 },
+      { zona: 'deltoides', seriesSemana: 2, frecuencia: 1, rirMedio: 2, iemMedio: 18.4, rmPct: 1.5, ejercicios: 1 },
+      { zona: 'biceps', seriesSemana: 5, frecuencia: 2, rirMedio: 2, iemMedio: 33.2, rmPct: 4.9, ejercicios: 2 },
+      { zona: 'triceps', seriesSemana: 2, frecuencia: 1, rirMedio: 2, iemMedio: 11.9, rmPct: -0.5, ejercicios: 1 },
+      { zona: 'cuadriceps', seriesSemana: 3, frecuencia: 1, rirMedio: 2, iemMedio: 6.9, rmPct: 5.5, ejercicios: 1 },
+      { zona: 'isquios', seriesSemana: 3, frecuencia: 1.5, rirMedio: 2, iemMedio: 7.7, rmPct: -1.1, ejercicios: 1 },
+      { zona: 'abdomen', seriesSemana: 1.6, frecuencia: 0.8, rirMedio: 2, iemMedio: 15.4, rmPct: null, ejercicios: 0 },
+    ],
+  },
 } as Mesocycle;
 
 // ── Logs ────────────────────────────────────────────────────────────────────
@@ -106,6 +207,8 @@ function log(dias: number, entries: { id: string; series: [number, number][]; ri
     id: `log_${contador++}`, athleteId: EMAIL, workoutId: 'w', assignmentId: 'as',
     mesocycleId: dias <= 16 ? 'meso_2' : 'meso_1',
     date, completedAt: `${date}T18:30:00.000Z`,
+    // Cansancio al salir (0-10), para el límite de los veredictos y la ficha de cierre.
+    cansancioAlSalir: 6 + (contador % 2), duracionSeg: (64 + (contador % 5) * 3) * 60, startedAt: `${date}T17:20:00.000Z`,
     entries: entries.map(e => ({
       exerciseId: e.id,
       sets: e.series.map(([weight, repsDone]) => ({ weight, repsDone, rir: e.rir ?? 2 })),
@@ -145,6 +248,12 @@ const LOGS: WorkoutLog[] = [
   // Un ejercicio que se ESTRENA hoy: no debe salir como «el que más sube».
   log(1, [{ id: 'press_inclinado', series: [[28, 10], [28, 10], [28, 9]] }]),
 ];
+
+/** Con `?caso=primer`, el press francés del bloque en curso con molestia:
+ *  el punto de partida tiene que decir que el tríceps se quejó con poco volumen. */
+const LOGS_PRIMER: WorkoutLog[] = LOGS.map(l => (l.mesocycleId !== 'meso_2' ? l : {
+  ...l, entries: l.entries.map(e => (e.exerciseId === 'frances' ? { ...e, queParo: 'molestia', molestia: 4 } : e)),
+}));
 
 /**
  * Un ejercicio y un log por grupo muscular, con un número de series creciente
@@ -391,13 +500,21 @@ const CARDIO: CardioSession[] = (() => {
 // caso que el repaso de «Antes de publicar» tiene que cazar, porque está hecho
 // —la sesión existe y la checklist la da por buena— y el atleta se la encuentra
 // en blanco.
+// Con rango y RIR pautados (18-11-2026): de ahí sale el siguiente paso de carga
+// de «La semana que viene». La sentadilla sube a 4 series en la semana 4: es el
+// cambio programado que esa sección tiene que contar.
+const pauta = (exerciseId: string, order: number, reps: string, extra: Record<string, unknown> = {}) =>
+  ({ exerciseId, order, sets: 3, reps, rir: 2, restSeconds: 120, ...extra });
 const RUTINAS: Workout[] = [
   { id: 'w_1', ownerId: 'coach', name: 'Día 1 · Torso', mesocycleId: 'meso_2', dayIndex: 0,
-    exercises: [{ exerciseId: 'press_banca', sets: 3 }, { exerciseId: 'remo_barra', sets: 3 }] },
+    exercises: [pauta('press_banca', 0, '6-8'), pauta('remo_barra', 1, '8-10')] },
   { id: 'w_2', ownerId: 'coach', name: 'Día 2 · Pierna', mesocycleId: 'meso_2', dayIndex: 1,
-    exercises: [{ exerciseId: 'sentadilla', sets: 3 }, { exerciseId: 'peso_muerto_rumano', sets: 3 }] },
+    exercises: [
+      pauta('sentadilla', 0, '6-8', { weeklyProgression: [{ atWeek: 4, cambios: { sets: 4 } }] }),
+      pauta('peso_muerto_rumano', 1, '8-10'),
+    ] },
   { id: 'w_3', ownerId: 'coach', name: 'Día 3 · Empuje', mesocycleId: 'meso_2', dayIndex: 2,
-    exercises: [{ exerciseId: 'press_inclinado', sets: 3 }] },
+    exercises: [pauta('press_inclinado', 0, '8-10')] },
   { id: 'w_4', ownerId: 'coach', name: 'Día 4 · Tirón', mesocycleId: 'meso_2', dayIndex: 3,
     exercises: [] },
 ] as unknown as Workout[];
@@ -431,6 +548,8 @@ const Q_SEMANAL: Questionnaire = {
     { id: 'q4', label: 'Agujetas · Pecho', type: 'scale', required: false, scaleMin: 0, scaleMax: 10, signalKey: 'doms.pecho' },
     { id: 'q5', label: 'Agujetas · Dorsal', type: 'scale', required: false, scaleMin: 0, scaleMax: 10, signalKey: 'doms.dorsal' },
     { id: 'q6', label: 'Agujetas · Cuádriceps', type: 'scale', required: false, scaleMin: 0, scaleMax: 10, signalKey: 'doms.cuadriceps' },
+    // Texto libre (18-11-2026): «Lo que me contaste» busca el día que nombra.
+    { id: 'q7', label: '¿Algo que contarme de la semana?', type: 'text', required: false },
   ],
 };
 
@@ -448,8 +567,41 @@ const RESPUESTAS: QuestionnaireResponse[] = [35, 28, 21, 14, 7].map((d, i) => ({
     { questionId: 'q4', value: [7, 6, 5, 4, 3][i] },
     { questionId: 'q5', value: [5, 4, 4, 3, 3][i] },
     { questionId: 'q6', value: [7, 8, 8, 7, 8][i] },
+    ...(i === 4 ? [{ questionId: 'q7', value: 'El jueves salí reventado de pierna, el resto bien.' }] : []),
   ],
 }));
+
+// El cuestionario semanal asignado: «La semana que viene» dice cuándo le toca.
+const ASIGNACIONES_Q: QuestionnaireAssignment[] = [{
+  id: 'as_semanal', questionnaireId: 'q_semanal', athleteId: EMAIL,
+  schedule: { type: 'weekdays', weekdays: [5] }, startDate: haceDias(60), active: true, createdAt: haceDias(60),
+} as QuestionnaireAssignment];
+
+// Lo que he cambiado (18-11-2026): uno de hace diez días con su hipótesis ya
+// por mirar (sale en «Lo que pide decisión»), y dos de esta semana, uno con lo
+// que se busca (sale como «por qué» al presentar).
+const CAMBIOS: CambioAtleta[] = [
+  { id: 'c_1', athleteId: EMAIL, area: 'entreno', objeto: 'rutina:w_1', titulo: 'Día 1 · Torso',
+    lineas: ['Press banca: descanso 2:00 → 2:30'], at: `${haceDias(10)}T10:00:00.000Z`, autor: 'coach' },
+  { id: 'c_2', athleteId: EMAIL, area: 'nutricion', objeto: 'dieta:d_deficit', titulo: 'Dieta «Déficit»',
+    lineas: ['Kcal 2.100 → 2.050'], at: `${haceDias(3)}T10:00:00.000Z`, autor: 'coach' },
+  { id: 'c_3', athleteId: EMAIL, area: 'entreno', objeto: 'meso:meso_2', titulo: 'Hipertrofia otoño',
+    lineas: ['Sentadilla: 3 → 4 series desde la semana 4'], at: `${haceDias(2)}T10:00:00.000Z`, autor: 'coach' },
+];
+const HIPOTESIS: Hipotesis[] = [
+  { id: 'c_1', espero: 'Que la 2.ª serie de press no se caiga tanto', exerciseId: 'press_banca', desde: haceDias(10), revisarEl: haceDias(1) },
+  { id: 'c_3', espero: 'Más estímulo de cuádriceps sin pasar de 7 de cansancio', exerciseId: 'sentadilla', desde: haceDias(2), revisarEl: haceDias(-14) },
+];
+
+// Lo que el cierre de bloque escribe (firmar veredictos, crear el bloque
+// siguiente) se queda aquí, en la consola: sin sesión de coach Firestore lo
+// rechazaría y no se podría ver ni el cierre firmado ni el bloque creado.
+const ESCRITURAS_DE_MENTIRA: EscriturasDelCierre = {
+  guardarCierre: async (mesoId, cierre) => { console.info('[harness] guardarCierre', mesoId, cierre); },
+  crearMesociclo: async meso => { console.info('[harness] crearMesociclo', meso); return { ...meso, id: 'meso_nuevo' }; },
+  crearRutina: async rutina => { console.info('[harness] crearRutina', rutina); return { ...rutina, id: `w_nueva_${rutina.dayIndex}` }; },
+  alAbrirEditor: email => console.info('[harness] abrir el editor de', email),
+};
 
 export default function RevisionCoachDevHarness() {
   // `?anatomia=1` enciende TODOS los grupos a la vez, en las cinco zonas de
@@ -457,6 +609,10 @@ export default function RevisionCoachDevHarness() {
   // fixture normal la mitad de los músculos están a cero y salen apagados, así
   // que no se ve si la lámina está bien hecha.
   const anatomia = new URLSearchParams(window.location.search).has('anatomia');
+  // `?pantalla=seguimiento` monta el Seguimiento CDG del bloque en curso (el
+  // semáforo de las hipótesis) y `?pantalla=ficha` la ficha viva («Qué le
+  // funciona»): las dos viven dentro del editor y de la pestaña Ficha, que
+  // piden sesión de coach.
   // `?pantalla=implantacion` monta la otra pestaña con el mismo fixture.
   const pantalla = new URLSearchParams(window.location.search).get('pantalla');
   // `?renovar=1` adelanta el bloque para que termine dentro de tres días: es la
@@ -467,9 +623,17 @@ export default function RevisionCoachDevHarness() {
   // él se ve el objetivo DEDUCIDO de las kcal; `ninguno` quita la periodización
   // entera para ver el selector desde cero.
   const objetivoParam = new URLSearchParams(window.location.search).get('objetivo');
+  // `?caso=parcial|deficit`: los casos de la auditoría de cifras del 17-11-2026
+  // en Cierre de bloque y en el Seguimiento (ver `mesoActualDe`).
+  const casoParam = new URLSearchParams(window.location.search).get('caso');
+  const caso: CasoDeHipotesis = casoParam === 'parcial' || casoParam === 'deficit' || casoParam === 'primer' ? casoParam : null;
+  const mesoActual = useMemo(() => mesoActualDe(caso), [caso]);
+  // En un primer bloque no hay bloque anterior.
+  const bloques = useMemo(() => (caso === 'primer' ? [mesoActual] : [MESO_ANTERIOR, mesoActual]), [caso, mesoActual]);
+  const logs = caso === 'primer' ? LOGS_PRIMER : LOGS;
   const mesoDeLaPantalla: Mesocycle = renovar
-    ? { ...MESO_ACTUAL, startDate: haceDias(MESO_ACTUAL.weeks * 7 - 4) }
-    : MESO_ACTUAL;
+    ? { ...mesoActual, startDate: haceDias(mesoActual.weeks * 7 - 4) }
+    : mesoActual;
 
   const client = useMemo(() => {
     const qc = new QueryClient({
@@ -491,6 +655,9 @@ export default function RevisionCoachDevHarness() {
     // ver también el estado sin periodización.
     // Objetivo › Plan (?pantalla=objetivos): el editor de fases sobre este programa.
     qc.setQueryData(['nutritionProgram', EMAIL], anatomia || objetivoParam === 'ninguno' ? null
+      // Déficit largo: la última fase dura 24 semanas y cubre también el bloque siguiente.
+      : caso === 'deficit' ? { ...PROGRAMA, phases: PROGRAMA.phases.map((f, i) =>
+          i === PROGRAMA.phases.length - 1 ? { ...f, weeks: 24, objetivo: 'deficit' as const } : f) }
       : objetivoParam ? { ...PROGRAMA, phases: PROGRAMA.phases.map((f, i) =>
           i === PROGRAMA.phases.length - 1 ? { ...f, objetivo: objetivoParam as NonNullable<typeof f.objetivo> } : f) }
       : PROGRAMA);
@@ -520,8 +687,16 @@ export default function RevisionCoachDevHarness() {
     qc.setQueryData(['weeklyChallengesForAthlete', EMAIL], RETOS);
     qc.setQueryData(['cardioSessions', EMAIL], CARDIO);
     qc.setQueryData(['workouts'], RUTINAS);
+    qc.setQueryData(['assignmentsForAthlete', EMAIL], ASIGNACIONES_Q);
+    qc.setQueryData(['cambiosAtleta', EMAIL], CAMBIOS);
+    qc.setQueryData(['hipotesis', EMAIL], HIPOTESIS);
     // Implantación.
     qc.setQueryData(['roadmap', EMAIL], null);
+    qc.setQueryData(cdgCatalogoKey, JSON.stringify(catalogoCdgPrueba));
+    // Ficha viva y bloques del atleta, para `?pantalla=ficha` y `?pantalla=seguimiento`.
+    qc.setQueryData(['dossier', EMAIL], DOSSIER_VACIO);
+    qc.setQueryData(['athleteStatusNote', EMAIL], '');
+    qc.setQueryData(['mesocycles', EMAIL], bloques);
     // Dos recordatorios: uno vencido sobre un paso del montaje y una tarea
     // suelta para mañana, para ver los dos estados del aviso.
     qc.setQueryData(['coachClientTasks', EMAIL], [
@@ -536,7 +711,7 @@ export default function RevisionCoachDevHarness() {
       },
     ]);
     return qc;
-  }, [anatomia, objetivoParam]);
+  }, [anatomia, objetivoParam, caso, mesoActual, bloques]);
 
   return (
     <QueryClientProvider client={client}>
@@ -545,7 +720,20 @@ export default function RevisionCoachDevHarness() {
           <p className="font-mono text-caption text-ink-3 uppercase tracking-widest mb-3">
             /dev/revision-coach — datos de mentira{anatomia ? ' · modo anatomía' : ''}
           </p>
-          {pantalla === 'objetivos' ? (
+          {pantalla === 'seguimiento' ? (
+            <SeguimientoCdg
+              athleteEmail={EMAIL}
+              logs={logs}
+              meso={mesoActual}
+              cicloDias={7}
+              vueltas={mesoActual.weeks}
+              grupos={RUTINAS.map(w => ({ name: w.name, dayIndex: w.dayIndex, workoutIds: [w.id], exercises: w.exercises }))}
+              allExercises={EJERCICIOS}
+              onGuardarUmbrales={u => console.info('[harness] onGuardarUmbrales', u)}
+            />
+          ) : pantalla === 'ficha' ? (
+            <DossierPanel athleteEmail={EMAIL} athleteName={PERFIL.displayName} />
+          ) : pantalla === 'objetivos' ? (
             <NutritionPeriodizationPanel
               athleteEmail={EMAIL}
               athleteName={PERFIL.displayName}
@@ -574,11 +762,12 @@ export default function RevisionCoachDevHarness() {
               onAbrirEditor={t => console.info('[harness] onAbrirEditor', t)}
             />
           ) : (
+          <EscriturasDelCierreContext.Provider value={ESCRITURAS_DE_MENTIRA}>
           <ClientRevisionPanel
             athlete={PERFIL}
-            logs={anatomia ? LOGS_ANATOMIA : LOGS}
+            logs={anatomia ? LOGS_ANATOMIA : logs}
             exercises={anatomia ? EJERCICIOS_ANATOMIA : EJERCICIOS}
-            mesocycles={anatomia ? [] : [MESO_ANTERIOR, MESO_ACTUAL]}
+            mesocycles={anatomia ? [] : bloques}
             photos={FOTOS}
             bodyweightLogs={PESOS}
             sexo="hombre"
@@ -588,6 +777,7 @@ export default function RevisionCoachDevHarness() {
             assignments={[]}
             onGoToTab={t => console.info('[harness] onGoToTab', t)}
           />
+          </EscriturasDelCierreContext.Provider>
           )}
         </div>
       </div>

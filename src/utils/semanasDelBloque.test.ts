@@ -4,7 +4,7 @@ import { resolveExerciseForWeek, resolverEjercicioDelMeso } from './progression'
 import {
   programarCambio, quitarCambiosDeSemana, novedadesDeSemana, compararSemanas, seriesDeLaSemana, origenDeCambios,
   programarEnSemanas, semanasAlternas, rirDescendente, subirSeries, revisionesPorSemana,
-  rirLineal, rirPorSemana, seriesPorSemana, repsPorSemana, tecnicaEnSemanas, diferencias,
+  rirLineal, rirPorSemana, seriesPorSemana, repsPorSemana, tecnicaEnSemanas, diferencias, hayNovedades,
 } from './semanasDelBloque';
 
 const curl: WorkoutExercise = { exerciseId: 'curl', order: 0, sets: 4, reps: '10', rir: 1, restSeconds: 75 };
@@ -104,6 +104,22 @@ describe('novedades y comparar', () => {
     expect(n.descarga).toBe(true);
     expect(n.cambios).toEqual([]);
     expect(novedadesDeSemana(ej, { semanasDescarga: [5] }, 6, nombreDe).vuelveElVolumen).toBe(true);
+  });
+  it('F7b: la semana puente tiene su aviso, y si además es descarga solo se avisa la descarga', () => {
+    const n = novedadesDeSemana(ej, { semanasPivot: [5] }, 5, nombreDe);
+    expect(n).toMatchObject({ puente: true, descarga: false, vueltaDeParon: false });
+    expect(hayNovedades(n)).toBe(true);
+    expect(novedadesDeSemana(ej, { semanasPivot: [5] }, 6, nombreDe).puente).toBe(false);
+    expect(novedadesDeSemana(ej, { semanasPivot: [5], semanasDescarga: [5] }, 5, nombreDe)).toMatchObject({ puente: false, descarga: true });
+  });
+  it('F7b: la vuelta de parón se avisa en la semana 1 y solo en ella', () => {
+    const n = novedadesDeSemana(ej, { vuelveDeParon: true }, 1, nombreDe);
+    expect(n.vueltaDeParon).toBe(true);
+    expect(hayNovedades(n)).toBe(true);
+    const s2 = novedadesDeSemana(ej, { vuelveDeParon: true }, 2, nombreDe);
+    expect(s2.vueltaDeParon).toBe(false);
+    expect(hayNovedades(s2)).toBe(false);
+    expect(hayNovedades(novedadesDeSemana(ej, {}, 1, nombreDe))).toBe(false);
   });
   it('compara dos semanas cualesquiera', () => {
     expect(compararSemanas(ej, 1, 8, nombreDe)[0].cambios).toHaveLength(1);

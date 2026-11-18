@@ -15,6 +15,10 @@ import { QuestionnaireQuestion, QSchedule, BodyMetricKey, Questionnaire, MuscleG
 import { OPCIONES_GRUPOS, VolumeSignalKey, SignalKey, AgujetasSignalKey } from './questionnaireSignals.js';
 import { ZONAS_IEM } from '../utils/cdg/zonas.js';
 
+/** Vídeo del protocolo de perímetros. El asistente lo enlaza junto a las
+ *  reglas de «mídete igual» (components/cuestionario/MedirseIgual.tsx). */
+export const VIDEO_PROTOCOLO_MEDIDAS = 'https://www.youtube.com/watch?v=cCQ8SPp9jdc';
+
 export interface QuestionnairePresetDef {
   title: string;
   description?: string;
@@ -199,7 +203,7 @@ const MEDICIONES: QuestionnairePresetDef = {
   title: 'Mediciones',
   description: 'Perímetros corporales mensuales — alimentan la ficha de mediciones y los índices '
     + 'antropométricos (Pecho/Cintura, Bíceps/Cintura, Cadera/Cintura, Muslo/Cintura). Sigue el orden del '
-    + 'protocolo en vídeo: https://www.youtube.com/watch?v=cCQ8SPp9jdc',
+    + `protocolo en vídeo: ${VIDEO_PROTOCOLO_MEDIDAS}`,
   suggestedSchedule: { type: 'monthly', dayOfMonth: 26 },
   questions: [
     metric('Cuello (cm)', 'cuello'),
@@ -529,7 +533,19 @@ const CIERRE_BLOQUE: QuestionnairePresetDef = {
     con(choice('¿Cómo te ha resultado la duración de las sesiones?', ['Corta', 'Bien', 'Demasiado larga']), { bloque: 'El bloque', tituloCorto: 'Duración de la sesión' }),
     con(choiceGroups('¿Qué grupos quieres priorizar en el siguiente bloque?', 'meso_end.priority_groups', 'Toca las zonas en el dibujo.'), { bloque: 'Siguiente bloque', tituloCorto: 'Grupos a priorizar', presentacion: 'mapa' }),
     con(choiceGroups('¿En qué grupos sentiste que el volumen fue demasiado?', 'meso_end.overload_groups', 'Puedes marcar varios, o ninguno.'), { bloque: 'Siguiente bloque', tituloCorto: 'Demasiado volumen', presentacion: 'mapa' }),
-    con(text('¿Qué ejercicios quieres mantener sí o sí, y qué te apetece probar o cambiar?'), { bloque: 'Siguiente bloque', tituloCorto: 'Mantener y probar' }),
+    // Cierre por ejercicio (17-11-2026). Sustituye a la caja de texto «¿qué
+    // quieres mantener y qué cambiar?»: el asistente enseña los ejercicios que
+    // ha hecho en el bloque y cada uno se contesta en un toque, sin obligar a
+    // opinar de todos. Ver utils/cierrePorEjercicio.ts.
+    con({
+      label: '¿Qué ejercicios se quedan y cuáles quitarías?', type: 'keep_change', required: false,
+      signalKey: 'meso_end.quitar', labelTrue: 'Se queda', labelFalse: 'Lo quitaría',
+      helpText: 'Un toque en cada uno. No hace falta contestarlos todos.',
+    }, { bloque: 'Siguiente bloque', tituloCorto: 'Ejercicios' }),
+    con({
+      ...text('¿Echas de menos algún ejercicio?', false, 'Uno que te guste y no esté en tu rutina.'),
+      signalKey: 'meso_end.echa_de_menos', maxChars: 120,
+    }, { bloque: 'Siguiente bloque', tituloCorto: 'Echa de menos' }),
     con(text('¿Tienes algún objetivo concreto para el próximo bloque?', false, 'Más fuerza, más masa en una zona, mejor condición física…'), { bloque: 'Siguiente bloque', tituloCorto: 'Objetivo' }),
     con(text('¿Hay alguna molestia articular o muscular que tengamos que tener en cuenta?'), { bloque: 'Siguiente bloque', tituloCorto: 'Molestias' }),
   ],
@@ -537,7 +553,7 @@ const CIERRE_BLOQUE: QuestionnairePresetDef = {
 
 const MEDICIONES_BLOQUE: QuestionnairePresetDef = {
   title: 'Mediciones del bloque',
-  description: 'Perímetros al cerrar cada bloque. Sigue el orden del vídeo del protocolo: https://www.youtube.com/watch?v=cCQ8SPp9jdc',
+  description: `Perímetros al cerrar cada bloque. Sigue el orden del vídeo del protocolo: ${VIDEO_PROTOCOLO_MEDIDAS}`,
   suggestedSchedule: { type: 'mesocycle_week', semanaDelBloque: 'ultima' },
   questions: [
     con(metric('Contorno de pecho', 'pecho'), { bloque: 'Mediciones', tituloCorto: 'Pecho' }),

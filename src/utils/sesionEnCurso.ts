@@ -39,6 +39,8 @@ export interface SerieBorrador {
   /** Bajada o miniserie añadida tras una serie principal. */
   segmento?: boolean;
   segmentoDe?: number;
+  /** Instante (ISO) en que se marcó como hecha. Ver `WorkoutSetLog.hechaEn`. */
+  hechaEn?: string;
 }
 
 export interface SesionEnCurso {
@@ -46,6 +48,19 @@ export interface SesionEnCurso {
   workoutId: string;
   playerSets: SerieBorrador[][];
   exerciseNoteInputs: string[];
+  /** D3: por ejercicio, «otra máquina o recorrido». Opcional por
+   *  compatibilidad con borradores guardados antes de que existiera. */
+  referenciasNuevas?: boolean[];
+  /** D2: por ejercicio, qué paró la última serie (`null` = sin contestar; en
+   *  JSON un hueco de array no puede ser `undefined`). */
+  quePararon?: (string | null)[];
+  /** D5: por ejercicio, molestia de 1 a 10 (`null` = sin contestar). */
+  molestias?: (number | null)[];
+  /** D4: «¿cómo llegas hoy?». */
+  comoLlega?: string;
+  /** «Hoy entreno fuera de mi gimnasio» (utils/sesionFuera.ts). Ausente en los
+   *  borradores de antes: ahí se decide como al abrir (semana fuera o no). */
+  fuera?: boolean;
   workoutNoteInput: string;
   /** ISO. Sirve para caducar el borrador, no para mostrarlo. */
   guardadoEn: string;

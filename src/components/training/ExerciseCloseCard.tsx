@@ -1,10 +1,14 @@
 import React from 'react';
+import { lecturaDeCalibracion, textoDeComprobacion, type Comprobacion } from '../../utils/calibracionRir';
 import { CardioAssignment, Exercise, WorkoutExercise } from '../../types';
 import { Icon, Button, Chip } from '../ui';
-import { rmDeSerie } from '../../utils/oneRepMax';
-import { SetInput } from './setInput';
+import { MOTIVOS_DE_PARADA, type MotivoDeParada } from '../../utils/queTeParo';
+import { SetInput, filaASerie } from './setInput';
+import { mejorRmValido, rirMedioApuntado } from './cierreDeEjercicio';
 import Confeti from './Confeti';
 import type { Logro, TipoDeLogro } from '../../utils/logrosDelEjercicio';
+import { rirCumplidoDeFilas } from '../../utils/sesionFuera';
+import { rirPautadoPorSerie } from '../../utils/setPrefill';
 
 interface Props {
   we: WorkoutExercise;
@@ -16,6 +20,9 @@ interface Props {
   priorBestOrm: number | undefined;
   noteValue: string;
   onNoteChange: (value: string) => void;
+  /** D2: qué paró la última serie. Ausente `onQueParo` = aquí no se pregunta. */
+  queParo?: string;
+  onQueParo?: (motivo: MotivoDeParada | undefined) => void;
   isLast: boolean;
   nextExerciseName: string | undefined;
   onNext: () => void;
@@ -32,6 +39,18 @@ interface Props {
   logros?: Logro[];
   /** Recién cerrado: suena la animación una vez. */
   festejar?: boolean;
+  /** Primera tarjeta de una pareja de series alternas: el «Siguiente» va en la segunda. */
+  sinSiguiente?: boolean;
+  /** F4: una serie al máximo ha comprobado el RIR que venía apuntando. */
+  comprobacion?: Comprobacion | null;
+  /** D5: molestia de 1 a 10. Solo se pregunta si lo que le paró fue una molestia. */
+  molestia?: number;
+  onMolestia?: (valor: number | undefined) => void;
+  /** F3: una frase que pone en contexto el resultado cuando no hay nada que celebrar. */
+  mensaje?: string;
+  /** Sesión fuera de su gimnasio (utils/sesionFuera.ts): los kilos no cuentan,
+   *  así que en vez del volumen se enseñan las series hechas a su RIR. */
+  fuera?: boolean;
   /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip.tsx). */
   key?: React.Key;
 }
@@ -44,12 +63,6 @@ const ICONO_DE_LOGRO: Record<TipoDeLogro, string> = {
 
 const CHIPS_RAPIDOS = ['Me sobró una rep', 'Molestia leve', 'Buena técnica', 'Mucho peso'];
 
-function rpeDeSerie(s: SetInput): number | null {
-  if (s.rir === 'fallo') return 10;
-  const n = Number(s.rir);
-  return Number.isFinite(n) ? 10 - n : null;
-}
-
 /**
  * Cierre de ejercicio (mockup "Serie en curso v2", frame 06) — se muestra en
  * vez de `ExerciseCard` en cuanto todas las series de la página están
@@ -57,25 +70,33 @@ function rpeDeSerie(s: SetInput): number | null {
  * la sesión, en `handleFinish`), aquí se calcula por ejercicio con el mismo
  * criterio (`rmDeSerie` + mejor histórico ANTES de la fecha) para que el atleta lo
  * vea en el momento, no al final de los 5 ejercicios.
+ *
+ * D9 (17-11-2026): el récord solo sale con una serie VÁLIDA para el RM
+ * (`esSerieValidaParaRm`: 3-15 repeticiones, RIR 2 o menos y apuntado por él).
+ * Antes bastaba subir el RIR del desplegable para que saliera «Récord personal».
  */
 export default function ExerciseCloseCard({
-  we, ex, exSets, priorBestOrm, noteValue, onNoteChange, isLast, nextExerciseName,
-  onNext, onReopen, sameDayCardio, logros, festejar,
+  we, ex, exSets, priorBestOrm, noteValue, onNoteChange, queParo, onQueParo, isLast, nextExerciseName,
+  onNext, onReopen, sameDayCardio, logros, festejar, sinSiguiente, comprobacion, molestia, onMolestia, mensaje,
+  fuera = false,
 }: Props) {
   const idNota = React.useId();
   const doneSets = exSets.filter(s => s.done);
   const volumen = doneSets.reduce((sum, s) => sum + (parseFloat(s.weight) || 0) * (parseInt(s.repsDone) || 0), 0);
 
-  let bestSet: SetInput | null = null;
-  let bestOrm = 0;
-  for (const s of doneSets) {
-    const orm = rmDeSerie(s);
-    if (orm > bestOrm) { bestOrm = orm; bestSet = s; }
-  }
-  const esRecord = bestOrm > 0 && priorBestOrm != null && bestOrm > priorBestOrm;
+  const series = doneSets.map(s => filaASerie(s));
+  const mejor = mejorRmValido(series);
+  const bestSet = mejor?.serie ?? null;
+  const esRecord = mejor != null && priorBestOrm != null && mejor.rm > priorBestOrm;
 
-  const rpes = doneSets.map(rpeDeSerie).filter((n): n is number => n != null);
-  const rpeMedio = rpes.length > 0 ? rpes.reduce((a, b) => a + b, 0) / rpes.length : null;
+  // F20b (17-11-2026): aquí ponía «RPE medio» (10 − RIR), una escala que el
+  // atleta no usa en ningún otro sitio de la app: él apunta RIR. Se enseña lo
+  // que apuntó. Solo las series principales: las bajadas y miniseries llevan
+  // un RIR 0 de relleno y hundían la media. Y solo las que apuntó ÉL (D1d): la
+  // media de un RIR pautado sin tocar no dice nada de cómo ha ido.
+  const rirMedio = rirMedioApuntado(series);
+  // Fuera de su gimnasio lo que se cuenta es el RIR, no los kilos.
+  const aTuRir = fuera ? rirCumplidoDeFilas(exSets, rirPautadoPorSerie(we)) : null;
 
   const addChip = (texto: string) => {
     onNoteChange(noteValue.trim() ? `${noteValue.trim()}. ${texto}` : texto);
@@ -123,21 +144,92 @@ export default function ExerciseCloseCard({
             <span className="font-mono text-caption font-bold text-on-accent bg-accent px-2 py-0.5 rounded-control">Nuevo</span>
           </div>
           <p className="font-mono text-title-l font-bold text-ink">
-            {bestSet.weight}<span className="text-label font-sans font-normal text-ink-2"> kg × {bestSet.repsDone}</span>
+            {String(bestSet.weight).replace('.', ',')}<span className="text-label font-sans font-normal text-ink-2"> kg × {bestSet.repsDone}</span>
           </p>
         </div>
       )}
 
+      {/* F3: sin récord ni logro, una frase para que un día igual no se lea como un fracaso. */}
+      {mensaje && !(logros && logros.length > 0) && !(esRecord && bestSet) && (
+        <p className="mx-4 mt-4 font-sans text-label text-ink-2">{mensaje}</p>
+      )}
+
       <div className="mx-4 mt-4 grid grid-cols-2 gap-3">
+        {aTuRir ? (
+          <div className="bg-raised rounded-surface p-3">
+            <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">A tu RIR</p>
+            <p className="font-mono text-title-m font-bold text-ink">
+              {aTuRir.aTuRir}<span className="text-label font-normal text-ink-2">/{aTuRir.hechas}</span>
+            </p>
+          </div>
+        ) : (
+          <div className="bg-raised rounded-surface p-3">
+            <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Volumen</p>
+            <p className="font-mono text-title-m font-bold text-ink">{Math.round(volumen).toLocaleString('es-ES')}</p>
+          </div>
+        )}
         <div className="bg-raised rounded-surface p-3">
-          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Volumen</p>
-          <p className="font-mono text-title-m font-bold text-ink">{Math.round(volumen).toLocaleString('es-ES')}</p>
-        </div>
-        <div className="bg-raised rounded-surface p-3">
-          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">RPE medio</p>
-          <p className="font-mono text-title-m font-bold text-ink">{rpeMedio != null ? rpeMedio.toFixed(1) : '—'}</p>
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">RIR medio</p>
+          <p className="font-mono text-title-m font-bold text-ink">{rirMedio != null ? rirMedio.toFixed(1).replace('.', ',') : '—'}</p>
         </div>
       </div>
+
+      {/* F4: el RIR, comprobado. Solo sale cuando una serie al máximo permite
+          compararlo con lo que apuntó; el resto de días no hay nada que decir. */}
+      {comprobacion && (
+        <div className={`mx-4 mt-4 rounded-surface border p-3.5 ${lecturaDeCalibracion(comprobacion.desfase) === 'calibrado' ? 'border-success/40 bg-success/10' : 'border-warning/40 bg-warning/10'}`}>
+          <p className="font-mono text-caption font-bold uppercase tracking-wide text-ink-2">Tu RIR, comprobado</p>
+          <p className="mt-1 font-sans text-label text-ink">{textoDeComprobacion(comprobacion)}</p>
+        </div>
+      )}
+
+      {/* D2: lo que limitó la serie decide si el ejercicio vale para ese
+          músculo. Un toque, y volver a tocar lo quita. */}
+      {onQueParo && (
+        <div className="mx-4 mt-4">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide mb-2">¿Qué te ha parado en la última serie?</p>
+          <div className="flex flex-wrap gap-1.5">
+            {MOTIVOS_DE_PARADA.map(m => {
+              const puesto = queParo === m.clave;
+              return (
+                <button
+                  key={m.clave}
+                  type="button"
+                  onClick={() => onQueParo(puesto ? undefined : m.clave)}
+                  aria-pressed={puesto}
+                  className={`rounded-control border px-2.5 py-1.5 font-sans text-label transition-colors ${
+                    puesto ? 'border-accent-line text-accent-ink' : 'border-hairline text-ink-2 hover:text-ink'
+                  }`}
+                >
+                  {m.etiqueta}
+                </button>
+              );
+            })}
+          </div>
+          {/* D5: cuánto molesta, para distinguir «lo noto» de «no puedo seguir». */}
+          {queParo === 'molestia' && onMolestia && (
+            <div className="mt-3">
+              <p className="font-mono text-caption text-ink-2 uppercase tracking-wide mb-2">¿Cuánto te molesta, de 1 a 10?</p>
+              <div className="flex flex-wrap gap-1.5">
+                {Array.from({ length: 10 }, (_, i) => i + 1).map(v => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => onMolestia(molestia === v ? undefined : v)}
+                    aria-pressed={molestia === v}
+                    aria-label={`Molestia ${v} de 10`}
+                    className={`h-9 w-9 rounded-control border font-mono text-label transition-colors ${
+                      molestia === v ? (v >= 6 ? 'border-danger text-danger' : 'border-accent-line text-accent-ink') : 'border-hairline text-ink-2 hover:text-ink'
+                    }`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mx-4 mt-4 space-y-2.5">
         <label htmlFor={idNota} className="font-mono text-caption text-ink-2 uppercase tracking-wide block">Nota para tu coach</label>
@@ -168,7 +260,7 @@ export default function ExerciseCloseCard({
       )}
 
       <div className="p-4">
-        {isLast ? (
+        {sinSiguiente ? null : isLast ? (
           // Sin botón primario propio: sería un segundo "primary" visible a
           // la vez que "Terminar sesión" de la barra fija de abajo, y el DS
           // solo permite uno (ver Button.tsx). Este es el último ejercicio,

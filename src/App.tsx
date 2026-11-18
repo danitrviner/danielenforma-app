@@ -171,6 +171,14 @@ const FichaHarness = import.meta.env.DEV
 const EntrenoHarness = import.meta.env.DEV
   ? pantallaDiferida('EntrenoDevHarness', () => import('./components/training/EntrenoDevHarness'))
   : null;
+// Banco de pruebas de los cambios con hipótesis (ruta /dev/hipotesis).
+const HipotesisHarness = import.meta.env.DEV
+  ? pantallaDiferida('HipotesisDevHarness', () => import('./components/revision/HipotesisDevHarness'))
+  : null;
+// Banco de pruebas de las series alternas en el editor del coach (ruta /dev/alternas).
+const AlternasHarness = import.meta.env.DEV
+  ? pantallaDiferida('AlternasDevHarness', () => import('./components/training/AlternasDevHarness'))
+  : null;
 // Banco de pruebas del reto de la semana y su aviso en el entreno (ruta /dev/retos).
 const RetosHarness = import.meta.env.DEV
   ? pantallaDiferida('RetosDevHarness', () => import('./components/roadmap/RetosDevHarness'))
@@ -179,6 +187,11 @@ const RetosHarness = import.meta.env.DEV
 // Banco de pruebas del editor de mesociclos en modo plantilla (ruta /dev/plantilla).
 const PlantillaHarness = import.meta.env.DEV
   ? pantallaDiferida('PlantillaDevHarness', () => import('./components/mesociclo/PlantillaDevHarness'))
+  : null;
+
+// Banco de pruebas de las fichas «Hipótesis del bloque» del mesociclo (ruta /dev/hipotesis-bloque).
+const HipotesisBloqueHarness = import.meta.env.DEV
+  ? pantallaDiferida('HipotesisBloqueDevHarness', () => import('./components/mesociclo/HipotesisBloqueDevHarness'))
   : null;
 
 // Banco de pruebas del Diario de nutrición del atleta (ruta /dev/nutricion).
@@ -191,6 +204,11 @@ const MiMenuHarness = import.meta.env.DEV
   : null;
 const PlanSemanaHarness = import.meta.env.DEV
   ? pantallaDiferida('PlanSemanaDevHarness', () => import('./components/PlanSemanaDevHarness'))
+  : null;
+
+// Banco de pruebas del cierre por ejercicio, «mídete igual» y saltar sesión (ruta /dev/cierre-atleta).
+const CierreAtletaHarness = import.meta.env.DEV
+  ? pantallaDiferida('CierreAtletaDevHarness', () => import('./components/CierreAtletaDevHarness'))
   : null;
 
 // Banco de pruebas de «El atleta ve ahora» + estado del bloque (ruta /dev/bloque-atleta).
@@ -216,6 +234,11 @@ const MaticesHarness = import.meta.env.DEV
 // Banco de pruebas del autopiloto: variantes visuales de Política y «Hecho hoy» (ruta /dev/autopiloto).
 const AutopilotoHarness = import.meta.env.DEV
   ? pantallaDiferida('AutopilotoDevHarness', () => import('./components/AutopilotoDevHarness'))
+  : null;
+
+// Banco de pruebas de las notificaciones push: tarjeta del Inicio y ajuste (ruta /dev/avisos).
+const AvisosPushHarness = import.meta.env.DEV
+  ? pantallaDiferida('AvisosPushDevHarness', () => import('./components/AvisosPushDevHarness'))
   : null;
 
 /* La pantalla de espera de la app, con marca. Existe como componente y no como
@@ -947,6 +970,13 @@ function AppContent() {
       </Suspense>
     );
   }
+  if (HipotesisBloqueHarness && location.pathname === '/dev/hipotesis-bloque') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <HipotesisBloqueHarness />
+      </Suspense>
+    );
+  }
   if (PlanSemanaHarness && location.pathname === '/dev/plan-semana') {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
@@ -965,6 +995,13 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <NutricionHarness />
+      </Suspense>
+    );
+  }
+  if (CierreAtletaHarness && location.pathname === '/dev/cierre-atleta') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <CierreAtletaHarness />
       </Suspense>
     );
   }
@@ -1017,6 +1054,20 @@ function AppContent() {
       </Suspense>
     );
   }
+  if (HipotesisHarness && location.pathname === '/dev/hipotesis') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <HipotesisHarness />
+      </Suspense>
+    );
+  }
+  if (AlternasHarness && location.pathname === '/dev/alternas') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <AlternasHarness />
+      </Suspense>
+    );
+  }
   if (EntrenoHarness && location.pathname === '/dev/entreno') {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
@@ -1036,6 +1087,14 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <RecetarioHarness />
+      </Suspense>
+    );
+  }
+
+  if (AvisosPushHarness && location.pathname === '/dev/avisos') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <AvisosPushHarness />
       </Suspense>
     );
   }

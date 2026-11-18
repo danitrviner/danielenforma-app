@@ -42,6 +42,7 @@ const TYPE_ICON: Record<AppNotification['type'], string> = {
   revision_recordatorio:   'alarm',
   revision_alerta:         'warning',
   revision_respondida:     'sticky_note_2',
+  cuestionario_nuevo:      'assignment_late',
   coach_mensaje:           'chat',
 };
 
@@ -68,6 +69,33 @@ export default function NotificationBell({ recipientEmail, onNavigate, mutedType
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
+
+  // Notificaciones push (18-11-2026): el service worker
+  // (public/firebase-messaging-sw.js) avisa a la página abierta cuando llega
+  // un push —con la app delante no pinta nada: basta con que la campana se
+  // refresque— y, si se toca una notificación con la app ya abierta, le pide
+  // ir a la pantalla del aviso (su enlace es `/<pestaña>`, la misma de `link`).
+  // En refs: `onNavigate` cambia en cada render de App y el canal tiene que
+  // abrirse una vez, no en cada render.
+  const alNavegar = useRef(onNavigate);
+  alNavegar.current = onNavigate;
+  const refrescar = useRef(refetch);
+  refrescar.current = refetch;
+  useEffect(() => {
+    // BroadcastChannel y no `navigator.serviceWorker`: el SW no controla las
+    // páginas de la app (tiene su propio ámbito), y este canal llega igual.
+    if (typeof BroadcastChannel === 'undefined') return;
+    const canal = new BroadcastChannel('enforma-avisos-push');
+    canal.onmessage = (e: MessageEvent) => {
+      const m = e.data as { tipo?: string; enlace?: string } | null;
+      if (m?.tipo === 'enforma-aviso-push') void refrescar.current();
+      if (m?.tipo === 'enforma-abrir' && typeof m.enlace === 'string') {
+        const pestana = m.enlace.replace(/^\//, '').split('?')[0];
+        if (/^[a-z][a-z0-9_-]*$/.test(pestana)) alNavegar.current(pestana);
+      }
+    };
+    return () => canal.close();
+  }, []);
 
   const unread = notifs.filter(n => !n.read).length;
 

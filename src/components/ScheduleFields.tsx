@@ -1,5 +1,5 @@
 import React from 'react';
-import { QScheduleType } from '../types';
+import { QScheduleType, SemanaDelBloque } from '../types';
 
 // Controlled repetition-schedule picker (tipo de repetición + días/intervalo/
 // día del mes + fecha de inicio). Extracted out of ClientHub's questionnaire
@@ -32,7 +32,14 @@ interface Props {
   onPlanWeekChange?: (n: number) => void;
   mesocycleOffsetDays?: number;
   onMesocycleOffsetDaysChange?: (n: number) => void;
+  /** 'mesocycle_week' (semana del bloque): primera, mitad, última o una semana
+   *  concreta. Solo se ofrece si llega el handler. */
+  semanaDelBloque?: SemanaDelBloque;
+  semanaNumero?: number;
+  onSemanaDelBloqueChange?: (v: { semanaDelBloque?: SemanaDelBloque; semanaNumero?: number }) => void;
 }
+
+const SEMANA_CONCRETA = 'concreta';
 
 export default function ScheduleFields({
   schedType, onSchedTypeChange,
@@ -42,8 +49,10 @@ export default function ScheduleFields({
   startDate, onStartDateChange, sinFechaDeInicio = false,
   planWeek = 3, onPlanWeekChange,
   mesocycleOffsetDays = 0, onMesocycleOffsetDaysChange,
+  semanaDelBloque, semanaNumero, onSemanaDelBloqueChange,
 }: Props) {
   const supportsEventTriggers = !!onPlanWeekChange && !!onMesocycleOffsetDaysChange;
+  const valorSemanaBloque = semanaNumero ? SEMANA_CONCRETA : (semanaDelBloque ?? 'ultima');
 
   return (
     <div className="space-y-3">
@@ -58,6 +67,7 @@ export default function ScheduleFields({
         <option value="monthly">Día del mes</option>
         {supportsEventTriggers && <option value="plan_week">Semana N del plan</option>}
         {supportsEventTriggers && <option value="mesocycle_end">Fin de bloque (mesociclo)</option>}
+        {onSemanaDelBloqueChange && <option value="mesocycle_week">Una semana de cada bloque</option>}
       </select>
 
       {schedType === 'weekdays' && (
@@ -135,6 +145,43 @@ export default function ScheduleFields({
             className="w-20 bg-bg border border-control-line rounded-control px-2 py-2 text-title-s text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <span className="font-mono text-caption text-ink-3">(0 = el último día del mesociclo)</span>
+        </div>
+      )}
+
+      {schedType === 'mesocycle_week' && onSemanaDelBloqueChange && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-caption text-ink-3">Semana</span>
+          <select
+            value={valorSemanaBloque}
+            aria-label="Qué semana de cada bloque"
+            onChange={e => {
+              const v = e.target.value;
+              if (v === SEMANA_CONCRETA) onSemanaDelBloqueChange({ semanaDelBloque: undefined, semanaNumero: semanaNumero ?? 2 });
+              else onSemanaDelBloqueChange({ semanaDelBloque: v as SemanaDelBloque, semanaNumero: undefined });
+            }}
+            className="max-w-full min-w-0 bg-bg border border-control-line rounded-control px-2 py-2 text-title-s text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+          >
+            <option value="primera">La primera</option>
+            <option value="mitad">La de la mitad</option>
+            <option value="ultima">La del cierre</option>
+            <option value={SEMANA_CONCRETA}>Una concreta…</option>
+          </select>
+          {valorSemanaBloque === 'ultima' && (
+            <span className="font-mono text-caption text-ink-3">(la última, o la que elijas en la cabecera del bloque)</span>
+          )}
+          {valorSemanaBloque === SEMANA_CONCRETA && (
+            <>
+              <input
+                type="number"
+                value={semanaNumero ?? 2}
+                min={1} max={52}
+                aria-label="Número de semana del bloque"
+                onChange={e => onSemanaDelBloqueChange({ semanaDelBloque: undefined, semanaNumero: Math.min(52, Math.max(1, Math.round(Number(e.target.value)) || 1)) })}
+                className="w-20 bg-bg border border-control-line rounded-control px-2 py-2 text-title-s text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+              <span className="font-mono text-caption text-ink-3">(en un bloque más corto, la última)</span>
+            </>
+          )}
         </div>
       )}
 

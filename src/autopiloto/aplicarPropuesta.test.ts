@@ -107,6 +107,59 @@ describe('aplicarPropuesta · sesiones y publicación', () => {
     expect(r.resultEntityId).toBe('meso1');
   });
 
+  /* Norma de ejercicio nuevo (17-11-2026). El bloque de estos casos empieza el
+     lunes siguiente a la aprobación; el del caso de arriba ya va por su semana
+     4 y por eso ni lleva entrada ni se marca. */
+  describe('norma de ejercicio nuevo al aprobar las sesiones', () => {
+    const porEmpezar = { ...meso, startDate: '2026-11-02' };
+    const sesiones = propuesta('workoutDays', {
+      mesocycleId: 'meso1',
+      days: [
+        { dayIndex: 0, exercises: [{ exerciseId: 'ex1', name: 'Press banca', sets: 4, reps: '8-10', rir: 1, restSeconds: 120 }] },
+        { dayIndex: 2, exercises: [{ exerciseId: 'ex2', name: 'Sentadilla', sets: 3, reps: '6-8', rir: 2, restSeconds: 90 }] },
+      ],
+    });
+    const rutinasDe = (r: ReturnType<typeof ok>) => {
+      const act = r.operaciones[0] as Extract<Operacion, { tipo: 'actualizarRutina' }>;
+      const nueva = r.operaciones[1] as Extract<Operacion, { tipo: 'crearRutina' }>;
+      return { existente: act.cambios, nueva: nueva.rutina };
+    };
+
+    it('sin registros a mano: se guardan tal cual y marcadas para que el editor ponga la entrada', async () => {
+      const r = ok(await aplicarPropuesta(sesiones, lector({ mesociclos: async () => [porEmpezar] }), OPC));
+      const { existente, nueva } = rutinasDe(r);
+      expect(existente.exercises![0].weeklyProgression).toBeUndefined();
+      expect(nueva.exercises[0].weeklyProgression).toBeUndefined();
+      expect(existente.tags).toEqual(['rampa-pendiente']);
+      expect(nueva.tags).toEqual(['rampa-pendiente']);
+    });
+
+    it('con registros: lo nuevo entra a 10-12 las semanas 1-3 y vuelve a su rango en la 4; lo conocido, igual; sin marca', async () => {
+      const registros = async () => [{ date: '2026-10-20', entries: [{ exerciseId: 'ex1', sets: [{ weight: 80, repsDone: 8, rir: 1 }] }] }];
+      const marcada = { ...rutinaDia0, tags: ['rampa-pendiente'] };
+      const r = ok(await aplicarPropuesta(sesiones, lector({
+        mesociclos: async () => [porEmpezar], registros, rutinas: async () => [marcada, rutinaDia1],
+      }), OPC));
+      const { existente, nueva } = rutinasDe(r);
+      expect(existente.exercises![0].weeklyProgression).toBeUndefined();          // el press lo hizo hace 2 semanas
+      expect(nueva.exercises[0].weeklyProgression).toEqual([
+        { atWeek: 1, cambios: { reps: '10-12' } },
+        { atWeek: 4, cambios: { reps: '6-8' } },
+      ]);
+      expect(existente.tags).toEqual([]);                                         // la marca vieja se limpia
+      expect(nueva.tags).toBeUndefined();
+    });
+
+    it('en un bloque que ya pasó de su semana 3 ni se pone la entrada ni se marca', async () => {
+      const registros = async () => [];
+      const r = ok(await aplicarPropuesta(sesiones, lector({ registros }), OPC));
+      const { existente, nueva } = rutinasDe(r);
+      expect(nueva.exercises[0].weeklyProgression).toBeUndefined();
+      expect(existente.tags).toBeUndefined();
+      expect(nueva.tags).toBeUndefined();
+    });
+  });
+
   it('publicar el bloque salta las fechas ya asignadas: volver a aprobar no duplica', async () => {
     const r = ok(await aplicarPropuesta(propuesta('publishBlock', { mesocycleId: 'meso1', mesocycleName: 'Meso 1' }), lector(), OPC));
     const fechas = r.operaciones.map(o => (o as Extract<Operacion, { tipo: 'crearAsignacion' }>).asignacion.date);
@@ -160,6 +213,31 @@ describe('aplicarPropuesta · configuración, road map, semana', () => {
     const r = ok(await aplicarPropuesta(propuesta('periodizationBlock', { mesocycle: { ...meso, weeks: 8 }, reviewCadenceWeeks: 4, reviewType: 'revision' }), lector(), OPC));
     expect(r.operaciones.map(o => o.tipo)).toEqual(['crearMesociclo', 'crearTarea', 'crearTarea']);
     expect(r.resultEntityRef).toBe('meso');
+  });
+
+  // 17-11-2026: el asistente guardaba solo `deloadWeek` (la marca del
+  // calendario) y el entreno solo recorta con `semanasDescarga`.
+  it('la descarga del bloque del asistente se crea en semanasDescarga, que es lo que recorta el entreno', async () => {
+    const crear = async (mesocycle: Partial<Mesocycle>) => {
+      const r = ok(await aplicarPropuesta(propuesta('periodizationBlock', { mesocycle: { ...meso, weeks: 8, ...mesocycle }, reviewCadenceWeeks: 4, reviewType: 'revision' }), lector(), OPC));
+      return (r.operaciones[0] as Extract<Operacion, { tipo: 'crearMesociclo' }>).mesociclo;
+    };
+    // Una propuesta antigua, aún sin aprobar, que solo trae la marca.
+    expect(await crear({ deloadWeek: 8 })).toMatchObject({ deloadWeek: 8, semanasDescarga: [8] });
+    // Una que ya trae las semanas de descarga no se pisa.
+    expect(await crear({ deloadWeek: 4, semanasDescarga: [4, 8] })).toMatchObject({ deloadWeek: 4, semanasDescarga: [4, 8] });
+    // Sin descarga, sin campos.
+    const sin = await crear({});
+    expect('semanasDescarga' in sin).toBe(false);
+    expect('deloadWeek' in sin).toBe(false);
+  });
+
+  it('la etapa de una plantilla con descarga lleva semanasDescarga', async () => {
+    const etapa = { name: 'Acumulación', weeks: 6, daysPerWeek: 4, groups: {}, deloadWeek: 6 };
+    const r = ok(await aplicarPropuesta(propuesta('mesocycleTemplate', { name: 'Bloque', stages: [etapa, { ...etapa, name: 'Sin descarga', deloadWeek: undefined }] }), lector(), OPC));
+    const { stages } = (r.operaciones[0] as Extract<Operacion, { tipo: 'crearPlantillaMesociclo' }>).plantilla;
+    expect(stages[0]).toMatchObject({ deloadWeek: 6, semanasDescarga: [6] });
+    expect('semanasDescarga' in stages[1]).toBe(false);
   });
 
   it('el reto lleva el id de la semana ISO y el feedback del check-in guarda el texto anterior', async () => {

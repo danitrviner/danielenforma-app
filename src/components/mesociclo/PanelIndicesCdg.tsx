@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getOnboarding } from '../../dbService';
+import { ahorroPautado } from '../../utils/seriesAlternas';
 import { MUSCLE_LABELS, type Exercise, type Mesocycle, type MuscleGroup, type WorkoutExercise, type WorkoutLog } from '../../types';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../../data/volumeLandmarks';
 import { resolverEjercicioDelMeso } from '../../utils/progression';
@@ -14,7 +15,8 @@ import {
   bandaIF, consejosDeTiempo, type ZonaIem, type LecturaAgujetas,
   barraFrenteAlObjetivo, MARCA_OBJETIVO, ordenarConGrupos, grupoDeZona, nombreCortoDeMusculo, musculosSinZona, avisosDeSeries, type AvisoDeSeries,
   semanasRealizadasDelMeso, semanasAnterioresAlBloque, cargaAgudaCronicaDelMeso, UMBRALES_CARGA_POR_DEFECTO, SEMANAS_CARGA_CRONICA, type UmbralesCarga,
-  articulacionesEnDiasSeguidos, UMBRAL_DIAS_SEGUIDOS
+  articulacionesEnDiasSeguidos, UMBRAL_DIAS_SEGUIDOS,
+  bandaIEA, BANDAS_IEA, articulacionesSobreSuLimite, limitesValidos, type BandaIEA
 } from '../../utils/cdg';
 import { seriesPorGrupo } from '../../utils/programacion';
 import { nombresCortosDeSesiones } from '../../utils/nombresMeso';
@@ -79,6 +81,8 @@ interface Props {
 const TONO_BANDA: Record<string, string> = {
   sencilla: 'text-ink-2', intermedia: 'text-ink', alta: 'text-warning', 'muy-alta': 'text-danger',
 };
+// Bandas de estrés articular del curso (X1): solo colorean el número, no avisan.
+const TONO_BANDA_IEA: Record<BandaIEA, string> = { bajo: 'text-ink-3', medio: 'text-ink-2', alto: 'text-ink font-bold' };
 
 const n2 = (v: number) => v.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('es-ES');
@@ -155,8 +159,8 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
     if (!motor || sesiones.length === 0) return null;
     const t = sumarSesiones(motor, sesiones.map(s => s.r));
     const columnas: Columna[] = [
-      ...sesiones.map((s, i) => ({ nombre: cortos[i] ?? s.nombre, completo: s.nombre, IF: s.r.IF, tiempoSeg: s.r.tiempoSeg, compuestos: s.r.compuestos, IEM: s.r.IEM, estresArticular: s.r.estresArticular })),
-      { nombre: 'Semana', IF: t.IF, tiempoSeg: t.tiempoSeg, compuestos: t.compuestos, IEM: t.IEM, estresArticular: t.estresArticular, total: true }
+      ...sesiones.map((s, i) => ({ nombre: cortos[i] ?? s.nombre, completo: s.nombre, IF: s.r.IF, tiempoSeg: Math.max(0, s.r.tiempoSeg - ahorroPautado(s.ejercicios)), compuestos: s.r.compuestos, IEM: s.r.IEM, estresArticular: s.r.estresArticular })),
+      { nombre: 'Semana', IF: t.IF, tiempoSeg: Math.max(0, t.tiempoSeg - sesiones.reduce((a, s) => a + ahorroPautado(s.ejercicios), 0)), compuestos: t.compuestos, IEM: t.IEM, estresArticular: t.estresArticular, total: true }
     ];
     const conValor = (nombres: string[], de: (c: Columna) => number[]) =>
       nombres.map((nombre, i) => ({ nombre, valores: columnas.map(c => de(c)[i] ?? 0) })).filter(f => f.valores.some(v => v > 0.005));
@@ -213,6 +217,20 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
     if (!motor) return [];
     return articulacionesEnDiasSeguidos(motor.articulaciones, sesiones.map((se, i) => ({ nombre: cortos[i] ?? se.nombre, dayIndex: grupos[i]?.dayIndex, estresArticular: se.r.estresArticular })));
   }, [motor, sesiones, cortos, grupos]);
+  // X1: banda del curso de cada articulación en la semana programada y las que
+  // pasan del límite semanal que el coach le puso a este atleta (informativo).
+  const limitesArticulares = carga?.umbrales?.limitesArticulares;
+  const articular = useMemo(() => {
+    if (!motor || !tabla) return null;
+    const semanal = tabla.columnas[tabla.columnas.length - 1].estresArticular;
+    const limites = limitesValidos(limitesArticulares);
+    return {
+      bandas: motor.articulaciones
+        .map((nombre, j) => ({ nombre, valor: semanal[j] ?? 0, limite: limites[nombre] as number | undefined, ...bandaIEA(semanal[j] ?? 0, 'semana') }))
+        .filter(f => f.valor > 0.005 || f.limite != null),
+      sobreLimite: articulacionesSobreSuLimite(motor.articulaciones, semanal, limites),
+    };
+  }, [motor, tabla, limitesArticulares]);
   const celdaSeguida = useMemo(() => {
     const s = new Set<string>();
     for (const a of diasSeguidos) { s.add(`${a.j}:${a.sesiones[0]}`); s.add(`${a.j}:${a.sesiones[1]}`); }
@@ -270,7 +288,7 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
 
   const avisosTiempo = useMemo(() => (minutosDisponibles == null ? [] : sesiones.flatMap((se, i) => consejosDeTiempo({
     minutosDisponibles,
-    tiempoSeg: se.r.tiempoSeg,
+    tiempoSeg: Math.max(0, se.r.tiempoSeg - ahorroPautado(se.ejercicios)),
     unilaterales: se.ejercicios.filter(e => (nombreCdgDe(e.exerciseId) ?? '').toLowerCase().includes('unilateral')).length,
   }).map(t => `${cortos[i] ?? se.nombre}: ${t}`))), [sesiones, cortos, minutosDisponibles, nombreCdgDe]);
 
@@ -300,6 +318,8 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
     const pesoCorporal = contextoPesoCorporal(allExercises, pesoKg);
     const { semanas } = semanasRealizadasDelMeso({
       logs: carga.logs, meso: carga.meso, cicloDias: carga.cicloDias, vueltas: carga.vueltas, motor, nombreCdgDe, sesionDeWorkout: id => sesionDe.get(id), pesoCorporal,
+      // F15: con lo programado delante, las bajadas apuntadas cuentan con la técnica pautada.
+      grupos: carga.grupos,
     });
     const anteriores = semanasAnterioresAlBloque({ logs: carga.logs.filter(l => l.mesocycleId !== carga.meso.id), inicio: carga.meso.startDate, motor, nombreCdgDe, pesoCorporal });
     const r = cargaAgudaCronicaDelMeso({
@@ -311,7 +331,8 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
     if (r.disponible === false) return { disponible: false as const, motivo: r.motivo, u };
     const totalIF = r.avisos.sesionesIF.find(x => x.sesion === 'Total de sesiones');
     const usadas = r.semanasUsadas.length + r.semanasDeOtrosBloques;
-    return { disponible: true as const, valor: totalIF?.valor ?? 0, fuera: !!totalIF?.fuera, fiable: r.fiable, usadas, u };
+    // F15: lo que se estrena esta semana (sin historia en la media) y las semanas sin sesiones que cuentan como cero.
+    return { disponible: true as const, valor: totalIF?.valor ?? 0, fuera: !!totalIF?.fuera, fiable: r.fiable, usadas, u, nuevos: r.avisos.nuevos, vacias: r.semanasVacias };
   }, [motor, carga, semana, nombreCdgDe, allExercises, pesoKg]);
 
   // Resumen y avisos de la semana (tarjetas de arriba).
@@ -544,6 +565,7 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
                         ? `baja más de lo previsto (mín. ${n2(cargaSemana.u.inferior)})`
                         : <>rango {n2(cargaSemana.u.inferior)}–{n2(cargaSemana.u.superior)} <span className="text-success">✓</span></>}
                     {!cargaSemana.fiable && ` · orientativo (${cargaSemana.usadas} de ${SEMANAS_CARGA_CRONICA} semanas)`}
+                    {cargaSemana.nuevos.length > 0 && ` · ${cargaSemana.nuevos.length} ${cargaSemana.nuevos.length === 1 ? 'zona nueva' : 'zonas nuevas'}`}
                   </>}
                 />
               )}
@@ -554,6 +576,22 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
                 detalle={resumen.nAvisos > 0 ? resumen.detalleAvisos : 'Todo en orden'}
               />
             </div>
+          )}
+
+          {/* Zona nueva (F15): sin historia no hay ratio; se dice aparte, como en Seguimiento. */}
+          {cargaSemana?.disponible && cargaSemana.nuevos.length > 0 && (
+            <p className="font-sans text-body-s text-ink-2">
+              <b className="text-ink">Zona nueva esta semana</b> (sin carga en las semanas de la media, así que no hay con qué compararla):{' '}
+              {[
+                ...cargaSemana.nuevos.filter(x => x.tipo === 'musculo').map(x => `${x.nombre} (IEM ${n1(x.aguda)})`),
+                ...cargaSemana.nuevos.filter(x => x.tipo === 'articulacion').map(x => `${x.nombre} (estrés articular ${n1(x.aguda)})`),
+              ].join(', ')}. Empieza con poco y mira las agujetas.
+            </p>
+          )}
+          {cargaSemana?.disponible && cargaSemana.vacias.length > 0 && (
+            <p className="font-sans text-body-s text-ink-3">
+              {cargaSemana.vacias.map(n => `S${n}`).join(', ')} sin ninguna sesión: {cargaSemana.vacias.length === 1 ? 'cuenta' : 'cuentan'} como cero en la media de la carga crónica.
+            </p>
           )}
 
           {zonas && (
@@ -743,10 +781,25 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
                   <span className={`ml-auto px-2 rounded-chip font-mono text-caption ${avisosArticulares.length + diasSeguidos.length > 0 ? 'bg-warning/10 text-warning' : 'bg-raised text-ink-2'}`}>
                     {diasSeguidos.length > 0 ? `${diasSeguidos.length} en días seguidos` : avisosArticulares.length > 0 ? 'Con avisos' : 'Sin avisos'}
                   </span>
+                  {articular && articular.sobreLimite.length > 0 && (
+                    <span className="px-2 rounded-chip font-mono text-caption bg-raised text-ink">
+                      {articular.sobreLimite.length} por encima de su límite
+                    </span>
+                  )}
                 </span>
               }
             >
               <div className="space-y-3 pb-3">
+                {/* X1: informativo. Se dice que pasa de SU límite, no por qué lo tiene. */}
+                {articular && articular.sobreLimite.length > 0 && (
+                  <ul className="space-y-1 font-sans text-body-s text-ink-2">
+                    {articular.sobreLimite.map(a => (
+                      <li key={`lim-${a.j}`}>
+                        <b className="text-ink">{a.articulacion}</b>: {n1(a.valor)} esta semana, por encima de su límite ({n1(a.limite)}).
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 {diasSeguidos.length > 0 && (
                   <ul className="space-y-1 font-sans text-body-s text-warning">
                     {diasSeguidos.map(a => (
@@ -781,6 +834,24 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
                     </tbody>
                   </table>
                 </div>
+                {articular && articular.bandas.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="font-sans text-label text-ink-3">Banda de la semana por articulación</p>
+                    <ul className="flex flex-wrap gap-x-4 gap-y-1 font-sans text-body-s">
+                      {articular.bandas.map(b => (
+                        <li key={b.nombre} className="whitespace-nowrap">
+                          <span className="text-ink-2">{b.nombre}</span>{' '}
+                          <span className="font-mono tabular-nums text-ink">{n1(b.valor)}</span>{' '}
+                          <span className={TONO_BANDA_IEA[b.banda]}>{b.etiqueta.toLowerCase()}{b.sobreElTecho ? ` (más de ${BANDAS_IEA.semana.techo})` : ''}</span>
+                          {b.limite != null && <span className="text-ink-3"> · límite {n1(b.limite)}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="font-sans text-label text-ink-3">
+                      Referencia del curso por semana: bajo hasta {BANDAS_IEA.semana.bajoHasta}, alto de {BANDAS_IEA.semana.altoDesde} a {BANDAS_IEA.semana.techo}; por sesión, bajo por debajo de {BANDAS_IEA.sesion.bajoHasta} y alto de {BANDAS_IEA.sesion.altoDesde} a {BANDAS_IEA.sesion.techo}. El límite de cada articulación se pone en Seguimiento.
+                    </p>
+                  </div>
+                )}
               </div>
             </Collapsible>
           </div>

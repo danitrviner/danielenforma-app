@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import { WorkoutLog, Exercise, QuestionnaireResponse, Questionnaire, BodyweightLog, WorkoutAssignment, BodyMetricKey, BODY_METRIC_LABELS } from '../types';
 import { rmDeSerie } from '../utils/oneRepMax';
+import { kgDeSerie, seriesDeFuerza } from '../utils/sesionFuera';
 import { getStepsForAthlete } from '../dbService';
 import { useBodyMeasurements } from '../hooks/useBodyMeasurements';
 import { DataPoint, Aggregation, Granularity, weekKey, toWeeklyBuckets, pearsonAligned } from '../utils/seriesCorrelation';
@@ -13,7 +14,6 @@ import { computeAnthropometricIndices, ANTHROPOMETRIC_INDEX_LABELS } from '../ut
 import { pctGrasaUSNavy, masaMagraEstimadaKg, computeIRC } from '../utils/bodyFatUSNavy';
 import { e1rmAlometrico, pesoCorporalEn } from '../utils/allometricScore';
 import { ewmaDeSeñal } from '../utils/wellnessTrend';
-import { historialIRP } from '../utils/readinessIndex';
 import { seriesTonelajePorPatron } from '../utils/stimulusSeries';
 import { useMotorCdg } from '../hooks/useMotorCdg';
 import { seriesIEMPorSemana } from '../utils/cdg';
@@ -93,7 +93,9 @@ const TITULARES: { id: string; mejorSiSube: boolean | null }[] = [
   { id: 'bw_weekly',          mejorSiSube: null },
   { id: 'irc',                mejorSiSube: true },
   { id: 'adherence_weekly',   mejorSiSube: true },
-  { id: 'irp',                mejorSiSube: true },
+  // Fuera del resumen (Dani, 18-11-2026): el «1RM: <ejercicio>» suelto que iba
+  // detrás (sigue en «Explorar los datos»). El índice de disposición para
+  // entrenar (IRP) se quitó del todo, también de «Explorar los datos».
 ];
 
 const TONO_DIRECCION: Record<ResumenMetrica['direccion'], string> = {
@@ -176,9 +178,8 @@ export default function CorrelationPanel({
       for (const log of logs) {
         let tonnage = 0;
         for (const entry of log.entries) {
-          for (const set of entry.sets) {
-            tonnage += (set.weight || 0) * (set.repsDone || 0);
-          }
+          // Fuera de su gimnasio los kilos no cuentan (utils/sesionFuera.ts).
+          for (const set of entry.sets) tonnage += kgDeSerie(set);
         }
         if (!byDate[log.date]) byDate[log.date] = 0;
         byDate[log.date] += tonnage;
@@ -327,12 +328,9 @@ export default function CorrelationPanel({
     if (estresEwma.length > 0) {
       result.push({ id: 'estres_ewma', label: 'Estrés semanal (EWMA)', points: estresEwma, agg: 'avg' });
     }
-
-    // 9. IRP (Índice de Readiness) — sueño × (10 − estrés − DOMS crónico) / 10.
-    const irpPoints = historialIRP({ responses, questionnaires });
-    if (irpPoints.length > 0) {
-      result.push({ id: 'irp', label: 'IRP (readiness)', points: irpPoints, agg: 'avg' });
-    }
+    // (El índice de disposición para entrenar, sueño × (10 − estrés − DOMS
+    // crónico) / 10, se quitó el 18-11-2026: sin escala, con negativos y
+    // mezclando estas mismas series, que ya están aquí por separado.)
 
     return result;
   }, [logs, responses, questionnaires, bodyweightLogs, bodyMeasurements, latestBodyMeasurements, stepLogs, assignments, sexo]);
@@ -347,7 +345,7 @@ export default function CorrelationPanel({
     for (const log of logs) {
       for (const entry of log.entries) {
         const eid = entry.exerciseId;
-        for (const set of entry.sets) {
+        for (const set of seriesDeFuerza(entry.sets)) {
           if (!set.weight || !set.repsDone) continue;
           const orm = rmDeSerie(set);
           if (!ormMap[eid]) ormMap[eid] = {};
@@ -439,17 +437,8 @@ export default function CorrelationPanel({
       if (r) out.push(r);
     }
 
-    // Fuerza: el ejercicio con más sesiones registradas, que ya viene primero
-    // en las variantes. Es el que mejor cuenta la progresión sin pedirle al
-    // coach que elija nada antes de enseñar la pantalla.
-    const ormFam = familias.find(f => f.id === 'orm');
-    if (ormFam) {
-      const v = ormFam.variantes[0];
-      const r = resumirSerie({ id: 'orm_destacado', label: `1RM: ${v.label}`, unit: 'kg', points: v.points, mejorSiSube: true });
-      if (r) out.push(r);
-    }
     return out;
-  }, [allSeries, familias]);
+  }, [allSeries]);
 
   const toggleSeries = (id: string) => {
     setSelectedIds(prev => {

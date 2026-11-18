@@ -34,7 +34,7 @@ export default function PanelPropuestaIem({ pr, onProgramar, onCerrar, onGuardar
       <div className="grid grid-cols-2 gap-2 items-end">
         <Select label="Semana a programar" value={String(pr.semana)} onChange={v => pr.setSemana(Number(v))}
           options={pr.destinos.map(s => ({ value: String(s), label: `S${s}` }))} />
-        <p className="font-sans text-caption text-ink-2 pb-2">Sobre lo programado en S{pr.semana - 1}. Las siguientes, en gris: borrador.</p>
+        <p className="font-sans text-caption text-ink-2 pb-2">Sobre lo programado en S{c?.ref ?? pr.semana - 1}. Las siguientes, en gris: borrador.</p>
       </div>
 
       {!pr.motor && <p className="font-sans text-caption text-ink-3">Cargando el catálogo CDG…</p>}
@@ -58,7 +58,7 @@ export default function PanelPropuestaIem({ pr, onProgramar, onCerrar, onGuardar
                 <Select label="Esta semana" value={String(z.pct)} onChange={v => pr.setPct(z.zona, Number(v))}
                   options={[...new Set([...PCTS, z.pct])].sort((a, b) => a - b).map(v => ({ value: String(v), label: v === 0 ? 'Mantener' : `${signo(v)} %` }))} />
                 {z.resumen && (
-                  <p className={`pb-2 font-mono text-caption tabular-nums ${z.resumen.alcanzado ? 'text-success' : 'text-warning'}`} title={`IEM de la zona: S${pr.semana - 1} programada → S${pr.semana} con los cambios`}>
+                  <p className={`pb-2 font-mono text-caption tabular-nums ${z.resumen.alcanzado ? 'text-success' : 'text-warning'}`} title={`IEM de la zona: S${c?.ref ?? pr.semana - 1} programada → S${pr.semana} con los cambios`}>
                     {z.resumen.base.toLocaleString('es-ES')} → {z.resumen.despues.toLocaleString('es-ES')}
                   </p>
                 )}

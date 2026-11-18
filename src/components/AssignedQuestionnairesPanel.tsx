@@ -3,18 +3,23 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, Questionnaire, QuestionnaireAssignment, QuestionnairePack,
   QuestionnaireQuestion, QuestionnaireResponse, QSchedule, QScheduleType,
+  ExcepcionDeFecha, SemanaDelBloque,
 } from '../types';
 import {
   assignQuestionnaire, assignQuestionnairesBatch, deactivateAssignment, createQuestionnaire,
   getQuestionnairePacksByCoach, createQuestionnairePack, updateQuestionnairePack, deleteQuestionnairePack,
-  getMesocycles,
+  getMesocycles, createNotificationDeduped,
 } from '../dbService';
-import { fijarAlViernes, fijarAlViernesAlCrear, type ScheduleContext } from '../utils/questionnaireSchedule';
+import { fijarAlViernes, fijarAlViernesAlCrear, isOverdue, type ScheduleContext } from '../utils/questionnaireSchedule';
+import { guardarExcepcionDeFecha, quitarExcepcionDeFecha } from '../db/questionnaires';
+import { extrasVigentes } from '../utils/excepcionesCuestionario';
+import { idsDeCuestionariosDeCierre } from '../utils/cicloRevision';
+import { avisoDeCuestionarioNuevo } from '../utils/recordatoriosRevision';
 import DiaRevisionAtleta from './revision/DiaRevisionAtleta';
 import { crearPaqueteOficial, itemsPendientes } from '../utils/paqueteOficial';
 import { PAQUETE_OFICIAL } from '../data/questionnairePresets';
 import {
-  cadenciaEnCristiano, cadenciaParaTabla, proximaOcurrencia, etiquetaFechaCorta, hoyLocalStr,
+  cadenciaEnCristiano, cadenciaParaTabla, proximaOcurrencia, proximaOcurrenciaDetallada, etiquetaFechaCorta, hoyLocalStr,
 } from '../utils/scheduleEngine';
 import { suggestedScheduleForTitle } from '../data/questionnairePresets';
 import { resolveQuestions } from '../utils/questionnaireResolve';
@@ -72,9 +77,88 @@ export default function AssignedQuestionnairesPanel({
     queryFn: () => getMesocycles(athlete.email),
     enabled: !!athlete.email,
   });
-  const ctxAtleta: ScheduleContext = useMemo(() => ({ mesocycles, diaRevision }), [mesocycles, diaRevision]);
+  // Solo el cuestionario de cierre sigue la semana de cierre del bloque (18-11).
+  const cuestionariosDeCierre = useMemo(() => idsDeCuestionariosDeCierre(coachQuestionnaires), [coachQuestionnaires]);
+  const ctxAtleta: ScheduleContext = useMemo(
+    () => ({ mesocycles, diaRevision, pausa: athlete.pausaRevisiones, cuestionariosDeCierre }),
+    [mesocycles, diaRevision, athlete.pausaRevisiones, cuestionariosDeCierre],
+  );
   const proximaDe = (a: Parameters<typeof proximaOcurrencia>[0]) =>
     etiquetaFechaCorta(proximaOcurrencia(fijarAlViernes(a, diaRevision), ctxAtleta));
+
+  // ── Mandar ahora y cambiar una fecha (18-11-2026) ─────────────────────────
+  // Las dos guardan una excepción en la asignación: ni tocan su cadencia ni la
+  // duplican (ver utils/excepcionesCuestionario.ts).
+  const hoy = hoyLocalStr();
+  /** «hoy», «mañana» o «jue, 26 nov», para meterlo en una frase. */
+  const corta = (iso: string) => {
+    const t = etiquetaFechaCorta(iso, hoy);
+    return t === 'Hoy' || t === 'Mañana' ? t.toLowerCase() : t;
+  };
+  /** «hoy», «mañana» o «el jue, 26 nov». */
+  const elDia = (iso: string) => (/^(hoy|mañana)$/.test(corta(iso)) ? corta(iso) : `el ${corta(iso)}`);
+  const nombreAtleta = athlete.displayName?.split(' ')[0] || 'el atleta';
+  const [fechaEditando, setFechaEditando] = useState<{ id: string; ocurrencia: string; valor: string } | null>(null);
+  const [guardandoExcepcion, setGuardandoExcepcion] = useState<string | null>(null);
+
+  /** Aviso en la campana de su app (18-11-2026): el mismo canal que el resto
+   *  de avisos del coach. Misma clave que el latido del servidor, así que no
+   *  le llegan dos. Si falla, el cuestionario ya está mandado: solo se dice. */
+  const avisarDelNuevo = async (a: QuestionnaireAssignment, titulo: string | null, desde: string): Promise<boolean> => {
+    const aviso = avisoDeCuestionarioNuevo({ email: athlete.email, assignmentId: a.id, desde, titulo });
+    try {
+      await createNotificationDeduped(aviso.dedupeKey, aviso.notificacion);
+      return true;
+    } catch (err) {
+      console.warn('avisarDelNuevo:', err);
+      return false;
+    }
+  };
+
+  const guardarExcepciones = async (
+    a: QuestionnaireAssignment, accion: () => Promise<ExcepcionDeFecha[]>, hecho: string, queHacia: string,
+    despues?: () => Promise<string>,
+  ) => {
+    setGuardandoExcepcion(a.id);
+    try {
+      const lista = await accion();
+      setAthleteQAssignments(prev => prev.map(x => x.id === a.id ? { ...x, excepciones: lista.length > 0 ? lista : undefined } : x));
+      setFechaEditando(null);
+      const mas = despues ? await despues() : '';
+      showToast(`${hecho}${mas}`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast(mensajeDeErrorFirestore(err, queHacia));
+    } finally {
+      setGuardandoExcepcion(null);
+    }
+  };
+
+  const tituloDe = (a: QuestionnaireAssignment) => coachQuestionnaires.find(q => q.id === a.questionnaireId)?.title ?? null;
+  const conAviso = (a: QuestionnaireAssignment, desde: string) => async () =>
+    (await avisarDelNuevo(a, tituloDe(a), desde))
+      ? ' Le queda un aviso en la campana de su app.'
+      : ' No se ha podido dejarle el aviso en la app: díselo tú.';
+
+  const mandarAhora = (a: QuestionnaireAssignment, titulo: string) => guardarExcepciones(
+    a, () => guardarExcepcionDeFecha(a, { nuevaFecha: hoy }, ctxAtleta, hoy),
+    `«${titulo}» le sale hoy a ${nombreAtleta}: pendiente 7 días o hasta que lo conteste.`,
+    'mandarlo ahora',
+    conAviso(a, hoy),
+  );
+  // Movida a hoy: se le abre ya, así que avisa igual. A otro día, avisa el
+  // latido del servidor la mañana de ese día.
+  const cambiarFecha = (a: QuestionnaireAssignment, ocurrencia: string, nuevaFecha: string) => guardarExcepciones(
+    a, () => guardarExcepcionDeFecha(a, { ocurrencia, nuevaFecha }, ctxAtleta, hoy),
+    nuevaFecha === ocurrencia ? 'Vuelve a su fecha.' : `Esa vez le sale ${elDia(nuevaFecha)}; las demás no cambian.`,
+    'cambiar la fecha',
+    nuevaFecha === hoy && nuevaFecha !== ocurrencia ? conAviso(a, hoy) : undefined,
+  );
+  const deshacer = (a: QuestionnaireAssignment, e: ExcepcionDeFecha) => guardarExcepciones(
+    a, () => quitarExcepcionDeFecha(a, e, ctxAtleta, hoy),
+    e.ocurrencia ? 'Vuelve a su fecha.' : 'Ya no se lo pide hasta su próxima fecha.',
+    'deshacer el cambio',
+  );
 
   // ── Paquetes ───────────────────────────────────────────────────────────────
   const packsKey = ['questionnairePacks', coachId] as const;
@@ -183,6 +267,7 @@ export default function AssignedQuestionnairesPanel({
   const [assignDayOfMonth, setAssignDayOfMonth] = useState(1);
   const [assignPlanWeek, setAssignPlanWeek] = useState(3);
   const [assignMesocycleOffsetDays, setAssignMesocycleOffsetDays] = useState(0);
+  const [assignSemanaBloque, setAssignSemanaBloque] = useState<{ semanaDelBloque?: SemanaDelBloque; semanaNumero?: number }>({});
   const [assignStartDate, setAssignStartDate] = useState(hoyLocalStr());
   const [assigningQ, setAssigningQ] = useState(false);
 
@@ -229,6 +314,7 @@ export default function AssignedQuestionnairesPanel({
       setAssignDayOfMonth(suggested.dayOfMonth ?? 1);
       setAssignPlanWeek(suggested.planWeek ?? 3);
       setAssignMesocycleOffsetDays(suggested.mesocycleOffsetDays ?? 0);
+      setAssignSemanaBloque({ semanaDelBloque: suggested.semanaDelBloque, semanaNumero: suggested.semanaNumero });
     }
   };
 
@@ -244,6 +330,10 @@ export default function AssignedQuestionnairesPanel({
     if (assignSchedType === 'monthly')       schedule.dayOfMonth          = assignDayOfMonth;
     if (assignSchedType === 'plan_week')     schedule.planWeek            = assignPlanWeek;
     if (assignSchedType === 'mesocycle_end') schedule.mesocycleOffsetDays = assignMesocycleOffsetDays;
+    if (assignSchedType === 'mesocycle_week') {
+      if (assignSemanaBloque.semanaNumero) schedule.semanaNumero = assignSemanaBloque.semanaNumero;
+      else schedule.semanaDelBloque = assignSemanaBloque.semanaDelBloque ?? 'ultima';
+    }
     return schedule;
   };
 
@@ -272,6 +362,12 @@ export default function AssignedQuestionnairesPanel({
         overrides,
       });
       setAthleteQAssignments(prev => [...prev, a]);
+      // Si ya le toca (una sola vez hoy, un hito ya pasado…), se le abre ahora:
+      // aviso en su app como con «Mandar ahora» (18-11-2026).
+      if (isOverdue(a, ctxAtleta)) {
+        const avisado = await avisarDelNuevo(a, tituloDe(a), hoy);
+        showToast(avisado ? 'Asignado. Ya le sale pendiente y le queda un aviso en la campana de su app.' : 'Asignado. Ya le sale pendiente.', 'success');
+      }
       setAssignQId('');
       setAssignSchedType('once');
       setAssignWeekdays([]);
@@ -482,6 +578,14 @@ export default function AssignedQuestionnairesPanel({
                   .filter(r => r.assignmentId === a.id || r.questionnaireId === a.questionnaireId)
                   .sort((x, y) => y.submittedAt.localeCompare(x.submittedAt))[0];
                 const proxima = proximaDe(a);
+                const titulo = tmpl?.title ?? 'el cuestionario';
+                // La próxima ocasión de su cadencia (movida o no), que es la
+                // que se puede cambiar de fecha, y los «Mandar ahora» abiertos.
+                const siguiente = proximaOcurrenciaDetallada(fijarAlViernes(a, diaRevision), ctxAtleta, { sinExtras: true });
+                const extras = extrasVigentes(a, athleteQResponses, hoy);
+                const mandadoHoy = extras.some(x => x.excepcion.nuevaFecha === hoy);
+                const editando = fechaEditando?.id === a.id ? fechaEditando : null;
+                const ocupado = guardandoExcepcion === a.id;
 
                 return (
                   <li key={a.id} className="px-5 py-3">
@@ -540,6 +644,98 @@ export default function AssignedQuestionnairesPanel({
                       >
                         <Icon name="close" size="s" />
                       </button>
+                    </div>
+
+                    {/* Mandar ahora · cambiar esta fecha (18-11-2026). Discreto: una
+                        línea de texto bajo el cuestionario, con lo que ya está
+                        cambiado delante y cómo deshacerlo. */}
+                    <div className="mt-1.5 sm:ml-9 flex flex-wrap items-center gap-x-3 gap-y-1.5 font-sans text-caption text-ink-2">
+                      {extras.map(x => (
+                        <span key={x.excepcion.nuevaFecha} className="inline-flex items-center gap-1.5">
+                          <Icon name="send" size="s" className="text-accent-ink" />
+                          <span>
+                            Mandado {elDia(x.excepcion.nuevaFecha)}
+                            {' · '}
+                            {x.contestada ? 'ya lo ha contestado' : `pendiente hasta ${elDia(x.hasta)}`}
+                          </span>
+                          {!x.contestada && <button
+                            type="button"
+                            onClick={() => deshacer(a, x.excepcion)}
+                            disabled={ocupado}
+                            className="min-h-10 px-1 font-mono text-caption text-ink-3 underline underline-offset-2 hover:text-ink disabled:opacity-50"
+                          >
+                            Deshacer
+                          </button>}
+                        </span>
+                      ))}
+
+                      {siguiente?.original && !editando && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Icon name="event" size="s" className="text-warning" />
+                          <span>
+                            Movida: {corta(siguiente.fecha)} (era {corta(siguiente.original)})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => deshacer(a, { ocurrencia: siguiente.original, nuevaFecha: siguiente.fecha })}
+                            disabled={ocupado}
+                            className="min-h-10 px-1 font-mono text-caption text-ink-3 underline underline-offset-2 hover:text-ink disabled:opacity-50"
+                          >
+                            Deshacer
+                          </button>
+                        </span>
+                      )}
+
+                      {editando ? (
+                        <span className="inline-flex flex-wrap items-center gap-2">
+                          <label htmlFor={`fecha-${a.id}`} className="text-ink-2">
+                            Cambiar la de {corta(editando.ocurrencia)} a
+                          </label>
+                          <input
+                            id={`fecha-${a.id}`}
+                            type="date"
+                            min={hoy}
+                            value={editando.valor}
+                            onChange={e => setFechaEditando({ ...editando, valor: e.target.value })}
+                            className="bg-bg border border-control-line rounded-control px-2 py-1.5 text-label font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                          />
+                          <Button
+                            size="s"
+                            onClick={() => editando.valor && cambiarFecha(a, editando.ocurrencia, editando.valor)}
+                            disabled={!editando.valor || editando.valor < hoy}
+                            loading={ocupado}
+                            loadingLabel="Guardando"
+                          >
+                            Guardar
+                          </Button>
+                          <Button size="s" variant="ghost" onClick={() => setFechaEditando(null)}>Cancelar</Button>
+                        </span>
+                      ) : (
+                        <>
+                          {siguiente && (
+                            <button
+                              type="button"
+                              onClick={() => setFechaEditando({ id: a.id, ocurrencia: siguiente.original ?? siguiente.fecha, valor: siguiente.fecha })}
+                              disabled={ocupado}
+                              className="min-h-10 inline-flex items-center gap-1 text-ink-2 hover:text-ink disabled:opacity-50"
+                              title={`Mueve solo la de ${corta(siguiente.original ?? siguiente.fecha)}; las demás no cambian`}
+                            >
+                              <Icon name="edit_calendar" size="s" />
+                              Cambiar esta fecha
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => mandarAhora(a, titulo)}
+                            disabled={ocupado || mandadoHoy}
+                            className="min-h-10 inline-flex items-center gap-1 text-accent-ink hover:text-ink disabled:text-ink-3 disabled:cursor-default"
+                            title={mandadoHoy ? 'Ya se lo has mandado hoy' : 'Le sale hoy, pendiente 7 días o hasta que lo conteste. Su cadencia no cambia.'}
+                          >
+                            <Icon name={ocupado ? 'progress_activity' : 'send'} size="s" className={ocupado ? 'animate-spin' : ''} />
+                            {mandadoHoy ? 'Mandado hoy' : 'Mandar ahora'}
+                          </button>
+                        </>
+                      )}
                     </div>
 
                     {abierta && (
@@ -800,6 +996,9 @@ export default function AssignedQuestionnairesPanel({
                         onPlanWeekChange={n => cambiarCadenciaDeFila(it.key, { planWeek: n })}
                         mesocycleOffsetDays={it.schedule.mesocycleOffsetDays ?? 0}
                         onMesocycleOffsetDaysChange={n => cambiarCadenciaDeFila(it.key, { mesocycleOffsetDays: n })}
+                        semanaDelBloque={it.schedule.semanaDelBloque}
+                        semanaNumero={it.schedule.semanaNumero}
+                        onSemanaDelBloqueChange={v => cambiarCadenciaDeFila(it.key, v)}
                       />
                       <Badge tone="info" icon="schedule" className="whitespace-nowrap">
                         {cadenciaParaTabla(it.schedule)}
@@ -895,6 +1094,9 @@ export default function AssignedQuestionnairesPanel({
                   onPlanWeekChange={setAssignPlanWeek}
                   mesocycleOffsetDays={assignMesocycleOffsetDays}
                   onMesocycleOffsetDaysChange={setAssignMesocycleOffsetDays}
+                  semanaDelBloque={assignSemanaBloque.semanaDelBloque}
+                  semanaNumero={assignSemanaBloque.semanaNumero}
+                  onSemanaDelBloqueChange={setAssignSemanaBloque}
                 />
 
                 {/* Lectura de control: lo que el coach acaba de montar, dicho en

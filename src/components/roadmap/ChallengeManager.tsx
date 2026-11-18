@@ -21,7 +21,7 @@ const KIND_LABEL: Record<ChallengeKind, string> = {
   amrap_serie: 'AMRAP en la última serie', doble_progresion: 'Doble progresión',
   record_reps: 'Récord de repeticiones', mas_reserva: 'Mismo peso con más reserva',
   supera_sesion: 'Supera tu sesión', grupo_estancado: 'Grupo estancado',
-  rir_minimo: 'RIR mínimo (descarga)',
+  rir_minimo: 'RIR mínimo (vuelta de parón)',
   custom: 'Custom (sin métrica automática)',
 };
 

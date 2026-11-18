@@ -17,6 +17,7 @@ import { ChallengeData, AutoChallengeInput, generateChallengeOptions, genericSte
 import { ejerciciosMejorados, recordsBatidos } from './planDeLaSemana.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
 import { rirEfectivo } from './oneRepMax.js';
+import { sinSesionesFuera } from './sesionFuera.js';
 
 export type { ChallengeData, AutoChallengeInput, ChallengeOption } from './challengeOptions.js';
 export {
@@ -55,6 +56,10 @@ export function evaluateChallengeProgress(
   const to = today < ch.weekEnd ? today : ch.weekEnd;
   const weekOver = today > ch.weekEnd;
   const clamp = (v: number) => Math.max(0, Math.min(100, v));
+  // Los retos de carga y de repeticiones con un peso concreto no se evalúan
+  // con sesiones hechas fuera de su gimnasio (17-11-2026, utils/sesionFuera.ts):
+  // allí los kilos son de otras máquinas. Los de series, sesiones y RIR, sí.
+  const deFuerza = sinSesionesFuera(data.workoutLogs);
 
   switch (ch.kind) {
     case 'pasos_media': {
@@ -68,7 +73,7 @@ export function evaluateChallengeProgress(
     }
     case 'carga_ejercicio': {
       const ids = ch.metric.exerciseId ? new Set([ch.metric.exerciseId]) : undefined;
-      const best = bestSet(data.workoutLogs, { exerciseIds: ids, from: ch.weekStart, to });
+      const best = bestSet(deFuerza, { exerciseIds: ids, from: ch.weekStart, to });
       const value = best?.e1rm ?? 0;
       const baseline = ch.metric.baseline ?? 0;
       // La barra mide el tramo baseline→target, no desde 0 (sería siempre ~100%).
@@ -105,7 +110,7 @@ export function evaluateChallengeProgress(
     case 'reps_ejercicio': {
       const { exerciseId, atWeight } = ch.metric;
       if (!exerciseId || atWeight == null) return { progressValue: 0, pct: 0, achieved: false };
-      const reps = bestRepsAtWeight(data.workoutLogs, exerciseId, atWeight, ch.weekStart, to);
+      const reps = bestRepsAtWeight(deFuerza, exerciseId, atWeight, ch.weekStart, to);
       return { progressValue: reps, pct: clamp((reps / ch.metric.target) * 100), achieved: reps >= ch.metric.target };
     }
     case 'series_grupo': {
@@ -132,7 +137,7 @@ export function evaluateChallengeProgress(
     case 'amrap_serie': {
       const { exerciseId, atWeight } = ch.metric;
       if (!exerciseId || atWeight == null) return { progressValue: 0, pct: 0, achieved: false };
-      const reps = bestRepsAtWeight(data.workoutLogs, exerciseId, atWeight, ch.weekStart, to);
+      const reps = bestRepsAtWeight(deFuerza, exerciseId, atWeight, ch.weekStart, to);
       return { progressValue: reps, pct: clamp((reps / ch.metric.target) * 100), achieved: reps >= ch.metric.target };
     }
     case 'doble_progresion': {
@@ -141,18 +146,18 @@ export function evaluateChallengeProgress(
       // «Toca subir»: vale cualquier peso por encima del de la última vez —
       // cada gimnasio tiene sus escalones y el motor no los conoce.
       const reps = subirDe != null
-        ? bestRepsAtWeight(data.workoutLogs, exerciseId, subirDe + 0.5, ch.weekStart, to)
-        : atWeight != null ? bestRepsAtWeight(data.workoutLogs, exerciseId, atWeight, ch.weekStart, to) : 0;
+        ? bestRepsAtWeight(deFuerza, exerciseId, subirDe + 0.5, ch.weekStart, to)
+        : atWeight != null ? bestRepsAtWeight(deFuerza, exerciseId, atWeight, ch.weekStart, to) : 0;
       return { progressValue: reps, pct: clamp((reps / ch.metric.target) * 100), achieved: reps >= ch.metric.target };
     }
     case 'record_reps': {
-      const n = recordsBatidos(data.workoutLogs, ch.weekStart, to, ch.metric.exerciseId);
+      const n = recordsBatidos(deFuerza, ch.weekStart, to, ch.metric.exerciseId);
       return { progressValue: n, pct: clamp((n / ch.metric.target) * 100), achieved: n >= ch.metric.target };
     }
     case 'mas_reserva': {
       const { exerciseId, atWeight, baseline, minRir = 1 } = ch.metric;
       if (!exerciseId || atWeight == null || baseline == null) return { progressValue: 0, pct: 0, achieved: false };
-      const hecho = data.workoutLogs.some(log => log.date >= ch.weekStart && log.date <= to
+      const hecho = deFuerza.some(log => log.date >= ch.weekStart && log.date <= to
         && log.entries.some(e => e.exerciseId === exerciseId && seriesPrincipales(e.sets).some(s =>
           s.weight + 0.01 >= atWeight && s.repsDone >= baseline && !s.alFallo && rirEfectivo(s.rir, s.alFallo) >= minRir)));
       return { progressValue: hecho ? 1 : 0, pct: hecho ? 100 : 0, achieved: hecho };
@@ -160,7 +165,7 @@ export function evaluateChallengeProgress(
     case 'supera_sesion':
     case 'grupo_estancado': {
       const refs = ch.metric.referencias ?? [];
-      const n = ejerciciosMejorados(refs, data.workoutLogs, ch.weekStart, to,
+      const n = ejerciciosMejorados(refs, deFuerza, ch.weekStart, to,
         ch.kind === 'supera_sesion' ? ch.metric.workoutId : undefined);
       return { progressValue: n, pct: clamp((n / ch.metric.target) * 100), achieved: n >= ch.metric.target };
     }

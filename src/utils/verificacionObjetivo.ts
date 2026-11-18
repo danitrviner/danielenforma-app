@@ -1,5 +1,6 @@
 import { BodyweightLog, BodyMeasurement, Exercise, WorkoutLog } from '../types.js';
 import { rmDeSerie } from './oneRepMax.js';
+import { seriesDeFuerza } from './sesionFuera.js';
 import { addDays } from './trainingWeek.js';
 import { contextoPesoCorporal, pesoDeSerie, type ContextoPesoCorporal } from './pesoCorporal.js';
 
@@ -269,7 +270,8 @@ export function senalFuerza(
     if (log.date < desde || log.date > hoy) continue;
     const mitad = log.date < corte ? 0 : 1;
     for (const e of log.entries ?? []) {
-      for (const s of e.sets ?? []) {
+      // Fuera de su gimnasio los kilos no dicen nada de su fuerza (utils/sesionFuera.ts).
+      for (const s of seriesDeFuerza(e.sets ?? [])) {
         const rm = rmDeSerie({ ...s, weight: pesoDeSerie(s.weight, e.exerciseId, ctx) });
         if (!rm) continue;
         const par = mejor.get(e.exerciseId) ?? [0, 0];

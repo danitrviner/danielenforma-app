@@ -41,6 +41,12 @@ interface Props {
    * mano. Por defecto 'coach', para no cambiar la pantalla del cliente.
    */
   audiencia?: 'coach' | 'atleta';
+  /**
+   * Solo los perímetros, sin índices antropométricos ni composición (IRC,
+   * US Navy). Lo usa «Cómo vas» de la revisión semanal, que se graba para el
+   * atleta y va sin índices (18-11-2026). Por defecto, todo como siempre.
+   */
+  soloPerimetros?: boolean;
 }
 
 function fmtDate(dateStr: string): string {
@@ -48,7 +54,7 @@ function fmtDate(dateStr: string): string {
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
-export default function BodyMeasurementsPanel({ athleteEmail, sexo, pesoKg, audiencia = 'coach' }: Props) {
+export default function BodyMeasurementsPanel({ athleteEmail, sexo, pesoKg, audiencia = 'coach', soloPerimetros = false }: Props) {
   const { all, latest, loading } = useBodyMeasurements(athleteEmail);
   const [expanded, setExpanded] = useState<BodyMetricKey | null>(null);
 
@@ -136,7 +142,7 @@ export default function BodyMeasurementsPanel({ athleteEmail, sexo, pesoKg, audi
         })}
       </div>
 
-      {hayIndices && (
+      {hayIndices && !soloPerimetros && (
         <div className="bg-surface border border-hairline rounded-surface p-4 space-y-2">
           <p className="font-sans font-bold text-label text-ink">Índices antropométricos</p>
           <div className="grid grid-cols-2 gap-2">
@@ -158,7 +164,7 @@ export default function BodyMeasurementsPanel({ athleteEmail, sexo, pesoKg, audi
         </div>
       )}
 
-      {composicion && (
+      {composicion && !soloPerimetros && (
         <div className="bg-surface border border-hairline rounded-surface p-4 space-y-2">
           <p className="font-sans font-bold text-label text-ink">Composición corporal (US Navy)</p>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">

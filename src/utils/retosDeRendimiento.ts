@@ -3,12 +3,17 @@
 // PROGRAMADO esta semana en su mesociclo activo y de lo que hizo la última vez
 // en cada ejercicio — nunca de un ejercicio que no le toca.
 //
-//   · Semanas especiales mandan: test → «bate 3 récords»; descarga o vuelta de
-//     un parón → «ninguna serie por debajo de RIR 3»; vacaciones/viaje →
-//     «mínimo 2 sesiones».
+//   · Semanas especiales mandan: test → «bate 3 récords»; vuelta de un parón →
+//     «ninguna serie por debajo de RIR 3»; vacaciones/viaje → «mínimo 2
+//     sesiones»; descarga y semana puente → «haz tus sesiones». En descarga,
+//     parón y puente no se propone ningún reto de progresar.
 //   · El resto de semanas compiten por score y rotan con la memoria del motor:
 //     doble progresión, supera tu sesión, AMRAP en la última serie, grupo
 //     estancado, mismo peso con más reserva y récord de repeticiones.
+//   · Con hipótesis en el bloque (17-11-2026), dentro de cada reto se elige
+//     antes un ejercicio de las zonas con estrella: el reto de la semana
+//     empuja lo mismo que el bloque quiere mejorar. No cambia qué retos salen
+//     ni su nota; solo sobre qué ejercicio, y el reto lo dice (`conObjetivo`).
 //
 // Devuelve opciones con el mismo contrato que challengeOptions; quien llama
 // les aplica la rotación y el orden final.
@@ -21,6 +26,8 @@ import {
   sesionesPendientes, ultimaVez, ultimasDosVeces, serieTop, superaA, referenciaDe,
   recordDeReps, tablaDeRecords, seguroParaAmrap, esGuiado,
 } from './planDeLaSemana.js';
+import { saltoReal, veredictoDeSerie } from './cargaSugerida.js';
+import { estrellasDe, gruposDeLasZonas } from './hipotesisDeBloque/tiposDeBloque.js';
 
 export const SCORE_RENDIMIENTO = {
   semanaEspecial: 95,
@@ -64,7 +71,10 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
   const tipo = contexto?.tipoSemana;
   const pendientes = sesionesPendientes(plan, today);
   const exById = new Map(input.exercises.map(e => [e.id, e]));
-  const meta = (o: Omit<ChallengeOption, 'contexto'>): ChallengeOption => ({ ...o, ...(contexto ? { contexto } : {}) });
+  // `delObjetivo`: el reto va sobre un ejercicio (o un grupo) de una zona con
+  // estrella. Sin contexto de bloque no hay dónde decirlo.
+  const meta = (o: Omit<ChallengeOption, 'contexto'>, delObjetivo = false): ChallengeOption =>
+    ({ ...o, ...(contexto ? { contexto: delObjetivo ? { ...contexto, conObjetivo: true } : contexto } : {}) });
 
   // Un candidato por ejercicio: la primera sesión pendiente en la que sale.
   const candidatos: Candidato[] = [];
@@ -82,6 +92,14 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
   }
   const claves = new Set((plan.meso?.ejerciciosClave ?? []).map(k => k.split('::').pop() ?? k));
   const esClave = (c: Candidato) => (claves.has(c.ej.exerciseId) ? 0 : 1);
+  // «Es del objetivo» (17-11-2026): el ejercicio trabaja un grupo de una zona
+  // con estrella del bloque (las que tienen hipótesis). Va por delante de
+  // «clave»: las estrellas son la decisión del bloque, y un ejercicio clave de
+  // otra zona puede esperar a la semana siguiente. Sin hipótesis no hay
+  // grupos y todo queda como estaba.
+  const gruposDelObjetivo = new Set<MuscleGroup>(gruposDeLasZonas(estrellasDe(plan.meso)));
+  const vaConElObjetivo = (c: Candidato) => !!c.ej.grupo && gruposDelObjetivo.has(c.ej.grupo);
+  const esDelObjetivo = (c: Candidato) => (vaConElObjetivo(c) ? 0 : 1);
 
   // ── Semanas especiales ──────────────────────────────────────────────────────
   if (tipo === 'test') {
@@ -102,26 +120,45 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
     }
   }
 
-  if (tipo === 'descarga' || tipo === 'paron') {
-    const descarga = tipo === 'descarga';
+  // Descarga (D10, 17-11-2026): se quita VOLUMEN, no intensidad — menos
+  // series, con la misma carga y el mismo RIR. El reto pedía «ninguna serie
+  // por debajo de RIR 3», justo lo contrario: mandaba alejarse del fallo en
+  // una semana en la que el coach no ha tocado el RIR. Ahora el reto es hacer
+  // las sesiones tal y como vienen, igual que en la semana puente.
+  if (tipo === 'descarga') {
+    const n = plan.sesiones.length;
+    if (n > 0) {
+      options.push(meta({
+        kind: 'entrenos_completados',
+        score: SCORE_RENDIMIENTO.semanaEspecial,
+        difficulty: 'justo',
+        title: n === 1 ? 'Semana de descarga: haz tu sesión' : `Semana de descarga: haz tus ${n} sesiones`,
+        description: `Semana de descarga: menos series, con las mismas cargas y el mismo esfuerzo de siempre. El reto es ${n === 1 ? 'hacer tu sesión' : `hacer las ${n} sesiones`} tal y como vienen. Recuperar también es entrenar.`,
+        reason: 'Semana de descarga del bloque — el reto es cumplirla tal y como viene (menos series, misma carga y mismo RIR)',
+        metric: { unit: 'sesiones', target: n, ...(plan.meso ? { mesocycleId: plan.meso.id } : {}) },
+      }));
+    }
+    // En descarga no se pide progresar: ni AMRAP, ni récords, ni dobles.
+    return options;
+  }
+
+  // Vuelta de un parón: aquí sí manda el RIR (la primera semana va a RIR 3 o
+  // más, y el entreno ya llega así pautado).
+  if (tipo === 'paron') {
     options.push(meta({
       kind: 'rir_minimo',
       score: SCORE_RENDIMIENTO.semanaEspecial,
       difficulty: 'justo',
-      title: descarga ? 'Descarga de verdad' : 'Vuelve con cabeza',
-      description: descarga
-        ? 'Semana de descarga: ninguna serie por debajo de RIR 3 y nada al fallo. Recuperar también es entrenar, y la semana que viene lo notarás.'
-        : 'Vuelves de un parón: esta semana ni una serie por debajo de RIR 3 ni al fallo. Primero se readapta el cuerpo; apretar viene después.',
-      reason: descarga
-        ? 'Semana de descarga del bloque — el reto es no convertirla en una semana normal'
-        : 'Primera semana tras un parón (RPE 6-7)',
+      title: 'Vuelve con cabeza',
+      description: 'Vuelves de un parón: esta semana ni una serie por debajo de RIR 3 ni al fallo. Primero se readapta el cuerpo; apretar viene después.',
+      reason: 'Primera semana tras un parón (RPE 6-7)',
       metric: {
         unit: '%', target: 100, minRir: 3,
         sesiones: plan.sesiones.length,
         ...(plan.meso ? { mesocycleId: plan.meso.id } : {}),
       },
     }));
-    // En estas semanas no se pide progresar: ni AMRAP, ni récords, ni dobles.
+    // En esta semana no se pide progresar: ni AMRAP, ni récords, ni dobles.
     return options;
   }
 
@@ -141,27 +178,68 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
     return options;
   }
 
+  // Semana puente (F7c, 17-11-2026): menos series para llegar fresco al tramo
+  // siguiente. Hasta ahora el motor no la conocía y seguía pidiendo AMRAP,
+  // récords y subidas de carga en la semana pensada para bajar la fatiga. El
+  // reto es hacer las sesiones; como en descarga, nada de progresar. Va con
+  // la nota de semana especial para que quede por delante de los retos de
+  // carga «a la antigua» de challengeOptions, que no saben qué semana es.
+  if (plan.semanaPuente) {
+    const n = plan.sesiones.length;
+    if (n > 0) {
+      options.push(meta({
+        kind: 'entrenos_completados',
+        score: SCORE_RENDIMIENTO.semanaEspecial,
+        difficulty: 'justo',
+        title: n === 1 ? 'Semana puente: haz tu sesión' : `Semana puente: haz tus ${n} sesiones`,
+        description: `Semana puente: menos series para llegar fresco al tramo siguiente. El reto es ${n === 1 ? 'hacer tu sesión' : `hacer las ${n} sesiones`} tal y como vienen, sin buscar marcas.`,
+        reason: 'Semana puente del bloque — el reto es cumplirla, no progresar',
+        metric: { unit: 'sesiones', target: n, ...(plan.meso ? { mesocycleId: plan.meso.id } : {}) },
+      }));
+    }
+    return options;
+  }
+
   if (candidatos.length === 0) return options;
 
   // ── Doble progresión ────────────────────────────────────────────────────────
   {
+    // «Toca subir» lo decide la MISMA función que la tarjeta de la sesión
+    // (`veredictoDeSerie`, F7c 17-11-2026): tope del rango a RIR pautado y con
+    // el salto real de carga del ejercicio. Antes aquí bastaba con las
+    // repeticiones, y el reto decía «sube» el mismo día que la tarjeta dejaba
+    // el peso de siempre.
     const conRango = candidatos
       .filter(c => c.ej.rango && c.ej.rango[1] > c.ej.rango[0])
-      .map(c => ({ c, falta: c.ej.rango![1] - c.top.reps }))
-      .filter(x => x.falta <= 2)
-      .sort((a, b) => esClave(a.c) - esClave(b.c) || a.falta - b.falta);
+      .map(c => ({
+        c,
+        falta: c.ej.rango![1] - c.top.reps,
+        veredicto: veredictoDeSerie(
+          { weight: c.top.weight, repsDone: c.top.reps, rir: c.top.rir, alFallo: c.top.alFallo, rirApuntado: c.top.rirApuntado },
+          { reps: c.ej.prescripcion.reps, rir: c.ej.prescripcion.rir },
+          saltoReal(workoutLogs, c.ej.exerciseId),
+        ),
+      }))
+      // En el tope pero sin margen (más justo de lo pautado, o al fallo): ni
+      // toca subir ni quedan repeticiones que buscar. Eso es de «mismo peso,
+      // más reserva», no de doble progresión.
+      .filter(x => x.veredicto != null || (x.falta > 0 && x.falta <= 2))
+      .sort((a, b) => esDelObjetivo(a.c) - esDelObjetivo(b.c) || esClave(a.c) - esClave(b.c) || a.falta - b.falta);
     const elegido = conRango[0];
     if (elegido) {
-      const { c } = elegido;
+      const { c, veredicto } = elegido;
       const [lo, hi] = c.ej.rango!;
       const tuning = difficultyFor('doble_progresion', memory);
-      if (c.top.reps >= hi) {
+      // Con el RIR apuntado puede tocar subir sin haber hecho el tope (9 a RIR 3
+      // con RIR 1 pautado son 11): ahí «ya en el tope» no sería verdad.
+      const enElTope = c.top.reps >= hi ? 'ya en el tope' : 'y te sobraban repeticiones para el tope';
+      if (veredicto?.que === 'subir') {
         options.push(meta({
           kind: 'doble_progresion',
           score: SCORE_RENDIMIENTO.dobleProgresion,
           difficulty: tuning.label,
           title: `${c.ej.nombre}: toca subir de ${fmtKg(c.top.weight)}`,
-          description: `Rango ${lo}-${hi}. La última vez: ${fmtKg(c.top.weight)} × ${c.top.reps}, ya en el tope. Esta semana sube al siguiente peso y saca al menos ${lo} repeticiones. Así se progresa.`,
+          description: `Rango ${lo}-${hi}. La última vez: ${fmtKg(c.top.weight)} × ${c.top.reps}, ${enElTope}. Esta semana sube al siguiente peso y saca al menos ${lo} repeticiones. Así se progresa.`,
           reason: `Doble progresión: llegó al tope del rango en ${c.ej.nombre} (${c.sesion.nombre})`,
           metric: {
             unit: 'reps', target: lo, baseline: c.top.reps, subirDe: c.top.weight,
@@ -169,23 +247,31 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
             workoutId: c.sesion.workoutId, workoutName: c.sesion.nombre,
             assignmentId: c.sesion.assignmentId, sessionDate: c.sesion.date,
           },
-        }));
+        }, vaConElObjetivo(c)));
       } else {
-        const target = tuning.factor < 1 ? Math.min(hi, c.top.reps + 1) : hi;
+        // Con un salto de carga grande, llegar al tope no basta: antes de subir
+        // hay que abrir el rango (las mismas repeticiones que pide la tarjeta).
+        const espera = veredicto?.que === 'esperar' ? veredicto : null;
+        const objetivo = espera ? espera.reps : hi;
+        const target = tuning.factor < 1 ? Math.min(objetivo, c.top.reps + 1) : objetivo;
         options.push(meta({
           kind: 'doble_progresion',
           score: SCORE_RENDIMIENTO.dobleProgresion,
           difficulty: tuning.label,
           title: `${c.ej.nombre}: ${target} con ${fmtKg(c.top.weight)}`,
-          description: `Rango ${lo}-${hi}. La última vez: ${fmtKg(c.top.weight)} × ${c.top.reps}. Saca ${target} repeticiones con ${fmtKg(c.top.weight)}${target === hi ? ' y la próxima vez toca subir peso' : ''}. ${cierre}`,
-          reason: `Doble progresión: a ${hi - c.top.reps} repeticiones del tope del rango en ${c.ej.nombre}`,
+          description: espera
+            ? `Rango ${lo}-${hi}. La última vez: ${fmtKg(c.top.weight)} × ${c.top.reps}, ${enElTope}, pero el siguiente peso son ${fmtKg(espera.paso)} más de golpe. Antes de subir, saca ${target} repeticiones con ${fmtKg(c.top.weight)}. ${cierre}`
+            : `Rango ${lo}-${hi}. La última vez: ${fmtKg(c.top.weight)} × ${c.top.reps}. Saca ${target} repeticiones con ${fmtKg(c.top.weight)}${target === hi ? ' y la próxima vez toca subir peso' : ''}. ${cierre}`,
+          reason: espera
+            ? `Doble progresión: en el tope del rango en ${c.ej.nombre}, pero el salto de carga es grande — abrir el rango antes de subir`
+            : `Doble progresión: a ${hi - c.top.reps} repeticiones del tope del rango en ${c.ej.nombre}`,
           metric: {
             unit: 'reps', target, baseline: c.top.reps, atWeight: c.top.weight,
             exerciseId: c.ej.exerciseId, exerciseName: c.ej.nombre,
             workoutId: c.sesion.workoutId, workoutName: c.sesion.nombre,
             assignmentId: c.sesion.assignmentId, sessionDate: c.sesion.date,
           },
-        }));
+        }, vaConElObjetivo(c)));
       }
     }
   }
@@ -228,10 +314,13 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
       .filter(c => !c.ej.prescripcion.technique && seguroParaAmrap(exById.get(c.ej.exerciseId)))
       // Primero lo guiado (máquina, polea): ahí la última repetición no se paga.
       .sort((a, b) => Number(!esGuiado(exById.get(a.ej.exerciseId))) - Number(!esGuiado(exById.get(b.ej.exerciseId)))
-        || esClave(a) - esClave(b) || a.sesion.date.localeCompare(b.sesion.date));
+        || esDelObjetivo(a) - esDelObjetivo(b) || esClave(a) - esClave(b) || a.sesion.date.localeCompare(b.sesion.date));
     if (aptos.length > 0) {
       // Rota entre los aptos semana a semana: «de vez en cuando», no siempre el mismo.
-      const c = pickVariant(aptos.slice(0, 4), seed);
+      // Con ejercicios del objetivo entre ellos, la rotación es solo entre esos:
+      // si no, con cuatro aptos por delante el de la estrella podía no salir nunca.
+      const delObjetivo = aptos.filter(vaConElObjetivo);
+      const c = pickVariant((delObjetivo.length > 0 ? delObjetivo : aptos).slice(0, 4), seed);
       const peso = c.series[c.series.length - 1].weight;
       const record = recordDeReps(workoutLogs, c.ej.exerciseId, peso, today);
       const tuning = difficultyFor('amrap_serie', memory);
@@ -249,7 +338,7 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
           workoutId: c.sesion.workoutId, workoutName: c.sesion.nombre,
           assignmentId: c.sesion.assignmentId, sessionDate: c.sesion.date,
         },
-      }));
+      }, vaConElObjetivo(c)));
     }
   }
 
@@ -288,7 +377,9 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
           muscleGroup: grupo as MuscleGroup, muscleLabel: label,
           referencias: refs,
         },
-      }));
+        // Qué grupo sale lo sigue decidiendo cuántos ejercicios lleva parados;
+        // si además es de una zona con estrella, el reto lo dice.
+      }, gruposDelObjetivo.has(grupo as MuscleGroup)));
     }
   }
 
@@ -297,7 +388,7 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
     const alFallo = candidatos
       .map(c => ({ c, s: [...c.series].filter(s => s.rir === 0).sort((a, b) => b.weight - a.weight)[0] }))
       .filter((x): x is { c: Candidato; s: Marca } => !!x.s && x.s.reps >= 3)
-      .sort((a, b) => esClave(a.c) - esClave(b.c));
+      .sort((a, b) => esDelObjetivo(a.c) - esDelObjetivo(b.c) || esClave(a.c) - esClave(b.c));
     const elegido = alFallo[0];
     if (elegido) {
       const { c, s } = elegido;
@@ -314,7 +405,7 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
           workoutId: c.sesion.workoutId, workoutName: c.sesion.nombre,
           assignmentId: c.sesion.assignmentId, sessionDate: c.sesion.date,
         },
-      }));
+      }, vaConElObjetivo(c)));
     }
   }
 
@@ -323,7 +414,7 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
     const conTabla = candidatos
       .map(c => ({ c, tabla: tablaDeRecords(workoutLogs, c.ej.exerciseId, today) }))
       .filter(x => x.tabla.length >= 2)
-      .sort((a, b) => esClave(a.c) - esClave(b.c) || b.tabla.length - a.tabla.length);
+      .sort((a, b) => esDelObjetivo(a.c) - esDelObjetivo(b.c) || esClave(a.c) - esClave(b.c) || b.tabla.length - a.tabla.length);
     const elegido = conTabla[0];
     if (elegido) {
       const { c, tabla } = elegido;
@@ -341,7 +432,7 @@ export function opcionesDeRendimiento(input: EntradaRendimiento): ChallengeOptio
           workoutId: c.sesion.workoutId, workoutName: c.sesion.nombre,
           assignmentId: c.sesion.assignmentId, sessionDate: c.sesion.date,
         },
-      }));
+      }, vaConElObjetivo(c)));
     }
   }
 

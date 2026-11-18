@@ -1,12 +1,12 @@
-import { QuestionnaireAssignment, QuestionnaireResponse } from '../types.js';
-import { isoLocal } from './trainingWeek.js';
+import { QuestionnaireAssignment, QuestionnaireResponse, ExcepcionDeFecha } from '../types.js';
+import { isoLocal, addDays } from './trainingWeek.js';
 import {
   todayStr, isDueToday, isUpcoming, ScheduleContext,
-  startOfDay, planWeekDueDate, mesocycleEndDate,
+  startOfDay, planWeekDueDate, mesocycleEndDate, fechasDeBloque,
 } from './scheduleEngine.js';
 import {
   DIA_REVISION_POR_DEFECTO, diasDelCiclo, aperturaDelCiclo, caducidadDelCiclo, aperturaDesde,
-  enPausa, fechasSemanaDelBloque,
+  enPausa,
 } from './cicloRevision.js';
 
 // Shared "is this recurring questionnaire due, and has the athlete already answered
@@ -36,7 +36,7 @@ export function martesDeCaducidad(apertura: string): string {
   return caducidadDelCiclo(apertura);
 }
 
-type ConCalendario = Pick<QuestionnaireAssignment, 'schedule' | 'startDate'>;
+type ConCalendario = Pick<QuestionnaireAssignment, 'schedule' | 'startDate'> & Partial<Pick<QuestionnaireAssignment, 'questionnaireId'>>;
 
 function fijarAlDiaCon<T extends ConCalendario>(a: T, apertura: number, anclar: (iso: string) => string): T {
   const s = a.schedule;
@@ -70,7 +70,7 @@ function conDiaDelAtleta(a: QuestionnaireAssignment, ctx?: ScheduleContext): Que
 }
 
 /** Último día programado (hoy incluido) de un 'weekdays' o 'interval'. */
-function ultimoPulso(a: QuestionnaireAssignment, today: string): Date | null {
+function ultimoPulso(a: ConCalendario, today: string): Date | null {
   const s = a.schedule;
   const now = startOfDay(today);
   if (s.type === 'weekdays') {
@@ -97,8 +97,8 @@ function ultimoPulso(a: QuestionnaireAssignment, today: string): Date | null {
 }
 
 /** Fecha en que tocó el último 'mesocycle_week' (hoy incluido), o null. */
-function ultimaSemanaDelBloque(a: QuestionnaireAssignment, ctx: ScheduleContext | undefined, today: string): string | null {
-  const pasadas = fechasSemanaDelBloque(a.schedule, ctx?.mesocycles ?? [], ctx?.diaRevision).filter(f => f <= today);
+function ultimaSemanaDelBloque(a: ConCalendario, ctx: ScheduleContext | undefined, today: string): string | null {
+  const pasadas = fechasDeBloque(a, ctx).filter(f => f <= today);
   return pasadas.length > 0 ? pasadas[pasadas.length - 1] : null;
 }
 
@@ -108,6 +108,26 @@ export function hasAnsweredThisOccurrence(
   ctx?: ScheduleContext,
 ): boolean {
   if (!original.schedule) return false;
+  const ocasiones = ocasionesConExcepciones(original, ctx);
+  if (ocasiones) {
+    // La ocasión que se contesta es la más reciente de las abiertas (o, si no
+    // hay ninguna abierta, la más reciente): una respuesta a un «Mandar ahora»
+    // no cierra la revisión normal que se abre después.
+    const abiertas = ocasiones.filter(o => o.abierta);
+    const actual = (abiertas.length > 0 ? abiertas : ocasiones).sort((x, y) => y.desde.localeCompare(x.desde))[0];
+    if (!actual) return false;
+    const hoy = todayStr();
+    return responses.some(r => r.assignmentId === original.id
+      && r.submittedAt.slice(0, 10) >= actual.desde && r.submittedAt.slice(0, 10) <= hoy);
+  }
+  return contestadaSegunCadencia(original, responses, ctx);
+}
+
+function contestadaSegunCadencia(
+  original: QuestionnaireAssignment,
+  responses: QuestionnaireResponse[],
+  ctx?: ScheduleContext,
+): boolean {
   const a = conDiaDelAtleta(original, ctx);
   const mine = responses.filter(r => r.assignmentId === a.id);
   if (mine.length === 0) return false;
@@ -168,6 +188,12 @@ export function hasAnsweredThisOccurrence(
 // equivale a isDueToday. Dentro de una pausa no se pide nada.
 export function isOverdue(original: QuestionnaireAssignment, ctx?: ScheduleContext): boolean {
   if (!original.schedule) return false;
+  const ocasiones = ocasionesConExcepciones(original, ctx);
+  if (ocasiones) return ocasiones.some(o => o.abierta);
+  return pendienteSegunCadencia(original, ctx);
+}
+
+function pendienteSegunCadencia(original: QuestionnaireAssignment, ctx?: ScheduleContext): boolean {
   const a = conDiaDelAtleta(original, ctx);
   const { type } = a.schedule;
   if (type === 'once') return isDueToday(a, ctx);
@@ -208,4 +234,144 @@ export function isOverdue(original: QuestionnaireAssignment, ctx?: ScheduleConte
   // mesocycle_end
   const offset = a.schedule.mesocycleOffsetDays ?? 0;
   return (ctx?.mesocycles ?? []).some(m => mesocycleEndDate(m, offset).getTime() <= today.getTime());
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Excepciones: fechas movidas y «Mandar ahora» (18-11-2026)
+
+   Cada ocasión de un cuestionario tiene una CLAVE (la fecha que da la cadencia
+   y que el coach ve como «Próxima») y un día en que se ABRE. Casi siempre son
+   la misma; en 'plan_week' la clave es el día del hito y se abre el día de
+   apertura de su ciclo de revisión.
+
+   Con excepciones, «pendiente» y «ya contestado» se calculan sobre la lista de
+   ocasiones que ya han empezado: la de la cadencia (si no se ha movido) y las
+   de las excepciones. Pendiente = alguna sigue abierta. Contestado = hay una
+   respuesta desde que empezó la más reciente de las abiertas.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export interface OcasionDeCadencia {
+  /** La fecha que da la cadencia (la que se guarda en `ExcepcionDeFecha.ocurrencia`). */
+  clave: string;
+  /** Día en que se abre. */
+  desde: string;
+}
+
+/** Días que dura abierta una extra («Mandar ahora»). */
+export const DIAS_DE_UNA_EXTRA = 7;
+
+/** La última ocasión de la cadencia que ya ha empezado (hoy incluido), sin
+ *  mirar las excepciones. `a` ya va con el día del atleta. */
+export function ultimaOcasionDeCadencia(
+  a: ConCalendario, ctx: ScheduleContext | undefined, hoy: string, alta = a.startDate,
+): OcasionDeCadencia | null {
+  const s = a.schedule;
+  if (!s || hoy < alta) return null;
+  const una = (f: string | null) => (f && f >= alta && f <= hoy ? { clave: f, desde: f } : null);
+  switch (s.type) {
+    case 'once': return una(a.startDate);
+    case 'weekdays':
+    case 'interval': {
+      const pulso = ultimoPulso(a, hoy);
+      return una(pulso ? isoLocal(pulso) : null);
+    }
+    case 'monthly': {
+      const dia = s.dayOfMonth ?? 1;
+      const h = startOfDay(hoy);
+      for (let atras = 0; atras < 2; atras++) {
+        const ultimoDelMes = new Date(h.getFullYear(), h.getMonth() - atras + 1, 0).getDate();
+        const f = isoLocal(new Date(h.getFullYear(), h.getMonth() - atras, Math.min(dia, ultimoDelMes)));
+        if (f <= hoy) return una(f);
+      }
+      return null;
+    }
+    case 'plan_week': {
+      const due = isoLocal(planWeekDueDate(s, startOfDay(a.startDate)));
+      const apertura = aperturaDelCiclo(due, ctx?.diaRevision);
+      const desde = apertura < alta ? alta : apertura;
+      return desde <= hoy ? { clave: due, desde } : null;
+    }
+    case 'mesocycle_week': return una(ultimaSemanaDelBloque(a, ctx, hoy));
+    case 'mesocycle_end': {
+      const offset = s.mesocycleOffsetDays ?? 0;
+      const pasadas = (ctx?.mesocycles ?? []).map(m => isoLocal(mesocycleEndDate(m, offset))).filter(f => f <= hoy).sort();
+      return pasadas.length > 0 ? { clave: pasadas[pasadas.length - 1], desde: pasadas[pasadas.length - 1] } : null;
+    }
+    default: return null;
+  }
+}
+
+/**
+ * Día (exclusive) en que deja de estar pendiente la ocasión de una excepción,
+ * o null si sigue hasta que la conteste. Una extra dura 7 días. Una movida dura
+ * lo mismo que habría durado en su fecha: la semanal, hasta el día de
+ * caducidad del atleta; la de semana del bloque, 7 días; la mensual, hasta fin
+ * de mes; la de una vez, ese día; un hito o un fin de bloque, hasta contestar.
+ */
+export function finDeLaExcepcion(
+  e: ExcepcionDeFecha, a: Pick<QuestionnaireAssignment, 'schedule'>, ctx?: ScheduleContext,
+): string | null {
+  if (!e.ocurrencia) return addDays(e.nuevaFecha, DIAS_DE_UNA_EXTRA);
+  switch (a.schedule?.type) {
+    case 'once': return addDays(e.nuevaFecha, 1);
+    case 'weekdays':
+    case 'interval': {
+      const caducidad = diasDelCiclo(ctx?.diaRevision).caducidad;
+      const dia = startOfDay(e.ocurrencia).getDay();
+      return addDays(e.nuevaFecha, ((caducidad - dia + 7) % 7) || 7);
+    }
+    case 'mesocycle_week': return addDays(e.nuevaFecha, 7);
+    case 'monthly': {
+      const d = startOfDay(e.nuevaFecha);
+      return isoLocal(new Date(d.getFullYear(), d.getMonth() + 1, 1));
+    }
+    default: return null;
+  }
+}
+
+interface Ocasion { desde: string; abierta: boolean }
+
+/** Las ocasiones ya empezadas, contando las excepciones; null si no tiene. */
+function ocasionesConExcepciones(original: QuestionnaireAssignment, ctx?: ScheduleContext): Ocasion[] | null {
+  const excepciones = original.excepciones ?? [];
+  if (excepciones.length === 0) return null;
+  const hoy = todayStr();
+  const a = conDiaDelAtleta(original, ctx);
+  const movidas = new Set(excepciones.map(e => e.ocurrencia).filter(Boolean));
+  const ocasiones: Ocasion[] = [];
+  const normal = ultimaOcasionDeCadencia(a, ctx, hoy, original.startDate);
+  if (normal && !movidas.has(normal.clave)) {
+    ocasiones.push({ desde: normal.desde, abierta: pendienteSegunCadencia(original, ctx) });
+  }
+  for (const e of excepciones) {
+    if (e.nuevaFecha > hoy) continue;
+    const fin = finDeLaExcepcion(e, a, ctx);
+    ocasiones.push({ desde: e.nuevaFecha, abierta: fin == null || hoy < fin });
+  }
+  return ocasiones;
+}
+
+/* ── ¿Se le abre hoy? (18-11-2026) ───────────────────────────────────────────
+   Para avisar al atleta de que tiene un cuestionario nuevo: una ocasión que
+   empieza HOY, sea una extra («Mandar ahora»), una fecha movida a hoy o la de
+   la cadencia (si no se ha movido). */
+
+/** Las cadencias que se repiten más de una vez por semana: avisar cada vez
+ *  sería ruido. Sus excepciones sí avisan. */
+function repiteVariasVecesPorSemana(a: Pick<QuestionnaireAssignment, 'schedule'>): boolean {
+  const s = a.schedule;
+  if (s?.type === 'weekdays') return (s.weekdays ?? []).length > 1;
+  if (s?.type === 'interval') return (s.intervalDays ?? 7) < 7;
+  return false;
+}
+
+export function seAbreHoy(original: QuestionnaireAssignment, ctx: ScheduleContext | undefined, hoy: string = todayStr()): boolean {
+  if (!original.schedule) return false;
+  const excepciones = original.excepciones ?? [];
+  if (excepciones.some(e => e.nuevaFecha === hoy)) return true;
+  if (repiteVariasVecesPorSemana(original)) return false;
+  const normal = ultimaOcasionDeCadencia(conDiaDelAtleta(original, ctx), ctx, hoy, original.startDate);
+  if (!normal || normal.desde !== hoy) return false;
+  if (enPausa(normal.desde, ctx?.pausa)) return false;
+  return !excepciones.some(e => e.ocurrencia === normal.clave);
 }

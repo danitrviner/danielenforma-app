@@ -8,7 +8,10 @@ import {
 } from 'recharts';
 import { WorkoutLog, Exercise } from '../types';
 import { getMesocycles } from '../dbService';
-import { rmDeSerie } from '../utils/oneRepMax';
+import { rmValidoDeSerie } from '../utils/marcaDeSesion';
+import { esSesionFuera, kgDeSerie } from '../utils/sesionFuera';
+import EtiquetaFuera from './training/EtiquetaFuera';
+import { REPS_MAX_RM, REPS_MIN_RM, RIR_MAX_RM } from '../utils/rmValido';
 import { addDays } from '../utils/trainingWeek';
 import { ewmaDeSeriePorSesion } from '../utils/loadTrend';
 import { formatearDuracion } from '../utils/duracionSesion';
@@ -83,6 +86,9 @@ interface SessionRow {
    *  trae (sesión antigua, de antes del cronómetro general) — se omite en
    *  vez de pintar un "0:00" que no es un dato real. */
   duracionSeg: number | null;
+  /** Alguna sesión de esta fecha se hizo fuera de su gimnasio: sus kilos no
+   *  suman tonelaje ni dan 1RM (utils/sesionFuera.ts). */
+  fuera?: boolean;
 }
 
 interface ChartPoint extends SessionRow {
@@ -175,7 +181,11 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
     setExcludedBuckets(new Set());
   }, [activeExId, mesocycleFilter, granularity]);
 
-  // Per-date session aggregation (with best CDG 1RM for activeExId)
+  // Per-date session aggregation (with best CDG 1RM for activeExId).
+  // El 1RM de la sesión es su MARCA: el de la mejor serie válida para estimarlo
+  // (3-15 repeticiones, RIR 2 o menos, RIR apuntado, sin bajadas; D2,
+  // 17-11-2026, y el tope de 15 —antes 12— de la auditoría de cifras). Una sesión sin series válidas se queda sin 1RM («—»), no con
+  // el de una serie de 20 a RIR 4: récords, curva y progresión salen de aquí.
   const sessionRows = useMemo<SessionRow[]>(() => {
     const byDate = new Map<string, SessionRow>();
     for (const log of logs) {
@@ -185,14 +195,16 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
         byDate.set(log.date, row);
       }
       if (log.duracionSeg != null) row.duracionSeg = (row.duracionSeg ?? 0) + log.duracionSeg;
+      if (esSesionFuera(log)) row.fuera = true;
       for (const entry of log.entries) {
         for (const s of entry.sets) {
           row.sets++;
           row.reps    += Number(s.repsDone);
-          row.tonnage  = Math.round((row.tonnage + Number(s.weight) * Number(s.repsDone)) * 10) / 10;
+          // Una serie fuera de su gimnasio no suma kilos (utils/sesionFuera.ts).
+          row.tonnage  = Math.round((row.tonnage + kgDeSerie(s)) * 10) / 10;
           if (entry.exerciseId === activeExId) {
-            const v = rmDeSerie(s);
-            if (v > (row.orm ?? 0)) row.orm = v;
+            const v = rmValidoDeSerie(s);
+            if (v != null && v > (row.orm ?? 0)) row.orm = v;
           }
         }
       }
@@ -212,8 +224,9 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
       for (const entry of log.entries) {
         if (entry.exerciseId !== activeExId) continue;
         for (const s of entry.sets) {
-          const v = rmDeSerie(s);
-          if (v > (byDate.get(log.date) ?? 0)) byDate.set(log.date, v);
+          // Misma marca que en la tabla: solo series válidas para el RM.
+          const v = rmValidoDeSerie(s);
+          if (v != null && v > (byDate.get(log.date) ?? 0)) byDate.set(log.date, v);
         }
       }
     }
@@ -450,6 +463,14 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           </select>
         </div>
       )}
+      {/* Con qué series se calcula: sin esto, una sesión a 20 repeticiones o a
+          RIR 4 aparece con «—» y parece un fallo. */}
+      {ormActive && loggedExercises.length > 0 && (
+        <p className="font-sans text-caption text-ink-3">
+          El 1RM de cada sesión sale de su mejor serie de {REPS_MIN_RM} a {REPS_MAX_RM} repeticiones con RIR {RIR_MAX_RM} o menos
+          (apuntado por el atleta, sin bajadas ni miniseries). Una sesión sin ninguna serie así no tiene 1RM.
+        </p>
+      )}
 
       {/* ── Progresión semanal/diaria (qué tramos cuentan para el cálculo) ── */}
       {ormActive && progressBuckets.length > 0 && (
@@ -631,7 +652,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
         <div className="flex flex-col gap-2 sm:hidden">
           {[...sessionRows].reverse().map(row => (
             <div key={row.date} className="bg-bg border border-hairline rounded-surface px-3 py-3 flex items-center justify-between gap-2">
-              <span className="font-sans text-caption text-ink-2 flex-shrink-0">{row.label}</span>
+              <span className="font-sans text-caption text-ink-2 flex-shrink-0">{row.label}{row.fuera && <EtiquetaFuera />}</span>
               <div className="flex items-center gap-3 flex-shrink-0 font-mono text-caption">
                 {row.duracionSeg != null && (
                   <span className="text-ink-2">{formatearDuracion(row.duracionSeg)}</span>
@@ -665,7 +686,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   key={row.date}
                   className={`border-b border-hairline ${i % 2 === 0 ? 'bg-bg' : 'bg-bg'} hover:bg-raised transition-colors`}
                 >
-                  <td className="px-3 py-3 font-sans text-caption text-ink-2">{row.label}</td>
+                  <td className="px-3 py-3 font-sans text-caption text-ink-2">{row.label}{row.fuera && <EtiquetaFuera />}</td>
                   {hayDuracion && (
                     <td className="px-3 py-3 font-mono text-caption text-ink-2">
                       {row.duracionSeg != null ? formatearDuracion(row.duracionSeg) : '—'}

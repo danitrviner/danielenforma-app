@@ -9,10 +9,18 @@ import { expandSetGroups } from '../../utils/setGroups';
 import { generateWarmup } from '../../utils/warmup/WarmupGenerator';
 import { parseTargetReps } from '../../utils/warmup/WarmupEngine';
 import ExerciseVideoPlayer from '../ExerciseVideoPlayer';
-import { SetInput, RIR_OPCIONES, rirTexto, rirClaseColor, resumenRangosPautados } from './setInput';
+import {
+  SetInput, RIR_OPCIONES, rirTexto, rirClaseColor, resumenRangosPautados, tieneReps, AVISO_SIN_REPS,
+  apuntarRir, resumenRirPautado,
+} from './setInput';
+import { rirPautadoPorSerie } from '../../utils/setPrefill';
 import RestRing from './RestRing';
 import { MOTIVOS_SALTAR, conMotivo, motivoDeLaNota } from '../../utils/saltarEjercicio';
 import { sugerirCarga, consejoEnVivo } from '../../utils/cargaSugerida';
+import { consejoDeDiaMalo } from '../../utils/diaMalo';
+import type { TipoDeSemana } from '../../utils/tipoDeSemana';
+import MarcaDeReferencia from './MarcaDeReferencia';
+import PistaDePesoFuera from './PistaDePesoFuera';
 
 interface Props {
   we: WorkoutExercise;
@@ -42,6 +50,19 @@ interface Props {
   /** Solo con las series principales hechas y la técnica a medias: da el
    *  ejercicio por terminado (ver `estadoDelEjercicio`). */
   onCerrarEjercicio?: () => void;
+  /** D3: el atleta ha marcado que hoy cambia la máquina o el recorrido. */
+  nuevaReferencia?: boolean;
+  /** Ausente = no se ofrece la casilla (p. ej. en pantallas de solo lectura). */
+  onToggleReferencia?: (marcada: boolean) => void;
+  /** P12: salto real de carga del ejercicio, sacado de su historial. */
+  saltoKg?: number | null;
+  /** F6: el atleta no ha hecho nunca este ejercicio. */
+  esNuevo?: boolean;
+  /** F7a: semana de descarga, puente o vuelta de parón. En ellas no se sugiere subir carga. */
+  tipoSemana?: TipoDeSemana | null;
+  /** Sesión fuera de su gimnasio (utils/sesionFuera.ts): el peso llega vacío
+   *  con una pista, sin lo de la última vez, sin subidas ni «día malo». */
+  fuera?: boolean;
   /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip.tsx). */
   key?: React.Key;
 }
@@ -64,11 +85,18 @@ export default React.memo(function ExerciseCard({
   onUpdateSet, onMarkDone, onAddRow, noteValue, onNoteChange,
   restTimer, onSkipRest, onAddRestSeconds,
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, cambios,
-  onCerrarEjercicio,
+  onCerrarEjercicio, nuevaReferencia = false, onToggleReferencia, saltoKg, esNuevo = false, tipoSemana,
+  fuera = false,
 }: Props) {
-  const idNota = React.useId();
-  const motivoMarcado = motivoDeLaNota(noteValue);
   const expanded = expandSetGroups(we);
+  // Fuera de su gimnasio los kilos de la última vez son de otras máquinas: no
+  // se usan ni de pista ni para comparar. La nota de la última vez y lo que le
+  // contestó el coach sí se enseñan (van con `prevEntry`).
+  const previa = fuera ? undefined : prevEntry;
+  // El RIR que ha pautado el coach en cada serie: el objetivo. Lo que apunte
+  // el atleta no lo cambia.
+  const pautados = React.useMemo(() => rirPautadoPorSerie(we), [we]);
+  const rirPautado = resumenRirPautado(pautados);
   // Las bajadas y miniseries no son series: no cuentan en «2/3».
   const totalSets = exSets.filter(s => !s.segmento).length;
   const doneSets = exSets.filter(s => !s.segmento && s.done).length;
@@ -78,11 +106,25 @@ export default React.memo(function ExerciseCard({
     manualSets: we.manualWarmupSets,
     targetWeight: set1Weight,
     targetReps: parseTargetReps(expanded[0]?.reps ?? we.reps),
-    previousSets: prevEntry?.sets,
+    previousSets: previa?.sets,
   });
 
-  const sugerencia = React.useMemo(() => sugerirCarga(we, prevEntry), [we, prevEntry]);
-  const consejo = React.useMemo(() => consejoEnVivo(we, exSets), [we, exSets]);
+  const sugerencia = React.useMemo(() => sugerirCarga(we, previa, saltoKg, tipoSemana, fuera), [we, previa, saltoKg, tipoSemana, fuera]);
+  const consejo = React.useMemo(() => consejoEnVivo(we, exSets, saltoKg, tipoSemana, fuera), [we, exSets, saltoKg, tipoSemana, fuera]);
+  // F23: una fila sin repeticiones no se marca; se avisa junto a ella.
+  const { sinReps, marcar } = useMarcarSerie(exSets, onMarkDone);
+  // F1: la primera serie ha salido claramente peor que la última vez. Con
+  // referencia nueva no se compara (es otra tarea).
+  const diaMalo = React.useMemo(
+    () => (nuevaReferencia || !previa ? null : consejoDeDiaMalo(exSets, previa)),
+    [exSets, previa, nuevaReferencia],
+  );
+  // El botón se ofrece mientras alguna serie pendiente esté sin peso (se
+  // rellenaría con el de siempre) o con más del propuesto.
+  const diaMaloPorAplicar = diaMalo?.seriesPendientes.some(i => {
+    const kg = parseFloat(exSets[i]?.weight);
+    return !(kg > 0) || kg > diaMalo.peso;
+  }) ?? false;
   const esDropset = we.technique === 'dropset';
   const esMyoreps = we.technique === 'myoreps';
   const esRestpause = we.technique === 'restpause';
@@ -104,14 +146,14 @@ export default React.memo(function ExerciseCard({
   const serieSiguiente = siguiente + 1;
   const segmentosSiguiente = siguiente >= 0 && seriesTecnica.includes(serieSiguiente) ? segmentosDe(serieSiguiente) : [];
   const principalSiguiente = siguiente >= 0 ? exSets[siguiente] : undefined;
-  const puedeCompletar = !!principalSiguiente && !!principalSiguiente.weight && !!principalSiguiente.repsDone;
+  const puedeCompletar = !!principalSiguiente && !!principalSiguiente.weight && tieneReps(principalSiguiente);
   const completarConTecnica = () => {
     if (!principalSiguiente || !puedeCompletar) return;
     onMarkDone(siguiente, true);
     const peso = parseFloat(principalSiguiente.weight) || 0;
     segmentosSiguiente.forEach((idx, k) => {
       const seg = exSets[idx];
-      if (seg.done || !seg.repsDone) return;
+      if (seg.done || !tieneReps(seg)) return;
       if (!seg.weight) {
         const sugerido = esDropset ? pesoDeBajada(peso, pctBajada, k) : peso || null;
         if (sugerido != null) onUpdateSet(idx, 'weight', String(sugerido));
@@ -176,6 +218,12 @@ export default React.memo(function ExerciseCard({
             {!esDropset && !esMyoreps && resumenRangosPautados(expanded) && (
               <span title="Repeticiones pautadas por tu entrenador" className="text-caption font-mono px-2 rounded-control bg-hairline text-ink-3 whitespace-nowrap">
                 {resumenRangosPautados(expanded)}
+              </span>
+            )}
+            {/* El RIR del coach, a la vista aunque el atleta apunte otro en la fila. */}
+            {rirPautado && (
+              <span title="RIR pautado por tu entrenador" className="text-caption font-mono px-2 rounded-control bg-hairline text-ink-3 whitespace-nowrap">
+                {rirPautado}
               </span>
             )}
             {warmup.readiness && (
@@ -261,7 +309,13 @@ export default React.memo(function ExerciseCard({
           </div>
         </div>
       )}
-      {sugerencia.resumen && doneSets === 0 && (
+      {/* F6 + P5: ejercicio que estrena. Semana de entrada, sin tocar lo pautado. */}
+      {esNuevo && doneSets === 0 && <ConsejoDelCoach texto={TEXTO_EJERCICIO_NUEVO} />}
+      {/* Fuera de su gimnasio: el peso llega vacío y esto dice cómo elegirlo. */}
+      {fuera && doneSets < totalSets && <PistaDePesoFuera reps={expanded[0]?.reps ?? we.reps} rir={pautados[0]} />}
+      {/* Con «otra máquina o recorrido» marcado, la subida de peso
+          que sale de la sesión anterior ya no aplica: era otra tarea. */}
+      {sugerencia.resumen && doneSets === 0 && !nuevaReferencia && (
         <ConsejoDelCoach texto={sugerencia.resumen} />
       )}
       {/* En plena sesión: la serie anterior se pasó del rango con margen. */}
@@ -272,23 +326,34 @@ export default React.memo(function ExerciseCard({
         />
       )}
 
+      {/* En plena sesión: hoy viene más justo que la última vez (F1). */}
+      {diaMalo && (
+        <ConsejoDelCoach
+          texto={diaMalo.texto}
+          accion={diaMaloPorAplicar ? {
+            texto: `Poner ${String(diaMalo.peso).replace('.', ',')} kg en lo que queda`,
+            onClick: () => diaMalo.seriesPendientes.forEach(i => onUpdateSet(i, 'weight', String(diaMalo.peso))),
+          } : undefined}
+        />
+      )}
+
       {/* Series */}
       {esDropset || esMyoreps || esRestpause ? (
         <>
           <NormalTable
-            we={we} exSets={exSets.slice(0, nPrincipales)} expanded={expanded} warmup={warmup} prevEntry={prevEntry}
-            onUpdateSet={onUpdateSet} onMarkDone={onMarkDone}
+            we={we} exSets={exSets.slice(0, nPrincipales)} expanded={expanded} warmup={warmup} prevEntry={previa}
+            onUpdateSet={onUpdateSet} onMarkDone={marcar} sinReps={sinReps}
             firstSetRowTargetRef={firstSetRowTargetRef} setEditorTargetRef={setEditorTargetRef}
           />
           {seriesTecnica.map(k => (esDropset ? (
             <DropsetRows
               key={k} exSets={exSets} serie={k} indices={segmentosDe(k)} pctBajada={pctBajada} pauta={pautaDelBloque(we)}
-              onUpdateSet={onUpdateSet} onMarkDone={onMarkDone} onAddRow={() => onAddRow(k)}
+              onUpdateSet={onUpdateSet} onMarkDone={marcar} sinReps={sinReps} onAddRow={() => onAddRow(k)}
             />
           ) : (
             <MyorepsRows
               key={k} exSets={exSets} serie={k} indices={segmentosDe(k)} pauta={pautaDelBloque(we)}
-              onUpdateSet={onUpdateSet} onMarkDone={onMarkDone} onAddRow={() => onAddRow(k)}
+              onUpdateSet={onUpdateSet} onMarkDone={marcar} sinReps={sinReps} onAddRow={() => onAddRow(k)}
               variante={esRestpause ? 'restpause' : 'myoreps'}
             />
           )))}
@@ -303,7 +368,7 @@ export default React.memo(function ExerciseCard({
                 Completar serie {serieSiguiente} + {esDropset ? 'drop' : 'miniseries'}
               </button>
               {!puedeCompletar && <p className="mt-1.5 text-center font-sans text-caption text-ink-3">Apunta el peso y las reps de la serie {serieSiguiente}.</p>}
-              {puedeCompletar && segmentosSiguiente.some(i => !exSets[i].done && !exSets[i].repsDone) && (
+              {puedeCompletar && segmentosSiguiente.some(i => !exSets[i].done && !tieneReps(exSets[i])) && (
                 <p className="mt-1.5 text-center font-sans text-caption text-ink-3">Las {esDropset ? 'bajadas' : 'miniseries'} sin reps se quedan para marcarlas después.</p>
               )}
             </div>
@@ -321,12 +386,41 @@ export default React.memo(function ExerciseCard({
         </>
       ) : (
         <NormalTable
-          we={we} exSets={exSets} expanded={expanded} warmup={warmup} prevEntry={prevEntry}
-          onUpdateSet={onUpdateSet} onMarkDone={onMarkDone}
+          we={we} exSets={exSets} expanded={expanded} warmup={warmup} prevEntry={previa}
+          onUpdateSet={onUpdateSet} onMarkDone={marcar} sinReps={sinReps}
           firstSetRowTargetRef={firstSetRowTargetRef} setEditorTargetRef={setEditorTargetRef}
         />
       )}
 
+      <PieDeEjercicio
+        we={we} ex={ex} doneSets={doneSets} noteValue={noteValue} onNoteChange={onNoteChange}
+        nuevaReferencia={nuevaReferencia} onToggleReferencia={onToggleReferencia} personalNote={personalNote}
+      />
+    </div>
+  );
+});
+
+/* El pie de un ejercicio: por qué no se ha hecho, «otra máquina o recorrido»,
+   la nota del atleta y lo que el coach dejó escrito. Va aparte porque la
+   tarjeta de series alternas (ParejaAlternaCard) lo pinta una vez por cada
+   ejercicio de la pareja, con su nombre como `titulo`. */
+export function PieDeEjercicio({ we, ex, doneSets, noteValue, onNoteChange, nuevaReferencia = false, onToggleReferencia, personalNote, titulo }: {
+  we: WorkoutExercise;
+  ex: Exercise | undefined;
+  /** Series principales ya marcadas: con alguna hecha no se pregunta por qué no se hizo. */
+  doneSets: number;
+  noteValue: string;
+  onNoteChange: (value: string) => void;
+  nuevaReferencia?: boolean;
+  onToggleReferencia?: (marcada: boolean) => void;
+  personalNote: string | undefined;
+  titulo?: string;
+  key?: React.Key;
+}) {
+  const idNota = React.useId();
+  const motivoMarcado = motivoDeLaNota(noteValue);
+  return (
+    <>
       {/* Nota del atleta para este ejercicio.
 
           Encima, el motivo de no haberlo hecho en un toque. Antes esto no
@@ -337,6 +431,7 @@ export default React.memo(function ExerciseCard({
           hacía falta era que la nota de un ejercicio SIN series dejara de
           tirarse al guardar (TrainingScreen.handleFinish). */}
       <div className="px-4 py-3 bg-bg border-t border-hairline">
+        {titulo && <p className="mb-2 font-sans text-label font-bold text-ink">{titulo}</p>}
         {(doneSets === 0 || motivoMarcado) && (
           <div className="mb-3">
             <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">¿No lo has hecho?</p>
@@ -359,6 +454,9 @@ export default React.memo(function ExerciseCard({
               })}
             </div>
           </div>
+        )}
+        {onToggleReferencia && !motivoMarcado && (
+          <MarcaDeReferencia marcada={nuevaReferencia} onCambiar={onToggleReferencia} />
         )}
         <label htmlFor={idNota} className="font-mono text-caption text-ink-2 uppercase tracking-wider block mb-2">Tu nota (opcional)</label>
         <textarea
@@ -390,14 +488,14 @@ export default React.memo(function ExerciseCard({
           <p className="text-label text-accent-ink">{personalNote}</p>
         </div>
       )}
-    </div>
+    </>
   );
-});
+}
 
 // ── Tabla normal (idéntica a la de antes, solo reubicada) ──────────────────
 
 function NormalTable({
-  we, exSets, expanded, warmup, prevEntry, onUpdateSet, onMarkDone, firstSetRowTargetRef, setEditorTargetRef,
+  we, exSets, expanded, warmup, prevEntry, onUpdateSet, onMarkDone, sinReps, firstSetRowTargetRef, setEditorTargetRef,
 }: {
   we: WorkoutExercise;
   exSets: SetInput[];
@@ -406,6 +504,8 @@ function NormalTable({
   prevEntry: WorkoutEntryLog | undefined;
   onUpdateSet: Props['onUpdateSet'];
   onMarkDone: Props['onMarkDone'];
+  /** F23: fila que se ha intentado marcar sin repeticiones (ver `useMarcarSerie`). */
+  sinReps: number | null;
   firstSetRowTargetRef?: Props['firstSetRowTargetRef'];
   setEditorTargetRef?: Props['setEditorTargetRef'];
 }) {
@@ -445,8 +545,8 @@ function NormalTable({
             const esSiguiente = !setInput.done && exSets.slice(0, sIdx).every(s => s.done);
             const alFallo = setInput.rir === 'fallo';
             return (
+              <React.Fragment key={sIdx}>
               <tr
-                key={sIdx}
                 className={`border-b transition-colors duration-(--duration-state) ${
                   alFallo && !setInput.done ? 'border-danger/35 bg-danger/6'
                   : setInput.done ? 'border-hairline bg-accent/6'
@@ -485,14 +585,11 @@ function NormalTable({
                   />
                 </td>
                 <td className="px-2 sm:px-3 py-2">
-                  <select
-                    value={setInput.rir}
-                    onChange={e => onUpdateSet(sIdx, 'rir', e.target.value)}
-                    disabled={setInput.done}
-                    className={`w-14 sm:w-16 appearance-none bg-field border border-control-line rounded-control px-1 sm:px-2 py-2 text-center font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${rirClaseColor(setInput.rir)}`}
-                  >
-                    {RIR_OPCIONES.map(v => <option key={v} value={v}>{rirTexto(v)}</option>)}
-                  </select>
+                  <SelectRir
+                    fila={setInput}
+                    onApuntar={valor => apuntarRir(onUpdateSet, sIdx, valor)}
+                    ancho="w-14 sm:w-16"
+                  />
                 </td>
                 <td className="px-2 sm:px-4 py-2 text-center">
                   <BotonSerieHecha
@@ -502,6 +599,12 @@ function NormalTable({
                   />
                 </td>
               </tr>
+              {sinReps === sIdx && (
+                <tr className="border-b border-hairline">
+                  <td colSpan={5} className="px-2 sm:px-4 pb-2"><AvisoSinReps /></td>
+                </tr>
+              )}
+              </React.Fragment>
             );
           })}
         </tbody>
@@ -516,7 +619,7 @@ function NormalTable({
 // así que un dropset en la última de 3 series convertía las series 2 y 3 en
 // bajadas. Ahora la técnica se SUMA a la serie, no la sustituye.
 
-function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, onMarkDone, onAddRow }: {
+function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, onMarkDone, sinReps, onAddRow }: {
   exSets: SetInput[];
   /** Serie principal tras la que van (1 = la primera). */
   serie: number;
@@ -528,6 +631,8 @@ function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, on
   pauta: string;
   onUpdateSet: Props['onUpdateSet'];
   onMarkDone: Props['onMarkDone'];
+  /** F23: fila que se ha intentado marcar sin repeticiones. */
+  sinReps: number | null;
   onAddRow: () => void;
   key?: React.Key;
 }) {
@@ -547,7 +652,8 @@ function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, on
         const dropWeight = parseFloat(s.weight || '') || 0;
         const caida = baseWeight > 0 && dropWeight > 0 ? Math.round((1 - dropWeight / baseWeight) * 100) : null;
         return (
-          <div key={sIdx} className="flex items-center gap-2 rounded-surface bg-raised p-3 ml-2 border-l-2 border-accent-line">
+          <React.Fragment key={sIdx}>
+          <div className="flex items-center gap-2 rounded-surface bg-raised p-3 ml-2 border-l-2 border-accent-line">
             <span className="flex h-7 w-9 flex-shrink-0 items-center justify-center rounded-control bg-hairline font-mono text-label font-bold text-ink-2">
               D{i + 1}
             </span>
@@ -578,7 +684,8 @@ function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, on
             <button
               onClick={() => {
                 // Sin peso escrito se apunta el sugerido: si no, la bajada contaría 0 kg.
-                if (!s.done && !s.weight && sugerido != null) onUpdateSet(sIdx, 'weight', String(sugerido));
+                // (Solo si se va a marcar de verdad: sin repeticiones no se marca.)
+                if (!s.done && tieneReps(s) && !s.weight && sugerido != null) onUpdateSet(sIdx, 'weight', String(sugerido));
                 onMarkDone(sIdx, !s.done);
               }}
               aria-label={s.done ? `Desmarcar bajada ${i + 1}` : `Marcar bajada ${i + 1} como hecha`}
@@ -589,6 +696,8 @@ function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, on
               <Icon name={s.done ? 'check_circle' : 'radio_button_unchecked'} size="s" filled={s.done} />
             </button>
           </div>
+          {sinReps === sIdx && <AvisoSinReps />}
+          </React.Fragment>
         );
       })}
       <button
@@ -612,7 +721,7 @@ function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, on
 
 // ── Myoreps / rest-pause: miniseries o pausas DESPUÉS de la última serie ───
 
-function MyorepsRows({ exSets, serie, indices, pauta, onUpdateSet, onMarkDone, onAddRow, variante }: {
+function MyorepsRows({ exSets, serie, indices, pauta, onUpdateSet, onMarkDone, sinReps, onAddRow, variante }: {
   exSets: SetInput[];
   /** Serie principal que hace de activación (1 = la primera). */
   serie: number;
@@ -625,6 +734,8 @@ function MyorepsRows({ exSets, serie, indices, pauta, onUpdateSet, onMarkDone, o
   pauta: string;
   onUpdateSet: Props['onUpdateSet'];
   onMarkDone: Props['onMarkDone'];
+  /** F23: fila que se ha intentado marcar sin repeticiones. */
+  sinReps: number | null;
   onAddRow: () => void;
 }) {
   const activacion = exSets.filter(s => !s.segmento)[serie - 1];
@@ -649,7 +760,7 @@ function MyorepsRows({ exSets, serie, indices, pauta, onUpdateSet, onMarkDone, o
                 onClick={() => {
                   // Las miniseries se hacen con el mismo peso que la serie de
                   // activación: se copia para que el tonelaje no salga a 0.
-                  if (!s.done && !s.weight && activacion?.weight) onUpdateSet(sIdx, 'weight', activacion.weight);
+                  if (!s.done && tieneReps(s) && !s.weight && activacion?.weight) onUpdateSet(sIdx, 'weight', activacion.weight);
                   onMarkDone(sIdx, !s.done);
                 }}
                 className={`flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-full border transition-colors ${
@@ -678,6 +789,7 @@ function MyorepsRows({ exSets, serie, indices, pauta, onUpdateSet, onMarkDone, o
             +
           </button>
         </div>
+        {sinReps != null && indices.includes(sinReps) && <AvisoSinReps />}
       </div>
       {totalEfectivo > 0 && (
         <div className="rounded-surface bg-bg p-3 flex items-center justify-between">
@@ -690,10 +802,56 @@ function MyorepsRows({ exSets, serie, indices, pauta, onUpdateSet, onMarkDone, o
 }
 
 
+/** F6 + P5: lo que se le dice la primera vez que hace un ejercicio. */
+export const TEXTO_EJERCICIO_NUEVO = 'Es la primera vez que haces este ejercicio: hoy es de entrada. Busca el peso y quédate con una repetición más de margen de la que marca. Es normal tener agujetas los próximos días.';
+
+/* F23 (17-11-2026): marcar una serie exige repeticiones. Este gancho envuelve
+   el `onMarkDone` de la tarjeta: si la fila no las tiene, no la marca y
+   recuerda cuál fue para pintar el aviso junto a ella; el aviso se va solo en
+   cuanto el atleta las apunta. Desmarcar no se toca. Lo comparte la tarjeta de
+   series alternas (ParejaAlternaCard). */
+export function useMarcarSerie(exSets: readonly SetInput[], onMarkDone: Props['onMarkDone']) {
+  const [fila, setFila] = React.useState<number | null>(null);
+  const marcar = (sIdx: number, markingDone: boolean) => {
+    if (markingDone && !tieneReps(exSets[sIdx])) { setFila(sIdx); return; }
+    setFila(null);
+    onMarkDone(sIdx, markingDone);
+  };
+  return { sinReps: fila != null && !tieneReps(exSets[fila]) ? fila : null, marcar };
+}
+
+/** El aviso de F23, con la misma letra que el resto de avisos de la tarjeta. */
+export function AvisoSinReps() {
+  return <p role="status" className="mt-1.5 text-center font-sans text-caption text-warning">{AVISO_SIN_REPS}</p>;
+}
+
+/* La celda de RIR de la tabla: el desplegable de siempre, que llega con el
+   pautado. Cambiarlo cuenta como RIR apuntado por el atleta (ver `apuntarRir`).
+   La comparten la tarjeta normal y la de series alternas. */
+export function SelectRir({ fila, onApuntar, ancho, etiqueta }: {
+  fila: SetInput;
+  onApuntar: (valor: string) => void;
+  /** Clases de ancho (las de la tabla en la que va). */
+  ancho: string;
+  etiqueta?: string;
+}) {
+  return (
+    <select
+      value={fila.rir}
+      onChange={e => onApuntar(e.target.value)}
+      disabled={fila.done}
+      aria-label={etiqueta}
+      className={`${ancho} appearance-none bg-field border border-control-line rounded-control px-1 sm:px-2 py-2 text-center font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${rirClaseColor(fila.rir)}`}
+    >
+      {RIR_OPCIONES.map(v => <option key={v} value={v}>{rirTexto(v)}</option>)}
+    </select>
+  );
+}
+
 /* El botón de «serie hecha»: al marcarla, el check entra con el sello
    (`seal-pop`, el mismo que cierra el anillo del día). Solo en la transición:
    abrir un entreno con series ya hechas no sella nada. */
-const BotonSerieHecha = React.forwardRef<HTMLButtonElement, { hecha: boolean; onClick: () => void }>(
+export const BotonSerieHecha = React.forwardRef<HTMLButtonElement, { hecha: boolean; onClick: () => void }>(
   function BotonSerieHecha({ hecha, onClick }, ref) {
     const sellando = useRecienHecho(hecha);
     return (
@@ -718,7 +876,7 @@ const BotonSerieHecha = React.forwardRef<HTMLButtonElement, { hecha: boolean; on
 /* Consejos de carga firmados por el coach (28-10-2026). Antes eran una frase
    suelta de la app («Sube a 82,5 kg: …»); Dani quería que se leyera como lo
    que es, una indicación suya, para que el atleta le haga caso. */
-function ConsejoDelCoach({ texto, accion }: { texto: string; accion?: { texto: string; onClick: () => void } }) {
+export function ConsejoDelCoach({ texto, accion }: { texto: string; accion?: { texto: string; onClick: () => void } }) {
   return (
     <div className="mx-4 mt-2 flex items-start gap-2.5 rounded-control border border-success/40 bg-success/10 px-3 py-2.5">
       <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-success/20 font-sans text-label font-bold text-success" aria-hidden="true">

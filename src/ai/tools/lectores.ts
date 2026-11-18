@@ -11,7 +11,8 @@ import { repartoParaAsistente, sesionesDelReparto, diasSemanaDesdeAsistente, cal
 import { frecuenciaPorDefecto } from '../../utils/calculadoraReparto.js';
 import { computeAnthropometricIndices, ANTHROPOMETRIC_INDEX_LABELS } from '../../utils/anthropometricIndices.js';
 import { pctGrasaUSNavy, masaMagraEstimadaKg, computeIRC } from '../../utils/bodyFatUSNavy.js';
-import { historialIRP } from '../../utils/readinessIndex.js';
+import { ewmaDeSeñal } from '../../utils/wellnessTrend.js';
+import { domsCronicoGlobal } from '../../utils/domsCronico.js';
 import { resumirSerie } from '../../utils/progressSummary.js';
 import { mdcDeMetrica } from '../../utils/mdc.js';
 import { leerSexo } from '../../utils/athleteProfileSignals.js';
@@ -26,9 +27,11 @@ import { computeWeightTrend } from '../../utils/nutritionAnalysis.js';
 import { estimateMaintenanceKcal } from '../../utils/energyCalc.js';
 import { buildTrainingReport } from '../../utils/trainingReport.js';
 import { buildRevisionCoach, PeriodoRevision, mesoActivo, pesoVsSemanaPasada } from '../../utils/revisionCoach.js';
-import { buildCierreMesociclo } from '../../utils/cierreMesociclo.js';
+import { buildCierreCompleto } from '../../utils/cierreCompleto.js';
+import { ID_EN_SUS_PALABRAS } from '../../utils/conclusionesDelBloque.js';
 import { suggestVolume, VolumeIntent } from '../../utils/volumeSuggestion.js';
 import { buildVolumeHistoryFrom } from '../../utils/volumeHistory.js';
+import { cicloDiasDeMeso } from '../../utils/asignacionMesociclo.js';
 import { VOLUME_LANDMARKS_DEFAULT } from '../../data/volumeLandmarks.js';
 import { construirTitulares } from '../../utils/titularesRevision.js';
 import { construirComidaDeLaSemana } from '../../utils/comidaDeLaSemana.js';
@@ -46,6 +49,7 @@ import { Macros, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, MUSCLE_ORDER, Ex
 import { tareaPorId, type BriefSeccion } from '../tareas.js';
 import { mediana } from '../../utils/perfilProgramacion.js';
 import { checkinsOf, findProfile, isoDate, markAthleteText, objetivoParaElAsistente, toResult } from './comunes.js';
+import { hipotesisParaElAsistente, NOTA_DE_HIPOTESIS } from './hipotesis.js';
 
 // ── Ejecutores ────────────────────────────────────────────────────────────────
 
@@ -159,6 +163,9 @@ export async function getClientOverview(email: string): Promise<string> {
       id: activeMeso.id, number: activeMeso.number, weeks: activeMeso.weeks,
       startDate: activeMeso.startDate, objective: activeMeso.objective,
       daysPerWeek: activeMeso.daysPerWeek,
+      // H11 (17-11-2026): el tipo de bloque, la hipótesis de cada zona
+      // prioritaria y, si están firmados, el cierre y el mapa de respuesta.
+      ...hipotesisParaElAsistente(activeMeso, mesos),
     } : null,
     nutritionProgram: program ? {
       startDate: program.startDate,
@@ -1073,8 +1080,12 @@ export async function getProgressMetrics(email: string): Promise<string> {
     });
   }
 
-  const irp = historialIRP({ responses, questionnaires });
-  const resumenIrp = resumirSerie({ id: 'irp', label: 'IRP (readiness)', points: irp, mejorSiSube: true });
+  // Sueño, estrés y agujetas por separado (18-11-2026): el índice de
+  // disposición para entrenar (IRP) que los mezclaba se quitó de la app.
+  const resumenDe = (id: string, label: string, clave: string, mejorSiSube: boolean) => {
+    const r = resumirSerie({ id, label, points: ewmaDeSeñal(clave, responses, questionnaires), mejorSiSube });
+    return r ? { ultimo: r.ultimo, cambio: r.delta, desde: r.desde, mediciones: r.puntos } : null;
+  };
 
   return toResult({
     sexoConocido: sexo ?? null,
@@ -1082,7 +1093,11 @@ export async function getProgressMetrics(email: string): Promise<string> {
     perimetros,
     composicionCorporal: composicion.slice(-6),
     indicesAntropometricos: ultimosIndices,
-    readiness: resumenIrp ? { ultimo: resumenIrp.ultimo, cambio: resumenIrp.delta, desde: resumenIrp.desde, mediciones: resumenIrp.puntos } : null,
+    recuperacion: {
+      sueñoHoras: resumenDe('sueño', 'Horas de sueño', 'wellness.sleep_hours_weekly', true),
+      estres: resumenDe('estres', 'Estrés', 'wellness.stress_weekly', false),
+      agujetasCronicasMedia: domsCronicoGlobal(responses, questionnaires),
+    },
     note: composicion.length === 0
       ? 'Sin % de grasa: hace falta sexo (de la anamnesis), altura, cuello y cintura en la misma medición. Si falta, díselo a Dani con add_coach_task en vez de estimarlo a ojo.'
       : 'El % de grasa es una estimación US Navy por perímetros, no una analítica. Un cambio marcado como ruido de medición NO es progreso.',
@@ -1138,10 +1153,15 @@ export async function getNutritionAnalysis(email: string): Promise<string> {
  * tokens en decirle al modelo lo que el motor ya resolvió.
  */
 /**
- * El CIERRE del bloque, para el asistente: `buildCierreMesociclo`, el mismo
- * motor que Dani ve en Mesociclo › Cierre. Sesiones, volumen programado y
- * realizado por grupo, tonelaje y 1RM frente al bloque anterior, patrones,
- * titulares y el borrador para el cliente. Solo lectura.
+ * El CIERRE del bloque, para el asistente: `buildCierreCompleto`, el mismo
+ * motor que Dani ve en Mesociclo › Cierre y en Revisión › Cierre de bloque.
+ * Sesiones, volumen programado y realizado por grupo, tonelaje y 1RM frente al
+ * bloque anterior, patrones, titulares, conclusiones, lo que dice el atleta y
+ * el borrador para el cliente. Solo lectura.
+ *
+ * Desde el 17-11-2026 se calcula con el peso corporal (sin él, dominadas y
+ * fondos daban otra cifra que en pantalla) y trae las conclusiones y la voz
+ * del atleta, que antes se quedaban en la pantalla.
  */
 export async function getCierreBloque(email: string, mesocycleId?: string): Promise<string> {
   const profile = await findProfile(email);
@@ -1153,9 +1173,25 @@ export async function getCierreBloque(email: string, mesocycleId?: string): Prom
   const empezados = mesos.filter(m => !!m.startDate).sort((a, b) => a.startDate.localeCompare(b.startDate));
   const meso = mesocycleId ? mesos.find(m => m.id === mesocycleId) : (mesoActivo(mesos, hoy) ?? empezados[empezados.length - 1]);
   if (!meso) return toResult({ error: mesocycleId ? `No existe el mesociclo ${mesocycleId}.` : 'El atleta no tiene mesociclos que cerrar.' });
-  const c = buildCierreMesociclo({ meso, mesocycles: mesos, logs, assignments, exercises, athleteName: aliasDeAtleta(profile.displayName, profile.email), hoy });
+  // Lo del cuerpo y los cuestionarios se lee solo cuando ya hay bloque que cerrar.
+  const coachUid = (coachActual().uid || undefined);
+  const [bodyweightLogs, medidas, responses, questionnaires, programaNutricion] = await Promise.all([
+    getBodyweightForAthlete(email), getBodyMeasurementsForAthlete(email), getResponsesForAthlete(email),
+    coachUid ? getQuestionnairesByCoach(coachUid) : Promise.resolve([]), getNutritionProgram(email),
+  ]);
+  const completo = buildCierreCompleto({
+    meso, mesocycles: mesos, logs, assignments, exercises, athleteName: aliasDeAtleta(profile.displayName, profile.email), hoy,
+    bodyweightLogs, medidas, responses, questionnaires, programaNutricion,
+  });
+  const c = completo.cierre;
+  const voz = completo.evolucion.voz;
+  // La foto del bloque que se cierra va aunque no esté firmado (punto 1 del relevo).
+  const hipotesis = hipotesisParaElAsistente(meso, mesos, completo.hipotesis?.dosis);
   return toResult({
-    bloque: { id: c.mesoId, numero: c.numero, objetivo: c.objetivo, inicio: c.inicio, fin: c.fin, semanas: c.semanas, diasSemana: c.diasSemana, enCurso: c.enCurso, comparacion: c.comparacion },
+    bloque: { id: c.mesoId, numero: c.numero, nombre: c.nombre, objetivo: c.objetivo, inicio: c.inicio, fin: c.fin, semanas: c.semanas, diasSemana: c.diasSemana, enCurso: c.enCurso, comparacion: c.comparacion, tipoBloque: hipotesis.tipoBloque },
+    // H11 (17-11-2026): a qué se apostó en cada zona prioritaria; si Dani ya
+    // firmó el cierre, qué pasó con cada apuesta y el mapa de respuesta.
+    hipotesisDelBloque: hipotesis,
     sesiones: c.sesiones,
     volumen: {
       pct: c.volumen.pct, totalProgramadas: c.volumen.totalProgramadas, totalRealizadas: c.volumen.totalRealizadas,
@@ -1167,9 +1203,34 @@ export async function getCierreBloque(email: string, mesocycleId?: string): Prom
       patrones: c.patrones.map(p => ({ patron: p.label, series: p.sets, tonelajeDeltaPct: p.tonnageDeltaPct, ormDeltaPct: p.ormDeltaPct })),
       destacado: c.informe.highlights,
     },
+    progresionEnElBloque: {
+      resumen: c.progresion.resumen,
+      ejercicios: c.progresion.ejercicios.map(e => ({
+        ejercicio: e.nombre, grupo: e.grupoLabel, estado: e.estado, deltaPct: e.deltaPct,
+        inicioAFinal: e.lectura, comoMejora: e.comoMejora || undefined, semanasConDatos: e.semanasConDatos,
+      })),
+      porPatron: c.progresion.porPatron.map(p => ({ patron: p.label, deltaMedioPct: p.deltaMedioPct, mejoran: p.mejoran, ejercicios: p.ejercicios })),
+      semanas: c.progresion.semanas.map(s => ({ semana: s.semana, sesiones: `${s.sesionesHechas}/${s.sesionesProgramadas}`, tonelaje: s.tonelaje, rirMedio: s.rirMedio, indiceFuerza: s.indiceFuerza })),
+    },
     titulares: c.titulares,
-    borradorParaElCliente: c.resumenParaCliente,
-    note: 'Son los números de Mesociclo › Cierre, los mismos que ve Dani. Úsalos para el veredicto del bloque y para decir qué cambia en el siguiente (volumen por grupo que se cumplió o no, patrones que suben o se estancan). No recalcules nada.',
+    // Con qué dato se ha decidido: sesiones sin marca de RM y por qué.
+    ...(c.notaDeDatos ? { notaDeDatos: c.notaDeDatos } : {}),
+    // Las reglas del cierre, con la cifra que dispara cada una. La que cita al
+    // atleta literal se queda fuera: su texto va abajo, marcado como dato.
+    conclusiones: {
+      hallazgos: completo.conclusiones.hallazgos.map(h => ({ tono: h.tono, texto: h.texto })),
+      acciones: completo.conclusiones.acciones.filter(a => a.id !== ID_EN_SUS_PALABRAS).map(a => ({ tono: a.tono, texto: a.texto })),
+    },
+    vozDelAtleta: voz ? {
+      fecha: voz.fecha, valoracion: voz.valoracion, recuperacion: voz.recuperacion, exigencia: voz.exigencia,
+      quierePriorizar: voz.priorizar, demasiadoVolumenEn: voz.demasiado,
+      respuestas: voz.respuestas.map(r => ({ pregunta: r.pregunta, respuesta: markAthleteText(r.respuesta) })),
+    } : null,
+    pesoCorporalKg: completo.pesoCorporalKg,
+    borradorParaElCliente: completo.mensaje,
+    note: 'Son los números de Mesociclo › Cierre, los mismos que ve Dani. Úsalos para el veredicto del bloque y para decir qué cambia en el siguiente (volumen por grupo que se cumplió o no, patrones que suben o se estancan). No recalcules nada. '
+      + `hipotesisDelBloque → ${NOTA_DE_HIPOTESIS}`
+      + (hipotesis.hipotesis.length && !hipotesis.cierreDeHipotesis ? ' El cierre de las hipótesis de este bloque está SIN FIRMAR: no des ninguna por confirmada ni por fallida; recuérdale a Dani que lo firme en Revisión › Cierre de bloque.' : ''),
   });
 }
 
@@ -1230,10 +1291,11 @@ export async function getRevisionEngine(email: string, periodoPedido: string): P
         agujetasCronicas: bienestar.domsPorGrupo[c.group] ?? null,
       })),
     comoHaLlegado: {
-      disposicion: bienestar.irp.valor,
-      sueñoHoras: bienestar.irp.horasSueño,
-      estres: bienestar.irp.estres,
+      sueñoHoras: bienestar.actual.horasSueño,
+      estres: bienestar.actual.estres,
       agujetasCronicas: bienestar.domsCronico.map(d => ({ grupo: d.grupo, media: d.media })),
+      contexto: bienestar.contexto.contexto,
+      motivosDelContexto: bienestar.contexto.motivos,
     },
     comida: {
       diasRegistrados: comida.patrones.diasRegistrados,
@@ -1284,9 +1346,16 @@ export async function getVolumeSuggestion(
   const hoy = hoyIsoLocal();
   const actual = mesoActivo(mesos, hoy) ?? [...mesos].sort((a, b) => b.number - a.number)[0] ?? null;
 
+  // El bloque nuevo todavía no existe (esto se llama ANTES de proponerlo), así
+  // que no hay «bloque actual» que excluir: `currentId: null` y el historial
+  // sale del último bloque con semanas terminadas, que suele ser el que está en
+  // curso. Antes se pasaba el bloque en curso como `currentId`, el historial
+  // salía del bloque de ANTES de ese, y la respuesta llamaba «bloqueAnterior»
+  // al que estaba en curso: la etiqueta y los datos hablaban de bloques distintos.
   const history = buildVolumeHistoryFrom({
     mesocycles: mesos,
-    currentId: actual?.id ?? '',
+    currentId: null,
+    hoy,
     logs, exercises, assignments, responses, questionnaires,
   });
 
@@ -1305,15 +1374,20 @@ export async function getVolumeSuggestion(
   // Lo que no venga se queda en 'media'. Nunca se hereda del bloque anterior a
   // ciegas: si el coach quiere repetir prioridades, las dice.
   const pedidas = (input.prioridades ?? {}) as Record<string, string>;
-  const priorities = {} as Record<MuscleGroup, 'alta' | 'media' | 'baja'>;
+  const priorities = {} as Record<MuscleGroup, 'alta' | 'media' | 'baja' | 'ignorar'>;
   for (const g of MUSCLE_ORDER) {
     const v = pedidas[g];
-    priorities[g] = v === 'alta' || v === 'baja' ? v : 'media';
+    priorities[g] = v === 'alta' || v === 'baja' || v === 'ignorar' ? v : 'media';
   }
 
   const r = suggestVolume({
     landmarks: landmarks ?? VOLUME_LANDMARKS_DEFAULT,
     daysPerWeek: diasPorSemana,
+    // `diasPorSemana` son las sesiones del MICROCICLO: con un ciclo de 14 días
+    // y 8 sesiones, el techo semanal es el de 4, no el de 8. Solo cuando las
+    // sesiones son las del bloque en curso: si el modelo pide otras, su ciclo
+    // no se conoce y se toma por semanal, como hasta ahora.
+    semanasDelCiclo: actual && diasPorSemana === actual.daysPerWeek ? cicloDiasDeMeso(actual) / 7 : undefined,
     splitId: actual?.splitId,
     reparto: actual ? repartoDelMesociclo(actual) : undefined,
     level: nivel,
@@ -1322,9 +1396,16 @@ export async function getVolumeSuggestion(
     history,
   });
 
+  const anterior = history.previous;
   return toResult({
     partiendoDe: {
-      bloqueAnterior: actual ? { id: actual.id, numero: actual.number, nombre: actual.name } : null,
+      // El bloque del que sale el historial de verdad, con cuánto de él se ha
+      // contado: si sigue en curso, solo sus semanas terminadas.
+      bloqueAnterior: anterior ? {
+        id: anterior.id, numero: anterior.number, nombre: anterior.name,
+        enCurso: history.enCurso === true, semanasContadas: history.semanasContadas,
+        adherenciaPct: history.adherencePct, rirMedio: history.meanRir,
+      } : null,
       diasPorSemana, nivel, intencionPedida: intent, intencionAplicada: r.intentAplicado,
     },
     totalSeries: r.totalSeries,

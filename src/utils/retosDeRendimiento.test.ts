@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { recordDeReps } from './planDeLaSemana';
 import type {
   Exercise, Mesocycle, Workout, WorkoutAssignment, WorkoutLog, WorkoutSetLog, WeeklyChallenge, StepLog,
 } from '../types';
@@ -152,6 +153,16 @@ describe('planDeLaSemana', () => {
     expect(conMeso({ eventosSemana: { '2': { tipo: 'vacaciones' } } })).toBe('evento');
   });
 
+  it('F7c: marca la semana puente, salvo que además sea de descarga o de test', () => {
+    const puente = (m: Partial<Mesocycle>) => planDeLaSemana({
+      assignments: ASIGNACIONES, workouts: [PIERNA], mesocycles: [{ ...MESO, ...m } as Mesocycle], exercises: EJERCICIOS, today: HOY,
+    })!.semanaPuente;
+    expect(puente({ semanasPivot: [2] })).toBe(true);
+    expect(puente({ semanasPivot: [3] })).toBeUndefined();
+    expect(puente({ semanasPivot: [2], semanasDescarga: [2] })).toBeUndefined();
+    expect(puente({ semanasPivot: [2], semanasTest: [2] })).toBeUndefined();
+  });
+
   it('mesoActivo ignora bloques terminados o por empezar', () => {
     expect(mesoActivo([MESO], HOY)?.id).toBe('m1');
     expect(mesoActivo([{ ...MESO, startDate: '2026-01-05' } as Mesocycle], HOY)).toBeNull();
@@ -260,10 +271,73 @@ describe('retos de rendimiento — generación', () => {
     expect(opt.title).toBe('Semana 2 de 9: 1 de 1');
   });
 
-  it('descarga: solo «RIR mínimo», nada de progresar', () => {
+  const DE_PROGRESAR = ['doble_progresion', 'amrap_serie', 'supera_sesion', 'grupo_estancado', 'mas_reserva', 'record_reps'];
+
+  it('D10: descarga — el reto es hacer las sesiones; ni RIR mínimo ni progresar', () => {
     const opts = generateChallengeOptions(input({ mesocycles: [{ ...MESO, semanasDescarga: [2] } as Mesocycle] }));
-    expect(opts[0].kind).toBe('rir_minimo');
-    expect(opts.some(o => o.kind === 'amrap_serie' || o.kind === 'doble_progresion')).toBe(false);
+    expect(opts[0]).toMatchObject({ kind: 'entrenos_completados', title: 'Semana de descarga: haz tu sesión', metric: { target: 1, mesocycleId: 'm1' } });
+    // En descarga se quita volumen, no intensidad: nada que pida alejarse del fallo.
+    expect(opts.some(o => o.kind === 'rir_minimo')).toBe(false);
+    expect(opts.some(o => DE_PROGRESAR.includes(o.kind))).toBe(false);
+  });
+
+  it('D10: lo que lee el atleta en descarga no le pide alejarse del fallo ni bajar peso', () => {
+    const opt = generateChallengeOptions(input({ mesocycles: [{ ...MESO, semanasDescarga: [2] } as Mesocycle] }))[0];
+    const texto = `${opt.title} ${opt.description}`;
+    expect(texto).toContain('menos series, con las mismas cargas');
+    expect(texto).not.toMatch(/RIR|fallo|menos peso|baja/i);
+  });
+
+  it('F7c: semana puente — el reto es hacer las sesiones, nada de progresar', () => {
+    const opts = generateChallengeOptions(input({ mesocycles: [{ ...MESO, semanasPivot: [2] } as Mesocycle] }));
+    expect(opts[0]).toMatchObject({ kind: 'entrenos_completados', title: 'Semana puente: haz tu sesión', metric: { target: 1, mesocycleId: 'm1' } });
+    expect(opts.some(o => DE_PROGRESAR.includes(o.kind))).toBe(false);
+  });
+
+  it('F7c: vuelta de parón — solo «RIR mínimo», nada de progresar', () => {
+    const opts = generateChallengeOptions(input({ mesocycles: [{ ...MESO, vuelveDeParon: true, startDate: LUNES } as Mesocycle] }));
+    expect(opts[0]).toMatchObject({ kind: 'rir_minimo', title: 'Vuelve con cabeza' });
+    expect(opts.some(o => DE_PROGRESAR.includes(o.kind))).toBe(false);
+  });
+
+  it('F7c: en descarga, puente y vuelta de parón tampoco salen los retos de carga «a la antigua»', () => {
+    const ANTIGUOS = ['carga_ejercicio', 'reps_ejercicio', 'series_grupo'];
+    const hay = (m: Partial<Mesocycle>) => generateChallengeOptions(input({ mesocycles: [{ ...MESO, ...m } as Mesocycle] })).some(o => ANTIGUOS.includes(o.kind));
+    expect(hay({})).toBe(true); // en una semana normal sí se proponen
+    expect(hay({ semanasDescarga: [2] })).toBe(false);
+    expect(hay({ semanasPivot: [2] })).toBe(false);
+    expect(hay({ vuelveDeParon: true, startDate: LUNES })).toBe(false);
+  });
+
+  // «Toca subir» con el mismo criterio que la tarjeta (`veredictoDeSerie`).
+  const conPrensa = (series: WorkoutSetLog[], reps = '8-12') => generateChallengeOptions(input({
+    workoutLogs: [...HISTORIAL.slice(0, -1), log('2026-10-22', { prensa: series, muerto: [s(85, 8)] })],
+    workouts: [{ ...PIERNA, exercises: [we('prensa', 0, reps), we('muerto', 4)] } as unknown as Workout, VIEJA],
+  })).find(o => o.kind === 'doble_progresion');
+
+  it('F7c: en el tope pero al fallo, o más justo de lo pautado, NO «toca subir» (la tarjeta tampoco sube)', () => {
+    expect(conPrensa([s(120, 12, 1)])?.metric).toMatchObject({ exerciseId: 'prensa', subirDe: 120 });
+    expect(conPrensa([s(120, 12, 0, true)])).toBeUndefined();
+    expect(conPrensa([s(120, 12, 0)])).toBeUndefined();
+  });
+
+  it('D1a: con el RIR apuntado, «toca subir» se decide a RIR pautado, igual que la tarjeta', () => {
+    const apuntada = (weight: number, repsDone: number, rir: number): WorkoutSetLog => ({ ...s(weight, repsDone, rir), rirApuntado: true });
+    // 11 a RIR 3 con RIR 1 pautado son 13: pasa del tope (12) sin haberlo hecho.
+    const sube = conPrensa([apuntada(120, 11, 3)])!;
+    expect(sube.metric).toMatchObject({ exerciseId: 'prensa', subirDe: 120 });
+    expect(sube.description).toContain('120 kg × 11, y te sobraban repeticiones para el tope');
+    // 12 a RIR 0 con RIR 1 pautado son 11: en el tope, pero apretando de más.
+    expect(conPrensa([apuntada(120, 12, 0)])).toBeUndefined();
+  });
+
+  it('F7c: en el tope con un salto de carga grande, el reto pide abrir el rango, como la tarjeta', () => {
+    // Historial de la prensa: 110 y 120 kg → salto real de 10 kg (8 %): con un
+    // rango de 2 repeticiones hacen falta 2 más antes de subir.
+    const opt = conPrensa([s(120, 12, 1)], '10-12')!;
+    expect(opt.metric).toMatchObject({ exerciseId: 'prensa', atWeight: 120, target: 14 });
+    expect(opt.metric.subirDe).toBeUndefined();
+    expect(opt.description).toContain('Antes de subir, saca 14 repeticiones con 120 kg');
   });
 
   it('semana de test: «bate 3 récords»', () => {
@@ -413,5 +487,130 @@ describe('avisoDeReto', () => {
 
   it('los retos que no van de entreno no avisan', () => {
     expect(avisoDeReto(reto({ kind: 'pasos_media', metric: { unit: 'pasos', target: 8000 } }), 'prensa')).toBeNull();
+  });
+});
+
+describe('fuera de su gimnasio (17-11-2026)', () => {
+  const l = (id: string, date: string, weight: number, repsDone: number, fuera = false): WorkoutLog => ({
+    id, athleteId: 'a', workoutId: 'w', assignmentId: id, date, completedAt: '',
+    entries: [{ exerciseId: 'ex1', sets: [{ weight, repsDone, rir: 2, ...(fuera ? { fuera: true } : {}) }] }],
+  });
+
+  it('«la última vez» de los retos se salta las sesiones fuera', () => {
+    const logs = [l('a', '2026-11-01', 80, 8), l('b', '2026-11-08', 30, 15, true)];
+    expect(ultimaVez(logs, 'ex1', '2026-11-17')).toMatchObject({ date: '2026-11-01', series: [{ weight: 80, reps: 8 }] });
+  });
+
+  it('los récords ni se baten ni se cuentan con sesiones fuera', () => {
+    const logs = [l('a', '2026-11-01', 80, 8), l('b', '2026-11-08', 80, 15, true)];
+    expect(recordDeReps(logs, 'ex1', 80, '2026-11-17')).toBe(8);
+    expect(tablaDeRecords(logs, 'ex1', '2026-11-17')).toEqual([{ weight: 80, reps: 8 }]);
+    expect(recordsBatidos(logs, '2026-11-05', '2026-11-17')).toBe(0);
+  });
+});
+
+/* Retos ligados al objetivo del bloque (17-11-2026): con hipótesis, cada reto
+   elige antes un ejercicio de las zonas con estrella y lo dice en su contexto.
+   No cambia qué retos salen ni las semanas especiales. */
+describe('retos ligados al objetivo del bloque (17-11-2026)', () => {
+  const conEstrellas = (zonas: string[], extra: Partial<Mesocycle> = {}): Partial<AutoChallengeInput> => ({
+    mesocycles: [{ ...MESO, hipotesis: Object.fromEntries(zonas.map(z => [z, { palanca: 'volumen' }])), ...extra } as Mesocycle],
+  });
+  const de = (o: Partial<AutoChallengeInput>, kind: WeeklyChallenge['kind']) =>
+    generateChallengeOptions(input(o)).find(x => x.kind === kind);
+
+  it('sin hipótesis todo queda como estaba: mismo ejercicio y sin marca', () => {
+    const opt = de({}, 'doble_progresion')!;
+    expect(opt.metric.exerciseId).toBe('prensa');
+    expect(opt.contexto?.conObjetivo).toBeUndefined();
+  });
+
+  it('doble progresión: con estrella en isquios va al femoral que está a 2 del tope, no a la prensa', () => {
+    const opt = de(conEstrellas(['isquios']), 'doble_progresion')!;
+    expect(opt.metric.exerciseId).toBe('femoral2');
+    expect(opt.contexto).toEqual({ bloque: 'Hipertrofia 1', semana: 2, semanas: 9, conObjetivo: true });
+  });
+
+  it('la estrella va por delante del ejercicio clave', () => {
+    const opt = de(conEstrellas(['isquios'], { ejerciciosClave: ['w-pierna::prensa'] }), 'doble_progresion')!;
+    expect(opt.metric.exerciseId).toBe('femoral2');
+    // Y entre dos de fuera del objetivo, sigue mandando «clave».
+    const sinEstrella = de({ mesocycles: [{ ...MESO, ejerciciosClave: ['w-pierna::femoral2'] } as Mesocycle] }, 'doble_progresion')!;
+    expect(sinEstrella.metric.exerciseId).toBe('femoral2');
+    expect(sinEstrella.contexto?.conObjetivo).toBeUndefined();
+  });
+
+  it('si la estrella ya era el ejercicio elegido, solo se añade la marca', () => {
+    const opt = de(conEstrellas(['cuadriceps']), 'doble_progresion')!;
+    expect(opt.metric).toMatchObject({ exerciseId: 'prensa', subirDe: 120 });
+    expect(opt.contexto?.conObjetivo).toBe(true);
+  });
+
+  it('no inventa retos: si ningún candidato es del objetivo, sale el de siempre y sin marca', () => {
+    // «Más reserva» solo tiene un candidato (la extensión, que fue al fallo).
+    const opt = de(conEstrellas(['isquios']), 'mas_reserva')!;
+    expect(opt.metric.exerciseId).toBe('ext');
+    expect(opt.contexto?.conObjetivo).toBeUndefined();
+    const tipos = (o: Partial<AutoChallengeInput>) => generateChallengeOptions(input(o)).map(x => x.kind).sort();
+    expect(tipos(conEstrellas(['isquios']))).toEqual(tipos({}));
+  });
+
+  it('AMRAP: con ejercicios del objetivo entre los aptos, rota solo entre ellos (cualquier semana)', () => {
+    // Cuatro semanas seguidas (la rotación cambia de ejercicio con la semana):
+    // siempre un femoral, nunca la prensa ni la extensión.
+    for (let i = 0; i < 4; i++) {
+      const today = addDays(HOY, i * 7);
+      const asignaciones = [asig('a-pierna', addDays('2026-10-30', i * 7), 'w-pierna', 'm1')];
+      const opt = de({ ...conEstrellas(['isquios']), today, assignments: asignaciones }, 'amrap_serie')!;
+      expect(['femoral', 'femoral2']).toContain(opt.metric.exerciseId);
+      expect(opt.contexto?.conObjetivo).toBe(true);
+    }
+    // Sin estrellas, la rotación de siempre.
+    expect(de({}, 'amrap_serie')!.contexto?.conObjetivo).toBeUndefined();
+  });
+
+  it('récord de repeticiones: la marca solo si el ejercicio elegido es del objetivo', () => {
+    // Solo la extensión tiene dos marcas vigentes: sale con cualquier estrella.
+    expect(de(conEstrellas(['isquios']), 'record_reps')).toMatchObject({ metric: { exerciseId: 'ext' } });
+    expect(de(conEstrellas(['isquios']), 'record_reps')!.contexto?.conObjetivo).toBeUndefined();
+    expect(de(conEstrellas(['cuadriceps']), 'record_reps')!.contexto?.conObjetivo).toBe(true);
+    expect(de(conEstrellas(['cuadriceps']), 'mas_reserva')!.contexto?.conObjetivo).toBe(true);
+  });
+
+  it('grupo estancado: el grupo lo deciden los parones; la marca, la estrella', () => {
+    const suyo = de(conEstrellas(['isquios']), 'grupo_estancado')!;
+    expect(suyo.metric.muscleGroup).toBe('isquios');
+    expect(suyo.contexto?.conObjetivo).toBe(true);
+    const ajeno = de(conEstrellas(['cuadriceps']), 'grupo_estancado')!;
+    expect(ajeno.metric.muscleGroup).toBe('isquios');
+    expect(ajeno.contexto?.conObjetivo).toBeUndefined();
+  });
+
+  it('una zona de varios grupos (deltoides) cubre todos los suyos', () => {
+    const hombro: Workout = { ...PIERNA, exercises: [...PIERNA.exercises, we('lat', 5, '10-12', 'deltoide_lat')] } as Workout;
+    const logs = [...HISTORIAL, log('2026-10-23', { lat: [s(10, 11)] })];
+    const opt = de({
+      ...conEstrellas(['deltoides']), workouts: [hombro, VIEJA], workoutLogs: logs,
+      exercises: [...EJERCICIOS, ex('lat', 'Elevaciones laterales en polea', 'deltoide_lat')],
+    }, 'doble_progresion')!;
+    expect(opt.metric.exerciseId).toBe('lat');
+    expect(opt.contexto?.conObjetivo).toBe(true);
+  });
+
+  it('descarga, puente y vuelta de parón no cambian ni llevan la marca', () => {
+    const descarga = generateChallengeOptions(input(conEstrellas(['isquios'], { semanasDescarga: [2] })));
+    const sinEstrellas = generateChallengeOptions(input({ mesocycles: [{ ...MESO, semanasDescarga: [2] } as Mesocycle] }));
+    expect(descarga.map(o => [o.kind, o.title])).toEqual(sinEstrellas.map(o => [o.kind, o.title]));
+    expect(descarga.some(o => o.contexto?.conObjetivo)).toBe(false);
+    for (const extra of [{ semanasPivot: [2] }, { vuelveDeParon: true, startDate: LUNES }] as Partial<Mesocycle>[]) {
+      const opts = generateChallengeOptions(input(conEstrellas(['isquios'], extra)));
+      expect(opts.some(o => o.contexto?.conObjetivo)).toBe(false);
+    }
+  });
+
+  it('el reto que se guarda conserva la marca', () => {
+    const ch = generateAutoChallenge(input(conEstrellas(['isquios'])));
+    expect(ch).toMatchObject({ kind: 'doble_progresion', metric: { exerciseId: 'femoral2' } });
+    expect(ch.contexto).toEqual({ bloque: 'Hipertrofia 1', semana: 2, semanas: 9, conObjetivo: true });
   });
 });

@@ -1,7 +1,8 @@
 import { WorkoutLog, Exercise } from '../types.js';
 import { weightedGroupsOf } from './trainingReport.js';
-import { MovementPattern, PATTERN_LABELS, patronesDeGrupo } from './movementPatterns.js';
+import { MovementPattern, PATTERN_LABELS, patronesPonderados } from './movementPatterns.js';
 import { DataPoint, weekKey } from './seriesCorrelation.js';
+import { kgDeSerie } from './sesionFuera.js';
 
 // Series temporales de tonelaje por patrón, para el panel de correlaciones.
 // Las tablas de patrones de cierreMesociclo.ts dan UN número por mesociclo
@@ -23,13 +24,13 @@ export function seriesTonelajePorPatron(
     let semana = porSemana.get(wk);
     if (!semana) { semana = new Map(); porSemana.set(wk, semana); }
     for (const entry of log.entries) {
-      const tonelajeEntry = entry.sets.reduce((s, set) => s + (set.weight || 0) * (set.repsDone || 0), 0);
+      // Las series fuera de su gimnasio no suman kilos (utils/sesionFuera.ts).
+      const tonelajeEntry = entry.sets.reduce((s, set) => s + kgDeSerie(set), 0);
       if (tonelajeEntry === 0) continue;
-      for (const { group, weight } of weightedGroupsOf(entry.exerciseId, exercises)) {
-        if (group === 'none') continue;
-        for (const pattern of patronesDeGrupo(group)) {
-          semana.set(pattern, (semana.get(pattern) ?? 0) + tonelajeEntry * weight);
-        }
+      // El patrón lo decide el ejercicio (F17), con el mismo peso que en movementPatterns.ts.
+      for (const { group: pattern, weight } of patronesPonderados(entry.exerciseId, exercises)) {
+        if (pattern === 'none') continue;
+        semana.set(pattern, (semana.get(pattern) ?? 0) + tonelajeEntry * weight);
       }
     }
   }

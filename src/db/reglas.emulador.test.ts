@@ -21,7 +21,7 @@ import {
   assertSucceeds,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 const PROJECT_ID = 'enforma-reglas-test';
 const COACH = 'danitrviner@gmail.com';
@@ -485,5 +485,46 @@ describe('libertad y arranque · quién escribe qué (16-11)', () => {
     const otro = env.authenticatedContext('uid-otro', { email: 'otro@enforma.com', email_verified: true }).firestore();
     await assertFails(getDoc(doc(otro, 'recipeFavorites', ATLETA)));
     await assertFails(setDoc(doc(otro, 'recipeFavorites', ATLETA), { athleteId: ATLETA, recipeIds: [] }));
+  });
+});
+
+describe('pushTokens · el token del móvil lo escribe su dueño y no lo lee nadie (18-11)', () => {
+  const UID = 'uidAtletaPush';
+  const atleta = () => env.authenticatedContext(UID, { email: ATLETA, email_verified: true }).firestore();
+  const coach = () => env.authenticatedContext('uid-coach', { email: COACH, email_verified: true }).firestore();
+  const otro = () => env.authenticatedContext('uidOtro', { email: 'otro@enforma.com', email_verified: true }).firestore();
+  const datos = (cambios: Record<string, unknown> = {}) => ({
+    userId: UID, email: ATLETA, token: 'fcm-token', plataforma: 'web',
+    creadoEn: '2026-11-18T10:00:00.000Z', ultimoUso: '2026-11-18T10:00:00.000Z', ...cambios,
+  });
+
+  it('el atleta guarda, refresca y borra su token', async () => {
+    await assertSucceeds(setDoc(doc(atleta(), 'pushTokens', `${UID}_abc123`), datos()));
+    await assertSucceeds(setDoc(doc(atleta(), 'pushTokens', `${UID}_abc123`), datos({ ultimoUso: '2026-11-19T10:00:00.000Z' })));
+    await assertSucceeds(deleteDoc(doc(atleta(), 'pushTokens', `${UID}_abc123`)));
+  });
+
+  it('nadie lo lee desde la app, ni el propio atleta ni el coach', async () => {
+    await sembrar(async db => { await setDoc(doc(db, 'pushTokens', `${UID}_abc123`), datos()); });
+    await assertFails(getDoc(doc(atleta(), 'pushTokens', `${UID}_abc123`)));
+    await assertFails(getDoc(doc(coach(), 'pushTokens', `${UID}_abc123`)));
+  });
+
+  it('no se puede escribir con el UID o el correo de otro, ni con campos de más', async () => {
+    await assertFails(setDoc(doc(atleta(), 'pushTokens', `uidOtro_abc123`), datos()));
+    await assertFails(setDoc(doc(atleta(), 'pushTokens', `${UID}_abc123`), datos({ userId: 'uidOtro' })));
+    await assertFails(setDoc(doc(atleta(), 'pushTokens', `${UID}_abc123`), datos({ email: 'otro@enforma.com' })));
+    await assertFails(setDoc(doc(atleta(), 'pushTokens', `${UID}_abc123`), datos({ extra: 1 })));
+  });
+
+  it('otro usuario no pisa ni borra el token ajeno', async () => {
+    await sembrar(async db => { await setDoc(doc(db, 'pushTokens', `${UID}_abc123`), datos()); });
+    await assertFails(setDoc(doc(otro(), 'pushTokens', `${UID}_abc123`), datos({ userId: 'uidOtro', email: 'otro@enforma.com' })));
+    await assertFails(deleteDoc(doc(otro(), 'pushTokens', `${UID}_abc123`)));
+  });
+
+  it('pushEnviados es solo del servidor', async () => {
+    await assertFails(getDoc(doc(coach(), 'pushEnviados', 'x')));
+    await assertFails(setDoc(doc(atleta(), 'pushEnviados', 'x'), { email: ATLETA }));
   });
 });

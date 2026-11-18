@@ -39,15 +39,20 @@ export const TECHNIQUE_COLOR: Record<WorkoutTechnique, string> = {
   fallo:     'text-danger border-danger/30 bg-danger/10',
 };
 
+// Las pausas y porcentajes de estos textos son los MISMOS que los de
+// `AJUSTES_POR_DEFECTO` (utils/tecnicaDeSerie.ts) y los de la doctrina del
+// asistente (ai/doctrina.ts, §12). Hasta el 11-11-2026 decían tres cosas
+// distintas (rest-pause 10-15 s aquí, 20-30 s en la doctrina). Si se toca una,
+// se tocan las tres: lo comprueba workoutTechniques.test.ts.
 export const TECHNIQUE_DESCRIPTION: Record<WorkoutTechnique, string> = {
   amrap:
     '"As Many Reps As Possible". En esta serie, haz todas las repeticiones que puedas con buena técnica hasta el fallo (o muy cerca de él).',
   dropset:
-    'Al llegar al fallo (o casi), baja el peso un 20-30% sin descansar y sigue hasta el fallo de nuevo. Se puede repetir 1-2 veces más bajando el peso cada vez.',
+    'Al llegar al fallo (o casi), baja el peso en torno a un 20-25 % sin descansar y sigue hasta el fallo de nuevo. Haz las bajadas que marque la serie: ni más ni menos.',
   myoreps:
-    'Haz una serie de activación hasta cerca del fallo, descansa 15-20s, y encadena varias mini-series de 3-5 repeticiones con el mismo peso hasta que no puedas completar el mínimo.',
+    'Haz una serie de activación hasta cerca del fallo, descansa unos 20 s y encadena varias mini-series de 3-5 repeticiones con el mismo peso hasta que no puedas completar el mínimo. Descansa siempre lo mismo entre ellas.',
   restpause:
-    'Al llegar al fallo, descansa 10-15s respirando (sin soltar el peso si es posible) y haz unas repeticiones más. Repite 1-2 veces más.',
+    'Al llegar al fallo, descansa 15-20 s respirando (sin soltar el peso si es posible) y haz unas repeticiones más. Repite 1-2 veces más, siempre con la misma pausa: si un día descansas más, sacar más repeticiones no es mejorar.',
   fallo:
     'Serie a fallo real: sigue hasta que la técnica se rompa, no hasta un número de repeticiones prefijado.',
 };

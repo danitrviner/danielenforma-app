@@ -81,9 +81,11 @@ interface Props {
   onCancel: () => void;
   saving: boolean;
   isNew?: boolean;
+  /** Aviso encima del formulario (preguntas nuevas del paquete oficial). */
+  aviso?: React.ReactNode;
 }
 
-export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, saving, isNew = true }: Props) {
+export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, saving, isNew = true, aviso }: Props) {
   const setQ = (idx: number, patch: Partial<QuestionnaireQuestion>) =>
     setForm(f => ({ ...f, questions: f.questions.map((q, i) => i === idx ? { ...q, ...patch } : q) }));
 
@@ -122,6 +124,8 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
           {isNew ? 'Nuevo cuestionario' : 'Editar cuestionario'}
         </h2>
       </div>
+
+      {aviso}
 
       {/* Title + description */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">

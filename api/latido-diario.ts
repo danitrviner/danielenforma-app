@@ -38,6 +38,8 @@ import {
   leerMenusDelAtleta, publicarMenu,
 } from './_lib/db-admin.js';
 import { uidDelCoach, leerPoliticaAutopiloto } from './_lib/fuenteAdmin.js';
+import { avisarPorPush, obtenerMensajeria } from './_lib/push.js';
+import type { AppNotification } from '../src/types.js';
 import { autopilotoCubre } from '../src/autopiloto/politica.js';
 import { politicaDeEpisodio, POLITICA_POR_DEFECTO } from '../src/autopiloto/politica.js';
 import { menusQuePublicar, planDePublicacion } from '../src/autopiloto/menuSemanal.js';
@@ -147,10 +149,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let politica = POLITICA_POR_DEFECTO;
   try { politica = await leerPoliticaAutopiloto(db); } catch (err) { console.warn('latido-diario: sin política del autopiloto, se usa sombra', err); }
 
+  // Notificaciones push (18-11-2026). Sin cuenta de servicio (local, pruebas)
+  // es `null` y el latido sigue igual: el push es un extra sobre la campana.
+  let mensajeria: Awaited<ReturnType<typeof obtenerMensajeria>> = null;
+  try { mensajeria = await obtenerMensajeria(); } catch (err) { console.warn('latido-diario: sin FCM, no habrá push', err); }
+
   const resumen: ResumenDeAtleta[] = [];
 
   for (const perfil of atletas) {
     const email = perfil.email;
+    // Los avisos que crea ESTA pasada para el atleta: al final salen en una
+    // sola notificación push (src/utils/avisosPush.ts, `mensajeDelDia`). Uno
+    // que ya existía (por ejemplo, el que el coach dejó esta tarde con
+    // «Mandar ahora») no se crea y, por tanto, no vuelve a sonar.
+    const avisosNuevos: AppNotification[] = [];
+    const crearAviso = async (clave: string, data: Omit<AppNotification, 'id'>): Promise<void> => {
+      if (await crearAvisoUnaVez(db, clave, data)) avisosNuevos.push({ ...data, id: clave });
+    };
     try {
       /* Se leía `leerRetos` (la colección entera de retos del atleta, sin
          ventana) y no se usaba para nada: el motor lee las dos semanas que
@@ -216,7 +231,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               await actualizarPeldanos(db, accion.userId, accion.peldanos);
               break;
             case 'aviso':
-              await crearAvisoUnaVez(db, accion.dedupeKey, accion.notificacion);
+              await crearAviso(accion.dedupeKey, accion.notificacion);
               break;
             case 'mensaje_borrador':
               await crearMensajeBorrador(db, accion.mensaje);
@@ -233,7 +248,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         getWeeklyChallenge: (e, semana) => leerReto(db, e, semana),
         saveWeeklyChallenge: ch => (enSeco ? Promise.resolve() : guardarReto(db, ch)),
         createNotificationDeduped: (clave, data) =>
-          enSeco ? Promise.resolve() : crearAvisoUnaVez(db, clave, data),
+          enSeco ? Promise.resolve() : crearAviso(clave, data),
       };
       const reto = await ejecutarRetoSemanal(
         email,
@@ -285,8 +300,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           leerRespuestasDeCuestionarios(db, email, addDays(hoy, -21)),
           leerMesociclos(db, email),
         ]);
-        const avisos = recordatoriosDeRevision({ hoy, perfil, asignaciones: cuestionarios, respuestas, mesociclos });
-        if (!enSeco) for (const r of avisos) await crearAvisoUnaVez(db, r.dedupeKey, r.notificacion);
+        // Con las plantillas: el cierre de bloque va en la semana elegida en el
+        // bloque y los cuestionarios que se abren otro día avisan (18-11).
+        const avisos = recordatoriosDeRevision({ hoy, perfil, asignaciones: cuestionarios, respuestas, mesociclos, plantillas });
+        if (!enSeco) for (const r of avisos) await crearAviso(r.dedupeKey, r.notificacion);
         if (avisos.length > 0) hecho.push(`recordatorio de revisión: ${avisos.length}`);
 
         // ── 4. El autopiloto: detectar y ENCOLAR (28-10) ──────────────────
@@ -361,6 +378,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       } catch (err) {
         hecho.push(`recordatorio de revisión: error (${(err as Error)?.message ?? err})`);
+      }
+
+      // ── 7. Notificación push de lo nuevo de esta noche (18-11) ───────────
+      // Solo lo que va al propio atleta (los avisos para el coach se quedan en
+      // su campana) y en una sola notificación aunque sean varios. En su
+      // propio try: un fallo de FCM no puede borrar lo ya hecho arriba.
+      if (!enSeco && avisosNuevos.length > 0) {
+        try {
+          const push = await avisarPorPush(db, mensajeria, email, avisosNuevos);
+          if (push.enviados > 0) hecho.push(`push: ${push.enviados} dispositivos`);
+          if (push.borrados > 0) hecho.push(`push: ${push.borrados} tokens caducados borrados`);
+        } catch (err) {
+          hecho.push(`push: error (${(err as Error)?.message ?? err})`);
+        }
       }
 
       resumen.push({ email, hecho });

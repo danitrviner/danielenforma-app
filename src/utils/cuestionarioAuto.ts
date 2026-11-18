@@ -1,8 +1,9 @@
 import type {
-  AutoRelleno, BodyweightLog, Exercise, StepLog, WorkoutAssignment, WorkoutLog,
+  AutoRelleno, BodyweightLog, Exercise, Mesocycle, StepLog, WorkoutAssignment, WorkoutLog,
 } from '../types.js';
 import { ZONAS_IEM, type ZonaIem } from './cdg/zonas.js';
 import { addDays } from './trainingWeek.js';
+import type { EjercicioDelBloque } from './cierrePorEjercicio.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Lo que la app ya sabe antes de preguntar (cuestionarios, 27-10)
@@ -82,4 +83,73 @@ export function zonasEntrenadas(d: DatosSemana): ZonaEntrenada[] {
 /** «martes» a partir de una fecha ISO. */
 export function diaDeLaSemana(iso: string): string {
   return new Date(iso + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long' });
+}
+
+/* ── Cierre de bloque: los ejercicios que ha hecho (17-11-2026) ──────────────
+   Mismo criterio que las agujetas: no se le pregunta por una lista fija, sino
+   por lo que de verdad ha entrenado. Aquí, los ejercicios del bloque que se
+   cierra, para que diga cuáles se quedan y cuáles quitaría en un toque. */
+
+export interface DatosBloque {
+  hoy: string;
+  mesocycles?: Pick<Mesocycle, 'id' | 'startDate' | 'weeks'>[];
+  logs?: Pick<WorkoutLog, 'date' | 'entries' | 'mesocycleId'>[];
+  exercises?: Pick<Exercise, 'id' | 'name' | 'muscleGroup'>[];
+}
+
+/** El cierre se contesta la última semana del bloque o unos días después. */
+export const MARGEN_TRAS_EL_BLOQUE_DIAS = 14;
+/** Sin bloque que cerrar (cuestionario puesto a mano), lo de las últimas 6 semanas. */
+const VENTANA_SIN_BLOQUE_DIAS = 42;
+
+const finDeBloque = (m: Pick<Mesocycle, 'startDate' | 'weeks'>) => addDays(m.startDate, Math.max(1, m.weeks) * 7 - 1);
+
+/**
+ * El bloque que se está cerrando: el que está en curso hoy o, si ya acabó, el
+ * último que terminó hace poco. Si el siguiente acaba de empezar (primera
+ * semana) y el anterior terminó hace nada, el cierre sigue siendo del
+ * anterior: es el que el atleta contesta con unos días de retraso. `null` si
+ * no hay ninguno a mano.
+ */
+export function bloqueQueSeCierra<M extends Pick<Mesocycle, 'id' | 'startDate' | 'weeks'>>(mesocycles: M[] | undefined, hoy: string): M | null {
+  const empezados = (mesocycles ?? [])
+    .filter(m => !!m.startDate && m.startDate <= hoy)
+    .sort((a, b) => b.startDate.localeCompare(a.startDate));
+  const enCurso = empezados.find(m => hoy <= finDeBloque(m));
+  const terminado = empezados.find(m => finDeBloque(m) < hoy);
+  const recienTerminado = terminado && hoy <= addDays(finDeBloque(terminado), MARGEN_TRAS_EL_BLOQUE_DIAS) ? terminado : null;
+  if (!enCurso) return recienTerminado;
+  const recienEmpezado = hoy < addDays(enCurso.startDate, 7);
+  return recienEmpezado && recienTerminado ? recienTerminado : enCurso;
+}
+
+/**
+ * Los ejercicios que el atleta ha HECHO en el bloque que se cierra (al menos
+ * una serie apuntada), en el orden en que aparecieron. Uno saltado todas las
+ * veces no sale: no puede opinar de lo que no ha hecho. Sin nombre en el
+ * catálogo tampoco, porque no habría qué enseñarle.
+ */
+export function ejerciciosDelBloque(d: DatosBloque): EjercicioDelBloque[] {
+  const meso = bloqueQueSeCierra(d.mesocycles, d.hoy);
+  const desde = meso ? meso.startDate : addDays(d.hoy, -VENTANA_SIN_BLOQUE_DIAS);
+  const hasta = meso ? finDeBloque(meso) : d.hoy;
+  // Por `mesocycleId` cuando el registro lo trae; por fechas para los antiguos
+  // (mismo criterio que el cierre: utils/cierreMesociclo.ts).
+  const delBloque = (d.logs ?? [])
+    .filter(l => (meso && l.mesocycleId ? l.mesocycleId === meso.id : l.date >= desde && l.date <= hasta) && l.date <= d.hoy)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const porId = new Map((d.exercises ?? []).map(e => [e.id, e]));
+  const dias = new Map<string, Set<string>>();
+  for (const log of delBloque) {
+    for (const entry of log.entries) {
+      if (!(entry.sets?.length > 0) || !porId.get(entry.exerciseId)?.name) continue;
+      if (!dias.has(entry.exerciseId)) dias.set(entry.exerciseId, new Set());
+      dias.get(entry.exerciseId)!.add(log.date);
+    }
+  }
+  return [...dias].map(([id, fechas]) => {
+    const ex = porId.get(id)!;
+    return { id, nombre: ex.name, grupo: ex.muscleGroup, sesiones: fechas.size };
+  });
 }

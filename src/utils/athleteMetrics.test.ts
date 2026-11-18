@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { bestSet } from './athleteMetrics';
 import { WorkoutLog } from '../types';
 import { exerciseBestProgress, exerciseWeightTrend, exerciseSessionHistory } from './athleteMetrics';
 
@@ -85,5 +86,24 @@ describe('exerciseSessionHistory', () => {
     expect(history).toHaveLength(10);
     expect(history[0].date).toBe('2026-08-15');
     expect(history[9].date).toBe('2026-08-06');
+  });
+});
+
+describe('fuera de su gimnasio (17-11-2026)', () => {
+  const l = (id: string, date: string, weight: number, fuera = false): WorkoutLog => ({
+    id, athleteId: 'a', workoutId: 'w', assignmentId: id, date, completedAt: '',
+    ...(fuera ? { fuera: true } : {}),
+    entries: [{ exerciseId: 'ex1', sets: [{ weight, repsDone: 8, rir: 1, ...(fuera ? { fuera: true } : {}) }] }],
+  });
+
+  it('las series fuera no son la mejor serie ni entran en la curva de pesos', () => {
+    const logs = [l('a', '2026-11-01', 80), l('b', '2026-11-08', 120, true)];
+    expect(bestSet(logs)?.weight).toBe(80);
+    expect(exerciseWeightTrend(logs, 'ex1')).toEqual([80]);
+  });
+
+  it('el historial del ejercicio las enseña, marcadas', () => {
+    const h = exerciseSessionHistory([l('a', '2026-11-01', 80), l('b', '2026-11-08', 30, true)], 'ex1');
+    expect(h.map(x => x.fuera ?? false)).toEqual([true, false]);
   });
 });

@@ -1,15 +1,21 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, Workout, WorkoutAssignment, WorkoutLog, WorkoutEntryLog } from '../types';
+import { PlanSemanal, UserProfile, Workout, WorkoutAssignment, WorkoutLog, WorkoutEntryLog } from '../types';
 import LoadHistoryPanel from './LoadHistoryPanel';
 import {
   getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getExercises,
   createWorkoutLog, updateWorkoutLog, updateWorkoutAssignment, getWorkoutLogs, getExerciseNotesForAthlete,
   getCardioAssignmentsForAthlete, getMesocycles,
 } from '../dbService';
-import { MONTHS_ES, addDays, formatDate, hoyIsoLocal } from '../utils/trainingWeek';
+import { MONTHS_ES, addDays, formatDate, getWeekStart, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, BloqueDelCiclo, DiaDelCiclo, EstadoDeDia } from '../utils/cicloDelAtleta';
-import { prefillWorkoutSets } from '../utils/setPrefill';
+import { prefillWorkoutSets, entradasDeLaUltimaVez } from '../utils/setPrefill';
+import { tipoDeSemana } from '../utils/tipoDeSemana';
+import {
+  alternarSesionFuera, cambiarPrerrelleno, esSesionFuera, fueraAlAbrir, serieConFuera, sesionesPendientesDeLaSemana,
+} from '../utils/sesionFuera';
+import { getPlanSemanal, guardarSesionesFuera } from '../db/planSemanal';
+import { saltoReal } from '../utils/cargaSugerida';
 import { conEstadoReal } from '../utils/estadoDeAsignacion';
 import { mesocycleWeekNumber, resolverEjercicioDelMeso } from '../utils/progression';
 import { marcarRetoParaReevaluar } from '../hooks/useRetoDeLaSemana';
@@ -19,7 +25,6 @@ import { useToast } from '../hooks/useToast';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import { exerciseBestProgress, exerciseWeightTrend, ExerciseBestProgress } from '../utils/athleteMetrics';
-import { rmDeSerie } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
 import { Skeleton } from './ui';
 import { useBotonAtras } from '../services/botonAtras';
@@ -32,11 +37,20 @@ import { haptics } from '../services/haptics';
 import { Badge, BadgeTone, Button, Icon, SegmentedControl, Chip, EmptyState } from './ui';
 import WorkoutSessionPlayer, { SessionCelebration } from './training/WorkoutSessionPlayer';
 import NovedadesDeSemana from './training/NovedadesDeSemana';
+import ObjetivoDelBloque from './training/ObjetivoDelBloque';
+import BloqueTerminado from './training/BloqueTerminado';
+import SesionesFueraDeLaSemana from './training/SesionesFueraDeLaSemana';
+import { progresoDelObjetivo, mesoDelObjetivo } from '../utils/progresoDelObjetivo';
+import { bloqueTerminadoParaElAtleta } from '../utils/bloqueTerminado';
 import { novedadesDeSemana, hayNovedades } from '../utils/semanasDelBloque';
 import { novedadesDeLaSesion, type NovedadesDeLaSesion } from '../utils/planificadorProgresion';
 import { cargarAvisoSesion, guardarAvisoSesion, borrarAvisoSesion } from '../utils/avisoDeSesion';
-import { SetInput, nuevaSerieVacia } from './training/setInput';
+import { SetInput, nuevaSerieVacia, tieneReps, seriesHechas, filaASerie } from './training/setInput';
+import { mejorRmValido } from './training/cierreDeEjercicio';
 import { AL_VOLVER_A_LA_APP } from '../utils/refrescoDelAtleta';
+import { dondePreguntar, esMotivoDeParada, type MotivoDeParada } from '../utils/queTeParo';
+import SaltarSesion, { SesionSaltada } from './SaltarSesion';
+import { ESPERA_PARA_DESHACER_MS, cambiosAlSaltar, sePuedeSaltar, type MotivoDeSalto } from '../utils/saltarSesion';
 
 interface TrainingScreenProps {
   profile: UserProfile;
@@ -215,6 +229,22 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const [isFinishing, setIsFinishing] = useState(false);
   const [celebration, setCelebration] = useState<SessionCelebration | null>(null);
   const [exerciseNoteInputs, setExerciseNoteInputs] = useState<string[]>([]);
+  // D3: por ejercicio, si hoy cambia la máquina o el recorrido (referencia nueva).
+  const [referenciasNuevas, setReferenciasNuevas] = useState<boolean[]>([]);
+  // D2: por ejercicio, qué paró la última serie (lo contesta al cerrarlo).
+  const [quePararon, setQuePararon] = useState<(MotivoDeParada | undefined)[]>([]);
+  // D5: molestia de 1 a 10 por ejercicio. D4: cómo llega hoy.
+  const [molestias, setMolestias] = useState<(number | undefined)[]>([]);
+  const [comoLlega, setComoLlega] = useState<WorkoutLog['comoLlega']>(undefined);
+  // «Hoy entreno fuera de mi gimnasio» (utils/sesionFuera.ts). Se cambia en
+  // toda la sesión; `prerrellenosRef` guarda la tabla de los dos modos para
+  // pasar de uno a otro las filas que el atleta aún no ha tocado.
+  const [fuera, setFuera] = useState(false);
+  const prerrellenosRef = useRef<{ normal: SetInput[][]; fuera: SetInput[][] } | null>(null);
+  // D6: cansancio al salir (0-10). Se contesta en el diálogo de fin de sesión,
+  // con el entreno ya guardado: `logGuardadoId` es el registro al que se añade.
+  const [cansancioAlSalir, setCansancioAlSalir] = useState<number | undefined>(undefined);
+  const [logGuardadoId, setLogGuardadoId] = useState<string | null>(null);
   const [workoutNoteInput, setWorkoutNoteInput] = useState('');
   // Cambios que el coach ha programado para ESTA sesión respecto a la misma
   // sesión la semana anterior, y qué contestó el atleta al aviso (null = aún
@@ -298,6 +328,40 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // pintaba de rojo la sesión de hoy y de amarillo la de ayer.
   const today = hoyIsoLocal();
 
+  // «¿Entrenas fuera esta semana?» (17-11-2026): las sesiones de esta semana
+  // que el atleta marcó para hacer fuera de su gimnasio, en su plan semanal.
+  // Clave propia y no la de Mi semana: allí se guarda el plan sin este campo
+  // y su caché lo pisaría (utils/sesionFuera.ts, db/planSemanal.ts).
+  const lunesDeHoy = getWeekStart(today);
+  const planFueraKey = ['sesionesFuera', profile.email, lunesDeHoy] as const;
+  const { data: planDeLaSemana } = useQuery({
+    queryKey: planFueraKey,
+    queryFn: () => getPlanSemanal(profile.email, lunesDeHoy),
+    ...AL_VOLVER_A_LA_APP,
+  });
+  const sesionesFueraMarcadas = planDeLaSemana?.sesionesFuera ?? [];
+  const [guardandoFuera, setGuardandoFuera] = useState(false);
+  const sesionesDelPanelFuera = sesionesPendientesDeLaSemana<WorkoutAssignment>(assignments, lunesDeHoy)
+    .map(a => ({ id: a.id, nombre: getWorkout(a.workoutId)?.name ?? 'Rutina', fecha: a.date }));
+  /** Marca o desmarca una sesión como «fuera» en el plan de la semana. Se pinta
+   *  al momento y, si no se puede guardar, vuelve atrás con un aviso. */
+  const marcarSesionFuera = (id: string, avisarSiFalla = true) => {
+    const anterior = queryClient.getQueryData<PlanSemanal | null>(planFueraKey);
+    const marcadas = alternarSesionFuera(anterior?.sesionesFuera, id);
+    queryClient.setQueryData<PlanSemanal | null>(planFueraKey, {
+      ...(anterior ?? { id: `${profile.email}_${lunesDeHoy}`, athleteId: profile.email, semana: lunesDeHoy, platos: [] }),
+      sesionesFuera: marcadas,
+    });
+    setGuardandoFuera(true);
+    guardarSesionesFuera(profile.email, lunesDeHoy, marcadas)
+      .catch(err => {
+        console.warn('guardarSesionesFuera failed:', err);
+        queryClient.setQueryData(planFueraKey, anterior ?? null);
+        if (avisarSiFalla) showToast('No se ha podido guardar. Inténtalo otra vez.');
+      })
+      .finally(() => setGuardandoFuera(false));
+  };
+
   const sortedAssignments = [...assignments].sort((a, b) => a.date.localeCompare(b.date));
   const filteredAssignments = listFilter === 'all'
     ? sortedAssignments
@@ -317,6 +381,18 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
   // Lo que el coach ha programado que cambie ESTA semana de ciclo respecto a
   // la anterior (un top set nuevo, otro ejercicio, la descarga).
+  // El objetivo del bloque en una frase y cuánto le falta (17-11-2026). Sin
+  // hipótesis en el bloque no sale nada: el componente se calla solo.
+  const objetivoDelBloque = useMemo(
+    () => progresoDelObjetivo({ meso: mesoDelObjetivo(mesocycles, today), logs, exercises, workouts, assignments, hoy: today }),
+    [mesocycles, logs, exercises, workouts, assignments, today],
+  );
+  // El bloque que acaba de terminar: sus «antes → después» y su constancia.
+  const bloqueTerminado = useMemo(
+    () => bloqueTerminadoParaElAtleta({ mesociclos: mesocycles, assignments, logs, exercises, hoy: today }),
+    [mesocycles, assignments, logs, exercises, today],
+  );
+
   const novedades = useMemo(() => {
     const primera = bloqueHoy?.dias[0]?.assignment;
     const meso = primera?.mesocycleId ? mesocycles.find(m => m.id === primera.mesocycleId) : undefined;
@@ -370,25 +446,21 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       : baseWorkout;
 
     // Para cada ejercicio de la rutina, la sesión registrada más reciente
-    // entre TODAS las sesiones anteriores — es lo que rellena la tabla.
-    const sortedPrev = logs
-      .filter(l => l.date < assignment.date)
-      .sort((a, b) => b.date.localeCompare(a.date));
-    const seenExercises = new Set<string>();
-    const entries: WorkoutEntryLog[] = [];
-    for (const log of sortedPrev) {
-      for (const entry of log.entries) {
-        if (!seenExercises.has(entry.exerciseId)) {
-          seenExercises.add(entry.exerciseId);
-          entries.push(entry);
-        }
-      }
-    }
+    // entre TODAS las sesiones anteriores — es lo que rellena la tabla. Un
+    // ejercicio saltado con motivo no cuenta como «la última vez» (F19): se
+    // usa la sesión anterior que sí tenga series.
+    const entries = entradasDeLaUltimaVez(logs, assignment.date);
 
-    const prerrellenadas = prefillWorkoutSets(wo, entries);
+    // F7a: en descarga, puente y vuelta de parón la tabla no llega con la
+    // carga subida; se repite lo de la última vez.
+    const semana = meso ? mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso)) : 0;
+    const prerrellenadas = prefillWorkoutSets(wo, entries, id => saltoReal(logs, id), tipoDeSemana(meso, semana));
+    // Fuera de su gimnasio: peso vacío y el objetivo del rango. Si el atleta
+    // la marcó en el panel de la semana, llega encendido.
+    const prerrellenadasFuera = prefillWorkoutSets(wo, entries, id => saltoReal(logs, id), tipoDeSemana(meso, semana), true);
+    const marcadaEnElPanel = sesionesFueraMarcadas.includes(assignment.id);
 
     if (meso) {
-      const semana = mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso));
       const base = baseWorkout.exercises.slice().sort((a, b) => a.order - b.order);
       const datos = novedadesDeLaSesion(base, meso, semana, baseWorkout.name, id => exercises.find(e => e.id === id)?.name ?? 'Ejercicio');
       setAvisoSesion(hayNovedades(datos.novedades)
@@ -431,9 +503,18 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
     setActiveAssignment(assignment);
     setActiveWorkout(wo);
-    setPlayerSets(borrador?.playerSets ?? prerrellenadas);
+    // Lo que el atleta hizo en la sesión (el borrador) manda sobre el panel.
+    const arrancaFuera = fueraAlAbrir(borrador?.fuera, marcadaEnElPanel);
+    prerrellenosRef.current = { normal: prerrellenadas, fuera: prerrellenadasFuera };
+    setFuera(arrancaFuera);
+    setPlayerSets(borrador?.playerSets ?? (arrancaFuera ? prerrellenadasFuera : prerrellenadas));
     setExerciseNoteInputs(borrador?.exerciseNoteInputs
       ?? wo.exercises.slice().sort((a, b) => a.order - b.order).map(() => ''));
+    setReferenciasNuevas(Array.isArray(borrador?.referenciasNuevas) ? borrador.referenciasNuevas : []);
+    setQuePararon(Array.isArray(borrador?.quePararon)
+      ? borrador.quePararon.map(m => (esMotivoDeParada(m) ? m : undefined)) : []);
+    setMolestias(Array.isArray(borrador?.molestias) ? borrador.molestias.map(m => m ?? undefined) : []);
+    setComoLlega(borrador?.comoLlega === 'bien' || borrador?.comoLlega === 'normal' || borrador?.comoLlega === 'justo' ? borrador.comoLlega : undefined);
     setWorkoutNoteInput(borrador?.workoutNoteInput ?? '');
     setCelebration(null);
     setPrevEntries(entries);
@@ -487,6 +568,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         done: true,
         ...(s.segmento ? { segmento: true } : {}),
         ...(s.segmento && s.segmentoDe ? { segmentoDe: s.segmentoDe } : {}),
+        // Al corregir una sesión se conserva la hora original de cada serie.
+        ...(s.hechaEn ? { hechaEn: s.hechaEn } : {}),
+        // Y si el RIR lo apuntó el atleta o no (D1b). Un registro antiguo no
+        // lleva la marca y sigue sin ella salvo que ahora lo cambie.
+        ...(s.rirApuntado != null ? { rirApuntado: s.rirApuntado } : {}),
       }));
     });
     const exerciseNoteInputsFromLog = orderedExercises.map(we =>
@@ -494,24 +580,23 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
     // "Última vez" para la referencia en pantalla: la sesión anterior a
     // ESTA, no la propia sesión que se está editando.
-    const sortedPrev = logs
-      .filter(l => l.id !== existingLog.id && l.date < assignment.date)
-      .sort((a, b) => b.date.localeCompare(a.date));
-    const seenExercises = new Set<string>();
-    const prevEntriesForEdit: WorkoutEntryLog[] = [];
-    for (const log of sortedPrev) {
-      for (const entry of log.entries) {
-        if (!seenExercises.has(entry.exerciseId)) {
-          seenExercises.add(entry.exerciseId);
-          prevEntriesForEdit.push(entry);
-        }
-      }
-    }
+    const prevEntriesForEdit = entradasDeLaUltimaVez(logs, assignment.date, existingLog.id);
 
     setActiveAssignment(assignment);
     setActiveWorkout(wo);
     setPlayerSets(playerSetsFromLog);
     setExerciseNoteInputs(exerciseNoteInputsFromLog);
+    setReferenciasNuevas(orderedExercises.map(we =>
+      existingLog.entries.find(e => e.exerciseId === we.exerciseId)?.nuevaReferencia === true));
+    setQuePararon(orderedExercises.map(we => {
+      const m = existingLog.entries.find(e => e.exerciseId === we.exerciseId)?.queParo;
+      return esMotivoDeParada(m) ? m : undefined;
+    }));
+    setMolestias(orderedExercises.map(we => existingLog.entries.find(e => e.exerciseId === we.exerciseId)?.molestia));
+    setComoLlega(existingLog.comoLlega);
+    // Al corregir, las filas son lo guardado: no hay prerrelleno que cambiar.
+    setFuera(esSesionFuera(existingLog));
+    prerrellenosRef.current = null;
     setWorkoutNoteInput(existingLog.note ?? '');
     setCelebration(null);
     setPrevEntries(prevEntriesForEdit);
@@ -534,6 +619,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     setPlayerSets([]);
     setPrevEntries([]);
     setExerciseNoteInputs([]);
+    setReferenciasNuevas([]);
+    setQuePararon([]);
+    setMolestias([]);
+    setComoLlega(undefined);
+    setFuera(false);
+    prerrellenosRef.current = null;
+    setCansancioAlSalir(undefined);
+    setLogGuardadoId(null);
     setWorkoutNoteInput('');
     setEditingLogId(null);
     // Solo se limpia el estado de React, no el inicio guardado en
@@ -551,9 +644,22 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // frecuente de toda la pantalla.
   const updateSet = (exIdx: number, sIdx: number, field: keyof SetInput, value: string | boolean) => {
     setPlayerSets(prev => {
+      const fila = { ...prev[exIdx][sIdx], [field]: value };
+      // F23: una fila sin repeticiones no se da por hecha, venga de donde
+      // venga la orden (la tarjeta, que además avisa; el botón del bloqueo;
+      // «Cerrar ejercicio»). Va dentro del actualizador para ver las
+      // repeticiones recién escritas en la misma tanda. El peso 0 sí vale.
+      if (field === 'done' && value === true && !tieneReps(fila)) return prev;
       const next = [...prev];
       next[exIdx] = [...next[exIdx]];
-      next[exIdx][sIdx] = { ...next[exIdx][sIdx], [field]: value };
+      // D1: la hora a la que se marca la serie. Corrigiendo una sesión ya
+      // terminada no se sella (ahí «ahora» no es cuando se hizo) y se conserva
+      // la que tuviera; al desmarcar, se quita.
+      if (field === 'done') {
+        if (value === true) { if (!editingLogId) fila.hechaEn = new Date().toISOString(); }
+        else delete fila.hechaEn;
+      }
+      next[exIdx][sIdx] = fila;
       return next;
     });
   };
@@ -566,6 +672,64 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     setPlayerSets(prev => {
       const next = [...prev];
       next[exIdx] = [...(next[exIdx] || []), nuevaSerieVacia(true, segmentoDe)];
+      return next;
+    });
+  };
+
+  /** Enciende o apaga «fuera». Las filas sin hacer y sin tocar pasan al
+   *  prerrelleno del otro modo; lo que el atleta ya escribió no se toca. */
+  const cambiarFuera = (valor: boolean) => {
+    setFuera(valor);
+    // Lo que el atleta decide en la sesión manda sobre el panel: si la sesión
+    // sale en el panel de esta semana, se marca o desmarca allí también. Así
+    // apagarlo sin marcar ninguna serie (sin borrador) no vuelve a encenderse
+    // al reabrirla, y el panel no dice algo distinto de la sesión.
+    if (activeAssignment && !editingLogId
+      && sesionesDelPanelFuera.some(s => s.id === activeAssignment.id)
+      && sesionesFueraMarcadas.includes(activeAssignment.id) !== valor) {
+      marcarSesionFuera(activeAssignment.id, false);
+    }
+    const p = prerrellenosRef.current;
+    if (p) setPlayerSets(prev => cambiarPrerrelleno(prev, valor ? p.normal : p.fuera, valor ? p.fuera : p.normal));
+  };
+
+  const marcarReferenciaNueva = (exIdx: number, marcada: boolean) => {
+    setReferenciasNuevas(prev => {
+      const next = [...prev];
+      next[exIdx] = marcada;
+      return next;
+    });
+  };
+
+  // D2: en qué ejercicios de esta sesión se pregunta «¿qué te ha parado?» —
+  // los ejercicios clave del mesociclo o, si no hay, los dos primeros.
+  const preguntarQueParo = useMemo(() => {
+    if (!activeWorkout) return [];
+    const ids = activeWorkout.exercises.slice().sort((a, b) => a.order - b.order).map(we => we.exerciseId);
+    const meso = activeAssignment?.mesocycleId ? mesocycles.find(m => m.id === activeAssignment.mesocycleId) : undefined;
+    return dondePreguntar(ids, meso?.ejerciciosClave);
+  }, [activeWorkout, activeAssignment, mesocycles]);
+
+  // F7a: si la sesión abierta cae en semana de descarga, puente o vuelta de
+  // parón, para que sus tarjetas no sugieran subir carga.
+  const tipoSemanaActiva = useMemo(() => {
+    const meso = activeAssignment?.mesocycleId ? mesocycles.find(m => m.id === activeAssignment.mesocycleId) : undefined;
+    if (!activeAssignment || !meso) return null;
+    return tipoDeSemana(meso, mesocycleWeekNumber(meso.startDate, activeAssignment.date, cicloDiasDeMeso(meso)));
+  }, [activeAssignment, mesocycles]);
+
+  const marcarQueParo = (exIdx: number, motivo: MotivoDeParada | undefined) => {
+    setQuePararon(prev => {
+      const next = [...prev];
+      next[exIdx] = motivo;
+      return next;
+    });
+  };
+
+  const marcarMolestia = (exIdx: number, valor: number | undefined) => {
+    setMolestias(prev => {
+      const next = [...prev];
+      next[exIdx] = valor;
       return next;
     });
   };
@@ -584,7 +748,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // overlay, y mientras la celebración esté abierta manda ella.
   useBotonAtras(cerrarPlayer, !!activeAssignment && !celebration);
 
-  const canFinish = playerSets.some(exSets => exSets.some(s => s.done));
+  // Solo cuentan las series con repeticiones (F23): son las que se guardan.
+  const canFinish = playerSets.some(exSets => seriesHechas(exSets).length > 0);
 
   // 05-5. Autoguardado del entrenamiento en curso: cada serie marcada y cada
   // nota persiste al instante en el dispositivo. Antes, la única escritura era
@@ -611,11 +776,17 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       workoutId:         activeWorkout.id,
       playerSets,
       exerciseNoteInputs,
+      referenciasNuevas,
+      // Los huecos del array salen como `null` al pasar por JSON.
+      quePararon:        quePararon.map(m => m ?? null),
+      molestias:         molestias.map(m => m ?? null),
+      comoLlega,
+      fuera,
       workoutNoteInput,
       guardadoEn:        new Date().toISOString(),
       formaPrescrita:    formaPrescritaRef.current,
     });
-  }, [activeAssignment, activeWorkout, playerSets, exerciseNoteInputs, workoutNoteInput,
+  }, [activeAssignment, activeWorkout, playerSets, exerciseNoteInputs, referenciasNuevas, quePararon, molestias, comoLlega, fuera, workoutNoteInput,
       celebration, canFinish, profile.email]);
 
   const handleFinish = async () => {
@@ -626,17 +797,17 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       const entries: WorkoutEntryLog[] = orderedExercises
         .map((we, exIdx) => ({
           exerciseId: we.exerciseId,
-          sets: (playerSets[exIdx] || [])
-            .filter(s => s.done)
-            .map(s => ({
-              weight: parseFloat(s.weight) || 0,
-              repsDone: parseInt(s.repsDone) || 0,
-              rir: s.rir === 'fallo' ? 0 : parseInt(s.rir) || 0,
-              alFallo: s.rir === 'fallo',
-              ...(s.segmento ? { segmento: true } : {}),
-              ...(s.segmento && s.segmentoDe ? { segmentoDe: s.segmentoDe } : {}),
-            })),
+          // F23: marcada Y con repeticiones. Una fila marcada en blanco (de un
+          // borrador anterior al arreglo) se guardaba como 0 kg × 0 reps.
+          // D1b: cada serie guarda si el RIR lo eligió el atleta (`rirApuntado`).
+          // Fuera de su gimnasio, la marca va en cada serie (utils/sesionFuera.ts);
+          // al apagarlo en una corrección, se quita.
+          sets: seriesHechas<SetInput>(playerSets[exIdx] || []).map(s => serieConFuera(filaASerie(s), fuera)),
           note: (exerciseNoteInputs[exIdx] || '').trim() || undefined,
+          ...(referenciasNuevas[exIdx] ? { nuevaReferencia: true } : {}),
+          ...(quePararon[exIdx] ? { queParo: quePararon[exIdx] } : {}),
+          // La molestia solo vale mientras siga diciendo que eso fue lo que le paró.
+          ...(quePararon[exIdx] === 'molestia' && molestias[exIdx] ? { molestia: molestias[exIdx] } : {}),
         }))
         // Antes era `.filter(e => e.sets.length > 0)` a secas, y eso TIRABA la
         // nota de un ejercicio que no se llegó a hacer: el atleta escribía «no
@@ -651,13 +822,17 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       // (nada de PRs/celebración — es una corrección, no un entreno nuevo; y
       // comparar la sesión contra sí misma daría un "récord" falso).
       if (editingLogId) {
+        // `fuera: false` solo si antes lo estaba: así una corrección cualquiera
+        // no le añade el campo a un registro que nunca lo tuvo.
+        const marcaFuera = fuera || logs.find(l => l.id === editingLogId)?.fuera ? { fuera } : {};
         await updateWorkoutLog(editingLogId, {
           entries,
           note: workoutNoteInput.trim() || undefined,
           completedAt: now,
+          ...marcaFuera,
         });
         queryClient.setQueryData<WorkoutLog[]>(logsKey, prev => prev?.map(l =>
-          l.id === editingLogId ? { ...l, entries, note: workoutNoteInput.trim() || undefined, completedAt: now } : l
+          l.id === editingLogId ? { ...l, entries, note: workoutNoteInput.trim() || undefined, completedAt: now, ...marcaFuera } : l
         ));
         void haptics.success();
         showToast('Cambios guardados.');
@@ -671,7 +846,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       const priorBest = allTimeBestBefore(logs, activeAssignment.date);
       const prs: SessionCelebration['prs'] = [];
       for (const entry of entries) {
-        const newBest = entry.sets.reduce((max, s) => Math.max(max, rmDeSerie(s)), 0);
+        // Con referencia nueva (otra máquina u otro recorrido) no hay marca
+        // anterior con la que comparar: no puede ser récord (D3).
+        if (entry.nuevaReferencia) continue;
+        // D9: el récord de RM solo se celebra con una serie válida para estimarlo.
+        const newBest = mejorRmValido(entry.sets)?.rm ?? 0;
         const prevBest = priorBest.get(entry.exerciseId);
         if (newBest > 0 && prevBest != null && newBest > prevBest) {
           prs.push({ exerciseId: entry.exerciseId, name: getExercise(entry.exerciseId)?.name || entry.exerciseId, newBest });
@@ -700,8 +879,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         note: workoutNoteInput.trim() || undefined,
         startedAt: startedAtIso,
         duracionSeg,
+        comoLlega,
         // Para el coach: si la sesión traía cambios, si el atleta leyó el aviso.
         novedadesVistas: avisoSesion ? avisoSesion.leido === true : undefined,
+        ...(fuera ? { fuera: true } : {}),
       });
 
       // El entrenamiento ya está a salvo en `workoutLogs` en este punto. Marcar
@@ -722,6 +903,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       }
 
       queryClient.setQueryData<WorkoutLog[]>(logsKey, prev => [...(prev ?? []), newLog]);
+      // D6: el diálogo de fin de sesión pregunta el cansancio y lo añade a este registro.
+      setCansancioAlSalir(undefined);
+      setLogGuardadoId(newLog.id);
       /* El reto de la semana puede haberse movido con este entreno —«sentadilla
          a 100 kg», «12 series de pecho»— así que se marca para reevaluar. Sin
          esto, Inicio seguiría enseñando el progreso de la última evaluación
@@ -757,6 +941,85 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     setCelebration(null);
     cerrarPlayer();
   };
+
+  // D6: «¿Cómo de cansado sales?». El entreno ya está guardado cuando sale el
+  // diálogo, así que la respuesta se añade a ese registro en el mismo toque,
+  // sin esperar a «Genial»: si cierra la app antes, ya está guardada.
+  const apuntarCansancio = async (valor: number) => {
+    setCansancioAlSalir(valor);
+    if (!logGuardadoId) return;
+    try {
+      await updateWorkoutLog(logGuardadoId, { cansancioAlSalir: valor });
+      queryClient.setQueryData<WorkoutLog[]>(logsKey, prev => prev?.map(l =>
+        l.id === logGuardadoId ? { ...l, cansancioAlSalir: valor } : l
+      ));
+    } catch (err) {
+      console.error('No se pudo guardar el cansancio al salir:', err);
+      showToast('No se pudo guardar cómo de cansado sales.');
+    }
+  };
+
+  // ── «No voy a poder hacerla» ───────────────────────────────────────────────
+  // La sesión se pinta como saltada al momento, pero la escritura espera unos
+  // segundos: las reglas de Firestore no dejan al atleta devolver una
+  // asignación a «pendiente», así que deshacer solo puede ser no haberla
+  // guardado todavía. Ver utils/saltarSesion.ts.
+  const [saltoEnEspera, setSaltoEnEspera] = useState<{ id: string; motivo: MotivoDeSalto } | null>(null);
+  const saltoRef = useRef<{ id: string; motivo: MotivoDeSalto; temporizador: number } | null>(null);
+
+  const pintarEstado = (id: string, status: WorkoutAssignment['status']) =>
+    queryClient.setQueryData<WorkoutAssignment[]>(assignmentsKey, prev => prev?.map(a => a.id === id ? { ...a, status } : a));
+
+  /** Guarda de verdad el salto que estaba esperando (si lo hay). */
+  const guardarSaltoEnEspera = () => {
+    const salto = saltoRef.current;
+    if (!salto) return;
+    window.clearTimeout(salto.temporizador);
+    saltoRef.current = null;
+    setSaltoEnEspera(null);
+    updateWorkoutAssignment(salto.id, cambiosAlSaltar(salto.motivo))
+      .then(() => pintarEstado(salto.id, 'skipped'))
+      .catch(err => {
+        console.error('No se pudo marcar la sesión como saltada:', err);
+        pintarEstado(salto.id, 'pending');
+        showToast('No se pudo guardar. La sesión sigue pendiente.');
+      });
+  };
+  const guardarSaltoRef = useRef(guardarSaltoEnEspera);
+  guardarSaltoRef.current = guardarSaltoEnEspera;
+
+  const saltarSesion = (a: WorkoutAssignment, motivo: MotivoDeSalto) => {
+    // Si había otra esperando, esa ya no se puede deshacer: se guarda ahora.
+    guardarSaltoEnEspera();
+    pintarEstado(a.id, 'skipped');
+    const temporizador = window.setTimeout(() => guardarSaltoRef.current(), ESPERA_PARA_DESHACER_MS);
+    saltoRef.current = { id: a.id, motivo, temporizador };
+    setSaltoEnEspera({ id: a.id, motivo });
+    void haptics.success();
+  };
+
+  const deshacerSalto = () => {
+    const salto = saltoRef.current;
+    if (!salto) return;
+    window.clearTimeout(salto.temporizador);
+    saltoRef.current = null;
+    setSaltoEnEspera(null);
+    pintarEstado(salto.id, 'pending');
+  };
+
+  // Salir de Rutinas, o mandar la app al fondo, antes de que venza la espera no
+  // puede perder el salto: se guarda en ese momento.
+  useEffect(() => {
+    const guardar = () => guardarSaltoRef.current();
+    const alOcultar = () => { if (document.visibilityState === 'hidden') guardar(); };
+    window.addEventListener('pagehide', guardar);
+    document.addEventListener('visibilitychange', alOcultar);
+    return () => {
+      window.removeEventListener('pagehide', guardar);
+      document.removeEventListener('visibilitychange', alOcultar);
+      guardar();
+    };
+  }, []);
 
   // ── Tarjeta de un día del ciclo (la usan tanto la vuelta en curso como el
   // histórico por vueltas) ───────────────────────────────────────────────────
@@ -815,6 +1078,29 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 <p className="text-caption text-ink">{a.note}</p>
               </div>
             )}
+            {/* «No voy a poder hacerla»: discreta, debajo de todo, y solo en una
+                sesión pendiente sin series apuntadas. */}
+            {wo && sePuedeSaltar(a, seriesAMedias) && (
+              <div className="mt-1.5">
+                <SaltarSesion sesion={wo.name} onSaltar={motivo => saltarSesion(a, motivo)} />
+              </div>
+            )}
+            {saltoEnEspera?.id === a.id && (
+              <div className="mt-1.5">
+                <SesionSaltada motivo={saltoEnEspera.motivo} onDeshacer={deshacerSalto} />
+              </div>
+            )}
+            {/* Pasada la espera ya no se puede volver a «pendiente» (reglas),
+                pero sí hacerla: al terminarla queda como completada. */}
+            {wo && a.status === 'skipped' && saltoEnEspera?.id !== a.id && (
+              <button
+                type="button"
+                onClick={() => openPlayer(a)}
+                className="mt-1.5 inline-flex items-center gap-1 font-sans text-caption text-ink-4 underline underline-offset-2 hover:text-ink-2"
+              >
+                Al final sí la hago
+              </button>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2 self-end md:self-auto">
@@ -857,6 +1143,15 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         prevEntries={prevEntries}
         exerciseNoteInputs={exerciseNoteInputs}
         updateExerciseNote={updateExerciseNote}
+        referenciasNuevas={referenciasNuevas}
+        marcarReferenciaNueva={marcarReferenciaNueva}
+        quePararon={quePararon}
+        marcarQueParo={marcarQueParo}
+        preguntarQueParo={preguntarQueParo}
+        molestias={molestias}
+        marcarMolestia={marcarMolestia}
+        comoLlega={comoLlega}
+        onComoLlega={setComoLlega}
         getExercise={getExercise}
         getPersonalNote={getPersonalNote}
         logs={logs}
@@ -879,6 +1174,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           guardarAvisoSesion(profile.email, activeAssignment.id, leido);
           setAvisoSesion(a => a ? { ...a, leido } : a);
         }}
+        tipoSemana={tipoSemanaActiva}
+        fuera={fuera}
+        onFuera={cambiarFuera}
+        cansancioAlSalir={cansancioAlSalir}
+        onCansancioAlSalir={logGuardadoId ? apuntarCansancio : undefined}
       />
     );
   }
@@ -928,6 +1228,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             ))}
           </div>
 
+          {/* Fuera de la lista: se ve aunque no queden sesiones pendientes, que es
+              justo lo que pasa cuando el bloque acaba de terminar. */}
+          {!loading && listFilter === 'pending' && <BloqueTerminado cierre={bloqueTerminado} className="mb-3" />}
+
           {loading ? (
             <div className="space-y-3">
               <Skeleton className="h-20 w-full" />
@@ -947,6 +1251,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               /* La vuelta en curso, del Día 1 al Día N y en ese orden. Sin bloque
                  «Atrasados» al final: el que se pasó sale en su sitio, en rojo. */
               <div className="space-y-3">
+                <ObjetivoDelBloque progreso={objetivoDelBloque} />
                 {novedades && <NovedadesDeSemana novedades={novedades.n} clave={novedades.clave} semana={novedades.semana} />}
                 <div className="flex items-center gap-3">
                   <span className="font-mono text-caption uppercase font-bold tracking-widest text-accent-ink">
@@ -995,6 +1300,17 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 </div>
               );
             })()
+          )}
+
+          {/* «¿Entrenas fuera esta semana?»: al final del todo, para quien
+              baja buscándolo; no compite con las sesiones. */}
+          {!loading && listFilter === 'pending' && (
+            <SesionesFueraDeLaSemana
+              sesiones={sesionesDelPanelFuera}
+              marcadas={sesionesFueraMarcadas}
+              onAlternar={id => marcarSesionFuera(id)}
+              guardando={guardandoFuera}
+            />
           )}
         </div>
       )}

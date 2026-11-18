@@ -10,6 +10,7 @@ import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, Dialog, Sheet } from './ui';
 import { pulsable } from '../utils/a11y';
 import { coincideBusqueda } from '../utils/busqueda';
+import { esquemaPorDefecto } from '../utils/seleccionEjercicios';
 
 interface WorkoutsScreenProps {
   coachId: string;
@@ -162,8 +163,14 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
   };
 
   const addExerciseToWorkout = (ex: Exercise) => {
+    // Reps, RIR y descanso según el tipo de ejercicio (P1). Se desestructura
+    // para no arrastrar `tipo` al documento de la rutina.
+    const { reps, rir, restSeconds } = esquemaPorDefecto(ex);
     const newWE: WorkoutExercise = {
       ...DEFAULT_WE,
+      reps,
+      rir,
+      restSeconds,
       exerciseId: ex.id,
       order: editorExercises.length,
     };

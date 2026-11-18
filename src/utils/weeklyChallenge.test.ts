@@ -283,3 +283,26 @@ describe('evaluateChallengeProgress', () => {
     expect(res.pct).toBe(75);
   });
 });
+
+describe('retos y sesiones fuera de su gimnasio (17-11-2026)', () => {
+  const ch: WeeklyChallenge = {
+    id: 'a@x.com_2026-W28', athleteId: 'a@x.com', isoWeek: '2026-W28', weekStart: '2026-07-06', weekEnd: '2026-07-12',
+    kind: 'reps_ejercicio', title: 't', description: 'd', origin: 'auto',
+    metric: { unit: 'reps', target: 10, exerciseId: 'ex1', atWeight: 60 }, status: 'activo', createdAt: '2026-07-06',
+  };
+  const l = (fuera: boolean): WorkoutLog => ({
+    id: 'w1', athleteId: 'a@x.com', workoutId: 'wk', assignmentId: 'as', date: '2026-07-07', completedAt: '',
+    ...(fuera ? { fuera: true } : {}),
+    entries: [{ exerciseId: 'ex1', sets: [{ weight: 60, repsDone: 12, rir: 2, ...(fuera ? { fuera: true } : {}) }] }],
+  });
+
+  it('un reto de repeticiones con un peso no se cumple con una sesión fuera', () => {
+    expect(evaluateChallengeProgress(ch, { ...EMPTY_DATA, workoutLogs: [l(false)] }, '2026-07-08').achieved).toBe(true);
+    expect(evaluateChallengeProgress(ch, { ...EMPTY_DATA, workoutLogs: [l(true)] }, '2026-07-08').progressValue).toBe(0);
+  });
+
+  it('uno de RIR sí cuenta las series hechas fuera', () => {
+    const rir: WeeklyChallenge = { ...ch, kind: 'rir_minimo', metric: { unit: '%', target: 100, minRir: 2 } };
+    expect(evaluateChallengeProgress(rir, { ...EMPTY_DATA, workoutLogs: [l(true)] }, '2026-07-13').achieved).toBe(true);
+  });
+});

@@ -190,6 +190,20 @@ describe('semanas de la fase, bloques y próximo cambio (hoja de periodización,
     expect(r.bloques.map(b => [b.nombre, b.estado, b.semana])).toEqual([['Adaptación', 'pasada', 6], ['Hipertrofia 1', 'actual', 7], ['Hipertrofia 2', 'futura', 1]]);
   });
 
+  it('F5 · la semana del bloque es la vuelta del ciclo, como en Rutinas, no días/7', () => {
+    // Ciclo de 14 días en un bloque de 8 semanas: 4 vueltas. Hoy (29-10) es su día 18 → vuelta 2 (días/7 daba 3).
+    const largo = { ...meso('m1', 'Frecuencia 1,5', '2026-10-12', 8), daysPerWeek: 6, cycleDays: 14 } as Mesocycle;
+    const r = construirRoadmap({ ...base, mesociclos: [largo] });
+    expect(r.bloque).toMatchObject({ semana: 2, semanas: 4, semanasCalendario: 8, hasta: '2026-12-06' });
+    expect(r.bloques[0]).toMatchObject({ semana: 2, semanas: 4, semanasCalendario: 8, estado: 'actual' });
+  });
+
+  it('F5 · con ciclo semanal el número no cambia', () => {
+    const semanal = { ...meso('m1', 'Hipertrofia 1', '2026-10-12', 8), daysPerWeek: 4 } as Mesocycle;
+    const r = construirRoadmap({ ...base, mesociclos: [semanal] });
+    expect(r.bloque).toMatchObject({ semana: 3, semanas: 8, semanasCalendario: 8 });
+  });
+
   it('el próximo cambio: escalón de kcal, de pasos o cambio de fase, lo primero que llegue', () => {
     const kcal = [null, ...semanas().map(s => s.kcalPlan)]; kcal[9] = 2000;
     const r = construirRoadmap({ ...base, kcalSemana: kcal });
@@ -198,5 +212,34 @@ describe('semanas de la fase, bloques y próximo cambio (hoja de periodización,
     expect(construirRoadmap({ ...base, pasosSemana: pasos }).proximoCambio).toMatchObject({ semana: 8, texto: 'En la S8 subes a 11.000 pasos.' });
     // Sin escalones: el siguiente cambio es la fase de mantenimiento, en la S11.
     expect(construirRoadmap(base).proximoCambio).toMatchObject({ semana: 11, texto: 'En la S11 empiezas «Mantenimiento».' });
+  });
+});
+
+describe('objetivo del bloque y bloque terminado en el Road map (17-11)', () => {
+  const comun = { program: PROGRAMA, semanas: semanas(), assignments: [], workoutLogs: [], respuestas: [], stepLogs: [], stepGoal: 9000, hoy: HOY };
+  const conHipotesis = { id: 'm1', athleteId: 'a@x.com', name: 'Hipertrofia 1', startDate: '2026-10-12', weeks: 8, daysPerWeek: 3, tipoBloque: 'desarrollo', hipotesis: { pectoral: { palanca: 'volumen' } } } as unknown as Mesocycle;
+
+  it('sin hipótesis en el bloque no hay objetivo que enseñar', () => {
+    const sin = { ...conHipotesis, hipotesis: undefined } as unknown as Mesocycle;
+    expect(construirRoadmap({ ...comun, mesociclos: [sin] }).objetivoDelBloque).toBeNull();
+    expect(construirRoadmap({ ...comun, mesociclos: [] }).objetivoDelBloque).toBeNull();
+  });
+
+  it('con hipótesis trae la frase y la misma semana que el bloque; sin catálogo de ejercicios, sin barra', () => {
+    const r = construirRoadmap({ ...comun, mesociclos: [conHipotesis] });
+    expect(r.objetivoDelBloque).toMatchObject({ mesocycleId: 'm1', semana: r.bloque!.semana, semanas: 8, semanaTexto: 'Semana 3 de 8', zonas: [], empujon: null });
+    expect(r.objetivoDelBloque!.frase).toMatch(/^Este bloque va de pecho\./);
+  });
+
+  it('con el catálogo mide el progreso de sus zonas', () => {
+    const r = construirRoadmap({ ...comun, mesociclos: [conHipotesis], exercises: [{ id: 'press', name: 'Press', muscleGroup: 'pecho' }] as never[] });
+    expect(r.objetivoDelBloque!.zonas).toMatchObject([{ zona: 'pectoral', estado: 'pronto' }]);
+  });
+
+  it('el bloque que acabó hace 14 días o menos trae su cierre; después, ya no', () => {
+    const acabado = { id: 'm0', athleteId: 'a@x.com', name: 'Adaptación', startDate: '2026-09-14', weeks: 6, daysPerWeek: 3 } as unknown as Mesocycle; // acaba el 25-10
+    const r = construirRoadmap({ ...comun, mesociclos: [acabado] });
+    expect(r.bloqueTerminado).toMatchObject({ mesocycleId: 'm0', nombre: 'Adaptación', fin: '2026-10-25', antesDespues: [], constancia: null });
+    expect(construirRoadmap({ ...comun, hoy: '2026-11-09', mesociclos: [acabado] }).bloqueTerminado).toBeNull();
   });
 });

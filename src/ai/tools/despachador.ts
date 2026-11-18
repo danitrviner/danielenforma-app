@@ -4,10 +4,11 @@
 import { getAllUserProfiles, getOnboarding } from './datos.js';
 import { estadoConsentimiento, motivoParaElCoach, aliasDeAtleta } from '../consentimientoIA.js';
 import type { RoadmapItem } from '../../types.js';
-import { DietUpdatePayload, MesocycleProposalPayload, WorkoutDayInput, WorkoutExerciseInput, LadderLevelInput } from '../validators.js';
+import { DietUpdatePayload, WorkoutDayInput, WorkoutExerciseInput, LadderLevelInput } from '../validators.js';
 import { DossierPatch } from '../../types.js';
 import { calcularRepartoTool, getChallengeOptions, getCheckinsInfo, getClientBrief, getClientOverview, getCoachAdjustments, getDietInfo, getExerciseLibrary, getExerciseUsage, getFoodLibrary, getNutritionAnalysis, getOnboardingCompleto, getProgressMetrics, getProposalFeedback, getQuestionnaireTrends, getRevisionEngine, getSetupStatus, getTrainingHistory, getVolumeSuggestion, leerContextoDelPlan, leerFicha, listClients, listMisRepartos, searchKnowledge } from './lectores.js';
-import { SEMANAS_POR_DEFECTO } from '../validators.js';
+import { semanasPorDefectoDe } from './hipotesis.js';
+import type { GruposDelAsistente } from './propuestas.js';
 import { getCdgSemana, proposeProgresionIem, getAlternativasEjercicio } from './cdg.js';
 import { getResultadoEsperado, getCierreBloque } from './lectores.js';
 import { cerrarEsperado } from './propuestas.js';
@@ -200,17 +201,19 @@ export async function executeTool(
         }
         const content = await proposeMesocycle(
           email,
-          // Sin semanas, el bloque estándar de Dani (doctrina §11). En septiembre
-          // el asistente proponía 4-8 y Dani alargaba a 12 en 6 de 12 bloques.
-          input.weeks === undefined ? SEMANAS_POR_DEFECTO : Number(input.weeks),
+          // Sin semanas, el bloque estándar de Dani (doctrina §11): 12, u 8 si
+          // es un primer bloque. En septiembre el asistente proponía 4-8 y Dani
+          // alargaba a 12 en 6 de 12 bloques.
+          input.weeks === undefined ? semanasPorDefectoDe(input.tipo_bloque) : Number(input.weeks),
           Number(input.days_per_week),
           input.objective,
-          input.groups as MesocycleProposalPayload['groups'],
+          input.groups as GruposDelAsistente,
           typeof input.start_date === 'string' ? input.start_date : undefined,
           typeof input.rationale === 'string' ? input.rationale : '',
           chatId,
           leerExpediente(input),
           input.reparto,
+          { tipoBloque: input.tipo_bloque, semana1Reducida: input.semana1_reducida, semanasIndicadas: input.weeks !== undefined },
         );
         const parsed = JSON.parse(content) as { valid?: boolean };
         return { content, isError: parsed.valid === false };
@@ -236,17 +239,19 @@ export async function executeTool(
         }
         const content = await proposePeriodizationBlock(
           email,
-          Number(input.weeks),
+          input.weeks === undefined ? semanasPorDefectoDe(input.tipo_bloque) : Number(input.weeks),
           Number(input.days_per_week),
           input.objective,
-          input.groups as MesocycleProposalPayload['groups'],
+          input.groups as GruposDelAsistente,
           typeof input.start_date === 'string' ? input.start_date : undefined,
+          // En desuso (la descarga va por señales), pero se sigue aceptando.
           typeof input.deload_week === 'number' ? input.deload_week : undefined,
           input.review_cadence_weeks,
           input.review_type as 'revision' | 'cuestionario' | 'foto',
           typeof input.rationale === 'string' ? input.rationale : '',
           chatId,
           leerExpediente(input),
+          { tipoBloque: input.tipo_bloque, semana1Reducida: input.semana1_reducida, semanasIndicadas: input.weeks !== undefined },
         );
         const parsed = JSON.parse(content) as { valid?: boolean };
         return { content, isError: parsed.valid === false };

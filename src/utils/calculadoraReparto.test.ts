@@ -207,3 +207,27 @@ describe('calcularRepartos · días máximos del microciclo', () => {
     expect(calcularRepartos({ diasSemana: [0, 2, 4], frecuencias: { pecho: 1.5 }, grupos: grupos({ pecho: 9 }) }).cicloDias).toBe(14);
   });
 });
+
+describe('calcularRepartos · brazos cruzados (P9)', () => {
+  const series: Partial<Record<MuscleGroup, number>> = { pecho: 12, dorsal: 12, biceps: 10, triceps: 10, deltoide_lat: 8, cuadriceps: 10, isquios: 8 };
+  const frecuencias = Object.fromEntries(Object.keys(series).map(g => [g, 2]));
+  const entrada = { diasSemana: [0, 1, 2, 3, 4, 5], frecuencias };
+
+  it('con un brazo en prioridad alta sale la primera, con el bíceps lejos de la espalda', () => {
+    const r = calcularRepartos({ ...entrada, grupos: grupos(series, ['biceps']) });
+    const cruzada = r.opciones[0];
+    expect(cruzada.estrategia).toBe('Empuje + bíceps / Tirón + tríceps / Pierna');
+    for (const s of cruzada.sesiones) {
+      const gs = s.grupos.map(x => x.grupo);
+      if (gs.includes('biceps')) expect(gs, `día ${s.dia + 1}`).not.toContain('dorsal');
+      if (gs.includes('triceps')) expect(gs, `día ${s.dia + 1}`).not.toContain('pecho');
+    }
+    expect(r.opciones.length).toBeLessThanOrEqual(5);
+  });
+
+  it('sin brazos prioritarios no se ofrece', () => {
+    const r = calcularRepartos({ ...entrada, grupos: grupos(series, ['pecho']) });
+    expect(r.opciones.some(o => o.estrategia.includes('bíceps'))).toBe(false);
+    expect(r.opciones.length).toBeLessThanOrEqual(4);
+  });
+});

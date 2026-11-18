@@ -2,6 +2,8 @@ import React from 'react';
 import { ExercisePerf } from '../../utils/trainingReport';
 import { fechaCorta } from '../../utils/trainingWeek';
 import { Delta, Badge, Sparkline } from '../ui';
+import { describirCambios, type CambioEnLaVentana } from '../../utils/comparabilidad';
+import { textoDeSemanas, type Estancamiento } from '../../utils/estancamiento';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Los ejercicios que hay dentro de un patrón, cuando el coach lo despliega.
@@ -27,11 +29,15 @@ interface Props {
   curvas?: Record<string, number[]>;
   /** Última fecha con serie registrada, de `revision.ultimaSesionPorEjercicio`. */
   ultimaSesion?: Record<string, string>;
+  /** S3: ejercicios cuya tarea cambió en la ventana (`revision.cambiosDeTarea`). */
+  cambios?: Record<string, CambioEnLaVentana>;
+  /** S1: ejercicios con seis semanas o más sin mejorar con la misma tarea (17-11-2026). */
+  estancados?: Estancamiento[];
 }
 
 export default function TablaEjerciciosPatron({
   ejercicios, comparacion, vacio = 'Sin ejercicios registrados en este patrón.',
-  curvas, ultimaSesion,
+  curvas, ultimaSesion, cambios, estancados,
 }: Props) {
   if (ejercicios.length === 0) {
     return <p className="font-sans text-caption text-ink-3 px-1 py-2">{vacio}</p>;
@@ -56,7 +62,16 @@ export default function TablaEjerciciosPatron({
                 <span className="inline-flex items-center gap-2">
                   {e.name}
                   {e.isPR && <Badge tone="success">Récord</Badge>}
+                  {estancados?.some(x => x.exerciseId === e.exerciseId) && (
+                    <Badge tone="warning">{textoDeSemanas(estancados.find(x => x.exerciseId === e.exerciseId)!.semanas)} igual</Badge>
+                  )}
                 </span>
+                {/* S3: lo de la columna «vs» compara dos tareas distintas. */}
+                {cambios?.[e.exerciseId] && (
+                  <span className="block font-sans text-caption text-ink-3">
+                    Cambió {describirCambios(cambios[e.exerciseId].cambios)} el {fechaCorta(cambios[e.exerciseId].date)}: no es comparable con lo de antes
+                  </span>
+                )}
               </td>
               <td className="px-3 py-2.5 text-right font-mono text-label text-ink-2 tabular-nums">{e.sets}</td>
               <td className="px-3 py-2.5 text-right font-mono text-label text-ink tabular-nums">

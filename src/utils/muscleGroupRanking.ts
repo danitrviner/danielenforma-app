@@ -4,11 +4,13 @@ import { MuscleGroup, MuscleGroupConfig } from '../types.js';
 // then weekly series descending. Same ordering MesocycleManager's distribution
 // engine already used inline — extracted here so MesocycleTemplateLibrary can
 // compute "top N prioritized groups" per template without duplicating the logic.
-const PRIO_ORDER: Record<MuscleGroupConfig['priority'], number> = { alta: 0, media: 1, baja: 2 };
+const PRIO_ORDER: Record<MuscleGroupConfig['priority'], number> = { alta: 0, media: 1, baja: 2, ignorar: 3 };
 
+// Un grupo ignorado (17-11-2026) no entra en el ranking aunque conserve series:
+// ni se reparte ni cuenta entre los «principales» de una plantilla.
 export function rankMuscleGroups(groups: Record<MuscleGroup, MuscleGroupConfig>): MuscleGroup[] {
   return (Object.keys(groups) as MuscleGroup[])
-    .filter(g => groups[g].series > 0)
+    .filter(g => groups[g].series > 0 && groups[g].priority !== 'ignorar')
     .sort((a, b) => {
       const dp = PRIO_ORDER[groups[a].priority] - PRIO_ORDER[groups[b].priority];
       return dp !== 0 ? dp : groups[b].series - groups[a].series;

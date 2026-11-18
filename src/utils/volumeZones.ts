@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// Zonas de volumen (Sin volumen / MEV / Productivo / MAV / MRV) — antes vivían
+// Zonas de volumen (Sin volumen / Bajo MEV / Productivo / MAV / MRV) — antes vivían
 // como umbrales fijos (≤4, ≤9, ≤14, 15+) duplicados en MesocycleManager.tsx y
 // MesocycleTemplateLibrary.tsx, iguales para los 17 grupos musculares. Ahora
 // leen la tabla de landmarks por grupo (src/data/volumeLandmarks.ts, editable
@@ -24,8 +24,12 @@ export function zoneOf(series: number, landmark: VolumeLandmark = GENERIC_LANDMA
   return 'mrv';
 }
 
+// La zona `mev` son las series POR DEBAJO del mínimo efectivo (1 … MEV−1), no
+// «estar en el MEV»: con el rótulo «MEV» a secas, un grupo a 3 series con MEV
+// de 6 se leía como «ya está en su mínimo efectivo» cuando le faltan 3 para
+// llegar. Se rotula «Bajo MEV» (17-11-2026). La clave interna no cambia.
 const ZONE_LABEL: Record<VolumeZone, string> = {
-  sin_volumen: 'Sin volumen', mev: 'MEV', productivo: 'Productivo', mav: 'MAV', mrv: 'MRV',
+  sin_volumen: 'Sin volumen', mev: 'Bajo MEV', productivo: 'Productivo', mav: 'MAV', mrv: 'MRV',
 };
 
 export function zoneLabel(series: number, landmark?: VolumeLandmark): string {
@@ -76,7 +80,7 @@ export function heatmapBg(series: number, landmark: VolumeLandmark = GENERIC_LAN
 
 export const VOLUME_ZONE_LEGEND = [
   { label: 'Sin volumen', bg: 'var(--color-surface)',      text: 'var(--color-ink-3)'     },
-  { label: 'MEV',         bg: 'rgb(59 130 246 / 35%)',     text: 'var(--color-ink)'      },
+  { label: 'Bajo MEV',    bg: 'rgb(59 130 246 / 35%)',     text: 'var(--color-ink)'      },
   { label: 'Productivo',  bg: 'rgb(34 197 94 / 45%)',      text: 'var(--color-ink)'   },
   { label: 'MAV',         bg: 'rgb(249 115 22 / 55%)',     text: 'var(--color-ink)'   },
   { label: 'MRV',         bg: 'rgb(239 68 68 / 50%)',      text: 'var(--color-ink)'    },

@@ -1,6 +1,7 @@
 import { WorkoutExercise, WeeklyProgressionRule, CambiosDeSemana } from '../types.js';
 import { syncAggregateFromGroups } from './setGroups.js';
 import { evaluateCondition, ConditionContext } from './conditions.js';
+import { REDUCCION_SEMANA_1_PCT } from './hipotesisDeBloque/cifras.js';
 
 /**
  * Días que dura una vuelta completa del mesociclo.
@@ -213,6 +214,111 @@ export function aplicarDescarga(we: WorkoutExercise): WorkoutExercise {
   return { ...we, sets: mitad(we.sets) };
 }
 
+// ── Semana 1 reducida (17-11-2026) ───────────────────────────────────────────
+// Empezar el bloque un poco por debajo de donde acabó el anterior: un 7 % menos
+// de VOLUMEN, con las cargas y el RIR de siempre (en una descarga Dani quita
+// series, nunca intensidad). Un 7 % de las 3 series de un ejercicio no es
+// ninguna serie entera, así que la cuenta se hace por GRUPO muscular y sobre
+// lo programado en la semana 1: 14 series de pecho → 13. Y como el recorte de
+// un grupo cae en un ejercicio concreto, hace falta ver todas las rutinas del
+// ciclo a la vez: `planDeSemana1Reducida` lo calcula con ellas delante (el
+// editor del mesociclo) y lo deja en `Mesocycle.semana1Recorte`, que es lo
+// único que necesita `resolverEjercicioDelMeso` —que resuelve ejercicio a
+// ejercicio, sin ver a sus vecinos— para aplicarlo igual en todas las pantallas.
+
+/** Series que pierde un grupo en la semana 1 reducida: el 7 % de las que tiene
+ *  programadas, en series enteras. Un grupo con estrella pierde al menos una
+ *  (con 6 series el 7 % redondea a ninguna), pero nunca se queda sin series. */
+export function seriesQueSeQuitanEnSemana1(seriesDelGrupo: number, conEstrella: boolean): number {
+  if (!(seriesDelGrupo > 0)) return 0;
+  const quitar = seriesDelGrupo - Math.round(seriesDelGrupo * (1 - REDUCCION_SEMANA_1_PCT / 100));
+  return Math.min(seriesDelGrupo - 1, Math.max(quitar, conEstrella ? 1 : 0));
+}
+
+/**
+ * El recorte de la semana 1 reducida: cuántas series pierde cada ejercicio
+ * (clave = `exerciseId`) en CADA sesión de la semana 1 en la que aparece.
+ *
+ * `rutinas` son las sesiones del ciclo tal y como quedan en la semana 1 sin el
+ * recorte (cambios por semana y escalones ya aplicados). Por grupo:
+ *
+ *  · se quita el 7 % de sus series, en enteras (`seriesQueSeQuitanEnSemana1`);
+ *  · sale del ejercicio con más series, y a igualdad del último de la semana:
+ *    lo accesorio antes que lo principal;
+ *  · ningún ejercicio baja de 1 serie;
+ *  · un ejercicio que se repite en varias sesiones pierde la serie en todas
+ *    (la clave es el ejercicio, no la sesión): solo se elige si esas series
+ *    caben en lo que toca quitar. Si ninguno cabe, un grupo con estrella
+ *    recorta el que menos se repite —pierde algo más del 7 %, que sigue dentro
+ *    del «5-10 %» acordado en casi todos los repartos— y el resto no recorta.
+ */
+export function planDeSemana1Reducida(
+  rutinas: readonly { exercises: readonly Pick<WorkoutExercise, 'exerciseId' | 'muscleGroup' | 'sets'>[] }[],
+  groups: Partial<Record<string, { priority?: string }>> | undefined,
+): Record<string, number> {
+  interface Candidato { id: string; veces: number; minimo: number; total: number; ultima: number }
+  const porGrupo = new Map<string, { series: number; ejercicios: Map<string, Candidato> }>();
+  let posicion = 0;
+  for (const rutina of rutinas) {
+    for (const e of rutina.exercises) {
+      posicion++;
+      if (!e.muscleGroup || !(e.sets > 0)) continue;
+      const g = porGrupo.get(e.muscleGroup) ?? { series: 0, ejercicios: new Map<string, Candidato>() };
+      porGrupo.set(e.muscleGroup, g);
+      g.series += e.sets;
+      const c = g.ejercicios.get(e.exerciseId) ?? { id: e.exerciseId, veces: 0, minimo: Infinity, total: 0, ultima: 0 };
+      g.ejercicios.set(e.exerciseId, { ...c, veces: c.veces + 1, minimo: Math.min(c.minimo, e.sets), total: c.total + e.sets, ultima: posicion });
+    }
+  }
+
+  const plan: Record<string, number> = {};
+  for (const [grupo, g] of porGrupo) {
+    const conEstrella = groups?.[grupo]?.priority === 'alta';
+    let quedan = seriesQueSeQuitanEnSemana1(g.series, conEstrella);
+    if (quedan <= 0) continue;
+    const candidatos = [...g.ejercicios.values()];
+    // Lo que le queda por dar a un ejercicio en cada sesión sin bajar de 1 serie.
+    const margen = (c: Candidato) => c.minimo - 1 - (plan[c.id] ?? 0);
+    const elegir = (lista: Candidato[]) => lista.sort((a, b) =>
+      (b.minimo - (plan[b.id] ?? 0)) - (a.minimo - (plan[a.id] ?? 0)) || b.ultima - a.ultima)[0];
+    let quitadas = 0;
+    while (quedan > 0) {
+      const c = elegir(candidatos.filter(x => margen(x) > 0 && x.veces <= quedan));
+      if (!c) break;
+      plan[c.id] = (plan[c.id] ?? 0) + 1;
+      quedan -= c.veces;
+      quitadas += c.veces;
+    }
+    if (quitadas === 0 && conEstrella) {
+      const c = candidatos.filter(x => margen(x) > 0).sort((a, b) => a.veces - b.veces || b.minimo - a.minimo || b.ultima - a.ultima)[0];
+      if (c) plan[c.id] = 1;
+    }
+  }
+  return plan;
+}
+
+/** Semana 1 reducida de UN ejercicio: le quita `quitar` series (del último
+ *  bloque hacia atrás), nunca por debajo de 1. Reps, RIR, carga y descanso no
+ *  se tocan. */
+export function aplicarSemana1Reducida(we: WorkoutExercise, quitar: number): WorkoutExercise {
+  let pendientes = Math.max(0, Math.floor(quitar));
+  if (pendientes === 0) return we;
+  if (we.setGroups && we.setGroups.length > 0) {
+    const total = we.setGroups.reduce((s, g) => s + g.sets, 0);
+    pendientes = Math.min(pendientes, total - 1);
+    if (pendientes <= 0) return we;
+    const bloques = we.setGroups.map(g => ({ ...g }));
+    for (let i = bloques.length - 1; i >= 0 && pendientes > 0; i--) {
+      const fuera = Math.min(bloques[i].sets, pendientes);
+      bloques[i].sets -= fuera;
+      pendientes -= fuera;
+    }
+    return syncAggregateFromGroups({ ...we, setGroups: bloques.filter(g => g.sets > 0) });
+  }
+  const sets = Math.max(1, we.sets - pendientes);
+  return sets === we.sets ? we : { ...we, sets };
+}
+
 function conRirMinimo(we: WorkoutExercise, minimo: number): WorkoutExercise {
   const sube = (rir: number | undefined) => (rir == null ? rir : Math.max(rir, minimo));
   if (we.setGroups && we.setGroups.length > 0) {
@@ -230,6 +336,7 @@ export function resolverEjercicioDelMeso(
     semanasDescarga?: number[]; semanasTest?: number[]; semanasPivot?: number[];
     groups?: Partial<Record<string, { priority?: string }>>;
     vuelveDeParon?: boolean;
+    semana1Reducida?: boolean; semana1Recorte?: Partial<Record<string, number>>;
   } | undefined,
   semana: number,
   conditionCtx?: ProgressionConditionCtx,
@@ -241,6 +348,12 @@ export function resolverEjercicioDelMeso(
   // estímulo. Si la semana ya es de descarga, manda la descarga.
   else if (meso?.semanasPivot?.includes(semana) && !(r.muscleGroup && meso.groups?.[r.muscleGroup]?.priority === 'alta')) {
     r = aplicarDescarga(r);
+  }
+  // Semana 1 reducida: un 7 % menos de volumen, ya repartido por ejercicio en
+  // `semana1Recorte` (ver `planDeSemana1Reducida`). Si la semana 1 es además
+  // de descarga o puente, mandan ellas: no se recorta dos veces.
+  else if (meso?.semana1Reducida && semana === 1) {
+    r = aplicarSemana1Reducida(r, meso.semana1Recorte?.[r.exerciseId] ?? 0);
   }
   // Vuelve de un parón (guía del IH): la primera semana a RPE 6-7, o sea,
   // con al menos 3 repeticiones en reserva. Solo sube el RIR, nunca lo baja.

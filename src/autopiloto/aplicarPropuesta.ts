@@ -34,7 +34,7 @@ import type {
   PublishBlockProposalPayload, QuestionnaireAssignment, Roadmap, RoadmapProposalPayload, SetupConfigProposalPayload,
   SnapshotDocumento, SpecialDayProposalPayload, TaskItem, TemplateStage, UserProfile, WeekDay, WeekPlanProposalPayload,
   WeeklyChallenge, WeeklyChallengeProposalPayload, WeightCheckIn, Workout, WorkoutAssignment, WorkoutDaysProposalPayload, QuestionnaireResponse, RespuestaRevisionProposalPayload, MensajeCoach, MensajeAtletaProposalPayload,
-  WorkoutExercise, WorkoutTemplateProposalPayload,
+  WorkoutExercise, WorkoutLog, WorkoutTemplateProposalPayload,
 } from '../types.js';
 import { rirDescendente, subirSeries, programarEnSemanas } from '../utils/semanasDelBloque.js';
 import { programarAjuste } from '../utils/semanasNutricion.js';
@@ -48,6 +48,8 @@ import { nombrePropioDeSesion } from '../utils/draftEjercicios.js';
 import { repartoDelMesociclo, tiposDeEntrenamiento } from '../utils/trainingSplits.js';
 import { distribucionDeMeso } from '../utils/distribucionDeMeso.js';
 import { isoLocal, addDays } from '../utils/trainingWeek.js';
+import { descargaEnSemanaDeCalendario } from '../utils/descargaDelBloque.js';
+import { conRampaPendiente, entradaYaPasada, rutinaConRampa, sinRampaPendiente, tieneRampaPendiente } from '../utils/rampaEnRutinas.js';
 
 // ── Lo que hay que poder leer ────────────────────────────────────────────────
 
@@ -68,6 +70,10 @@ export interface LectorAplicacion {
   checkin?(id: string): Promise<WeightCheckIn | null>;
   ficha?(email: string): Promise<AthleteDossier | null>;
   respuestaCuestionario?(email: string, id: string): Promise<QuestionnaireResponse | null>;
+  /** Registros de entreno del atleta, para la norma de ejercicio nuevo
+   *  (17-11-2026). Opcional: sin él, las sesiones se guardan sin la entrada y
+   *  marcadas para que el editor del mesociclo se la ponga al abrir el bloque. */
+  registros?(email: string): Promise<Pick<WorkoutLog, 'date' | 'entries'>[]>;
 }
 
 export interface OpcionesAplicacion {
@@ -207,7 +213,14 @@ export async function aplicarPropuesta(
       // Al aprobar se crea el mesociclo Y toda la cadencia de revisiones de
       // golpe; el carril "Revisiones" las pinta solas en cuanto existen.
       const { mesocycle, reviewCadenceWeeks, reviewType } = p.payload as PeriodizationBlockPayload;
-      ops.push({ tipo: 'crearMesociclo', ref: 'meso', mesociclo: mesocycle });
+      // La descarga que promete la propuesta tiene que recortar el entreno, y
+      // eso solo lo hace `semanasDescarga`. Las propuestas creadas antes del
+      // 17-11-2026 traen solo `deloadWeek` (la marca del calendario): se
+      // completan aquí, al aprobar. Un bloque YA guardado no se toca.
+      const mesociclo = mesocycle.deloadWeek !== undefined && !mesocycle.semanasDescarga?.length
+        ? { ...mesocycle, ...descargaEnSemanaDeCalendario(mesocycle.deloadWeek, cicloDiasDeMeso(mesocycle)) }
+        : mesocycle;
+      ops.push({ tipo: 'crearMesociclo', ref: 'meso', mesociclo });
       const reviewCount = Math.max(1, Math.floor(mesocycle.weeks / reviewCadenceWeeks));
       const reviewTitle = reviewType === 'revision' ? 'Revisión' : reviewType === 'cuestionario' ? 'Cuestionario' : 'Fotos de check-in';
       for (let i = 0; i < reviewCount; i++) {
@@ -397,8 +410,20 @@ export async function aplicarPropuesta(
       const meso = mesos.find(m => m.id === mesocycleId);
       const delMeso = todas.filter(w => w.mesocycleId === mesocycleId);
       const athleteName = perfil?.displayName;
+      /* Norma de ejercicio nuevo (17-11-2026): lo que el atleta no ha hecho
+         nunca, o no en más de 8 semanas, entra con más repeticiones las tres
+         primeras semanas — la misma función que usa el editor. Hacen falta
+         sus registros; si este lector no los da, la rutina se guarda tal cual
+         y MARCADA (`conRampaPendiente`), y el editor se la pone la primera vez
+         que el coach abre el bloque. En un bloque que ya pasó de su semana 3
+         no se hace ni lo uno ni lo otro: la entrada ya no cambiaría nada. */
+      const aTiempo = !!meso && !entradaYaPasada(meso.startDate, cicloDiasDeMeso(meso), isoLocal(new Date(ahora)));
+      const registros = aTiempo && lector.registros ? await lector.registros(p.athleteId) : null;
+      const catalogo = registros ? new Map((await lector.ejercicios()).map(e => [e.id, e])) : null;
+      const rampa = { registros, inicio: meso?.startDate ?? '', ejercicio: (id: string) => catalogo?.get(id) };
+      const pendiente = aTiempo && !registros;
       for (const dia of days) {
-        const exercises: WorkoutExercise[] = dia.exercises.map((ex, i) => ({
+        const exercises: WorkoutExercise[] = rutinaConRampa(dia.exercises.map((ex, i) => ({
           exerciseId: ex.exerciseId,
           order: i,
           sets: ex.sets,
@@ -407,7 +432,7 @@ export async function aplicarPropuesta(
           restSeconds: ex.restSeconds,
           ...(ex.notes ? { notes: ex.notes } : {}),
           ...(ex.muscleGroup ? { muscleGroup: ex.muscleGroup } : {}),
-        }));
+        })), rampa);
         // Sin nombre, el mismo que pondría el editor: el que le puso Dani a
         // esa sesión o el tipo de día de su reparto («Pierna», «Empuje»…).
         const tipo = meso
@@ -419,10 +444,16 @@ export async function aplicarPropuesta(
           : `Sesión ${dia.dayIndex + 1}`);
         const existente = delMeso.find(w => w.dayIndex === dia.dayIndex);
         if (existente) {
+          // Con la entrada ya puesta aquí, una marca de «pendiente» anterior sobra.
+          const tags = pendiente ? conRampaPendiente(existente.tags)
+            : registros && tieneRampaPendiente(existente) ? sinRampaPendiente(existente.tags) : undefined;
           antes.push(foto('workouts', existente.id, sinId(existente)));
-          ops.push({ tipo: 'actualizarRutina', id: existente.id, cambios: { name: nombre, exercises } });
+          ops.push({ tipo: 'actualizarRutina', id: existente.id, cambios: { name: nombre, exercises, ...(tags ? { tags } : {}) } });
         } else {
-          ops.push({ tipo: 'crearRutina', ref: `rutina_${dia.dayIndex}`, rutina: { ownerId: opciones.coachUid, name: nombre, mesocycleId, dayIndex: dia.dayIndex, exercises } });
+          ops.push({ tipo: 'crearRutina', ref: `rutina_${dia.dayIndex}`, rutina: {
+            ownerId: opciones.coachUid, name: nombre, mesocycleId, dayIndex: dia.dayIndex, exercises,
+            ...(pendiente ? { tags: conRampaPendiente(undefined) } : {}),
+          } });
         }
       }
       return { ok: true, operaciones: ops, snapshotAntes: antes, resultEntityId: mesocycleId };
@@ -595,7 +626,11 @@ export async function aplicarPropuesta(
         ...(st.reparto ? { reparto: st.reparto } : {}),
         ...(st.cycleDays !== undefined ? { cycleDays: st.cycleDays } : {}),
         ...(st.distribution ? { distribution: st.distribution } : {}),
-        ...(st.deloadWeek !== undefined ? { deloadWeek: st.deloadWeek } : {}),
+        // Con `semanasDescarga`, que es lo que viaja al bloque del atleta y
+        // recorta el entreno; `deloadWeek` solo pintaba el calendario.
+        ...(st.deloadWeek !== undefined
+          ? descargaEnSemanaDeCalendario(st.deloadWeek, cicloDiasDeMeso({ daysPerWeek: st.daysPerWeek, cycleDays: st.cycleDays, reparto: st.reparto }))
+          : {}),
         ...(st.reviewCadenceWeeks !== undefined ? { reviewCadenceWeeks: st.reviewCadenceWeeks, reviewType: st.reviewType ?? 'revision' } : {}),
         ...(st.days ? {
           days: st.days.map((d, k) => ({

@@ -1,7 +1,9 @@
 import { WorkoutLog, Exercise, Mesocycle, MuscleGroup, MUSCLE_LABELS } from '../types.js';
-import { rmDeSerie } from './oneRepMax.js';
+import { rmValidoDeSerie } from './marcaDeSesion.js';
+import { esAnteriorALaReferencia, ultimaReferenciaPorEjercicio } from './referenciaDeEjercicio.js';
 import { addDays } from './trainingWeek.js';
 import { contextoPesoCorporal, pesoDeSerie, type ContextoPesoCorporal } from './pesoCorporal.js';
+import { REPS_MIN_RM } from './rmValido.js';
 
 // Deterministic training-performance report engine (no LLM/external API), same
 // style as src/utils/nutritionAnalysis.ts. Powers the weekly report the coach
@@ -32,9 +34,11 @@ export interface ExercisePerf {
   sets: number;
   reps: number;
   tonnage: number;
-  bestOrm: number;               // best CDG 1RM in the current period
-  prevBestOrm: number | null;    // best CDG 1RM in the comparison window
-  deltaOrmPct: number | null;    // signed % vs prevBestOrm
+  // Desde el 17-11-2026 (D2) el 1RM sale solo de las series VÁLIDAS
+  // (`rmValido.ts`: 3-15 reps, RIR 2 o menos, RIR apuntado, sin bajadas).
+  bestOrm: number;               // mejor 1RM (CDG) de una serie válida en el periodo; 0 = sin marca
+  prevBestOrm: number | null;    // lo mismo en la ventana de comparación; null = sin marca allí
+  deltaOrmPct: number | null;    // signed % vs prevBestOrm; null si falta la marca en un lado
   isPR: boolean;                 // bestOrm beats the all-time best BEFORE this period
 }
 
@@ -83,7 +87,12 @@ export interface Agg {
 // Exportada además del uso interno: movementPatterns.ts la reutiliza para
 // construir el bloque "Rendimiento" (por patrón de movimiento en vez de por
 // grupo muscular) sin duplicar la lógica de tonelaje/1RM por sesión.
-export function aggregate(logs: WorkoutLog[], ctx?: ContextoPesoCorporal | null): Agg {
+export function aggregate(
+  logs: WorkoutLog[],
+  ctx?: ContextoPesoCorporal | null,
+  /** Referencias nuevas por ejercicio (D3): las series de antes no cuentan para el 1RM, sí para el trabajo. */
+  refs?: ReadonlyMap<string, string>,
+): Agg {
   const perExercise = new Map<string, { sets: number; reps: number; tonnage: number; bestOrm: number }>();
   const dates = new Set<string>();
   let tonnage = 0;
@@ -98,14 +107,18 @@ export function aggregate(logs: WorkoutLog[], ctx?: ContextoPesoCorporal | null)
         const r = Number(s.repsDone) || 0;
         if (!s.segmento) row.sets++;
         row.reps += r;
-        const t = w * r;
+        // Fuera de su gimnasio (utils/sesionFuera.ts) la serie cuenta como
+        // serie, pero sus kilos no suman tonelaje: son de otras máquinas.
+        const t = s.fuera ? 0 : w * r;
         row.tonnage = round1(row.tonnage + t);
         tonnage = round1(tonnage + t);
-        // Una serie de calentamiento mal apuntada (RIR vacío = 0) no es un
-        // récord: el 1RM solo se estima con peso y 3+ repeticiones (B13, 26-10-2026).
-        if (!cuentaParaRm({ ...s, weight: w })) continue;
-        const orm = rmDeSerie({ ...s, weight: w });
-        if (orm > row.bestOrm) row.bestOrm = orm;
+        // Cambió de máquina o de recorrido después: esta marca es de otra tarea.
+        if (esAnteriorALaReferencia(refs, entry.exerciseId, log.date)) continue;
+        // El 1RM solo se estima con las series válidas (D2, 17-11-2026): una
+        // serie de 20 a RIR 4, una bajada o una serie con el RIR pautado sin
+        // tocar no son un récord. Antes bastaba con peso y 3+ reps (B13).
+        const orm = rmValidoDeSerie(s, w);
+        if (orm != null && orm > row.bestOrm) row.bestOrm = orm;
       }
     }
   }
@@ -113,8 +126,14 @@ export function aggregate(logs: WorkoutLog[], ctx?: ContextoPesoCorporal | null)
 }
 
 /** Repeticiones mínimas para que una serie cuente en el 1RM estimado. */
-export const REPS_MINIMAS_RM = 3;
-/** ¿Sirve esta serie para estimar el 1RM? Con peso y al menos `REPS_MINIMAS_RM` repeticiones. */
+export const REPS_MINIMAS_RM = REPS_MIN_RM;
+/**
+ * ¿Tiene la serie peso y al menos `REPS_MINIMAS_RM` repeticiones? Era el único
+ * filtro del 1RM (B13, 26-10-2026). Ya no decide qué entra en el RM: eso lo
+ * hace `rmValidoDeSerie` (`marcaDeSesion.ts`), que además mira el tope de
+ * repeticiones, el RIR y las bajadas. Se conserva para quien solo necesite
+ * saber si la serie tiene con qué estimarse.
+ */
 export function cuentaParaRm(s: { weight?: number | null; repsDone?: number | null }): boolean {
   return (Number(s.weight) || 0) > 0 && (Number(s.repsDone) || 0) >= REPS_MINIMAS_RM;
 }
@@ -125,14 +144,18 @@ export function cuentaParaRm(s: { weight?: number | null; repsDone?: number | nu
 // historial previo, un primer registro nunca cuenta como récord).
 export function allTimeBestBefore(logs: WorkoutLog[], beforeDate: string, ctx?: ContextoPesoCorporal | null): Map<string, number> {
   const best = new Map<string, number>();
+  // D3: si el atleta marcó una referencia nueva (cambió de máquina o de
+  // recorrido), lo anterior no es historial de ESTA tarea. Sin historial no
+  // hay récord, igual que con un ejercicio que se hace por primera vez.
+  const refs = ultimaReferenciaPorEjercicio(logs);
   for (const log of logs) {
     if (log.date >= beforeDate) continue;
     for (const entry of log.entries) {
+      if (esAnteriorALaReferencia(refs, entry.exerciseId, log.date)) continue;
       for (const s of entry.sets) {
-        const serie = { ...s, weight: pesoDeSerie(s.weight, entry.exerciseId, ctx) };
-        if (!cuentaParaRm(serie)) continue;
-        const orm = rmDeSerie(serie);
-        if (orm > (best.get(entry.exerciseId) ?? 0)) best.set(entry.exerciseId, orm);
+        // Solo series válidas (D2): el récord a batir es una marca de verdad.
+        const orm = rmValidoDeSerie(s, pesoDeSerie(s.weight, entry.exerciseId, ctx));
+        if (orm != null && orm > (best.get(entry.exerciseId) ?? 0)) best.set(entry.exerciseId, orm);
       }
     }
   }
@@ -227,8 +250,9 @@ export function buildTrainingReport(params: {
   const curLogs = logs.filter(l => inRange(l.date, w.curStart, w.curEnd));
   const prevLogs = w.prevStart && w.prevEnd ? logs.filter(l => inRange(l.date, w.prevStart!, w.prevEnd!)) : [];
 
-  const cur = aggregate(curLogs, ctx);
-  const prev = aggregate(prevLogs, ctx);
+  const refs = ultimaReferenciaPorEjercicio(logs);
+  const cur = aggregate(curLogs, ctx, refs);
+  const prev = aggregate(prevLogs, ctx, refs);
   const priorBest = allTimeBestBefore(logs, w.curStart);
 
   const nameOf = (id: string) => exercises.find(e => e.id === id)?.name ?? `Ejercicio (…${id.slice(-6)})`;
@@ -237,7 +261,13 @@ export function buildTrainingReport(params: {
   const perExercise: ExercisePerf[] = Array.from(cur.perExercise.entries())
     .map(([exerciseId, row]) => {
       const prevRow = prev.perExercise.get(exerciseId);
-      const prevBestOrm = prevRow ? prevRow.bestOrm : null;
+      // Con una referencia nueva posterior a la ventana anterior, lo de antes
+      // es otra tarea: no hay con qué comparar (y no un «−20 %» falso).
+      const ref = refs.get(exerciseId);
+      const comparable = !(ref && w.prevEnd && ref > w.prevEnd);
+      // Sin ninguna serie válida en la ventana anterior no hay marca que
+      // comparar: es `null`, no un 0.
+      const prevBestOrm = prevRow && comparable && prevRow.bestOrm > 0 ? prevRow.bestOrm : null;
       // A PR must beat existing history — a first-ever exercise (no prior logs)
       // isn't a record, so require a prior best to exist before flagging.
       const prior = priorBest.get(exerciseId);
@@ -250,7 +280,8 @@ export function buildTrainingReport(params: {
         tonnage: row.tonnage,
         bestOrm: row.bestOrm,
         prevBestOrm,
-        deltaOrmPct: prevBestOrm != null ? deltaPct(row.bestOrm, prevBestOrm) : null,
+        // Y sin marca en esta, tampoco: `bestOrm` 0 contra 100 no es un −100 %.
+        deltaOrmPct: prevBestOrm != null && row.bestOrm > 0 ? deltaPct(row.bestOrm, prevBestOrm) : null,
         isPR,
       };
     })

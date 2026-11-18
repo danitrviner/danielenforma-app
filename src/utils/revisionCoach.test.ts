@@ -6,7 +6,7 @@ import {
 import {
   resolverPeriodoRevision, buildRevisionCoach, agruparEjerciciosPorPatron,
   mejoresYPeores, mesoActivo, semanasDeVentana, pesoVsSemanaPasada, construirBienestar,
-  fechaDeLaUltimaRevision, curvasDeLaVentana,
+  fechaDeLaUltimaRevision, curvasDeLaVentana, senalesDelProtocolo, resumenDelPatron,
 } from './revisionCoach';
 
 const HOY = '2026-09-14'; // lunes
@@ -169,7 +169,7 @@ describe('mesoActivo', () => {
 describe('agruparEjerciciosPorPatron', () => {
   const exercises = [
     ej('press', 'pecho'),
-    ej('frances', 'triceps'),   // empuje_torso Y brazo
+    ej('frances', 'triceps'),   // aislamiento de tríceps: solo Brazo (F17)
     ej('plancha', 'core'),      // sin patrón
     ej('remo', 'dorsal'),
   ];
@@ -178,9 +178,9 @@ describe('agruparEjerciciosPorPatron', () => {
     bestOrm: 100, prevBestOrm: 95, deltaOrmPct: 5, isPR: false,
   }));
 
-  it('un ejercicio de dos patrones aparece ENTERO en los dos', () => {
+  it('el patrón lo decide el ejercicio: un aislamiento de tríceps va a Brazo, no a empuje de torso (F17)', () => {
     const { porPatron } = agruparEjerciciosPorPatron(perf, exercises);
-    expect(porPatron.empuje_torso.map(e => e.exerciseId)).toEqual(['press', 'frances']);
+    expect(porPatron.empuje_torso.map(e => e.exerciseId)).toEqual(['press']);
     expect(porPatron.brazo.map(e => e.exerciseId)).toEqual(['frances']);
   });
 
@@ -236,6 +236,17 @@ describe('mejoresYPeores', () => {
 
   it('un ±1 % de Epley es ruido de redondeo, no una mejora', () => {
     expect(mejoresYPeores(perf).suben.map(e => e.exerciseId)).not.toContain('ruido');
+  });
+
+  it('el listón es el ruido de medida (3 %): un ±2,5 % no sube ni baja', () => {
+    const justos = [
+      { ...base, exerciseId: 'casi_sube', sets: 4, bestOrm: 102.5, prevBestOrm: 100, deltaOrmPct: 2.5 },
+      { ...base, exerciseId: 'casi_baja', sets: 4, bestOrm: 97.5, prevBestOrm: 100, deltaOrmPct: -2.5 },
+      { ...base, exerciseId: 'baja_de_verdad', sets: 4, bestOrm: 97, prevBestOrm: 100, deltaOrmPct: -3 },
+    ];
+    const { suben, bajan } = mejoresYPeores(justos);
+    expect(suben).toEqual([]);
+    expect(bajan.map(e => e.exerciseId)).toEqual(['baja_de_verdad']);
   });
 
   it('los que bajan salen de la peor a la menos mala', () => {
@@ -313,6 +324,20 @@ describe('buildRevisionCoach', () => {
     expect(r.informe.sessions).toBe(4);
     expect(r.ejerciciosPorPatron.empuje_torso.map(e => e.exerciseId)).toEqual(['press']);
     expect(r.ejerciciosPorPatron.traccion.map(e => e.exerciseId)).toEqual(['remo']);
+  });
+
+  // D2 (17-11-2026): sin series válidas en la ventana no hay marca, y sin marca no hay caída.
+  it('un ejercicio sin marca en la ventana no «cae un 100 %» ni entra en el patrón de la caída', () => {
+    const conRir = (date: string, rir: number) => log(date, [{ exerciseId: 'press', series: [[80, 8], [80, 8], [80, 8]], rir }]);
+    const r = buildRevisionCoach({
+      // La quincena anterior, a RIR 2; esta, todo a RIR 4 (la vuelta de un parón, por ejemplo).
+      logs: [conRir('2026-08-25', 2), conRir('2026-08-28', 2), conRir('2026-09-08', 4), conRir('2026-09-11', 4)],
+      exercises, mesocycles: [], periodo: { tipo: '14d' }, hoy: HOY,
+    });
+    const press = r.informe.perExercise.find(e => e.exerciseId === 'press')!;
+    expect(press).toMatchObject({ bestOrm: 0, deltaOrmPct: null });
+    expect(r.caida).toBeNull();
+    expect(r.bajan).toEqual([]);
   });
 
   it('sin logs no revienta: devuelve la ventana y todo a cero', () => {
@@ -411,21 +436,25 @@ describe('construirBienestar', () => {
   ];
   const ventana = { desde: '2026-09-01', hasta: '2026-09-14' };
 
-  it('calcula el IRP actual y su serie', () => {
+  it('sueño, estrés y agujetas por separado, sin índice que los mezcle (18-11-2026)', () => {
     const b = construirBienestar({ responses: RESPUESTAS, questionnaires: [Q_BIENESTAR], ventana });
-    expect(b.irp.valor).not.toBeNull();
-    expect(b.irp.horasSueño).not.toBeNull();
-    expect(b.irp.estres).not.toBeNull();
-    expect(b.historial.length).toBeGreaterThan(0);
+    expect(b.actual.horasSueño).toBe(b.sueño[b.sueño.length - 1].value);
+    expect(b.actual.estres).toBe(b.estres[b.estres.length - 1].value);
+    expect(b.actual.domsCronico).not.toBeNull();
+    expect(b).not.toHaveProperty('irp');
+    expect(b).not.toHaveProperty('historial');
   });
 
-  it('el IRP de referencia es el de ANTES de la ventana, no el de dentro', () => {
+  it('el contexto es el del protocolo, con lo vigente al final de la ventana', () => {
+    // Última respuesta (07-09): estrés 7 → desfavorable, como en el protocolo semanal.
     const b = construirBienestar({ responses: RESPUESTAS, questionnaires: [Q_BIENESTAR], ventana });
-    const ultimoAntes = b.historial.filter(p => p.date <= '2026-08-31').pop();
-    expect(b.irpAlInicio).toBe(ultimoAntes?.value ?? null);
-    // El punto del 07-09 cae DENTRO de la ventana: no puede ser la referencia.
-    const dentro = b.historial.find(p => p.date === '2026-09-07');
-    if (dentro) expect(b.irpAlInicio).not.toBe(dentro.value);
+    expect(b.contexto).toEqual({ contexto: 'desfavorable', motivos: ['estrés 7/10'] });
+    // Mirando antes del 07-09, lo vigente es el 24-08 (estrés 6, 6 h): ni bueno ni malo.
+    const antes = construirBienestar({ responses: RESPUESTAS, questionnaires: [Q_BIENESTAR], ventana: { desde: '2026-08-25', hasta: '2026-08-31' } });
+    expect(antes.contexto.contexto).toBe('neutro');
+    // Lo caducado (más de 10 días) es «sin dato».
+    const tarde = construirBienestar({ responses: RESPUESTAS, questionnaires: [Q_BIENESTAR], ventana: { desde: '2026-09-20', hasta: '2026-09-30' } });
+    expect(tarde.contexto.contexto).toBe('sin-dato');
   });
 
   it('solo saca como crónicos los grupos que pasan el umbral, de más a menos', () => {
@@ -445,13 +474,68 @@ describe('construirBienestar', () => {
     expect(b.domsPorGrupo.cuadriceps).toBeUndefined();
   });
 
-  it('sin cuestionarios no inventa nada: IRP null y listas vacías', () => {
+  it('sin cuestionarios no inventa nada: todo null y listas vacías', () => {
     const b = construirBienestar({ responses: [], questionnaires: [], ventana });
-    expect(b.irp.valor).toBeNull();
-    expect(b.historial).toEqual([]);
+    expect(b.actual).toEqual({ horasSueño: null, estres: null, domsCronico: null });
+    expect(b.contexto.contexto).toBe('sin-dato');
     expect(b.domsCronico).toEqual([]);
     expect(b.domsPorGrupo).toEqual({});
-    expect(b.irpAlInicio).toBeNull();
+  });
+
+  // ── R3: señales del protocolo semanal para la descarga ─────────────────────
+  const Q_SEMANA: Questionnaire = {
+    id: 'q_s', ownerId: 'coach', title: 'Tu semana',
+    questions: [
+      { id: 'cansancio', label: 'Cansancio al salir', type: 'scale', required: false, scaleMin: 0, scaleMax: 10, signalKey: 'wellness.fatigue_post_weekly' },
+      { id: 'ag_isquios', label: 'Agujetas isquios', type: 'scale', required: false, scaleMin: 1, scaleMax: 5, signalKey: 'agujetas.isquios' },
+      { id: 'ag_gluteo', label: 'Agujetas glúteo', type: 'scale', required: false, scaleMin: 1, scaleMax: 5, signalKey: 'agujetas.gluteo' },
+    ],
+  };
+  const semana = (fecha: string, cansancio: number, isquios: number, gluteo: number): QuestionnaireResponse => ({
+    id: `s_${fecha}`, questionnaireId: 'q_s', assignmentId: 'a', athleteId: 'ana@x.com', submittedAt: `${fecha}T19:00:00.000Z`,
+    answers: [{ questionId: 'cansancio', value: cansancio }, { questionId: 'ag_isquios', value: isquios }, { questionId: 'ag_gluteo', value: gluteo }],
+  });
+
+  it('R3 · saca el cansancio al salir y las agujetas 1-5 con su semana previa, a fecha del final de la ventana', () => {
+    const responses = [semana('2026-09-04', 6, 4, 2), semana('2026-09-11', 9, 4, 3)];
+    const r = senalesDelProtocolo({ responses, questionnaires: [Q_SEMANA], hasta: '2026-09-14' });
+    expect(r.cansancioAlSalir).toBe(9);
+    expect(r.agujetasPorZona).toEqual([
+      { nombre: 'Isquiotibiales', valor: 4, anterior: 4 },
+      { nombre: 'Glúteo (mayor y medio)', valor: 3, anterior: 2 },
+    ]);
+    // Mirando una semana atrás, lo del 11-09 todavía no existía.
+    const antes = senalesDelProtocolo({ responses, questionnaires: [Q_SEMANA], hasta: '2026-09-07' });
+    expect(antes.cansancioAlSalir).toBe(6);
+    expect(antes.agujetasPorZona?.[0]).toEqual({ nombre: 'Isquiotibiales', valor: 4, anterior: undefined });
+  });
+
+  it('R3 · lo caducado es «sin dato», y el DOM\'s 0-10 no se cuenta dos veces', () => {
+    const viejo = senalesDelProtocolo({ responses: [semana('2026-08-01', 9, 5, 5)], questionnaires: [Q_SEMANA], hasta: '2026-09-14' });
+    expect(viejo.cansancioAlSalir).toBeUndefined();
+    expect(viejo.agujetasPorZona).toEqual([]);
+    // Las agujetas convertidas del DOM's por grupo ya van por «agujetas que no se van».
+    const soloDoms = senalesDelProtocolo({ responses: RESPUESTAS, questionnaires: [Q_BIENESTAR], hasta: '2026-09-14' });
+    expect(soloDoms.agujetasPorZona).toEqual([]);
+  });
+
+  it('R3 · buildRevisionCoach las pasa a la descarga: cansancio de 9 y agujetas repetidas son dos señales', () => {
+    const r = buildRevisionCoach({
+      logs: [], exercises: [], mesocycles: [], periodo: { tipo: '7d' }, hoy: HOY,
+      responses: [semana('2026-09-04', 6, 4, 2), semana('2026-09-11', 9, 4, 3)], questionnaires: [Q_SEMANA],
+    });
+    expect(r.descarga.senales).toEqual([
+      'sale muy cansado de las sesiones (9/10)',
+      'agujetas de 4 o más dos semanas seguidas en isquiotibiales',
+    ]);
+    expect(r.descarga.recomendada).toBe(true);
+    // Con una sola (cansancio alto, agujetas normales) no se recomienda.
+    const una = buildRevisionCoach({
+      logs: [], exercises: [], mesocycles: [], periodo: { tipo: '7d' }, hoy: HOY,
+      responses: [semana('2026-09-11', 9, 2, 2)], questionnaires: [Q_SEMANA],
+    });
+    expect(una.descarga.senales).toHaveLength(1);
+    expect(una.descarga.recomendada).toBe(false);
   });
 
   it('buildRevisionCoach lo expone sin que haya que pedirlo aparte', () => {
@@ -459,7 +543,43 @@ describe('construirBienestar', () => {
       logs: [], exercises: [], mesocycles: [], periodo: { tipo: '7d' }, hoy: HOY,
       responses: RESPUESTAS, questionnaires: [Q_BIENESTAR],
     });
-    expect(r.bienestar.irp.valor).not.toBeNull();
+    expect(r.bienestar.actual.horasSueño).not.toBeNull();
+  });
+
+  it('un contexto desfavorable es UNA señal de descarga, con sus motivos (sustituye a la disposición)', () => {
+    const Q_CTX: Questionnaire = {
+      id: 'q_c', ownerId: 'coach', title: 'Contexto',
+      questions: [
+        { id: 'estres', label: 'Estrés', type: 'scale', required: true, scaleMin: 1, scaleMax: 10, signalKey: 'wellness.stress_weekly' },
+        { id: 'sueno', label: 'Horas de sueño', type: 'numeric', required: true, signalKey: 'wellness.sleep_hours_weekly' },
+      ],
+    };
+    const ctx = (fecha: string, estres: number, sueno: number): QuestionnaireResponse => ({
+      id: `c_${fecha}`, questionnaireId: 'q_c', assignmentId: 'a', athleteId: 'ana@x.com', submittedAt: `${fecha}T19:00:00.000Z`,
+      answers: [{ questionId: 'estres', value: estres }, { questionId: 'sueno', value: sueno }],
+    });
+    const malo = buildRevisionCoach({
+      logs: [], exercises: [], mesocycles: [], periodo: { tipo: '7d' }, hoy: HOY,
+      responses: [ctx('2026-09-11', 8, 5)], questionnaires: [Q_CTX],
+    });
+    expect(malo.descarga.senales).toEqual(['contexto desfavorable (estrés 8/10 y 5 h de sueño)']);
+    expect(malo.descarga.recomendada).toBe(false);
+    const bueno = buildRevisionCoach({
+      logs: [], exercises: [], mesocycles: [], periodo: { tipo: '7d' }, hoy: HOY,
+      responses: [ctx('2026-09-11', 3, 8)], questionnaires: [Q_CTX],
+    });
+    expect(bueno.descarga.senales).toEqual([]);
+
+    // Estancamiento: con el contexto desfavorable no se aprieta ni se suben
+    // series, se mantiene (antes lo decidía «disposición ≤ 0»).
+    const fechas: string[] = [];
+    for (let d = new Date('2026-07-20T12:00:00Z'); d.toISOString().slice(0, 10) <= HOY; d.setUTCDate(d.getUTCDate() + 3)) fechas.push(d.toISOString().slice(0, 10));
+    const logs = fechas.map(f => log(f, [{ exerciseId: 'press', series: [[80, 8], [80, 8], [80, 8]] }]));
+    const base = { logs, exercises: [ej('press', 'pecho')], mesocycles: [], periodo: { tipo: '7d' } as const, hoy: HOY, questionnaires: [Q_CTX] };
+    const parado = buildRevisionCoach({ ...base, responses: [ctx('2026-09-11', 3, 8)] }).estancados[0];
+    expect(parado?.exerciseId).toBe('press');
+    expect(parado?.veredicto).not.toBe('mantener');
+    expect(buildRevisionCoach({ ...base, responses: [ctx('2026-09-11', 8, 7)] }).estancados[0]?.veredicto).toBe('mantener');
   });
 });
 
@@ -567,5 +687,16 @@ describe('curvasDeLaVentana', () => {
     const r = curvasDeLaVentana([{ exerciseId: 'nunca', name: 'Nada' } as never], []);
     expect(r.curvaPorEjercicio.nunca).toBeUndefined();
     expect(r.ultimaSesionPorEjercicio.nunca).toBeUndefined();
+  });
+});
+
+describe('resumenDelPatron (18-11-2026: sin % agregado del patrón)', () => {
+  it('cuenta ejercicios que suben, bajan o se mantienen con el umbral del ruido', () => {
+    expect(resumenDelPatron([
+      { deltaOrmPct: 16.7 }, { deltaOrmPct: 3 }, { deltaOrmPct: -2.9 }, { deltaOrmPct: -3 }, { deltaOrmPct: null },
+    ])).toEqual({ suben: 2, bajan: 1, seMantienen: 1 });
+  });
+  it('un patrón sin nada que comparar sale a cero', () => {
+    expect(resumenDelPatron([])).toEqual({ suben: 0, bajan: 0, seMantienen: 0 });
   });
 });

@@ -2,12 +2,13 @@
 // Si algo no cuadra, el ejecutor de la tool devuelve estos issues como
 // tool_result de error para que el modelo se autocorrija — nunca llega una
 // propuesta rota a la tarjeta de revisión de Dani.
-import { FoodCategory, DietItem, Macros, MealItem, MuscleGroup, MUSCLE_LABELS } from '../types.js';
+import { FoodCategory, DietItem, Macros, MealItem, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS } from '../types.js';
 import { CATS, BUDGET_CATS } from '../utils/exchangeHelpers.js';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma.js';
 import { parseBaseGrams } from '../utils/conversionNutricional.js';
 import { macrosDesdeGramos, redondearMacros } from '../utils/macros.js';
 import { macrosDeLineas, objetivoDeDieta } from '../utils/macrosLegado.js';
+import { SERIES_POR_DIA_TOPE } from '../utils/volumeSuggestion.js';
 
 export interface ValidationIssue { field: string; message: string }
 
@@ -208,13 +209,21 @@ const MAX_SERIES_PER_GROUP = 25; // tope semanal por grupo (heatmap del Mesocycl
 // músculo y sesión (criterio de Dani), un torso que toca 3 músculos ya son
 // ~30. Subido a 25 por sesión el 2026-09-02 — sigue bloqueando por encima,
 // que es lo que evita que un error del modelo cuele 200 series.
-const SERIES_PER_DAY_SOFT_CAP = 25;
+//
+// Desde el 17-11-2026 es la MISMA constante que el sugeridor de volumen
+// (`SERIES_POR_DIA_TOPE`, 23 por sesión, cifra de Dani del 23-08). Con dos
+// números, el asistente podía proponer un bloque de 24-25 series por sesión
+// que el validador daba por bueno y que «Sugerir volumen» recortaba en cuanto
+// se abría: dos motores de la misma app diciendo cosas distintas del mismo
+// bloque. El aviso de la Distribución (días × 12) es otra cosa —solo avisa— y
+// se queda como está (decisión de Dani).
+const SERIES_PER_DAY_SOFT_CAP = SERIES_POR_DIA_TOPE;
 
 export interface MesocycleProposalPayload {
   weeks: number;
   daysPerWeek: number;
   objective: string;
-  groups: Partial<Record<MuscleGroup, { series: number; priority?: 'alta' | 'media' | 'baja' }>>;
+  groups: Partial<Record<MuscleGroup, { series: number; priority?: MuscleGroupConfig['priority'] }>>;
 }
 
 /** El bloque estándar de Dani (doctrina §11). Si el asistente no dice semanas,
@@ -273,8 +282,16 @@ export function validateMesocyclePayload(payload: MesocycleProposalPayload): Val
     } else {
       totalSeries += s;
     }
-    if (cfg?.priority && !['alta', 'media', 'baja'].includes(cfg.priority)) {
-      issues.push({ field: `groups.${group}.priority`, message: `priority de "${group}" debe ser alta, media o baja` });
+    // Cuatro niveles (17-11-2026): alta = especializar, media = desarrollar,
+    // baja = mantener (la mitad), ignorar = 0 series y fuera del bloque.
+    // Cuántos grupos van en alta NO se valida aquí, a propósito (Dani,
+    // 18-11-2026: «con 4 que avise, pero que me permita hacer lo que quiera»):
+    // de más zonas prioritarias de lo normal se avisa al leer el bloque
+    // (`leerBloqueDelAsistente`), sin rechazar la propuesta.
+    if (cfg?.priority && !['alta', 'media', 'baja', 'ignorar'].includes(cfg.priority)) {
+      issues.push({ field: `groups.${group}.priority`, message: `priority de "${group}" debe ser alta, media, baja o ignorar` });
+    } else if (cfg?.priority === 'ignorar' && typeof s === 'number' && s > 0) {
+      issues.push({ field: `groups.${group}.series`, message: `"${group}" está en ignorar: sus series tienen que ser 0 (recibido: ${s}). Si quieres trabajarlo poco, ponlo en baja (mantener).` });
     }
   }
 

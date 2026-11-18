@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { ZONAS_IEM, indicesDeZonas, iemPorZona, avisosIemIea, variacion } from './zonas'
-import { agujetasPorZona, propuestaZona, aEscala5, tipoDeBloque, contextoDeLaSemana, sensibilidadDeZona } from './agujetas'
+import { ZONAS_IEM, indicesDeZonas, iemPorZona, avisosIemIea, variacion, articulacionesSobreSuLimite, limitesValidos } from './zonas'
+import { agujetasPorZona, propuestaZona, aEscala5, tipoDeBloque, contextoDeLaSemana, sensibilidadDeZona, pctEfectivo } from './agujetas'
 import { bandaIF, consejosDeTiempo } from './referencias'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -81,6 +81,29 @@ describe('freno / acelerador', () => {
     expect(p.pct).toBeUndefined()
     expect(p.texto).toContain('tú decides cuánto')
     expect(p.texto).toContain('estiramiento')
+  })
+  it('F6 · el 5 es un aviso bloqueante: frena más que el 4, aunque no lleve porcentaje', () => {
+    const cinco = propuestaZona({ ...base, agujetas: 5 })
+    expect(cinco.bloqueante).toBe(true)
+    expect(cinco.texto).toContain('no subir')
+    // Ni el 4 (que sí lleva −20 %) ni lo demás bloquean.
+    expect(propuestaZona({ ...base, agujetas: 4 }).bloqueante).toBeUndefined()
+    expect(propuestaZona({ ...base, sensible: true, agujetas: 4 }).bloqueante).toBeUndefined()
+    expect(propuestaZona({ ...base, agujetas: 1 }).bloqueante).toBeUndefined()
+    // En zona propensa también: un 5 no «espera una semana».
+    expect(propuestaZona({ ...base, sensible: true, agujetas: 5 })).toMatchObject({ tono: 'freno', bloqueante: true })
+  })
+  it('F6 · con la zona bloqueada el coach solo puede bajar: un % positivo se queda en 0', () => {
+    const cinco = propuestaZona({ ...base, agujetas: 5 })
+    expect(pctEfectivo(cinco)).toBe(0)
+    expect(pctEfectivo(cinco, 20)).toBe(0)
+    expect(pctEfectivo(cinco, -25)).toBe(-25)
+    // Sin bloqueo manda el coach y, si no ha tocado nada, el sugerido.
+    const uno = propuestaZona({ ...base, agujetas: 1 })
+    expect(pctEfectivo(uno)).toBe(10)
+    expect(pctEfectivo(uno, 30)).toBe(30)
+    expect(pctEfectivo(uno, 0)).toBe(0)
+    expect(pctEfectivo(propuestaZona({ ...base, agujetas: 4 }))).toBe(-20)
   })
   it('el objetivo de Volumen es la meta: no se pasa y, si ya llega, decide el coach', () => {
     expect(propuestaZona({ ...base, agujetas: 1, objetivo: 20 })).toMatchObject({ tono: 'objetivo' })
@@ -176,3 +199,24 @@ describe('primera semana tras parón (P5)', () => {
     expect(propuestaZona({ ...base, agujetas: 5 }).tono).toBe('freno')
   })
 })
+
+describe('X1 · límite de estrés articular del atleta', () => {
+  const ARTICULACIONES = ['Hombro Articular', 'Rodilla Articular', 'Cadera Articular']
+
+  it('avisa solo de las articulaciones con límite que lo pasan', () => {
+    const r = articulacionesSobreSuLimite(ARTICULACIONES, [4.2, 9, 2], { 'Hombro Articular': 3, 'Cadera Articular': 3 })
+    expect(r).toEqual([{ articulacion: 'Hombro Articular', j: 0, valor: 4.2, limite: 3 }])
+  })
+
+  it('justo en el límite no avisa: es «por encima de su límite»', () => {
+    expect(articulacionesSobreSuLimite(ARTICULACIONES, [3, 0, 0], { 'Hombro Articular': 3 })).toEqual([])
+    expect(articulacionesSobreSuLimite(ARTICULACIONES, [3.1, 0, 0], { 'Hombro Articular': 3 })).toHaveLength(1)
+  })
+
+  it('sin límites, o con límites que no son un número mayor que cero, no hay aviso', () => {
+    expect(articulacionesSobreSuLimite(ARTICULACIONES, [20, 20, 20], undefined)).toEqual([])
+    expect(articulacionesSobreSuLimite(ARTICULACIONES, [20, 20, 20], { 'Hombro Articular': 0, 'Rodilla Articular': Number.NaN, 'Cadera Articular': '3' })).toEqual([])
+    expect(limitesValidos({ a: 3, b: 0, c: -1, d: null, e: 2.5 })).toEqual({ a: 3, e: 2.5 })
+  })
+})
+

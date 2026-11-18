@@ -14,9 +14,17 @@ describe('ordenarSesion (guía del IH)', () => {
     const r = ordenarSesion([e('banca', 'pecho'), e('inclinado', 'pecho'), e('remo', 'dorsal'), e('jalon', 'dorsal'), e('crunch', 'core')], {});
     expect(ids(r)).toEqual(['banca', 'remo', 'inclinado', 'jalon', 'crunch']);
   });
-  it('en pierna, de menos a más multiarticular (analíticos primero)', () => {
-    const r = ordenarSesion([e('sentadilla', 'cuadriceps', 3), e('extension', 'cuadriceps', 0), e('curl', 'isquios', 0), e('peso_muerto', 'isquios', 4)], {});
-    expect(ids(r)).toEqual(['extension', 'curl', 'sentadilla', 'peso_muerto']);
+  it('en pierna, lo pesado primero (multiarticulares antes que analíticos)', () => {
+    const r = ordenarSesion([e('extension', 'cuadriceps', 0), e('sentadilla', 'cuadriceps', 3), e('curl', 'isquios', 0), e('peso_muerto', 'isquios', 4)], {});
+    expect(ids(r)).toEqual(['peso_muerto', 'sentadilla', 'extension', 'curl']);
+  });
+  it('en pierna, a igual número de secundarios respeta el orden que traían', () => {
+    const r = ordenarSesion([e('extension', 'cuadriceps', 0), e('curl', 'isquios', 0), e('prensa', 'cuadriceps', 2), e('hack', 'cuadriceps', 2)], {});
+    expect(ids(r)).toEqual(['prensa', 'hack', 'extension', 'curl']);
+  });
+  it('en pierna, un analítico de prioridad alta sigue yendo el primero', () => {
+    const r = ordenarSesion([e('sentadilla', 'cuadriceps', 3), e('aduccion', 'aductores', 0), e('curl', 'isquios', 0)], { aductores: { priority: 'alta' } });
+    expect(ids(r)).toEqual(['aduccion', 'sentadilla', 'curl']);
   });
   it('si no hay los dos patrones, no toca el orden', () => {
     expect(ids(ordenarSesion([e('a', 'pecho'), e('b', 'triceps')], {}))).toEqual(['a', 'b']);
