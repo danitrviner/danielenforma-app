@@ -68,11 +68,12 @@ const MAX_SERIES_PER_GROUP = 25;
  *
  * Los 12/día siguen aquí, pero como AVISO, que es para lo que sirven: por
  * encima de eso la pantalla de Distribución marca sobrevolumen.
+ *
+ * Las dos cifras viven en `topesDeVolumen.ts` (archivo hoja, sin importaciones)
+ * para que nadie las lea en un ciclo de importaciones; aquí se reexportan.
  */
-export const SERIES_POR_DIA_TOPE = 23;
-
-/** Series por sesión y grupo que tiene sentido acumular sin caer en trabajo basura. */
-export const SERIES_POR_SESION = 8;
+export { SERIES_POR_DIA_TOPE, SERIES_POR_SESION } from './topesDeVolumen.js';
+import { SERIES_POR_DIA_TOPE, SERIES_POR_SESION } from './topesDeVolumen.js';
 
 const FACTOR_INTENT: Record<VolumeIntent, number> = {
   conservador: 0.85,
