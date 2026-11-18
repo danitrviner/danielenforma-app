@@ -62,7 +62,7 @@ describe('gustoPorTipo', () => {
   it('suma favoritas y cambios, resta «no me gusta», y se queda en ±2', () => {
     const g = gustoPorTipo(pool, {
       favoritas: ['b1', 'b2'], noGustan: ['t1'],
-      cambios: { evitadas: { e1: 2 }, elegidas: { b1: 2 }, sustituciones: {} },
+      cambios: { evitadas: { e1: 2 }, elegidas: { b1: 2 }, sustituciones: {}, extrasElegidos: {} },
     });
     expect(g.get('batido')).toBe(2);     // 1 + 1 + 1 → tope 2
     expect(g.get('tostada')).toBe(-1);
@@ -72,5 +72,24 @@ describe('gustoPorTipo', () => {
 
   it('solo mira las recetas de la franja', () => {
     expect(gustoPorTipo(pool.slice(2), { favoritas: ['b1'] }).size).toBe(0);
+  });
+});
+
+describe('extras que se pone el atleta', () => {
+  const menuCon = (complements: object[]) => ({
+    id: 'm1', athleteId: 'a@x.com', status: 'published' as const, name: 'M', createdAt: '', varietyLevel: 3, swapHistory: [],
+    days: [{ day: 'mon' as const, dietId: 'd1', target: { HC: 0, PROT: 0, GRASA: 0 }, objetivo: { kcal: 0, p: 0, hc: 0, g: 0 }, meals: [{ id: 'm', slot: 1, name: 'Desayuno', recipeId: 'r', recipeName: 'R', scale: 1, exch: { HC: 0, PROT: 0, GRASA: 0 }, macros: { kcal: 0, p: 0, hc: 0, g: 0 }, kcal: 0, complements }] }],
+  });
+  it('cuenta los que ha puesto él, no los que le cuadró el generador', () => {
+    const menu = menuCon([
+      { foodLabel: 'Manzana', category: 'HC', quantity: 0, alimentoId: 'manzana', gramos: 150, delAtleta: true },
+      { foodLabel: 'Manzana', category: 'HC', quantity: 0, alimentoId: 'manzana', gramos: 150, delAtleta: true },
+      { foodLabel: 'Plátano', category: 'HC', quantity: 0, alimentoId: 'platano', gramos: 100 },
+      { foodLabel: '1 yogur', category: 'PROT', quantity: 1, delAtleta: true },
+    ] as never);
+    expect(senalesDeCambios([menu as never]).extrasElegidos).toEqual({ manzana: 2 });
+  });
+  it('sin menús, ninguno', () => {
+    expect(senalesDeCambios([]).extrasElegidos).toEqual({});
   });
 });

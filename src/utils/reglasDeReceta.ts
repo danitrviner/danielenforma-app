@@ -55,6 +55,10 @@ export interface ReglasDeReceta {
   /** Lo que el coach fija en cada ingesta del menú (11-2026): fruta, recetas
    *  cerradas y extra fijo. Ver ingestaPersonalizada.ts. */
   ingestas?: IngestasAMedida;
+  /** Frutas DISTINTAS como mucho en una semana de menú (17-11-2026): con 2, el
+   *  resto de días repiten las que ya están y la compra no se llena de fruta
+   *  que se estropea. Ausente = sin tope. */
+  topeDeFrutas?: number;
   updatedAt?: string;
 }
 

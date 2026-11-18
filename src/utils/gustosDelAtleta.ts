@@ -27,12 +27,15 @@ export interface SenalesDeCambios {
   elegidas: Record<string, number>;
   /** Alimento tal cual va en la receta (normalizado) → por cuál lo cambia. */
   sustituciones: Record<string, string>;
+  /** Extras del catálogo que ha puesto ÉL (alimentoId → veces): el que cambia
+   *  el plátano por la manzana ve manzana más veces (Dani, 17-11-2026). */
+  extrasElegidos: Record<string, number>;
 }
 
 /** Veces que hay que repetir un cambio de alimento para darlo por costumbre. */
 export const MIN_VECES_SUSTITUCION = 2;
 
-export const SIN_SENALES: SenalesDeCambios = { evitadas: {}, elegidas: {}, sustituciones: {} };
+export const SIN_SENALES: SenalesDeCambios = { evitadas: {}, elegidas: {}, sustituciones: {}, extrasElegidos: {} };
 
 const suma = (m: Record<string, number>, k: string) => { m[k] = (m[k] ?? 0) + 1; };
 
@@ -41,6 +44,7 @@ export function senalesDeCambios(menus: readonly WeeklyMenu[]): SenalesDeCambios
   const evitadas: Record<string, number> = {};
   const elegidas: Record<string, number> = {};
   const pares = new Map<string, Map<string, number>>();
+  const extrasElegidos: Record<string, number> = {};
   for (const menu of menus) {
     for (const s of menu.swapHistory ?? []) {
       if (!s.fromRecipeId || !s.toRecipeId || s.fromRecipeId === s.toRecipeId) continue;
@@ -49,6 +53,11 @@ export function senalesDeCambios(menus: readonly WeeklyMenu[]): SenalesDeCambios
     }
     for (const day of menu.days ?? []) {
       for (const meal of day.meals) {
+        // Lo que el atleta se ha puesto él (`delAtleta`): su fruta, su yogur,
+        // su capricho. Cuenta como gusto para los menús siguientes.
+        for (const c of meal.complements ?? []) {
+          if (c.delAtleta && c.alimentoId) suma(extrasElegidos, c.alimentoId);
+        }
         for (const sw of meal.ingredientSwaps ?? []) {
           if (!sw.from || !sw.to || sw.from === sw.to) continue;
           const de = normalizeStr(sw.from);
@@ -74,7 +83,7 @@ export function senalesDeCambios(menus: readonly WeeklyMenu[]): SenalesDeCambios
     const [a, veces] = [...porDestino.entries()].sort((x, y) => y[1] - x[1])[0];
     if (veces >= MIN_VECES_SUSTITUCION) sustituciones[de] = a;
   }
-  return { evitadas, elegidas, sustituciones };
+  return { evitadas, elegidas, sustituciones, extrasElegidos };
 }
 
 /** Los cambios de alimento que el atleta hace siempre, aplicados a esta receta. */

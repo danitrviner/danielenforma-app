@@ -397,7 +397,7 @@ export async function getReglasDeReceta(athleteEmail: string): Promise<ReglasDeR
    recomendadas (y al revés), porque `setDoc` reemplaza el documento entero.
    Los arrays que sí se mandan se sustituyen enteros, que es lo que se quiere. */
 export async function saveReglasDeReceta(
-  reglas: Pick<ReglasDeReceta, 'athleteId'> & Partial<Pick<ReglasDeReceta, 'reglas' | 'recomendadas' | 'listaMenu' | 'ajustesMenu' | 'recetario' | 'seleccion' | 'ingestas' | 'libertad'>>,
+  reglas: Pick<ReglasDeReceta, 'athleteId'> & Partial<Pick<ReglasDeReceta, 'reglas' | 'recomendadas' | 'listaMenu' | 'ajustesMenu' | 'recetario' | 'seleccion' | 'ingestas' | 'libertad' | 'topeDeFrutas'>>,
   /** Para que el historial diga «Pollo al curry» y no «receta»; opcional. */
   nombreDe?: (id: string) => string | undefined,
 ): Promise<void> {

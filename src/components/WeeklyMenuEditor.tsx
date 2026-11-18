@@ -1,4 +1,4 @@
-import { useReglasDeReceta, useListaDeMenu, useSeleccionDeRecetas, useIngestasAMedida, reglasDeRecetaKey } from '../hooks/useReglasDeReceta';
+import { useReglasDeReceta, useListaDeMenu, useSeleccionDeRecetas, useIngestasAMedida, useTopeDeFrutas, reglasDeRecetaKey } from '../hooks/useReglasDeReceta';
 import { conIngestasAMedida, idsCerrados, ingestasDeSlots } from '../utils/ingestaPersonalizada';
 import { useToast } from '../hooks/useToast';
 import { recetasFijasDelMenu, tambienEnLaMuestra } from '../utils/seleccionDeRecetas';
@@ -10,7 +10,7 @@ import {
   Macros, MenuMeal,
 } from '../types';
 import { queryRecetasForGenerator, getRecipes, getRecipeById, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites, getNutritionProgram, getWeeklyMenusForAthlete, saveReglasDeReceta } from '../dbService';
-import { senalesDeCambios } from '../utils/gustosDelAtleta';
+import { senalesDeCambios, type SenalesDeCambios } from '../utils/gustosDelAtleta';
 import { semanaDelPrograma, totalSemanas, ajustesDeLaSemana, aplicarAjustes, kcalDeDieta, gramosDeMantenimiento } from '../utils/semanasNutricion';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 import {
@@ -24,6 +24,7 @@ import { intercambiosDeMacros } from '../utils/macrosLegado';
 import { macrosDelPlato, objetivoDelDiaDeMenu } from '../utils/menuMacros';
 import { esExtraDelCatalogo, textoDeExtra } from '../utils/extrasDelCatalogo';
 import { getCatalogoAlimentos } from '../dbService';
+import type { AlimentoCatalogo } from '../utils/catalogoAlimentos';
 import { buildShoppingList } from '../utils/menuShoppingList';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
 import { Icon, Button, Input, Select } from './ui';
@@ -101,6 +102,11 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   // Lo que el coach dejó fijado en cada ingesta de este atleta (fruta, recetas
   // cerradas, extra fijo) se vuelve a poner encima del reparto de partida.
   const ingestasGuardadas = useIngestasAMedida(athleteEmail);
+  // Frutas distintas como mucho por semana: la compra no se llena de fruta que
+  // se estropea. Es del atleta, no de este menú; se guarda al generar.
+  const topeGuardado = useTopeDeFrutas(athleteEmail);
+  const [topeDeFrutas, setTopeDeFrutas] = useState<number | undefined>(topeGuardado);
+  useEffect(() => { setTopeDeFrutas(topeGuardado); }, [topeGuardado]);
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [slots, setSlots] = useState<MealSlotSpec[]>(
@@ -215,7 +221,8 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     // Cada «Generar» sale distinto (entre las recetas que cuadran bien).
     azar: Math.random,
     cambios,
-  }), [onboarding, nutritionConfig, variety, favorites, preferredDish, excludedDish, recetasOcultas, listaMenu, seleccion, paquetes, favoritasDelCoach, cambios]);
+    ...(topeDeFrutas ? { topeDeFrutas } : {}),
+  }), [onboarding, nutritionConfig, variety, favorites, preferredDish, excludedDish, recetasOcultas, listaMenu, seleccion, paquetes, favoritasDelCoach, cambios, topeDeFrutas]);
 
   function cycleDishType(id: string) {
     if (preferredDish.includes(id)) { setPreferredDish(p => p.filter(x => x !== id)); setExcludedDish(e => [...e, id]); }
@@ -292,10 +299,11 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
      menú se genera igual y se avisa. */
   const guardarIngestas = async () => {
     const ingestas = ingestasDeSlots(slots);
-    if (JSON.stringify(ingestas) === JSON.stringify(ingestasGuardadas ?? {})) return;
+    const mismo = JSON.stringify(ingestas) === JSON.stringify(ingestasGuardadas ?? {}) && topeDeFrutas === topeGuardado;
+    if (mismo) return;
     try {
-      await saveReglasDeReceta({ athleteId: athleteEmail, ingestas });
-      queryClient.setQueryData(reglasDeRecetaKey(athleteEmail), (prev: object | undefined) => ({ ...prev, ingestas }));
+      await saveReglasDeReceta({ athleteId: athleteEmail, ingestas, topeDeFrutas });
+      queryClient.setQueryData(reglasDeRecetaKey(athleteEmail), (prev: object | undefined) => ({ ...prev, ingestas, topeDeFrutas }));
     } catch {
       showToast('El menú se ha generado, pero no se pudo guardar la configuración de las comidas para los próximos.');
     }
@@ -588,6 +596,37 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
           </div>
         </div>
 
+        {/* Frutas distintas por semana (17-11-2026): la fruta rota sola, pero
+            cinco frutas distintas en una semana es compra que se estropea. */}
+        <div>
+          <span className="block font-sans text-caption text-ink-2 uppercase mb-2">Frutas distintas por semana</span>
+          <div className="flex gap-2" role="radiogroup" aria-label="Frutas distintas por semana">
+            {[2, 3, 5, undefined].map(n => {
+              const activo = topeDeFrutas === n;
+              return (
+                <button
+                  key={n ?? 'sin'}
+                  type="button"
+                  role="radio"
+                  aria-checked={activo}
+                  onClick={() => setTopeDeFrutas(n)}
+                  className={`flex-1 py-3 rounded-control font-mono font-bold text-body-s transition-[color,background-color,border-color,opacity,transform,box-shadow] ${activo ? 'bg-accent text-on-accent' : 'bg-surface border border-hairline text-ink-2 hover:text-ink'}`}
+                >
+                  {n ?? 'Sin tope'}
+                </button>
+              );
+            })}
+          </div>
+          <p className="font-sans text-caption text-ink-3 mt-1">
+            {topeDeFrutas
+              ? `Como mucho ${topeDeFrutas} frutas distintas en la semana: el resto de días repiten las que ya están.`
+              : 'Va variando la fruta sin límite. Más variedad, pero más compra.'}
+          </p>
+        </div>
+
+        {/* Lo que el atleta se pone él en sus menús: ya le sale más a menudo. */}
+        <LoQueSePoneEl cambios={cambios} catalogo={catalogo} />
+
         {/* Dish-type filter — prefilled from the athlete's preference */}
         <div>
           <span className="block font-mono text-caption text-ink-2 uppercase mb-2">Tipos de plato</span>
@@ -848,6 +887,32 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
           Cancelar
         </Button>
       </div>
+    </div>
+  );
+}
+
+/* ── Lo que el atleta cambia por su cuenta ─────────────────────────────────── */
+
+/** Los extras que se pone ÉL en sus menús (`senalesDeCambios.extrasElegidos`):
+ *  el coach se entera sin preguntar y sabe por qué le salen más a menudo. */
+function LoQueSePoneEl({ cambios, catalogo }: { cambios: SenalesDeCambios | undefined; catalogo: readonly AlimentoCatalogo[] }) {
+  const suyos = Object.entries(cambios?.extrasElegidos ?? {})
+    .sort((a, b) => (b[1] as number) - (a[1] as number))
+    .slice(0, 5)
+    .map(([id, veces]) => ({ nombre: catalogo.find(a => a.id === id)?.nombre ?? id, veces }));
+  if (suyos.length === 0) return null;
+  return (
+    <div className="bg-surface border border-hairline rounded-surface p-4 space-y-1">
+      <p className="font-sans text-caption text-ink-3 uppercase flex items-center gap-1.5">
+        <Icon name="swap_horiz" size="s" className="text-accent-ink" />
+        Lo que se pone él
+      </p>
+      <p className="font-sans text-caption text-ink-2">
+        {suyos.map(x => `${x.nombre} (${x.veces} ${x.veces === 1 ? 'vez' : 'veces'})`).join(' · ')}
+      </p>
+      <p className="font-sans text-caption text-ink-3">
+        Ya le salen más a menudo en los menús nuevos. Para fijarlos, ponlos como extra de la comida.
+      </p>
     </div>
   );
 }

@@ -130,3 +130,17 @@ export function useLibertad(email: string | undefined): LibertadDelAtleta {
   });
   return useMemo(() => libertadVigente(data?.libertad), [data?.libertad]);
 }
+
+/**
+ * Frutas distintas como mucho por semana de menú, si el coach lo ha acotado.
+ * Mismo documento que las reglas: no cuesta otra lectura.
+ */
+export function useTopeDeFrutas(email: string | undefined): number | undefined {
+  const { data } = useQuery({
+    queryKey: reglasDeRecetaKey(email ?? ''),
+    queryFn: () => getReglasDeReceta(email!),
+    enabled: !!email,
+    staleTime: 5 * 60_000,
+  });
+  return data?.topeDeFrutas;
+}
