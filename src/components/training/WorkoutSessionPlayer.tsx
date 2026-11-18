@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   UserProfile, WorkoutAssignment, Workout, WorkoutEntryLog, WorkoutLog, Exercise, CardioAssignment,
 } from '../../types';
@@ -32,13 +32,7 @@ import type { NovedadesDeLaSesion } from '../../utils/planificadorProgresion';
 import type { TipoDeSemana } from '../../utils/tipoDeSemana';
 import { tieneSeriesValidas, rirPautadoPorSerie } from '../../utils/setPrefill';
 import { mensajeDeCierreFuera, rirCumplidoDeFilas } from '../../utils/sesionFuera';
-import InterruptorFuera, { VARIANTE_FUERA_POR_DEFECTO, type VarianteFuera } from './InterruptorFuera';
-
-const COMO_LLEGA: { clave: NonNullable<WorkoutLog['comoLlega']>; etiqueta: string }[] = [
-  { clave: 'bien', etiqueta: 'Con energía' },
-  { clave: 'normal', etiqueta: 'Normal' },
-  { clave: 'justo', etiqueta: 'Justo' },
-];
+import PreguntaComoLlega, { VARIANTE_COMO_LLEGA_POR_DEFECTO, type VarianteComoLlega } from './PreguntaComoLlega';
 
 export interface SessionCelebration {
   isFirstEver: boolean;
@@ -71,9 +65,13 @@ interface Props {
   /** D5: por ejercicio, molestia de 1 a 10. */
   molestias?: (number | undefined)[];
   marcarMolestia?: (exIdx: number, valor: number | undefined) => void;
-  /** D4: «¿cómo llegas hoy?». Ausente `onComoLlega` = no se pregunta. */
+  /** D4: «¿cómo llegas hoy?». Ausente `onComoLlega` = no se pregunta. Si se
+   *  pregunta, va LO PRIMERO y tapa los ejercicios hasta que se contesta
+   *  (PreguntaComoLlega.tsx). */
   comoLlega?: WorkoutLog['comoLlega'];
-  onComoLlega?: (valor: WorkoutLog['comoLlega']) => void;
+  onComoLlega?: (valor: WorkoutLog['comoLlega'], nota?: number) => void;
+  /** Cómo se pregunta (ver PreguntaComoLlega.tsx). Solo el banco pasa otra. */
+  varianteComoLlega?: VarianteComoLlega;
   getExercise: (id: string) => Exercise | undefined;
   getPersonalNote: (exerciseId: string) => string | undefined;
   logs: WorkoutLog[];
@@ -107,13 +105,9 @@ interface Props {
    *  Ausente `onCansancioAlSalir` = no se pregunta. */
   cansancioAlSalir?: number;
   onCansancioAlSalir?: (valor: number) => void;
-  /** Sesión fuera de su gimnasio (utils/sesionFuera.ts). Ausente `onFuera` =
-   *  no se ofrece el interruptor. */
+  /** Sesión fuera de su gimnasio (utils/sesionFuera.ts). Se decide antes, en
+   *  el panel de la semana de Rutinas: dentro de la sesión no se pregunta. */
   fuera?: boolean;
-  onFuera?: (valor: boolean) => void;
-  /** Cómo se enseña el interruptor (ver InterruptorFuera.tsx). Solo el banco
-   *  de pruebas pasa otra. */
-  varianteFuera?: VarianteFuera;
 }
 
 const CANSANCIO = Array.from({ length: 11 }, (_, i) => i);
@@ -137,7 +131,7 @@ export default function WorkoutSessionPlayer({
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, onMarkActionDone,
   avisoSesion, onAvisoSesion, tipoSemana,
   cansancioAlSalir, onCansancioAlSalir,
-  fuera = false, onFuera, varianteFuera = VARIANTE_FUERA_POR_DEFECTO,
+  fuera = false, varianteComoLlega = VARIANTE_COMO_LLEGA_POR_DEFECTO,
 }: Props) {
   const orderedExercises = activeWorkout.exercises.slice().sort((a, b) => a.order - b.order);
   const doneSetsTotal = playerSets.flat().filter(s => s.done).length;
@@ -158,6 +152,26 @@ export default function WorkoutSessionPlayer({
   const hechasDe = (exIdx: number) => (playerSets[exIdx] || []).map(x => x.done);
   const [pageIdx, setPageIdx] = useState(0);
   const paginaActual = paginas[Math.min(pageIdx, paginas.length - 1)] ?? [0];
+
+  // Al pasar de ejercicio, el nombre del nuevo arriba del todo (Dani, 18-11):
+  // si estaba abajo mirando su historial y deslizaba, el siguiente aparecía
+  // también abajo y había que subir a ver qué ejercicio era. Solo se mueve si
+  // el título ha quedado tapado por la cabecera fija; si ya se ve, no.
+  const inicioDelEjercicioRef = useRef<HTMLDivElement>(null);
+  const cabeceraRef = useRef<HTMLElement>(null);
+  const paginaAnterior = useRef(pageIdx);
+  useEffect(() => {
+    if (paginaAnterior.current === pageIdx) return;
+    paginaAnterior.current = pageIdx;
+    const el = inicioDelEjercicioRef.current;
+    const cab = cabeceraRef.current;
+    if (!el || !cab) return;
+    const margen = cab.getBoundingClientRect().bottom + 8;
+    if (el.getBoundingClientRect().top < margen - 1) {
+      el.style.scrollMarginTop = `${margen}px`;
+      el.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'auto' });
+    }
+  }, [pageIdx]);
   const [openVideoIdx, setOpenVideoIdx] = useState<number | null>(null);
   const [historyExId, setHistoryExId] = useState<string | null>(null);
   // Ejercicios que el atleta ha reabierto explícitamente tras cerrarlos (ver
@@ -188,6 +202,7 @@ export default function WorkoutSessionPlayer({
   };
   const isLastPage = pageIdx === paginas.length - 1;
   const isEditingCompleted = activeAssignment.status === 'completed';
+  const preguntarComoLlega = !!onComoLlega && !isEditingCompleted && comoLlega == null;
 
   // Cronómetro de descanso — vive aquí (antes en TrainingScreen) porque solo
   // el player lo usa; se arranca al marcar una serie como hecha con el
@@ -744,7 +759,7 @@ export default function WorkoutSessionPlayer({
           aporta (ya se eligió para entrar) y en el móvil ocupaba tres líneas.
           Queda solo para lectores de pantalla; todo sube para que la ficha del
           ejercicio quepa sin scroll vertical. */}
-      <header className="pb-2 border-b border-hairline sticky top-[var(--header-h)] bg-bg/92 backdrop-blur-md z-[var(--z-sticky)] pt-1 space-y-2">
+      <header ref={cabeceraRef} className="pb-2 border-b border-hairline sticky top-[var(--header-h)] bg-bg/92 backdrop-blur-md z-[var(--z-sticky)] pt-1 space-y-2">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="s" icon="arrow_back" label="Volver" onClick={cerrarPlayer} className="shrink-0" />
           <div className="flex-1 min-w-0">
@@ -790,49 +805,6 @@ export default function WorkoutSessionPlayer({
         </div>
       </header>
 
-      <Coachmark
-        id="training_player_mark_set"
-        profile={profile}
-        icon="touch_app"
-        text="Marca el círculo al terminar cada serie — es lo que usa tu coach para progresarte."
-      />
-
-      {/* F5: RIR 0 y FALLO no son lo mismo, y el dato solo vale si se apunta bien. */}
-      <Coachmark
-        id="training_rir0_vs_fallo"
-        profile={profile}
-        icon="help"
-        text="RIR 0: no te quedaba otra repetición con buena técnica y paraste. FALLO: intentaste otra y no salió. Apunta lo que pasó de verdad."
-      />
-
-      {/* D4: cómo llega hoy, en un toque y antes de la primera serie. Da
-          contexto a un día malo sin tener que escribir nada. */}
-      {onComoLlega && !isEditingCompleted && doneSetsTotal === 0 && (
-        <div className="flex flex-wrap items-center gap-2 px-1">
-          <span className="font-sans text-label text-ink-2">¿Cómo llegas hoy?</span>
-          {COMO_LLEGA.map(o => (
-            <button
-              key={o.clave}
-              type="button"
-              onClick={() => onComoLlega(comoLlega === o.clave ? undefined : o.clave)}
-              aria-pressed={comoLlega === o.clave}
-              className={`rounded-control border px-2.5 py-1.5 font-sans text-label transition-colors ${
-                comoLlega === o.clave ? 'border-accent-line text-accent-ink' : 'border-hairline text-ink-2 hover:text-ink'
-              }`}
-            >
-              {o.etiqueta}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* «Hoy entreno fuera de mi gimnasio» (17-11-2026): a diferencia de
-          «¿cómo llegas?», se puede cambiar durante toda la sesión y al
-          corregirla. Ver InterruptorFuera.tsx. */}
-      {onFuera && (
-        <InterruptorFuera activo={fuera} onCambiar={onFuera} variante={varianteFuera} />
-      )}
-
       {avisoSesion && onAvisoSesion && !isEditingCompleted && (
         <Dialog
           open={avisoSesion.leido === null}
@@ -857,9 +829,38 @@ export default function WorkoutSessionPlayer({
         </Dialog>
       )}
 
-      <Pager value={pageIdx} onChange={setPageIdx} label="Ejercicios de la sesión" dots="none">
-        {pages}
-      </Pager>
+      {/* Las ayudas hablan de marcar series: después de «¿cómo llegas?». */}
+      {!preguntarComoLlega && (
+        <>
+        <Coachmark
+          id="training_player_mark_set"
+          profile={profile}
+          icon="touch_app"
+          text="Marca el círculo al terminar cada serie — es lo que usa tu coach para progresarte."
+        />
+
+        {/* F5: RIR 0 y FALLO no son lo mismo, y el dato solo vale si se apunta bien. */}
+        <Coachmark
+          id="training_rir0_vs_fallo"
+          profile={profile}
+          icon="help"
+          text="RIR 0: no te quedaba otra repetición con buena técnica y paraste. FALLO: intentaste otra y no salió. Apunta lo que pasó de verdad."
+        />
+        </>
+      )}
+
+      {/* D4 (18-11-2026): «¿cómo llegas hoy?» va lo primero y tapa los
+          ejercicios hasta que se contesta. Al reabrir la sesión se vuelve a
+          preguntar (TrainingScreen borra la respuesta al abrir). */}
+      {preguntarComoLlega ? (
+        <PreguntaComoLlega variante={varianteComoLlega} onContestar={(valor, nota) => onComoLlega?.(valor, nota)} />
+      ) : (
+        <div ref={inicioDelEjercicioRef}>
+          <Pager value={pageIdx} onChange={setPageIdx} label="Ejercicios de la sesión" dots="none">
+            {pages}
+          </Pager>
+        </div>
+      )}
 
       {/* Terminar la sesión: SOLO en la página del último ejercicio.
           Antes aparecía en cuanto se marcaba una sola serie en cualquier
@@ -869,7 +870,7 @@ export default function WorkoutSessionPlayer({
           sin ninguna otra condición: para corregir algo a mitad de sesión
           está el "Editar" de la tarjeta de cierre de cada ejercicio, no
           hace falta terminar antes de tiempo. */}
-      {isLastPage && (
+      {isLastPage && !preguntarComoLlega && (
         <div className="px-4 pt-4">
           <div className="flex justify-center gap-3">
             <Button

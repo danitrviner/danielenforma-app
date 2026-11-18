@@ -67,12 +67,11 @@ describe('el panel de la semana, en Rutinas', () => {
     expect(original).toEqual(['a']);
   });
 
-  it('marcada en el panel llega encendida; lo que el atleta hizo en la sesión manda', () => {
-    expect(fueraAlAbrir(undefined, true)).toBe(true);
-    expect(fueraAlAbrir(undefined, false)).toBe(false);
-    expect(fueraAlAbrir(false, true)).toBe(false); // la abrió y lo apagó
-    expect(fueraAlAbrir(true, false)).toBe(true); // lo encendió en la sesión
-    expect(fueraAlAbrir('raro', true)).toBe(true); // un borrador viejo sin la marca
+  it('solo es «fuera» con el ajuste de Mi gimnasio activado y la sesión marcada en el panel (18-11)', () => {
+    expect(fueraAlAbrir(true, true)).toBe(true);
+    expect(fueraAlAbrir(true, false)).toBe(false);
+    expect(fueraAlAbrir(false, true)).toBe(false); // lo desactivó: lo marcado no cuenta
+    expect(fueraAlAbrir(false, false)).toBe(false);
   });
 });
 

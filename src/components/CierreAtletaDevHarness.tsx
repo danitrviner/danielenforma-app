@@ -8,11 +8,8 @@ import { presetPorTitulo, buildQuestionnaireFromPreset } from '../data/questionn
 import { bodyMeasurementsForAthleteKey } from '../hooks/useBodyMeasurements';
 import { esPreguntaPorEjercicio } from '../utils/cierrePorEjercicio';
 import { pasosDeCuestionario } from '../utils/pasosDeCuestionario';
-import { ESPERA_PARA_DESHACER_MS, type MotivoDeSalto } from '../utils/saltarSesion';
 import QuestionnaireWizard, { idComentario, type BorradorDeCuestionario } from './QuestionnaireWizard';
-import SaltarSesion, { SesionSaltada } from './SaltarSesion';
 import TrainingScreen from './TrainingScreen';
-import { Badge, Button, Icon } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Banco de pruebas de la tanda del atleta del 17-11 — ruta `/dev/cierre-atleta`,
@@ -163,54 +160,7 @@ function Mediciones() {
   );
 }
 
-// ── 3. Saltar sesión ─────────────────────────────────────────────────────────
-/** La tarjeta de «hoy» de Rutinas, calcada de TrainingScreen, con la acción nueva. */
-function TarjetaDeSesion() {
-  const [saltada, setSaltada] = useState<MotivoDeSalto | null>(null);
-  const [enEspera, setEnEspera] = useState(false);
-  const temporizador = useRef<number | undefined>(undefined);
-  const saltar = (m: MotivoDeSalto) => {
-    setSaltada(m);
-    setEnEspera(true);
-    window.clearTimeout(temporizador.current);
-    temporizador.current = window.setTimeout(() => setEnEspera(false), ESPERA_PARA_DESHACER_MS);
-  };
-  const deshacer = () => { window.clearTimeout(temporizador.current); setSaltada(null); setEnEspera(false); };
-  return (
-    <div className={`border p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${saltada ? 'rounded-surface bg-surface border-hairline' : 'protagonista rounded-canvas bg-accent-bg border-accent/50 shadow-glow'}`}>
-      <div className="flex items-center gap-4">
-        <div className={`w-10 h-10 rounded-surface flex items-center justify-center flex-shrink-0 ${saltada ? 'bg-raised text-ink-2' : 'bg-accent/15 text-accent-ink'}`}>
-          <Icon name={saltada ? 'skip_next' : 'bolt'} size="m" filled />
-        </div>
-        <div>
-          <p className="font-sans font-bold text-ink text-title-s">Torso A</p>
-          <p className="font-mono text-label text-ink-2">Hoy · 6 ejercicios</p>
-          {!saltada && <div className="mt-1.5"><SaltarSesion sesion="Torso A" onSaltar={saltar} /></div>}
-          {saltada && enEspera && <div className="mt-1.5"><SesionSaltada motivo={saltada} onDeshacer={deshacer} /></div>}
-          {saltada && !enEspera && (
-            <button type="button" onClick={deshacer} className="mt-1.5 inline-flex items-center gap-1 font-sans text-caption text-ink-4 underline underline-offset-2 hover:text-ink-2">
-              Al final sí la hago
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-2 self-end md:self-auto">
-        <Badge tone={saltada ? 'neutral' : 'accent'}>{saltada ? 'Saltado' : 'Hoy'}</Badge>
-        {!saltada && <Button variant="primary" size="s" icon="play_circle">Empezar</Button>}
-      </div>
-    </div>
-  );
-}
-
-function SaltarLaSesion() {
-  return (
-    <Seccion titulo="No voy a poder hacerla" nota={`Tras elegir motivo hay ${ESPERA_PARA_DESHACER_MS / 1000} s para deshacer; después solo queda «Al final sí la hago» (aquí, en el banco, te devuelve al principio).`}>
-      <TarjetaDeSesion />
-    </Seccion>
-  );
-}
-
-// ── 4. La pantalla real ──────────────────────────────────────────────────────
+// ── 3. La pantalla real ──────────────────────────────────────────────────────
 function RutinasReal() {
   return (
     <Seccion titulo="Rutinas (pantalla real)" nota="Sin sesión iniciada, el guardado falla a los 6 s: la tarjeta vuelve a pendiente y sale el aviso. Con sesión, se queda como saltada.">
@@ -238,11 +188,10 @@ export default function CierreAtletaDevHarness() {
         <div className="mx-auto max-w-xl px-4 py-6 space-y-10">
           <header>
             <p className="font-mono text-caption uppercase tracking-[.14em] text-accent-ink">Banco de pruebas</p>
-            <h1 className="font-display text-hero font-black tracking-tight text-ink uppercase">Cierre, medidas y saltar</h1>
+            <h1 className="font-display text-hero font-black tracking-tight text-ink uppercase">Cierre y medidas</h1>
           </header>
           <CierrePorEjercicio />
           <Mediciones />
-          <SaltarLaSesion />
           <RutinasReal />
         </div>
       </div>

@@ -6,8 +6,8 @@ import { formatearDuracion } from '../../utils/duracionSesion';
 import { SegmentedControl } from '../ui';
 import { nuevaSerieVacia, seriesHechas, filaASerie, type SetInput } from './setInput';
 import WorkoutSessionPlayer, { type SessionCelebration } from './WorkoutSessionPlayer';
-import { VARIANTES_FUERA, VARIANTE_FUERA_POR_DEFECTO, type VarianteFuera } from './InterruptorFuera';
-import { alternarSesionFuera, cambiarPrerrelleno, fueraAlAbrir, serieConFuera } from '../../utils/sesionFuera';
+import { VARIANTES_COMO_LLEGA, VARIANTE_COMO_LLEGA_POR_DEFECTO, type VarianteComoLlega } from './PreguntaComoLlega';
+import { alternarSesionFuera, fueraAlAbrir, serieConFuera } from '../../utils/sesionFuera';
 import SesionesFueraDeLaSemana from './SesionesFueraDeLaSemana';
 
 /* Banco de pruebas del reproductor de entreno (`/dev/entreno`, solo en
@@ -40,7 +40,7 @@ const EJERCICIOS = [
   { id: 'elev', name: 'Elevaciones laterales' },
   { id: 'curl', name: 'Curl en polea baja con barra' },
   { id: 'tri', name: 'Extensión de tríceps en polea alta' },
-  { id: 'jalon', name: 'Jalón al pecho' },
+  { id: 'jalon', name: 'Jalón al pecho con agarre neutro estrecho en máquina' },
 ] as unknown as Exercise[];
 const WORKOUT: Workout = {
   id: 'w', ownerId: '', name: 'Torso de prueba',
@@ -86,17 +86,12 @@ function setsIniciales(fuera = false): SetInput[][] {
 
 export default function EntrenoDevHarness() {
   const [sets, setSets] = useState(() => setsIniciales());
-  // Sesión fuera de su gimnasio: la variante del interruptor, si está
-  // encendido y qué sesiones están marcadas en el panel de la semana.
-  const [varianteFuera, setVarianteFuera] = useState<VarianteFuera>(VARIANTE_FUERA_POR_DEFECTO);
+  // «¿Cómo llegas hoy?»: la variante, para que Dani elija viéndolas.
+  const [varianteComoLlega, setVarianteComoLlega] = useState<VarianteComoLlega>(VARIANTE_COMO_LLEGA_POR_DEFECTO);
+  // Sesión fuera de su gimnasio: se decide en el panel de la semana (abajo);
+  // en el banco el ajuste de Mi gimnasio se da por activado.
   const [fuera, setFuera] = useState(false);
   const [marcadas, setMarcadas] = useState<string[]>([]);
-  const cambiarFuera = (valor: boolean) => {
-    setFuera(valor);
-    setSets(prev => cambiarPrerrelleno(prev, setsIniciales(!valor), setsIniciales(valor)));
-    // Lo que se decide en la sesión manda sobre el panel (como en TrainingScreen).
-    setMarcadas(prev => (prev.includes('dev') === valor ? prev : alternarSesionFuera(prev, 'dev')));
-  };
   const [notas, setNotas] = useState<string[]>(WORKOUT.exercises.map(() => ''));
   // D3: «otra máquina o recorrido» por ejercicio.
   const [referencias, setReferencias] = useState<boolean[]>([]);
@@ -122,7 +117,7 @@ export default function EntrenoDevHarness() {
   };
   /** Vuelve a abrir la sesión de cero, como al pulsar «Empezar» en Rutinas. */
   const reiniciar = (marcadaEnElPanel = marcadas.includes('dev')) => {
-    const arranca = fueraAlAbrir(undefined, marcadaEnElPanel);
+    const arranca = fueraAlAbrir(true, marcadaEnElPanel);
     setSets(setsIniciales(arranca));
     setFuera(arranca);
     setNotas(WORKOUT.exercises.map(() => ''));
@@ -135,17 +130,17 @@ export default function EntrenoDevHarness() {
     <div className="min-h-screen bg-bg px-4 py-6">
       <div className="mb-4 rounded-surface border border-dashed border-accent-line bg-surface p-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <p className="font-mono text-caption font-bold uppercase tracking-wide text-accent-ink">Banco de pruebas · fuera de su gimnasio</p>
+          <p className="font-mono text-caption font-bold uppercase tracking-wide text-accent-ink">Banco de pruebas · sesión</p>
           <button type="button" onClick={() => reiniciar()} className="font-mono text-caption font-bold uppercase tracking-wide text-ink-2 hover:text-accent-ink">Reiniciar</button>
         </div>
         <SegmentedControl
-          label="Cómo se enseña «fuera de mi gimnasio»"
-          value={varianteFuera}
-          onChange={v => setVarianteFuera(v as VarianteFuera)}
-          options={VARIANTES_FUERA.map(v => ({ value: v.clave, label: v.etiqueta }))}
+          label="Cómo se pregunta «¿cómo llegas hoy?»"
+          value={varianteComoLlega}
+          onChange={v => { setVarianteComoLlega(v as VarianteComoLlega); setComoLlega(undefined); }}
+          options={VARIANTES_COMO_LLEGA.map(v => ({ value: v.clave, label: v.etiqueta }))}
           className="w-full"
         />
-        <p className="font-sans text-caption text-ink-2">{VARIANTES_FUERA.find(v => v.clave === varianteFuera)?.explicacion}</p>
+        <p className="font-sans text-caption text-ink-2">{VARIANTES_COMO_LLEGA.find(v => v.clave === varianteComoLlega)?.explicacion}</p>
         <p className="font-sans text-caption text-ink-2">
           Abajo, el panel de Rutinas: marcar o desmarcar «Torso de prueba» vuelve a abrir la sesión como si la empezaras desde allí.
         </p>
@@ -180,7 +175,8 @@ export default function EntrenoDevHarness() {
         molestias={molestias}
         marcarMolestia={(exIdx, v) => setMolestias(prev => { const n = [...prev]; n[exIdx] = v; return n; })}
         comoLlega={comoLlega}
-        onComoLlega={setComoLlega}
+        onComoLlega={valor => setComoLlega(valor)}
+        varianteComoLlega={varianteComoLlega}
         getExercise={id => EJERCICIOS.find(e => e.id === id)}
         getPersonalNote={() => undefined}
         logs={LOGS}
@@ -197,8 +193,6 @@ export default function EntrenoDevHarness() {
         cansancioAlSalir={cansancio}
         onCansancioAlSalir={setCansancio}
         fuera={fuera}
-        onFuera={cambiarFuera}
-        varianteFuera={varianteFuera}
       />
 
       {/* Lo que se guardaría: para comprobar `rirApuntado` (D1b) y el cansancio (D6). */}
