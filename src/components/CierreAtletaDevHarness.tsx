@@ -10,10 +10,9 @@ import { esPreguntaPorEjercicio } from '../utils/cierrePorEjercicio';
 import { pasosDeCuestionario } from '../utils/pasosDeCuestionario';
 import { ESPERA_PARA_DESHACER_MS, type MotivoDeSalto } from '../utils/saltarSesion';
 import QuestionnaireWizard, { idComentario, type BorradorDeCuestionario } from './QuestionnaireWizard';
-import type { VarianteEjercicios } from './cuestionario/EjerciciosDelBloquePaso';
-import SaltarSesion, { SesionSaltada, type VarianteSaltar } from './SaltarSesion';
+import SaltarSesion, { SesionSaltada } from './SaltarSesion';
 import TrainingScreen from './TrainingScreen';
-import { Badge, Button, Icon, SegmentedControl } from './ui';
+import { Badge, Button, Icon } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Banco de pruebas de la tanda del atleta del 17-11 — ruta `/dev/cierre-atleta`,
@@ -119,7 +118,6 @@ function Seccion({ titulo, nota, children }: { titulo: string; nota?: string; ch
 // ── 1. Cierre por ejercicio ──────────────────────────────────────────────────
 function CierrePorEjercicio() {
   const cierre = Q_CIERRE;
-  const [variante, setVariante] = useState<VarianteEjercicios>('filas');
   const [borrador, setBorrador] = useState<BorradorDeCuestionario | null>(null);
   const pregunta = cierre.questions.find(esPreguntaPorEjercicio)!;
   // Se abre directamente en la pantalla de la pregunta nueva.
@@ -127,27 +125,15 @@ function CierrePorEjercicio() {
   const inicial = useRef<BorradorDeCuestionario>({ answers: {}, stepIdx: paso });
   return (
     <Seccion titulo="Cierre por ejercicio" nota="El asistente real, abierto en la pregunta nueva. Los ejercicios salen de los registros sembrados del bloque. La siguiente pantalla es «¿Echas de menos algún ejercicio?».">
-      <SegmentedControl
-        label="Versión"
-        value={variante}
-        onChange={v => setVariante(v as VarianteEjercicios)}
-        options={[{ value: 'filas', label: 'A · Filas' }, { value: 'tarjetas', label: 'B · Tarjetas' }]}
-        className="w-full sm:w-fit"
-      />
-      {/* La clave va en un Fragment: al cambiar de versión el asistente se
-          vuelve a montar y recupera del borrador lo ya contestado. */}
-      <React.Fragment key={variante}>
-        <QuestionnaireWizard
+      <QuestionnaireWizard
           questionnaire={cierre}
           assignment={asignacion(cierre)}
           athleteEmail={EMAIL}
           borrador={borrador ?? inicial.current}
           onBorrador={setBorrador}
-          varianteEjercicios={variante}
           onSubmitted={() => undefined}
           onCancel={() => undefined}
         />
-      </React.Fragment>
       <div className="bg-raised border border-dashed border-hairline rounded-control p-3 space-y-1">
         <p className="font-mono text-caption uppercase tracking-[.14em] text-ink-4">Lo que se guardaría</p>
         <p className="font-mono text-caption text-ink-2 break-all">valor: {String(borrador?.answers[pregunta.id] ?? '—')}</p>
@@ -179,7 +165,7 @@ function Mediciones() {
 
 // ── 3. Saltar sesión ─────────────────────────────────────────────────────────
 /** La tarjeta de «hoy» de Rutinas, calcada de TrainingScreen, con la acción nueva. */
-function TarjetaDeSesion({ variante }: { variante: VarianteSaltar }) {
+function TarjetaDeSesion() {
   const [saltada, setSaltada] = useState<MotivoDeSalto | null>(null);
   const [enEspera, setEnEspera] = useState(false);
   const temporizador = useRef<number | undefined>(undefined);
@@ -199,7 +185,7 @@ function TarjetaDeSesion({ variante }: { variante: VarianteSaltar }) {
         <div>
           <p className="font-sans font-bold text-ink text-title-s">Torso A</p>
           <p className="font-mono text-label text-ink-2">Hoy · 6 ejercicios</p>
-          {!saltada && <div className="mt-1.5"><SaltarSesion sesion="Torso A" variante={variante} onSaltar={saltar} /></div>}
+          {!saltada && <div className="mt-1.5"><SaltarSesion sesion="Torso A" onSaltar={saltar} /></div>}
           {saltada && enEspera && <div className="mt-1.5"><SesionSaltada motivo={saltada} onDeshacer={deshacer} /></div>}
           {saltada && !enEspera && (
             <button type="button" onClick={deshacer} className="mt-1.5 inline-flex items-center gap-1 font-sans text-caption text-ink-4 underline underline-offset-2 hover:text-ink-2">
@@ -219,27 +205,16 @@ function TarjetaDeSesion({ variante }: { variante: VarianteSaltar }) {
 function SaltarLaSesion() {
   return (
     <Seccion titulo="No voy a poder hacerla" nota={`Tras elegir motivo hay ${ESPERA_PARA_DESHACER_MS / 1000} s para deshacer; después solo queda «Al final sí la hago» (aquí, en el banco, te devuelve al principio).`}>
-      <p className="font-mono text-caption uppercase tracking-[.14em] text-ink-4">A · Hoja</p>
-      <TarjetaDeSesion variante="hoja" />
-      <p className="font-mono text-caption uppercase tracking-[.14em] text-ink-4 pt-2">B · En línea</p>
-      <TarjetaDeSesion variante="enLinea" />
+      <TarjetaDeSesion />
     </Seccion>
   );
 }
 
 // ── 4. La pantalla real ──────────────────────────────────────────────────────
 function RutinasReal() {
-  const [variante, setVariante] = useState<VarianteSaltar>('hoja');
   return (
     <Seccion titulo="Rutinas (pantalla real)" nota="Sin sesión iniciada, el guardado falla a los 6 s: la tarjeta vuelve a pendiente y sale el aviso. Con sesión, se queda como saltada.">
-      <SegmentedControl
-        label="Versión"
-        value={variante}
-        onChange={v => setVariante(v as VarianteSaltar)}
-        options={[{ value: 'hoja', label: 'A · Hoja' }, { value: 'enLinea', label: 'B · En línea' }]}
-        className="w-full sm:w-fit"
-      />
-      <TrainingScreen profile={PERFIL} varianteSaltar={variante} />
+      <TrainingScreen profile={PERFIL} />
     </Seccion>
   );
 }

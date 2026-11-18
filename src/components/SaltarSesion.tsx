@@ -7,55 +7,24 @@ import { Button, Icon, Sheet } from './ui';
    en Rutinas (17-11-2026). Pregunta el motivo en un toque y avisa hacia
    arriba; quien la monta marca la sesión como saltada (utils/saltarSesion).
 
-   Dos versiones para elegir, con la misma lógica:
-     · `hoja`     el enlace abre una hoja con los cuatro motivos en grande.
-                  No ocupa nada en la tarjeta hasta que se toca.
-     · `enLinea`  los motivos se despliegan en la propia tarjeta, como los de
-                  «¿No lo has hecho?» de un ejercicio. Un toque menos de viaje.
+   El enlace abre una hoja con los cuatro motivos en grande: no ocupa nada en
+   la tarjeta hasta que se toca (Dani eligió la hoja el 18-11-2026).
 
    `SesionSaltada` es lo que queda en la tarjeta los segundos en que todavía
    se puede deshacer.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-export type VarianteSaltar = 'hoja' | 'enLinea';
-export const VARIANTE_SALTAR_POR_DEFECTO: VarianteSaltar = 'hoja';
-
 interface Props {
   /** Nombre de la rutina, para el título de la hoja. */
   sesion: string;
   onSaltar: (motivo: MotivoDeSalto) => void;
-  variante?: VarianteSaltar;
 }
 
 const ENLACE = 'inline-flex items-center gap-1 font-sans text-caption text-ink-4 underline underline-offset-2 hover:text-ink-2';
 
-export default function SaltarSesion({ sesion, onSaltar, variante = VARIANTE_SALTAR_POR_DEFECTO }: Props) {
+export default function SaltarSesion({ sesion, onSaltar }: Props) {
   const [abierto, setAbierto] = useState(false);
   const elegir = (m: MotivoDeSalto) => { setAbierto(false); onSaltar(m); };
-
-  if (variante === 'enLinea') {
-    if (!abierto) {
-      return <button type="button" onClick={() => setAbierto(true)} className={ENLACE}>No voy a poder hacerla</button>;
-    }
-    return (
-      <div className="space-y-2">
-        <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">¿Qué ha pasado?</p>
-        <div className="flex flex-wrap gap-1.5">
-          {MOTIVOS_DE_SALTO.map(m => (
-            <button
-              key={m.clave}
-              type="button"
-              onClick={() => elegir(m.clave)}
-              className="rounded-control border border-hairline px-2.5 py-1.5 font-sans text-label text-ink-2 hover:text-ink transition-colors"
-            >
-              {m.etiqueta}
-            </button>
-          ))}
-          <button type="button" onClick={() => setAbierto(false)} className="px-2 py-1.5 font-sans text-label text-ink-4 hover:text-ink">Cancelar</button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>

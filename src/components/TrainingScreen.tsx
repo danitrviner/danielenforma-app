@@ -49,13 +49,11 @@ import { SetInput, nuevaSerieVacia, tieneReps, seriesHechas, filaASerie } from '
 import { mejorRmValido } from './training/cierreDeEjercicio';
 import { AL_VOLVER_A_LA_APP } from '../utils/refrescoDelAtleta';
 import { dondePreguntar, esMotivoDeParada, type MotivoDeParada } from '../utils/queTeParo';
-import SaltarSesion, { SesionSaltada, type VarianteSaltar } from './SaltarSesion';
+import SaltarSesion, { SesionSaltada } from './SaltarSesion';
 import { ESPERA_PARA_DESHACER_MS, cambiosAlSaltar, sePuedeSaltar, type MotivoDeSalto } from '../utils/saltarSesion';
 
 interface TrainingScreenProps {
   profile: UserProfile;
-  /** Cómo se pregunta el motivo de «No voy a poder hacerla» (hoja o en la tarjeta). */
-  varianteSaltar?: VarianteSaltar;
 }
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -113,7 +111,7 @@ const ESTADO_CIRCULO: Record<EstadoDeDia, string> = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function TrainingScreen({ profile, varianteSaltar }: TrainingScreenProps) {
+export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const tutorial = useTutorialEngine();
@@ -1084,7 +1082,7 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
                 sesión pendiente sin series apuntadas. */}
             {wo && sePuedeSaltar(a, seriesAMedias) && (
               <div className="mt-1.5">
-                <SaltarSesion sesion={wo.name} variante={varianteSaltar} onSaltar={motivo => saltarSesion(a, motivo)} />
+                <SaltarSesion sesion={wo.name} onSaltar={motivo => saltarSesion(a, motivo)} />
               </div>
             )}
             {saltoEnEspera?.id === a.id && (

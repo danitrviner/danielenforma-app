@@ -10,22 +10,15 @@ import { Icon, Skeleton } from '../ui';
    Cada uno se contesta en un toque —«se queda» o «lo quitaría»— y tocar el
    mismo otra vez lo deja sin contestar: no hace falta opinar de todos.
 
-   Dos versiones para elegir, con la misma lógica (utils/cierrePorEjercicio):
-     · `filas`     filas compactas como las de agujetas, con dos botones de
-                   icono a la derecha. Cabe el bloque entero casi sin scroll.
-     · `tarjetas`  una tarjeta por ejercicio con los dos botones escritos,
-                   como el sí/no del resto del cuestionario. Más alto, pero no
-                   hay que aprender qué es cada icono.
+   Filas compactas como las de agujetas, con dos botones de icono a la
+   derecha: cabe el bloque entero casi sin scroll (Dani eligió las filas el
+   18-11-2026). La lógica vive en utils/cierrePorEjercicio.
    ═══════════════════════════════════════════════════════════════════════════ */
-
-export type VarianteEjercicios = 'filas' | 'tarjetas';
-export const VARIANTE_EJERCICIOS_POR_DEFECTO: VarianteEjercicios = 'filas';
 
 interface Props {
   ejercicios: EjercicioDelBloque[];
   votos: VotosDeEjercicios;
   onVoto: (id: string, voto: VotoDeEjercicio) => void;
-  variante?: VarianteEjercicios;
   cargando?: boolean;
   /** Textos de los dos botones (los de la pregunta, si el coach los cambió). */
   etiquetaQueda?: string;
@@ -41,7 +34,7 @@ const detalleDe = (e: EjercicioDelBloque) =>
   [e.grupo ? MUSCLE_LABELS[e.grupo] : null, `${e.sesiones} ${e.sesiones === 1 ? 'día' : 'días'}`].filter(Boolean).join(' · ');
 
 export default function EjerciciosDelBloquePaso({
-  ejercicios, votos, onVoto, variante = VARIANTE_EJERCICIOS_POR_DEFECTO, cargando = false,
+  ejercicios, votos, onVoto, cargando = false,
   etiquetaQueda = 'Se queda', etiquetaQuitar = 'Lo quitaría',
 }: Props) {
   const etiqueta: Record<VotoDeEjercicio, string> = { queda: etiquetaQueda, quitar: etiquetaQuitar };
@@ -92,45 +85,17 @@ export default function EjerciciosDelBloquePaso({
     );
   };
 
-  const tarjeta = (e: EjercicioDelBloque) => {
-    const voto = votos[e.id];
-    return (
-      <div key={e.id} className="bg-surface border border-hairline rounded-control p-3 space-y-2">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="font-sans text-label font-bold text-ink text-pretty">{e.nombre}</span>
-          <span className="shrink-0 font-sans text-caption text-ink-4">{detalleDe(e)}</span>
-        </div>
-        <div className="grid grid-cols-2 gap-1 bg-raised border border-control-line rounded-control p-1" role="group" aria-label={e.nombre}>
-          {OPCIONES.map(o => (
-            <button
-              key={o.voto}
-              type="button"
-              aria-pressed={voto === o.voto}
-              onClick={() => onVoto(e.id, o.voto)}
-              className={`min-h-[40px] rounded-[10px] border inline-flex items-center justify-center gap-1.5 font-sans text-label transition-colors active:scale-[0.98] ${voto === o.voto ? o.marcado : 'border-transparent text-ink-3 hover:text-ink'}`}
-            >
-              <Icon name={o.icono} size="s" filled={voto === o.voto} />
-              {etiqueta[o.voto]}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-2">
-      {/* En filas, la leyenda de los dos iconos; en tarjetas ya va escrito. */}
+      {/* La leyenda de los dos iconos. */}
       <div className="flex items-center justify-between gap-3 font-sans text-caption text-ink-4">
-        {variante === 'filas' ? (
-          <p className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1"><Icon name="thumb_up" size="s" className="text-success" />{etiquetaQueda}</span>
-            <span className="inline-flex items-center gap-1"><Icon name="thumb_down" size="s" className="text-danger" />{etiquetaQuitar}</span>
-          </p>
-        ) : <span>Lo que has hecho este bloque</span>}
+        <p className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-1"><Icon name="thumb_up" size="s" className="text-success" />{etiquetaQueda}</span>
+          <span className="inline-flex items-center gap-1"><Icon name="thumb_down" size="s" className="text-danger" />{etiquetaQuitar}</span>
+        </p>
         <span className="font-mono tabular-nums">{contestados} de {ejercicios.length}</span>
       </div>
-      <div className="flex flex-col gap-1.5">{ejercicios.map(variante === 'filas' ? fila : tarjeta)}</div>
+      <div className="flex flex-col gap-1.5">{ejercicios.map(fila)}</div>
     </div>
   );
 }

@@ -10,7 +10,7 @@ import { pasosDeCuestionario, esDeAgujetas } from '../utils/pasosDeCuestionario'
 import type { ZonaEntrenada } from '../utils/cuestionarioAuto';
 import AgujetasPaso from './cuestionario/AgujetasPaso';
 import MapaGrupos, { esPreguntaDeMapa } from './cuestionario/MapaGrupos';
-import EjerciciosDelBloquePaso, { type VarianteEjercicios } from './cuestionario/EjerciciosDelBloquePaso';
+import EjerciciosDelBloquePaso from './cuestionario/EjerciciosDelBloquePaso';
 import { NotaMideteIgual, CambioDeMedida } from './cuestionario/MedirseIgual';
 import {
   esPreguntaPorEjercicio, leerVotos, votosATexto, conVoto, fraseDeVotos, cuentaDeVotos,
@@ -47,8 +47,6 @@ interface Props {
   /** Ejercicios del bloque que se cierra (pregunta «se queda / lo quitaría»).
    *  Sin pasarlos, el asistente los busca él cuando el cuestionario la lleva. */
   ejerciciosDelBloque?: EjercicioDelBloque[];
-  /** Cómo se pinta esa pregunta: filas con iconos o tarjetas con texto. */
-  varianteEjercicios?: VarianteEjercicios;
   onSubmitted: (r: QuestionnaireResponse) => void;
   onCancel: () => void;
 }
@@ -78,7 +76,7 @@ const ESPERA_GUARDADO_MS = 600;
 
 export default function QuestionnaireWizard({
   questionnaire, assignment, athleteEmail, currentWeight, borrador, onBorrador,
-  autoRellenos, zonasEntrenadas = [], ejerciciosDelBloque, varianteEjercicios, onSubmitted, onCancel,
+  autoRellenos, zonasEntrenadas = [], ejerciciosDelBloque, onSubmitted, onCancel,
 }: Props) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -471,7 +469,6 @@ export default function QuestionnaireWizard({
             ejercicios={ejercicios}
             votos={leerVotos(valor)}
             onVoto={(id, voto) => votarEjercicio(question, id, voto)}
-            variante={varianteEjercicios}
             cargando={!ejerciciosDelBloque && delBloque.cargando}
             etiquetaQueda={question.labelTrue}
             etiquetaQuitar={question.labelFalse}
