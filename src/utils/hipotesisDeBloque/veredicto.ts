@@ -11,6 +11,7 @@ import {
   NO_RESPONDE_PARA_SOLTAR_ESTRELLA, RM_OBJETIVO_PCT, RM_RUIDO_PCT, SEMANAS_DE_FRENO_QUE_EXPLICAN, redondearIem,
 } from './cifras.js';
 import type { EstadoDeEjercicio, EstadoDelBloque } from './estadoDelBloqueAnterior.js';
+import { textoDeVigilar } from './estresArticular.js';
 import { seguidosAlFinal, veredictosDeLaZona, type BloqueConCierre } from './historial.js';
 import { PALANCAS, otraPalanca } from './palancas.js';
 import { nombreCortoDeZona } from './tiposDeBloque.js';
@@ -55,7 +56,9 @@ import { nombreCortoDeZona } from './tiposDeBloque.js';
 
    Los límites (cansancio medio al salir de 8 o más, molestia en la zona) van
    como DATO: no cambian la lectura, pero una confirmada con un límite pasado
-   no sube el techo.
+   no sube el techo. Dani lo confirmó el 18-11-2026 y añadió que con molestia
+   se vigile el estrés articular de la zona: la propuesta para el bloque
+   siguiente lo dice (`estresArticular.ts`), sea cual sea la lectura.
 
    Determinista y sin escribir nada: el coach firma (`cierreParaGuardar`).
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -394,6 +397,11 @@ export function veredictoDeHipotesis(e: EntradaDeVeredicto): VeredictoCalculado 
       texto: `Repite la hipótesis arreglando la causa: ${ARREGLO[causa!]}.`,
     };
   }
+
+  // Con molestia apuntada en la zona, además: vigilar sus articulaciones en el
+  // bloque siguiente (Dani, 18-11-2026). Vale para cualquier lectura.
+  const vigilar = limites.molestia.pasado ? textoDeVigilar(zona) : null;
+  if (vigilar) propuesta = { ...propuesta, texto: `${propuesta.texto} ${vigilar}.` };
 
   return {
     zona, palanca,

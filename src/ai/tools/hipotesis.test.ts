@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { CierreDeHipotesis, Mesocycle } from '../../types';
 import { usarFuenteDeDatos, type FuenteDeDatos } from './datos';
 import { NOTA_DE_HIPOTESIS, hipotesisParaElAsistente, esTipoDeBloque, semanasPorDefectoDe } from './hipotesis';
-import { leerBloqueDelAsistente, proposeMesocycle, proposePeriodizationBlock } from './propuestas';
+import { leerBloqueDelAsistente, primerBloqueSiNoSeIndica, proposeMesocycle, proposePeriodizationBlock } from './propuestas';
 import { cambiosDeMesociclo } from '../cambiosPropuesta';
 
 /* H11 (17-11-2026): el asistente lee la hipótesis del bloque y puede proponer
@@ -108,26 +108,64 @@ describe('leerBloqueDelAsistente', () => {
     expect(leerBloqueDelAsistente({ pecho: { series: 10 } }, { tipoBloque: 'primer', semana1Reducida: false }).campos.semana1Reducida).toBe(false);
   });
 
-  it('rechaza un tipo que no existe y avisa de más zonas prioritarias de las que admite el tipo', () => {
+  it('rechaza un tipo que no existe; más zonas prioritarias de las que suele llevar el tipo es un aviso, no un rechazo', () => {
     expect(leerBloqueDelAsistente({ pecho: { series: 10 } }, { tipoBloque: 'volumen' }).issues[0].field).toBe('tipo_bloque');
     expect(leerBloqueDelAsistente({ pecho: { series: 10 } }, { semana1Reducida: 'si' }).issues[0].field).toBe('semana1_reducida');
     const b = leerBloqueDelAsistente({ pecho: { series: 12, priority: 'alta' }, dorsal: { series: 14, priority: 'alta' } }, { tipoBloque: 'especializacion' });
     expect(b.avisos.join(' ')).toMatch(/2 zonas prioritarias \(pectoral y dorsal\).*una sola estrella/);
+    expect(b.issues).toEqual([]);
+  });
+
+  // Dani, 18-11-2026: «con 4 que avise, pero que me permita hacer lo que quiera».
+  it('desarrollo: tres zonas prioritarias pasan sin aviso; con cuatro avisa y no rechaza', () => {
+    const alta = (grupos: string[]) => Object.fromEntries(grupos.map(g => [g, { series: 10, priority: 'alta' as const }]));
+    const tres = leerBloqueDelAsistente(alta(['pecho', 'dorsal', 'cuadriceps']), { tipoBloque: 'desarrollo' });
+    expect(tres.issues).toEqual([]);
+    expect(tres.avisos).toEqual([]);
+    const cuatro = leerBloqueDelAsistente(alta(['pecho', 'dorsal', 'cuadriceps', 'gluteo']), { tipoBloque: 'desarrollo' });
+    expect(cuatro.issues).toEqual([]);
+    expect(cuatro.avisos.join(' ')).toMatch(/4 zonas prioritarias \(pectoral, dorsal, cuádriceps y glúteo\).*Con 4 estrellas.*puedes dejarlo así/);
+    // Los cuatro grupos siguen en alta: nada se recorta.
+    expect(Object.values(cuatro.groups).filter(g => g.priority === 'alta')).toHaveLength(4);
+  });
+});
+
+// Dani, 18-11-2026: «no me parece mal que salga como primer bloque; de 8 semanas, aunque luego se pueda estirar».
+describe('primer bloque de un atleta, si el asistente no indica tipo', () => {
+  const UNO = [{ id: 'm1' }];
+  it('sin bloques anteriores y sin tipo: primer bloque, con las 8 semanas de su preset', () => {
+    const r = primerBloqueSiNoSeIndica({ semanasIndicadas: false }, 12, []);
+    expect(r.opciones.tipoBloque).toBe('primer');
+    expect(r.weeks).toBe(8);
+    expect(r.aviso).toMatch(/primer bloque de este atleta.*«Primer bloque» \(8 semanas, semana 1 reducida\)/);
+    // El despachador rellena 12 cuando no hay `weeks`: sin saber si las mandó, esas 12 son «no indicadas».
+    expect(primerBloqueSiNoSeIndica({}, 12, []).weeks).toBe(8);
+  });
+  it('si el asistente dijo las semanas, se respetan: se puede estirar', () => {
+    expect(primerBloqueSiNoSeIndica({ semanasIndicadas: true }, 12, [])).toMatchObject({ weeks: 12, opciones: { tipoBloque: 'primer' } });
+    expect(primerBloqueSiNoSeIndica({}, 10, []).weeks).toBe(10);
+  });
+  it('con tipo indicado, o con algún bloque anterior, no se toca nada', () => {
+    expect(primerBloqueSiNoSeIndica({ tipoBloque: 'desarrollo' }, 12, [])).toEqual({ opciones: { tipoBloque: 'desarrollo' }, weeks: 12, aviso: null });
+    expect(primerBloqueSiNoSeIndica({}, 12, UNO)).toEqual({ opciones: {}, weeks: 12, aviso: null });
   });
 });
 
 describe('propose_mesocycle y propose_periodization_block · tipo, ignorar y semana 1 reducida', () => {
   const creadas: Record<string, unknown>[] = [];
+  /** Los bloques que ya tiene el atleta: vacío = lo que se proponga es su primer bloque. */
+  let bloquesDelAtleta: Mesocycle[] = [];
+  const YA_TUVO_UNO = [{ id: 'm1', athleteId: 'ana@x.com', number: 1, weeks: 8, startDate: '2026-06-01', objective: 'Primer bloque', daysPerWeek: 3, groups: {} } as unknown as Mesocycle];
   const fuente = {
     getUserProfileByEmail: async () => ({ userId: 'u', email: 'ana@x.com', displayName: 'Ana Ruiz', role: 'client' }),
     getAllUserProfiles: async () => [{ userId: 'u', email: 'ana@x.com', displayName: 'Ana Ruiz', role: 'client' }],
-    getMesocycles: async () => [],
+    getMesocycles: async () => bloquesDelAtleta,
     createAiProposal: vi.fn(async (d: Record<string, unknown>) => { creadas.push(d); return { id: `p${creadas.length}`, ...d }; }),
     appendDossierFacts: async () => undefined,
     coachActual: () => ({ uid: 'coach', email: 'danitrviner@gmail.com' }),
     isLocalBypassActive: () => false,
   };
-  beforeEach(() => { creadas.length = 0; usarFuenteDeDatos(fuente as unknown as FuenteDeDatos); });
+  beforeEach(() => { creadas.length = 0; bloquesDelAtleta = []; usarFuenteDeDatos(fuente as unknown as FuenteDeDatos); });
   const GRUPOS = { pecho: { series: 12, priority: 'alta' as const }, dorsal: { series: 12, priority: 'media' as const }, gemelo: { series: 6, priority: 'ignorar' as const } };
 
   it('el mesociclo de la propuesta lleva tipoBloque, semana1Reducida y el grupo ignorado a 0', async () => {
@@ -141,12 +179,53 @@ describe('propose_mesocycle y propose_periodization_block · tipo, ignorar y sem
     expect(r.trainedGroups.join(' ')).not.toMatch(/Gemelo/);
   });
 
-  it('sin tipo ni extras, la propuesta es la de siempre', async () => {
+  it('sin tipo ni extras y con algún bloque anterior, la propuesta es la de siempre', async () => {
+    bloquesDelAtleta = YA_TUVO_UNO;
     await proposeMesocycle('ana@x.com', 12, 4, 'Hipertrofia', { pecho: { series: 12 } }, '2026-11-23', '', 'chat');
     const meso = creadas[0].payload as Mesocycle;
     expect(meso.tipoBloque).toBeUndefined();
     expect(meso.semana1Reducida).toBeUndefined();
     expect(meso.phaseType).toBeUndefined();
+    expect(meso.weeks).toBe(12);
+  });
+
+  // Dani, 18-11-2026: el primer bloque de un atleta nace como «primer bloque».
+  it('sin tipo y sin ningún bloque anterior: nace como primer bloque de 8 semanas con la semana 1 reducida, y se dice', async () => {
+    const r = JSON.parse(await proposeMesocycle('ana@x.com', 12, 4, 'Hipertrofia', { pecho: { series: 12 } }, '2026-11-23', '', 'chat', undefined, undefined, { semanasIndicadas: false }));
+    expect(r.proposalCreated).toBe(true);
+    const meso = creadas[0].payload as Mesocycle;
+    expect(meso).toMatchObject({ number: 1, tipoBloque: 'primer', weeks: 8, semana1Reducida: true, phaseType: 'hipertrofia', cdgVelocidad: 'suave' });
+    expect(creadas[0].summary).toContain('8 sem');
+    expect(creadas[0].summary).toContain('· Primer bloque · semana 1 reducida');
+    expect(r.avisos.join(' ')).toMatch(/primer bloque de este atleta/);
+  });
+
+  it('el primer bloque respeta las semanas y el tipo que diga el asistente', async () => {
+    await proposeMesocycle('ana@x.com', 12, 4, 'Hipertrofia', { pecho: { series: 12 } }, '2026-11-23', '', 'chat', undefined, undefined, { semanasIndicadas: true });
+    expect(creadas[0].payload).toMatchObject({ tipoBloque: 'primer', weeks: 12 });
+    await proposeMesocycle('ana@x.com', 12, 4, 'Desarrollo', { pecho: { series: 12 } }, '2026-11-23', '', 'chat', undefined, undefined, { tipoBloque: 'desarrollo' });
+    expect(creadas[1].payload).toMatchObject({ tipoBloque: 'desarrollo', weeks: 12 });
+    expect((creadas[1].payload as Mesocycle).semana1Reducida).toBeUndefined();
+  });
+
+  // Dani, 18-11-2026: «con 4 que avise, pero que me permita hacer lo que quiera».
+  it('cuatro zonas prioritarias: la propuesta se crea, con el aviso', async () => {
+    bloquesDelAtleta = YA_TUVO_UNO;
+    const grupos = Object.fromEntries(['pecho', 'dorsal', 'cuadriceps', 'gluteo'].map(g => [g, { series: 10, priority: 'alta' as const }]));
+    const r = JSON.parse(await proposeMesocycle('ana@x.com', 12, 4, 'Desarrollo', grupos, '2026-11-23', '', 'chat', undefined, undefined, { tipoBloque: 'desarrollo' }));
+    expect(r.proposalCreated).toBe(true);
+    expect(r.valid).toBeUndefined();
+    expect(r.avisos.join(' ')).toMatch(/4 zonas prioritarias.*puedes dejarlo así/);
+    const meso = creadas[0].payload as Mesocycle;
+    expect(['pecho', 'dorsal', 'cuadriceps', 'gluteo'].every(g => meso.groups[g as keyof Mesocycle['groups']].priority === 'alta')).toBe(true);
+  });
+
+  it('el bloque completo sin tipo también nace como primer bloque; si la descarga pedida no cabe en 8 semanas, conserva las suyas', async () => {
+    await proposePeriodizationBlock('ana@x.com', 12, 3, 'Hipertrofia', { pecho: { series: 8 } }, '2026-11-23', undefined, 2, 'revision', '', 'chat');
+    expect((creadas[0].payload as { mesocycle: Mesocycle }).mesocycle).toMatchObject({ tipoBloque: 'primer', weeks: 8, semana1Reducida: true });
+    const r = JSON.parse(await proposePeriodizationBlock('ana@x.com', 12, 3, 'Hipertrofia', { pecho: { series: 8 } }, '2026-11-23', 10, 2, 'revision', '', 'chat'));
+    expect(r.proposalCreated).toBe(true);
+    expect((creadas[1].payload as { mesocycle: Mesocycle }).mesocycle).toMatchObject({ tipoBloque: 'primer', weeks: 12, deloadWeek: 10 });
   });
 
   it('un tipo inventado no crea propuesta', async () => {

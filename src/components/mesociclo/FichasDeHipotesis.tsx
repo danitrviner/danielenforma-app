@@ -293,9 +293,11 @@ export default function FichasDeHipotesis({
         </div>
       ) : (
         <p className="font-sans text-body-s text-ink-3 leading-relaxed">
-          {TIPOS_DE_BLOQUE[tipo].maxEstrellas === 0
-            ? `«${TIPOS_DE_BLOQUE[tipo].etiqueta}» no prioriza ninguna zona: no lleva hipótesis por zona.`
-            : `Ninguna zona lleva estrella todavía. Marca con ⭐ Especializar en la pestaña Volumen ${TIPOS_DE_BLOQUE[tipo].maxEstrellas === 1 ? 'la zona' : `las zonas (hasta ${TIPOS_DE_BLOQUE[tipo].maxEstrellas})`} que este bloque prioriza y aquí saldrá su ficha.`}
+          {/* El número es el del aviso, no un tope (Dani, 18-11-2026): con más
+              estrellas la ficha sale igual y arriba se avisa. */}
+          {TIPOS_DE_BLOQUE[tipo].estrellasSinAviso === 0
+            ? `«${TIPOS_DE_BLOQUE[tipo].etiqueta}» no suele priorizar ninguna zona: no lleva hipótesis por zona. Si aun así marcas alguna con ⭐ Especializar, aquí saldrá su ficha.`
+            : `Ninguna zona lleva estrella todavía. Marca con ⭐ Especializar en la pestaña Volumen ${TIPOS_DE_BLOQUE[tipo].estrellasSinAviso === 1 ? 'la zona' : `las zonas (lo normal son hasta ${TIPOS_DE_BLOQUE[tipo].estrellasSinAviso})`} que este bloque prioriza y aquí saldrá su ficha.`}
         </p>
       )}
 

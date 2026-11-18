@@ -868,10 +868,12 @@ export interface WorkoutSetLog {
    *  registros anteriores y en las series añadidas al corregir una sesión ya
    *  terminada: ahí «ahora» no es cuando se hizo. Ver utils/tiemposDeSerie.ts. */
   hechaEn?: string;
-  /** ¿El RIR lo eligió el atleta? (17-11-2026). `true` = lo apuntó él;
-   *  `false` = la serie se guardó con el RIR pautado sin tocar, así que no dice
-   *  nada de su esfuerzo y no entra en el RM ni en la calibración. Ausente en
-   *  los registros anteriores: ahí no se sabe y se dan por buenos. */
+  /** ¿El RIR lo eligió el atleta? (17-11-2026). `true` = lo apuntó él (lo
+   *  cambió o marcó fallo). Ausente = se guardó con el RIR pautado sin tocar o
+   *  es un registro anterior: no se sabe y se da por bueno. Al guardar una
+   *  sesión no se escribe `false`; los motores lo siguen tratando por si acaso
+   *  (un `false` no dice nada de su esfuerzo y no entra en el RM ni en la
+   *  calibración). */
   rirApuntado?: boolean;
   /** La serie se hizo FUERA del gimnasio habitual (17-11-2026): otras poleas,
    *  otras máquinas, otros pesos. Cuenta para el volumen y el estímulo (el RIR
@@ -931,12 +933,6 @@ export interface WorkoutLog {
   /** Sesión hecha fuera del gimnasio habitual (viaje, hotel, otro gimnasio),
    *  marcada por el atleta o por el coach (17-11-2026). Ver `WorkoutSetLog.fuera`. */
   fuera?: boolean;
-  /** Agujetas de las zonas trabajadas en esta sesión, 1-5, contestadas entre
-   *  36 y 72 h después (17-11-2026). Clave = `ZonaIem` (utils/cdg/zonas.ts).
-   *  Sustituye al recuerdo semanal cuando existe. */
-  agujetas48h?: Partial<Record<string, number>>;
-  /** Cuándo contestó `agujetas48h` (ISO). */
-  agujetas48hAt?: string;
   /** Respuesta del coach a la nota del entreno completo. */
   noteReply?: RespuestaCoach;
   /** Instante en que se ABRIÓ el player por primera vez (ISO), no en que se

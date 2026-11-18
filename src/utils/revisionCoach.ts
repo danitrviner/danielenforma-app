@@ -401,10 +401,10 @@ export function construirBienestar(params: {
  * El aviso de salto de carga NO sale de aquí: necesita el catálogo CDG, que
  * esta función pura no tiene. `senalesActivas` ya lo acepta (`saltoDeCarga`).
  *
- * Con `logs` (D6r y D7, 17-11-2026) se lee además lo que el atleta apunta por
- * sesión: el cansancio al salir es la media de las sesiones de los 7 días que
- * acaban en `hasta` (y se dice de cuál salió peor), y las agujetas contestadas
- * a las 48 h se mezclan con las del cuestionario. Sin nada por sesión, lo de siempre.
+ * Con `logs` (D6r, 17-11-2026) se lee además el cansancio que el atleta apunta
+ * al acabar cada sesión: la media de las sesiones de los 7 días que acaban en
+ * `hasta`, y de cuál salió peor. Las agujetas son las del cuestionario semanal
+ * (Dani, 18-11: no se preguntan a los dos días). Sin nada por sesión, lo de siempre.
  */
 export function senalesDelProtocolo(params: {
   responses: QuestionnaireResponse[];
@@ -421,7 +421,7 @@ export function senalesDelProtocolo(params: {
   const serie = (k: string) => historialDeSeñal(k, responses, questionnaires).filter(p => p.date <= hasta);
   const deSesiones = cansancioDeSesiones(logs, { desde: addDays(hasta, -6), hasta, nombreDe: params.nombreDeSesion });
   const cansancioAlSalir = deSesiones?.media ?? ultimaVigente(serie('wellness.fatigue_post_weekly'), hasta)?.value;
-  const zonas = Object.values(agujetasPorZona(serie, logs, hasta))
+  const zonas = Object.values(agujetasPorZona(serie))
     .filter(l => !l.deEscala10 && agujetasVigentes(l.fecha, hasta))
     .map(l => ({ nombre: ZONA_POR_CLAVE[l.zona].nombre, valor: l.valor, anterior: l.anterior }));
   const grupoDe = params.grupoDe ?? (() => undefined);

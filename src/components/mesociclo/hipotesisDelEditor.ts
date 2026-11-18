@@ -1,13 +1,13 @@
-import type { ExperienceLevel, HipotesisDeZona, Mesocycle, PalancaDeHipotesis, TipoDeBloque } from '../../types';
+import type { ExperienceLevel, HipotesisDeZona, Mesocycle, MuscleGroup, MuscleGroupConfig, PalancaDeHipotesis, TipoDeBloque } from '../../types';
 import { VELOCIDADES, sensibilidadDeZona, type Sensibilidad, type Velocidad } from '../../utils/cdg/agujetas';
 import type { ZonaIem } from '../../utils/cdg/zonas';
 import { REDUCCION_SEMANA_1_PCT, redondearIem } from '../../utils/hipotesisDeBloque/cifras';
 import type { EstadoDeZona } from '../../utils/hipotesisDeBloque/estadoDelBloqueAnterior';
 import { cifrasDeHipotesis, rmObjetivoPorDefecto, type NotaDeHipotesis } from '../../utils/hipotesisDeBloque/proponerHipotesis';
 import {
-  TIPOS_DE_BLOQUE, aplicarTipoDeBloque, type CampoDeTipo,
+  TIPOS_DE_BLOQUE, aplicarTipoDeBloque, tipoDeBloqueNuevo, type CampoDeTipo,
 } from '../../utils/hipotesisDeBloque/tiposDeBloque';
-import { inicioPorDefecto } from '../../utils/hipotesisDelMeso';
+import { bajarAMantener, inicioPorDefecto } from '../../utils/hipotesisDelMeso';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Lo que hace el EDITOR con el tipo de bloque y las fichas de hipótesis
@@ -51,30 +51,51 @@ export function elegirTipoDeBloque(meso: Mesocycle, tipo: TipoDeBloque): TipoEle
 }
 
 /**
- * Con qué nace un bloque nuevo (Dani, 17-11): desarrollo, 12 semanas, y
- * empieza el lunes siguiente al final del bloque que todavía no ha terminado
- * (hoy si no hay ninguno). La semana 1 reducida nace apagada.
+ * Con qué nace un bloque nuevo. El primero de un atleta, como «primer bloque»
+ * con lo que marca su preset (8 semanas, semana 1 reducida encendida: todos
+ * los ejercicios son nuevos), aunque luego se pueda estirar (Dani,
+ * 18-11-2026). Los demás, desarrollo de 12 semanas con la semana 1 reducida
+ * apagada (Dani, 17-11). Empieza el lunes siguiente al final del bloque que
+ * todavía no ha terminado (hoy si no hay ninguno). Todo es editable después.
  */
 export function camposDeBloqueNuevo(mesos: readonly Mesocycle[], hoy: string): Pick<Mesocycle, 'weeks' | 'startDate' | 'objective'> & Partial<Mesocycle> {
-  const { cambios } = aplicarTipoDeBloque({}, 'desarrollo', { nuevo: true });
+  const tipo = tipoDeBloqueNuevo(mesos);
+  const { cambios } = aplicarTipoDeBloque({}, tipo, { nuevo: true });
   return {
-    weeks: TIPOS_DE_BLOQUE.desarrollo.semanas,
-    objective: TIPOS_DE_BLOQUE.desarrollo.objective,
+    weeks: TIPOS_DE_BLOQUE[tipo].semanas,
+    objective: TIPOS_DE_BLOQUE[tipo].objective,
     ...cambios,
     startDate: inicioPorDefecto(mesos, hoy),
   };
 }
 
-/** Lo que resume el tipo elegido bajo los chips: «hasta 3 estrellas en dinámico, el resto en estático · …». */
+/**
+ * Aceptar «Bajarlos a mantener» (Dani, 18-11-2026): los grupos sin estrella
+ * que seguían en desarrollar pasan a mantener con la mitad de sus series. Lo
+ * que se devuelve es lo que se escribe (`cambios`) y lo que había (`antes`),
+ * que es lo que apunta el Deshacer del editor.
+ */
+export function alBajarAMantener(meso: Pick<Mesocycle, 'groups' | 'tipoBloque'>): { cambios: Pick<Mesocycle, 'groups'>; antes: Pick<Mesocycle, 'groups'> } | null {
+  const groups = bajarAMantener<Record<MuscleGroup, MuscleGroupConfig>>(meso);
+  return groups === meso.groups ? null : { cambios: { groups }, antes: { groups: meso.groups } };
+}
+
+/**
+ * Lo que resume el tipo elegido bajo los chips: «las estrellas en dinámico y
+ * el resto en estático (con 4 o más avisa, sin bloquear) · …». Solo cuenta lo
+ * que el tipo HA RELLENADO: desde el 18-11-2026 no dice «lo que no lleva
+ * estrella, a mantener», porque eso ya no lo hace el tipo (se recomienda
+ * aparte), y el número de estrellas es el del aviso, no un tope.
+ */
 export function resumenDelTipo(tipo: TipoDeBloque, meso: Pick<Mesocycle, 'weeks'> & Partial<Pick<Mesocycle, 'cdgVelocidad' | 'semana1Reducida'>>): string {
   const p = TIPOS_DE_BLOQUE[tipo];
-  const estrellas = p.maxEstrellas === 0
+  const n = p.estrellasSinAviso;
+  const estrellas = n === 0
     ? 'sin estrellas'
-    : `${p.maxEstrellas === 1 ? 'una sola estrella' : `hasta ${p.maxEstrellas} estrellas`} en dinámico, el resto en estático`;
+    : `${n === 1 ? 'la estrella' : 'las estrellas'} en dinámico y el resto en estático (con ${n + 1} o más avisa, sin bloquear)`;
   const velocidad = VELOCIDADES.find(v => v.value === (meso.cdgVelocidad ?? p.velocidad))?.label ?? '';
-  const resto = p.resto === 'mantener' ? 'lo que no lleva estrella, a mantener' : null;
   return [
-    estrellas, resto, `velocidad ${velocidad.toLowerCase()}`,
+    estrellas, `velocidad ${velocidad.toLowerCase()}`,
     `${meso.weeks} ${meso.weeks === 1 ? 'semana' : 'semanas'}`,
     meso.semana1Reducida ? 'semana 1 reducida' : null,
   ].filter(Boolean).join(' · ');

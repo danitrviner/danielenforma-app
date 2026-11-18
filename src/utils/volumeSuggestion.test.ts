@@ -266,12 +266,13 @@ describe('suggestVolume · objetivo por músculo (P6)', () => {
     expect(suggestVolume(base({ priorities: todoBaja, history: hist('media', 6) })).groups.biceps.series).toBe(minimo);
   });
 
-  it('avisa a partir de tres zonas con estrella; los tres deltoides cuentan como una (17-11-2026)', () => {
+  it('avisa a partir de cuatro zonas con estrella, sin impedir nada; los tres deltoides cuentan como una (Dani, 18-11-2026)', () => {
     const alta = (gs: MuscleGroup[]) => Object.fromEntries(MUSCLE_ORDER.map(g => [g, gs.includes(g) ? 'alta' : 'baja'])) as Record<MuscleGroup, Prioridad>;
     const aviso = (r: ReturnType<typeof suggestVolume>) => r.warnings.some(w => w.includes('estrellas'));
     expect(aviso(suggestVolume(base({ priorities: alta(['pecho', 'dorsal']) })))).toBe(false);
     expect(aviso(suggestVolume(base({ priorities: alta(['pecho', 'deltoide_ant', 'deltoide_lat', 'deltoide_post']) })))).toBe(false);
-    expect(aviso(suggestVolume(base({ priorities: alta(['pecho', 'dorsal', 'biceps']) })))).toBe(true);
+    expect(aviso(suggestVolume(base({ priorities: alta(['pecho', 'dorsal', 'biceps']) })))).toBe(false);
+    expect(aviso(suggestVolume(base({ priorities: alta(['pecho', 'dorsal', 'biceps', 'cuadriceps']) })))).toBe(true);
   });
 
   it('en especialización avisa ya con dos estrellas', () => {

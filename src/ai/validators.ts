@@ -284,6 +284,10 @@ export function validateMesocyclePayload(payload: MesocycleProposalPayload): Val
     }
     // Cuatro niveles (17-11-2026): alta = especializar, media = desarrollar,
     // baja = mantener (la mitad), ignorar = 0 series y fuera del bloque.
+    // Cuántos grupos van en alta NO se valida aquí, a propósito (Dani,
+    // 18-11-2026: «con 4 que avise, pero que me permita hacer lo que quiera»):
+    // de más zonas prioritarias de lo normal se avisa al leer el bloque
+    // (`leerBloqueDelAsistente`), sin rechazar la propuesta.
     if (cfg?.priority && !['alta', 'media', 'baja', 'ignorar'].includes(cfg.priority)) {
       issues.push({ field: `groups.${group}.priority`, message: `priority de "${group}" debe ser alta, media, baja o ignorar` });
     } else if (cfg?.priority === 'ignorar' && typeof s === 'number' && s > 0) {

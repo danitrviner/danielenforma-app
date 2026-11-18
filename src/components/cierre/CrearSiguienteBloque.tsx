@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import type { Mesocycle } from '../../types';
+import { limitesEnLinea, type LimiteArticularPropuesto } from '../../utils/hipotesisDeBloque/estresArticular';
 import { resumenDeTipo, type SiguienteBloque } from '../../utils/hipotesisDeBloque/siguienteBloque';
 import { nombreDeMeso } from '../../utils/nombresMeso';
 import { fechaCorta } from '../../utils/trainingWeek';
@@ -22,6 +23,16 @@ import { Seccion } from './piezas';
    rutinas pero sin asignar al atleta (eso sigue siendo «Asignar mesociclo»,
    en el editor), igual que al aplicar una plantilla. Si ya hay un bloque
    posterior, se pregunta antes.
+
+   18-11-2026 (decisiones de Dani):
+    · La tarjeta dice de dónde salen las series y repeticiones del bloque
+      nuevo —la última semana normal de este, no la semana 1 ni una descarga—
+      porque «con las prescripciones con las que acabó» no se entendía.
+    · Si alguna zona con estrella trae molestias, sale qué articulaciones
+      vigilar y, cuando se puede calcular, un límite semanal sugerido (su
+      media en este bloque) con un botón para fijarlo. El límite es del
+      atleta (el de Seguimiento › «Guardar para este atleta»), avisa y no
+      bloquea; la línea de «vigilar» se queda escrita en el bloque nuevo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
@@ -34,6 +45,8 @@ interface Props {
   sinFirmar: boolean;
   /** Falta el catálogo CDG: las hipótesis nuevas salen sin cifras de estímulo. */
   sinCifras: boolean;
+  /** Guarda como límite semanal del atleta los que sugiere la tarjeta. Sin él no hay botón. */
+  onFijarLimites?: (limites: LimiteArticularPropuesto[]) => Promise<void>;
   /** Sin `@types/react` en el repo, TS no excluye la key por su cuenta (ver Chip). */
   key?: React.Key;
 }
@@ -48,7 +61,7 @@ function Dato({ etiqueta, valor, sub }: { etiqueta: string; valor: string; sub: 
   );
 }
 
-export default function CrearSiguienteBloque({ athleteEmail, meso, propuesto, sinFirmar, sinCifras }: Props) {
+export default function CrearSiguienteBloque({ athleteEmail, meso, propuesto, sinFirmar, sinCifras, onFijarLimites }: Props) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -60,6 +73,11 @@ export default function CrearSiguienteBloque({ athleteEmail, meso, propuesto, si
   const creado = hecho?.meso ?? null;
   /** Qué botón espera la confirmación de «ya hay un bloque posterior». */
   const [pendiente, setPendiente] = useState<'crear' | 'ajustar' | null>(null);
+
+  // Los límites articulares ya fijados desde aquí: al guardarlos la propuesta
+  // deja de sugerirlos (el atleta ya los tiene) y hay que poder decir cuáles fueron.
+  const [fijando, setFijando] = useState(false);
+  const [fijados, setFijados] = useState<LimiteArticularPropuesto[] | null>(null);
 
   const r = hecho?.resumen ?? propuesto.resumen;
   const sinRutinas = (hecho?.rutinas ?? propuesto.rutinas.length) === 0;
@@ -92,6 +110,24 @@ export default function CrearSiguienteBloque({ athleteEmail, meso, propuesto, si
     if (luegoAjustar) abrirEditor();
   };
   const pedir = (cual: 'crear' | 'ajustar') => (r.hayPosterior ? setPendiente(cual) : void crear(cual === 'ajustar'));
+
+  // Los límites se leen de la propuesta de AHORA, no de la congelada al crear:
+  // se pueden fijar antes o después de crear el bloque.
+  const limites = propuesto.resumen.articular.limites;
+  const fijarLimites = async () => {
+    if (!onFijarLimites || limites.length === 0) return;
+    setFijando(true);
+    try {
+      await onFijarLimites(limites);
+      setFijados(limites);
+      showToast('Límite semanal guardado para este atleta', 'success');
+    } catch (err) {
+      console.error('CrearSiguienteBloque: no se pudieron guardar los límites articulares', err);
+      showToast('No se ha podido guardar el límite. No se ha cambiado nada: vuelve a intentarlo.', 'error');
+    } finally {
+      setFijando(false);
+    }
+  };
 
   return (
     <Seccion
@@ -127,7 +163,7 @@ export default function CrearSiguienteBloque({ athleteEmail, meso, propuesto, si
         {r.motivoDeArranque && <>{r.motivoDeArranque} </>}
         {creado
           ? <>Creado como <b className="text-ink">{nombreDeMeso(creado)}</b>: está en Plan › Entrenamientos, sin asignar al atleta. Ábrelo allí para ajustarlo y asignarlo.</>
-          : <>Mismo reparto, días y ejercicios, con las prescripciones con las que acabó este bloque. Se crea como borrador, sin asignar al atleta. Nada se crea hasta que pulses.</>}
+          : <>Mismo reparto, días y ejercicios. <b className="text-ink">Copia lo que hacía en su última semana normal</b> (la S{r.semanaDeReferencia} de este bloque; no la semana 1 ni una descarga): mismas series y repeticiones. Se crea como borrador, sin asignar al atleta. Nada se crea hasta que pulses.</>}
       </p>
       {sinRutinas && !creado && (
         <p className="font-sans text-caption text-warning">
@@ -142,6 +178,24 @@ export default function CrearSiguienteBloque({ athleteEmail, meso, propuesto, si
       {[...r.rotacion, ...r.avisos].map(t => (
         <p key={t} className="font-sans text-caption text-warning">{t}</p>
       ))}
+      {/* Molestias en una zona con estrella: qué articulaciones vigilar en el
+          bloque nuevo y, si se pudo calcular, el límite semanal sugerido. */}
+      {r.articular.vigilar.map(v => (
+        <p key={v.zona} className="font-sans text-caption text-warning">{v.texto}</p>
+      ))}
+      {fijados ? (
+        <p className="font-sans text-caption text-ink-2">
+          <b className="text-ink">Límite semanal fijado para este atleta:</b> {limitesEnLinea(fijados)}. Se cambia en Seguimiento, dentro del editor del bloque.
+        </p>
+      ) : limites.length > 0 && onFijarLimites && (
+        <div className="flex items-start justify-between gap-3 flex-wrap rounded-control border border-hairline bg-bg px-3 py-2">
+          <p className="font-sans text-caption text-ink-2 leading-relaxed min-w-0 flex-1">
+            <b className="text-ink">Límite semanal sugerido:</b> {limitesEnLinea(limites)}. Es lo que cargó de media por semana en este bloque, no más alto.
+            Si lo fijas queda como límite de este atleta: avisa cuando una semana lo pase y no bloquea nada.
+          </p>
+          <Button size="s" variant="secondary" onClick={() => void fijarLimites()} loading={fijando} loadingLabel="Guardando">Fijar como límite semanal</Button>
+        </div>
+      )}
       {/* Por qué alguna hipótesis no propone lo de siempre (déficit, zona ya
           alta). Son propuestas: se cambian en el editor. */}
       {(r.notas ?? []).map(t => (

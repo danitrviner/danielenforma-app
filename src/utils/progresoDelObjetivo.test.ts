@@ -65,7 +65,7 @@ describe('progresoDelObjetivo', () => {
     const p = progresoDelObjetivo({ meso: meso(), logs: pressPorSemana(1, () => 60), exercises: EJERCICIOS, hoy: lunesDe(2) })!;
     expect(p.estado).toBe('pronto');
     expect(p.fraccion).toBe(0);
-    expect(p.mejoraPct).toBeNull();
+    expect(p.zonas[0].mejoraPct).toBeNull();
     expect(p.titular).toBe('Todavía es pronto para medirlo');
   });
 
@@ -81,25 +81,23 @@ describe('progresoDelObjetivo', () => {
     expect(p.estado).toBe('igual');
     expect(p.fraccion).toBe(0);
     expect(p.titular).toBe('De momento mueves lo mismo que al empezar');
-    expect(`${p.titular} ${p.detalle}`).not.toMatch(/mejora|llevas/i);
+    expect(p.titular).not.toMatch(/mejora|llevas/i);
   });
 
   it('mejora por encima del ruido y por debajo del objetivo: dice cuánto lleva de cuánto', () => {
     // 60 → 62,5 kg: +4,2 %.
     const p = progresoDelObjetivo({ meso: meso(), logs: pressPorSemana(4, s => (s <= 2 ? 60 : 62.5)), exercises: EJERCICIOS, hoy: lunesDe(5) })!;
     expect(p.estado).toBe('mejora');
-    expect(p.mejoraPct).toBe(4.2);
-    expect(p.objetivoPct).toBe(5);
+    expect(p.zonas[0]).toMatchObject({ mejoraPct: 4.2, objetivoPct: 5 });
     expect(p.titular).toBe('Llevas un 4,2 % de 5 %');
     expect(p.fraccion).toBeCloseTo(0.84, 2);
   });
 
-  it('al llegar al objetivo la barra se llena, pero no promete el bloque: hay que sostenerlo', () => {
+  it('al llegar al objetivo la barra se llena', () => {
     const p = progresoDelObjetivo({ meso: meso(), logs: pressPorSemana(4, s => (s <= 2 ? 60 : 65)), exercises: EJERCICIOS, hoy: lunesDe(5) })!;
     expect(p.estado).toBe('conseguido');
     expect(p.fraccion).toBe(1);
     expect(p.titular).toBe('Vas por encima del objetivo: +8,3 %');
-    expect(p.detalle).toMatch(/sostenerlo hasta el final/);
   });
 
   it('si mueve menos que al empezar lo dice sin dramatizar y sin barra', () => {
@@ -120,10 +118,8 @@ describe('progresoDelObjetivo', () => {
     const p = progresoDelObjetivo({ meso: m, logs: pressPorSemana(4, s => (s <= 2 ? 60 : 62.5)), exercises: EJERCICIOS, hoy: lunesDe(5) })!;
     expect(p.zonas.map(z => [z.nombre, z.estado, z.objetivoPct])).toEqual([['pecho', 'mejora', 5], ['hombro', 'pronto', 4]]);
     expect(p.estado).toBe('mejora');
-    expect(p.mejoraPct).toBeNull();
     expect(p.fraccion).toBeCloseTo(0.42, 2);
     expect(p.titular).toBe('Pecho +4,2 % · Hombro: todavía es pronto');
-    expect(p.detalle).toBe('Vas bien. Falta que arranque hombro.');
   });
 
   // El tope de la marca pasó de 12 a 15 repeticiones en la auditoría de cifras del 17-11-2026: por encima, sigue sin dar marca.
@@ -155,7 +151,7 @@ describe('progresoDelObjetivo', () => {
 
   it('el texto del atleta no lleva tecnicismos', () => {
     const p = progresoDelObjetivo({ meso: meso(), logs: pressPorSemana(4, s => (s <= 2 ? 60 : 62.5)), exercises: EJERCICIOS, hoy: lunesDe(5) })!;
-    const todo = [p.frase, p.titular, p.detalle, ...p.zonas.map(z => z.texto)].join(' ');
+    const todo = [p.frase, p.titular, p.empujon?.texto ?? '', ...p.zonas.map(z => z.texto)].join(' ');
     expect(todo).not.toMatch(/IEM|índice|hipótesis|veredicto|RM\b|zona|tipo de bloque|\bIA\b/i);
   });
 });
@@ -173,9 +169,8 @@ describe('progresoDelObjetivo · bloque de mantener la fuerza (objetivo 0 %)', (
   it('mueve lo mismo que al empezar: lo está consiguiendo, sin cifras', () => {
     const p = progresoDelObjetivo({ meso: m, logs: pressPorSemana(6, () => 60), exercises: EJERCICIOS, hoy: lunesDe(7) })!;
     expect(p.zonas[0]).toMatchObject({ mantener: true, objetivoPct: 0, estado: 'conseguido', fraccion: 1, texto: 'Pecho: mantienes tu fuerza' });
-    expect(p).toMatchObject({ estado: 'conseguido', titular: 'Mantienes tu fuerza', mejoraPct: null, objetivoPct: null });
-    expect(p.detalle).toBe('Mueves lo mismo que al empezar, que es lo que buscamos en esta fase. Sigue así hasta el final del bloque.');
-    expect(`${p.titular} ${p.detalle} ${p.zonas[0].texto}`).not.toMatch(/%|déficit|RM|IEM/);
+    expect(p).toMatchObject({ estado: 'conseguido', titular: 'Mantienes tu fuerza' });
+    expect(`${p.titular} ${p.zonas[0].texto}`).not.toMatch(/%|déficit|RM|IEM/);
   });
 
   it('si baja más que el ruido de medida, se le dice sin dramatizar', () => {

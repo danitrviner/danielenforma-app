@@ -12,7 +12,7 @@ import {
   leerRendimiento, indicadoresCambioDeBloque, avisosIemIea, type SemanaParaLectura, type Contexto,
   tipoSugerido, semanasHastaAburrirse, avisoDeFiabilidad, referenciasToleradas,
   contextoPorCiclos, rachaFinal, valorEnElCicloDe, esDescargaOPuente,
-  cansancioDeSesiones, sesionesDurasPorZona, zonasDeEjercicios, nombresDeZonas, origenDeLectura, type LecturaAgujetas,
+  cansancioDeSesiones, sesionesDurasPorZona, zonasDeEjercicios, nombresDeZonas,
   bandaIEA, BANDAS_IEA, LIMITE_IEA_CON_ANTECEDENTES, articulacionesSobreSuLimite, limitesValidos, type BandaIEA
 } from '../../utils/cdg';
 import { useAgujetasCdg } from '../../hooks/useAgujetasCdg';
@@ -53,11 +53,10 @@ import { ETIQUETA_DE_SEMAFORO, semaforoDelBloque, type ColorDeSemaforo } from '.
    por posición (F16). La lectura del rendimiento no compara con la semana en
    curso a medias ni con una descarga (R1).
 
-   17-11-2026 (D6r, D7): el cansancio al salir sale de las sesiones de la semana
+   17-11-2026 (D6r): el cansancio al salir sale de las sesiones de la semana
    que se evalúa (media, y cuál fue la más dura) cuando el atleta lo apunta al
-   terminar; si no, del cuestionario semanal como antes. Las agujetas mezclan
-   las contestadas a las 48 h de cada sesión con las del cuestionario: manda la
-   más reciente, y al lado se dice de dónde sale («a 48 h» o «semanal»).
+   terminar; si no, del cuestionario semanal como antes. Las agujetas salen
+   del cuestionario semanal.
 
    17-11-2026 (auditoría de cifras): el cansancio frena SESIÓN A SESIÓN. Una
    sesión de la semana con 8 o más deja en «mantener» las zonas que se
@@ -98,8 +97,6 @@ const ETIQUETA_TONO: Record<TonoPropuesta, string> = {
 const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('es-ES');
 const n2 = (v: number) => (Math.round(v * 100) / 100).toLocaleString('es-ES');
 const pct = (v: number | null) => (v == null ? '—' : `${v >= 0 ? '+' : ''}${(Math.round(v * 1000) / 10).toLocaleString('es-ES')} %`);
-/** De dónde sale una lectura de agujetas, dicho en corto al lado de la nota. */
-const origenCorto = (l: LecturaAgujetas) => (origenDeLectura(l) === '48h' ? 'a 48 h' : 'semanal');
 // Bandas de estrés articular del curso (X1): colorean, no avisan.
 const TONO_BANDA_IEA: Record<BandaIEA, string> = { bajo: 'text-ink-3', medio: 'text-ink-2', alto: 'text-ink font-bold' };
 const aNumero = (t: string) => Number(t.replace(',', '.').trim());
@@ -404,7 +401,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                       })}
                     </>)}
                 </li>
-                <li>Agujetas de cada zona (a 48 h de la sesión o del cuestionario semanal: la más reciente) contra su IEM (tabla).</li>
+                <li>Agujetas de la semana (cuestionario semanal) contra el IEM de cada zona (tabla).</li>
                 <li>Rendimiento: RM y tonelaje (abajo).</li>
               </ol>
               {(!estres && !motivacion && fatigaPost == null) && (
@@ -426,7 +423,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                         </button>
                       </div>
                       <p className="font-mono text-caption text-ink-2 tabular-nums">
-                        Agujetas {f.lectura ? (f.vigente ? <><b className={f.lectura.valor >= 5 ? 'text-danger' : f.lectura.valor >= 4 ? 'text-warning' : 'text-ink'}>{f.lectura.valor}/5</b><span className="font-sans text-ink-3"> {origenCorto(f.lectura)}</span></> : `${f.lectura.valor}/5 · antigua`) : '—'}
+                        Agujetas {f.lectura ? (f.vigente ? <b className={f.lectura.valor >= 5 ? 'text-danger' : f.lectura.valor >= 4 ? 'text-warning' : 'text-ink'}>{f.lectura.valor}/5</b> : `${f.lectura.valor}/5 · antigua`) : '—'}
                         {' · '}IEM {f.iem > 0.005 ? n1(f.iem) : '·'}{f.vs != null ? ` (${pct(f.vs)})` : ''}{f.objetivo != null ? ` · objetivo ${n1(f.objetivo)}` : ''}
                       </p>
                       <p className={`font-sans text-caption ${TONO[f.propuesta.tono]}`}>
@@ -450,8 +447,8 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                               {SENSIBILIDADES.find(a => a.value === f.modo)?.label}
                             </button>
                           </td>
-                          <td className="py-1 px-2 text-right font-mono tabular-nums whitespace-nowrap" title={f.lectura ? `${f.lectura.fecha} · ${origenDeLectura(f.lectura) === '48h' ? 'contestada a las 48 h de la sesión' : 'cuestionario semanal'}${f.lectura.deEscala10 ? ' · 0-10 convertido' : ''}` : undefined}>
-                            {f.lectura && !f.vigente ? <span className="text-ink-3" title={`Última lectura: ${f.lectura.fecha}`}>{f.lectura.valor} · antigua</span> : f.lectura ? <>{f.lectura.anterior != null && <span className="text-ink-3">{f.lectura.anterior} → </span>}<b className={f.lectura.valor >= 5 ? 'text-danger' : f.lectura.valor >= 4 ? 'text-warning' : 'text-ink'}>{f.lectura.valor}</b><span className="block font-sans text-ink-3">{origenCorto(f.lectura)}</span></> : <span className="text-ink-3">—</span>}
+                          <td className="py-1 px-2 text-right font-mono tabular-nums" title={f.lectura ? `${f.lectura.fecha}${f.lectura.deEscala10 ? ' · cuestionario 0-10 convertido' : ''}` : undefined}>
+                            {f.lectura && !f.vigente ? <span className="text-ink-3" title={`Última lectura: ${f.lectura.fecha}`}>{f.lectura.valor} · antigua</span> : f.lectura ? <>{f.lectura.anterior != null && <span className="text-ink-3">{f.lectura.anterior} → </span>}<b className={f.lectura.valor >= 5 ? 'text-danger' : f.lectura.valor >= 4 ? 'text-warning' : 'text-ink'}>{f.lectura.valor}</b></> : <span className="text-ink-3">—</span>}
                           </td>
                           <td className="py-1 px-2 text-right font-mono tabular-nums text-ink">{f.iem > 0.005 ? n1(f.iem) : '·'}</td>
                           <td className="py-1 px-2 text-right font-mono tabular-nums text-ink-2">{pct(f.vs)}</td>
@@ -473,7 +470,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                 </p>
               )}
               <p className="font-sans text-caption text-ink-3">
-                Agujetas en la escala 1-5 del curso: «a 48 h» es lo que contestó a los dos días de la sesión; «semanal», el recuerdo del cuestionario (el DOM's 0-10 antiguo va convertido). De cada zona se usa la más reciente y solo cuentan las de los últimos {UMBRALES_PROTOCOLO.diasVigenciaAgujetas} días. No se leen a ciegas: los ejercicios en estiramiento y los tempos excéntricos largos dan más agujetas con el mismo IEM.
+                Agujetas del cuestionario semanal, en la escala 1-5 del curso (el DOM's 0-10 antiguo va convertido); solo cuentan las de los últimos {UMBRALES_PROTOCOLO.diasVigenciaAgujetas} días. No se leen a ciegas: los ejercicios en estiramiento y los tempos excéntricos largos dan más agujetas con el mismo IEM.
               </p>
             </>
           );

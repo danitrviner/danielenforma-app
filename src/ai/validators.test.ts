@@ -81,6 +81,14 @@ describe('validateMesocyclePayload — tope de volumen', () => {
    a una dieta, y una fase sin dieta no le enseña nada al atleta. Se rechaza aquí
    con el motivo, para que el modelo se corrija solo en vez de que Dani apruebe
    un plan roto. */
+// Dani, 18-11-2026: «con 4 que avise, pero que me permita hacer lo que quiera».
+describe('validateMesocyclePayload — las zonas prioritarias no tienen tope', () => {
+  it('cinco grupos en alta, de cinco zonas distintas, no dan ningún issue', () => {
+    const groups = Object.fromEntries(['pecho', 'dorsal', 'cuadriceps', 'gluteo', 'isquios'].map(g => [g, { series: 10, priority: 'alta' }])) as MesocycleProposalPayload['groups'];
+    expect(validateMesocyclePayload({ weeks: 12, daysPerWeek: 4, objective: 'Desarrollo', groups })).toEqual([]);
+  });
+});
+
 describe('validateNutritionPhases', () => {
   const DIETAS = ['d1', 'd2'];
 

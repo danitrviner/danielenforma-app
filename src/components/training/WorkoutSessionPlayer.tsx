@@ -14,9 +14,7 @@ import { segundosTranscurridos, formatearDuracion } from '../../utils/duracionSe
 import { haptics } from '../../services/haptics';
 import { formatDate } from '../../utils/trainingWeek';
 import { useEstable } from '../../hooks/useEstable';
-import {
-  SetInput, tieneReps, filaASerie, apuntarRir, opcionRapidaDe, rirDesdeElBloqueo, VARIANTE_RIR_POR_DEFECTO, type VarianteRir,
-} from './setInput';
+import { SetInput, tieneReps, filaASerie, rirDesdeElBloqueo } from './setInput';
 import { estadoDelEjercicio, seriesPrincipales } from '../../utils/seriesPrincipales';
 import { tonelajeMaximoAntesDe, type Logro } from '../../utils/logrosDelEjercicio';
 import { logrosDelCierre, mensajeTrasCerrar, comprobacionDelRir } from './cierreDeEjercicio';
@@ -105,9 +103,6 @@ interface Props {
   /** F7a: la sesión cae en semana de descarga, puente o vuelta de parón. En
    *  ellas las tarjetas no sugieren subir carga. */
   tipoSemana?: TipoDeSemana | null;
-  /** D1c: cómo se le pide el RIR al atleta (ver `VarianteRir` en setInput.ts).
-   *  Sin ella, la de hoy. Solo el banco de pruebas pasa otra. */
-  varianteRir?: VarianteRir;
   /** D6: cansancio al salir, 0-10, contestado en el diálogo de fin de sesión.
    *  Ausente `onCansancioAlSalir` = no se pregunta. */
   cansancioAlSalir?: number;
@@ -141,7 +136,7 @@ export default function WorkoutSessionPlayer({
   celebration, dismissCelebration, cerrarPlayer, sameDayCardio,
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, onMarkActionDone,
   avisoSesion, onAvisoSesion, tipoSemana,
-  varianteRir = VARIANTE_RIR_POR_DEFECTO, cansancioAlSalir, onCansancioAlSalir,
+  cansancioAlSalir, onCansancioAlSalir,
   fuera = false, onFuera, varianteFuera = VARIANTE_FUERA_POR_DEFECTO,
 }: Props) {
   const orderedExercises = activeWorkout.exercises.slice().sort((a, b) => a.order - b.order);
@@ -584,26 +579,9 @@ export default function WorkoutSessionPlayer({
   // referencia nueva la sesión anterior no vale de estimación. Y solo con RIR
   // que apuntó él: del pautado sin tocar no se opina (D1d).
   const comprobacionDe = (exIdx: number) => {
-    const hechas = seriesPrincipales(playerSets[exIdx] || []).filter(x => x.done).map(x => filaASerie(x, isEditingCompleted));
+    const hechas = seriesPrincipales(playerSets[exIdx] || []).filter(x => x.done).map(x => filaASerie(x));
     const previa = referenciasNuevas?.[exIdx] || fuera ? undefined : prevEntries.find(e => e.exerciseId === orderedExercises[exIdx].exerciseId);
     return comprobacionDelRir(hechas, previa ? seriesPrincipales(previa.sets) : undefined);
-  };
-
-  // D1c, variante «última»: al cerrar el ejercicio se pregunta el RIR solo de
-  // la última serie principal. Esa queda como apuntada; las demás, no.
-  const rirUltimaDe = (exIdx: number) => {
-    if (varianteRir !== 'ultima' || isEditingCompleted) return undefined;
-    const filas = playerSets[exIdx] || [];
-    let idx = -1;
-    filas.forEach((f, i) => { if (!f.segmento && f.done) idx = i; });
-    if (idx < 0) return undefined;
-    const fila = filas[idx];
-    const serie = filas.slice(0, idx + 1).filter(f => !f.segmento).length - 1;
-    return {
-      pautado: rirPautadoPorSerie(orderedExercises[exIdx])[serie],
-      elegido: fila.rirApuntado === true ? opcionRapidaDe(fila.rir) : null,
-      onElegir: (valor: string) => apuntarRir((sIdx, field, value) => updateSet(exIdx, sIdx, field, value), idx, valor),
-    };
   };
 
   // Fuera de su gimnasio, en el diálogo de fin de sesión: cuántas series a su RIR.
@@ -657,8 +635,6 @@ export default function WorkoutSessionPlayer({
           mensaje={mensajeDe(exIdx)}
           logros={logrosDe(exIdx)}
           festejar={festejando === exIdx}
-          rirUltima={rirUltimaDe(exIdx)}
-          esCorreccion={isEditingCompleted}
           fuera={fuera}
         />
       );
@@ -687,7 +663,6 @@ export default function WorkoutSessionPlayer({
         saltoKg={saltos.get(we.exerciseId)}
         esNuevo={!isEditingCompleted && !yaHechos.has(we.exerciseId)}
         tipoSemana={tipoSemana}
-        varianteRir={varianteRir}
         nuevaReferencia={referenciasNuevas?.[exIdx] ?? false}
         onToggleReferencia={marcarReferenciaNueva && !isEditingCompleted ? cb.onToggleReferencia : undefined}
         restTimer={pageIdx === pIdx && restTimer && restSecondsLeft
@@ -757,7 +732,6 @@ export default function WorkoutSessionPlayer({
           onSkipRest={onSkipRestStable}
           onAddRestSeconds={addRestSecondsStable}
           tipoSemana={tipoSemana}
-          varianteRir={varianteRir}
           fuera={fuera}
         />
       </div>

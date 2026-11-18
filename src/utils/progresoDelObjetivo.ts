@@ -6,7 +6,7 @@ import { semanasDeCalendarioEnDescarga } from './cierreMesociclo.js';
 import { finDeBloque } from './finDeBloque.js';
 import { RM_OBJETIVO_PCT } from './hipotesisDeBloque/cifras.js';
 import { ZONA_PARA_EL_ATLETA, objetivoDelMesoParaElAtleta } from './hipotesisDeBloque/objetivoParaElAtleta.js';
-import { enLista, estrellasDe, gruposDeLasZonas } from './hipotesisDeBloque/tiposDeBloque.js';
+import { estrellasDe, gruposDeLasZonas } from './hipotesisDeBloque/tiposDeBloque.js';
 import { buildProgresionDelBloque, type ProgresionDelBloque } from './progresionDelBloque.js';
 import { resolverEjercicioDelMeso } from './progression.js';
 import { mediana } from './rmValido.js';
@@ -110,15 +110,10 @@ export interface ProgresoDelObjetivo {
   /** Una por zona prioritaria que sube. Vacío si el bloque no busca subir nada medible. */
   zonas: ProgresoDeZona[];
   estado: EstadoDelObjetivo;
-  /** Media de las zonas, 0-1: lo que rellena la barra o el anillo. */
+  /** Media de las zonas, 0-1: lo que rellena la barra. */
   fraccion: number;
-  /** Con una sola zona, su mejora y su objetivo; con varias, `null` (se enseñan por zona). */
-  mejoraPct: number | null;
-  objetivoPct: number | null;
   /** Una línea corta: «Llevas un 4 % de 5 %». */
   titular: string;
-  /** Una frase para acompañar, en tono de entrenador. */
-  detalle: string;
   empujon: Empujon | null;
 }
 
@@ -259,24 +254,6 @@ function titularDe(zonas: readonly ProgresoDeZona[], estado: EstadoDelObjetivo):
   }
 }
 
-function detalleDe(zonas: readonly ProgresoDeZona[], estado: EstadoDelObjetivo): string {
-  if (zonas.length === 0) return '';
-  switch (estado) {
-    case 'pronto': return zonas.every(z => z.sinMarcas)
-      ? 'Con las series de ahora no hay marca que comparar. Apunta cuánto te guardas en cada serie y coméntaselo a tu entrenador.'
-      : 'En cuanto tengas dos semanas apuntadas te digo cómo vas. Apunta cada serie.';
-    case 'conseguido': return zonas.every(z => z.mantener)
-      ? 'Mueves lo mismo que al empezar, que es lo que buscamos en esta fase. Sigue así hasta el final del bloque.'
-      : 'Ya mueves lo que buscábamos. Ahora toca sostenerlo hasta el final del bloque.';
-    case 'mejora': {
-      const atras = zonas.filter(z => z.estado !== 'mejora' && z.estado !== 'conseguido').map(z => z.nombre);
-      return atras.length > 0 ? `Vas bien. Falta que arranque ${enLista(atras)}.` : 'Vas en camino. Sigue apretando en estos ejercicios.';
-    }
-    case 'baja': return 'Pasa algunas semanas. Céntrate en repetir tus marcas y vuelve a subir desde ahí.';
-    default: return 'Aún no se nota la diferencia. Busca una repetición más en cada serie.';
-  }
-}
-
 /**
  * El empujón: de los ejercicios de las zonas prioritarias que tiene pautados
  * esta semana, el que está más cerca de subir de peso y lo que le falta. Usa
@@ -374,7 +351,6 @@ export function progresoDelObjetivo(o: {
   const exercises = o.exercises;
   const zonas = exercises ? progresoDeLasZonas(meso, progresionDelBloqueDelAtleta({ ...o, meso, exercises })) : [];
   const estado = estadoGlobal(zonas);
-  const sola = zonas.length === 1 ? zonas[0] : null;
   return {
     mesocycleId: meso.id,
     frase: objetivoDelMesoParaElAtleta(meso as Mesocycle, o.nivel),
@@ -382,11 +358,7 @@ export function progresoDelObjetivo(o: {
     semanaTexto: semanas != null ? `Semana ${semana} de ${semanas}` : `Semana ${semana}`,
     zonas, estado,
     fraccion: zonas.length ? zonas.reduce((a, z) => a + z.fraccion, 0) / zonas.length : 0,
-    // Con «no perder» no hay cifra que enseñar: se dice con palabras (titular).
-    mejoraPct: sola && !sola.mantener ? sola.mejoraPct : null,
-    objetivoPct: sola && !sola.mantener ? sola.objetivoPct : null,
     titular: titularDe(zonas, estado),
-    detalle: detalleDe(zonas, estado),
     empujon: o.workouts && exercises ? empujonDelObjetivo({ meso, workouts: o.workouts, logs: o.logs, exercises, hoy: o.hoy }) : null,
   };
 }

@@ -239,6 +239,24 @@ describe('los límites van como dato del veredicto', () => {
     expect(r.limites.textos).toEqual(['molestia apuntada en 3 sesiones (hasta 6/10)']);
   });
 
+  // Dani, 18-11-2026: «me parece bien; incluso que se controle el índice articular de la zona».
+  it('con molestia en la zona, confirmada no sube el techo y la propuesta pide vigilar sus articulaciones', () => {
+    const r = v({ limites: { molestiasEnLaZona: 2, molestiaMaxima: 5 } });
+    expect(r.lectura).toBe('confirmada');
+    expect(r.propuesta.subirTecho).toBe(false);
+    expect(r.propuesta.texto).toContain('sin subir el techo: se pasó un límite (molestia apuntada en 2 sesiones (hasta 5/10))');
+    expect(r.propuesta.texto).toMatch(/Vigilar el estrés articular de hombro \(articular, tendinoso compresivo y tendinoso tensil\)\.$/);
+    // También cuando la lectura es otra: la molestia no depende de si la apuesta salió.
+    expect(v({ rmPct: 1, limites: { molestiasEnLaZona: 1 } }).propuesta.texto).toContain('Vigilar el estrés articular de hombro');
+    // Sin molestia (o solo con el cansancio pasado) no se dice nada de articulaciones.
+    expect(v().propuesta.texto).not.toContain('Vigilar');
+    expect(v({ limites: { cansancioMedio: 8.4 } }).propuesta.texto).not.toContain('Vigilar');
+    // Una zona a la que el método no asigna articulaciones no da línea.
+    const biceps = veredictoDeHipotesis({ zona: 'biceps', hipotesis: H, iemMedio: 17, rm: { rmPct: 6 }, limites: { molestiasEnLaZona: 2 } });
+    expect(biceps.propuesta.subirTecho).toBe(false);
+    expect(biceps.propuesta.texto).not.toContain('Vigilar');
+  });
+
   it('sin datos de límites, ninguno pasado', () => {
     expect(v().limites).toMatchObject({ algunoPasado: false, textos: [], cansancio: { valor: null, pasado: false }, molestia: { veces: 0, pasado: false } });
   });

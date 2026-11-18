@@ -319,10 +319,15 @@ describe('la palanca sale del historial de veredictos', () => {
 describe('estrellas y resto de zonas', () => {
   const estado = anterior({ pectoral: { iemMedio: 14, iemFinal: 16 }, dorsal: { iemMedio: 18, iemFinal: 20 }, biceps: { iemMedio: 8, iemFinal: 9 } });
 
-  it('avisa a partir de 3 estrellas, y en especialización con más de una', () => {
+  it('avisa a partir de 4 estrellas, y en especialización con más de una; propone todas igualmente (Dani, 18-11-2026)', () => {
     expect(proponerHipotesis({ tipo: 'desarrollo', estrellas: ['pectoral', 'dorsal'] }).avisos).toEqual([]);
-    expect(proponerHipotesis({ tipo: 'desarrollo', estrellas: ['pectoral', 'dorsal', 'biceps'] }).avisos).toHaveLength(1);
-    expect(proponerHipotesis({ tipo: 'especializacion', estrellas: ['pectoral', 'dorsal'] }).avisos[0]).toContain('una sola estrella');
+    expect(proponerHipotesis({ tipo: 'desarrollo', estrellas: ['pectoral', 'dorsal', 'biceps'] }).avisos).toEqual([]);
+    const cuatro = proponerHipotesis({ tipo: 'desarrollo', estrellas: ['pectoral', 'dorsal', 'biceps', 'gluteo'] });
+    expect(cuatro.avisos).toHaveLength(1);
+    expect(Object.keys(cuatro.hipotesis)).toHaveLength(4);
+    const dos = proponerHipotesis({ tipo: 'especializacion', estrellas: ['pectoral', 'dorsal'] });
+    expect(dos.avisos[0]).toContain('una sola estrella');
+    expect(Object.keys(dos.hipotesis)).toEqual(['pectoral', 'dorsal']);
   });
 
   it('desarrollo: el resto sigue como estaba, sin cifra', () => {
@@ -330,20 +335,25 @@ describe('estrellas y resto de zonas', () => {
     expect(r.iemDelResto).toEqual({});
   });
 
-  it('mantenimiento: sin estrellas y todo a la mitad de donde acabó', () => {
+  it('mantenimiento: sin estrellas; el resto baja a la mitad solo donde el coach lo ha puesto en mantener', () => {
     const r = proponerHipotesis({ tipo: 'mantenimiento', estrellas: [], anterior: estado });
     expect(r.hipotesis).toEqual({});
     expect(r.cdgObjetivosIem).toEqual({});
-    expect(r.iemDelResto).toEqual({ pectoral: 8, dorsal: 10, biceps: 4.5 });
+    // El tipo lo recomienda, no lo hace (Dani, 18-11-2026): sin decir nada, nada baja.
+    expect(r.iemDelResto).toEqual({});
     expect(Object.values(r.cdgModoPorZona).every(m => m === 'estatico')).toBe(true);
+    const aceptado = proponerHipotesis({ tipo: 'mantenimiento', estrellas: [], anterior: estado, resto: { pectoral: 'mantener', dorsal: 'mantener', biceps: 'mantener' } });
+    expect(aceptado.iemDelResto).toEqual({ pectoral: 8, dorsal: 10, biceps: 4.5 });
   });
 
-  it('especialización: la estrella sube y el resto baja a mantener; ignorar es 0', () => {
+  it('especialización: la estrella sube; el resto no baja solo, y con mantener es la mitad e ignorar es 0', () => {
     const r = proponerHipotesis({ tipo: 'especializacion', estrellas: ['pectoral'], anterior: estado, resto: { biceps: 'ignorar', dorsal: 'como_estaba' } });
     expect(r.cdgObjetivosIem).toEqual({ pectoral: 17.6 });
     expect(r.iemDelResto).toEqual({ biceps: 0 });
     const porDefecto = proponerHipotesis({ tipo: 'especializacion', estrellas: ['pectoral'], anterior: estado });
-    expect(porDefecto.iemDelResto).toEqual({ dorsal: 10, biceps: 4.5 });
+    expect(porDefecto.iemDelResto).toEqual({});
+    const aceptado = proponerHipotesis({ tipo: 'especializacion', estrellas: ['pectoral'], anterior: estado, resto: { dorsal: 'mantener', biceps: 'mantener' } });
+    expect(aceptado.iemDelResto).toEqual({ dorsal: 10, biceps: 4.5 });
   });
 });
 

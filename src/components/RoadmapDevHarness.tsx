@@ -5,8 +5,8 @@ import { semanasDelPlan, evaluarPlan, calcularGastoReal } from '../utils/seguimi
 import { construirRoadmap } from '../utils/roadmapDelAtleta';
 import RoadmapDelAtletaVista from './roadmap/RoadmapDelAtletaVista';
 import WeeklyChallengeCard from './roadmap/WeeklyChallengeCard';
-import ObjetivoDelBloque, { type VarianteObjetivoDelBloque } from './training/ObjetivoDelBloque';
-import BloqueTerminado, { type VarianteBloqueTerminado } from './training/BloqueTerminado';
+import ObjetivoDelBloque from './training/ObjetivoDelBloque';
+import BloqueTerminado from './training/BloqueTerminado';
 import { progresoDelObjetivo } from '../utils/progresoDelObjetivo';
 import { bloqueTerminadoParaElAtleta } from '../utils/bloqueTerminado';
 
@@ -15,8 +15,8 @@ import { bloqueTerminadoParaElAtleta } from '../utils/bloqueTerminado';
    el camino con fases y el arranque sin ellas; `?v=plan|arranque` una sola.
 
    17-11-2026: el bloque en curso lleva hipótesis (pecho), así que el paso de
-   entreno enseña el objetivo del bloque. `?v=objetivo` enseña sus tres
-   variantes en varios momentos del bloque y `?v=cierre` las dos de «Bloque
+   entreno enseña el objetivo del bloque. `?v=objetivo` enseña la franja en
+   varios momentos del bloque y `?v=cierre` la celebración de «Bloque
    terminado» (con marcas y sin ellas). */
 
 const HOY = hoyIsoLocal();
@@ -138,28 +138,19 @@ const CIERRES: { titulo: string; nota: string; datos: ReturnType<typeof bloqueDe
   },
 ];
 
-const VARIANTES_OBJETIVO: VarianteObjetivoDelBloque[] = ['franja', 'tarjeta', 'anillo'];
-const VARIANTES_CIERRE: VarianteBloqueTerminado[] = ['tarjeta', 'celebracion'];
 const VISTAS = ['todas', 'plan', 'arranque', 'objetivo', 'cierre'] as const;
 type Vista = typeof VISTAS[number];
 
-function Variantes() {
+function Objetivos() {
   return (
     <section className="space-y-6">
-      <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">Objetivo del bloque · tres variantes (franja = la de Rutinas y el Road map)</p>
+      <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">Objetivo del bloque · la franja de Rutinas y del Road map</p>
       {MOMENTOS.map(m => {
         const progreso = progresoDelObjetivo({ meso: m.datos.meso, logs: m.datos.logs, exercises: EJERCICIOS, workouts: m.datos.rutinas, assignments: m.datos.asignaciones, hoy: HOY });
         return (
           <div key={m.titulo} className="space-y-2">
             <p className="font-sans text-body-s font-bold text-ink">{m.titulo} <span className="font-normal text-ink-3">· {m.nota}</span></p>
-            <div className="grid gap-4 md:grid-cols-3">
-              {VARIANTES_OBJETIVO.map(v => (
-                <div key={v} className="max-w-sm space-y-1">
-                  <p className="font-mono text-caption uppercase text-ink-3">{v}</p>
-                  <ObjetivoDelBloque progreso={progreso} variante={v} />
-                </div>
-              ))}
-            </div>
+            <div className="max-w-sm"><ObjetivoDelBloque progreso={progreso} /></div>
           </div>
         );
       })}
@@ -170,20 +161,13 @@ function Variantes() {
 function Cierres() {
   return (
     <section className="space-y-6">
-      <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">Bloque terminado · dos variantes</p>
+      <p className="font-mono text-caption uppercase tracking-widest text-accent-ink">Bloque terminado · la celebración</p>
       {CIERRES.map(c => {
         const cierre = bloqueTerminadoParaElAtleta({ mesociclos: [c.datos.meso], assignments: c.datos.asignaciones, logs: c.datos.logs, exercises: EJERCICIOS, hoy: HOY });
         return (
           <div key={c.titulo} className="space-y-2">
             <p className="font-sans text-body-s font-bold text-ink">{c.titulo} <span className="font-normal text-ink-3">· {c.nota}</span></p>
-            <div className="grid gap-4 md:grid-cols-2">
-              {VARIANTES_CIERRE.map(v => (
-                <div key={v} className="max-w-sm space-y-1">
-                  <p className="font-mono text-caption uppercase text-ink-3">{v}</p>
-                  <BloqueTerminado cierre={cierre} variante={v} sinRecordar />
-                </div>
-              ))}
-            </div>
+            <div className="max-w-sm"><BloqueTerminado cierre={cierre} sinRecordar /></div>
           </div>
         );
       })}
@@ -233,7 +217,7 @@ export default function RoadmapDevHarness() {
             </div>
           )}
         </div>}
-        {(vista === 'todas' || vista === 'objetivo') && <Variantes />}
+        {(vista === 'todas' || vista === 'objetivo') && <Objetivos />}
         {(vista === 'todas' || vista === 'cierre') && <Cierres />}
       </div>
     </div>

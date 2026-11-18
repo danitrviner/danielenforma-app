@@ -2,7 +2,7 @@ import type { Mesocycle, MuscleGroup, PhaseType, TipoDeBloque } from '../../type
 import { sensibilidadDeZona, type Sensibilidad, type Velocidad } from '../cdg/agujetas.js';
 import { ZONAS_IEM, ZONA_POR_CLAVE, esZonaIem, type ZonaIem } from '../cdg/zonas.js';
 import {
-  DIAS_DE_PARON_PARA_REDUCIR, ESTRELLAS_CON_AVISO, ESTRELLAS_DESARROLLO, ESTRELLAS_ESPECIALIZACION,
+  DIAS_DE_PARON_PARA_REDUCIR, ESTRELLAS_DESARROLLO, ESTRELLAS_ESPECIALIZACION,
   SEMANAS_POR_DEFECTO, SEMANAS_PRIMER_BLOQUE, VELOCIDAD_POR_DEFECTO,
 } from './cifras.js';
 
@@ -10,10 +10,19 @@ import {
    Los cuatro tipos de bloque (17-11-2026)
 
    Un tipo es un PRESET EDITABLE, no un catálogo cerrado: al elegirlo se
-   rellenan la duración, la velocidad, el modo de cada zona y cuántas zonas
-   pueden llevar estrella, y el coach cambia después lo que quiera. Sustituye
-   en pantalla a `objective` y a `phaseType`, que se siguen escribiendo
-   derivados porque el calendario y las plantillas los leen.
+   rellenan la duración, la velocidad y el modo de cada zona, y el coach cambia
+   después lo que quiera. Sustituye en pantalla a `objective` y a `phaseType`,
+   que se siguen escribiendo derivados porque el calendario y las plantillas
+   los leen.
+
+   Dos decisiones de Dani del 18-11-2026 que cambian lo que hace un tipo:
+    · Las estrellas no tienen tope. Cada tipo dice cuántas lleva sin que la
+      app avise (`estrellasSinAviso`: 3 en desarrollo, 1 en especialización);
+      con más sale un aviso informativo y nada se bloquea ni se recorta («con
+      4 que avise, pero que me permita hacer lo que quiera»).
+    · El tipo no toca los grupos sin estrella. Especialización y mantenimiento
+      RECOMIENDAN bajarlos a mantener (`resto`), y lo hace el coach con un
+      botón («prefiero que me lo recomiende, no que lo haga ella»).
 
    Ojo con los nombres: `utils/cdg/agujetas.ts` ya exporta un `TipoDeBloque`
    (sensibilidad + velocidad, los dos ejes del freno/acelerador). El de aquí
@@ -32,8 +41,10 @@ export interface PresetDeBloque {
   paraQue: string;
   semanas: number;
   velocidad: Velocidad;
-  /** Zonas que pueden llevar estrella. 0 = el bloque no prioriza ninguna. */
-  maxEstrellas: number;
+  /** Zonas con estrella que lleva el tipo sin que la app avise (0 = no suele
+   *  priorizar ninguna). NO es un tope: con más, `avisoDeEstrellas` lo dice y
+   *  nada se bloquea ni se recorta (Dani, 18-11-2026). */
+  estrellasSinAviso: number;
   /** Modo del freno/acelerador: la zona con estrella sube con agujetas de 1 a
    *  3; el resto, solo con un 1. */
   modoConEstrella: Sensibilidad;
@@ -46,8 +57,10 @@ export interface PresetDeBloque {
   phaseType: PhaseType;
   /** Base del texto de `Mesocycle.objective` (ver `objetivoDerivado`). */
   objective: string;
-  /** Qué pasa con las zonas sin estrella si el coach no dice nada: siguen como
-   *  estaban o bajan a mantener (la mitad). */
+  /** Qué RECOMIENDA el tipo para las zonas sin estrella: dejarlas como estaban
+   *  o bajarlas a mantener (la mitad). Es una recomendación que el coach
+   *  acepta con un botón (`recomendacionDeMantener`, hipotesisDelMeso.ts): el
+   *  tipo no cambia los grupos solo (Dani, 18-11-2026). */
   resto: 'como_estaba' | 'mantener';
 }
 
@@ -55,7 +68,7 @@ export const TIPOS_DE_BLOQUE: Record<TipoDeBloque, PresetDeBloque> = {
   primer: {
     tipo: 'primer', etiqueta: 'Primer bloque',
     paraQue: 'Aprender los ejercicios y encontrar el punto de partida; todavía no se prioriza ninguna zona.',
-    semanas: SEMANAS_PRIMER_BLOQUE, velocidad: VELOCIDAD_POR_DEFECTO, maxEstrellas: 0,
+    semanas: SEMANAS_PRIMER_BLOQUE, velocidad: VELOCIDAD_POR_DEFECTO, estrellasSinAviso: 0,
     modoConEstrella: 'dinamico', modoSinEstrella: 'estatico',
     semana1Reducida: true, vuelveDeParon: false,
     phaseType: 'hipertrofia', objective: 'Primer bloque', resto: 'como_estaba',
@@ -63,15 +76,15 @@ export const TIPOS_DE_BLOQUE: Record<TipoDeBloque, PresetDeBloque> = {
   desarrollo: {
     tipo: 'desarrollo', etiqueta: 'Desarrollo',
     paraQue: 'Subir el estímulo de las zonas con estrella y sostener el resto.',
-    semanas: SEMANAS_POR_DEFECTO, velocidad: VELOCIDAD_POR_DEFECTO, maxEstrellas: ESTRELLAS_DESARROLLO,
+    semanas: SEMANAS_POR_DEFECTO, velocidad: VELOCIDAD_POR_DEFECTO, estrellasSinAviso: ESTRELLAS_DESARROLLO,
     modoConEstrella: 'dinamico', modoSinEstrella: 'estatico',
     semana1Reducida: false, vuelveDeParon: false,
     phaseType: 'hipertrofia', objective: 'Desarrollo', resto: 'como_estaba',
   },
   especializacion: {
     tipo: 'especializacion', etiqueta: 'Especialización',
-    paraQue: 'Volcar el bloque en una sola zona; las demás se quedan en mantener para dejarle sitio.',
-    semanas: SEMANAS_POR_DEFECTO, velocidad: VELOCIDAD_POR_DEFECTO, maxEstrellas: ESTRELLAS_ESPECIALIZACION,
+    paraQue: 'Volcar el bloque en una sola zona; lo normal es bajar las demás a mantener para dejarle sitio.',
+    semanas: SEMANAS_POR_DEFECTO, velocidad: VELOCIDAD_POR_DEFECTO, estrellasSinAviso: ESTRELLAS_ESPECIALIZACION,
     modoConEstrella: 'dinamico', modoSinEstrella: 'estatico',
     semana1Reducida: false, vuelveDeParon: false,
     phaseType: 'hipertrofia', objective: 'Especialización', resto: 'mantener',
@@ -79,7 +92,7 @@ export const TIPOS_DE_BLOQUE: Record<TipoDeBloque, PresetDeBloque> = {
   mantenimiento: {
     tipo: 'mantenimiento', etiqueta: 'Mantenimiento',
     paraQue: 'Conservar lo ganado con la mitad de trabajo: no se busca subir nada.',
-    semanas: SEMANAS_POR_DEFECTO, velocidad: VELOCIDAD_POR_DEFECTO, maxEstrellas: 0,
+    semanas: SEMANAS_POR_DEFECTO, velocidad: VELOCIDAD_POR_DEFECTO, estrellasSinAviso: 0,
     modoConEstrella: 'dinamico', modoSinEstrella: 'estatico',
     semana1Reducida: false, vuelveDeParon: false,
     phaseType: 'mantenimiento', objective: 'Mantenimiento', resto: 'mantener',
@@ -88,6 +101,15 @@ export const TIPOS_DE_BLOQUE: Record<TipoDeBloque, PresetDeBloque> = {
 
 /** El orden en que se ofrecen. */
 export const ORDEN_DE_TIPOS: readonly TipoDeBloque[] = ['primer', 'desarrollo', 'especializacion', 'mantenimiento'];
+
+/**
+ * El tipo con el que nace un bloque si nadie lo dice (Dani, 18-11-2026): el
+ * PRIMERO de un atleta —no tiene ningún bloque anterior—, «primer bloque»,
+ * con lo que marca su preset (8 semanas, semana 1 reducida) y editable; los
+ * demás, desarrollo. `bloques` son los que ya tiene el atleta. Lo usan el
+ * editor («Nuevo mesociclo») y el asistente cuando no indica `tipo_bloque`.
+ */
+export const tipoDeBloqueNuevo = (bloques: readonly unknown[]): TipoDeBloque => (bloques.length === 0 ? 'primer' : 'desarrollo');
 
 /** Nombre corto de una zona para el coach: «Trapecio», no «Trapecio (escápula)». */
 export const nombreCortoDeZona = (zona: ZonaIem): string => ZONA_POR_CLAVE[zona].nombre.split(' (')[0];
@@ -119,35 +141,45 @@ export function modoPorZonaDe(estrellas: readonly ZonaIem[], tipo: TipoDeBloque 
   return Object.fromEntries(ZONAS_IEM.map(z => [z.clave, con.has(z.clave) ? p.modoConEstrella : p.modoSinEstrella])) as Record<ZonaIem, Sensibilidad>;
 }
 
-/** El texto de `Mesocycle.objective` que sale del tipo: «Desarrollo: pectoral y deltoides». */
+/**
+ * El texto de `Mesocycle.objective` que sale del tipo: «Desarrollo: pectoral y
+ * deltoides». Lleva TODAS las estrellas del bloque: desde el 18-11-2026 no se
+ * recortan a las que el tipo lleva sin aviso (antes una cuarta estrella, o
+ * una en un primer bloque, desaparecía del texto).
+ */
 export function objetivoDerivado(tipo: TipoDeBloque, estrellas: readonly ZonaIem[] = []): string {
   const p = TIPOS_DE_BLOQUE[tipo];
-  const validas = estrellas.slice(0, Math.max(0, p.maxEstrellas));
-  if (validas.length === 0) return p.objective;
-  return `${p.objective}: ${enLista(validas.map(z => nombreCortoDeZona(z).toLowerCase()))}`;
+  if (estrellas.length === 0) return p.objective;
+  return `${p.objective}: ${enLista(estrellas.map(z => nombreCortoDeZona(z).toLowerCase()))}`;
 }
 
 export interface AvisoDeEstrellas {
-  /** `excede`: más de las que admite el tipo. `aviso`: caben, pero son muchas. */
-  nivel: 'aviso' | 'excede';
+  /** Siempre informativo. Hasta el 17-11-2026 había un segundo nivel
+   *  («excede») que pedía quitar estrellas; Dani lo retiró el 18-11. */
+  nivel: 'aviso';
   texto: string;
 }
 
-/** Qué decirle al coach según cuántas estrellas lleva el bloque. `null` = nada. */
+/** Con lo que acaba todo aviso de estrellas: que se lea que no bloquea. */
+export const SOLO_ES_UN_AVISO = 'Es solo un aviso: puedes dejarlo así.';
+
+/**
+ * Qué decirle al coach según cuántas estrellas lleva el bloque. `null` = nada.
+ * Dani, 18-11-2026: en desarrollo, con 3 o menos no hay aviso y con 4 o más
+ * sí; en especialización sale con 2 o más; en un primer bloque o en uno de
+ * mantenimiento, con cualquiera (no suelen priorizar ninguna zona). Nunca
+ * bloquea: quien llama lo enseña y sigue.
+ */
 export function avisoDeEstrellas(tipo: TipoDeBloque, estrellas: number): AvisoDeEstrellas | null {
   const p = TIPOS_DE_BLOQUE[tipo];
-  if (estrellas > p.maxEstrellas) {
-    const texto = p.maxEstrellas === 0
-      ? `${p.etiqueta} no lleva estrellas: no prioriza ninguna zona. Quítalas o cambia el tipo de bloque.`
-      : p.maxEstrellas === 1
-        ? `${p.etiqueta} es de una sola estrella y hay ${estrellas}: elige cuál se queda.`
-        : `${p.etiqueta} admite hasta ${p.maxEstrellas} estrellas y hay ${estrellas}: elige cuáles se quedan.`;
-    return { nivel: 'excede', texto };
-  }
-  if (estrellas >= ESTRELLAS_CON_AVISO) {
-    return { nivel: 'aviso', texto: `Con ${estrellas} estrellas la prioridad se reparte mucho: lo que se prioriza todo a la vez no se prioriza.` };
-  }
-  return null;
+  if (estrellas <= p.estrellasSinAviso) return null;
+  const hay = `hay ${estrellas}`;
+  const texto = p.estrellasSinAviso === 0
+    ? `${p.etiqueta} no suele llevar estrellas (no prioriza ninguna zona) y ${hay}.`
+    : p.estrellasSinAviso === 1
+      ? `${p.etiqueta} suele llevar una sola estrella y ${hay}: con más, el bloque se parece a uno de desarrollo.`
+      : `Con ${estrellas} estrellas la prioridad se reparte mucho: lo que se prioriza todo a la vez no se prioriza.`;
+  return { nivel: 'aviso', texto: `${texto} ${SOLO_ES_UN_AVISO}` };
 }
 
 /**
@@ -183,7 +215,7 @@ export interface CambiosDeTipoDeBloque {
   cambios: Partial<Pick<Mesocycle, 'tipoBloque' | CampoDeTipo>>;
   /** Campos que el coach había tocado a mano y se dejan como están. */
   respetados: CampoDeTipo[];
-  /** Lo que el coach tiene que decidir (estrellas de más para el tipo nuevo). */
+  /** Avisos informativos del tipo nuevo (más estrellas de las que suele llevar). No bloquean. */
   avisos: string[];
 }
 
@@ -199,8 +231,9 @@ export interface CambiosDeTipoDeBloque {
  *  · `nuevo: true` (bloque que se está creando, con los valores por defecto
  *    del formulario): se rellena todo salvo lo que venga en `tocados`.
  *
- * Las hipótesis no se borran nunca desde aquí: si el tipo nuevo admite menos
- * estrellas de las que hay, se avisa y decide el coach.
+ * Ni las hipótesis ni los grupos se tocan desde aquí: si el tipo nuevo suele
+ * llevar menos estrellas de las que hay, se avisa (sin bloquear) y decide el
+ * coach; y bajar el resto a mantener es una recomendación aparte.
  */
 export function aplicarTipoDeBloque(
   meso: MesoParaTipo, tipo: TipoDeBloque, o: { nuevo?: boolean; tocados?: readonly CampoDeTipo[] } = {},
@@ -242,5 +275,5 @@ export function aplicarTipoDeBloque(
   }
 
   const aviso = avisoDeEstrellas(tipo, estrellas.length);
-  return { cambios, respetados, avisos: aviso?.nivel === 'excede' ? [aviso.texto] : [] };
+  return { cambios, respetados, avisos: aviso ? [aviso.texto] : [] };
 }

@@ -1,7 +1,6 @@
 import type { WorkoutSetLog } from '../../types';
 import { mejorSerieValida } from '../../utils/marcaDeSesion';
 import { rmDeSerie } from '../../utils/oneRepMax';
-import { esSerieValidaParaRm } from '../../utils/rmValido';
 import { logrosDelEjercicio, type Logro } from '../../utils/logrosDelEjercicio';
 import { comprobarRir, type Comprobacion } from '../../utils/calibracionRir';
 import { seriesPrincipales } from '../../utils/seriesPrincipales';

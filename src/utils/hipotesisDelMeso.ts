@@ -1,7 +1,8 @@
 import { MUSCLE_ORDER, type ExperienceLevel, type HipotesisDeZona, type Mesocycle, type MuscleGroup, type MuscleGroupConfig, type TipoDeBloque, type WorkoutLog } from '../types.js';
 import { ZONAS_IEM, ZONA_POR_CLAVE, esZonaIem, type ZonaIem } from './cdg/zonas.js';
 import { proponerHipotesis, type PropuestaDeHipotesis, type TratoDelResto } from './hipotesisDeBloque/proponerHipotesis.js';
-import { avisoDeEstrellas, estrellasDe, modoPorZonaDe, objetivoDerivado, type AvisoDeEstrellas } from './hipotesisDeBloque/tiposDeBloque.js';
+import { TIPOS_DE_BLOQUE, avisoDeEstrellas, estrellasDe, modoPorZonaDe, objetivoDerivado, type AvisoDeEstrellas } from './hipotesisDeBloque/tiposDeBloque.js';
+import { FRACCION_DE_MANTENER } from './hipotesisDeBloque/cifras.js';
 import type { EstadoDelBloque } from './hipotesisDeBloque/estadoDelBloqueAnterior.js';
 import type { BloqueConCierre } from './hipotesisDeBloque/historial.js';
 import type { Velocidad } from './cdg/agujetas.js';
@@ -19,6 +20,9 @@ import { addDays, diasEntreFechas } from './trainingWeek.js';
      · los cuatro niveles de prioridad y cómo se llaman en pantalla;
      · qué zonas llevan estrella (una zona la lleva si alguno de sus grupos
        está en ⭐ Especializar) y qué se hace con las demás;
+     · la recomendación de bajar el resto a mantener en un bloque de
+       especialización o de mantenimiento (18-11-2026): se recomienda y el
+       coach la aplica con un botón; el tipo de bloque no cambia los grupos;
      · qué se escribe al confirmar las hipótesis: `hipotesis`, y a juego el
        techo en `cdgObjetivosIem` y el modo por zona, que es lo que lee el
        protocolo semanal;
@@ -93,9 +97,73 @@ export function tratoDelRestoPorZona(groups: Grupos | undefined): Partial<Record
   return out;
 }
 
-/** El aviso de estrellas de un bloque (sustituye al viejo «más de 3 en alta»). Sin tipo, desarrollo. */
+/**
+ * El aviso de estrellas de un bloque (sustituye al viejo «más de 3 en alta»).
+ * Sin tipo, desarrollo. Informativo: sale con 4 o más (2 o más en
+ * especialización) y nada se bloquea (Dani, 18-11-2026).
+ */
 export function avisoDeEstrellasDelMeso(meso: { groups?: Grupos; tipoBloque?: TipoDeBloque }): AvisoDeEstrellas | null {
   return avisoDeEstrellas(meso.tipoBloque ?? 'desarrollo', zonasConEstrella(meso.groups).length);
+}
+
+// ── El resto, a mantener: una recomendación (Dani, 18-11-2026) ──────────────
+//
+// «Prefiero que me lo recomiende, no que lo haga ella». En especialización (y
+// en mantenimiento, que es la misma lógica sin estrella) lo normal es que lo
+// que no lleva estrella baje a mantener, la mitad de lo que hacía. La app lo
+// dice y el coach lo aplica con un botón, que entra en el Deshacer del
+// editor; elegir el tipo de bloque no toca los grupos.
+
+/** Series de un grupo en mantener: la mitad de las que hacía (`FRACCION_DE_MANTENER`),
+ *  en series enteras y hacia arriba, igual que en «Sugerir volumen» (5 → 3). */
+export const seriesDeMantener = (series: number): number => Math.ceil(Math.max(0, series) * FRACCION_DE_MANTENER);
+
+export interface RecomendacionDeMantener {
+  /** Grupos sin estrella que siguen en ◑ Desarrollar y se entrenan: los que bajarían. */
+  grupos: Array<{ grupo: MuscleGroup; series: number; mitad: number }>;
+  /** «En especialización el resto suele ir a mantener (la mitad de lo que hacía).» */
+  texto: string;
+  /** Lo que dice el botón. */
+  accion: string;
+}
+
+/**
+ * ¿Hay algo que recomendar bajar a mantener? Solo en los tipos que lo
+ * recomiendan (`PresetDeBloque.resto`) y solo los grupos sin estrella que
+ * siguen en desarrollar con series: los que ya están en mantener o ignorados
+ * no se tocan, y uno a 0 series no tiene nada que bajar. Tampoco los grupos
+ * de una zona CON estrella aunque ellos no la lleven (deltoide anterior con el
+ * lateral en ⭐): son parte de lo que el bloque prioriza. `null` = no sale.
+ */
+export function recomendacionDeMantener(meso: { groups?: Grupos; tipoBloque?: TipoDeBloque }): RecomendacionDeMantener | null {
+  const tipo = meso.tipoBloque;
+  if (!tipo || TIPOS_DE_BLOQUE[tipo].resto !== 'mantener') return null;
+  const estrellas = zonasConEstrella(meso.groups);
+  const deZonaConEstrella = new Set<MuscleGroup>(estrellas.flatMap(z => [...gruposDeZona(z)]));
+  const grupos = MUSCLE_ORDER
+    .filter(g => !deZonaConEstrella.has(g) && (meso.groups?.[g]?.priority ?? 'media') === 'media' && (meso.groups?.[g]?.series ?? 0) > 0)
+    .map(g => ({ grupo: g, series: meso.groups![g]!.series, mitad: seriesDeMantener(meso.groups![g]!.series) }));
+  if (grupos.length === 0) return null;
+  const hayEstrellas = estrellas.length > 0;
+  return {
+    grupos,
+    texto: `En ${TIPOS_DE_BLOQUE[tipo].etiqueta.toLowerCase()} ${hayEstrellas ? 'el resto' : 'todo'} suele ir a mantener (la mitad de lo que hacía).`,
+    accion: 'Bajarlos a mantener',
+  };
+}
+
+/**
+ * Los grupos tras aceptar la recomendación: los que proponía bajan a ⚪
+ * Mantener con la mitad de sus series. Los demás quedan como estaban. Sin
+ * recomendación devuelve los mismos grupos.
+ */
+export function bajarAMantener<G extends Grupos>(meso: { groups?: G; tipoBloque?: TipoDeBloque }): G {
+  const groups = (meso.groups ?? {}) as G;
+  const r = recomendacionDeMantener(meso);
+  if (!r) return groups;
+  const out = { ...groups } as Record<string, unknown>;
+  for (const { grupo, mitad } of r.grupos) out[grupo] = { ...groups[grupo], series: mitad, priority: 'baja' };
+  return out as G;
 }
 
 // ── El bloque anterior y los valores por defecto de uno nuevo ───────────────

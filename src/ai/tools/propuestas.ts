@@ -29,7 +29,8 @@ import { Diet, Macros, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS,
 import { cambiosDeMesociclo, cambiosDeDieta, cambiosDePeriodizacion } from '../cambiosPropuesta.js';
 import { alimentosDelBancoDelCoach, contextoNutricional, findProfile, textoDeObjetivo, toResult } from './comunes.js';
 import { esTipoDeBloque, TIPOS_DE_BLOQUE_VALIDOS } from './hipotesis.js';
-import { TIPOS_DE_BLOQUE, avisoDeEstrellas, enLista, nombreCortoDeZona } from '../../utils/hipotesisDeBloque/tiposDeBloque.js';
+import { TIPOS_DE_BLOQUE, avisoDeEstrellas, enLista, nombreCortoDeZona, tipoDeBloqueNuevo } from '../../utils/hipotesisDeBloque/tiposDeBloque.js';
+import { SEMANAS_POR_DEFECTO } from '../../utils/hipotesisDeBloque/cifras.js';
 import { zonasDeGrupos } from '../../utils/hipotesisDeBloque/mapaDeRespuesta.js';
 import { entradaYaPasada, entradasPrevistas } from '../../utils/rampaEnRutinas.js';
 
@@ -705,13 +706,51 @@ export async function proposeDietUpdate(
    pasa a validar a `validateMesocyclePayload` (un grupo ignorado es un grupo a
    0 series: así vale con el validador conozca o no el cuarto nivel) de lo que
    se guarda (0 series y `priority: 'ignorar'`, que es lo que el editor y los
-   motores leen para dejarlo fuera de sugerencias, avisos y reparto). */
+   motores leen para dejarlo fuera de sugerencias, avisos y reparto).
+
+   18-11-2026 (decisiones de Dani):
+    · Las zonas prioritarias no tienen tope. Con 4 o más en desarrollo (2 o más
+      en especialización) la propuesta lleva un AVISO y se crea igual: el
+      asistente puede proponerlo, y quien decide es Dani al revisarla. Nada de
+      esto es un `issue`.
+    · Sin `tipo_bloque`, el primer bloque de un atleta nace como «primer
+      bloque» con lo que marca su preset (ver `primerBloqueSiNoSeIndica`). */
 
 /** Los grupos tal y como los manda el asistente: con el cuarto nivel. */
 export type GruposDelAsistente = Partial<Record<MuscleGroup, { series: number; priority?: MuscleGroupConfig['priority'] }>>;
 
 /** Lo que el asistente puede decir de más sobre un bloque. Sin validar todavía. */
-export interface OpcionesDeBloque { tipoBloque?: unknown; semana1Reducida?: unknown }
+export interface OpcionesDeBloque {
+  tipoBloque?: unknown;
+  semana1Reducida?: unknown;
+  /** ¿Mandó `weeks` el asistente? El despachador rellena las del bloque
+   *  estándar cuando faltan y aquí ya no se distingue. Sin decirlo, unas
+   *  semanas iguales a las del estándar se toman por «no indicadas». */
+  semanasIndicadas?: boolean;
+}
+
+/**
+ * El primer bloque de un atleta cuando el asistente no indica tipo (Dani,
+ * 18-11-2026: «no me parece mal que salga como primer bloque; de 8 semanas,
+ * aunque luego se pueda estirar»). Sin `tipo_bloque` y sin ningún bloque
+ * anterior, nace como «primer bloque» con lo que marca su preset: 8 semanas
+ * —salvo que el asistente haya dicho otras— y la semana 1 reducida. Con algún
+ * bloque anterior no se inventa nada: sigue como venía. Es una propuesta: Dani
+ * la cambia al revisarla.
+ */
+export function primerBloqueSiNoSeIndica(
+  opciones: OpcionesDeBloque, weeks: number, existentes: readonly unknown[],
+): { opciones: OpcionesDeBloque; weeks: number; aviso: string | null } {
+  if (opciones.tipoBloque !== undefined || tipoDeBloqueNuevo(existentes) !== 'primer') return { opciones, weeks, aviso: null };
+  const preset = TIPOS_DE_BLOQUE.primer;
+  const sinIndicar = opciones.semanasIndicadas === false || (opciones.semanasIndicadas === undefined && weeks === SEMANAS_POR_DEFECTO);
+  const semanas = sinIndicar ? preset.semanas : weeks;
+  return {
+    opciones: { ...opciones, tipoBloque: 'primer' },
+    weeks: semanas,
+    aviso: `Es el primer bloque de este atleta y no indicabas tipo_bloque: nace como «${preset.etiqueta}» (${semanas} semanas, semana 1 reducida). Dani lo puede cambiar al revisarlo; si no es un primer bloque, vuelve a proponerlo con su tipo_bloque.`,
+  };
+}
 
 export interface BloqueDelAsistente {
   /** Los grupos, como los entiende `validateMesocyclePayload`. */
@@ -762,6 +801,8 @@ export function leerBloqueDelAsistente(groupsInput: GruposDelAsistente | null | 
     // Solo el primer bloque la trae encendida; en el resto, apagada salvo que se pida.
     if (preset.semana1Reducida) campos.semana1Reducida = true;
 
+    // Informativo, nunca un rechazo: con 4 o más zonas prioritarias (2 o más en
+    // especialización) se avisa y la propuesta se crea igual (Dani, 18-11-2026).
     const prioritarias = zonasDeGrupos((Object.keys(groups) as MuscleGroup[]).filter(g => groups[g].priority === 'alta' && groups[g].series > 0));
     const aviso = avisoDeEstrellas(tipo, prioritarias.length);
     if (aviso) avisos.push(`Los grupos en «alta» son ${prioritarias.length} ${prioritarias.length === 1 ? 'zona prioritaria' : 'zonas prioritarias'} (${enLista(prioritarias.map(z => nombreCortoDeZona(z).toLowerCase()))}). ${aviso.texto}`);
@@ -780,7 +821,7 @@ function textoDeTipo(campos: BloqueDelAsistente['campos']): string {
 
 export async function proposeMesocycle(
   athleteEmail: string,
-  weeks: number,
+  semanasPedidas: number,
   daysPerWeek: number,
   objective: string,
   groupsInput: GruposDelAsistente,
@@ -791,8 +832,8 @@ export async function proposeMesocycle(
   repartoInput?: unknown,
   opciones: OpcionesDeBloque = {},
 ): Promise<string> {
-  const bloque = leerBloqueDelAsistente(groupsInput, opciones);
-  const issues = [...validateMesocyclePayload({ weeks, daysPerWeek, objective, groups: bloque.paraValidar }), ...bloque.issues];
+  const comoLlega = leerBloqueDelAsistente(groupsInput, opciones);
+  const issues = [...validateMesocyclePayload({ weeks: semanasPedidas, daysPerWeek, objective, groups: comoLlega.paraValidar }), ...comoLlega.issues];
   const { reparto, issues: issuesReparto } = repartoDesdeAsistente(repartoInput);
   issues.push(...issuesReparto);
   if (reparto && sesionesDelReparto(reparto) !== daysPerWeek) {
@@ -801,7 +842,6 @@ export async function proposeMesocycle(
   if (issues.length > 0) {
     return toResult({ valid: false, issues, note: 'Corrige estos problemas y vuelve a llamar a propose_mesocycle.' });
   }
-  const avisos = [...avisosDeMesociclo({ weeks, daysPerWeek, objective, groups: bloque.paraValidar }), ...bloque.avisos];
 
   const profile = await findProfile(athleteEmail);
   if (!profile) return toResult({ valid: false, issues: [{ field: 'athlete_email', message: `No existe ningún cliente con email ${athleteEmail}` }] });
@@ -809,6 +849,14 @@ export async function proposeMesocycle(
   const existing = await getMesocycles(athleteEmail);
   // Tras borrar un mesociclo, `length + 1` repetía número (B14, 26-10-2026).
   const number = siguienteNumeroDeBloque(existing);
+  // Sin tipo y sin bloques anteriores: es su primer bloque (Dani, 18-11-2026).
+  const primero = primerBloqueSiNoSeIndica(opciones, semanasPedidas, existing);
+  const bloque = primero.aviso ? leerBloqueDelAsistente(groupsInput, primero.opciones) : comoLlega;
+  const weeks = primero.weeks;
+  const avisos = [
+    ...avisosDeMesociclo({ weeks, daysPerWeek, objective, groups: bloque.paraValidar }), ...bloque.avisos,
+    ...(primero.aviso ? [primero.aviso] : []),
+  ];
 
   // Todos los grupos: los omitidos van a 0 series (shape completo que espera
   // el editor de la app) y los ignorados, a 0 con su nivel.
@@ -996,7 +1044,7 @@ export async function proposeWorkoutDays(
 // (Bloque H) las pinta solas en cuanto existen, sin nada más que hacer.
 export async function proposePeriodizationBlock(
   athleteEmail: string,
-  weeks: number,
+  semanasPedidas: number,
   daysPerWeek: number,
   objective: string,
   groupsInput: GruposDelAsistente,
@@ -1009,10 +1057,10 @@ export async function proposePeriodizationBlock(
   expediente?: ProposalExpediente,
   opciones: OpcionesDeBloque = {},
 ): Promise<string> {
-  const bloque = leerBloqueDelAsistente(groupsInput, opciones);
-  const issues = [...validateMesocyclePayload({ weeks, daysPerWeek, objective, groups: bloque.paraValidar }), ...bloque.issues];
-  if (deloadWeek !== undefined && (deloadWeek < 1 || deloadWeek > weeks)) {
-    issues.push({ field: 'deload_week', message: `deload_week debe estar entre 1 y ${weeks}` });
+  const comoLlega = leerBloqueDelAsistente(groupsInput, opciones);
+  const issues = [...validateMesocyclePayload({ weeks: semanasPedidas, daysPerWeek, objective, groups: comoLlega.paraValidar }), ...comoLlega.issues];
+  if (deloadWeek !== undefined && (deloadWeek < 1 || deloadWeek > semanasPedidas)) {
+    issues.push({ field: 'deload_week', message: `deload_week debe estar entre 1 y ${semanasPedidas}` });
   }
   if (!Number.isFinite(reviewCadenceWeeks) || reviewCadenceWeeks < 1) {
     issues.push({ field: 'review_cadence_weeks', message: 'review_cadence_weeks debe ser un número >= 1' });
@@ -1027,12 +1075,22 @@ export async function proposePeriodizationBlock(
   const existing = await getMesocycles(athleteEmail);
   // Tras borrar un mesociclo, `length + 1` repetía número (B14, 26-10-2026).
   const number = siguienteNumeroDeBloque(existing);
+  // Sin tipo y sin bloques anteriores: es su primer bloque (Dani, 18-11-2026).
+  // Si al acortarlo a sus semanas la descarga pedida cae fuera, se conservan
+  // las semanas que venían: no se rechaza una propuesta por un valor por defecto.
+  const primerBloque = primerBloqueSiNoSeIndica(opciones, semanasPedidas, existing);
+  const primero = deloadWeek !== undefined && deloadWeek > primerBloque.weeks
+    ? primerBloqueSiNoSeIndica({ ...opciones, semanasIndicadas: true }, semanasPedidas, existing)
+    : primerBloque;
+  const bloque = primero.aviso ? leerBloqueDelAsistente(groupsInput, primero.opciones) : comoLlega;
+  const weeks = primero.weeks;
   const { groups } = bloque;
   // La descarga por calendario ya no se ofrece (17-11-2026): va por señales.
   // El campo se sigue aceptando para no romper a quien lo mande, y se avisa.
   const avisos = [
     ...avisosDeMesociclo({ weeks, daysPerWeek, objective, groups: bloque.paraValidar }),
     ...bloque.avisos,
+    ...(primero.aviso ? [primero.aviso] : []),
     ...(deloadWeek !== undefined ? [`deload_week está en desuso: la descarga se decide por señales (marcas que caen, cansancio alto sostenido), no por calendario. Se ha guardado en la semana ${deloadWeek} porque la has mandado; si no hay una señal que la pida, quítala.`] : []),
   ];
 

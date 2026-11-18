@@ -26,7 +26,8 @@
 import { UMBRALES_PROTOCOLO, VELOCIDADES } from '../utils/cdg/agujetas.js';
 import {
   BLOQUES_EN_MANTENER_PARA_CANDIDATA, BLOQUES_PARA_JUZGAR_A_UN_AVANZADO, CANSANCIO_LIMITE, DIAS_DE_PARON_PARA_REDUCIR,
-  ESTRELLAS_DESARROLLO, FRACCION_DE_MANTENER, NO_RESPONDE_PARA_SOLTAR_ESTRELLA, RANGO_REDUCCION_SEMANA_1_PCT,
+  ESTRELLAS_CON_AVISO, ESTRELLAS_CON_AVISO_ESPECIALIZACION, ESTRELLAS_DESARROLLO, FRACCION_DE_MANTENER,
+  NO_RESPONDE_PARA_SOLTAR_ESTRELLA, RANGO_REDUCCION_SEMANA_1_PCT,
   RM_ESPERADO_AVANZADO_PCT, RM_OBJETIVO_PCT, RM_OBJETIVO_PRINCIPIANTE_PCT, SEMANAS_ENTRE_SUBIDAS, SEMANAS_POR_DEFECTO, SEMANAS_PRIMER_BLOQUE,
   SUBIDA_DE_PROCESO_PCT, VELOCIDAD_POR_DEFECTO,
 } from '../utils/hipotesisDeBloque/cifras.js';
@@ -49,7 +50,15 @@ import { SEMANAS_PARA_CAMBIAR_VARIANTE, SEMANAS_SIN_MEJORAR, SESIONES_SIN_MEJORA
    repeticiones (antes 12; `rmValido.ts`); el estancamiento se cuenta en
    semanas y con mejora sostenida (antes 6 y 12 sesiones y un 3 % de un salto;
    `estancamiento.ts`); y el cansancio al salir frena sesión a sesión, no solo
-   con la media (`cdg/agujetas.ts`). */
+   con la media (`cdg/agujetas.ts`).
+
+   Decisiones de Dani del 18-11-2026, que cambian el texto de §2, §11, §15 y
+   §18: las zonas prioritarias ya no tienen tope (con 4 o más la app avisa y
+   nada más; en especialización, con 2 o más); en especialización y
+   mantenimiento, bajar el resto a mantener se RECOMIENDA, no se hace solo; el
+   primer bloque de un atleta es de tipo «primer bloque»; y con molestias en
+   una zona prioritaria, además de no subir el techo, se vigila el estrés
+   articular de sus articulaciones. */
 const CANSANCIO_QUE_FRENA = UMBRALES_PROTOCOLO.fatigaPostAlta;
 const ESCALON_PCT = VELOCIDADES.find(v => v.value === VELOCIDAD_POR_DEFECTO)!.pct;
 const SEMANAS_DE_PARON = Math.round(DIAS_DE_PARON_PARA_REDUCIR / 7);
@@ -94,9 +103,13 @@ Cuatro niveles por grupo, y cada grupo lleva uno (es su priority):
 - Desarrollar (media): se sostiene donde estaba y progresa en carga o repeticiones.
 - Mantener (baja): ${MANTENER} de las series que hacía. Con eso conserva lo ganado y deja sitio.
 - Ignorar (ignorar): 0 series. Fuera del bloque, de las sugerencias y de los avisos.
-Si todo es prioridad, nada es prioridad: como mucho ${ESTRELLAS_DESARROLLO} zonas prioritarias en un bloque de desarrollo y
-UNA en uno de especialización (el resto baja a mantener). El primer bloque y el de mantenimiento no
-llevan ninguna.
+Si todo es prioridad, nada es prioridad: lo normal son hasta ${ESTRELLAS_DESARROLLO} zonas prioritarias en un bloque de
+desarrollo y UNA en uno de especialización; el primer bloque y el de mantenimiento no suelen llevar
+ninguna. No es un tope: con ${ESTRELLAS_CON_AVISO} o más (${ESTRELLAS_CON_AVISO_ESPECIALIZACION} o más en especialización) la app AVISA y nada más. Si te pido más
+zonas prioritarias, propónlas igual y di en rationale qué se reparte; no me las recortes tú.
+En especialización y en mantenimiento, bajar a mantener lo que no es prioritario es una RECOMENDACIÓN,
+no algo que se haga solo: propónmelo (esos grupos en baja, con ${MANTENER} de sus series), dime cuáles
+son y lo decido yo.
 DESCUENTA el trabajo indirecto antes de añadir aislamiento — una serie indirecta cuenta como media:
 los tirones ya cargan dorsal, biceps y antebrazo; los press cargan pecho, triceps y deltoide_ant;
 sentadilla y zancada cargan cuadriceps, gluteo y aductores; el peso muerto y el hip thrust cargan
@@ -217,7 +230,11 @@ ${SEMANAS_PARA_CAMBIAR_VARIANTE} semanas. Se cuenta en semanas, no en sesiones: 
 ### 11. Estructura del bloque (${SEMANAS_POR_DEFECTO} semanas por defecto; ${SEMANAS_PRIMER_BLOQUE} el primer bloque)
 Cuatro tipos de bloque (tipo_bloque): primer bloque (aprender los ejercicios y encontrar el punto de
 partida; sin prioridades) · desarrollo (suben las zonas prioritarias, el resto se sostiene) ·
-especialización (todo a UNA zona, el resto en mantener) · mantenimiento (conservar con ${MANTENER.toLowerCase()}).
+especialización (todo a UNA zona; el resto se recomienda bajarlo a mantener) · mantenimiento (conservar
+con ${MANTENER.toLowerCase()}).
+El PRIMER bloque de un atleta —no tiene ninguno anterior— es de tipo primer bloque: ${SEMANAS_PRIMER_BLOQUE} semanas, semana 1
+reducida y sin prioridades, aunque luego se pueda estirar. Si en su primer bloque no indicas
+tipo_bloque, nace así. Los demás, desarrollo salvo que haya motivo para otro tipo.
 El bloque nuevo ARRANCA DONDE ACABÓ EL ANTERIOR: las series y el esfuerzo de su última semana normal.
 No se vuelve a empezar desde abajo en cada bloque. Semana 1 reducida (un ${RANGO_REDUCCION_SEMANA_1_PCT.min}-${RANGO_REDUCCION_SEMANA_1_PCT.max} % menos) solo en dos casos:
 hay ejercicios nuevos, o vuelve de un parón de más de ${SEMANAS_DE_PARON} semanas (y entonces, además, lejos del
@@ -324,6 +341,10 @@ las ve el atleta.
 
 ### 18. Seguridad y dolor
 Lesión activa declarada → nunca el gesto que duele; sustituye por un patrón equivalente y anótalo.
+Molestia apuntada en una zona prioritaria durante el bloque → es un límite pasado: aunque la apuesta se
+confirme, el techo de esa zona NO sube. Y en el bloque siguiente se vigila el estrés articular de las
+articulaciones que carga esa zona: que no pase por semana de lo que cargó de media en el bloque
+anterior. Dímelo en rationale con la articulación por su nombre.
 Dolor recurrente en la misma articulación y siempre en la misma posición → introduce la variante de
 posición contraria del mismo patrón, no te limites a bajar volumen.
 Lo que rompe tejidos es la exposición de golpe y sin progresión, no la técnica imperfecta: prioriza

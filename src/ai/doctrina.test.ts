@@ -6,7 +6,9 @@ import {
   buildDoctrinaBlock,
 } from './doctrina';
 import { MUSCLE_LABELS, type MuscleGroup } from '../types';
-import { RM_OBJETIVO_PCT, SEMANAS_ENTRE_SUBIDAS, SEMANAS_POR_DEFECTO } from '../utils/hipotesisDeBloque/cifras';
+import {
+  ESTRELLAS_CON_AVISO, ESTRELLAS_CON_AVISO_ESPECIALIZACION, RM_OBJETIVO_PCT, SEMANAS_ENTRE_SUBIDAS, SEMANAS_POR_DEFECTO,
+} from '../utils/hipotesisDeBloque/cifras';
 import { MEJORA_SOSTENIDA_RM_PCT, RUIDO_RM_PCT, SESIONES_DEL_NIVEL } from '../utils/ruidoDeMedida';
 import { SEMANAS_PARA_CAMBIAR_VARIANTE, SEMANAS_SIN_MEJORAR, SESIONES_SIN_MEJORAR } from '../utils/estancamiento';
 import { UMBRALES_PROTOCOLO } from '../utils/cdg/agujetas';
@@ -140,6 +142,32 @@ describe('decisiones de Dani que no se pueden perder', () => {
     for (const nivel of ['Especializar (alta)', 'Desarrollar (media)', 'Mantener (baja): la MITAD', 'Ignorar (ignorar): 0 series']) {
       expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain(nivel);
     }
+  });
+
+  // Decisiones de Dani del 18-11-2026.
+  it('las zonas prioritarias no tienen tope: con 4 o más (2 en especialización) la app avisa y el asistente las propone igual', () => {
+    expect([ESTRELLAS_CON_AVISO, ESTRELLAS_CON_AVISO_ESPECIALIZACION]).toEqual([4, 2]);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/lo normal son hasta 3 zonas prioritarias en un bloque de\s+desarrollo y UNA en uno de especialización/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/No es un tope: con 4 o más \(2 o más en especialización\) la app AVISA y nada más/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/propónlas igual/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).not.toMatch(/como mucho 3 zonas prioritarias/);
+  });
+
+  it('en especialización y mantenimiento, bajar el resto a mantener se recomienda: no se hace solo', () => {
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/bajar a mantener lo que no es prioritario es una RECOMENDACIÓN,\s+no algo que se haga solo/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/especialización \(todo a UNA zona; el resto se recomienda bajarlo a mantener\)/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).not.toContain('(el resto baja a mantener)');
+  });
+
+  it('el primer bloque de un atleta es de tipo primer bloque: 8 semanas, aunque luego se estire', () => {
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/El PRIMER bloque de un atleta —no tiene ninguno anterior— es de tipo primer bloque: 8 semanas/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/aunque luego se pueda estirar/);
+  });
+
+  it('molestia en una zona prioritaria: el techo no sube y se vigila el estrés articular de la zona', () => {
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/Molestia apuntada en una zona prioritaria durante el bloque → es un límite pasado/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/el techo de esa zona NO sube/);
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/se vigila el estrés articular/);
   });
 
   it('en descarga o semana puente se quita volumen, nunca intensidad, y solo por señales', () => {

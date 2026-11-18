@@ -13,12 +13,14 @@ import { planDeSemana1Reducida, resolveExerciseForWeek, vueltasDelCiclo } from '
 import { addDays, diasEntreFechas } from '../trainingWeek.js';
 import { bloqueEnDeficit } from './bloqueEnDeficit.js';
 import { candidatosACambio, type CandidatoACambio } from './candidatosACambio.js';
+import { CANSANCIO_LIMITE } from './cifras.js';
 import type { EstadoDeEjercicio, EstadoDelBloque } from './estadoDelBloqueAnterior.js';
+import { notaDeVigilancia, propuestaArticular, type MolestiaDeZona, type PropuestaArticular } from './estresArticular.js';
 import type { BloqueConCierre } from './historial.js';
 import { rotacionDeEstrellas, zonasDeGrupos } from './mapaDeRespuesta.js';
 import { cifrasDeHipotesis, proponerHipotesis } from './proponerHipotesis.js';
 import { TIPOS_DE_BLOQUE, enLista, estrellasDe, nombreCortoDeZona, objetivoDerivado, sugerirSemana1Reducida } from './tiposDeBloque.js';
-import { cierreParaGuardar, type PropuestaSiguiente } from './veredicto.js';
+import { cierreParaGuardar, molestiasDeLaZona, type LimitesDelVeredicto, type PropuestaSiguiente, type ZonaDeEjercicio } from './veredicto.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El bloque siguiente, propuesto (17-11-2026)
@@ -37,25 +39,37 @@ import { cierreParaGuardar, type PropuestaSiguiente } from './veredicto.js';
       parten las cifras de la hipótesis (`iemArranque`).
     · Tipo de bloque: el mismo, salvo «primer bloque», que solo hay uno: el
       siguiente es de desarrollo.
-    · Estrellas: las que tenía, menos las que la rotación suelta (dos «no
-      responde» seguidos, `rotacionDeEstrellas`; una «mejora, menos de lo
-      buscado» no cuenta y sigue la misma línea sin subir el techo). El hueco lo recoge una zona
+    · Estrellas: las que tenía, TODAS (desde el 18-11-2026 no se recortan a
+      las que el tipo lleva sin aviso: con 4 o más se avisa y nada más), menos
+      las que la rotación suelta (dos «no responde» seguidos,
+      `rotacionDeEstrellas`; una «mejora, menos de lo buscado» no cuenta y
+      sigue la misma línea sin subir el techo). El hueco lo recoge una zona
       que pida el atleta; si no pide ninguna, se queda libre y se le dice al
       coach cuáles llevan dos bloques en mantener.
+    · Molestias (Dani, 18-11-2026): una zona con molestia apuntada no sube el
+      techo aunque se confirme, y además se propone vigilar el estrés
+      articular de sus articulaciones, con un límite semanal sugerido (su
+      media en este bloque, no más alto; `estresArticular.ts`). La línea viaja
+      como nota privada de la semana 1 del bloque nuevo; el límite es del
+      atleta y solo se escribe si el coach lo acepta en la tarjeta.
     · Objetivo de resultado y techo según el caso (auditoría de cifras,
       17-11-2026): +8 % de RM en un principiante; con el bloque NUEVO cayendo
       en déficit, no perder y techo sin subir; con la zona ya alta (80 de IEM
       o más), techo sin subir. Sale de `proponerHipotesis` y se edita después.
     · NO se heredan descargas, puentes, test, notas de semana ni eventos: eran
-      de aquel calendario.
+      de aquel calendario. (La única nota con la que puede nacer es la de
+      vigilar una articulación, que es de este bloque.)
 
    Puro: devuelve el mesociclo y sus rutinas listos para guardar. Nada se
    asigna al atleta: las rutinas nacen sin calendario, como al aplicar una
    plantilla.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/** Un veredicto, recién calculado (con su propuesta) o ya guardado (sin ella). */
-export type VeredictoParaClonar = VeredictoDeHipotesis & { propuesta?: Pick<PropuestaSiguiente, 'subirTecho'> };
+/** Un veredicto, recién calculado (con su propuesta y sus límites) o ya guardado (sin ellos). */
+export type VeredictoParaClonar = VeredictoDeHipotesis & {
+  propuesta?: Pick<PropuestaSiguiente, 'subirTecho'>;
+  limites?: Pick<LimitesDelVeredicto, 'molestia'>;
+};
 
 export interface EntradaDeSiguienteBloque {
   /** El bloque que se cierra. */
@@ -70,6 +84,15 @@ export interface EntradaDeSiguienteBloque {
   estado?: Pick<EstadoDelBloque, 'porZona'> | null;
   /** Parones y molestias por ejercicio (`estadoDeLosEjercicios`). */
   ejercicios?: readonly EstadoDeEjercicio[];
+  /** Ejercicio → zona (`VeredictosDelCierre.zonaDe`). Con él, un veredicto ya
+   *  firmado —que se guarda sin sus límites— recupera las molestias de su zona. */
+  zonaDe?: ZonaDeEjercicio;
+  /** Cansancio medio al salir en el bloque: el otro límite de un veredicto ya firmado. */
+  cansancioMedio?: number | null;
+  /** Estrés articular medio por semana y articulación en este bloque (`estresArticularMedioDelBloque`). */
+  estresArticular?: Partial<Record<string, number>> | null;
+  /** Límites articulares que ya tiene el atleta (`UserProfile.cdgUmbralesCarga.limitesArticulares`). */
+  limitesArticulares?: Partial<Record<string, unknown>> | null;
   /** Ids que el atleta dijo que quitaría (`voz.quitaria` del cierre). */
   quitaria?: readonly string[];
   /** Zonas que pide priorizar (`zonasDeGrupos` sobre lo que contestó). */
@@ -116,6 +139,10 @@ export interface SiguienteBloque {
     enDeficit: boolean;
     /** Por qué alguna hipótesis no propone lo de siempre (déficit, zona ya alta), en frases para el coach. */
     notas: string[];
+    /** La vuelta del ciclo de este bloque de la que se copian series y repeticiones: su última semana normal. */
+    semanaDeReferencia: number;
+    /** Zonas con molestia: qué articulaciones vigilar y qué límite semanal se sugiere (Dani, 18-11-2026). */
+    articular: PropuestaArticular;
     /** Ya hay un bloque que empieza después del que se cierra. */
     hayPosterior: boolean;
   };
@@ -201,7 +228,8 @@ export function siguienteBloque(e: EntradaDeSiguienteBloque): SiguienteBloque {
   const inicio = inicioDelSiguiente(e.fin, e.hoy);
 
   // ── Plan: el mismo, con las prescripciones del final ───────────────────────
-  const { dias, cambiosDeId } = diasDesdeRutinas(e.rutinas, meso.daysPerWeek, ultimaSemanaNormal(meso));
+  const semanaDeReferencia = ultimaSemanaNormal(meso);
+  const { dias, cambiosDeId } = diasDesdeRutinas(e.rutinas, meso.daysPerWeek, semanaDeReferencia);
   const etapa = etapaDesdeMeso(meso, { id: 'siguiente', dias });
   if (dias.length === 0) delete etapa.days;
   const { id: _sinId, ...clonado } = mesoDeAtletaDesdeEtapa(etapa, { id: '', athleteId: meso.athleteId, number: numero, startDate: inicio }, e.grupoDe);
@@ -229,14 +257,18 @@ export function siguienteBloque(e: EntradaDeSiguienteBloque): SiguienteBloque {
   const pedidas = rot.candidatas.filter(c => c.motivos.includes('lo_pide_el_atleta'));
   const enMantener = rot.candidatas.filter(c => !c.motivos.includes('lo_pide_el_atleta')).map(c => c.nombre.toLowerCase());
   for (const s of rot.soltar) {
-    const recoge = estrellas.length < preset.maxEstrellas ? pedidas.shift() : undefined;
+    // Cada estrella que se suelta deja un hueco: lo recoge lo que pida el
+    // atleta sin mirar cuántas quedan (las estrellas no tienen tope; con 4 o
+    // más solo se avisa. Dani, 18-11-2026).
+    const recoge = pedidas.shift();
     if (recoge) estrellas.push(recoge.zona);
     const suelta = `${s.nombre} suelta la estrella (${s.noRespondeSeguidos} bloques sin responder)`;
     rotacion.push(recoge
       ? `${suelta} y la recoge ${recoge.nombre.toLowerCase()}, que la pide el atleta.`
       : `${suelta} y nadie la recoge: decide tú a quién va${enMantener.length ? ` (llevan dos bloques o más en mantener: ${enLista(enMantener)})` : ''}.`);
   }
-  const conEstrella = estrellas.slice(0, Math.max(0, preset.maxEstrellas));
+  // Todas: ya no se recortan a las que el tipo lleva sin aviso.
+  const conEstrella = estrellas;
 
   // ── Arranque ───────────────────────────────────────────────────────────────
   const diasDeParon = diasEntreFechas(e.ultimaSesion ?? e.fin, inicio);
@@ -255,10 +287,22 @@ export function siguienteBloque(e: EntradaDeSiguienteBloque): SiguienteBloque {
   });
   const hipotesis: Partial<Record<string, HipotesisDeZona>> = { ...propuesta.hipotesis };
   const cdgObjetivosIem: Partial<Record<string, number>> = { ...propuesta.cdgObjetivosIem };
-  // Confirmada con un límite pasado: misma línea, pero sin subir el techo.
+  // Molestias de cada zona con veredicto: las del veredicto recién calculado
+  // o, en uno ya firmado (se guarda sin sus límites), las de sus ejercicios.
+  const molestias: MolestiaDeZona[] = e.veredictos.flatMap(v => {
+    const zona = v.zona as ZonaIem;
+    const m = v.limites?.molestia
+      ?? (e.ejercicios && e.zonaDe ? (({ molestiasEnLaZona: veces, molestiaMaxima: maxima }) => ({ veces, maxima }))(molestiasDeLaZona(e.ejercicios, e.zonaDe, zona)) : null);
+    return m && m.veces > 0 ? [{ zona, veces: m.veces, maxima: m.maxima }] : [];
+  });
+  const conMolestia = new Set<string>(molestias.map(m => m.zona));
+  const cansancioPasado = e.cansancioMedio != null && e.cansancioMedio >= CANSANCIO_LIMITE;
+  // Confirmada con un límite pasado: misma línea, pero sin subir el techo. Un
+  // veredicto firmado no trae la propuesta: sus límites se releen del bloque.
   for (const v of e.veredictos) {
     const h = hipotesis[v.zona];
-    if (!h || v.lectura !== 'confirmada' || v.propuesta?.subirTecho !== false) continue;
+    const limitePasado = v.propuesta ? v.propuesta.subirTecho === false : conMolestia.has(v.zona) || cansancioPasado;
+    if (!h || v.lectura !== 'confirmada' || !limitePasado) continue;
     const sinSubir = cifrasDeHipotesis({
       palanca: h.palanca, estado: e.estado?.porZona[v.zona as ZonaIem], velocidad: meso.cdgVelocidad ?? preset.velocidad,
       semana1Reducida: arranque.semana1Reducida, subir: false, limite: h.limite, rmObjetivoPct: h.rmObjetivoPct,
@@ -268,6 +312,12 @@ export function siguienteBloque(e: EntradaDeSiguienteBloque): SiguienteBloque {
   }
   const notas = [...new Set(conEstrella.flatMap(z => (propuesta.notas[z] ?? [])
     .map(n => (n.clave === 'deficit' ? n.texto : `${nombreCortoDeZona(z)}: ${n.texto.charAt(0).toLowerCase()}${n.texto.slice(1)}`))))];
+
+  // Con molestia en alguna zona: qué articulaciones vigilar y qué límite
+  // semanal se sugiere. La línea se queda escrita en el bloque nuevo, como
+  // nota privada del coach en su semana 1.
+  const articular = propuestaArticular({ molestias, estresMedio: e.estresArticular, limitesActuales: e.limitesArticulares });
+  const notaArticular = notaDeVigilancia(articular);
 
   const nuevo: Omit<Mesocycle, 'id'> = {
     ...clonado,
@@ -286,6 +336,7 @@ export function siguienteBloque(e: EntradaDeSiguienteBloque): SiguienteBloque {
     hipotesis,
     semana1Reducida: arranque.semana1Reducida,
     ...(arranque.vuelveDeParon ? { vuelveDeParon: true } : {}),
+    ...(notaArticular ? { notasSemana: { 1: notaArticular } } : {}),
   };
 
   const rutinas = rutinasDeMesoDePlantilla({ ...nuevo, id: '' }, { ownerId: e.ownerId, athleteName: e.athleteName })
@@ -309,7 +360,7 @@ export function siguienteBloque(e: EntradaDeSiguienteBloque): SiguienteBloque {
       numero, inicio, semanas: preset.semanas, tipo, estrellas: conEstrella, rotacion,
       seQuedan: clonar.length, candidatos: cambiar,
       semana1Reducida: arranque.semana1Reducida, vuelveDeParon: arranque.vuelveDeParon, motivoDeArranque: arranque.motivo,
-      avisos: propuesta.avisos, enDeficit, notas,
+      avisos: propuesta.avisos, enDeficit, notas, semanaDeReferencia, articular,
       hayPosterior: e.mesocycles.some(m => m.id !== meso.id && m.startDate > meso.startDate),
     },
   };

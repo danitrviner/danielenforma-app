@@ -10,7 +10,7 @@ import { Chip, SegmentedControl } from '../ui';
 import FichasDeHipotesis from './FichasDeHipotesis';
 import Semana1Reducida from './Semana1Reducida';
 import TipoDeBloqueSelector from './TipoDeBloqueSelector';
-import { alCambiarSemana1, camposDeBloqueNuevo } from './hipotesisDelEditor';
+import { alBajarAMantener, alCambiarSemana1, camposDeBloqueNuevo, elegirTipoDeBloque } from './hipotesisDelEditor';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Banco de pruebas de las fichas «Hipótesis del bloque» (Mesociclo, coach) —
@@ -23,6 +23,12 @@ import { alCambiarSemana1, camposDeBloqueNuevo } from './hipotesisDelEditor';
    17-11-2026: el bloque anterior firmado con una «mejora, menos de lo
    buscado», el bloque en déficit, una zona que ya acabó alta (pectoral en 82)
    y un principiante.
+
+   18-11-2026 (decisiones de Dani): «4 estrellas» enseña el aviso informativo
+   (con 3 no sale y nada se bloquea); «Especialización» nace con el resto en
+   desarrollar para ver la recomendación «Bajarlos a mantener» y su Deshacer
+   (aquí, una pila en memoria como la del editor); y «Primer bloque» es el de
+   un atleta sin bloques: nace como primer bloque de 8 semanas.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const HOY = '2026-11-17';
@@ -88,37 +94,64 @@ const RUTINAS: { exercises: WorkoutExercise[] }[] = [
 ];
 const GRUPOS_DE_ZONA: Partial<Record<ZonaIem, MuscleGroup[]>> = { pectoral: ['pecho'], deltoides: ['deltoide_ant', 'deltoide_lat', 'deltoide_post'], dorsal: ['dorsal'] };
 
-type Escenario = 'con' | 'firmado' | 'parcial' | 'deficit' | 'alta' | 'principiante' | 'sin' | 'antiguo';
+type Escenario = 'con' | 'firmado' | 'cuatro' | 'especializacion' | 'parcial' | 'deficit' | 'alta' | 'principiante' | 'sin' | 'antiguo';
 const ESCENARIOS: { value: Escenario; label: string }[] = [
   { value: 'con', label: 'Con bloque anterior' },
   { value: 'firmado', label: 'Anterior firmado' },
+  { value: 'cuatro', label: '4 estrellas' },
+  { value: 'especializacion', label: 'Especialización' },
   { value: 'parcial', label: 'Mejora parcial' },
   { value: 'deficit', label: 'En déficit' },
   { value: 'alta', label: 'Zona alta' },
   { value: 'principiante', label: 'Principiante' },
-  { value: 'sin', label: 'Sin bloque anterior' },
+  { value: 'sin', label: 'Primer bloque' },
   { value: 'antiguo', label: 'Bloque sin tipo' },
 ];
 
 function partida(e: Escenario): { meso: Mesocycle; mesos: Mesocycle[]; anterior: Mesocycle | null } {
   const anterior = e === 'sin' ? null : e === 'firmado' ? ANTERIOR_FIRMADO : e === 'parcial' ? ANTERIOR_PARCIAL : ANTERIOR;
   const mesos = anterior ? [anterior] : [];
+  // Las estrellas de partida de cada caso: cuatro zonas para ver el aviso; una
+  // sola y el resto en desarrollar para ver la recomendación de mantener; y
+  // ninguna en el primer bloque de un atleta, que no prioriza nada.
+  const prioridades: Partial<Record<MuscleGroup, MuscleGroupConfig['priority']>> = e === 'cuatro'
+    ? { ...PRIORIDADES_DE_PARTIDA, dorsal: 'alta', cuadriceps: 'alta' }
+    : e === 'especializacion' ? { pecho: 'alta', gemelo: 'ignorar' }
+      : e === 'sin' ? { gemelo: 'ignorar' }
+        : PRIORIDADES_DE_PARTIDA;
   const base: Mesocycle = {
-    id: 'h2', athleteId: 'dani@enforma.app', number: 4, name: 'Hipertrofia 2', daysPerWeek: 4,
-    groups: grupos(SERIES, PRIORIDADES_DE_PARTIDA),
+    id: 'h2', athleteId: 'dani@enforma.app', number: anterior ? 4 : 1, name: anterior ? 'Hipertrofia 2' : 'Primer bloque', daysPerWeek: 4,
+    groups: grupos(SERIES, prioridades),
     ...(e === 'antiguo'
       ? { weeks: 10, startDate: '2026-11-30', objective: 'Hipertrofia tren superior' }
       : camposDeBloqueNuevo(mesos, HOY)),
   };
-  return { meso: base, mesos, anterior };
+  // Especialización: elegida como en el editor, que no toca los grupos.
+  const meso = e === 'especializacion' ? { ...base, ...elegirTipoDeBloque(base, 'especializacion').cambios } : base;
+  return { meso, mesos, anterior };
 }
 
 export default function HipotesisBloqueDevHarness() {
   const [escenario, setEscenario] = useState<Escenario>('con');
   const [meso, setMeso] = useState<Mesocycle>(() => partida('con').meso);
   const { mesos, anterior } = useMemo(() => partida(escenario), [escenario]);
-  const cambiarEscenario = (e: string) => { setEscenario(e as Escenario); setMeso(partida(e as Escenario).meso); };
-  const cambiar = (cambios: Partial<Mesocycle>) => setMeso(m => ({ ...m, ...cambios }));
+  // El Deshacer del editor, en pequeño: aquí solo entra «Bajarlos a mantener».
+  const [antesDeMantener, setAntesDeMantener] = useState<Partial<Mesocycle> | null>(null);
+  const cambiarEscenario = (e: string) => { setEscenario(e as Escenario); setMeso(partida(e as Escenario).meso); setAntesDeMantener(null); };
+  const cambiar = (cambios: Partial<Mesocycle>) => {
+    // Tocar los grupos a mano después deja sin sentido deshacer aquello.
+    if (cambios.groups) setAntesDeMantener(null);
+    setMeso(m => ({ ...m, ...cambios }));
+  };
+  const bajarAMantener = () => {
+    const r = alBajarAMantener(meso);
+    if (!r) return;
+    setMeso(m => ({ ...m, ...r.cambios }));
+    setAntesDeMantener(r.antes);
+  };
+  const deshacerMantener = antesDeMantener
+    ? () => { setMeso(m => ({ ...m, ...antesDeMantener })); setAntesDeMantener(null); }
+    : undefined;
 
   const estado = !anterior ? null : escenario === 'alta' ? ESTADO_ALTO : ESTADO;
   const nivel = escenario === 'principiante' ? 'principiante' : 'intermedio';
@@ -135,11 +168,14 @@ export default function HipotesisBloqueDevHarness() {
   return (
     <div className="min-h-screen bg-bg text-ink p-4 sm:p-8">
       <div className="max-w-5xl mx-auto space-y-4">
-        <SegmentedControl label="Escenario" value={escenario} onChange={cambiarEscenario} options={ESCENARIOS} />
+        {/* Diez escenarios no caben en una pantalla estrecha: que se desplace la fila, no la página. */}
+        <div className="overflow-x-auto">
+          <SegmentedControl label="Escenario" value={escenario} onChange={cambiarEscenario} options={ESCENARIOS} />
+        </div>
 
         <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
           <h2 className="font-sans font-bold text-ink text-title-s">{meso.name} · {meso.weeks} semanas · empieza el {meso.startDate}</h2>
-          <TipoDeBloqueSelector meso={meso} onCambiar={cambiar} />
+          <TipoDeBloqueSelector meso={meso} onCambiar={cambiar} onBajarAMantener={bajarAMantener} onDeshacerMantener={deshacerMantener} />
           <Semana1Reducida
             activa={!!meso.semana1Reducida}
             motivo={sugerencia.motivo}
@@ -185,6 +221,7 @@ export default function HipotesisBloqueDevHarness() {
           <pre data-testid="meso" className="font-mono text-caption text-ink-2 whitespace-pre-wrap">{JSON.stringify({
             tipoBloque: meso.tipoBloque, weeks: meso.weeks, startDate: meso.startDate, objective: meso.objective, phaseType: meso.phaseType,
             cdgVelocidad: meso.cdgVelocidad, semana1Reducida: meso.semana1Reducida,
+            grupos: Object.fromEntries(MUSCLE_ORDER.filter(g => meso.groups[g].series > 0 || meso.groups[g].priority !== 'media').map(g => [g, `${meso.groups[g].series} · ${meso.groups[g].priority}`])),
             hipotesis: meso.hipotesis, cdgObjetivosIem: meso.cdgObjetivosIem, cdgModoPorZona: meso.cdgModoPorZona,
           }, null, 2)}</pre>
         </details>

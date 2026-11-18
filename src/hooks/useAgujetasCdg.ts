@@ -23,10 +23,8 @@ const DIAS_DE_LA_SEMANA_QUE_ACABA = 7;
  * el contexto de esta semana. Caducada sale `undefined` («sin dato») y su
  * nombre va en `caducadas`, para que la pantalla pueda decir por qué falta.
  *
- * 17-11-2026 (D6r, D7): también lee los registros de entreno (misma clave
+ * 17-11-2026 (D6r): también lee los registros de entreno (misma clave
  * `workoutLogs` que Mesociclo y la ficha, así que tampoco suma lecturas).
- *  · Agujetas: las contestadas a las 48 h de cada sesión se mezclan con las del
- *    cuestionario semanal; por zona manda la más reciente (`agujetasPorZona`).
  *  · Cansancio al salir: `fatigaPost` es la media de las sesiones de los
  *    últimos 7 días que lo lleven apuntado (`cansancioSesiones` dice además de
  *    cuál salió peor); sin ninguna, la cifra del cuestionario semanal, que
@@ -84,7 +82,7 @@ export function useAgujetasCdg (athleteEmail?: string) {
       .filter(k => !señales[k] && historial[k].some(p => p.date <= hoy))
       .map(k => NOMBRES[k]);
     return {
-      agujetas: agujetasPorZona(serie, logs), ...señales,
+      agujetas: agujetasPorZona(serie), ...señales,
       fatigaPostSemanal, cansancioSesiones,
       // Las semanas anteriores, para ver si un mal contexto es puntual o persistente.
       historial, caducadas,

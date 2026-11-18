@@ -8,11 +8,6 @@
  * cual. Quien siga con el DOM's 0-10 por grupo (`doms.<grupo>`) también vale:
  * se convierte a 1-5 con max(1, round(v / 2)).
  *
- * Desde el 17-11-2026 (D7) también llegan POR SESIÓN: el atleta las contesta
- * entre 36 y 72 h después de entrenar (`WorkoutLog.agujetas48h`). Las dos
- * fuentes conviven: de cada zona se usa la lectura MÁS RECIENTE por fecha, y
- * la «anterior» es la lectura previa de esa zona, venga de donde venga.
- *
  * Reglas (clase de seguimiento semanal del curso; el detalle, en `propuestaZona`):
  *   5 → freno: nunca subir; reducir o pausar la carga de esa zona (sin % fijo,
  *       decisión de Dani del 25-10). Es un aviso BLOQUEANTE (`Propuesta.bloqueante`):
@@ -32,8 +27,7 @@
  * no el porcentaje (curso, Caso 6). Las subidas no se guardan: se deducen de
  * lo programado semana a semana (`subidasDeLaZona`).
  */
-import type { WorkoutLog } from '../../types.js'
-import { ZONAS_IEM, esZonaIem, type ZonaIem } from './zonas.js'
+import { ZONAS_IEM, type ZonaIem } from './zonas.js'
 import { SEMANAS_ENTRE_SUBIDAS, SUBIDA_MINIMA } from '../hipotesisDeBloque/cifras.js'
 
 /**
@@ -91,43 +85,6 @@ export interface LecturaAgujetas {
   anterior?: number
   /** Viene del cuestionario antiguo 0-10, convertido. */
   deEscala10: boolean
-  /** Solo si la contestó a las 48 h de una sesión (`WorkoutLog.agujetas48h`).
-   *  Ausente = recuerdo del cuestionario semanal. Ver `origenDeLectura`. */
-  origen?: '48h'
-}
-
-export type OrigenDeLectura = '48h' | 'semanal'
-/** De dónde sale una lectura de agujetas: de la tarjeta a 48 h o del cuestionario semanal. */
-export const origenDeLectura = (l: Pick<LecturaAgujetas, 'origen'>): OrigenDeLectura => l.origen ?? 'semanal'
-
-/** Lo que hace falta de un registro para leer sus agujetas a 48 h. */
-export type SesionConAgujetas = Pick<WorkoutLog, 'agujetas48h' | 'agujetas48hAt' | 'completedAt' | 'date'>
-
-/** Una respuesta a 48 h: `date` es el día y `instante` el momento exacto (ordena las del mismo día). */
-export interface PuntoDeSesion extends PuntoSeñal { instante: string }
-interface PuntoDeAgujetas extends PuntoDeSesion { origen: OrigenDeLectura }
-
-/**
- * Las agujetas contestadas a las 48 h, por zona y en orden. La fecha de cada
- * lectura es el día en que contestó (`agujetas48hAt`); sin él, dos días
- * después de terminar la sesión. Claves que no son zona o notas fuera de 1-5
- * se ignoran.
- */
-export function agujetasDeSesiones (sesiones: readonly SesionConAgujetas[], hasta?: string): Partial<Record<ZonaIem, PuntoDeSesion[]>> {
-  const out: Partial<Record<ZonaIem, PuntoDeSesion[]>> = {}
-  for (const s of sesiones) {
-    if (!s.agujetas48h) continue
-    const fin = Date.parse(s.completedAt)
-    const instante = s.agujetas48hAt ?? (Number.isFinite(fin) ? new Date(fin + 48 * 3_600_000).toISOString() : s.date)
-    const date = instante.slice(0, 10)
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || (hasta != null && date > hasta)) continue
-    for (const [zona, valor] of Object.entries(s.agujetas48h)) {
-      if (!esZonaIem(zona) || typeof valor !== 'number' || !(valor >= 1 && valor <= 5)) continue
-      ;(out[zona] ??= []).push({ date, value: valor, instante })
-    }
-  }
-  for (const puntos of Object.values(out)) puntos.sort((a, b) => a.instante.localeCompare(b.instante))
-  return out
 }
 
 const r1 = (v: number) => Math.round(v * 10) / 10
@@ -147,21 +104,10 @@ export function esLecturaDeLaSemanaPrevia (fechaAnterior: string, fecha: string,
   return Number.isFinite(d) && d >= 1 && d <= dias
 }
 
-/**
- * La lectura de agujetas de cada zona. `sesiones` son los registros del atleta
- * con sus respuestas a 48 h: se mezclan con las del cuestionario semanal y gana
- * la más reciente por fecha (el mismo día, la de la sesión, que es la medida y
- * no el recuerdo). `hasta` deja fuera las respuestas a 48 h posteriores a esa
- * fecha; la `serie` del cuestionario llega ya filtrada por quien llama.
- */
-export function agujetasPorZona (serie: SerieDeSeñal, sesiones: readonly SesionConAgujetas[] = [], hasta?: string): Partial<Record<ZonaIem, LecturaAgujetas>> {
+export function agujetasPorZona (serie: SerieDeSeñal): Partial<Record<ZonaIem, LecturaAgujetas>> {
   const out: Partial<Record<ZonaIem, LecturaAgujetas>> = {}
-  const deSesion = agujetasDeSesiones(sesiones, hasta)
   for (const z of ZONAS_IEM) {
-    const nuevas: PuntoDeAgujetas[] = [
-      ...serie(`agujetas.${z.clave}`).filter(p => p.value >= 1 && p.value <= 5).map(p => ({ ...p, origen: 'semanal' as const, instante: p.date.slice(0, 10) })),
-      ...(deSesion[z.clave] ?? []).map(p => ({ ...p, origen: '48h' as const })),
-    ].sort((a, b) => a.date.slice(0, 10).localeCompare(b.date.slice(0, 10)) || (a.origen === b.origen ? a.instante.localeCompare(b.instante) : a.origen === '48h' ? 1 : -1))
+    const nuevas = serie(`agujetas.${z.clave}`).filter(p => p.value >= 1 && p.value <= 5)
     if (nuevas.length) {
       const u = nuevas[nuevas.length - 1]
       // La anterior es la última de OTRO día, y solo vale si es de la semana previa.
@@ -169,7 +115,6 @@ export function agujetasPorZona (serie: SerieDeSeñal, sesiones: readonly Sesion
       out[z.clave] = {
         zona: z.clave, valor: u.value, fecha: u.date,
         anterior: previa && esLecturaDeLaSemanaPrevia(previa.date, u.date) ? previa.value : undefined, deEscala10: false,
-        ...(u.origen === '48h' ? { origen: '48h' as const } : {}),
       }
       continue
     }

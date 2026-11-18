@@ -18,9 +18,9 @@ export interface SetInput {
   segmentoDe?: number;
   /** Instante (ISO) en que se marcó como hecha. Ver `WorkoutSetLog.hechaEn`. */
   hechaEn?: string;
-  /** D1b: el RIR de esta fila lo ha elegido el atleta (lo cambió, lo eligió en
-   *  el selector rápido o marcó fallo). Sin la marca, el RIR que hay es el
-   *  prerrelleno con el pautado. Ver `WorkoutSetLog.rirApuntado`. */
+  /** D1b: el RIR de esta fila lo ha elegido el atleta (lo cambió o marcó
+   *  fallo). Sin la marca, el RIR que hay es el prerrelleno con el pautado.
+   *  Ver `WorkoutSetLog.rirApuntado`. */
   rirApuntado?: boolean;
 }
 
@@ -29,60 +29,12 @@ type Actualizar = (sIdx: number, field: keyof SetInput, value: string | boolean)
 /* ═══════════════════════════════════════════════════════════════════════════
    Cómo se apunta el RIR (D1, 17-11-2026)
 
-   El RIR llegaba prerrellenado con el pautado y un toque en «Hecha» lo
-   guardaba como si fuera del atleta: ese dato entraba en el RM estimado y en
-   la carga de la sesión siguiente. Ahora cada serie guarda si el RIR lo eligió
-   él (`rirApuntado`), y hay cuatro formas de pedírselo para que Dani elija
-   viéndolas (banco `/dev/entreno`). La lógica es una sola; la variante solo
-   cambia qué pasa al tocar «Hecha».
-
-     · actual   — como hasta ahora: prerrellenado con el pautado. Por defecto.
-     · selector — al tocar «Hecha» sale un selector de un toque (FALLO · 0 · 1 ·
-                  2 · 3 · 4+) con el pautado resaltado; elegir marca la serie.
-     · vacio    — el RIR llega vacío, con el pautado como pista, y no se puede
-                  marcar la serie sin elegirlo.
-     · ultima   — como hasta ahora, y al cerrar el ejercicio se pregunta solo
-                  por la última serie.
+   El RIR llega prerrellenado con el pautado y el atleta lo puede cambiar. Un
+   toque en «Hecha» lo guardaba como si fuera suyo: ese dato entraba en el RM
+   estimado y en la carga de la sesión siguiente. Ahora cada serie guarda si el
+   RIR lo eligió él (`rirApuntado`): si lo cambia o marca fallo, queda apuntado;
+   si no lo toca, se guarda sin marca, como siempre.
    ═══════════════════════════════════════════════════════════════════════════ */
-
-export type VarianteRir = 'actual' | 'selector' | 'vacio' | 'ultima';
-
-/** La que queda en producción hasta que Dani elija. */
-export const VARIANTE_RIR_POR_DEFECTO: VarianteRir = 'actual';
-
-/** Para el conmutador del banco de pruebas. */
-export const VARIANTES_RIR: { clave: VarianteRir; etiqueta: string; explicacion: string }[] = [
-  { clave: 'actual', etiqueta: 'Actual', explicacion: 'El RIR llega con el pautado. Si no lo tocas, se guarda sin apuntar.' },
-  { clave: 'selector', etiqueta: 'Selector', explicacion: 'Al tocar «Hecha» eliges el RIR en un toque y la serie queda marcada.' },
-  { clave: 'vacio', etiqueta: 'Vacío', explicacion: 'El RIR llega vacío y no se puede marcar la serie sin elegirlo.' },
-  { clave: 'ultima', etiqueta: 'Última', explicacion: 'Como la actual; al cerrar el ejercicio se pregunta por la última serie.' },
-];
-
-/** Opciones del selector rápido de un toque. «4+» se guarda como 4. */
-export const RIR_RAPIDO: readonly { valor: string; texto: string }[] = [
-  { valor: 'fallo', texto: 'FALLO' },
-  { valor: '0', texto: '0' },
-  { valor: '1', texto: '1' },
-  { valor: '2', texto: '2' },
-  { valor: '3', texto: '3' },
-  { valor: '4', texto: '4+' },
-];
-
-/** La opción del selector rápido que corresponde a un RIR ('5' → la de «4+»).
- *  `null` si no es un RIR (vacío o ilegible). */
-export function opcionRapidaDe(rir: string | undefined): string | null {
-  if (rir === 'fallo') return 'fallo';
-  if (rir == null || rir.trim() === '') return null;
-  const n = Number(rir);
-  if (!Number.isFinite(n) || n < 0) return null;
-  return String(Math.min(4, Math.round(n)));
-}
-
-/** «pautado: 1» / «pautado: fallo» — la pista que acompaña al RIR del coach. */
-export function textoDePautado(pautado: string | undefined): string | null {
-  if (pautado == null || pautado === '') return null;
-  return `pautado: ${pautado === 'fallo' ? 'fallo' : pautado}`;
-}
 
 /**
  * El RIR pautado de toda la tabla en una etiqueta, agrupando series seguidas
@@ -104,71 +56,19 @@ export function resumenRirPautado(pautados: readonly string[]): string | null {
   return `RIR ${grupos.map(g => `${g.count}x${rirTexto(g.rir)}`).join(', ')}`;
 }
 
-/**
- * Lo que enseña la celda de RIR. En la variante `vacio`, una serie por hacer
- * cuyo RIR aún no ha elegido el atleta se ve vacía aunque por debajo lleve el
- * pautado: así cambiar de variante no toca los datos, solo lo que se pide.
- */
-export function rirEnPantalla(fila: Pick<SetInput, 'rir' | 'done' | 'rirApuntado'>, variante: VarianteRir): string {
-  return variante === 'vacio' && !fila.done && fila.rirApuntado !== true ? '' : fila.rir;
-}
-
 /** El atleta elige el RIR de una fila: se guarda el valor y que lo eligió él. */
 export function apuntarRir(actualizar: Actualizar, sIdx: number, valor: string): void {
   actualizar(sIdx, 'rir', valor);
   actualizar(sIdx, 'rirApuntado', true);
 }
 
-/** Qué pasa al tocar «Hecha» en una fila sin marcar. */
-export type PasoAlMarcar =
-  /** Falta apuntar las repeticiones (F23). */
-  | 'sin_reps'
-  /** Variante `selector`: se abre el selector rápido junto a la fila. */
-  | 'elegir_rir'
-  /** Variante `vacio`: no se marca hasta que elija el RIR. */
-  | 'falta_rir'
-  | 'marcar';
-
 /**
- * Lo que toca al dar una fila por hecha, según la variante. Las bajadas y
- * miniseries nunca piden RIR (llevan uno de relleno que no se enseña), y si el
- * atleta ya lo eligió no se le vuelve a preguntar.
+ * Una fila de la tabla como la serie que se guarda en el registro. La marca
+ * `rirApuntado` (D1b) solo va si el atleta eligió o cambió el RIR (o marcó
+ * fallo): un RIR sin tocar se guarda SIN marca, como siempre. Al corregir una
+ * sesión ya guardada la fila trae la marca que tuviera el registro y se respeta.
  */
-export function pasoAlMarcar(
-  fila: Pick<SetInput, 'repsDone' | 'segmento' | 'rirApuntado'> | undefined, variante: VarianteRir,
-): PasoAlMarcar {
-  if (!fila || !tieneReps(fila)) return 'sin_reps';
-  if (fila.segmento || fila.rirApuntado === true) return 'marcar';
-  if (variante === 'selector') return 'elegir_rir';
-  if (variante === 'vacio') return 'falta_rir';
-  return 'marcar';
-}
-
-/** Lo que se le dice junto a la fila cuando intenta marcarla sin elegir el RIR. */
-export const AVISO_SIN_RIR = 'Elige el RIR para marcarla como hecha.';
-
-/**
- * Lo que se guarda en `WorkoutSetLog.rirApuntado` (D1b): `true` si el atleta
- * eligió o cambió el RIR (o marcó fallo); `false` si se quedó el prerrelleno
- * sin tocar. Al CORREGIR una sesión ya guardada se respeta lo que tuviera: un
- * registro antiguo sin la marca sigue sin ella (ahí no se sabe).
- *
- * En la variante `actual` (la de producción mientras Dani no elija otra) un RIR
- * sin tocar se guarda SIN marca, como siempre: marcarlo `false` dejaría sin RM
- * ni récords a todos los atletas de un día para otro, porque hoy casi nadie
- * toca el desplegable. El `false` solo se escribe en las variantes que le
- * piden el RIR al atleta, que es donde «no lo tocó» significa algo.
- */
-export function rirApuntadoAlGuardar(
-  fila: Pick<SetInput, 'rirApuntado'>, esCorreccion = false, variante: VarianteRir = VARIANTE_RIR_POR_DEFECTO,
-): boolean | undefined {
-  if (fila.rirApuntado != null) return fila.rirApuntado;
-  return esCorreccion || variante === 'actual' ? undefined : false;
-}
-
-/** Una fila de la tabla como la serie que se guarda en el registro. */
-export function filaASerie(s: SetInput, esCorreccion = false, variante: VarianteRir = VARIANTE_RIR_POR_DEFECTO): WorkoutSetLog {
-  const apuntado = rirApuntadoAlGuardar(s, esCorreccion, variante);
+export function filaASerie(s: SetInput): WorkoutSetLog {
   return {
     weight: parseFloat(s.weight) || 0,
     repsDone: parseInt(s.repsDone) || 0,
@@ -177,7 +77,7 @@ export function filaASerie(s: SetInput, esCorreccion = false, variante: Variante
     ...(s.segmento ? { segmento: true } : {}),
     ...(s.segmento && s.segmentoDe ? { segmentoDe: s.segmentoDe } : {}),
     ...(s.hechaEn ? { hechaEn: s.hechaEn } : {}),
-    ...(apuntado != null ? { rirApuntado: apuntado } : {}),
+    ...(s.rirApuntado != null ? { rirApuntado: s.rirApuntado } : {}),
   };
 }
 

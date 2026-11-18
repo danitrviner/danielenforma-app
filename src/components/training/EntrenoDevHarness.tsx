@@ -4,9 +4,7 @@ import { hoyIsoLocal, addDays } from '../../utils/trainingWeek';
 import { prefillWorkoutSets } from '../../utils/setPrefill';
 import { formatearDuracion } from '../../utils/duracionSesion';
 import { SegmentedControl } from '../ui';
-import {
-  nuevaSerieVacia, seriesHechas, filaASerie, VARIANTES_RIR, VARIANTE_RIR_POR_DEFECTO, type SetInput, type VarianteRir,
-} from './setInput';
+import { nuevaSerieVacia, seriesHechas, filaASerie, type SetInput } from './setInput';
 import WorkoutSessionPlayer, { type SessionCelebration } from './WorkoutSessionPlayer';
 import { VARIANTES_FUERA, VARIANTE_FUERA_POR_DEFECTO, type VarianteFuera } from './InterruptorFuera';
 import { alternarSesionFuera, cambiarPrerrelleno, fueraAlAbrir, serieConFuera } from '../../utils/sesionFuera';
@@ -17,14 +15,14 @@ import SesionesFueraDeLaSemana from './SesionesFueraDeLaSemana';
    en la última serie y uno con myo-reps, con una sesión anterior para que haya
    récords y consejos que enseñar. No lee ni escribe nada de Firestore.
 
-   17-11-2026: arriba, el conmutador de las cuatro formas de apuntar el RIR
-   (D1c) para que Dani elija viéndolas; la tabla llega prerrellenada como en la
-   sesión real (`prefillWorkoutSets`), hay un ejercicio con la última serie a
-   AMRAP (D5) y «Terminar sesión» abre el diálogo de fin de sesión con la
-   pregunta del cansancio (D6). Abajo se ve lo que se guardaría de cada serie.
+   17-11-2026: la tabla llega prerrellenada como en la sesión real
+   (`prefillWorkoutSets`), con el RIR pautado; hay un ejercicio con la última
+   serie a AMRAP (D5) y «Terminar sesión» abre el diálogo de fin de sesión con
+   la pregunta del cansancio (D6). Abajo se ve lo que se guardaría de cada
+   serie, con el RIR «apuntado» solo si se ha cambiado.
 
-   17-11-2026 (tarde): «Hoy entreno fuera de mi gimnasio». Segundo conmutador
-   con sus dos variantes (chip / fila). Encendido, la tabla pasa a peso vacío
+   17-11-2026 (tarde): «Hoy entreno fuera de mi gimnasio». Arriba, el
+   conmutador de sus dos variantes (chip / fila). Encendido, la tabla pasa a peso vacío
    con la pista, sin subidas ni récords, y cada serie se guarda con la marca
    `fuera`.
 
@@ -107,14 +105,12 @@ export default function EntrenoDevHarness() {
   // D5 y D4: molestia por ejercicio y cómo llega hoy.
   const [molestias, setMolestias] = useState<(number | undefined)[]>([]);
   const [comoLlega, setComoLlega] = useState<WorkoutLog['comoLlega']>(undefined);
-  // D1c: la forma de apuntar el RIR que se está probando.
-  const [variante, setVariante] = useState<VarianteRir>(VARIANTE_RIR_POR_DEFECTO);
   // D6: el diálogo de fin de sesión y el cansancio contestado en él.
   const [celebracion, setCelebracion] = useState<SessionCelebration | null>(null);
   const [cansancio, setCansancio] = useState<number | undefined>(undefined);
   const guardadas = WORKOUT.exercises.map((we, i) => ({
     nombre: EJERCICIOS.find(e => e.id === we.exerciseId)?.name ?? we.exerciseId,
-    series: seriesHechas<SetInput>(sets[i] || []).map(s => serieConFuera(filaASerie(s, false, variante), fuera)),
+    series: seriesHechas<SetInput>(sets[i] || []).map(s => serieConFuera(filaASerie(s), fuera)),
   })).filter(e => e.series.length > 0);
   const terminar = () => {
     const todas = guardadas.flatMap(e => e.series);
@@ -137,21 +133,11 @@ export default function EntrenoDevHarness() {
 
   return (
     <div className="min-h-screen bg-bg px-4 py-6">
-      {/* Conmutador de variantes del RIR (D1c). Cambiar de una a otra no toca lo ya apuntado. */}
       <div className="mb-4 rounded-surface border border-dashed border-accent-line bg-surface p-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <p className="font-mono text-caption font-bold uppercase tracking-wide text-accent-ink">Banco de pruebas · cómo se apunta el RIR</p>
+          <p className="font-mono text-caption font-bold uppercase tracking-wide text-accent-ink">Banco de pruebas · fuera de su gimnasio</p>
           <button type="button" onClick={() => reiniciar()} className="font-mono text-caption font-bold uppercase tracking-wide text-ink-2 hover:text-accent-ink">Reiniciar</button>
         </div>
-        <SegmentedControl
-          label="Forma de apuntar el RIR"
-          value={variante}
-          onChange={v => setVariante(v as VarianteRir)}
-          options={VARIANTES_RIR.map(v => ({ value: v.clave, label: v.etiqueta }))}
-          className="w-full"
-        />
-        <p className="font-sans text-caption text-ink-2">{VARIANTES_RIR.find(v => v.clave === variante)?.explicacion}</p>
-        <p className="pt-2 font-mono text-caption font-bold uppercase tracking-wide text-accent-ink">Fuera de su gimnasio</p>
         <SegmentedControl
           label="Cómo se enseña «fuera de mi gimnasio»"
           value={varianteFuera}
@@ -208,7 +194,6 @@ export default function EntrenoDevHarness() {
         cerrarPlayer={() => {}}
         sameDayCardio={null}
         onMarkActionDone={() => {}}
-        varianteRir={variante}
         cansancioAlSalir={cansancio}
         onCansancioAlSalir={setCansancio}
         fuera={fuera}

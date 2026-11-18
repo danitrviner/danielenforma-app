@@ -5,9 +5,9 @@ import { usarFuenteDeDatos, type FuenteDeDatos } from './datos';
 import { getCdgSemana } from './cdg';
 import { addDays, hoyIsoLocal } from '../../utils/trainingWeek';
 
-/* D6r y D7 (17-11-2026) en get_cdg_semana: el cansancio al salir sale de las
-   sesiones (media y cuál fue la más dura) y las agujetas contestadas a las 48 h
-   conviven con las del cuestionario semanal. Sin datos por sesión, como antes. */
+/* D6r (17-11-2026) en get_cdg_semana: el cansancio al salir sale de las
+   sesiones (media y cuál fue la más dura); sin dato por sesión, del
+   cuestionario semanal. Las agujetas, siempre del cuestionario semanal. */
 
 const HOY = hoyIsoLocal();
 const ej = (id: string, name: string, muscleGroup: Exercise['muscleGroup'], cdgNombre: string): Exercise =>
@@ -51,7 +51,7 @@ const usar = (logs: WorkoutLog[]) => usarFuenteDeDatos({
 } as unknown as FuenteDeDatos);
 
 const zona = (r: { zonas: Array<{ zona: string }> }, clave: string) => r.zonas.find(z => z.zona === clave) as unknown as {
-  agujetas: { valor: number; anterior: number | null; origen: string } | null;
+  agujetas: { valor: number; anterior: number | null } | null;
   propuestaSemanaQueViene: { tono: string; pct: number | null; texto: string; frenadaPorSesion: { sesion: string; cansancio: number } | null };
 };
 
@@ -60,7 +60,7 @@ describe('get_cdg_semana · señales por sesión', () => {
     usar([log('a', 2, {})]);
     const r = JSON.parse(await getCdgSemana('ana@x.com'));
     expect(r.contexto).toMatchObject({ fatigaPost: 5, fatigaPostOrigen: 'cuestionario_semanal', sesionMasCansada: null });
-    expect(zona(r, 'deltoides').agujetas).toMatchObject({ valor: 1, origen: 'cuestionario_semanal' });
+    expect(zona(r, 'deltoides').agujetas).toMatchObject({ valor: 1, anterior: null });
     expect(zona(r, 'deltoides').propuestaSemanaQueViene.tono).toBe('acelerar');
   });
 
@@ -101,14 +101,5 @@ describe('get_cdg_semana · señales por sesión', () => {
     const r = JSON.parse(await getCdgSemana('ana@x.com'));
     expect(r.contexto.sesionesDuras).toMatchObject([{ cansancio: 9, zonasFrenadas: [] }]);
     expect(zona(r, 'deltoides').propuestaSemanaQueViene.tono).toBe('acelerar');
-  });
-
-  it('las agujetas contestadas a las 48 h mandan si son más recientes que el cuestionario', async () => {
-    usar([log('a', 4, { agujetas48h: { deltoides: 4 }, agujetas48hAt: `${addDays(HOY, -1)}T10:00:00.000Z` })]);
-    const r = JSON.parse(await getCdgSemana('ana@x.com'));
-    expect(zona(r, 'deltoides').agujetas).toMatchObject({ valor: 4, anterior: 1, origen: 'a_48h_de_la_sesion' });
-    expect(zona(r, 'deltoides').propuestaSemanaQueViene.tono).toBe('freno'); // no propensa con un 4
-    // El pectoral no se contestó a 48 h: sigue con el cuestionario.
-    expect(zona(r, 'pectoral').agujetas).toMatchObject({ valor: 1, origen: 'cuestionario_semanal' });
   });
 });

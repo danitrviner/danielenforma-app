@@ -3,8 +3,8 @@ import type { Questionnaire, QuestionnaireResponse, WorkoutLog } from '../types'
 import { avisosDeSesionesDuras, senalesActivas, SENALES_PARA_DESCARGA } from './descargaPorSenales';
 import { senalesDelProtocolo } from './revisionCoach';
 
-/* D6r y D7 (17-11-2026): el cansancio al salir y las agujetas a 48 h, apuntados
-   sesión a sesión, llegan a las señales de descarga. Lo anterior (R3, con el
+/* D6r (17-11-2026): el cansancio al salir, apuntado sesión a sesión, llega a
+   las señales de descarga. Lo anterior (R3, con el
    cuestionario semanal) se prueba en bloqueS2S7.test.ts y revisionCoach.test.ts. */
 
 describe('senalesActivas · cansancio por sesión', () => {
@@ -98,18 +98,5 @@ describe('senalesDelProtocolo · con lo apuntado en cada sesión', () => {
     expect(r.cansancioAlSalir).toBe(5);
     expect(r.sesionMasCansada).toBeUndefined();
     expect('sesionMasCansada' in r).toBe(false);
-  });
-
-  it('las agujetas a 48 h mandan si son más recientes, con la lectura previa venga de donde venga', () => {
-    const logs = [log('a', '2026-09-10', { agujetas48h: { gluteo: 4 }, agujetas48hAt: '2026-09-12T10:00:00.000Z' })];
-    const r = senalesDelProtocolo({ responses: [semana('2026-09-04', 5, 4)], questionnaires: [Q], hasta: '2026-09-14', logs });
-    expect(r.agujetasPorZona).toEqual([{ nombre: 'Glúteo (mayor y medio)', valor: 4, anterior: 4 }]);
-    expect(senalesActivas(r)).toEqual(['agujetas de 4 o más dos semanas seguidas en glúteo (mayor y medio)']);
-  });
-
-  it('lo contestado después de `hasta` no entra en una revisión de antes', () => {
-    const logs = [log('a', '2026-09-10', { agujetas48h: { gluteo: 5 }, agujetas48hAt: '2026-09-12T10:00:00.000Z' })];
-    const r = senalesDelProtocolo({ responses, questionnaires: [Q], hasta: '2026-09-11', logs });
-    expect(r.agujetasPorZona).toEqual([{ nombre: 'Glúteo (mayor y medio)', valor: 2, anterior: 4 }]);
   });
 });

@@ -4,7 +4,7 @@ import {
   PRIORIDADES, siguientePrioridad, esIgnorado, seriesQueCuentan, zonasConEstrella, tratoDelRestoPorZona,
   avisoDeEstrellasDelMeso, mesoAnteriorA, lunesDesde, inicioPorDefecto, diasDeParon, ejerciciosNuevos,
   propuestaDelMeso, hipotesisEnPantalla, hayCambiosSinGuardar, camposAlConfirmar, restoPorNivel, seriesDeZona,
-  hipotesisEnCurso, limpiarHipotesis,
+  hipotesisEnCurso, limpiarHipotesis, recomendacionDeMantener, bajarAMantener, seriesDeMantener,
 } from './hipotesisDelMeso';
 
 const grupos = (cfg: Partial<Record<MuscleGroup, [number, MuscleGroupConfig['priority']]>>) =>
@@ -46,12 +46,66 @@ describe('estrellas por zona', () => {
     expect(t.deltoides).toBe('como_estaba');
     expect(t.dorsal).toBe('como_estaba');
   });
-  it('avisa según el tipo: en especialización con dos estrellas excede; sin tipo, desarrollo', () => {
+  // Dani, 18-11-2026: «con 4 que avise, pero que me permita hacer lo que quiera».
+  it('avisa según el tipo: en especialización con dos estrellas; sin tipo, desarrollo, y ahí a partir de 4', () => {
     const g = grupos({ pecho: [12, 'alta'], dorsal: [12, 'alta'] });
-    expect(avisoDeEstrellasDelMeso({ groups: g, tipoBloque: 'especializacion' })?.nivel).toBe('excede');
+    expect(avisoDeEstrellasDelMeso({ groups: g, tipoBloque: 'especializacion' })?.nivel).toBe('aviso');
     expect(avisoDeEstrellasDelMeso({ groups: g })).toBeNull();
     const tres = grupos({ pecho: [12, 'alta'], dorsal: [12, 'alta'], cuadriceps: [10, 'alta'] });
-    expect(avisoDeEstrellasDelMeso({ groups: tres })?.nivel).toBe('aviso');
+    expect(avisoDeEstrellasDelMeso({ groups: tres })).toBeNull();
+    const cuatro = grupos({ pecho: [12, 'alta'], dorsal: [12, 'alta'], cuadriceps: [10, 'alta'], gluteo: [8, 'alta'] });
+    expect(avisoDeEstrellasDelMeso({ groups: cuatro })?.nivel).toBe('aviso');
+    // Los tres deltoides son UNA zona: cuatro grupos en alta pueden ser dos estrellas.
+    const deltoides = grupos({ pecho: [12, 'alta'], deltoide_ant: [4, 'alta'], deltoide_lat: [8, 'alta'], deltoide_post: [6, 'alta'] });
+    expect(avisoDeEstrellasDelMeso({ groups: deltoides })).toBeNull();
+  });
+});
+
+// Dani, 18-11-2026: «prefiero que me lo recomiende, no que lo haga ella».
+describe('el resto, a mantener: una recomendación', () => {
+  const g = grupos({ pecho: [12, 'alta'], dorsal: [14, 'media'], biceps: [5, 'media'], triceps: [6, 'baja'], gemelo: [0, 'ignorar'], core: [0, 'media'] });
+
+  it('la mitad de las series, enteras y hacia arriba', () => {
+    expect([14, 5, 1, 0].map(seriesDeMantener)).toEqual([7, 3, 1, 0]);
+  });
+
+  it('sale en especialización y en mantenimiento, con los grupos sin estrella que siguen en desarrollar', () => {
+    const r = recomendacionDeMantener({ groups: g, tipoBloque: 'especializacion' });
+    expect(r?.grupos).toEqual([{ grupo: 'dorsal', series: 14, mitad: 7 }, { grupo: 'biceps', series: 5, mitad: 3 }]);
+    expect(r?.texto).toBe('En especialización el resto suele ir a mantener (la mitad de lo que hacía).');
+    expect(r?.accion).toBe('Bajarlos a mantener');
+    const sinEstrellas = grupos({ pecho: [12, 'media'], dorsal: [14, 'media'] });
+    expect(recomendacionDeMantener({ groups: sinEstrellas, tipoBloque: 'mantenimiento' })?.texto).toContain('En mantenimiento todo suele ir a mantener');
+  });
+
+  it('no sale en desarrollo, en un primer bloque ni en un bloque sin tipo', () => {
+    expect(recomendacionDeMantener({ groups: g, tipoBloque: 'desarrollo' })).toBeNull();
+    expect(recomendacionDeMantener({ groups: g, tipoBloque: 'primer' })).toBeNull();
+    expect(recomendacionDeMantener({ groups: g })).toBeNull();
+  });
+
+  it('si el resto ya está en mantener o ignorado, no sale', () => {
+    const ya = grupos({ pecho: [12, 'alta'], dorsal: [7, 'baja'], biceps: [0, 'ignorar'], core: [0, 'media'] });
+    expect(recomendacionDeMantener({ groups: ya, tipoBloque: 'especializacion' })).toBeNull();
+  });
+
+  it('un grupo de una zona con estrella no baja aunque él no la lleve', () => {
+    const delt = grupos({ deltoide_lat: [10, 'alta'], deltoide_ant: [4, 'media'], dorsal: [12, 'media'] });
+    expect(recomendacionDeMantener({ groups: delt, tipoBloque: 'especializacion' })?.grupos.map(x => x.grupo)).toEqual(['dorsal']);
+  });
+
+  it('aceptarla baja esos grupos a mantener con la mitad y no toca los demás; después ya no sale', () => {
+    const despues = bajarAMantener({ groups: g, tipoBloque: 'especializacion' });
+    expect(despues.dorsal).toEqual({ series: 7, priority: 'baja' });
+    expect(despues.biceps).toEqual({ series: 3, priority: 'baja' });
+    expect(despues.pecho).toEqual(g.pecho);
+    expect(despues.triceps).toEqual(g.triceps);
+    expect(despues.gemelo).toEqual(g.gemelo);
+    expect(despues.core).toEqual(g.core);
+    expect(g.dorsal).toEqual({ series: 14, priority: 'media' }); // no muta lo que recibe
+    expect(recomendacionDeMantener({ groups: despues, tipoBloque: 'especializacion' })).toBeNull();
+    // Sin recomendación devuelve los mismos grupos.
+    expect(bajarAMantener({ groups: g, tipoBloque: 'desarrollo' })).toBe(g);
   });
 });
 

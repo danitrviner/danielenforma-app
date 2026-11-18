@@ -5,7 +5,6 @@ import { Icon, Button, Chip } from '../ui';
 import { MOTIVOS_DE_PARADA, type MotivoDeParada } from '../../utils/queTeParo';
 import { SetInput, filaASerie } from './setInput';
 import { mejorRmValido, rirMedioApuntado } from './cierreDeEjercicio';
-import { SelectorRapidoDeRir } from './ExerciseCard';
 import Confeti from './Confeti';
 import type { Logro, TipoDeLogro } from '../../utils/logrosDelEjercicio';
 import { rirCumplidoDeFilas } from '../../utils/sesionFuera';
@@ -49,12 +48,6 @@ interface Props {
   onMolestia?: (valor: number | undefined) => void;
   /** F3: una frase que pone en contexto el resultado cuando no hay nada que celebrar. */
   mensaje?: string;
-  /** D1c, variante `ultima`: se pregunta el RIR solo de la última serie.
-   *  `elegido` = la opción que ya contestó (ver `opcionRapidaDe`), si la hay. */
-  rirUltima?: { pautado: string | undefined; elegido: string | null; onElegir: (valor: string) => void };
-  /** Se está corrigiendo una sesión ya guardada: el RIR de sus series se da por
-   *  bueno salvo que el registro diga lo contrario (ver `rirApuntadoAlGuardar`). */
-  esCorreccion?: boolean;
   /** Sesión fuera de su gimnasio (utils/sesionFuera.ts): los kilos no cuentan,
    *  así que en vez del volumen se enseñan las series hechas a su RIR. */
   fuera?: boolean;
@@ -85,13 +78,13 @@ const CHIPS_RAPIDOS = ['Me sobró una rep', 'Molestia leve', 'Buena técnica', '
 export default function ExerciseCloseCard({
   we, ex, exSets, priorBestOrm, noteValue, onNoteChange, queParo, onQueParo, isLast, nextExerciseName,
   onNext, onReopen, sameDayCardio, logros, festejar, sinSiguiente, comprobacion, molestia, onMolestia, mensaje,
-  rirUltima, esCorreccion = false, fuera = false,
+  fuera = false,
 }: Props) {
   const idNota = React.useId();
   const doneSets = exSets.filter(s => s.done);
   const volumen = doneSets.reduce((sum, s) => sum + (parseFloat(s.weight) || 0) * (parseInt(s.repsDone) || 0), 0);
 
-  const series = doneSets.map(s => filaASerie(s, esCorreccion));
+  const series = doneSets.map(s => filaASerie(s));
   const mejor = mejorRmValido(series);
   const bestSet = mejor?.serie ?? null;
   const esRecord = mejor != null && priorBestOrm != null && mejor.rm > priorBestOrm;
@@ -180,18 +173,6 @@ export default function ExerciseCloseCard({
           <p className="font-mono text-title-m font-bold text-ink">{rirMedio != null ? rirMedio.toFixed(1).replace('.', ',') : '—'}</p>
         </div>
       </div>
-
-      {/* D1c, variante «última»: el RIR se pregunta solo aquí, y solo de la
-          última serie. Un toque; el pautado va resaltado hasta que contesta. */}
-      {rirUltima && (
-        <div className="mx-4 mt-4">
-          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide mb-2">¿Cuántas te quedaban en la última?</p>
-          <SelectorRapidoDeRir
-            pautado={rirUltima.pautado} elegido={rirUltima.elegido} onElegir={rirUltima.onElegir}
-            etiqueta="Repeticiones que te quedaban en la última serie"
-          />
-        </div>
-      )}
 
       {/* F4: el RIR, comprobado. Solo sale cuando una serie al máximo permite
           compararlo con lo que apuntó; el resto de días no hay nada que decir. */}

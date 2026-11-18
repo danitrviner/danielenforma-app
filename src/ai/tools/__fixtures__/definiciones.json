@@ -522,7 +522,7 @@
       "especializacion",
       "mantenimiento"
      ],
-     "description": "Tipo de bloque. \"primer\": el primero del atleta, para aprender los ejercicios y encontrar el punto de partida (8 semanas, sin grupos en \"alta\"). \"desarrollo\": sube el estímulo de las zonas prioritarias (hasta 3) y sostiene el resto. \"especializacion\": todo a UNA zona; el resto en \"baja\" para dejarle sitio. \"mantenimiento\": conservar lo ganado con la mitad de trabajo, sin prioridades. Ponlo siempre y di en rationale por qué ese."
+     "description": "Tipo de bloque. \"primer\": el primero del atleta, para aprender los ejercicios y encontrar el punto de partida (8 semanas, sin grupos en \"alta\"). \"desarrollo\": sube el estímulo de las zonas prioritarias (lo normal, hasta 3; con 4 o más la app avisa pero no lo impide) y sostiene el resto. \"especializacion\": todo a UNA zona; lo habitual es llevar el resto a \"baja\" para dejarle sitio, pero eso lo decide Dani: recomiéndalo en rationale, no lo des por hecho. \"mantenimiento\": conservar lo ganado con la mitad de trabajo, sin prioridades. Ponlo siempre y di en rationale por qué ese."
     },
     "semana1_reducida": {
      "type": "boolean",
@@ -724,7 +724,7 @@
       "especializacion",
       "mantenimiento"
      ],
-     "description": "Tipo de bloque. \"primer\": el primero del atleta, para aprender los ejercicios y encontrar el punto de partida (8 semanas, sin grupos en \"alta\"). \"desarrollo\": sube el estímulo de las zonas prioritarias (hasta 3) y sostiene el resto. \"especializacion\": todo a UNA zona; el resto en \"baja\" para dejarle sitio. \"mantenimiento\": conservar lo ganado con la mitad de trabajo, sin prioridades. Ponlo siempre y di en rationale por qué ese."
+     "description": "Tipo de bloque. \"primer\": el primero del atleta, para aprender los ejercicios y encontrar el punto de partida (8 semanas, sin grupos en \"alta\"). \"desarrollo\": sube el estímulo de las zonas prioritarias (lo normal, hasta 3; con 4 o más la app avisa pero no lo impide) y sostiene el resto. \"especializacion\": todo a UNA zona; lo habitual es llevar el resto a \"baja\" para dejarle sitio, pero eso lo decide Dani: recomiéndalo en rationale, no lo des por hecho. \"mantenimiento\": conservar lo ganado con la mitad de trabajo, sin prioridades. Ponlo siempre y di en rationale por qué ese."
     },
     "semana1_reducida": {
      "type": "boolean",

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { MUSCLE_ORDER, type Mesocycle, type MuscleGroup, type MuscleGroupConfig } from '../../types';
 import {
-  alCambiarSemana1, camposDeBloqueNuevo, conCifra, conLimite, conPalanca, elegirTipoDeBloque, fmtCifra, leerCifra,
+  alBajarAMantener, alCambiarSemana1, camposDeBloqueNuevo, conCifra, conLimite, conPalanca, elegirTipoDeBloque, fmtCifra, leerCifra,
   modoDeLaZona, notasDeLaFicha, pctDeSubida, pideNoPerder, referenciaDeProceso, resumenDelTipo, textoDeModo,
 } from './hipotesisDelEditor';
+import { tipoDeBloqueNuevo } from '../../utils/hipotesisDeBloque/tiposDeBloque';
 
 const grupos = (alta: MuscleGroup[] = []) => Object.fromEntries(
   MUSCLE_ORDER.map(g => [g, { series: 8, priority: alta.includes(g) ? 'alta' : 'media' }]),
@@ -14,13 +15,35 @@ const meso = (extra: Partial<Mesocycle> = {}): Mesocycle => ({
   groups: grupos(), ...extra,
 });
 
+/** Un bloque ya terminado: con él en la lista, el siguiente ya no es el primero del atleta. */
+const YA_TUVO_UNO = [meso({ id: 'm0', number: 1, startDate: '2026-06-01', weeks: 8 })];
+
 describe('bloque nuevo', () => {
-  it('nace como desarrollo de 12 semanas, con la semana 1 reducida apagada', () => {
+  // Dani, 18-11-2026: «no me parece mal que salga como primer bloque; de 8 semanas, aunque luego se pueda estirar».
+  it('el PRIMERO de un atleta nace como «primer bloque»: 8 semanas y semana 1 reducida', () => {
+    expect(tipoDeBloqueNuevo([])).toBe('primer');
     const c = camposDeBloqueNuevo([], '2026-11-17');
+    expect(c).toMatchObject({
+      weeks: 8, tipoBloque: 'primer', objective: 'Primer bloque', phaseType: 'hipertrofia',
+      cdgVelocidad: 'suave', semana1Reducida: true, startDate: '2026-11-17',
+    });
+  });
+
+  it('los demás nacen como desarrollo de 12 semanas, con la semana 1 reducida apagada', () => {
+    expect(tipoDeBloqueNuevo(YA_TUVO_UNO)).toBe('desarrollo');
+    const c = camposDeBloqueNuevo(YA_TUVO_UNO, '2026-11-17');
     expect(c).toMatchObject({
       weeks: 12, tipoBloque: 'desarrollo', objective: 'Desarrollo', phaseType: 'hipertrofia',
       cdgVelocidad: 'suave', semana1Reducida: false, startDate: '2026-11-17',
     });
+  });
+
+  it('el primer bloque es editable: se puede estirar o cambiar de tipo', () => {
+    const primero = meso({ ...camposDeBloqueNuevo([], '2026-11-17') });
+    // Estirado a 12 semanas a mano y luego pasado a desarrollo: las 12 se respetan.
+    const r = elegirTipoDeBloque({ ...primero, weeks: 12 }, 'desarrollo');
+    expect(r.cambios).toMatchObject({ tipoBloque: 'desarrollo', objective: 'Desarrollo', semana1Reducida: false });
+    expect(r.cambios.weeks).toBeUndefined();
   });
 
   it('empieza el lunes siguiente al final del bloque en curso', () => {
@@ -45,7 +68,7 @@ describe('elegir el tipo en la cabecera', () => {
   });
 
   it('entre tipos, lo que nadie tocó cambia con el tipo y el objetivo se deriva', () => {
-    const nuevo = meso({ ...camposDeBloqueNuevo([], '2026-11-17') });
+    const nuevo = meso({ ...camposDeBloqueNuevo(YA_TUVO_UNO, '2026-11-17') });
     const r = elegirTipoDeBloque(nuevo, 'primer');
     expect(r.cambios).toMatchObject({ tipoBloque: 'primer', weeks: 8, objective: 'Primer bloque' });
     expect(r.respetados).toEqual([]);
@@ -54,22 +77,50 @@ describe('elegir el tipo en la cabecera', () => {
   });
 
   it('lo que el coach tocó se respeta y se dice', () => {
-    const tocado = meso({ ...camposDeBloqueNuevo([], '2026-11-17'), weeks: 10 });
+    const tocado = meso({ ...camposDeBloqueNuevo(YA_TUVO_UNO, '2026-11-17'), weeks: 10 });
     const r = elegirTipoDeBloque(tocado, 'primer');
     expect(r.cambios.weeks).toBeUndefined();
     expect(r.respetados).toContain('las semanas');
   });
 
-  it('avisa si el tipo nuevo admite menos estrellas de las que hay', () => {
+  it('avisa, sin bloquear, si el tipo nuevo suele llevar menos estrellas de las que hay', () => {
     const conDos = meso({ tipoBloque: 'desarrollo', hipotesis: { pectoral: { palanca: 'volumen' }, deltoides: { palanca: 'volumen' } } });
-    expect(elegirTipoDeBloque(conDos, 'especializacion').avisos[0]).toContain('una sola estrella');
+    const r = elegirTipoDeBloque(conDos, 'especializacion');
+    expect(r.avisos[0]).toContain('una sola estrella');
+    expect(r.avisos[0]).toContain('puedes dejarlo así');
+    // El tipo se aplica igualmente y las hipótesis siguen ahí.
+    expect(r.cambios.tipoBloque).toBe('especializacion');
+    expect(r.cambios).not.toHaveProperty('hipotesis');
   });
 
-  it('el resumen del tipo dice estrellas, velocidad y semanas', () => {
-    expect(resumenDelTipo('desarrollo', { weeks: 12 })).toBe('hasta 3 estrellas en dinámico, el resto en estático · velocidad suave (~10 %) · 12 semanas');
+  it('el resumen del tipo dice estrellas, velocidad y semanas; el número es el del aviso, no un tope', () => {
+    expect(resumenDelTipo('desarrollo', { weeks: 12 }))
+      .toBe('las estrellas en dinámico y el resto en estático (con 4 o más avisa, sin bloquear) · velocidad suave (~10 %) · 12 semanas');
     expect(resumenDelTipo('especializacion', { weeks: 12, semana1Reducida: true }))
-      .toBe('una sola estrella en dinámico, el resto en estático · lo que no lleva estrella, a mantener · velocidad suave (~10 %) · 12 semanas · semana 1 reducida');
+      .toBe('la estrella en dinámico y el resto en estático (con 2 o más avisa, sin bloquear) · velocidad suave (~10 %) · 12 semanas · semana 1 reducida');
     expect(resumenDelTipo('primer', { weeks: 8 })).toContain('sin estrellas');
+    // Ya no promete lo que el tipo no hace: bajar el resto a mantener se recomienda aparte.
+    expect(resumenDelTipo('especializacion', { weeks: 12 })).not.toContain('a mantener');
+  });
+});
+
+// Dani, 18-11-2026: «prefiero que me lo recomiende, no que lo haga ella».
+describe('especialización: el resto no baja solo', () => {
+  it('elegir Especialización o Mantenimiento no toca los grupos', () => {
+    const bloque = meso({ tipoBloque: 'desarrollo', groups: grupos(['pecho']) });
+    expect(elegirTipoDeBloque(bloque, 'especializacion').cambios).not.toHaveProperty('groups');
+    expect(elegirTipoDeBloque(bloque, 'mantenimiento').cambios).not.toHaveProperty('groups');
+  });
+
+  it('«Bajarlos a mantener» escribe la mitad en mantener y devuelve lo que había, para el Deshacer', () => {
+    const bloque = meso({ tipoBloque: 'especializacion', groups: grupos(['pecho']) });
+    const r = alBajarAMantener(bloque)!;
+    expect(r.antes.groups).toBe(bloque.groups);
+    expect(r.cambios.groups.pecho).toEqual({ series: 8, priority: 'alta' });
+    expect(r.cambios.groups.dorsal).toEqual({ series: 4, priority: 'baja' });
+    // Deshacer es volver a escribir `antes`; y sobre lo ya bajado no hay nada que hacer.
+    expect(alBajarAMantener({ ...bloque, ...r.cambios })).toBeNull();
+    expect(alBajarAMantener(meso({ tipoBloque: 'desarrollo', groups: grupos(['pecho']) }))).toBeNull();
   });
 });
 

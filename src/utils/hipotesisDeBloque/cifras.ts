@@ -139,12 +139,21 @@ export const RM_ESPERADO_AVANZADO_PCT = { min: 2, max: 3 } as const;
  *  (Dani). Ignorarla = 0. */
 export const FRACCION_DE_MANTENER = 0.5;
 
-/** Estrellas (zonas prioritarias) a partir de las cuales la app avisa (Dani). */
-export const ESTRELLAS_CON_AVISO = 3;
-/** Máximo de estrellas en un bloque de desarrollo (Dani). */
-export const ESTRELLAS_DESARROLLO = 3;
-/** En especialización, una sola (Dani). */
-export const ESTRELLAS_ESPECIALIZACION = 1;
+/**
+ * Estrellas (zonas prioritarias) a partir de las cuales la app AVISA en un
+ * bloque de desarrollo (Dani, 18-11-2026: «con 4 que avise, pero que me
+ * permita hacer lo que quiera»). Con 3 o menos no dice nada. Es un aviso
+ * informativo, nunca un tope: ni el editor, ni la sugerencia de volumen, ni
+ * el asistente rechazan un bloque por sus estrellas. Hasta el 17-11 avisaba
+ * con 3 y con 4 lo daba por excedido.
+ */
+export const ESTRELLAS_CON_AVISO = 4;
+/** Las que lleva un bloque de desarrollo sin que la app diga nada (Dani). */
+export const ESTRELLAS_DESARROLLO = ESTRELLAS_CON_AVISO - 1;
+/** En especialización el aviso sale antes: con 2 o más (Dani, 18-11-2026). */
+export const ESTRELLAS_CON_AVISO_ESPECIALIZACION = 2;
+/** En especialización lo normal es una sola (Dani). */
+export const ESTRELLAS_ESPECIALIZACION = ESTRELLAS_CON_AVISO_ESPECIALIZACION - 1;
 
 /** Veces seguidas que una zona puede «no responder» antes de que la estrella
  *  pase a otra (Dani: a la segunda). */

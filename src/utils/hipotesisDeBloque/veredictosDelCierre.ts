@@ -17,6 +17,7 @@ import {
   type EstadoDeEjercicio, type EstadoDelBloque,
 } from './estadoDelBloqueAnterior.js';
 import { RM_RUIDO_PCT } from './cifras.js';
+import { estresArticularMedioDelBloque } from './estresArticular.js';
 import { ordenarBloques } from './historial.js';
 import { estrellasDe, nombreCortoDeZona } from './tiposDeBloque.js';
 import { franjaDeResultado, veredictosDelBloque, zonaPrincipalDeEjercicios, type VeredictoCalculado } from './veredicto.js';
@@ -58,6 +59,14 @@ export interface VeredictosDelCierre {
   adherenciaPct: number | null;
   /** Semanas del bloque en las que las agujetas frenaron cada zona con estrella. */
   semanasFrenadasPorZona: Partial<Record<ZonaIem, number>>;
+  /**
+   * Estrés articular medio por semana de cada articulación en el bloque
+   * (clave = su nombre en el motor CDG). Solo se calcula si hubo alguna
+   * molestia apuntada, que es cuando hace falta: de ahí sale el límite
+   * semanal que se sugiere para el bloque siguiente (Dani, 18-11-2026).
+   * Vacío sin motor o sin molestias.
+   */
+  estresArticularMedio: Record<string, number>;
   /** Los bloques ANTERIORES del atleta, del más antiguo al más reciente. */
   anteriores: Mesocycle[];
   /** Última sesión registrada del bloque (`YYYY-MM-DD`), si hay alguna. */
@@ -133,7 +142,9 @@ export function semanasFrenadasPorAgujetas(o: {
   for (const s of o.semanas) {
     if (!s.cuenta) continue;
     const finSemana = addDays(s.inicio, 6);
-    const lecturas = agujetasPorZona(k => historialDeSeñal(k, r, q).filter(p => p.date <= finSemana), o.logs, finSemana);
+    // Solo las del cuestionario: las agujetas a 48 h por sesión se retiraron
+    // de `cdg/agujetas.ts` el 18-11-2026 (`logs` se sigue aceptando, sin uso).
+    const lecturas = agujetasPorZona(k => historialDeSeñal(k, r, q).filter(p => p.date <= finSemana));
     for (const zona of o.zonas) {
       const l = lecturas[zona];
       if (!l || l.fecha < s.inicio) continue;
@@ -164,7 +175,7 @@ export function veredictosDelCierre(e: EntradaDeVeredictosDelCierre): Veredictos
   };
 
   if (!e.motor || !e.nombreCdgDe) {
-    return { ...base, veredictos: [], sinMotor: estrellas.length > 0, estado: null, zonaDe: {}, semanasFrenadasPorZona: {} };
+    return { ...base, veredictos: [], sinMotor: estrellas.length > 0, estado: null, zonaDe: {}, semanasFrenadasPorZona: {}, estresArticularMedio: {} };
   }
 
   // Con el bloque a medias solo se miran las semanas que ya han empezado (las
@@ -182,7 +193,13 @@ export function veredictosDelCierre(e: EntradaDeVeredictosDelCierre): Veredictos
     contexto: { adherenciaPct: e.adherenciaPct ?? null, ...(contexto ? { contexto } : {}) },
     semanasFrenadasPorZona,
   });
-  return { ...base, veredictos, sinMotor: false, estado, zonaDe, semanasFrenadasPorZona };
+  // Con alguna molestia apuntada en una zona con estrella, cuánto cargaron las
+  // articulaciones por semana: mismas semanas y mismo cálculo que el IEM de arriba.
+  const hayMolestia = veredictos.some(v => v.limites.molestia.pasado);
+  const estresArticularMedio = hayMolestia
+    ? estresArticularMedioDelBloque({ motor: e.motor, logs: delBloque, nombreCdgDe: e.nombreCdgDe, semanas: estado.semanas })
+    : {};
+  return { ...base, veredictos, sinMotor: false, estado, zonaDe, semanasFrenadasPorZona, estresArticularMedio };
 }
 
 // ── La ficha de cierre del método ────────────────────────────────────────────

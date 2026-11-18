@@ -140,8 +140,9 @@ export interface EntradaDeHipotesis {
   palancas?: Partial<Record<ZonaIem, PalancaDeHipotesis>>;
   /** Límite propio de alguna zona, en palabras del coach: se conserva. */
   limites?: Partial<Record<ZonaIem, string>>;
-  /** Qué hacer con zonas sin estrella. Sin decir nada, lo que marque el tipo
-   *  (mantenimiento y especialización: mantener; el resto: como estaban). */
+  /** Qué hacer con zonas sin estrella. Sin decir nada, siguen como estaban en
+   *  cualquier tipo de bloque: especialización y mantenimiento RECOMIENDAN
+   *  bajarlas a mantener, pero no lo hacen solos (Dani, 18-11-2026). */
   resto?: Partial<Record<ZonaIem, TratoDelResto>>;
   /** Nivel del atleta (`OnboardingData.experienceLevel`): a un principiante se le pide más RM. */
   nivel?: ExperienceLevel;
@@ -272,7 +273,9 @@ export function proponerHipotesis(e: EntradaDeHipotesis): PropuestaDeHipotesis {
   const iemDelResto: PropuestaDeHipotesis['iemDelResto'] = {};
   for (const z of ZONAS_IEM) {
     if (estrellas.includes(z.clave)) continue;
-    const trato = e.resto?.[z.clave] ?? preset.resto;
+    // Solo baja lo que el coach ha puesto en mantener o ignorar: el tipo de
+    // bloque lo recomienda, no lo decide (Dani, 18-11-2026).
+    const trato = e.resto?.[z.clave] ?? 'como_estaba';
     const final = e.anterior?.porZona[z.clave]?.iemFinal;
     if (trato === 'ignorar') iemDelResto[z.clave] = 0;
     else if (trato === 'mantener' && final != null && final > 0.005) iemDelResto[z.clave] = redondearIem(final * FRACCION_DE_MANTENER);

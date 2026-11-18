@@ -85,6 +85,25 @@ describe('veredictosDelCierre', () => {
     expect(r.veredictos[0].propuesta.subirTecho).toBe(false);
   });
 
+  // Dani, 18-11-2026: con molestia en una zona con estrella se vigila su estrés articular.
+  it('con molestia en la zona: el techo no sube y sale el estrés articular medio por semana; sin molestia no se calcula', () => {
+    const sin = veredictosDelCierre({
+      meso: meso(), mesocycles: [meso()], logs: semanas(8, 6), fin: FIN, hoy: addDays(FIN, 3), progresion: progresion(6), motor, nombreCdgDe,
+    });
+    expect(sin.estresArticularMedio).toEqual({});
+    const logs = [...semanas(8, 6).slice(0, 7), log(addDays(INICIO, 7 * 7 + 1), 'press', 4, { cansancioAlSalir: 6, molestia: 5 })];
+    const con = veredictosDelCierre({
+      meso: meso(), mesocycles: [meso()], logs, fin: FIN, hoy: addDays(FIN, 3), progresion: progresion(6), motor, nombreCdgDe,
+    });
+    expect(con.veredictos[0]).toMatchObject({ lectura: 'confirmada', limites: { molestia: { veces: 1, maxima: 5, pasado: true } }, propuesta: { subirTecho: false } });
+    expect(con.veredictos[0].propuesta.texto).toContain('Vigilar el estrés articular de hombro');
+    // Claves = articulaciones del motor; el press carga el hombro.
+    const claves = Object.keys(con.estresArticularMedio);
+    expect(claves.length).toBeGreaterThan(0);
+    expect(claves.every(a => motor.articulaciones.includes(a))).toBe(true);
+    expect(claves.some(a => a.startsWith('Hombro'))).toBe(true);
+  });
+
   it('con el bloque a medias no cuentan la semana en curso ni las que faltan', () => {
     const hoy = addDays(INICIO, 3 * 7 + 2);
     const r = veredictosDelCierre({
@@ -151,11 +170,6 @@ describe('semanasFrenadasPorAgujetas', () => {
       resp(addDays(INICIO, 27), { pecho: 5 }),  // S4 no cuenta (descarga)
     ];
     const r = semanasFrenadasPorAgujetas({ meso: meso(), zonas: ['pectoral'], semanas: semanasDelBloque, logs: [], responses, questionnaires: [Q] });
-    expect(r).toEqual({ pectoral: 1 });
-  });
-  it('también con las agujetas contestadas a las 48 h de la sesión', () => {
-    const logs = [log(addDays(INICIO, 8), 'press', 3, { agujetas48h: { pectoral: 5 }, agujetas48hAt: `${addDays(INICIO, 10)}T10:00:00.000Z` })];
-    const r = semanasFrenadasPorAgujetas({ meso: meso(), zonas: ['pectoral', 'dorsal'], semanas: semanasDelBloque, logs });
     expect(r).toEqual({ pectoral: 1 });
   });
 });

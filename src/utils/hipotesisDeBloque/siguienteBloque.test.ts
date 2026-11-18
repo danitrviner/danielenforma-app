@@ -179,6 +179,100 @@ describe('siguienteBloque', () => {
     expect(r.meso.cdgObjetivosIem?.pectoral).toBe(64);
   });
 
+  // Dani, 18-11-2026: confirmó el límite por molestias y pidió vigilar el índice articular de la zona.
+  describe('molestias en una zona con estrella', () => {
+    const conMolestia = v('pectoral', 'volumen', 'confirmada', {
+      propuesta: { subirTecho: false }, limites: { molestia: { veces: 2, maxima: 6, pasado: true } },
+    });
+    const ESTRES = { 'Hombro Articular': 6.27, 'Hombro Tendinoso Compresivo': 2.04, 'Hombro Tendinoso Tensil': 3.19 };
+
+    it('sin molestias no hay nada que vigilar y el bloque nace sin notas', () => {
+      expect(s.resumen.articular).toEqual({ vigilar: [], limites: [] });
+      expect(s.meso.notasSemana).toBeUndefined();
+    });
+
+    it('la propuesta dice qué articulaciones vigilar, sugiere su media semanal como límite y deja la línea escrita en el bloque nuevo', () => {
+      const r = siguienteBloque({ ...base, veredictos: [conMolestia, VEREDICTOS[1]], estresArticular: ESTRES });
+      expect(r.resumen.articular.vigilar.map(x => x.texto)).toEqual([
+        'Vigilar el estrés articular de hombro (articular, tendinoso compresivo y tendinoso tensil): molestia apuntada en pectoral (2 sesiones, hasta 6/10).',
+      ]);
+      expect(r.resumen.articular.limites).toEqual([
+        { articulacion: 'Hombro Articular', limite: 6.2 },
+        { articulacion: 'Hombro Tendinoso Compresivo', limite: 2 },
+        { articulacion: 'Hombro Tendinoso Tensil', limite: 3.1 },
+      ]);
+      // Nota privada del coach en la semana 1: lo único que no viene de aquel calendario.
+      expect(r.meso.notasSemana).toEqual({ 1: r.resumen.articular.vigilar[0].texto });
+      // Y el techo sigue sin subir, como antes.
+      expect(r.meso.hipotesis?.pectoral?.iemTecho).toBe(64);
+    });
+
+    it('sin el estrés calculado (sin motor CDG) queda solo la línea; y no se propone subir un límite que ya tiene', () => {
+      const soloLinea = siguienteBloque({ ...base, veredictos: [conMolestia, VEREDICTOS[1]] });
+      expect(soloLinea.resumen.articular.vigilar).toHaveLength(1);
+      expect(soloLinea.resumen.articular.limites).toEqual([]);
+      const yaLosTiene = siguienteBloque({
+        ...base, veredictos: [conMolestia, VEREDICTOS[1]], estresArticular: ESTRES,
+        limitesArticulares: { 'Hombro Articular': 3, 'Hombro Tendinoso Compresivo': 2, 'Hombro Tendinoso Tensil': 5 },
+      });
+      expect(yaLosTiene.resumen.articular.limites).toEqual([{ articulacion: 'Hombro Tendinoso Tensil', limite: 3.1, actual: 5 }]);
+    });
+
+    it('un veredicto ya FIRMADO (sin propuesta ni límites) relee las molestias de sus ejercicios: tampoco sube el techo', () => {
+      const firmados = [v('pectoral', 'volumen', 'confirmada'), VEREDICTOS[1]];
+      const ejercicios: EstadoDeEjercicio[] = [
+        { exerciseId: 'press', sesiones: 12, estancamiento: null, molestia: { veces: 3, maxima: null, ultima: '2026-11-10' } },
+        ...EJERCICIOS.slice(1),
+      ];
+      const zonaDe = { press: 'pectoral', elevaciones: 'deltoides', sentadilla: 'cuadriceps' } as const;
+      const r = siguienteBloque({ ...base, veredictos: firmados, ejercicios, zonaDe });
+      expect(r.meso.hipotesis?.pectoral).toMatchObject({ palanca: 'volumen', iemTecho: 64 });
+      expect(r.resumen.articular.vigilar.map(x => x.zona)).toEqual(['pectoral']);
+      expect(r.resumen.articular.vigilar[0].texto).toContain('molestia apuntada en pectoral (3 sesiones).');
+      // La molestia de la sentadilla es de una zona sin estrella: no entra aquí (va a candidatos a cambio).
+      // Sin molestia en la zona, el firmado sube como siempre…
+      expect(siguienteBloque({ ...base, veredictos: firmados, zonaDe }).meso.hipotesis?.pectoral?.iemTecho).toBe(70.4);
+      // …salvo que el cansancio medio del bloque pasara del límite.
+      expect(siguienteBloque({ ...base, veredictos: firmados, zonaDe, cansancioMedio: 8.2 }).meso.hipotesis?.pectoral?.iemTecho).toBe(64);
+      expect(siguienteBloque({ ...base, veredictos: firmados, zonaDe, cansancioMedio: 7.9 }).meso.hipotesis?.pectoral?.iemTecho).toBe(70.4);
+    });
+  });
+
+  it('copia la última semana normal del bloque y lo dice (ni la semana 1 ni una descarga)', () => {
+    // MESO: descarga en la 12, test en la 11 y puente en la 6 → la última normal es la 10.
+    expect(s.resumen.semanaDeReferencia).toBe(10);
+    expect(s.rutinas[0].exercises[0]).toMatchObject({ exerciseId: 'press', sets: 4, rir: 1 });
+  });
+
+  // Dani, 18-11-2026: «con 4 que avise, pero que me permita hacer lo que quiera».
+  it('cuatro estrellas: el bloque siguiente las hereda todas, con un aviso y sin recortar ninguna', () => {
+    const cuatro: Mesocycle = {
+      ...MESO,
+      hipotesis: { ...MESO.hipotesis, dorsal: { palanca: 'volumen' }, gluteo: { palanca: 'volumen' } },
+    };
+    const veredictos = [...VEREDICTOS, v('dorsal', 'volumen', 'confirmada'), v('gluteo', 'volumen', 'sin_probar')];
+    const r = siguienteBloque({ ...base, meso: cuatro, mesocycles: [ANTERIOR, cuatro], veredictos });
+    expect(r.resumen.estrellas).toEqual(['pectoral', 'dorsal', 'deltoides', 'gluteo']);
+    expect(Object.keys(r.meso.hipotesis ?? {}).sort()).toEqual(['deltoides', 'dorsal', 'gluteo', 'pectoral']);
+    expect(r.meso.objective).toBe('Desarrollo: pectoral, dorsal, deltoides y glúteo');
+    expect(r.resumen.avisos.join(' ')).toContain('Con 4 estrellas');
+    expect(r.resumen.avisos.join(' ')).toContain('puedes dejarlo así');
+    expect(resumenDeTipo(r.resumen)).toBe('Desarrollo · 4 estrellas (pectoral, dorsal, deltoides y glúteo)');
+  });
+
+  it('con cuatro estrellas, la que se suelta la recoge igualmente lo que pide el atleta', () => {
+    const hipotesis = { ...MESO.hipotesis, dorsal: { palanca: 'volumen' as const }, gluteo: { palanca: 'volumen' as const } };
+    const cuatro: Mesocycle = { ...MESO, hipotesis };
+    const previo: Mesocycle = {
+      ...cuatro, id: 'm1b', number: 1, startDate: '2026-06-01',
+      cierreDeHipotesis: { firmadoEn: '2026-08-23T10:00:00.000Z', veredictos: [v('deltoides', 'volumen', 'no_responde')] },
+    };
+    const veredictos = [...VEREDICTOS, v('dorsal', 'volumen', 'confirmada'), v('gluteo', 'volumen', 'confirmada')];
+    const r = siguienteBloque({ ...base, meso: cuatro, mesocycles: [previo, cuatro], veredictos, pideElAtleta: ['cuadriceps'] });
+    expect(r.resumen.estrellas).toEqual(['pectoral', 'dorsal', 'gluteo', 'cuadriceps']);
+    expect(r.resumen.rotacion[0]).toContain('la recoge cuádriceps');
+  });
+
   it('el proceso del bloque nuevo se pide sobre donde acabó este (64 + 5 %), no sobre su media (61)', () => {
     expect(s.meso.hipotesis?.pectoral).toMatchObject({ iemMedioAnterior: 61, iemFinalAnterior: 64, iemMedioObjetivo: 67.2, iemTecho: 70.4 });
   });

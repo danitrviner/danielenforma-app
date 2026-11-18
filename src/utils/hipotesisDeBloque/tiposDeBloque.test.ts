@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { clasificarFaseEntreno } from '../roadmapCalendar';
 import { ZONAS_IEM } from '../cdg/zonas';
+import { ESTRELLAS_CON_AVISO, ESTRELLAS_CON_AVISO_ESPECIALIZACION } from './cifras';
 import {
-  ORDEN_DE_TIPOS, TIPOS_DE_BLOQUE, aplicarTipoDeBloque, avisoDeEstrellas, enLista, estrellasDe, gruposDeLasZonas,
+  ORDEN_DE_TIPOS, SOLO_ES_UN_AVISO, TIPOS_DE_BLOQUE, aplicarTipoDeBloque, avisoDeEstrellas, enLista, estrellasDe, gruposDeLasZonas,
   modoPorZonaDe, objetivoDerivado, sugerirSemana1Reducida,
 } from './tiposDeBloque';
 
@@ -10,7 +11,8 @@ describe('los cuatro tipos de bloque', () => {
   it('cifras de cada preset: semanas, velocidad y estrellas', () => {
     expect(ORDEN_DE_TIPOS).toEqual(['primer', 'desarrollo', 'especializacion', 'mantenimiento']);
     expect(ORDEN_DE_TIPOS.map(t => TIPOS_DE_BLOQUE[t].semanas)).toEqual([8, 12, 12, 12]);
-    expect(ORDEN_DE_TIPOS.map(t => TIPOS_DE_BLOQUE[t].maxEstrellas)).toEqual([0, 3, 1, 0]);
+    // Las que lleva cada tipo SIN aviso; no es un tope (Dani, 18-11-2026).
+    expect(ORDEN_DE_TIPOS.map(t => TIPOS_DE_BLOQUE[t].estrellasSinAviso)).toEqual([0, 3, 1, 0]);
     expect(ORDEN_DE_TIPOS.every(t => TIPOS_DE_BLOQUE[t].velocidad === 'suave')).toBe(true);
     // Solo el primer bloque sugiere la semana 1 reducida (todos los ejercicios son nuevos).
     expect(ORDEN_DE_TIPOS.map(t => TIPOS_DE_BLOQUE[t].semana1Reducida)).toEqual([true, false, false, false]);
@@ -37,12 +39,14 @@ describe('los cuatro tipos de bloque', () => {
     expect(Object.values(modoPorZonaDe([])).every(m => m === 'estatico')).toBe(true);
   });
 
-  it('el `objective` derivado nombra las estrellas que caben en el tipo', () => {
+  it('el `objective` derivado nombra TODAS las estrellas: no se recortan a las del tipo (Dani, 18-11-2026)', () => {
     expect(objetivoDerivado('desarrollo', ['pectoral', 'deltoides'])).toBe('Desarrollo: pectoral y deltoides');
     expect(objetivoDerivado('especializacion', ['gluteo'])).toBe('Especialización: glúteo');
     expect(objetivoDerivado('desarrollo')).toBe('Desarrollo');
-    expect(objetivoDerivado('mantenimiento', ['pectoral'])).toBe('Mantenimiento');
-    expect(objetivoDerivado('primer', ['pectoral'])).toBe('Primer bloque');
+    expect(objetivoDerivado('mantenimiento')).toBe('Mantenimiento');
+    expect(objetivoDerivado('primer', ['pectoral'])).toBe('Primer bloque: pectoral');
+    expect(objetivoDerivado('especializacion', ['pectoral', 'gluteo'])).toBe('Especialización: pectoral y glúteo');
+    expect(objetivoDerivado('desarrollo', ['pectoral', 'dorsal', 'deltoides', 'gluteo'])).toBe('Desarrollo: pectoral, dorsal, deltoides y glúteo');
   });
 
   it('listas en español: «y», y «e» delante de i-', () => {
@@ -59,18 +63,29 @@ describe('los cuatro tipos de bloque', () => {
 });
 
 describe('aviso de estrellas', () => {
-  it('desarrollo: nada con 1-2, aviso a partir de 3 y excede con 4', () => {
-    expect(avisoDeEstrellas('desarrollo', 2)).toBeNull();
-    expect(avisoDeEstrellas('desarrollo', 3)?.nivel).toBe('aviso');
-    expect(avisoDeEstrellas('desarrollo', 4)?.nivel).toBe('excede');
+  // Dani, 18-11-2026: «con 4 que avise, pero que me permita hacer lo que quiera».
+  it('desarrollo: nada con 3 o menos; con 4 o más, un aviso informativo', () => {
+    expect(ESTRELLAS_CON_AVISO).toBe(4);
+    for (const n of [0, 1, 2, 3]) expect(avisoDeEstrellas('desarrollo', n)).toBeNull();
+    expect(avisoDeEstrellas('desarrollo', 4)).toMatchObject({ nivel: 'aviso' });
+    expect(avisoDeEstrellas('desarrollo', 4)?.texto).toContain('Con 4 estrellas');
+    expect(avisoDeEstrellas('desarrollo', 6)?.nivel).toBe('aviso');
   });
-  it('especialización: una sola; primer bloque y mantenimiento: ninguna', () => {
+  it('especialización: el aviso sale con 2 o más; primer bloque y mantenimiento, con cualquiera', () => {
+    expect(ESTRELLAS_CON_AVISO_ESPECIALIZACION).toBe(2);
     expect(avisoDeEstrellas('especializacion', 1)).toBeNull();
-    expect(avisoDeEstrellas('especializacion', 2)).toMatchObject({ nivel: 'excede' });
-    expect(avisoDeEstrellas('especializacion', 2)?.texto).toContain('una sola estrella');
-    expect(avisoDeEstrellas('primer', 1)?.nivel).toBe('excede');
-    expect(avisoDeEstrellas('mantenimiento', 1)?.texto).toContain('no lleva estrellas');
+    expect(avisoDeEstrellas('especializacion', 2)).toMatchObject({ nivel: 'aviso' });
+    expect(avisoDeEstrellas('especializacion', 2)?.texto).toContain('una sola estrella y hay 2');
+    expect(avisoDeEstrellas('primer', 1)?.nivel).toBe('aviso');
+    expect(avisoDeEstrellas('mantenimiento', 1)?.texto).toContain('no suele llevar estrellas');
     expect(avisoDeEstrellas('mantenimiento', 0)).toBeNull();
+  });
+  it('ningún aviso pide quitar estrellas: todos dicen que se puede dejar así', () => {
+    const avisos = [avisoDeEstrellas('desarrollo', 4), avisoDeEstrellas('especializacion', 3), avisoDeEstrellas('primer', 2), avisoDeEstrellas('mantenimiento', 1)];
+    for (const a of avisos) {
+      expect(a?.texto).toContain(SOLO_ES_UN_AVISO);
+      expect(a?.texto).not.toMatch(/elige cuál|Quítalas|admite hasta/);
+    }
   });
 });
 
@@ -151,12 +166,19 @@ describe('aplicarTipoDeBloque', () => {
     expect(r2.respetados).toContain('cdgModoPorZona');
   });
 
-  it('no borra hipótesis: si el tipo nuevo admite menos estrellas, avisa', () => {
+  it('no borra hipótesis: si el tipo nuevo suele llevar menos estrellas, avisa sin bloquear', () => {
     const meso = { tipoBloque: 'desarrollo' as const, hipotesis: { pectoral: { palanca: 'volumen' as const }, deltoides: { palanca: 'volumen' as const } } };
     const r = aplicarTipoDeBloque(meso, 'especializacion');
     expect(r.avisos).toHaveLength(1);
     expect(r.avisos[0]).toContain('una sola estrella y hay 2');
     expect(r.cambios).not.toHaveProperty('hipotesis');
+  });
+
+  it('no toca los grupos: bajar el resto a mantener es una recomendación aparte (Dani, 18-11-2026)', () => {
+    const groups = { pecho: { series: 12, priority: 'alta' as const }, dorsal: { series: 14, priority: 'media' as const } };
+    for (const tipo of ['especializacion', 'mantenimiento'] as const) {
+      expect(aplicarTipoDeBloque({ tipoBloque: 'desarrollo', groups } as never, tipo).cambios).not.toHaveProperty('groups');
+    }
   });
 
   it('aplicar el mismo tipo dos veces no cambia nada', () => {

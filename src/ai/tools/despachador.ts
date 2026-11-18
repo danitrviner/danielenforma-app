@@ -213,7 +213,7 @@ export async function executeTool(
           chatId,
           leerExpediente(input),
           input.reparto,
-          { tipoBloque: input.tipo_bloque, semana1Reducida: input.semana1_reducida },
+          { tipoBloque: input.tipo_bloque, semana1Reducida: input.semana1_reducida, semanasIndicadas: input.weeks !== undefined },
         );
         const parsed = JSON.parse(content) as { valid?: boolean };
         return { content, isError: parsed.valid === false };
@@ -251,7 +251,7 @@ export async function executeTool(
           typeof input.rationale === 'string' ? input.rationale : '',
           chatId,
           leerExpediente(input),
-          { tipoBloque: input.tipo_bloque, semana1Reducida: input.semana1_reducida },
+          { tipoBloque: input.tipo_bloque, semana1Reducida: input.semana1_reducida, semanasIndicadas: input.weeks !== undefined },
         );
         const parsed = JSON.parse(content) as { valid?: boolean };
         return { content, isError: parsed.valid === false };

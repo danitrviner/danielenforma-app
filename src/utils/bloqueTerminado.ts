@@ -22,8 +22,8 @@ import { progresionDelBloqueDelAtleta } from './progresoDelObjetivo.js';
      · su constancia: sesiones hechas de las que tocaban;
      · qué viene.
 
-   Sin marcas no se opina de fuerza: la lista sale vacía y la tarjeta enseña
-   solo la constancia. Y solo entran los cambios que el atleta ve a simple
+   Sin marcas no se opina de fuerza: la lista sale vacía y se enseña solo la
+   constancia. Y solo entran los cambios que el atleta ve a simple
    vista (más kilos, o los mismos con más repeticiones): un «menos peso pero
    mejor estimación» es verdad, pero aquí confunde.
 

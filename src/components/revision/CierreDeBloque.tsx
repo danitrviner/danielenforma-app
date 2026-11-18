@@ -5,11 +5,13 @@ import {
   QuestionnaireResponse, UserProfile, WorkoutAssignment, WorkoutLog,
 } from '../../types';
 import { auth } from '../../firebase';
-import { getDietCompletionLogsForAthlete, getDietsForAthlete, getNutritionProgram, getOnboarding } from '../../dbService';
+import { getDietCompletionLogsForAthlete, getDietsForAthlete, getNutritionProgram, getOnboarding, updateUserProfile } from '../../dbService';
 import { getWorkouts } from '../../db/training';
 import { useMotorCdg } from '../../hooks/useMotorCdg';
 import { mapaDeRespuesta } from '../../utils/hipotesisDeBloque/mapaDeRespuesta';
 import { siguienteBloque, zonasQuePide } from '../../utils/hipotesisDeBloque/siguienteBloque';
+import { limitesTrasAceptar, type LimiteArticularPropuesto } from '../../utils/hipotesisDeBloque/estresArticular';
+import { UMBRALES_CARGA_POR_DEFECTO } from '../../utils/cdg/integracion';
 import { getBodyMeasurementsForAthlete } from '../../db/bodyMeasurements';
 import { bodyMeasurementsForAthleteKey } from '../../hooks/useBodyMeasurements';
 import { appendDossierFacts, getDossier } from '../../db/dossier';
@@ -55,6 +57,12 @@ import ComparadorFotos from './ComparadorFotos';
    las firma y quedan en el mesociclo— y el bloque siguiente ya propuesto
    (cierre/CrearSiguienteBloque). Un bloque antiguo, sin hipótesis, no enseña
    ninguna de las dos.
+
+   18-11-2026 (Dani): con molestias en una zona con estrella, la propuesta del
+   bloque siguiente dice qué articulaciones vigilar y sugiere su límite
+   semanal. Aceptarlo escribe el límite del atleta
+   (`UserProfile.cdgUmbralesCarga.limitesArticulares`, el mismo que se edita
+   en Seguimiento); es lo único que este cierre escribe fuera del mesociclo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
@@ -338,12 +346,20 @@ export default function CierreDeBloque({
     () => mapaDeRespuesta(mesocycles.map(m => (m.id === meso.id && firmado ? { ...m, cierreDeHipotesis: firmado } : m))).frase,
     [mesocycles, meso.id, firmado],
   );
+  // Límites articulares del atleta: los de su perfil o, si se acaban de fijar
+  // aquí, esos (el perfil que llega por props no se vuelve a leer al momento).
+  const [limitesAqui, setLimitesAqui] = useState<{ email: string; limites: Record<string, number> } | null>(null);
+  const limitesArticulares = limitesAqui?.email === athlete.email ? limitesAqui.limites : athlete.cdgUmbralesCarga?.limitesArticulares;
   const propuesto = useMemo(() => {
     if (!hipotesis) return null;
     return siguienteBloque({
       meso, rutinas: rutinas.filter(w => w.mesocycleId === meso.id), mesocycles,
       veredictos: firmado?.veredictos ?? hipotesis.veredictos,
       estado: hipotesis.estado, ejercicios: hipotesis.ejercicios,
+      // Molestias y estrés articular: un veredicto firmado se guarda sin sus
+      // límites, así que se releen del bloque (ejercicio → zona y cansancio medio).
+      zonaDe: hipotesis.zonaDe, cansancioMedio: hipotesis.cansancioMedio,
+      estresArticular: hipotesis.estresArticularMedio, limitesArticulares,
       quitaria: evolucion.voz?.quitaria, pideElAtleta: zonasQuePide(evolucion.voz?.priorizar),
       // El parón se cuenta desde lo último que entrenó, sea de este bloque o de uno posterior.
       fin: cierre.fin, hoy, ultimaSesion: logs.reduce<string | null>((u, l) => (l.date <= hoy && (u == null || l.date > u) ? l.date : u), null),
@@ -352,7 +368,17 @@ export default function CierreDeBloque({
       // Para el objetivo del bloque siguiente: un principiante pide más y en déficit se pide no perder.
       nivel: alta?.experienceLevel, programaNutricion: programa,
     });
-  }, [hipotesis, meso, rutinas, mesocycles, firmado, evolucion.voz, cierre.fin, hoy, athlete.displayName, ejercicioDe, logs, alta?.experienceLevel, programa]);
+  }, [hipotesis, meso, rutinas, mesocycles, firmado, evolucion.voz, cierre.fin, hoy, athlete.displayName, ejercicioDe, logs, alta?.experienceLevel, programa, limitesArticulares]);
+
+  // Aceptar el límite sugerido: se suma a los que ya tenía (nunca sube uno) y
+  // se guarda con sus umbrales de carga, por el mismo camino que Seguimiento.
+  const fijarLimitesArticulares = async (propuestos: LimiteArticularPropuesto[]) => {
+    const limites = limitesTrasAceptar(limitesArticulares, propuestos);
+    const umbrales = athlete.cdgUmbralesCarga ?? UMBRALES_CARGA_POR_DEFECTO;
+    await updateUserProfile(athlete.userId, { cdgUmbralesCarga: { inferior: umbrales.inferior, superior: umbrales.superior, limitesArticulares: limites } });
+    setLimitesAqui({ email: athlete.email, limites });
+    void queryClient.invalidateQueries({ queryKey: ['userProfiles'] });
+  };
 
   const guardarVeredictos = async (nuevo: CierreDeHipotesis) => {
     setFirmando(true);
@@ -480,6 +506,7 @@ export default function CierreDeBloque({
               propuesto={propuesto}
               sinFirmar={!firmado}
               sinCifras={!hipotesis?.estado}
+              onFijarLimites={fijarLimitesArticulares}
             />
           )}
 

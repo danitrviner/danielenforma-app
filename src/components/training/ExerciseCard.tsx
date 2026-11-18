@@ -11,8 +11,7 @@ import { parseTargetReps } from '../../utils/warmup/WarmupEngine';
 import ExerciseVideoPlayer from '../ExerciseVideoPlayer';
 import {
   SetInput, RIR_OPCIONES, rirTexto, rirClaseColor, resumenRangosPautados, tieneReps, AVISO_SIN_REPS,
-  AVISO_SIN_RIR, RIR_RAPIDO, VARIANTE_RIR_POR_DEFECTO, apuntarRir, opcionRapidaDe, pasoAlMarcar, resumenRirPautado,
-  rirEnPantalla, textoDePautado, type VarianteRir,
+  apuntarRir, resumenRirPautado,
 } from './setInput';
 import { rirPautadoPorSerie } from '../../utils/setPrefill';
 import RestRing from './RestRing';
@@ -61,8 +60,6 @@ interface Props {
   esNuevo?: boolean;
   /** F7a: semana de descarga, puente o vuelta de parón. En ellas no se sugiere subir carga. */
   tipoSemana?: TipoDeSemana | null;
-  /** D1c: cómo se le pide el RIR (ver `VarianteRir` en setInput.ts). Sin ella, la de hoy. */
-  varianteRir?: VarianteRir;
   /** Sesión fuera de su gimnasio (utils/sesionFuera.ts): el peso llega vacío
    *  con una pista, sin lo de la última vez, sin subidas ni «día malo». */
   fuera?: boolean;
@@ -89,7 +86,7 @@ export default React.memo(function ExerciseCard({
   restTimer, onSkipRest, onAddRestSeconds,
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, cambios,
   onCerrarEjercicio, nuevaReferencia = false, onToggleReferencia, saltoKg, esNuevo = false, tipoSemana,
-  varianteRir = VARIANTE_RIR_POR_DEFECTO, fuera = false,
+  fuera = false,
 }: Props) {
   const expanded = expandSetGroups(we);
   // Fuera de su gimnasio los kilos de la última vez son de otras máquinas: no
@@ -114,11 +111,8 @@ export default React.memo(function ExerciseCard({
 
   const sugerencia = React.useMemo(() => sugerirCarga(we, previa, saltoKg, tipoSemana, fuera), [we, previa, saltoKg, tipoSemana, fuera]);
   const consejo = React.useMemo(() => consejoEnVivo(we, exSets, saltoKg, tipoSemana, fuera), [we, exSets, saltoKg, tipoSemana, fuera]);
-  // F23: una fila sin repeticiones no se marca; se avisa junto a ella. D1c:
-  // según la variante, tampoco sin elegir el RIR.
-  const { sinReps, sinRir, eligiendo, marcar, elegirRir } = useMarcarSerie(exSets, onMarkDone, { variante: varianteRir, onUpdateSet });
-  // Serie cuyas bajadas se cierran en cuanto elija el RIR («Completar serie + drop»).
-  const [completarTras, setCompletarTras] = React.useState<number | null>(null);
+  // F23: una fila sin repeticiones no se marca; se avisa junto a ella.
+  const { sinReps, marcar } = useMarcarSerie(exSets, onMarkDone);
   // F1: la primera serie ha salido claramente peor que la última vez. Con
   // referencia nueva no se compara (es otra tarea).
   const diaMalo = React.useMemo(
@@ -153,8 +147,9 @@ export default React.memo(function ExerciseCard({
   const segmentosSiguiente = siguiente >= 0 && seriesTecnica.includes(serieSiguiente) ? segmentosDe(serieSiguiente) : [];
   const principalSiguiente = siguiente >= 0 ? exSets[siguiente] : undefined;
   const puedeCompletar = !!principalSiguiente && !!principalSiguiente.weight && tieneReps(principalSiguiente);
-  const cerrarSegmentosDeLaSiguiente = () => {
-    if (!principalSiguiente) return;
+  const completarConTecnica = () => {
+    if (!principalSiguiente || !puedeCompletar) return;
+    onMarkDone(siguiente, true);
     const peso = parseFloat(principalSiguiente.weight) || 0;
     segmentosSiguiente.forEach((idx, k) => {
       const seg = exSets[idx];
@@ -165,24 +160,6 @@ export default React.memo(function ExerciseCard({
       }
       onMarkDone(idx, true);
     });
-  };
-  const completarConTecnica = () => {
-    if (!principalSiguiente || !puedeCompletar) return;
-    // D1c: si antes hay que elegir el RIR, la fila lo pide (selector o aviso)
-    // y las bajadas se cierran al elegirlo.
-    const paso = pasoAlMarcar(principalSiguiente, varianteRir);
-    if (paso !== 'marcar') {
-      setCompletarTras(paso === 'elegir_rir' ? siguiente : null);
-      if (eligiendo !== siguiente) marcar(siguiente, true);
-      return;
-    }
-    onMarkDone(siguiente, true);
-    cerrarSegmentosDeLaSiguiente();
-  };
-  const elegirRirDeFila = (sIdx: number, valor: string) => {
-    elegirRir(sIdx, valor);
-    if (completarTras === sIdx && sIdx === siguiente) cerrarSegmentosDeLaSiguiente();
-    setCompletarTras(null);
   };
 
   // Tamaño adaptativo del nombre — un nombre largo ("Elevación de rodilla
@@ -366,7 +343,6 @@ export default React.memo(function ExerciseCard({
           <NormalTable
             we={we} exSets={exSets.slice(0, nPrincipales)} expanded={expanded} warmup={warmup} prevEntry={previa}
             onUpdateSet={onUpdateSet} onMarkDone={marcar} sinReps={sinReps}
-            variante={varianteRir} pautados={pautados} sinRir={sinRir} eligiendo={eligiendo} onElegirRir={elegirRirDeFila}
             firstSetRowTargetRef={firstSetRowTargetRef} setEditorTargetRef={setEditorTargetRef}
           />
           {seriesTecnica.map(k => (esDropset ? (
@@ -412,7 +388,6 @@ export default React.memo(function ExerciseCard({
         <NormalTable
           we={we} exSets={exSets} expanded={expanded} warmup={warmup} prevEntry={previa}
           onUpdateSet={onUpdateSet} onMarkDone={marcar} sinReps={sinReps}
-          variante={varianteRir} pautados={pautados} sinRir={sinRir} eligiendo={eligiendo} onElegirRir={elegirRirDeFila}
           firstSetRowTargetRef={firstSetRowTargetRef} setEditorTargetRef={setEditorTargetRef}
         />
       )}
@@ -521,7 +496,6 @@ export function PieDeEjercicio({ we, ex, doneSets, noteValue, onNoteChange, nuev
 
 function NormalTable({
   we, exSets, expanded, warmup, prevEntry, onUpdateSet, onMarkDone, sinReps, firstSetRowTargetRef, setEditorTargetRef,
-  variante, pautados, sinRir, eligiendo, onElegirRir,
 }: {
   we: WorkoutExercise;
   exSets: SetInput[];
@@ -532,12 +506,6 @@ function NormalTable({
   onMarkDone: Props['onMarkDone'];
   /** F23: fila que se ha intentado marcar sin repeticiones (ver `useMarcarSerie`). */
   sinReps: number | null;
-  /** D1c: cómo se pide el RIR, el pautado de cada serie y en qué fila está el aviso o el selector. */
-  variante: VarianteRir;
-  pautados: readonly string[];
-  sinRir: number | null;
-  eligiendo: number | null;
-  onElegirRir: (sIdx: number, valor: string) => void;
   firstSetRowTargetRef?: Props['firstSetRowTargetRef'];
   setEditorTargetRef?: Props['setEditorTargetRef'];
 }) {
@@ -618,7 +586,7 @@ function NormalTable({
                 </td>
                 <td className="px-2 sm:px-3 py-2">
                   <SelectRir
-                    fila={setInput} variante={variante} pautado={pautados[sIdx]}
+                    fila={setInput}
                     onApuntar={valor => apuntarRir(onUpdateSet, sIdx, valor)}
                     ancho="w-14 sm:w-16"
                   />
@@ -634,18 +602,6 @@ function NormalTable({
               {sinReps === sIdx && (
                 <tr className="border-b border-hairline">
                   <td colSpan={5} className="px-2 sm:px-4 pb-2"><AvisoSinReps /></td>
-                </tr>
-              )}
-              {sinRir === sIdx && (
-                <tr className="border-b border-hairline">
-                  <td colSpan={5} className="px-2 sm:px-4 pb-2"><AvisoSinRir /></td>
-                </tr>
-              )}
-              {eligiendo === sIdx && (
-                <tr className="border-b border-hairline bg-accent/[.03]">
-                  <td colSpan={5} className="px-2 sm:px-4 pt-1 pb-3">
-                    <PreguntaDeRir pautado={pautados[sIdx]} onElegir={valor => onElegirRir(sIdx, valor)} />
-                  </td>
                 </tr>
               )}
               </React.Fragment>
@@ -854,46 +810,14 @@ export const TEXTO_EJERCICIO_NUEVO = 'Es la primera vez que haces este ejercicio
    recuerda cuál fue para pintar el aviso junto a ella; el aviso se va solo en
    cuanto el atleta las apunta. Desmarcar no se toca. Lo comparte la tarjeta de
    series alternas (ParejaAlternaCard). */
-/* D1c (17-11-2026): el mismo gancho decide también qué pasa con el RIR al
-   tocar «Hecha», según la variante (`pasoAlMarcar`): en `selector` abre el
-   selector rápido junto a la fila (`eligiendo`) y la serie se marca al elegir
-   (`elegirRir`); en `vacio` no la marca y avisa (`sinRir`). Sin `rir`, se
-   comporta como siempre. */
-export function useMarcarSerie(
-  exSets: readonly SetInput[], onMarkDone: Props['onMarkDone'],
-  rir?: { variante: VarianteRir; onUpdateSet: Props['onUpdateSet'] },
-) {
-  const variante = rir?.variante ?? VARIANTE_RIR_POR_DEFECTO;
+export function useMarcarSerie(exSets: readonly SetInput[], onMarkDone: Props['onMarkDone']) {
   const [fila, setFila] = React.useState<number | null>(null);
-  const [filaSinRir, setFilaSinRir] = React.useState<number | null>(null);
-  const [filaEligiendo, setFilaEligiendo] = React.useState<number | null>(null);
   const marcar = (sIdx: number, markingDone: boolean) => {
-    const paso = markingDone ? pasoAlMarcar(exSets[sIdx], variante) : 'marcar';
-    if (paso === 'sin_reps') { setFila(sIdx); setFilaEligiendo(null); return; }
+    if (markingDone && !tieneReps(exSets[sIdx])) { setFila(sIdx); return; }
     setFila(null);
-    // Volver a tocar «Hecha» con el selector abierto lo cierra.
-    if (paso === 'elegir_rir') { setFilaSinRir(null); setFilaEligiendo(f => (f === sIdx ? null : sIdx)); return; }
-    if (paso === 'falta_rir') { setFilaEligiendo(null); setFilaSinRir(sIdx); return; }
-    setFilaSinRir(null);
-    setFilaEligiendo(null);
     onMarkDone(sIdx, markingDone);
   };
-  /** Selector rápido: apunta el RIR elegido y da la serie por hecha. */
-  const elegirRir = (sIdx: number, valor: string) => {
-    if (rir) apuntarRir(rir.onUpdateSet, sIdx, valor);
-    setFilaEligiendo(null);
-    onMarkDone(sIdx, true);
-  };
-  const pendiente = (i: number | null) => (i != null && exSets[i] && !exSets[i].done ? i : null);
-  return {
-    sinReps: fila != null && !tieneReps(exSets[fila]) ? fila : null,
-    // Los dos se van solos: el aviso en cuanto elige el RIR, el selector si la
-    // serie se marca por otro lado o se queda sin repeticiones.
-    sinRir: variante === 'vacio' && pendiente(filaSinRir) != null && exSets[filaSinRir as number].rirApuntado !== true ? filaSinRir : null,
-    eligiendo: variante === 'selector' && pendiente(filaEligiendo) != null && tieneReps(exSets[filaEligiendo as number]) ? filaEligiendo : null,
-    marcar,
-    elegirRir,
-  };
+  return { sinReps: fila != null && !tieneReps(exSets[fila]) ? fila : null, marcar };
 }
 
 /** El aviso de F23, con la misma letra que el resto de avisos de la tarjeta. */
@@ -901,106 +825,26 @@ export function AvisoSinReps() {
   return <p role="status" className="mt-1.5 text-center font-sans text-caption text-warning">{AVISO_SIN_REPS}</p>;
 }
 
-/** Variante `vacio`: el aviso de que falta elegir el RIR. */
-export function AvisoSinRir() {
-  return <p role="status" className="mt-1.5 text-center font-sans text-caption text-warning">{AVISO_SIN_RIR}</p>;
-}
-
-/* La celda de RIR de la tabla: el desplegable de siempre. Cambiarlo cuenta
-   como RIR apuntado por el atleta. En la variante `vacio` llega sin valor y
-   con el pautado como pista gris debajo; la pista va fuera del flujo para que
-   la celda no crezca y el desplegable siga alineado con el peso y las reps.
+/* La celda de RIR de la tabla: el desplegable de siempre, que llega con el
+   pautado. Cambiarlo cuenta como RIR apuntado por el atleta (ver `apuntarRir`).
    La comparten la tarjeta normal y la de series alternas. */
-export function SelectRir({ fila, variante, pautado, onApuntar, ancho, etiqueta }: {
+export function SelectRir({ fila, onApuntar, ancho, etiqueta }: {
   fila: SetInput;
-  variante: VarianteRir;
-  /** RIR pautado de esta serie ('0'-'5' o 'fallo'). */
-  pautado: string | undefined;
   onApuntar: (valor: string) => void;
   /** Clases de ancho (las de la tabla en la que va). */
   ancho: string;
   etiqueta?: string;
 }) {
-  const valor = rirEnPantalla(fila, variante);
-  const vacio = valor === '';
-  const select = (
+  return (
     <select
-      value={valor}
+      value={fila.rir}
       onChange={e => onApuntar(e.target.value)}
       disabled={fila.done}
       aria-label={etiqueta}
-      className={`${ancho} appearance-none bg-field border border-control-line rounded-control px-1 sm:px-2 py-2 text-center font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${vacio ? 'text-ink-3' : rirClaseColor(valor)}`}
+      className={`${ancho} appearance-none bg-field border border-control-line rounded-control px-1 sm:px-2 py-2 text-center font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${rirClaseColor(fila.rir)}`}
     >
-      {vacio && <option value="" disabled>—</option>}
       {RIR_OPCIONES.map(v => <option key={v} value={v}>{rirTexto(v)}</option>)}
     </select>
-  );
-  if (variante !== 'vacio') return select;
-  const pista = vacio ? textoDePautado(pautado) : null;
-  return (
-    <span className="relative inline-flex align-middle">
-      {select}
-      {pista && (
-        <span className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 whitespace-nowrap font-sans text-[10px] leading-[10px] text-ink-3">
-          {pista}
-        </span>
-      )}
-    </span>
-  );
-}
-
-/* El selector rápido de RIR, de un toque: FALLO · 0 · 1 · 2 · 3 · 4+. El
-   pautado va resaltado con el borde (es el objetivo, y se sigue viendo); lo
-   que elige el atleta, relleno. Lo usan la variante `selector` (junto a la
-   fila) y la `ultima` (en la tarjeta de cierre). */
-export function SelectorRapidoDeRir({ pautado, elegido, onElegir, etiqueta }: {
-  pautado: string | undefined;
-  /** Opción ya elegida por el atleta (ver `opcionRapidaDe`), si la hay. */
-  elegido?: string | null;
-  onElegir: (valor: string) => void;
-  etiqueta: string;
-}) {
-  const delCoach = opcionRapidaDe(pautado);
-  return (
-    <div role="group" aria-label={etiqueta} className="flex gap-1.5">
-      {RIR_RAPIDO.map(o => {
-        const esElegido = elegido === o.valor;
-        const esPautado = !esElegido && delCoach === o.valor;
-        return (
-          <button
-            key={o.valor}
-            type="button"
-            onClick={() => onElegir(o.valor)}
-            aria-pressed={esElegido}
-            aria-label={o.valor === 'fallo' ? 'Al fallo' : `Me quedaban ${o.texto}`}
-            className={`h-11 min-w-0 rounded-control border font-mono transition-colors duration-(--duration-state) active:scale-95 ${
-              o.valor === 'fallo' ? 'flex-[1.7] text-label font-bold' : 'flex-1 text-title-s'
-            } ${
-              esElegido ? 'bg-accent border-accent text-on-accent'
-              : esPautado ? 'border-accent bg-accent/10 text-accent-ink'
-              : o.valor === 'fallo' ? 'border-hairline text-danger hover:border-danger/40'
-              : 'border-hairline text-ink-2 hover:border-accent-line hover:text-accent-ink'
-            }`}
-          >
-            {o.texto}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/** Variante `selector`: la pregunta que sale junto a la fila al tocar «Hecha». */
-export function PreguntaDeRir({ pautado, onElegir }: { pautado: string | undefined; onElegir: (valor: string) => void }) {
-  const pista = textoDePautado(pautado);
-  return (
-    <div>
-      <div className="mb-1.5 flex items-baseline justify-between gap-2">
-        <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">¿Cuántas te quedaban?</p>
-        {pista && <p className="font-sans text-caption text-ink-3">{pista}</p>}
-      </div>
-      <SelectorRapidoDeRir pautado={pautado} onElegir={onElegir} etiqueta="Repeticiones que te quedaban en esta serie" />
-    </div>
   );
 }
 

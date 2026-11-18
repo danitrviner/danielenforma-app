@@ -97,7 +97,7 @@ import TipoDeBloqueSelector from './mesociclo/TipoDeBloqueSelector';
 import Semana1Reducida from './mesociclo/Semana1Reducida';
 import FichasDeHipotesis from './mesociclo/FichasDeHipotesis';
 import { useHipotesisDelBloque } from './mesociclo/useHipotesisDelBloque';
-import { alCambiarSemana1, camposDeBloqueNuevo } from './mesociclo/hipotesisDelEditor';
+import { alBajarAMantener, alCambiarSemana1, camposDeBloqueNuevo } from './mesociclo/hipotesisDelEditor';
 import {
   conRampaSiEsNuevo, entradaYaPasada, etiquetaDeRampa, parcheConRampaAlDia, quitarRampaDeEntrada, registrosPrevistos, rutinaConRampa,
   sinRampaPendiente, tieneRampaPendiente, type RegistroParaRampa,
@@ -127,6 +127,18 @@ const DEFAULT_GROUPS = (): Record<MuscleGroup, MuscleGroupConfig> =>
 // ─── Generator types & helpers ────────────────────────────────────────────────
 
 type GeneratorPhase = 'idle' | 'loading' | 'preview' | 'assigning' | 'done' | 'error';
+
+/**
+ * Un paso del Deshacer del editor: un día de ejercicios como estaba, o campos
+ * del mesociclo como estaban. La pila vive en `MesocycleManager` y no en la
+ * pestaña Ejercicios (18-11-2026) para que también entre lo que se hace en la
+ * cabecera —«Bajarlos a mantener»— y para que no se pierda al cambiar de
+ * pestaña. `etiqueta` dice qué fue, para poder deshacerlo allí donde se hizo.
+ */
+type PasoDeDeshacer =
+  | { tipo: 'dia'; clave: string; prev: WorkoutExercise[] }
+  | { tipo: 'meso'; prev: Partial<Mesocycle>; etiqueta?: 'mantener' };
+type CambiarPila = (cambiar: (prev: PasoDeDeshacer[]) => PasoDeDeshacer[]) => void;
 
 
 const NOMBRE_DIA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -541,7 +553,11 @@ function MesoExercisesView({
   groups, loading, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise,
   onMoveExercise, onGoToDistribution, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
   onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones, coachId, landmarks, umbralesCarga,
+  pila, onPila,
 }: {
+  /** El Deshacer del editor (ver `PasoDeDeshacer`): lo guarda quien monta la pestaña. */
+  pila: PasoDeDeshacer[];
+  onPila: CambiarPila;
   /** Con él, la ficha de cada ejercicio deja corregir su clasificación muscular. */
   coachId?: string;
   onGuardarPlantilla?: () => void;
@@ -596,7 +612,7 @@ function MesoExercisesView({
     );
   }
 
-  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo, onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones, coachId, landmarks, umbralesCarga }} />;
+  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo, onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones, coachId, landmarks, umbralesCarga, pila, onPila }} />;
 }
 
 const PREFIJO_DIA = /^(Día\s*\d+\s*–\s*)(.*)$/i;
@@ -667,7 +683,10 @@ function MesoExercisesTabs({
   onAddExercise, onRemoveExercise,
   onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
   onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones, coachId, landmarks, umbralesCarga,
+  pila, onPila: setPila,
 }: {
+  pila: PasoDeDeshacer[];
+  onPila: CambiarPila;
   coachId?: string;
   onGuardarPlantilla?: () => void;
   revisiones?: Record<number, string[]>;
@@ -706,8 +725,8 @@ function MesoExercisesTabs({
   const { agujetas: agujetasCdg } = useAgujetasCdg(meso.athleteId);
   const [alcance, setAlcance] = useState<Alcance>('desde');
   const [comparar, setComparar] = useState<{ a: number; b: number } | null>(null);
-  type Deshacer = { tipo: 'dia'; clave: string; prev: WorkoutExercise[] } | { tipo: 'meso'; prev: Partial<Mesocycle> };
-  const [pila, setPila] = useState<Deshacer[]>([]);
+  // La pila del Deshacer llega de `MesocycleManager` (ver `PasoDeDeshacer`).
+  type Deshacer = PasoDeDeshacer;
   const claveGrupo = (g: MesoWorkoutGroup) => g.workoutIds.join('|');
   const baseDe = (g: MesoWorkoutGroup) => gruposBase.find(b => claveGrupo(b) === claveGrupo(g)) ?? g;
   const apuntar = (d: Deshacer) => setPila(prev => [...prev.slice(-19), d]);
@@ -1602,8 +1621,10 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup, onApplySuggestion
         <span className="text-ink-3">= Sin cambio</span>
         <span className="text-ink-2 ml-2">{LEYENDA_DE_PRIORIDADES}</span>
       </div>
-      {/* Cuántas estrellas caben depende del tipo de bloque (`avisoDeEstrellas`
-          del motor): cuenta zonas, no grupos — los tres deltoides son una. */}
+      {/* Aviso de estrellas (`avisoDeEstrellas` del motor): cuenta zonas, no
+          grupos — los tres deltoides son una. Es informativo y no impide nada
+          (Dani, 18-11-2026): con 4 o más en desarrollo, con 2 o más en
+          especialización. */}
       {avisoEstrellas && (
         <div className="flex items-start gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded-surface">
           <Icon name="warning" size="s" className="text-warning flex-shrink-0 mt-px" />
@@ -2315,6 +2336,34 @@ export default function MesocycleManager({
     scheduleAutoSave(updated);
   };
 
+  // ── Deshacer del editor ─────────────────────────────────────────────────────
+  // Una sola pila para todo el bloque: la usa la pestaña Ejercicios (su botón
+  // «Deshacer») y entra también lo que se acepta en la cabecera. Es del bloque
+  // que se está editando: al abrir otro, empieza vacía.
+  const [pilaDeshacer, setPilaDeshacer] = useState<PasoDeDeshacer[]>([]);
+  const idEnEdicion = editing?.id;
+  useEffect(() => { setPilaDeshacer([]); }, [idEnEdicion]);
+
+  // «Bajarlos a mantener» (Dani, 18-11-2026): en especialización y en
+  // mantenimiento la app RECOMIENDA bajar a mantener lo que no lleva estrella;
+  // no lo hace sola al elegir el tipo. Al aceptarlo se apunta cómo estaban los
+  // grupos, para el Deshacer.
+  const bajarElRestoAMantener = () => {
+    if (!editing) return;
+    const r = alBajarAMantener(editing);
+    if (!r) return;
+    setPilaDeshacer(prev => [...prev.slice(-19), { tipo: 'meso', prev: r.antes, etiqueta: 'mantener' }]);
+    actualizarMeso(r.cambios);
+  };
+  const ultimoPaso = pilaDeshacer[pilaDeshacer.length - 1];
+  /** Solo mientras sea lo último que se hizo: después manda el Deshacer de siempre. */
+  const deshacerMantener = ultimoPaso?.tipo === 'meso' && ultimoPaso.etiqueta === 'mantener'
+    ? () => { setPilaDeshacer(prev => prev.slice(0, -1)); actualizarMeso(ultimoPaso.prev); }
+    : undefined;
+  /** Los grupos se han tocado a mano después: deshacer aquello pisaría el cambio nuevo, así que deja de ofrecerse. */
+  const olvidarMantener = () => setPilaDeshacer(prev => (prev.some(p => p.tipo === 'meso' && p.etiqueta === 'mantener')
+    ? prev.filter(p => !(p.tipo === 'meso' && p.etiqueta === 'mantener')) : prev));
+
   const updateField = <K extends keyof Omit<Mesocycle, 'id' | 'groups' | 'distribution'>>(
     field: K, value: Mesocycle[K]
   ) => {
@@ -2348,6 +2397,7 @@ export default function MesocycleManager({
     };
     setEditing(updated);
     scheduleAutoSave(updated);
+    olvidarMantener();
   };
 
   // Aplica de golpe el resultado de "Sugerir volumen" (VolumeSuggestionSheet).
@@ -2364,6 +2414,7 @@ export default function MesocycleManager({
     const updated: Mesocycle = { ...editing, groups: nextGroups };
     setEditing(updated);
     scheduleAutoSave(updated);
+    olvidarMantener();
   };
 
   // La distribución de un mesociclo tal y como está ahora (reparto, calendario
@@ -3281,8 +3332,10 @@ export default function MesocycleManager({
       const created = await createMesocycle({
         athleteId:   selectedEmail,
         number:      siguienteNumeroDeBloque(mesocycles),
-        // Desarrollo de 12 semanas, desde el lunes siguiente al final del
-        // bloque en curso (17-11-2026; antes 4 semanas desde hoy y sin objetivo).
+        // El primer bloque de un atleta nace como «primer bloque» (8 semanas,
+        // semana 1 reducida; Dani, 18-11-2026) y los demás como desarrollo de
+        // 12, desde el lunes siguiente al final del bloque en curso
+        // (17-11-2026; antes 4 semanas desde hoy y sin objetivo). Todo editable.
         ...camposDeBloqueNuevo(mesocycles, hoyIsoLocal()),
         daysPerWeek: 4,
         groups:      DEFAULT_GROUPS(),
@@ -3968,7 +4021,12 @@ export default function MesocycleManager({
                 {/* Tipo de bloque (17-11-2026): sustituye al texto «Objetivo» y al
                     desplegable «Tipo (calendario)». `objective` y `phaseType`
                     se siguen escribiendo, derivados del tipo. */}
-                <TipoDeBloqueSelector meso={editing} onCambiar={actualizarMeso} />
+                <TipoDeBloqueSelector
+                  meso={editing}
+                  onCambiar={actualizarMeso}
+                  onBajarAMantener={bajarElRestoAMantener}
+                  onDeshacerMantener={deshacerMantener}
+                />
 
                 {/* Semana de descarga — el mismo dato que «Descarga» en la barra de
                     semanas de Ejercicios: mitad de series esa semana de ciclo
@@ -4601,6 +4659,8 @@ export default function MesocycleManager({
                   semanasDelCiclo={cicloDias / 7}
                   meso={editing}
                   onUpdateMeso={actualizarMeso}
+                  pila={pilaDeshacer}
+                  onPila={setPilaDeshacer}
                   vueltas={vueltasDelCiclo(editing.weeks, cicloDias)}
                   cicloDias={cicloDias}
                   logs={athleteLogs ?? (logsPending ? undefined : logsQuery)}

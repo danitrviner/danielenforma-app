@@ -804,7 +804,7 @@ export default function TrainingScreen({ profile, varianteSaltar }: TrainingScre
           // D1b: cada serie guarda si el RIR lo eligió el atleta (`rirApuntado`).
           // Fuera de su gimnasio, la marca va en cada serie (utils/sesionFuera.ts);
           // al apagarlo en una corrección, se quita.
-          sets: seriesHechas<SetInput>(playerSets[exIdx] || []).map(s => serieConFuera(filaASerie(s, !!editingLogId), fuera)),
+          sets: seriesHechas<SetInput>(playerSets[exIdx] || []).map(s => serieConFuera(filaASerie(s), fuera)),
           note: (exerciseNoteInputs[exIdx] || '').trim() || undefined,
           ...(referenciasNuevas[exIdx] ? { nuevaReferencia: true } : {}),
           ...(quePararon[exIdx] ? { queParo: quePararon[exIdx] } : {}),
