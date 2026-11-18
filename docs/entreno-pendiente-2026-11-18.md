@@ -69,3 +69,9 @@ Hechas (18-11): cierre por ejercicio en filas y saltar sesión con hoja; las otr
 - Las cifras del cierre de bloque, los récords y el historial de cargas cambian respecto a producción (RM con series de 3 a 15 repeticiones y RIR 2 o menos; mediana de 2 semanas contra 2).
 - El texto por defecto de la doctrina del asistente ha cambiado: una copia guardada por Dani saldrá como «atrasada».
 - Tras desplegar: pulsar el botón del punto 2 para poner al día su cuestionario de cierre.
+
+## Elección de la revisión semanal
+
+Hecha (18-11): versión B «Barras y citas» para «Tu semana de un vistazo» y «Lo que me contaste»; la A, borrada (7926ba71).
+
+Pendiente de Dani: notificaciones push de verdad (hoy solo la campana); adelantar las mediciones a la última revisión dentro del bloque cuando el bloque acaba antes del día de revisión; quitar el índice de disposición también de los cálculos internos (`revisionCoach.ts` ~505) y de lo que recibe el asistente (`ai/tools/lectores.ts` ~1275-1285).
