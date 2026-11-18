@@ -65,6 +65,13 @@ describe('bloqueQueSeCierra', () => {
     expect(bloqueQueSeCierra([m1, m2], '2026-10-07')?.id).toBe('m1');
     expect(bloqueQueSeCierra([m1, m2], '2026-10-12')?.id).toBe('m2');
   });
+  it('mandado a mitad de bloque (o con el cierre adelantado), el bloque en curso', () => {
+    // «Mandar ahora» o un cierre en la semana 2: el bloque anterior acabó hace
+    // menos de 14 días, pero el de ahora ya lleva más de una semana.
+    expect(bloqueQueSeCierra([m1, m2], '2026-10-14')?.id).toBe('m2');
+    const largo = { id: 'm3', startDate: '2026-11-02', weeks: 8 };
+    expect(bloqueQueSeCierra([m1, m2, largo], '2026-11-25')?.id).toBe('m3');
+  });
   it('sin bloques, o con el último ya lejos, ninguno', () => {
     expect(bloqueQueSeCierra([], hoy)).toBeNull();
     expect(bloqueQueSeCierra(undefined, hoy)).toBeNull();

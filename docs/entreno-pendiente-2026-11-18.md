@@ -24,15 +24,15 @@ Idea (de la formación de Heracles): al cerrar un bloque, ver si al atleta le va
 - Dónde se ve: sección «A qué responde» bajo los veredictos del cierre, la misma lista en «Qué le funciona» de la ficha del atleta, y como motivo en la propuesta del bloque siguiente (`proponerHipotesis` → `porQue`). El asistente lo recibe en `get_cierre_bloque` (`src/ai/tools/hipotesis.ts`).
 - Motor puro y probado en `src/utils/hipotesisDeBloque/respuestaADosis.ts`.
 
-## 2. Cuestionario de cierre: semana a elegir, mandar ahora y mover fechas
+**Hecho (18-11, sin commitear):** motor + pruebas; la foto sale en `veredictosDelCierre` (con y sin motor) y se guarda al firmar (`cierreParaGuardar`), o con «Guardar la foto del bloque» en bloques sin estrellas; sección «A qué responde» / «Punto de partida» en Cierre de bloque, resumen en «Qué le funciona», nota en la propuesta del bloque siguiente y en el `porQue` (también en el editor, vía historial); `hipotesisParaElAsistente` trae `indiciosDeRespuesta`. Banco: `/dev/revision-coach` (bloque en curso) y `?caso=primer`. **Falta:** `src/ai/tools/lectores.ts` ~1179 debe pasar `completo.hipotesis?.dosis` como 3.er argumento para que `get_cierre_bloque` vea la foto del bloque sin firmar; QA real; elegir variante visual (solo hay una).
 
-Dani quiere las dos cosas: elegir la semana al montar el bloque y un botón para mandarlo en el momento; y poder mover la fecha de un cuestionario de forma puntual.
+## 2. Cuestionario de cierre: semana a elegir, mandar ahora y mover fechas — HECHO (18-11, sin commitear)
 
-- Hoy: `QuestionnaireAssignment.schedule` (`src/types.ts` ~983-1101). El cierre va con «semana del bloque = última» (`src/data/questionnairePresets.ts` ~585); `semanaPedida` y `fechaSemanaDelBloque` en `src/utils/cicloRevision.ts` ~82-102. Solo admite primera, mitad o última. No existe ninguna función que edite una asignación ya creada. «Una vez» solo aparece el día exacto (`scheduleEngine.ts` ~80).
-- Semana a elegir: número de semana del bloque en el cierre, elegible al montar el bloque (campo en la cabecera del mesociclo o en la asignación; el coach ya puede escribir en las dos colecciones) y leído en `semanaPedida`, sin pasarse de las semanas del bloque.
-- Mandar ahora: botón en Cliente › Revisiones › Asignadas que deja ese cuestionario pendiente desde hoy durante 7 días.
-- Mover una fecha puntual: lista de excepciones en la asignación (`{ ocurrencia, nuevaFecha }`), aplicada en `isOverdue` y `hasAnsweredThisOccurrence` (`src/utils/questionnaireSchedule.ts`) y en `scheduleEngine.ts`, con su control en `AssignedQuestionnairesPanel.tsx`.
-- Preguntas nuevas en el cuestionario que Dani ya tiene: no hay mecanismo. Botón en el editor de cuestionarios «Añadir las preguntas nuevas del paquete oficial», que compara por `signalKey` (`meso_end.quitar`, `meso_end.echa_de_menos`), añade las que falten y conserva las respuestas antiguas. **Lo pulsa Dani después de desplegar**: la app en producción no sabe pintar la pregunta nueva.
+- Semana del cierre: `Mesocycle.semanaDeCierre` (semana de ciclo, como la descarga; sin valor = la última), campo «Cuestionario de cierre en la semana [N]» en la cabecera del bloque. Lo lee `semanaPedida` (`utils/cicloRevision.ts`) para TODAS las asignaciones «semana del bloque = última» (cierre y mediciones). Además `QSchedule.semanaNumero` (semana de calendario concreta en la asignación), ofrecida en `ScheduleFields` («Una semana de cada bloque»); `claveDeItem` ya la distingue.
+- Mandar ahora y Cambiar esta fecha: `QuestionnaireAssignment.excepciones` (`{ ocurrencia?, nuevaFecha }`), aplicadas en `isOverdue`, `hasAnsweredThisOccurrence`, `isDueToday`, `isUpcoming` y `proximaOcurrencia`; funciones puras en `utils/excepcionesCuestionario.ts` (con limpieza de las pasadas) y escritura en `db/questionnaires.ts` (`guardarExcepcionDeFecha`, `quitarExcepcionDeFecha`). Botones en Cliente › Revisiones › Asignadas, con «Deshacer». Sin reglas nuevas.
+- Preguntas nuevas del paquete oficial: `utils/preguntasDelPaquete.ts` + aviso «Añadirlas» en el editor de cuestionarios. **Lo pulsa Dani después de desplegar.**
+- Banco: `/dev/asignados` (Asignadas) y `/dev/asignados?pantalla=cuestionarios` (aviso).
+- Falta: QA real con sesión de coach y de atleta; las acciones de Asignadas van en una sola versión (sin variantes).
 
 ## 3. Revisión semanal del cliente, pensada para el vídeo
 

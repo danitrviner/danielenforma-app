@@ -6,10 +6,11 @@ import { PAQUETE_OFICIAL, presetPorTitulo, buildQuestionnaireFromPreset } from '
    crea los que falten. */
 
 /** Misma plantilla y mismo calendario: Mediciones va dos veces (fin y mitad de
- *  bloque) y no son duplicados. */
+ *  bloque) y no son duplicados; tampoco dos «semana del bloque» con semanas
+ *  concretas distintas (`semanaNumero`). */
 export function claveDeItem(i: { questionnaireId: string; schedule: QSchedule }): string {
   const s = i.schedule ?? { type: 'once' };
-  return `${i.questionnaireId}|${s.type}|${s.semanaDelBloque ?? ''}|${s.planWeek ?? ''}|${s.intervalDays ?? ''}|${s.minSemanasBloque ?? ''}`;
+  return `${i.questionnaireId}|${s.type}|${s.semanaDelBloque ?? ''}|${s.planWeek ?? ''}|${s.intervalDays ?? ''}|${s.minSemanasBloque ?? ''}|${s.semanaNumero ?? ''}`;
 }
 
 /** Lo que falta por aplicar de un paquete: con plantilla viva y que el atleta

@@ -1,4 +1,4 @@
-import { QSchedule, Mesocycle } from '../types.js';
+import { QSchedule, Mesocycle, ExcepcionDeFecha } from '../types.js';
 import { hoyIsoLocal } from './trainingWeek.js';
 import { fechasSemanaDelBloque, type PausaRevisiones } from './cicloRevision.js';
 
@@ -9,6 +9,18 @@ import { fechasSemanaDelBloque, type PausaRevisiones } from './cicloRevision.js'
 export interface Scheduled {
   schedule: QSchedule;
   startDate: string; // YYYY-MM-DD
+  /** Fechas movidas y ocasiones extra (ver utils/excepcionesCuestionario.ts). */
+  excepciones?: ExcepcionDeFecha[];
+}
+
+/* ── Excepciones (18-11-2026) ────────────────────────────────────────────────
+   Una ocasión movida deja de caer en su fecha original y cae en la nueva; una
+   extra («Mandar ahora») cae en la suya. Aquí solo se aplican al «toca hoy»,
+   «toca más adelante» y «próxima fecha»; el «pendiente» y el «ya contestado»
+   están en questionnaireSchedule.ts. */
+
+function fechasMovidas(a: Scheduled): Set<string> {
+  return new Set((a.excepciones ?? []).map(e => e.ocurrencia).filter((f): f is string => !!f));
 }
 
 // Contexto opcional para los disparadores por evento ('plan_week' y
@@ -71,6 +83,15 @@ export function mesocycleEndDate(m: Mesocycle, offsetDays: number): Date {
 
 export function isDueToday(a: Scheduled, ctx?: ScheduleContext): boolean {
   if (!a.schedule) return false;
+  if (a.excepciones?.length) {
+    const hoy = todayStr();
+    if (a.excepciones.some(e => e.nuevaFecha === hoy)) return true;
+    if (fechasMovidas(a).has(hoy)) return false;
+  }
+  return tocaHoySegunCadencia(a, ctx);
+}
+
+function tocaHoySegunCadencia(a: Scheduled, ctx?: ScheduleContext): boolean {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const start = startOfDay(a.startDate);
@@ -101,6 +122,7 @@ export function isDueToday(a: Scheduled, ctx?: ScheduleContext): boolean {
 export function isUpcoming(a: Scheduled, ctx?: ScheduleContext): boolean {
   if (!a.schedule) return false;
   if (isDueToday(a, ctx)) return false;
+  if ((a.excepciones ?? []).some(e => e.nuevaFecha > todayStr())) return true;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const start = startOfDay(a.startDate);
@@ -165,7 +187,9 @@ export function cadenciaEnCristiano(schedule: QSchedule): string {
         ? `${off} día${off === 1 ? '' : 's'} antes de acabar el bloque`
         : `${-off} día${-off === 1 ? '' : 's'} después de acabar el bloque`;
     }
-    case 'mesocycle_week': return `${SEMANA_BLOQUE_LARGA[schedule.semanaDelBloque ?? 'ultima']} de cada bloque`;
+    case 'mesocycle_week':
+      if (schedule.semanaNumero) return `La semana ${schedule.semanaNumero} de cada bloque`;
+      return `${SEMANA_BLOQUE_LARGA[schedule.semanaDelBloque ?? 'ultima']} de cada bloque`;
     default: return 'Sin fecha fija';
   }
 }
@@ -186,7 +210,9 @@ export function scheduleLabel(schedule: QSchedule): string {
       if (off === 0) return 'Fin de bloque';
       return off > 0 ? `${off}d antes de fin de bloque` : `${-off}d después de fin de bloque`;
     }
-    case 'mesocycle_week': return `${SEMANA_BLOQUE_CORTA[schedule.semanaDelBloque ?? 'ultima']} del bloque`;
+    case 'mesocycle_week':
+      if (schedule.semanaNumero) return `Semana ${schedule.semanaNumero} del bloque`;
+      return `${SEMANA_BLOQUE_CORTA[schedule.semanaDelBloque ?? 'ultima']} del bloque`;
     default:         return '—';
   }
 }
@@ -206,9 +232,57 @@ function ymdLocal(d: Date): string {
  *  Es lo que el coach necesita leer de un vistazo en la lista de asignados:
  *  `scheduleLabel` dice cada cuánto, esto dice CUÁNDO cae la siguiente. */
 export function proximaOcurrencia(a: Scheduled, ctx?: ScheduleContext): string | null {
+  return proximaOcurrenciaDetallada(a, ctx)?.fecha ?? null;
+}
+
+export interface ProximaOcurrencia {
+  fecha: string;
+  /** La fecha que daba la cadencia, si esta ocasión se ha movido. */
+  original?: string;
+  /** Ocasión extra («Mandar ahora»). */
+  extra?: boolean;
+}
+
+/** `proximaOcurrencia` contando las excepciones, y diciendo si la fecha es la
+ *  de la cadencia, una movida (con su fecha original) o una extra. Con
+ *  `sinExtras`, solo la próxima ocasión de la cadencia (movida o no): es la
+ *  que se puede cambiar de fecha. */
+export function proximaOcurrenciaDetallada(
+  a: Scheduled, ctx?: ScheduleContext, opciones?: { sinExtras?: boolean },
+): ProximaOcurrencia | null {
   if (!a.schedule) return null;
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
+  const excepciones = a.excepciones ?? [];
+  if (excepciones.length === 0) {
+    const f = proximaSegunCadencia(a, ctx, hoy);
+    return f ? { fecha: f } : null;
+  }
+  const hoyIso = ymdLocal(hoy);
+  const movidas = fechasMovidas(a);
+  // La siguiente de la cadencia que no se haya movido (como mucho un año de
+  // saltos: una cadencia diaria con todo movido no puede colgar la pantalla).
+  let normal: string | null = null;
+  let desde = hoy;
+  for (let i = 0; i < 366; i++) {
+    const f = proximaSegunCadencia(a, ctx, desde);
+    if (!f) break;
+    if (!movidas.has(f)) { normal = f; break; }
+    desde = startOfDay(f);
+    desde.setDate(desde.getDate() + 1);
+  }
+  const candidatas: ProximaOcurrencia[] = [
+    ...(normal ? [{ fecha: normal }] : []),
+    ...excepciones
+      .filter(e => e.nuevaFecha >= hoyIso && (e.ocurrencia || !opciones?.sinExtras))
+      .map(e => (e.ocurrencia ? { fecha: e.nuevaFecha, original: e.ocurrencia } : { fecha: e.nuevaFecha, extra: true })),
+  ];
+  candidatas.sort((x, y) => x.fecha.localeCompare(y.fecha));
+  return candidatas[0] ?? null;
+}
+
+/** La próxima fecha (`hoy` incluido) que da la cadencia, sin excepciones. */
+function proximaSegunCadencia(a: Scheduled, ctx: ScheduleContext | undefined, hoy: Date): string | null {
   const inicio = startOfDay(a.startDate);
   // Nunca antes del alta de la asignación: si empieza en el futuro, la primera
   // ocurrencia se busca desde ese día, no desde hoy.
@@ -233,7 +307,8 @@ export function proximaOcurrencia(a: Scheduled, ctx?: ScheduleContext): string |
       const n = a.schedule.intervalDays ?? 7;
       if (n <= 0) return null;
       if (desde <= inicio) return ymdLocal(inicio);
-      const diff = Math.floor((desde.getTime() - inicio.getTime()) / 86400000);
+      // round, no floor: con el cambio de hora un día no son 24 h justas.
+      const diff = Math.round((desde.getTime() - inicio.getTime()) / 86400000);
       const resto = diff % n;
       const cand = new Date(desde);
       if (resto !== 0) cand.setDate(cand.getDate() + (n - resto));
@@ -328,7 +403,9 @@ export function cadenciaParaTabla(schedule: QSchedule): string {
       return off > 0 ? `${off} d antes del fin` : `${-off} d tras el fin`;
     }
     case 'mesocycle_week': {
-      const base = `${SEMANA_BLOQUE_CORTA[schedule.semanaDelBloque ?? 'ultima']} del bloque`;
+      const base = schedule.semanaNumero
+        ? `Semana ${schedule.semanaNumero} del bloque`
+        : `${SEMANA_BLOQUE_CORTA[schedule.semanaDelBloque ?? 'ultima']} del bloque`;
       return schedule.minSemanasBloque ? `${base} (≥ ${schedule.minSemanasBloque} sem.)` : base;
     }
     default: return 'Sin fecha fija';

@@ -1,11 +1,13 @@
-import { db, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy } from '../firebase';
-import { Questionnaire, QuestionnaireAssignment, QuestionnairePack, QuestionnaireResponse } from '../types';
+import { db, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, deleteField, query, where, orderBy } from '../firebase';
+import { ExcepcionDeFecha, Questionnaire, QuestionnaireAssignment, QuestionnairePack, QuestionnaireResponse } from '../types';
 import {
   forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos,
   conTimeout, EscrituraEncolada, escribirEnLotes,
 } from './core';
 import { escribirLocal } from '../utils/almacenLocal';
-import { fijarAlViernes, fijarAlViernesAlCrear } from '../utils/questionnaireSchedule';
+import { fijarAlViernes, fijarAlViernesAlCrear, type ScheduleContext } from '../utils/questionnaireSchedule';
+import { conFechaMovida, limpiarExcepciones, sinExcepcion } from '../utils/excepcionesCuestionario';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 
 // ─── QUESTIONNAIRES ──────────────────────────────────────────────────────────
 // Collection: questionnaires  (owned by coach — ownerId == coachUid)
@@ -226,15 +228,19 @@ export async function assignQuestionnairesBatch(
 
 // Todo lo que se lee pasa por `fijarAlViernes`: lo asignado antes de la regla
 // del viernes (o configurado a otro día) se ve y se calcula como viernes.
+// Con una flecha y no `.map(fijarAlViernes)`: `map` pasa el ÍNDICE como
+// segundo argumento, que `fijarAlViernes` tomaba por el día de revisión (la
+// tercera asignación del atleta se anclaba a revisión en miércoles).
+const anclarAlLeer = (a: QuestionnaireAssignment) => fijarAlViernes(a);
 export async function getAssignmentsForAthlete(email: string): Promise<QuestionnaireAssignment[]> {
-  if (forceLocalOnly) return getLocalQAssignments().filter(a => a.athleteId === email).map(fijarAlViernes);
+  if (forceLocalOnly) return getLocalQAssignments().filter(a => a.athleteId === email).map(anclarAlLeer);
   try {
     const snap = await getDocs(query(collection(db, 'questionnaireAssignments'), where('athleteId', '==', email)));
-    return snap.docs.map(d => fijarAlViernes({ id: d.id, ...d.data() } as QuestionnaireAssignment));
+    return snap.docs.map(d => anclarAlLeer({ id: d.id, ...d.data() } as QuestionnaireAssignment));
   } catch (err) {
     console.warn('getAssignmentsForAthlete Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
-    return getLocalQAssignments().filter(a => a.athleteId === email).map(fijarAlViernes);
+    return getLocalQAssignments().filter(a => a.athleteId === email).map(anclarAlLeer);
   }
 }
 
@@ -251,6 +257,58 @@ export async function deactivateAssignment(id: string): Promise<void> {
     if (esFalloDePermisos(err)) throw err;
     escribirLocal(LOCAL_Q_ASSIGNMENTS, JSON.stringify(getLocalQAssignments().map(a => a.id === id ? { ...a, active: false } : a)));
   }
+}
+
+// ─── Fechas movidas y «Mandar ahora» (18-11-2026) ────────────────────────────
+// Las dos escriben la lista ENTERA de excepciones de la asignación, ya limpia
+// de las que no cambian nada (ver utils/excepcionesCuestionario.ts). La cadencia
+// no se toca. Devuelven la lista guardada para que la pantalla la pinte.
+
+async function escribirExcepciones(id: string, excepciones: ExcepcionDeFecha[]): Promise<void> {
+  const enLocal = () => escribirLocal(LOCAL_Q_ASSIGNMENTS, JSON.stringify(getLocalQAssignments().map(a => a.id === id
+    ? { ...a, excepciones: excepciones.length > 0 ? excepciones : undefined }
+    : a)));
+  if (forceLocalOnly) { enLocal(); return; }
+  try {
+    await updateDoc(doc(db, 'questionnaireAssignments', id), {
+      // Sin `undefined` dentro: Firestore no lo admite en un array.
+      excepciones: excepciones.length > 0
+        ? excepciones.map(e => (e.ocurrencia ? { ocurrencia: e.ocurrencia, nuevaFecha: e.nuevaFecha } : { nuevaFecha: e.nuevaFecha }))
+        : deleteField(),
+    });
+  } catch (err) {
+    console.warn('escribirExcepciones Firestore failed:', err);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
+    enLocal();
+  }
+}
+
+/**
+ * Guarda una excepción en una asignación: con `ocurrencia`, mueve esa ocasión
+ * a `nuevaFecha` («Cambiar esta fecha»; volver a la original la deshace); sin
+ * ella, añade una ocasión extra ese día («Mandar ahora»; una por día).
+ */
+export async function guardarExcepcionDeFecha(
+  a: QuestionnaireAssignment, excepcion: ExcepcionDeFecha, ctx?: ScheduleContext, hoy = hoyIsoLocal(),
+): Promise<ExcepcionDeFecha[]> {
+  const lista = excepcion.ocurrencia
+    ? conFechaMovida(a, excepcion.ocurrencia, excepcion.nuevaFecha, ctx, hoy)
+    : limpiarExcepciones(a, [
+        ...(a.excepciones ?? []).filter(e => e.ocurrencia || e.nuevaFecha !== excepcion.nuevaFecha),
+        { nuevaFecha: excepcion.nuevaFecha },
+      ], ctx, hoy);
+  await escribirExcepciones(a.id, lista);
+  return lista;
+}
+
+/** Quita una excepción (deshace un cambio de fecha o un «Mandar ahora»). */
+export async function quitarExcepcionDeFecha(
+  a: QuestionnaireAssignment, excepcion: ExcepcionDeFecha, ctx?: ScheduleContext, hoy = hoyIsoLocal(),
+): Promise<ExcepcionDeFecha[]> {
+  const lista = sinExcepcion(a, excepcion, ctx, hoy);
+  await escribirExcepciones(a.id, lista);
+  return lista;
 }
 
 // ─── QUESTIONNAIRE RESPONSES ─────────────────────────────────────────────────

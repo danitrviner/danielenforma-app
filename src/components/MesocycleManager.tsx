@@ -4066,6 +4066,32 @@ export default function MesocycleManager({
                   )}
                 </div>
 
+                {/* Semana del cuestionario de cierre (18-11-2026). Semana de
+                    ciclo, como la descarga. Sin tocar = la última (no se
+                    guarda nada, así sigue siéndolo si el bloque se alarga).
+                    La leen las asignaciones de «semana del bloque = última»
+                    (cierre y mediciones): `semanaPedida` en utils/cicloRevision.ts. */}
+                {(() => {
+                  const vueltasBloque = vueltasDelCiclo(editing.weeks, cicloDias);
+                  const semanaCierre = Math.min(vueltasBloque, editing.semanaDeCierre ?? vueltasBloque);
+                  return (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <label htmlFor="semana-cierre" className="font-sans text-caption text-ink-3">Cuestionario de cierre en la semana</label>
+                      <input
+                        id="semana-cierre"
+                        type="number" min={1} max={vueltasBloque}
+                        value={semanaCierre}
+                        onChange={e => {
+                          const n = Math.min(vueltasBloque, Math.max(1, parseInt(e.target.value) || 1));
+                          actualizarMeso({ semanaDeCierre: n === vueltasBloque ? undefined : n });
+                        }}
+                        className="w-14 bg-raised border border-control-line rounded-control px-2 py-1 text-center text-caption text-ink font-mono focus:outline-none focus:border-accent"
+                      />
+                      {semanaCierre === vueltasBloque && <span className="font-sans text-caption text-ink-3">(la última)</span>}
+                    </div>
+                  );
+                })()}
+
                 <Semana1Reducida
                   activa={!!editing.semana1Reducida}
                   motivo={modoPlantilla ? null : hipotesisDelBloque.sugerenciaSemana1.motivo}

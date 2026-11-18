@@ -992,6 +992,24 @@ export interface QSchedule {
   /** (for 'mesocycle_week') solo en bloques de al menos N semanas: «mitad» de
    *  las mediciones solo tiene sentido en bloques largos. */
   minSemanasBloque?: number;
+  /** (for 'mesocycle_week', 18-11-2026) una semana CONCRETA del bloque, de
+   *  calendario (1 = la primera). Manda sobre `semanaDelBloque` y nunca pasa
+   *  de las semanas que tenga cada bloque. Ver `semanaPedida` en
+   *  utils/cicloRevision.ts. */
+  semanaNumero?: number;
+}
+
+/**
+ * Una ocasión puntual de un cuestionario asignado que no cae cuando dice su
+ * cadencia (18-11-2026). Con `ocurrencia`, la ocasión de esa fecha (la que la
+ * cadencia daba, AAAA-MM-DD) se abre y caduca según `nuevaFecha`; las demás no
+ * cambian. Sin `ocurrencia` es una ocasión EXTRA («Mandar ahora»): pendiente
+ * desde `nuevaFecha` durante 7 días o hasta que la conteste. Ver
+ * utils/excepcionesCuestionario.ts.
+ */
+export interface ExcepcionDeFecha {
+  ocurrencia?: string;
+  nuevaFecha: string;
 }
 
 // Perímetros y peso corporal recogidos vía preguntas tipo 'metric'. El peso
@@ -1103,6 +1121,9 @@ export interface QuestionnaireAssignment {
   active: boolean;
   createdAt: string;
   overrides?: QuestionnaireOverrides;
+  /** Fechas movidas y ocasiones extra («Mandar ahora»). Las ya pasadas se
+   *  limpian al guardar (`limpiarExcepciones`). */
+  excepciones?: ExcepcionDeFecha[];
 }
 
 // Un paquete es un CONJUNTO de cuestionarios con su cadencia ya decidida:
@@ -2660,6 +2681,11 @@ export interface Mesocycle {
   /** Algo del cliente que cae esa semana de ciclo (vacaciones, viaje,
    *  competición). El atleta ve la nota en sus novedades. */
   eventosSemana?: Record<string, EventoDeSemana>;
+  /** Semana DE CICLO (la S de la barra de semanas, 1-indexada) en la que se
+   *  pide el cuestionario de cierre (18-11-2026). Sin valor = la última. Lo
+   *  leen las asignaciones de «semana del bloque = última» (cierre y
+   *  mediciones): ver `semanaPedida` en utils/cicloRevision.ts. */
+  semanaDeCierre?: number;
   /** Ejercicios que el coach eligió para planificar su progresión semana a
    *  semana («Planificar progresión»): `d<dayIndex>::<exerciseId>` (o
    *  `n:<nombre del día>::<exerciseId>` en rutinas sin `dayIndex`). Se

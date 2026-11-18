@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   diasDelCiclo, aperturaDelCiclo, caducidadDelCiclo, aperturaDesde, enPausa,
-  fechaSemanaDelBloque, esBloqueDeDescarga, normalizarDiaRevision,
+  fechaSemanaDelBloque, esBloqueDeDescarga, normalizarDiaRevision, semanaPedida, semanaDeCierreEnCalendario,
 } from './cicloRevision';
 import { isOverdue, hasAnsweredThisOccurrence } from './questionnaireSchedule';
 import type { Mesocycle, QuestionnaireAssignment, QuestionnaireResponse } from '../types';
@@ -109,5 +109,49 @@ describe('isOverdue con el día del atleta', () => {
     const r = { assignmentId: 'c1', submittedAt: '2026-10-17T09:00:00Z' } as QuestionnaireResponse;
     expect(hasAnsweredThisOccurrence(cierre, [r], ctx)).toBe(true);
     expect(hasAnsweredThisOccurrence(cierre, [{ ...r, submittedAt: '2026-10-10T09:00:00Z' }], ctx)).toBe(false);
+  });
+});
+
+describe('semana del cierre a elegir (18-11-2026)', () => {
+  const meso8 = { startDate: '2026-09-07', weeks: 8, objective: 'Hipertrofia' } as Mesocycle; // lunes
+  const ultima = { type: 'mesocycle_week' as const, semanaDelBloque: 'ultima' as const };
+
+  it('sin elegir, la última; con `semanaDeCierre`, esa semana', () => {
+    expect(semanaPedida(ultima, meso8)).toBe(8);
+    expect(semanaPedida(ultima, { ...meso8, semanaDeCierre: 6 })).toBe(6);
+    // Semana 6 = del 12 al 18 de octubre: se abre el viernes 16.
+    expect(fechaSemanaDelBloque(ultima, { ...meso8, semanaDeCierre: 6 })).toBe('2026-10-16');
+  });
+
+  it('nunca pasa de las vueltas del bloque', () => {
+    expect(semanaPedida(ultima, { ...meso8, semanaDeCierre: 12 })).toBe(8);
+    expect(semanaDeCierreEnCalendario({ ...meso8, semanaDeCierre: 0 })).toBeNull();
+  });
+
+  it('en ciclos de 14 días la semana elegida es una vuelta: la 3 acaba en la semana 6', () => {
+    const quincenal = { ...meso8, cycleDays: 14 };
+    expect(semanaPedida(ultima, { ...quincenal, semanaDeCierre: 3 })).toBe(6);
+    expect(semanaPedida(ultima, { ...quincenal, semanaDeCierre: 4 })).toBe(8);
+    expect(semanaPedida(ultima, { ...quincenal, semanaDeCierre: 9 })).toBe(8); // solo hay 4 vueltas
+  });
+
+  it('con el bloque entero manda su reparto; un ciclo de 10 días no se sale del bloque', () => {
+    const diez = { ...meso8, daysPerWeek: 4, cycleDays: 10 } as Mesocycle;
+    expect(semanaPedida(ultima, { ...diez, semanaDeCierre: 2 })).toBe(3); // días 10-19 → acaba en la semana 3
+    expect(semanaPedida(ultima, { ...diez, semanaDeCierre: 6 })).toBe(8); // 6 vueltas = 60 días > 56
+  });
+
+  it('el cierre elegido no mueve «primera» ni «mitad»', () => {
+    const m = { ...meso8, semanaDeCierre: 5 };
+    expect(semanaPedida({ type: 'mesocycle_week', semanaDelBloque: 'primera' }, m)).toBe(1);
+    expect(semanaPedida({ type: 'mesocycle_week', semanaDelBloque: 'mitad' }, m)).toBe(4);
+  });
+
+  it('una semana concreta en la asignación manda, con tope en las semanas del bloque', () => {
+    expect(semanaPedida({ type: 'mesocycle_week', semanaNumero: 3 }, { ...meso8, semanaDeCierre: 5 })).toBe(3);
+    expect(semanaPedida({ type: 'mesocycle_week', semanaNumero: 10 }, meso8)).toBe(8);
+    expect(fechaSemanaDelBloque({ type: 'mesocycle_week', semanaNumero: 3 }, meso8)).toBe('2026-09-25');
+    // La semana es de calendario aunque el bloque vaya en ciclos de 14 días.
+    expect(semanaPedida({ type: 'mesocycle_week', semanaNumero: 3 }, { ...meso8, cycleDays: 14 })).toBe(3);
   });
 });
