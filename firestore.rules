@@ -765,6 +765,41 @@ service cloud.firestore {
                                 && request.auth.token.email_verified == true);
     }
 
+    // ── pushTokens (notificaciones push, 18-11-2026) ─────────────────────────
+    // Un documento por dispositivo con su token de FCM. Lo escribe el propio
+    // atleta al pulsar «Activar» (y lo refresca al abrir la app); lo borra él
+    // al apagar los avisos o cerrar sesión. NADIE lo lee desde la app, ni el
+    // coach: el token es la dirección del móvil de esa persona. Solo lo lee el
+    // servidor (api/_lib/push.ts, SDK de administración, que salta las reglas)
+    // y también es él quien borra los que FCM da por muertos.
+    // El id empieza por el UID de quien escribe (`idDelTokenPush` en
+    // src/utils/avisosPush.ts): así nadie puede ocupar el id del dispositivo
+    // de otro. El email, en minúsculas y el del propio token verificado, es lo
+    // que usa el servidor para encontrar los móviles de un atleta.
+    match /pushTokens/{tokenId} {
+      allow read: if false;
+      allow create, update: if request.auth != null
+                            && request.auth.token.email_verified == true
+                            && tokenId.matches('^' + request.auth.uid + '_[a-z0-9]+$')
+                            && (resource == null || resource.data.userId == request.auth.uid)
+                            && request.resource.data.keys().hasOnly(['userId', 'email', 'token', 'plataforma', 'creadoEn', 'ultimoUso'])
+                            && request.resource.data.userId == request.auth.uid
+                            && request.resource.data.email == request.auth.token.email.lower()
+                            && request.resource.data.token is string
+                            && request.resource.data.token.size() > 0
+                            && request.resource.data.token.size() < 4096;
+      allow delete: if request.auth != null
+                    && (resource == null || resource.data.userId == request.auth.uid);
+    }
+
+    // ── pushEnviados (qué aviso ya sonó, 18-11-2026) ─────────────────────────
+    // Solo el servidor: api/_lib/push.ts reclama cada envío con `create` para
+    // que un aviso suene una vez aunque el cliente lo reescriba. Lleva el email
+    // para que el borrado de cuenta lo encuentre.
+    match /pushEnviados/{id} {
+      allow read, write: if false;
+    }
+
     // ── latidos (el resumen de la pasada nocturna) ───────────────────────────
     // Un documento por día, id = YYYY-MM-DD. Lo ESCRIBE el SDK de
     // administración desde `api/latido-diario.ts`, que se salta las reglas por

@@ -52,6 +52,9 @@ export const POR_CAMPO = [
   'contactos', 'mensajesCoach', 'planesSemanales',
   // El autopiloto: cada episodio lleva el email del atleta y su historial.
   'episodios',
+  // Notificaciones push (18-11-2026): sus tokens (userId + email) y la marca
+  // de qué aviso ya sonó (email).
+  'pushTokens', 'pushEnviados',
 ];
 
 const CAMPOS_PROPIETARIO = ['userId', 'athleteId', 'email'];

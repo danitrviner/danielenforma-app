@@ -36,6 +36,7 @@ import { useRetoDeLaSemana } from '../hooks/useRetoDeLaSemana';
 import AthleteReportsPanel from './AthleteReportsPanel';
 import PlanInPreparationCard from './PlanInPreparationCard';
 import RecordatorioGimnasioCard from '../features/gimnasio/RecordatorioGimnasioCard';
+import TarjetaActivarAvisos from './avisos/TarjetaActivarAvisos';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { Skeleton } from './ui';
 import { Icon, Button, PageHeader, ListRow } from './ui';
@@ -491,6 +492,11 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
           No entra en PendingTasksPanel porque ahí todas las filas tienen la
           misma forma y esta lleva barra de progreso y recuento propios. */}
       <RecordatorioGimnasioCard email={profile.email} />
+
+      {/* Notificaciones push (18-11): la única puerta para pedir el permiso.
+          Discreta y aquí abajo, con lo que está «a medio configurar»; no sale
+          sin clave VAPID, en la app nativa ni si ya están activas. */}
+      <TarjetaActivarAvisos uid={profile.userId} />
 
       <PendingTasksPanel profile={profile} checkins={checkins} onNavigate={onNavigate} />
 

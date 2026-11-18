@@ -253,12 +253,16 @@ export async function leerReto(
  */
 export async function crearAvisoUnaVez(
   db: Firestore, dedupeKey: string, data: Omit<AppNotification, 'id'>,
-): Promise<void> {
+): Promise<boolean> {
   try {
     await db.collection('notifications').doc(dedupeKey)
       .create(sinIndefinidos({ ...data, id: dedupeKey }));
+    // `true` solo si lo ha creado ESTA pasada: es lo que decide si se manda la
+    // notificación push (api/_lib/push.ts). Uno que ya estaba no vuelve a sonar.
+    return true;
   } catch {
     // Ya existía: es exactamente lo que se quería evitar, no un error.
+    return false;
   }
 }
 

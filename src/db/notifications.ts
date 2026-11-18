@@ -118,7 +118,17 @@ export async function createNotificationDeduped(
     await setDoc(doc(db, 'notifications', dedupeKey), stripUndefined(notif));
   } catch {
     // Silent — doc may already exist and caller may lack update permission (by design).
+    return;
   }
+
+  // 18-11-2026 · Notificación push en el acto. Si quien escribe es el coach y
+  // el aviso es para un atleta, el servidor se lo manda a su móvil
+  // (api/avisar.ts). Sin esperar y sin `import` en el arranque: no puede
+  // retrasar ni romper la acción del coach. Cada aviso suena una vez como
+  // mucho aunque esto se llame varias veces (api/_lib/push.ts).
+  void import('./avisarPush')
+    .then(m => m.pedirPushDelAviso(dedupeKey, data.recipientEmail))
+    .catch(() => {});
 }
 
 export async function markNotificationRead(id: string, recipientEmail: string): Promise<void> {

@@ -22,6 +22,8 @@ import MiGimnasioPanel from '../features/gimnasio/MiGimnasioPanel';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import FuentesCientificasSheet from './FuentesCientificasSheet';
 import NovedadesSheet from './NovedadesSheet';
+import AjusteAvisosDispositivo from './avisos/AjusteAvisosDispositivo';
+import { olvidarEsteDispositivo } from '../services/push/registroPush';
 import { NOVEDADES } from '../data/novedades';
 import { Avatar, Icon, Button, PageHeader, ListRow, Input, Sheet, SegmentedControl, Tabs } from './ui';
 import { leerPreferencia, guardarPreferencia, type PreferenciaDeTema } from '../utils/tema';
@@ -155,6 +157,10 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
     // línea en una consola que nadie mira. Ahora el cierre ocurre pase lo que
     // pase: es justo el caso en el que más falta hace.
     try {
+      // 18-11-2026: el token push de este móvil se borra ANTES de salir (después
+      // ya no hay sesión con la que borrarlo). Si no, en un móvil compartido le
+      // seguirían llegando los avisos de quien cerró sesión. Tope de 3 s.
+      await olvidarEsteDispositivo();
       await signOut(auth);
     } catch (err) {
       console.error('signOut falló; se cierra la sesión en local igualmente:', err);
@@ -268,6 +274,9 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
           </div>
           </>
         )}
+
+        {/* Notificaciones push del atleta (18-11-2026): por dispositivo. */}
+        {!isCoach && <AjusteAvisosDispositivo uid={profile.userId} />}
 
         <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">Soporte</p>
 

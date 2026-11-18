@@ -75,3 +75,23 @@ Hechas (18-11): cierre por ejercicio en filas y saltar sesión con hoja; las otr
 Hecha (18-11): versión B «Barras y citas» para «Tu semana de un vistazo» y «Lo que me contaste»; la A, borrada (7926ba71).
 
 Pendiente de Dani: notificaciones push de verdad (hoy solo la campana); adelantar las mediciones a la última revisión dentro del bloque cuando el bloque acaba antes del día de revisión; quitar el índice de disposición también de los cálculos internos (`revisionCoach.ts` ~505) y de lo que recibe el asistente (`ai/tools/lectores.ts` ~1275-1285).
+
+**Hecho (18-11, sin commitear): índice de disposición (IRP) quitado del todo.** Borrado `utils/readinessIndex.ts` (+ prueba); fuera de «Explorar los datos», de la tarjeta «Readiness» de Cliente › Cuerpo y de `get_progress_metrics`/`get_revision_engine` (ahora sueño, estrés y agujetas por separado, más el contexto). Donde decidía: estancamiento y caída usan contexto desfavorable del protocolo o cansancio al salir ≥ 8 (+ agujetas crónicas del grupo, como antes); la descarga cuenta «contexto desfavorable (motivos)» como señal. No se guardaba en Firestore. Falta QA real.
+
+## Notificaciones push (fase 1: web) — CONSTRUIDO 18-11, sin commitear ni desplegar
+
+Decisión de Dani (18-11): «notificaciones de verdad». Web push con Firebase Cloud Messaging para todo aviso de la campana dirigido al atleta.
+
+- **Cliente.** `src/services/push/registroPush.ts` (permiso, service worker, token, guardar/refrescar/borrar), `public/firebase-messaging-sw.js` (pinta la notificación; con la app delante no, salvo en iPhone; al tocarla abre `/<pestaña del aviso>`), tarjeta `src/components/avisos/TarjetaActivarAvisos.tsx` en Inicio (Activar / Ahora no 14 días; iPhone sin instalar → cómo añadirla a la pantalla de inicio; bloqueado → se dice una vez), interruptor `AjusteAvisosDispositivo.tsx` en Perfil › Ajustes («Avisos en este dispositivo»), y al cerrar sesión se borra el token del móvil. Lógica pura y probada: `src/utils/avisosPush.ts`.
+- **Servidor.** `api/_lib/push.ts` (`avisarPorPush`: tokens del atleta, una notificación aunque haya varios avisos, cada aviso suena una vez —`pushEnviados`—, borra tokens muertos). Lo usan `api/latido-diario.ts` (avisos nuevos de la noche) y la función nueva `api/avisar.ts` (solo el coach; la llama `createNotificationDeduped` tras crear cualquier aviso del coach para un atleta). Funciones en `api/`: 8 de 12.
+- **Reglas** (sin desplegar): colecciones nuevas `pushTokens` (escribe/borra solo su dueño, nadie lee) y `pushEnviados` (solo servidor). Probadas en el emulador (`npm run test:reglas`). Las dos, en el borrado de cuenta.
+- **Banco:** `/dev/avisos` (tarjeta y ajuste en todas sus caras; sin clave VAPID la tarjeta real no sale).
+
+**Para activarlo (Dani):**
+1. Consola de Firebase › proyecto `fleet-operator-z5xj8` › Configuración del proyecto › Cloud Messaging › Configuración web › Certificados push web › «Generar par de claves». Copiar la clave pública.
+2. Vercel › proyecto › Settings › Environment Variables: `VITE_FCM_VAPID_KEY` = esa clave (Production y Preview). `FIREBASE_SERVICE_ACCOUNT` ya está.
+3. Comprobar que la API «Firebase Cloud Messaging API (V1)» está habilitada (misma pantalla de Cloud Messaging). Si la clave de API del navegador tiene restricciones de API en Google Cloud, añadir «Firebase Installations API» y «FCM Registration API»; si no, «Activar» falla con un 403.
+4. Desplegar las reglas (`firebase deploy --only firestore:rules`, tras el diff con producción de siempre) y después la web (push a main → Vercel).
+5. Probar: Android/Chrome → abrir la web, Inicio › «Activar». iPhone (iOS 16.4+) → Safari › Compartir › «Añadir a pantalla de inicio», abrirla desde el icono, Inicio › «Activar». Luego, desde el coach, «Mandar ahora» un cuestionario a ese atleta: tiene que sonar en segundos.
+
+**Falta:** QA real en móvil Android e iPhone; fase 2 (app nativa: `@capacitor/push-notifications`, clave APNs, binario nuevo).

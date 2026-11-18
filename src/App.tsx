@@ -236,6 +236,11 @@ const AutopilotoHarness = import.meta.env.DEV
   ? pantallaDiferida('AutopilotoDevHarness', () => import('./components/AutopilotoDevHarness'))
   : null;
 
+// Banco de pruebas de las notificaciones push: tarjeta del Inicio y ajuste (ruta /dev/avisos).
+const AvisosPushHarness = import.meta.env.DEV
+  ? pantallaDiferida('AvisosPushDevHarness', () => import('./components/AvisosPushDevHarness'))
+  : null;
+
 /* La pantalla de espera de la app, con marca. Existe como componente y no como
    un `<div className="min-h-screen bg-bg" />` suelto por un motivo concreto:
    ese div es NEGRO Y VACÍO, exactamente igual que una app colgada. Cuando un
@@ -1082,6 +1087,14 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <RecetarioHarness />
+      </Suspense>
+    );
+  }
+
+  if (AvisosPushHarness && location.pathname === '/dev/avisos') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <AvisosPushHarness />
       </Suspense>
     );
   }
