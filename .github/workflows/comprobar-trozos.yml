@@ -1,0 +1,29 @@
+# Carga cada trozo de la web compilada en una página nueva. Detecta los ciclos
+# de importaciones que tumbaron producción el 18-11-2026 (PR #78) y que ni las
+# pruebas ni `vite build` ven. Ver scripts/comprobar-trozos.mjs.
+name: Comprobar trozos de la web
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: trozos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  trozos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run comprobar:trozos

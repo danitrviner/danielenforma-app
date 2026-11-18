@@ -1,6 +1,6 @@
 # Entreno · lo que queda por hacer (relevo del 18-11-2026)
 
-Para quien continúe este trabajo, sea quien sea. Rama `entreno-integrado` (este worktree, `~/en-forma-entreno`), en local y **sin subir**. Todo lo anterior está commiteado.
+Para quien continúe este trabajo, sea quien sea. **En producción desde el 18-11** (PR #78, 1650f572). Lo que sigue aquí como pendiente, pendiente sigue.
 
 ## Cómo trabajar aquí
 
