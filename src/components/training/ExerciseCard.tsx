@@ -1,4 +1,5 @@
 import { useRecienHecho } from '../../hooks/useRecienHecho';
+import { useTamanoQueCabe } from '../../hooks/useTamanoQueCabe';
 import React from 'react';
 import { Exercise, WorkoutEntryLog, WorkoutExercise } from '../../types';
 import { Icon, Button } from '../ui';
@@ -21,6 +22,9 @@ import { consejoDeDiaMalo } from '../../utils/diaMalo';
 import type { TipoDeSemana } from '../../utils/tipoDeSemana';
 import MarcaDeReferencia from './MarcaDeReferencia';
 import PistaDePesoFuera from './PistaDePesoFuera';
+
+/** Tamaños del nombre del ejercicio (px): ver useTamanoQueCabe. */
+const ESCALA_DEL_NOMBRE = { max: 24, min: 17, largo: 19 } as const;
 
 interface Props {
   we: WorkoutExercise;
@@ -162,12 +166,12 @@ export default React.memo(function ExerciseCard({
     });
   };
 
-  // Tamaño adaptativo del nombre — un nombre largo ("Elevación de rodilla
-  // alterno inclinado, de espalda") ocupaba media tarjeta a text-feature
-  // (26px); se reduce por escalones según longitud en vez de dejarlo fijo.
+  // Tamaño adaptativo del nombre (18-11-2026): el más grande con el que cabe
+  // en UNA línea, entre 17 y 24 px; si ni a 17 cabe, a 19 px y en varias
+  // líneas (hooks/useTamanoQueCabe.ts). Los escalones por longitud de abajo
+  // quedan para el primer pintado, antes de medir.
   const nombreEjercicio = ex?.name || we.exerciseId;
-  // En el móvil un escalón menos: el nombre largo ocupaba cuatro líneas y
-  // empujaba las series fuera de la pantalla.
+  const tituloAjustado = useTamanoQueCabe<HTMLDivElement, HTMLSpanElement>(nombreEjercicio, ESCALA_DEL_NOMBRE);
   const nombreSizeClass = nombreEjercicio.length > 40 ? 'text-title-s sm:text-title-m'
     : nombreEjercicio.length > 24 ? 'text-title-m sm:text-title-l'
     : 'text-title-l sm:text-feature';
@@ -177,9 +181,12 @@ export default React.memo(function ExerciseCard({
       {/* Cabecera */}
       <div ref={exIdx === 0 ? videoTargetRef : undefined} className="flex items-center gap-3 p-3 sm:p-4 bg-surface border-b border-hairline">
         <span className="hidden sm:block font-mono text-caption text-ink-3 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
-        <div className="flex-1 min-w-0">
-          <p className={`font-display ${nombreSizeClass} font-black uppercase tracking-tight text-ink flex items-center gap-2 flex-wrap`}>
-            {nombreEjercicio}
+        <div ref={tituloAjustado.ref} className="flex-1 min-w-0">
+          <p
+            className={`font-display ${nombreSizeClass} font-black uppercase tracking-tight text-ink flex items-center gap-2 flex-wrap`}
+            style={tituloAjustado.resultado ? { fontSize: `${tituloAjustado.resultado.px}px` } : undefined}
+          >
+            <span ref={tituloAjustado.medida} className={tituloAjustado.resultado?.unaLinea ? 'whitespace-nowrap' : undefined}>{nombreEjercicio}</span>
             {cambios && cambios.length > 0 && (
               <span className="inline-flex items-center text-caption font-mono font-bold uppercase px-2 rounded-control bg-accent text-on-accent flex-shrink-0">
                 Nuevo
