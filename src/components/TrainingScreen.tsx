@@ -40,6 +40,8 @@ import NovedadesDeSemana from './training/NovedadesDeSemana';
 import ObjetivoDelBloque from './training/ObjetivoDelBloque';
 import BloqueTerminado from './training/BloqueTerminado';
 import SesionesFueraDeLaSemana from './training/SesionesFueraDeLaSemana';
+import { gimnasioQueryKey } from '../features/gimnasio/MiGimnasioPanel';
+import { getEstadoCatalogo } from '../db/machines';
 import { progresoDelObjetivo, mesoDelObjetivo } from '../utils/progresoDelObjetivo';
 import { bloqueTerminadoParaElAtleta } from '../utils/bloqueTerminado';
 import { novedadesDeSemana, hayNovedades } from '../utils/semanasDelBloque';
@@ -49,8 +51,6 @@ import { SetInput, nuevaSerieVacia, tieneReps, seriesHechas, filaASerie } from '
 import { mejorRmValido } from './training/cierreDeEjercicio';
 import { AL_VOLVER_A_LA_APP } from '../utils/refrescoDelAtleta';
 import { dondePreguntar, esMotivoDeParada, type MotivoDeParada } from '../utils/queTeParo';
-import SaltarSesion, { SesionSaltada } from './SaltarSesion';
-import { ESPERA_PARA_DESHACER_MS, cambiosAlSaltar, sePuedeSaltar, type MotivoDeSalto } from '../utils/saltarSesion';
 
 interface TrainingScreenProps {
   profile: UserProfile;
@@ -236,11 +236,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // D5: molestia de 1 a 10 por ejercicio. D4: cómo llega hoy.
   const [molestias, setMolestias] = useState<(number | undefined)[]>([]);
   const [comoLlega, setComoLlega] = useState<WorkoutLog['comoLlega']>(undefined);
-  // «Hoy entreno fuera de mi gimnasio» (utils/sesionFuera.ts). Se cambia en
-  // toda la sesión; `prerrellenosRef` guarda la tabla de los dos modos para
-  // pasar de uno a otro las filas que el atleta aún no ha tocado.
+  // La nota de 1 a 10, si la sesión la pregunta así (ver PreguntaComoLlega.tsx).
+  const [comoLlegaNota, setComoLlegaNota] = useState<number | undefined>(undefined);
+  // Sesión fuera de su gimnasio (utils/sesionFuera.ts). Desde el 18-11 no se
+  // cambia dentro de la sesión: la decide el panel de la semana, en Rutinas.
   const [fuera, setFuera] = useState(false);
-  const prerrellenosRef = useRef<{ normal: SetInput[][]; fuera: SetInput[][] } | null>(null);
   // D6: cansancio al salir (0-10). Se contesta en el diálogo de fin de sesión,
   // con el entreno ya guardado: `logGuardadoId` es el registro al que se añade.
   const [cansancioAlSalir, setCansancioAlSalir] = useState<number | undefined>(undefined);
@@ -332,11 +332,19 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // que el atleta marcó para hacer fuera de su gimnasio, en su plan semanal.
   // Clave propia y no la de Mi semana: allí se guarda el plan sin este campo
   // y su caché lo pisaría (utils/sesionFuera.ts, db/planSemanal.ts).
+  // Solo si el atleta lo ha activado en Perfil › Mi gimnasio (18-11-2026).
+  // Misma clave que Mi gimnasio y el aviso de Hoy: no añade una lectura.
+  const { data: estadoGimnasio } = useQuery({
+    queryKey: gimnasioQueryKey(profile.email),
+    queryFn: () => getEstadoCatalogo(profile.email),
+  });
+  const fueraActivo = estadoGimnasio?.gimnasio.entrenoFuera === true;
   const lunesDeHoy = getWeekStart(today);
   const planFueraKey = ['sesionesFuera', profile.email, lunesDeHoy] as const;
   const { data: planDeLaSemana } = useQuery({
     queryKey: planFueraKey,
     queryFn: () => getPlanSemanal(profile.email, lunesDeHoy),
+    enabled: fueraActivo,
     ...AL_VOLVER_A_LA_APP,
   });
   const sesionesFueraMarcadas = planDeLaSemana?.sesionesFuera ?? [];
@@ -455,8 +463,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     // carga subida; se repite lo de la última vez.
     const semana = meso ? mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso)) : 0;
     const prerrellenadas = prefillWorkoutSets(wo, entries, id => saltoReal(logs, id), tipoDeSemana(meso, semana));
-    // Fuera de su gimnasio: peso vacío y el objetivo del rango. Si el atleta
-    // la marcó en el panel de la semana, llega encendido.
+    // Fuera de su gimnasio: peso vacío y el objetivo del rango. Lo es si el
+    // atleta la marcó en el panel de la semana (con el ajuste activado).
     const prerrellenadasFuera = prefillWorkoutSets(wo, entries, id => saltoReal(logs, id), tipoDeSemana(meso, semana), true);
     const marcadaEnElPanel = sesionesFueraMarcadas.includes(assignment.id);
 
@@ -503,18 +511,28 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
     setActiveAssignment(assignment);
     setActiveWorkout(wo);
-    // Lo que el atleta hizo en la sesión (el borrador) manda sobre el panel.
-    const arrancaFuera = fueraAlAbrir(borrador?.fuera, marcadaEnElPanel);
-    prerrellenosRef.current = { normal: prerrellenadas, fuera: prerrellenadasFuera };
+    // El panel de la semana manda. Si entre una apertura y otra la marcó o la
+    // desmarcó, las filas del borrador que no ha tocado pasan al otro modo.
+    const arrancaFuera = fueraAlAbrir(fueraActivo, marcadaEnElPanel);
     setFuera(arrancaFuera);
-    setPlayerSets(borrador?.playerSets ?? (arrancaFuera ? prerrellenadasFuera : prerrellenadas));
+    const fueraDelBorrador = borrador?.fuera === true;
+    setPlayerSets(borrador?.playerSets
+      ? (fueraDelBorrador === arrancaFuera
+          ? borrador.playerSets
+          : cambiarPrerrelleno(borrador.playerSets,
+              fueraDelBorrador ? prerrellenadasFuera : prerrellenadas,
+              arrancaFuera ? prerrellenadasFuera : prerrellenadas))
+      : (arrancaFuera ? prerrellenadasFuera : prerrellenadas));
     setExerciseNoteInputs(borrador?.exerciseNoteInputs
       ?? wo.exercises.slice().sort((a, b) => a.order - b.order).map(() => ''));
     setReferenciasNuevas(Array.isArray(borrador?.referenciasNuevas) ? borrador.referenciasNuevas : []);
     setQuePararon(Array.isArray(borrador?.quePararon)
       ? borrador.quePararon.map(m => (esMotivoDeParada(m) ? m : undefined)) : []);
     setMolestias(Array.isArray(borrador?.molestias) ? borrador.molestias.map(m => m ?? undefined) : []);
-    setComoLlega(borrador?.comoLlega === 'bien' || borrador?.comoLlega === 'normal' || borrador?.comoLlega === 'justo' ? borrador.comoLlega : undefined);
+    // «¿Cómo llegas hoy?» se contesta en CADA apertura (Dani, 18-11): si la
+    // cierra y la vuelve a abrir, lo de antes se borra y se pregunta de nuevo.
+    setComoLlega(undefined);
+    setComoLlegaNota(undefined);
     setWorkoutNoteInput(borrador?.workoutNoteInput ?? '');
     setCelebration(null);
     setPrevEntries(entries);
@@ -594,9 +612,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     }));
     setMolestias(orderedExercises.map(we => existingLog.entries.find(e => e.exerciseId === we.exerciseId)?.molestia));
     setComoLlega(existingLog.comoLlega);
-    // Al corregir, las filas son lo guardado: no hay prerrelleno que cambiar.
+    setComoLlegaNota(existingLog.comoLlegaNota);
     setFuera(esSesionFuera(existingLog));
-    prerrellenosRef.current = null;
     setWorkoutNoteInput(existingLog.note ?? '');
     setCelebration(null);
     setPrevEntries(prevEntriesForEdit);
@@ -623,8 +640,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     setQuePararon([]);
     setMolestias([]);
     setComoLlega(undefined);
+    setComoLlegaNota(undefined);
     setFuera(false);
-    prerrellenosRef.current = null;
     setCansancioAlSalir(undefined);
     setLogGuardadoId(null);
     setWorkoutNoteInput('');
@@ -674,23 +691,6 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       next[exIdx] = [...(next[exIdx] || []), nuevaSerieVacia(true, segmentoDe)];
       return next;
     });
-  };
-
-  /** Enciende o apaga «fuera». Las filas sin hacer y sin tocar pasan al
-   *  prerrelleno del otro modo; lo que el atleta ya escribió no se toca. */
-  const cambiarFuera = (valor: boolean) => {
-    setFuera(valor);
-    // Lo que el atleta decide en la sesión manda sobre el panel: si la sesión
-    // sale en el panel de esta semana, se marca o desmarca allí también. Así
-    // apagarlo sin marcar ninguna serie (sin borrador) no vuelve a encenderse
-    // al reabrirla, y el panel no dice algo distinto de la sesión.
-    if (activeAssignment && !editingLogId
-      && sesionesDelPanelFuera.some(s => s.id === activeAssignment.id)
-      && sesionesFueraMarcadas.includes(activeAssignment.id) !== valor) {
-      marcarSesionFuera(activeAssignment.id, false);
-    }
-    const p = prerrellenosRef.current;
-    if (p) setPlayerSets(prev => cambiarPrerrelleno(prev, valor ? p.normal : p.fuera, valor ? p.fuera : p.normal));
   };
 
   const marcarReferenciaNueva = (exIdx: number, marcada: boolean) => {
@@ -880,6 +880,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         startedAt: startedAtIso,
         duracionSeg,
         comoLlega,
+        ...(comoLlegaNota != null ? { comoLlegaNota } : {}),
         // Para el coach: si la sesión traía cambios, si el atleta leyó el aviso.
         novedadesVistas: avisoSesion ? avisoSesion.leido === true : undefined,
         ...(fuera ? { fuera: true } : {}),
@@ -959,68 +960,6 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     }
   };
 
-  // ── «No voy a poder hacerla» ───────────────────────────────────────────────
-  // La sesión se pinta como saltada al momento, pero la escritura espera unos
-  // segundos: las reglas de Firestore no dejan al atleta devolver una
-  // asignación a «pendiente», así que deshacer solo puede ser no haberla
-  // guardado todavía. Ver utils/saltarSesion.ts.
-  const [saltoEnEspera, setSaltoEnEspera] = useState<{ id: string; motivo: MotivoDeSalto } | null>(null);
-  const saltoRef = useRef<{ id: string; motivo: MotivoDeSalto; temporizador: number } | null>(null);
-
-  const pintarEstado = (id: string, status: WorkoutAssignment['status']) =>
-    queryClient.setQueryData<WorkoutAssignment[]>(assignmentsKey, prev => prev?.map(a => a.id === id ? { ...a, status } : a));
-
-  /** Guarda de verdad el salto que estaba esperando (si lo hay). */
-  const guardarSaltoEnEspera = () => {
-    const salto = saltoRef.current;
-    if (!salto) return;
-    window.clearTimeout(salto.temporizador);
-    saltoRef.current = null;
-    setSaltoEnEspera(null);
-    updateWorkoutAssignment(salto.id, cambiosAlSaltar(salto.motivo))
-      .then(() => pintarEstado(salto.id, 'skipped'))
-      .catch(err => {
-        console.error('No se pudo marcar la sesión como saltada:', err);
-        pintarEstado(salto.id, 'pending');
-        showToast('No se pudo guardar. La sesión sigue pendiente.');
-      });
-  };
-  const guardarSaltoRef = useRef(guardarSaltoEnEspera);
-  guardarSaltoRef.current = guardarSaltoEnEspera;
-
-  const saltarSesion = (a: WorkoutAssignment, motivo: MotivoDeSalto) => {
-    // Si había otra esperando, esa ya no se puede deshacer: se guarda ahora.
-    guardarSaltoEnEspera();
-    pintarEstado(a.id, 'skipped');
-    const temporizador = window.setTimeout(() => guardarSaltoRef.current(), ESPERA_PARA_DESHACER_MS);
-    saltoRef.current = { id: a.id, motivo, temporizador };
-    setSaltoEnEspera({ id: a.id, motivo });
-    void haptics.success();
-  };
-
-  const deshacerSalto = () => {
-    const salto = saltoRef.current;
-    if (!salto) return;
-    window.clearTimeout(salto.temporizador);
-    saltoRef.current = null;
-    setSaltoEnEspera(null);
-    pintarEstado(salto.id, 'pending');
-  };
-
-  // Salir de Rutinas, o mandar la app al fondo, antes de que venza la espera no
-  // puede perder el salto: se guarda en ese momento.
-  useEffect(() => {
-    const guardar = () => guardarSaltoRef.current();
-    const alOcultar = () => { if (document.visibilityState === 'hidden') guardar(); };
-    window.addEventListener('pagehide', guardar);
-    document.addEventListener('visibilitychange', alOcultar);
-    return () => {
-      window.removeEventListener('pagehide', guardar);
-      document.removeEventListener('visibilitychange', alOcultar);
-      guardar();
-    };
-  }, []);
-
   // ── Tarjeta de un día del ciclo (la usan tanto la vuelta en curso como el
   // histórico por vueltas) ───────────────────────────────────────────────────
   const renderAssignmentCard = (dia: DiaDelCiclo, opts?: { destacado?: boolean }) => {
@@ -1078,21 +1017,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 <p className="text-caption text-ink">{a.note}</p>
               </div>
             )}
-            {/* «No voy a poder hacerla»: discreta, debajo de todo, y solo en una
-                sesión pendiente sin series apuntadas. */}
-            {wo && sePuedeSaltar(a, seriesAMedias) && (
-              <div className="mt-1.5">
-                <SaltarSesion sesion={wo.name} onSaltar={motivo => saltarSesion(a, motivo)} />
-              </div>
-            )}
-            {saltoEnEspera?.id === a.id && (
-              <div className="mt-1.5">
-                <SesionSaltada motivo={saltoEnEspera.motivo} onDeshacer={deshacerSalto} />
-              </div>
-            )}
             {/* Pasada la espera ya no se puede volver a «pendiente» (reglas),
                 pero sí hacerla: al terminarla queda como completada. */}
-            {wo && a.status === 'skipped' && saltoEnEspera?.id !== a.id && (
+            {wo && a.status === 'skipped' && (
               <button
                 type="button"
                 onClick={() => openPlayer(a)}
@@ -1151,7 +1078,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         molestias={molestias}
         marcarMolestia={marcarMolestia}
         comoLlega={comoLlega}
-        onComoLlega={setComoLlega}
+        onComoLlega={(valor, nota) => { setComoLlega(valor); setComoLlegaNota(nota); }}
         getExercise={getExercise}
         getPersonalNote={getPersonalNote}
         logs={logs}
@@ -1176,7 +1103,6 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         }}
         tipoSemana={tipoSemanaActiva}
         fuera={fuera}
-        onFuera={cambiarFuera}
         cansancioAlSalir={cansancioAlSalir}
         onCansancioAlSalir={logGuardadoId ? apuntarCansancio : undefined}
       />
@@ -1304,7 +1230,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
           {/* «¿Entrenas fuera esta semana?»: al final del todo, para quien
               baja buscándolo; no compite con las sesiones. */}
-          {!loading && listFilter === 'pending' && (
+          {!loading && listFilter === 'pending' && fueraActivo && (
             <SesionesFueraDeLaSemana
               sesiones={sesionesDelPanelFuera}
               marcadas={sesionesFueraMarcadas}

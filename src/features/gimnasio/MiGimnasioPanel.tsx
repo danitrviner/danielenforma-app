@@ -8,6 +8,7 @@ import { useToast } from '../../hooks/useToast';
 import AddOwnMachineSheet from './AddOwnMachineSheet';
 import CatalogoSwipe from './CatalogoSwipe';
 import { coincideBusqueda } from '../../utils/busqueda';
+import InterruptorFuera from '../../components/training/InterruptorFuera';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Mi gimnasio — pantalla 06 del handoff. Vive en Perfil.
@@ -34,6 +35,7 @@ export default function MiGimnasioPanel({ email }: Props) {
   const [busqueda, setBusqueda] = useState('');
   const [anadiendo, setAnadiendo] = useState(false);
   const [repasando, setRepasando] = useState(false);
+  const [guardandoFuera, setGuardandoFuera] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: gimnasioQueryKey(email),
@@ -65,6 +67,22 @@ export default function MiGimnasioPanel({ email }: Props) {
     await guardarGimnasio(email, { maquinas });
     showToast(`${maquina.nombreMostrado} quitada de tu gimnasio`, 'info');
     refrescar();
+  };
+
+  /** «A veces entreno fuera de mi gimnasio» (18-11-2026): enciende el panel
+   *  de la semana al final de Rutinas. Se pinta al momento en la caché que
+   *  comparten Rutinas, Hoy y esta pantalla. */
+  const cambiarEntrenoFuera = async (activo: boolean) => {
+    if (!data) return;
+    const clave = gimnasioQueryKey(email);
+    qc.setQueryData<typeof data>(clave, prev => prev ? { ...prev, gimnasio: { ...prev.gimnasio, entrenoFuera: activo } } : prev);
+    setGuardandoFuera(true);
+    try {
+      await guardarGimnasio(email, { entrenoFuera: activo });
+      showToast(activo ? 'Listo: al final de Rutinas marcas las sesiones que haces fuera.' : 'Desactivado.', 'info');
+    } finally {
+      setGuardandoFuera(false);
+    }
   };
 
   const quitarPropia = async (propia: MaquinaPropia) => {
@@ -110,6 +128,8 @@ export default function MiGimnasioPanel({ email }: Props) {
           <Button variant="primary" size="m" onClick={() => setRepasando(true)}>Seguir revisando</Button>
         </div>
       )}
+
+      <InterruptorFuera activo={data?.gimnasio.entrenoFuera === true} onCambiar={cambiarEntrenoFuera} guardando={guardandoFuera} />
 
       {(misMaquinas.length + propias.length) > 6 && (
         <SearchField value={busqueda} onChange={setBusqueda} label="Buscar máquina" placeholder="Buscar máquina" />

@@ -658,6 +658,11 @@ export interface Gimnasio {
   maquinas: DecisionMaquina[];
   progresoCatalogo: ProgresoCatalogo;
   maquinasPropias: MaquinaPropia[];
+  /** «A veces entreno fuera de mi gimnasio» (18-11-2026). Apagado por defecto:
+   *  el atleta lo enciende en Perfil › Mi gimnasio y solo entonces sale, al
+   *  final de Rutinas, el panel para marcar las sesiones de la semana que hace
+   *  fuera (utils/sesionFuera.ts). */
+  entrenoFuera?: boolean;
 }
 
 // High-intensity techniques a coach can flag on an exercise so the athlete sees a
@@ -930,6 +935,10 @@ export interface WorkoutLog {
    *  Da contexto a un día malo: no es lo mismo rendir peor habiendo llegado
    *  justo que habiendo llegado bien. */
   comoLlega?: 'bien' | 'normal' | 'justo';
+  /** Cómo de fuerte empieza, de 1 a 10, si la sesión lo preguntó con la
+   *  escala (18-11-2026). `comoLlega` se guarda igual, por tramos, para lo que
+   *  ya lo lee (revisionCoach.ts): 1-4 justo, 5-7 normal, 8-10 con energía. */
+  comoLlegaNota?: number;
   /** Cansancio al salir de ESTA sesión, 0-10 (17-11-2026). El protocolo del
    *  Índice de Hipertrofia lo usa de freno (8-9: no subir sin bajar antes la
    *  fatiga de la sesión) y hasta ahora solo existía como pregunta semanal. */

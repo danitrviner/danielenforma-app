@@ -12,8 +12,10 @@ import { addDays } from './trainingWeek.js';
    siguiente.
 
    Desde hoy el atleta (o el coach, si se le olvidó) marca la sesión como
-   «fuera»: en la propia sesión, o antes, desde Rutinas, con el panel de la
-   semana (abajo). En esa sesión:
+   «fuera» desde Rutinas, con el panel de la semana (abajo). Desde el 18-11
+   ya no se pregunta dentro de la sesión, y el panel solo sale si el atleta
+   lo ha activado en Perfil › Mi gimnasio (`Gimnasio.entrenoFuera`). En esa
+   sesión:
 
      · Cuenta como sesión hecha: adherencia. El RIR sí se cumple, y su
        estímulo cuenta para controlar la carga (IEM del seguimiento CDG).
@@ -33,11 +35,11 @@ import { addDays } from './trainingWeek.js';
    el servidor (importa con `.js`).
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/** Lo que lee el atleta en el interruptor. */
-export const TEXTO_FUERA = {
-  titulo: 'Hoy entreno fuera de mi gimnasio',
-  corto: 'Fuera de mi gimnasio',
-  explicacion: 'Cuenta tu sesión y tu esfuerzo, pero no los pesos: no se comparan con los de siempre.',
+/** Lo que lee el atleta en el ajuste de Perfil › Mi gimnasio (18-11-2026). */
+export const TEXTO_AJUSTE_FUERA = {
+  titulo: 'A veces entreno fuera de mi gimnasio',
+  apagado: 'Actívalo si algunas semanas entrenas en otro sitio. Al final de Rutinas podrás marcar qué sesiones haces fuera.',
+  encendido: 'Al final de Rutinas marcas qué sesiones de esta semana haces fuera. Cuentan, pero sus pesos no se comparan con los de tu gimnasio.',
 } as const;
 
 /** ¿Esta serie se hizo fuera del gimnasio habitual? */
@@ -97,8 +99,9 @@ export function cambioDeFuera(log: Pick<WorkoutLog, 'entries'>, fuera: boolean):
    el panel de entrenamiento»—. El atleta, al final de Rutinas, marca qué
    sesiones de esta semana va a hacer fuera. Se guarda en su plan semanal
    (`PlanSemanal.sesionesFuera`, ids de asignación) y la sesión marcada
-   arranca con el interruptor encendido. Lo que haga dentro de la sesión
-   manda: si lo apaga, se queda apagado (el borrador lo recuerda). */
+   arranca como «fuera». Desde el 18-11 el panel es lo único que manda (la
+   sesión ya no tiene interruptor): si la desmarca, al volver a abrirla deja
+   de serlo. Solo pregunta por la semana en curso, no por las siguientes. */
 
 /** Lo que lee el atleta en el panel. */
 export const TEXTO_PANEL_FUERA = {
@@ -124,10 +127,10 @@ export function alternarSesionFuera(marcadas: readonly string[] | undefined, id:
   return lista.includes(id) ? lista.filter(x => x !== id) : [...lista, id];
 }
 
-/** ¿Arranca la sesión como «fuera»? Si el atleta ya la abrió y tocó el
- *  interruptor, lo que dejó en el borrador; si no, lo que marcó en el panel. */
-export function fueraAlAbrir(fueraDelBorrador: unknown, marcadaEnElPanel: boolean): boolean {
-  return typeof fueraDelBorrador === 'boolean' ? fueraDelBorrador : marcadaEnElPanel;
+/** ¿Arranca la sesión como «fuera»? Solo si el atleta tiene activado el
+ *  ajuste en Mi gimnasio y la marcó en el panel de la semana. */
+export function fueraAlAbrir(ajusteActivo: boolean, marcadaEnElPanel: boolean): boolean {
+  return ajusteActivo && marcadaEnElPanel;
 }
 
 /* ── Lo que cuenta en una sesión fuera: el RIR ───────────────────────────── */
@@ -197,12 +200,13 @@ export function pistaDePesoFuera(reps: string | undefined, rir: number | string 
   return `Elige un peso con el que hagas ${rango} repeticiones${objetivo ? ` ${objetivo}` : ''}.`;
 }
 
-/* ── Encender o apagar a mitad de sesión ─────────────────────────────────── */
+/* ── Cuando cambia entre una apertura y otra ───────────────────────────── */
 
 interface FilaCambiable { weight: string; repsDone: string; done: boolean; segmento?: boolean }
 
 /**
- * Al encender o apagar «fuera» a mitad de sesión, las filas que siguen como
+ * Si la sesión se reabre con otro modo que el del borrador (el atleta la ha
+ * marcado o desmarcado en el panel entre medias), las filas que siguen como
  * llegaron (sin hacer y sin tocar) pasan al prerrelleno del otro modo: con
  * «fuera», peso vacío y el objetivo del rango; sin él, lo de la última vez.
  * Lo que el atleta ya ha escrito o marcado no se toca. Devuelve el mismo
