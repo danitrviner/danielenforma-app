@@ -10,6 +10,8 @@ import { getWorkouts } from '../../db/training';
 import { useMotorCdg } from '../../hooks/useMotorCdg';
 import { mapaDeRespuesta } from '../../utils/hipotesisDeBloque/mapaDeRespuesta';
 import { siguienteBloque, zonasQuePide } from '../../utils/hipotesisDeBloque/siguienteBloque';
+import { fotosDeLosBloques, indiciosDeRespuesta, puntoDePartida } from '../../utils/hipotesisDeBloque/respuestaADosis';
+import { cierreParaGuardar } from '../../utils/hipotesisDeBloque/veredicto';
 import { limitesTrasAceptar, type LimiteArticularPropuesto } from '../../utils/hipotesisDeBloque/estresArticular';
 import { UMBRALES_CARGA_POR_DEFECTO } from '../../utils/cdg/integracion';
 import { getBodyMeasurementsForAthlete } from '../../db/bodyMeasurements';
@@ -29,6 +31,7 @@ import {
   fmt, conSigno, colorDelta, Tile, Seccion, SemanaASemana, Podio, ListaEjercicios, Agregado, MiniLinea,
 } from '../cierre/piezas';
 import VeredictosDeHipotesis from '../cierre/VeredictosDeHipotesis';
+import ARespondeA from '../cierre/ARespondeA';
 import CrearSiguienteBloque from '../cierre/CrearSiguienteBloque';
 import { useEscriturasDelCierre } from '../cierre/escriturasDelCierre';
 import ComparadorFotos from './ComparadorFotos';
@@ -63,6 +66,12 @@ import ComparadorFotos from './ComparadorFotos';
    semanal. Aceptarlo escribe el límite del atleta
    (`UserProfile.cdgUmbralesCarga.limitesArticulares`, el mismo que se edita
    en Seguimiento); es lo único que este cierre escribe fuera del mesociclo.
+
+   18-11-2026 (a qué responde): debajo de los veredictos, los indicios de si
+   al atleta le va mejor con más volumen, más frecuencia o más cerca del
+   fallo (cierre/ARespondeA), con las fotos firmadas de sus bloques y la de
+   este en vivo; en un primer bloque, su punto de partida. Los mismos
+   indicios van como motivo a la propuesta del bloque siguiente.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
@@ -350,6 +359,21 @@ export default function CierreDeBloque({
   // aquí, esos (el perfil que llega por props no se vuelve a leer al momento).
   const [limitesAqui, setLimitesAqui] = useState<{ email: string; limites: Record<string, number> } | null>(null);
   const limitesArticulares = limitesAqui?.email === athlete.email ? limitesAqui.limites : athlete.cdgUmbralesCarga?.limitesArticulares;
+  // A qué responde: las fotos firmadas de sus bloques hasta este y la de este
+  // (la firmada o, sin firmar, la de ahora). Lo posterior a este bloque no cuenta.
+  const indicios = useMemo(() => {
+    if (!hipotesis) return [];
+    const todos = mesocycles.some(m => m.id === meso.id) ? mesocycles : [...mesocycles, meso];
+    return indiciosDeRespuesta(fotosDeLosBloques(
+      todos.map(m => (m.id === meso.id ? { ...m, cierreDeHipotesis: firmado } : m)),
+      { actual: { mesocycleId: meso.id, dosis: hipotesis.dosis }, hasta: meso.startDate },
+    ));
+  }, [hipotesis, mesocycles, meso, firmado]);
+  const punto = useMemo(() => (hipotesis && meso.tipoBloque === 'primer'
+    ? puntoDePartida(firmado?.dosis?.length ? firmado.dosis : hipotesis.dosis, {
+      pideElAtleta: zonasQuePide(evolucion.voz?.priorizar), quejas: hipotesis.quejasPorZona,
+    })
+    : null), [hipotesis, meso.tipoBloque, firmado, evolucion.voz]);
   const propuesto = useMemo(() => {
     if (!hipotesis) return null;
     return siguienteBloque({
@@ -367,8 +391,10 @@ export default function CierreDeBloque({
       nombreDe: id => ejercicioDe(id)?.name, grupoDe: id => ejercicioDe(id)?.muscleGroup,
       // Para el objetivo del bloque siguiente: un principiante pide más y en déficit se pide no perder.
       nivel: alta?.experienceLevel, programaNutricion: programa,
+      // A qué responde: la foto de este bloque entra en el historial y los indicios van como motivo.
+      dosis: firmado?.dosis?.length ? firmado.dosis : hipotesis.dosis, indicios,
     });
-  }, [hipotesis, meso, rutinas, mesocycles, firmado, evolucion.voz, cierre.fin, hoy, athlete.displayName, ejercicioDe, logs, alta?.experienceLevel, programa, limitesArticulares]);
+  }, [hipotesis, meso, rutinas, mesocycles, firmado, evolucion.voz, cierre.fin, hoy, athlete.displayName, ejercicioDe, logs, alta?.experienceLevel, programa, limitesArticulares, indicios]);
 
   // Aceptar el límite sugerido: se suma a los que ya tenía (nunca sube uno) y
   // se guarda con sus umbrales de carga, por el mismo camino que Seguimiento.
@@ -380,17 +406,17 @@ export default function CierreDeBloque({
     void queryClient.invalidateQueries({ queryKey: ['userProfiles'] });
   };
 
-  const guardarVeredictos = async (nuevo: CierreDeHipotesis) => {
+  const guardarVeredictos = async (nuevo: CierreDeHipotesis, que = 'Veredictos guardados', queNo = 'los veredictos') => {
     setFirmando(true);
     try {
       await guardarCierre(meso.id, nuevo);
       setFirmadoAqui({ mesoId: meso.id, cierre: nuevo });
       queryClient.setQueryData<Mesocycle[]>(['mesocycles', athlete.email], prev =>
         prev?.map(m => (m.id === meso.id ? { ...m, cierreDeHipotesis: nuevo } : m)));
-      showToast('Veredictos guardados en el bloque', 'success');
+      showToast(`${que} en el bloque`, 'success');
     } catch (err) {
-      console.error('CierreDeBloque: no se pudieron guardar los veredictos', err);
-      showToast('No se han podido guardar los veredictos', 'error');
+      console.error(`CierreDeBloque: no se pudieron guardar ${queNo}`, err);
+      showToast(`No se han podido guardar ${queNo}`, 'error');
     } finally {
       setFirmando(false);
     }
@@ -423,6 +449,15 @@ export default function CierreDeBloque({
       setGuardando(false);
     }
   };
+
+  // Un bloque sin veredictos que firmar (sin estrellas: el primero, uno de
+  // mantenimiento) guarda solo su foto, con lo que ya tuviera firmado.
+  const conVeredictos = !!hipotesis && (hipotesis.estrellas.length > 0 || (firmado?.veredictos.length ?? 0) > 0);
+  const guardarFoto = hipotesis && !conVeredictos && hipotesis.dosis.length > 0
+    ? () => void guardarVeredictos(cierreParaGuardar({
+      veredictos: firmado?.veredictos ?? [], firmadoEn: new Date().toISOString(), ficha: hipotesis.ficha, dosis: hipotesis.dosis,
+    }), 'Foto del bloque guardada', 'la foto del bloque')
+    : undefined;
 
   const sinDatos = cierre.informe.sessions === 0;
   const res = cierre.progresion.resumen;
@@ -483,7 +518,7 @@ export default function CierreDeBloque({
       ) : (
         <>
           {/* ── 0. Hipótesis del bloque: qué pasó con cada una y el bloque siguiente ── */}
-          {hipotesis && (hipotesis.estrellas.length > 0 || (firmado?.veredictos.length ?? 0) > 0) && (
+          {hipotesis && conVeredictos && (
             <VeredictosDeHipotesis
               key={`veredictos-${meso.id}`}
               meso={meso}
@@ -496,6 +531,18 @@ export default function CierreDeBloque({
               guardando={firmando}
               onGuardar={guardarVeredictos}
               presentando={presentando}
+            />
+          )}
+          {/* ── 0b. A qué responde (o, en un primer bloque, su punto de partida) ── */}
+          {hipotesis && (
+            <ARespondeA
+              key={`responde-${meso.id}`}
+              indicios={indicios}
+              punto={punto}
+              presentando={presentando}
+              onGuardarFoto={guardarFoto}
+              guardando={firmando}
+              fotoGuardadaEn={!conVeredictos && firmado?.dosis?.length ? firmado.firmadoEn : null}
             />
           )}
           {!presentando && propuesto && (

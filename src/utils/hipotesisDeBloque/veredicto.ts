@@ -1,5 +1,5 @@
 import type {
-  CierreDeHipotesis, ExperienceLevel, HipotesisDeZona, LecturaDeHipotesis, PalancaDeHipotesis, VeredictoDeHipotesis,
+  CierreDeHipotesis, DosisDeZona, ExperienceLevel, HipotesisDeZona, LecturaDeHipotesis, PalancaDeHipotesis, VeredictoDeHipotesis,
 } from '../../types.js';
 import type { NombreCdgDe } from '../cdg/adaptadores.js';
 import { parsearEsfuerzo, parsearReps, type MotorCdg } from '../cdg/motor.js';
@@ -473,7 +473,8 @@ export function veredictoParaGuardar(v: VeredictoDeHipotesis, decision?: string)
 /**
  * El cierre que firma el coach (`Mesocycle.cierreDeHipotesis`). `decisiones`
  * es lo que decide para cada zona, en sus palabras; `lecturas`, por si
- * corrige la lectura de la app en alguna.
+ * corrige la lectura de la app en alguna; `dosis`, la foto de «dosis y
+ * respuesta» del bloque (`respuestaADosis.ts`), que se guarda tal cual.
  */
 export function cierreParaGuardar(o: {
   veredictos: readonly VeredictoDeHipotesis[];
@@ -481,11 +482,19 @@ export function cierreParaGuardar(o: {
   decisiones?: Partial<Record<string, string>>;
   lecturas?: Partial<Record<string, LecturaDeHipotesis>>;
   ficha?: CierreDeHipotesis['ficha'];
+  dosis?: readonly DosisDeZona[] | null;
 }): CierreDeHipotesis {
   const ficha = o.ficha ? Object.fromEntries(Object.entries(o.ficha).filter(([, v]) => v != null && v !== '')) as CierreDeHipotesis['ficha'] : undefined;
   return {
     firmadoEn: o.firmadoEn,
     veredictos: o.veredictos.map(v => veredictoParaGuardar({ ...v, lectura: o.lecturas?.[v.zona] ?? v.lectura }, o.decisiones?.[v.zona])),
     ...(ficha && Object.keys(ficha).length ? { ficha } : {}),
+    // Copia limpia: solo los campos del tipo (lo que llegue de más no va a Firestore).
+    ...(o.dosis?.length ? {
+      dosis: o.dosis.map(d => ({
+        zona: d.zona, seriesSemana: d.seriesSemana, frecuencia: d.frecuencia, rirMedio: d.rirMedio,
+        iemMedio: d.iemMedio, rmPct: d.rmPct, ejercicios: d.ejercicios,
+      })),
+    } : {}),
   };
 }

@@ -9,6 +9,7 @@ import {
 import type { EstadoDeZona, EstadoDelBloque } from './estadoDelBloqueAnterior.js';
 import { seguidosAlFinal, veredictosDeLaZona, type BloqueConCierre } from './historial.js';
 import { PALANCAS, PALANCA_POR_DEFECTO, otraPalanca } from './palancas.js';
+import { fotosDeLosBloques, indicioParaLaZona, indiciosDeRespuesta, type IndicioDeRespuesta } from './respuestaADosis.js';
 import { TIPOS_DE_BLOQUE, avisoDeEstrellas, modoPorZonaDe, nombreCortoDeZona } from './tiposDeBloque.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -44,6 +45,13 @@ import { TIPOS_DE_BLOQUE, avisoDeEstrellas, modoPorZonaDe, nombreCortoDeZona } f
 
    Sin bloque anterior no hay cifras de IEM: solo palanca y objetivo de
    resultado.
+
+   A qué responde (18-11-2026, `respuestaADosis.ts`): si en la MISMA zona se
+   repite que le fue mejor con más volumen o más cerca del fallo, se dice en
+   el `porQue` y, si el coach no eligió palanca a mano y no hay un veredicto
+   anterior que mande otra cosa (sin veredicto, o «sin probar»), se propone
+   la palanca coherente (volumen o intensidad). La frecuencia no es una
+   palanca: se queda como texto de recomendación.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const pctDeVelocidad = (v: Velocidad) => VELOCIDADES.find(x => x.value === v)!.pct;
@@ -149,6 +157,9 @@ export interface EntradaDeHipotesis {
   /** El bloque cae mayoritariamente en una fase de déficit (`bloqueEnDeficit`):
    *  por defecto se pide no perder fuerza y el techo no sube. */
   enDeficit?: boolean;
+  /** Los indicios de a qué responde el atleta (`indiciosDeRespuesta`). Sin
+   *  ellos, se sacan de las fotos guardadas en `historial`. */
+  indicios?: readonly IndicioDeRespuesta[];
 }
 
 /** Por qué una ficha no propone lo de siempre: una línea para el coach. */
@@ -197,6 +208,7 @@ export function proponerHipotesis(e: EntradaDeHipotesis): PropuestaDeHipotesis {
   const notas: PropuestaDeHipotesis['notas'] = {};
   const avisos: string[] = [];
   const enDeficit = !!e.enDeficit;
+  const indicios = e.indicios ?? indiciosDeRespuesta(fotosDeLosBloques(historial));
 
   const aviso = avisoDeEstrellas(e.tipo, estrellas.length);
   if (aviso) avisos.push(aviso.texto);
@@ -238,6 +250,14 @@ export function proponerHipotesis(e: EntradaDeHipotesis): PropuestaDeHipotesis {
         motivo = `La hipótesis anterior (${etiqueta}) no se llegó a probar: se repite.`;
       }
     }
+    // A qué responde: un «se repite» de la misma zona propone la palanca si
+    // ningún veredicto manda otra cosa ni el coach la ha elegido a mano.
+    const indicio = indicioParaLaZona(indicios, zona);
+    const mandaUnVeredicto = !!ultimo && ultimo.lectura !== 'sin_probar';
+    if (indicio.palanca && !mandaUnVeredicto && indicio.palanca !== palanca) {
+      palanca = indicio.palanca;
+      motivo = `Por lo que se repite en sus bloques, la apuesta es ${PALANCAS[palanca].etiqueta}.`;
+    }
     // Zona ya alta: el techo no sube (lo aplica `cifrasDeHipotesis`) y, si la
     // apuesta era volumen, pasa a la siguiente palanca que no haya fallado ya.
     const notasDeZona: NotaDeHipotesis[] = [];
@@ -265,7 +285,7 @@ export function proponerHipotesis(e: EntradaDeHipotesis): PropuestaDeHipotesis {
       nivel: e.nivel, enDeficit,
     });
     hipotesis[zona] = h;
-    porQue[zona] = motivo;
+    porQue[zona] = indicio.texto ? `${motivo} A qué responde: ${indicio.texto}` : motivo;
     if (notasDeZona.length) notas[zona] = notasDeZona;
     if (h.iemTecho != null) cdgObjetivosIem[zona] = h.iemTecho;
   }

@@ -1,5 +1,5 @@
 import type {
-  CierreDeHipotesis, ExperienceLevel, Mesocycle, Questionnaire, QuestionnaireResponse, WorkoutLog,
+  CierreDeHipotesis, DosisDeZona, ExperienceLevel, Mesocycle, MuscleGroup, Questionnaire, QuestionnaireResponse, WorkoutLog,
 } from '../../types.js';
 import type { NombreCdgDe } from '../cdg/adaptadores.js';
 import {
@@ -19,8 +19,11 @@ import {
 import { RM_RUIDO_PCT } from './cifras.js';
 import { estresArticularMedioDelBloque } from './estresArticular.js';
 import { ordenarBloques } from './historial.js';
+import { dosisDelBloque, semanasDelBloque, zonaDeLaDosis, type QuejaDeZona } from './respuestaADosis.js';
 import { estrellasDe, nombreCortoDeZona } from './tiposDeBloque.js';
-import { franjaDeResultado, veredictosDelBloque, zonaPrincipalDeEjercicios, type VeredictoCalculado } from './veredicto.js';
+import {
+  franjaDeResultado, molestiasDeLaZona, veredictosDelBloque, zonaPrincipalDeEjercicios, type VeredictoCalculado,
+} from './veredicto.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Los veredictos del bloque, montados para el cierre (17-11-2026)
@@ -71,6 +74,18 @@ export interface VeredictosDelCierre {
   anteriores: Mesocycle[];
   /** Última sesión registrada del bloque (`YYYY-MM-DD`), si hay alguna. */
   ultimaSesion: string | null;
+  /**
+   * La foto de «dosis y respuesta» de cada zona con trabajo en el bloque
+   * (`respuestaADosis.ts`, 18-11-2026): se guarda al firmar y, sin firmar, es
+   * la del bloque que se cierra. Sale también sin motor (la zona de cada
+   * ejercicio, de su grupo muscular), con `iemMedio` a `null`.
+   */
+  dosis: DosisDeZona[];
+  /**
+   * Solo en un PRIMER bloque, para su punto de partida: por zona de la foto,
+   * semanas frenadas por agujetas y sesiones con molestia. Vacío en el resto.
+   */
+  quejasPorZona: Partial<Record<ZonaIem, QuejaDeZona>>;
 }
 
 export interface EntradaDeVeredictosDelCierre {
@@ -90,6 +105,9 @@ export interface EntradaDeVeredictosDelCierre {
   nivel?: ExperienceLevel;
   responses?: QuestionnaireResponse[];
   questionnaires?: Questionnaire[];
+  /** Grupo muscular principal de cada ejercicio: la zona de la foto sin motor
+   *  o para un ejercicio sin vínculo CDG. */
+  grupoDe?: (exerciseId: string) => MuscleGroup | undefined;
 }
 
 const media = (v: readonly number[]) => (v.length ? v.reduce((a, b) => a + b, 0) / v.length : undefined);
@@ -173,9 +191,33 @@ export function veredictosDelCierre(e: EntradaDeVeredictosDelCierre): Veredictos
   const base = {
     estrellas, cansancioMedio, contexto, adherenciaPct: e.adherenciaPct ?? null, anteriores, ejercicios, ultimaSesion,
   };
+  // La foto de dosis y respuesta: mismas semanas que el cierre, con o sin motor.
+  const semanasDeLaFoto = semanasDelBloque(meso, { fin, hoy: e.hoy, logs: delBloque });
+  const foto = (porMotor: Record<string, ZonaIem>, estado: EstadoDelBloque | null) => {
+    const zonaDeFoto = zonaDeLaDosis(porMotor, e.grupoDe);
+    const dosis = dosisDelBloque({
+      meso, logs: delBloque, fin, hoy: e.hoy, zonaDe: zonaDeFoto, progresion: e.progresion, estado, semanas: semanasDeLaFoto,
+    });
+    return { dosis, quejasPorZona: meso.tipoBloque === 'primer' ? quejasDeLaFoto(dosis, zonaDeFoto) : {} };
+  };
+  const quejasDeLaFoto = (dosis: DosisDeZona[], zonaDeFoto: (id: string) => ZonaIem | undefined) => {
+    const zonas = dosis.map(d => d.zona as ZonaIem);
+    const frenadas = semanasFrenadasPorAgujetas({
+      meso, zonas, semanas: semanasDeLaFoto, logs: delBloque, responses: e.responses, questionnaires: e.questionnaires,
+    });
+    const out: Partial<Record<ZonaIem, QuejaDeZona>> = {};
+    for (const zona of zonas) {
+      const molestias = molestiasDeLaZona(ejercicios, zonaDeFoto, zona).molestiasEnLaZona;
+      if (frenadas[zona] || molestias) out[zona] = { semanasFrenadas: frenadas[zona] ?? 0, molestias };
+    }
+    return out;
+  };
 
   if (!e.motor || !e.nombreCdgDe) {
-    return { ...base, veredictos: [], sinMotor: estrellas.length > 0, estado: null, zonaDe: {}, semanasFrenadasPorZona: {}, estresArticularMedio: {} };
+    return {
+      ...base, veredictos: [], sinMotor: estrellas.length > 0, estado: null, zonaDe: {}, semanasFrenadasPorZona: {}, estresArticularMedio: {},
+      ...foto({}, null),
+    };
   }
 
   // Con el bloque a medias solo se miran las semanas que ya han empezado (las
@@ -199,7 +241,7 @@ export function veredictosDelCierre(e: EntradaDeVeredictosDelCierre): Veredictos
   const estresArticularMedio = hayMolestia
     ? estresArticularMedioDelBloque({ motor: e.motor, logs: delBloque, nombreCdgDe: e.nombreCdgDe, semanas: estado.semanas })
     : {};
-  return { ...base, veredictos, sinMotor: false, estado, zonaDe, semanasFrenadasPorZona, estresArticularMedio };
+  return { ...base, veredictos, sinMotor: false, estado, zonaDe, semanasFrenadasPorZona, estresArticularMedio, ...foto(zonaDe, estado) };
 }
 
 // ── La ficha de cierre del método ────────────────────────────────────────────

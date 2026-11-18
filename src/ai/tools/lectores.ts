@@ -1176,7 +1176,8 @@ export async function getCierreBloque(email: string, mesocycleId?: string): Prom
   });
   const c = completo.cierre;
   const voz = completo.evolucion.voz;
-  const hipotesis = hipotesisParaElAsistente(meso, mesos);
+  // La foto del bloque que se cierra va aunque no esté firmado (punto 1 del relevo).
+  const hipotesis = hipotesisParaElAsistente(meso, mesos, completo.hipotesis?.dosis);
   return toResult({
     bloque: { id: c.mesoId, numero: c.numero, nombre: c.nombre, objetivo: c.objetivo, inicio: c.inicio, fin: c.fin, semanas: c.semanas, diasSemana: c.diasSemana, enCurso: c.enCurso, comparacion: c.comparacion, tipoBloque: hipotesis.tipoBloque },
     // H11 (17-11-2026): a qué se apostó en cada zona prioritaria; si Dani ya

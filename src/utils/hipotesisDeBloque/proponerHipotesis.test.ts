@@ -369,3 +369,42 @@ describe('cifrasDeHipotesis', () => {
     expect(Object.keys(h)).toEqual(['palanca', 'rmObjetivoPct']);
   });
 });
+
+describe('a qué responde (18-11-2026): los indicios que se repiten en la misma zona', () => {
+  const dosis = (series: number, rmPct: number, rirMedio = 2) => [{ zona: 'pectoral', seriesSemana: series, frecuencia: 1, rirMedio, iemMedio: null, rmPct, ejercicios: 1 }];
+  /** Tres bloques firmados con foto y sin veredictos del pectoral: 12 → 15 → 12 series. */
+  const conFotos = (fotos: ReturnType<typeof dosis>[]): BloqueConCierre[] => fotos.map((d, i) => ({
+    id: `m${i + 1}`, number: i + 1, startDate: `2026-0${i + 1}-01`, tipoBloque: 'desarrollo',
+    cierreDeHipotesis: { firmadoEn: `2026-0${i + 1}-28T10:00:00.000Z`, veredictos: [], dosis: d },
+  }));
+
+  it('mejor con más cerca del fallo, dos veces: propone intensidad y lo dice en el porqué', () => {
+    const historial = conFotos([dosis(12, 2, 2.5), dosis(12, 7, 1), dosis(12, 1, 2.5)]);
+    const r = proponerHipotesis({ tipo: 'desarrollo', estrellas: ['pectoral'], historial });
+    expect(r.hipotesis.pectoral!.palanca).toBe('intensidad');
+    expect(r.porQue.pectoral).toContain('A qué responde: se repite que le fue mejor más cerca del fallo (2 casos)');
+  });
+
+  it('con un veredicto anterior que manda, la palanca no cambia; el motivo sí se añade', () => {
+    const historial = [
+      ...conFotos([dosis(12, 2, 2.5), dosis(12, 7, 1), dosis(12, 1, 2.5)]),
+      cerrado(4, 'pectoral', 'volumen', 'confirmada'),
+    ];
+    const r = proponerHipotesis({ tipo: 'desarrollo', estrellas: ['pectoral'], historial });
+    expect(r.hipotesis.pectoral!.palanca).toBe('volumen');
+    expect(r.porQue.pectoral).toMatch(/^Confirmada el bloque anterior.*A qué responde: se repite/);
+  });
+
+  it('la palanca elegida a mano manda', () => {
+    const historial = conFotos([dosis(12, 2, 2.5), dosis(12, 7, 1), dosis(12, 1, 2.5)]);
+    const r = proponerHipotesis({ tipo: 'desarrollo', estrellas: ['pectoral'], historial, palancas: { pectoral: 'ejercicios' } });
+    expect(r.hipotesis.pectoral!.palanca).toBe('ejercicios');
+  });
+
+  it('un solo caso no decide nada ni entra en el porqué', () => {
+    const historial = conFotos([dosis(12, 2, 2.5), dosis(12, 7, 1)]);
+    const r = proponerHipotesis({ tipo: 'desarrollo', estrellas: ['pectoral'], historial });
+    expect(r.hipotesis.pectoral!.palanca).toBe('volumen');
+    expect(r.porQue.pectoral).not.toContain('A qué responde');
+  });
+});

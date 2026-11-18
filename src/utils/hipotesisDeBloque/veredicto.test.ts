@@ -374,3 +374,12 @@ describe('veredictosDelBloque y lo que se guarda', () => {
     expect(cierre.veredictos[0]).not.toHaveProperty('resultado');
   });
 });
+
+describe('cierreParaGuardar con la foto de dosis y respuesta (18-11-2026)', () => {
+  it('guarda la foto limpia (solo los campos del tipo) y la omite si no hay', () => {
+    const dosis = [{ zona: 'pectoral', seriesSemana: 12, frecuencia: 2, rirMedio: 1.5, iemMedio: 14, rmPct: 5, ejercicios: 2, sobra: 1 }];
+    const c = cierreParaGuardar({ veredictos: [], firmadoEn: '2026-11-18', dosis });
+    expect(c.dosis).toEqual([{ zona: 'pectoral', seriesSemana: 12, frecuencia: 2, rirMedio: 1.5, iemMedio: 14, rmPct: 5, ejercicios: 2 }]);
+    expect('dosis' in cierreParaGuardar({ veredictos: [], firmadoEn: '2026-11-18', dosis: [] })).toBe(false);
+  });
+});

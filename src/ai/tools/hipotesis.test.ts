@@ -65,6 +65,18 @@ describe('hipotesisParaElAsistente', () => {
     const r = hipotesisParaElAsistente(m0, [m0, M1, M2]);
     expect(r).toEqual({ tipoBloque: null, hipotesis: [] });
   });
+
+  it('a qué responde (18-11-2026): los indicios con sus casos, de la foto firmada y la de este bloque en vivo', () => {
+    const d = (series: number, rmPct: number) => [{ zona: 'pectoral', seriesSemana: series, frecuencia: 1, rirMedio: 2, iemMedio: null, rmPct, ejercicios: 1 }];
+    const m1 = { ...M1, cierreDeHipotesis: { ...CIERRE, dosis: d(12, 2) } } as Mesocycle;
+    expect(hipotesisParaElAsistente(M2, [m1, M2]).indiciosDeRespuesta).toBeUndefined();
+    const r = hipotesisParaElAsistente(M2, [m1, M2], d(15, 6));
+    expect(r.indiciosDeRespuesta).toEqual([expect.objectContaining({
+      grado: 'indicio', alcance: 'misma_zona', variable: 'volumen', direccion: 'mas', casos: 1,
+      frase: 'Pectoral: le fue mejor con más series por semana.',
+    })]);
+    expect(NOTA_DE_HIPOTESIS).toContain('Son PISTAS, no conclusiones');
+  });
 });
 
 describe('tipo de bloque del asistente', () => {

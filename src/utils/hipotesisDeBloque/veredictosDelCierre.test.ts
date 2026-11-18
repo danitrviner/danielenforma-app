@@ -262,3 +262,35 @@ describe('lecturaDeVeredicto · las filas de la ficha', () => {
     expect(l.resultado.texto).toBe('RM estimado medio −1 % (objetivo: no perder).');
   });
 });
+
+describe('la foto de dosis y respuesta del cierre (18-11-2026)', () => {
+  it('con motor: por zona del motor, con su IEM medio y el RM de la progresión', () => {
+    const r = veredictosDelCierre({
+      meso: meso(), mesocycles: [meso()], logs: semanas(8), fin: FIN, hoy: addDays(FIN, 3),
+      progresion: progresion(6.2), motor, nombreCdgDe,
+    });
+    expect(r.dosis).toHaveLength(1);
+    expect(r.dosis[0]).toMatchObject({ zona: 'pectoral', seriesSemana: 4, frecuencia: 1, rirMedio: 1, rmPct: 6.2, ejercicios: 1 });
+    expect(r.dosis[0].iemMedio).toBeGreaterThan(1);
+    expect(r.quejasPorZona).toEqual({});
+  });
+
+  it('sin motor sale igual, con la zona del grupo muscular y sin IEM', () => {
+    const r = veredictosDelCierre({
+      meso: meso(), mesocycles: [meso()], logs: semanas(8), fin: FIN, hoy: addDays(FIN, 3),
+      progresion: progresion(6.2), grupoDe: id => (id === 'press' ? 'pecho' : undefined),
+    });
+    expect(r.sinMotor).toBe(true);
+    expect(r.dosis).toEqual([{ zona: 'pectoral', seriesSemana: 4, frecuencia: 1, rirMedio: 1, iemMedio: null, rmPct: 6.2, ejercicios: 1 }]);
+  });
+
+  it('en un primer bloque trae las quejas por zona (molestias) para el punto de partida', () => {
+    const r = veredictosDelCierre({
+      meso: meso({ tipoBloque: 'primer', hipotesis: undefined }), mesocycles: [],
+      logs: [...semanas(8), log(addDays(INICIO, 3), 'curl', 2, { molestia: 5 })], fin: FIN, hoy: addDays(FIN, 3), progresion: [],
+      grupoDe: id => ({ press: 'pecho', curl: 'biceps' } as Record<string, 'pecho' | 'biceps'>)[id],
+    });
+    expect(r.dosis.map(d => d.zona)).toEqual(['pectoral', 'biceps']);
+    expect(r.quejasPorZona).toEqual({ biceps: { semanasFrenadas: 0, molestias: 1 } });
+  });
+});

@@ -133,10 +133,16 @@ export default function VeredictosDeHipotesis({
   const haCambiado = !!firmado && calculados.length > 0
     && (firmado.veredictos.length !== calculados.length || firmado.veredictos.some(v => { const c = calculadoDe.get(v.zona); return !c || !mismasCifras(v, c); }));
   const decisionesTocadas = !!firmado && firmado.veredictos.some(v => (decisiones[v.zona] ?? '').trim() !== (v.decision ?? '').trim());
-  const puedeGuardar = paraGuardar.length > 0 && (!firmado || haCambiado || decisionesTocadas);
+  // Un cierre firmado antes del 18-11-2026 no trae la foto de dosis y respuesta: se puede volver a guardar para añadirla.
+  const faltaLaFoto = !!firmado && !firmado.dosis?.length && calculo.dosis.length > 0;
+  const puedeGuardar = paraGuardar.length > 0 && (!firmado || haCambiado || decisionesTocadas || faltaLaFoto);
 
+  // Con los veredictos se guarda la foto de «dosis y respuesta» del bloque
+  // (de ella salen los indicios de «A qué responde»): la de ahora si se puede
+  // recalcular; si no, la que ya estaba.
   const guardar = () => onGuardar?.(cierreParaGuardar({
     veredictos: paraGuardar, firmadoEn: new Date().toISOString(), decisiones, ficha,
+    dosis: calculo.dosis.length ? calculo.dosis : firmado?.dosis,
   }));
 
   const lineaDeFicha = fichaEnLinea(firmado && !haCambiado ? firmado.ficha ?? {} : ficha);

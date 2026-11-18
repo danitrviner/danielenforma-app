@@ -31,6 +31,10 @@ import { faseEnCurso } from './objetivoDeFase.js';
 // también sus veredictos (`hipotesis`). Necesitan el motor CDG, que solo existe
 // en la vista del coach: sin él vienen vacíos (`sinMotor`) y el resto del
 // cierre es exactamente el mismo. No tocan el mensaje al cliente.
+//
+// 18-11-2026 (a qué responde): con ellos viene la foto de «dosis y respuesta»
+// por zona (`hipotesis.dosis`, utils/hipotesisDeBloque/respuestaADosis.ts),
+// que sí sale sin motor: la zona de cada ejercicio sale de su grupo muscular.
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface CierreCompleto {
@@ -122,6 +126,7 @@ export function buildCierreCompleto(params: {
     progresion: cierre.progresion.ejercicios, adherenciaPct: cierre.sesiones.adherenciaPct,
     motor: params.motorCdg, nombreCdgDe: id => porId.get(id)?.cdgNombre,
     nivel: params.nivel, responses: params.responses, questionnaires: params.questionnaires,
+    grupoDe: id => porId.get(id)?.muscleGroup,
   }) : null;
   const hipotesis = veredictos && porId ? {
     ...veredictos,

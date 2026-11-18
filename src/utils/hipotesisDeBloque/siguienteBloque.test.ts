@@ -392,3 +392,16 @@ describe('siguienteBloque', () => {
     expect(r.meso.hipotesis?.pectoral?.palanca).toBe('volumen');
   });
 });
+
+describe('a qué responde (18-11-2026)', () => {
+  const foto = (series: number, rmPct: number) => [{ zona: 'pectoral', seriesSemana: series, frecuencia: 1, rirMedio: 2, iemMedio: null, rmPct, ejercicios: 1 }];
+  it('la foto de este bloque entra en el historial y lo que se repite va como nota para el coach', () => {
+    const cero: Mesocycle = { ...ANTERIOR, id: 'm0', number: 0, startDate: '2026-02-01', cierreDeHipotesis: { firmadoEn: '2026-03-30', veredictos: [], dosis: foto(12, 3) } };
+    const uno: Mesocycle = { ...ANTERIOR, cierreDeHipotesis: { firmadoEn: '2026-08-20', veredictos: [], dosis: foto(15, 7) } };
+    const r = siguienteBloque({ ...base, mesocycles: [cero, uno, MESO], dosis: foto(12, 2) });
+    expect(r.resumen.notas).toContain('Pectoral: se repite que le fue mejor con más series por semana (2 casos).');
+    // Sin la foto de este bloque solo hay un caso: nada que decir.
+    const sin = siguienteBloque({ ...base, mesocycles: [cero, uno, MESO] });
+    expect(sin.resumen.notas.some(n => n.includes('se repite'))).toBe(false);
+  });
+});

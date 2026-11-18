@@ -1,5 +1,5 @@
 import type {
-  ExperienceLevel, HipotesisDeZona, Mesocycle, MuscleGroup, NutritionProgram, TemplateDay, TipoDeBloque, VeredictoDeHipotesis,
+  DosisDeZona, ExperienceLevel, HipotesisDeZona, Mesocycle, MuscleGroup, NutritionProgram, TemplateDay, TipoDeBloque, VeredictoDeHipotesis,
   Workout, WorkoutExercise,
 } from '../../types.js';
 import { MUSCLE_LABELS } from '../../types.js';
@@ -19,6 +19,7 @@ import { notaDeVigilancia, propuestaArticular, type MolestiaDeZona, type Propues
 import type { BloqueConCierre } from './historial.js';
 import { rotacionDeEstrellas, zonasDeGrupos } from './mapaDeRespuesta.js';
 import { cifrasDeHipotesis, proponerHipotesis } from './proponerHipotesis.js';
+import { fotosDeLosBloques, indicioParaLaZona, indiciosDeRespuesta, type IndicioDeRespuesta } from './respuestaADosis.js';
 import { TIPOS_DE_BLOQUE, enLista, estrellasDe, nombreCortoDeZona, objetivoDerivado, sugerirSemana1Reducida } from './tiposDeBloque.js';
 import { cierreParaGuardar, molestiasDeLaZona, type LimitesDelVeredicto, type PropuestaSiguiente, type ZonaDeEjercicio } from './veredicto.js';
 
@@ -111,6 +112,12 @@ export interface EntradaDeSiguienteBloque {
   /** Periodización nutricional del atleta: si el bloque NUEVO cae mayoritariamente
    *  en déficit, se propone no perder fuerza y no subir el techo. */
   programaNutricion?: NutritionProgram | null;
+  /** La foto de dosis y respuesta de este bloque (la firmada o, sin firmar,
+   *  la calculada): entra en el historial del que salen los indicios. */
+  dosis?: readonly DosisDeZona[] | null;
+  /** Los indicios de a qué responde (`indiciosDeRespuesta`): se pasan como
+   *  motivo a la propuesta. Sin ellos, salen de las fotos del historial. */
+  indicios?: readonly IndicioDeRespuesta[];
 }
 
 export interface SiguienteBloque {
@@ -244,8 +251,9 @@ export function siguienteBloque(e: EntradaDeSiguienteBloque): SiguienteBloque {
 
   // ── Estrellas: las que tenía, con la rotación ──────────────────────────────
   const anteriores = e.mesocycles.filter(m => m.id !== meso.id && m.startDate <= meso.startDate);
-  const esteConCierre: BloqueConCierre = e.veredictos.length > 0
-    ? { ...meso, cierreDeHipotesis: cierreParaGuardar({ veredictos: e.veredictos, firmadoEn: meso.cierreDeHipotesis?.firmadoEn ?? e.hoy }) }
+  const dosis = e.dosis ?? meso.cierreDeHipotesis?.dosis ?? null;
+  const esteConCierre: BloqueConCierre = e.veredictos.length > 0 || dosis?.length
+    ? { ...meso, cierreDeHipotesis: cierreParaGuardar({ veredictos: e.veredictos, firmadoEn: meso.cierreDeHipotesis?.firmadoEn ?? e.hoy, dosis }) }
     : meso;
   const historial: BloqueConCierre[] = [...anteriores, esteConCierre];
   const rot = rotacionDeEstrellas({ bloques: historial, pideElAtleta: e.pideElAtleta });
@@ -280,10 +288,13 @@ export function siguienteBloque(e: EntradaDeSiguienteBloque): SiguienteBloque {
     return l ? [[z, l]] : [];
   })) as Partial<Record<ZonaIem, string>>;
   // Déficit: se mira el bloque NUEVO (sus fechas), no el que se cierra.
+  // A qué responde: los indicios que se repiten en la misma zona van como
+  // motivo (y, si nada manda otra cosa, deciden la palanca: `proponerHipotesis`).
+  const indicios = e.indicios ?? indiciosDeRespuesta(fotosDeLosBloques(historial));
   const enDeficit = bloqueEnDeficit(e.programaNutricion, inicio, addDays(inicio, preset.semanas * 7 - 1));
   const propuesta = proponerHipotesis({
     tipo, estrellas: conEstrella, velocidad: meso.cdgVelocidad, semana1Reducida: arranque.semana1Reducida,
-    anterior: e.estado ?? null, historial, limites, nivel: e.nivel, enDeficit,
+    anterior: e.estado ?? null, historial, limites, nivel: e.nivel, enDeficit, indicios,
   });
   const hipotesis: Partial<Record<string, HipotesisDeZona>> = { ...propuesta.hipotesis };
   const cdgObjetivosIem: Partial<Record<string, number>> = { ...propuesta.cdgObjetivosIem };
@@ -310,8 +321,12 @@ export function siguienteBloque(e: EntradaDeSiguienteBloque): SiguienteBloque {
     hipotesis[v.zona] = sinSubir;
     if (sinSubir.iemTecho != null) cdgObjetivosIem[v.zona] = sinSubir.iemTecho;
   }
-  const notas = [...new Set(conEstrella.flatMap(z => (propuesta.notas[z] ?? [])
-    .map(n => (n.clave === 'deficit' ? n.texto : `${nombreCortoDeZona(z)}: ${n.texto.charAt(0).toLowerCase()}${n.texto.slice(1)}`))))];
+  const notas = [...new Set([
+    ...conEstrella.flatMap(z => (propuesta.notas[z] ?? [])
+      .map(n => (n.clave === 'deficit' ? n.texto : `${nombreCortoDeZona(z)}: ${n.texto.charAt(0).toLowerCase()}${n.texto.slice(1)}`))),
+    // Lo que se repite en la misma zona, como motivo para el coach.
+    ...conEstrella.flatMap(z => { const t = indicioParaLaZona(indicios, z).texto; return t ? [`${nombreCortoDeZona(z)}: ${t}`] : []; }),
+  ])];
 
   // Con molestia en alguna zona: qué articulaciones vigilar y qué límite
   // semanal se sugiere. La línea se queda escrita en el bloque nuevo, como

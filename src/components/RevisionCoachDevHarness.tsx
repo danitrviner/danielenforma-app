@@ -127,10 +127,17 @@ const MESO_ACTUAL: Mesocycle = {
  *  · `deficit`: el bloque tal como se propone en déficit (no perder y techo
  *    donde acabó), y la fase de déficit alargada para que el bloque SIGUIENTE
  *    también caiga en ella.
+ *  · `primer` (18-11-2026): el bloque en curso es el PRIMERO del atleta (sin
+ *    estrellas ni bloque anterior): «A qué responde» pasa a ser su «Punto de
+ *    partida», con una molestia en el press francés (zona con poco volumen).
  */
-type CasoDeHipotesis = 'parcial' | 'deficit' | null;
+type CasoDeHipotesis = 'parcial' | 'deficit' | 'primer' | null;
 function mesoActualDe(caso: CasoDeHipotesis): Mesocycle {
   const h = MESO_ACTUAL.hipotesis!;
+  if (caso === 'primer') {
+    const { hipotesis: _h, cdgObjetivosIem: _o, cdgModoPorZona: _m, ...resto } = MESO_ACTUAL;
+    return { ...resto, number: 1, name: 'Primer bloque', objective: 'Primer bloque', tipoBloque: 'primer' };
+  }
   if (caso === 'parcial') return { ...MESO_ACTUAL, hipotesis: { ...h, pectoral: { ...h.pectoral!, rmObjetivoPct: 8 } } };
   if (caso === 'deficit') {
     return {
@@ -166,6 +173,22 @@ const MESO_ANTERIOR: Mesocycle = {
       decision: 'Misma línea; la estrella pasa a pecho y hombro.',
     }],
     ficha: { contexto: 'neutro', cansancioMedio: 6.2, faseNutricional: 'Mantenimiento', pesoDeltaKg: -0.8 },
+    // La foto de «dosis y respuesta» que se guardó al firmar (18-11-2026).
+    // Contra la del bloque en curso (que se calcula en vivo) da un indicio de
+    // cada tipo en «A qué responde»: pectoral y deltoides con más series y
+    // mejor RM («se repite»), dorsal más cerca del fallo sin diferencia,
+    // cuádriceps con series y frecuencia cambiadas a la vez (no se atribuye) y,
+    // dentro de este bloque, la mitad con más series contra la mitad con menos.
+    dosis: [
+      { zona: 'pectoral', seriesSemana: 2, frecuencia: 1, rirMedio: 2, iemMedio: 10.6, rmPct: 2.5, ejercicios: 1 },
+      { zona: 'dorsal', seriesSemana: 3, frecuencia: 1, rirMedio: 3, iemMedio: 21.2, rmPct: 3, ejercicios: 1 },
+      { zona: 'deltoides', seriesSemana: 2, frecuencia: 1, rirMedio: 2, iemMedio: 18.4, rmPct: 1.5, ejercicios: 1 },
+      { zona: 'biceps', seriesSemana: 5, frecuencia: 2, rirMedio: 2, iemMedio: 33.2, rmPct: 4.9, ejercicios: 2 },
+      { zona: 'triceps', seriesSemana: 2, frecuencia: 1, rirMedio: 2, iemMedio: 11.9, rmPct: -0.5, ejercicios: 1 },
+      { zona: 'cuadriceps', seriesSemana: 3, frecuencia: 1, rirMedio: 2, iemMedio: 6.9, rmPct: 5.5, ejercicios: 1 },
+      { zona: 'isquios', seriesSemana: 3, frecuencia: 1.5, rirMedio: 2, iemMedio: 7.7, rmPct: -1.1, ejercicios: 1 },
+      { zona: 'abdomen', seriesSemana: 1.6, frecuencia: 0.8, rirMedio: 2, iemMedio: 15.4, rmPct: null, ejercicios: 0 },
+    ],
   },
 } as Mesocycle;
 
@@ -218,6 +241,12 @@ const LOGS: WorkoutLog[] = [
   // Un ejercicio que se ESTRENA hoy: no debe salir como «el que más sube».
   log(1, [{ id: 'press_inclinado', series: [[28, 10], [28, 10], [28, 9]] }]),
 ];
+
+/** Con `?caso=primer`, el press francés del bloque en curso con molestia:
+ *  el punto de partida tiene que decir que el tríceps se quejó con poco volumen. */
+const LOGS_PRIMER: WorkoutLog[] = LOGS.map(l => (l.mesocycleId !== 'meso_2' ? l : {
+  ...l, entries: l.entries.map(e => (e.exerciseId === 'frances' ? { ...e, queParo: 'molestia', molestia: 4 } : e)),
+}));
 
 /**
  * Un ejercicio y un log por grupo muscular, con un número de series creciente
@@ -557,8 +586,11 @@ export default function RevisionCoachDevHarness() {
   // `?caso=parcial|deficit`: los casos de la auditoría de cifras del 17-11-2026
   // en Cierre de bloque y en el Seguimiento (ver `mesoActualDe`).
   const casoParam = new URLSearchParams(window.location.search).get('caso');
-  const caso: CasoDeHipotesis = casoParam === 'parcial' || casoParam === 'deficit' ? casoParam : null;
+  const caso: CasoDeHipotesis = casoParam === 'parcial' || casoParam === 'deficit' || casoParam === 'primer' ? casoParam : null;
   const mesoActual = useMemo(() => mesoActualDe(caso), [caso]);
+  // En un primer bloque no hay bloque anterior.
+  const bloques = useMemo(() => (caso === 'primer' ? [mesoActual] : [MESO_ANTERIOR, mesoActual]), [caso, mesoActual]);
+  const logs = caso === 'primer' ? LOGS_PRIMER : LOGS;
   const mesoDeLaPantalla: Mesocycle = renovar
     ? { ...mesoActual, startDate: haceDias(mesoActual.weeks * 7 - 4) }
     : mesoActual;
@@ -621,7 +653,7 @@ export default function RevisionCoachDevHarness() {
     // Ficha viva y bloques del atleta, para `?pantalla=ficha` y `?pantalla=seguimiento`.
     qc.setQueryData(['dossier', EMAIL], DOSSIER_VACIO);
     qc.setQueryData(['athleteStatusNote', EMAIL], '');
-    qc.setQueryData(['mesocycles', EMAIL], [MESO_ANTERIOR, mesoActual]);
+    qc.setQueryData(['mesocycles', EMAIL], bloques);
     // Dos recordatorios: uno vencido sobre un paso del montaje y una tarea
     // suelta para mañana, para ver los dos estados del aviso.
     qc.setQueryData(['coachClientTasks', EMAIL], [
@@ -636,7 +668,7 @@ export default function RevisionCoachDevHarness() {
       },
     ]);
     return qc;
-  }, [anatomia, objetivoParam, caso, mesoActual]);
+  }, [anatomia, objetivoParam, caso, mesoActual, bloques]);
 
   return (
     <QueryClientProvider client={client}>
@@ -648,7 +680,7 @@ export default function RevisionCoachDevHarness() {
           {pantalla === 'seguimiento' ? (
             <SeguimientoCdg
               athleteEmail={EMAIL}
-              logs={LOGS}
+              logs={logs}
               meso={mesoActual}
               cicloDias={7}
               vueltas={mesoActual.weeks}
@@ -690,9 +722,9 @@ export default function RevisionCoachDevHarness() {
           <EscriturasDelCierreContext.Provider value={ESCRITURAS_DE_MENTIRA}>
           <ClientRevisionPanel
             athlete={PERFIL}
-            logs={anatomia ? LOGS_ANATOMIA : LOGS}
+            logs={anatomia ? LOGS_ANATOMIA : logs}
             exercises={anatomia ? EJERCICIOS_ANATOMIA : EJERCICIOS}
-            mesocycles={anatomia ? [] : [MESO_ANTERIOR, mesoActual]}
+            mesocycles={anatomia ? [] : bloques}
             photos={FOTOS}
             bodyweightLogs={PESOS}
             sexo="hombre"
