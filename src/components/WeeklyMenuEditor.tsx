@@ -17,17 +17,20 @@ import {
   slotsFromOnboarding, generateWeek, generateDay, isDayWithinTolerance,
   dayGlobalDeviation, rankCandidates, slotTargets, recipeMatchesSlot,
   buildBatchPlan, reajustarDia, MealSlotSpec, GeneratorPrefs, MenuCandidate, filtroDuro, sinLaFruta, cerradasDe,
+  bestScaleFit,
 } from '../utils/menuEngine';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import { intercambiosDeMacros } from '../utils/macrosLegado';
 import { macrosDelPlato, objetivoDelDiaDeMenu } from '../utils/menuMacros';
+import { macrosDeReceta } from '../utils/macrosDeReceta';
+import { coincideBusqueda } from '../utils/busqueda';
 import { esExtraDelCatalogo, textoDeExtra } from '../utils/extrasDelCatalogo';
 import { getCatalogoAlimentos } from '../dbService';
 import type { AlimentoCatalogo } from '../utils/catalogoAlimentos';
 import { buildShoppingList } from '../utils/menuShoppingList';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
-import { Icon, Button, Input, Select } from './ui';
+import { Icon, Button, Input, Select, SearchField } from './ui';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import FotoDeReceta from './FotoDeReceta';
 import PaquetesDelGenerador from './PaquetesDelGenerador';
@@ -136,6 +139,13 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   const [pickerFor, setPickerFor] = useState<{ day: WeekDay; mealId: string } | null>(null);
   const [pickerCandidates, setPickerCandidates] = useState<MenuCandidate[]>([]);
   const [pickerLoading, setPickerLoading] = useState(false);
+  /* Buscar una receta CONCRETA para esa comida (Dani, 18-11-2026: «no puedo
+     meter una receta nueva a mitad de semana»). Las candidatas de arriba son
+     las que mejor cuadran; esto es el recetario entero de la franja, con lo
+     que se movería el día si la eliges. */
+  const [pickerQuery, setPickerQuery] = useState('');
+  const [pickerPool, setPickerPool] = useState<Recipe[]>([]);
+  const [pickerObjetivo, setPickerObjetivo] = useState<Macros | null>(null);
   const [showPrep, setShowPrep] = useState(false);
 
   // Athlete's recipe favorites/dislikes + dish-type preferences feed the generator
@@ -420,6 +430,9 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   const openPicker = async (day: WeekDay, mealId: string, mealIdx: number) => {
     setPickerFor({ day, mealId });
     setPickerLoading(true);
+    setPickerQuery('');
+    setPickerPool([]);
+    setPickerObjetivo(null);
     const menuDay = menu?.days.find(d => d.day === day);
     const slot = slots[mealIdx];
     if (menuDay && slot) {
@@ -427,11 +440,38 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       const targets = slotTargets(objetivoDelDiaDeMenu(menuDay), slots);
       const usedIds = new Set<string>(menuDay.meals.map(m => m.recipeId));
       const fruta = (menuDay.meals[mealIdx]?.complements ?? []).filter(c => c.obligatoria);
-      const ranked = rankCandidates(pool, sinLaFruta(targets[mealIdx], fruta), prefs, usedIds, { needsTupper: slot.needsTupper, dias: [day], dietId: menuDay.dietId, soloEstas: cerradasDe(slot, prefs) });
+      const objetivo = sinLaFruta(targets[mealIdx], fruta);
+      const ranked = rankCandidates(pool, objetivo, prefs, usedIds, { needsTupper: slot.needsTupper, dias: [day], dietId: menuDay.dietId, soloEstas: cerradasDe(slot, prefs) });
       setPickerCandidates(ranked.slice(0, 12));
+      setPickerObjetivo(objetivo);
+      setPickerLoading(false);
+      // El recetario ENTERO de la franja llega después: las candidatas ya están
+      // en pantalla y el buscador se enciende cuando termina.
+      const [enteras, builder] = await Promise.all([queryRecetasForGenerator(slot.slot, Infinity), ensureBuilderRecipes()]);
+      setPickerPool([...enteras, ...builder.filter(r => recipeMatchesSlot(r, slot.slot))]);
+      return;
     }
     setPickerLoading(false);
   };
+
+  /* Lo que sale al buscar por nombre: cualquier receta de la franja, con su
+     mejor ración y lo que movería el día. Una que no cuadre ni a ración doble
+     también se puede poner: va a ración 1 y el día lo dice. */
+  const buscadas: { c: MenuCandidate; desvio: number }[] = useMemo(() => {
+    const q = pickerQuery.trim();
+    if (q.length < 2 || !pickerObjetivo) return [];
+    const yaPuestas = new Set(pickerCandidates.map(c => c.recipe.id));
+    return pickerPool
+      .filter(r => coincideBusqueda(r.name, q))
+      .slice(0, 30)
+      .map(r => {
+        const fit = bestScaleFit(r, pickerObjetivo, dietMode);
+        const macros = fit?.macros ?? macrosDeReceta(r);
+        const c: MenuCandidate = { recipe: r, scale: fit?.scale ?? 1, macros, score: 0, ...(fit?.ajuste ? { ajuste: fit.ajuste } : {}) };
+        return { c, desvio: Math.round(macros.kcal - pickerObjetivo.kcal) };
+      })
+      .sort((a, b) => Math.abs(a.desvio) - Math.abs(b.desvio) || Number(yaPuestas.has(b.c.recipe.id)) - Number(yaPuestas.has(a.c.recipe.id)));
+  }, [pickerQuery, pickerPool, pickerObjetivo, pickerCandidates, dietMode]);
 
   const pickCandidate = (day: WeekDay, mealIdx: number, c: MenuCandidate) => {
     const menuDay = menu?.days.find(d => d.day === day);
@@ -472,6 +512,9 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     try {
       await updateWeeklyMenu(menu.id, { name: menu.name, days: menu.days, varietyLevel: variety, batchCooking: batch });
       await publishWeeklyMenu({ ...menu, varietyLevel: variety, batchCooking: batch });
+      // Queda publicado también aquí: si el editor sigue abierto, el pie pasa a
+      // «Guardar cambios» y no vuelve a ofrecer publicarlo.
+      setMenu({ ...menu, status: 'published' });
       onSaved({ ...menu, status: 'published' });
     } finally {
       setSaving(false);
@@ -708,7 +751,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
             )}
           </h2>
           <p className="text-ink-2 text-label font-mono">
-            {menu.status === 'published' ? 'Publicado — el atleta puede cambiar platos sin salirse de su día' : 'Borrador — revisa antes de publicar'}
+            {menu.status === 'published' ? 'Publicado — lo que cambies le llega al guardar' : 'Borrador — revisa antes de publicar'}
           </p>
         </div>
       </div>
@@ -841,27 +884,66 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
                           </div>
 
                           {pickerFor?.day === day.day && pickerFor.mealId === meal.id && (
-                            <div className="mt-3 border-t border-hairline pt-2 max-h-56 overflow-y-auto space-y-1">
-                              {pickerLoading ? (
-                                <p className="font-sans text-caption text-ink-3 text-center py-3">Buscando candidatas…</p>
-                              ) : pickerCandidates.length === 0 ? (
-                                <p className="font-sans text-caption text-ink-3 text-center py-3">Sin alternativas disponibles para esta ingesta.</p>
-                              ) : (
-                                pickerCandidates.map((c, ci) => (
-                                  <button
-                                    key={ci}
-                                    onClick={() => pickCandidate(day.day, mealIdx, c)}
-                                    className="w-full flex items-center gap-3 px-2 py-2 text-left hover:bg-raised rounded-control transition-colors"
-                                  >
-                                    <div className="w-7 h-7 rounded-control overflow-hidden flex-shrink-0 bg-raised">
-                                      <FotoDeReceta src={fotoDeReceta(c.recipe)} alt="" className="w-full h-full object-cover" fallback={null} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="font-sans text-label text-ink truncate">{c.recipe.name}</p>
-                                      <p className="font-mono text-caption text-ink-3">×{c.scale} · {Math.round(c.macros.kcal)} kcal · {fmtMacros(c.macros)}</p>
-                                    </div>
-                                  </button>
-                                ))
+                            <div className="mt-3 border-t border-hairline pt-2 space-y-2">
+                              <SearchField
+                                label="Buscar una receta para esta comida"
+                                placeholder={pickerPool.length > 0 ? 'Buscar en todo el recetario…' : 'Cargando el recetario…'}
+                                value={pickerQuery}
+                                onChange={setPickerQuery}
+                                onCancel={() => setPickerQuery('')}
+                              />
+                              <div className="max-h-56 overflow-y-auto space-y-1">
+                                {pickerQuery.trim().length >= 2 ? (
+                                  buscadas.length === 0 ? (
+                                    <p className="font-sans text-caption text-ink-3 text-center py-3">
+                                      {pickerPool.length === 0 ? 'Cargando el recetario…' : 'Ninguna receta con ese nombre para esta comida.'}
+                                    </p>
+                                  ) : (
+                                    buscadas.map(({ c, desvio }) => (
+                                      <button
+                                        key={c.recipe.id}
+                                        onClick={() => pickCandidate(day.day, mealIdx, c)}
+                                        className="w-full flex items-center gap-3 px-2 py-2 text-left hover:bg-raised rounded-control transition-colors"
+                                      >
+                                        <div className="w-7 h-7 rounded-control overflow-hidden flex-shrink-0 bg-raised">
+                                          <FotoDeReceta src={fotoDeReceta(c.recipe)} alt="" className="w-full h-full object-cover" fallback={null} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-sans text-label text-ink truncate">{c.recipe.name}</p>
+                                          <p className="font-mono text-caption text-ink-3">×{c.scale} · {Math.round(c.macros.kcal)} kcal · {fmtMacros(c.macros)}</p>
+                                        </div>
+                                        <span className={`flex-shrink-0 font-mono text-caption ${Math.abs(desvio) <= 50 ? 'text-success' : Math.abs(desvio) <= 150 ? 'text-ink-2' : 'text-danger'}`}>
+                                          {Math.abs(desvio) <= 50 ? 'cuadra' : `${desvio > 0 ? '+' : ''}${desvio} kcal`}
+                                        </span>
+                                      </button>
+                                    ))
+                                  )
+                                ) : pickerLoading ? (
+                                  <p className="font-sans text-caption text-ink-3 text-center py-3">Buscando candidatas…</p>
+                                ) : pickerCandidates.length === 0 ? (
+                                  <p className="font-sans text-caption text-ink-3 text-center py-3">Sin alternativas disponibles para esta ingesta. Búscala por nombre arriba.</p>
+                                ) : (
+                                  pickerCandidates.map((c, ci) => (
+                                    <button
+                                      key={ci}
+                                      onClick={() => pickCandidate(day.day, mealIdx, c)}
+                                      className="w-full flex items-center gap-3 px-2 py-2 text-left hover:bg-raised rounded-control transition-colors"
+                                    >
+                                      <div className="w-7 h-7 rounded-control overflow-hidden flex-shrink-0 bg-raised">
+                                        <FotoDeReceta src={fotoDeReceta(c.recipe)} alt="" className="w-full h-full object-cover" fallback={null} />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-sans text-label text-ink truncate">{c.recipe.name}</p>
+                                        <p className="font-mono text-caption text-ink-3">×{c.scale} · {Math.round(c.macros.kcal)} kcal · {fmtMacros(c.macros)}</p>
+                                      </div>
+                                    </button>
+                                  ))
+                                )}
+                              </div>
+                              {pickerQuery.trim().length >= 2 && buscadas.length > 0 && (
+                                <p className="font-sans text-caption text-ink-3">
+                                  Al ponerla se vuelve a cuadrar el día con lo que queda; el aviso de arriba dice cómo queda.
+                                </p>
                               )}
                             </div>
                           )}
@@ -876,13 +958,23 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
         })}
       </div>
 
+      {/* Un menú ya publicado se retoca a mitad de semana: se guarda encima y el
+          atleta lo ve, sin tener que generar otro (Dani, 18-11-2026). */}
       <div className="flex flex-col sm:flex-row gap-3 pt-2 pb-6">
-        <Button onClick={handlePublish} loading={saving} variant="primary" icon="publish" fullWidth>
-          Publicar menú
-        </Button>
-        <Button onClick={handleSaveDraft} disabled={saving} variant="secondary" icon="save" fullWidth>
-          Guardar borrador
-        </Button>
+        {menu.status === 'published' ? (
+          <Button onClick={handleSaveDraft} loading={saving} variant="primary" icon="save" fullWidth>
+            Guardar cambios
+          </Button>
+        ) : (
+          <>
+            <Button onClick={handlePublish} loading={saving} variant="primary" icon="publish" fullWidth>
+              Publicar menú
+            </Button>
+            <Button onClick={handleSaveDraft} disabled={saving} variant="secondary" icon="save" fullWidth>
+              Guardar borrador
+            </Button>
+          </>
+        )}
         <Button onClick={onCancel} variant="secondary">
           Cancelar
         </Button>
