@@ -4069,8 +4069,10 @@ export default function MesocycleManager({
                 {/* Semana del cuestionario de cierre (18-11-2026). Semana de
                     ciclo, como la descarga. Sin tocar = la última (no se
                     guarda nada, así sigue siéndolo si el bloque se alarga).
-                    La leen las asignaciones de «semana del bloque = última»
-                    (cierre y mediciones): `semanaPedida` en utils/cicloRevision.ts. */}
+                    Solo mueve el cuestionario de CIERRE (el que lleva señales
+                    `meso_end.*`); las mediciones y el resto de «última semana»
+                    siguen al final del bloque (Dani, 18-11): `semanaPedida`
+                    y `esCuestionarioDeCierre` en utils/cicloRevision.ts. */}
                 {(() => {
                   const vueltasBloque = vueltasDelCiclo(editing.weeks, cicloDias);
                   const semanaCierre = Math.min(vueltasBloque, editing.semanaDeCierre ?? vueltasBloque);
@@ -4087,7 +4089,9 @@ export default function MesocycleManager({
                         }}
                         className="w-14 bg-raised border border-control-line rounded-control px-2 py-1 text-center text-caption text-ink font-mono focus:outline-none focus:border-accent"
                       />
-                      {semanaCierre === vueltasBloque && <span className="font-sans text-caption text-ink-3">(la última)</span>}
+                      <span className="font-sans text-caption text-ink-3">
+                        {semanaCierre === vueltasBloque ? '(la última)' : '· las mediciones, siempre al final'}
+                      </span>
                     </div>
                   );
                 })()}

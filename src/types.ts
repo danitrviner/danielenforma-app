@@ -45,6 +45,10 @@ export type NotificationType =
   | 'revision_alerta'
   // El coach ha contestado la revisión del atleta (texto, audio o vídeo).
   | 'revision_respondida'
+  // Al atleta se le abre un cuestionario fuera del día de su revisión: un
+  // «Mandar ahora» del coach, una fecha movida o un hito que cae otro día
+  // (18-11-2026). Ver `avisoDeCuestionarioNuevo` en utils/recordatoriosRevision.ts.
+  | 'cuestionario_nuevo'
   // Un mensaje del coach en su canal (29-10): cambio explicado, acuse de un
   // problema, hito, línea suelta. Ver `MensajeCoach`.
   | 'coach_mensaje';
@@ -2682,9 +2686,11 @@ export interface Mesocycle {
    *  competición). El atleta ve la nota en sus novedades. */
   eventosSemana?: Record<string, EventoDeSemana>;
   /** Semana DE CICLO (la S de la barra de semanas, 1-indexada) en la que se
-   *  pide el cuestionario de cierre (18-11-2026). Sin valor = la última. Lo
-   *  leen las asignaciones de «semana del bloque = última» (cierre y
-   *  mediciones): ver `semanaPedida` en utils/cicloRevision.ts. */
+   *  pide el cuestionario de cierre (18-11-2026). Sin valor = la última. Solo
+   *  la lee la asignación del cuestionario de CIERRE («semana del bloque =
+   *  última» con señales `meso_end.*`); las mediciones siguen al final del
+   *  bloque. Ver `semanaPedida` y `esCuestionarioDeCierre` en
+   *  utils/cicloRevision.ts. */
   semanaDeCierre?: number;
   /** Ejercicios que el coach eligió para planificar su progresión semana a
    *  semana («Planificar progresión»): `d<dayIndex>::<exerciseId>` (o

@@ -5,6 +5,7 @@ import { getTasksForAthlete, getAssignmentsForAthlete, getResponsesForAthlete, g
 import { isDueToday, isOverdue, hasAnsweredThisOccurrence, todayStr, ScheduleContext } from '../utils/questionnaireSchedule';
 import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
 import { tareasVigentes } from '../utils/tareasDelAtleta';
+import { idsDeCuestionariosDeCierre } from '../utils/cicloRevision';
 import { Skeleton } from './ui';
 import { ListRow } from './ui';
 
@@ -85,9 +86,36 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
     queryFn: () => getMesocycles(profile.email),
   });
   const { diaRevision, pausaRevisiones } = profile;
+
+  // One cache entry per questionnaire id (['questionnaireById', id]) so this
+  // reuses/gets reused by CheckInScreen and ProfileScreen's own lookups of
+  // the same questionnaire instead of each fetching it independently.
+  // Todas las activas, no solo las pendientes (18-11): para saber cuál es el
+  // cuestionario de cierre, que es el único que sigue la semana de cierre del
+  // bloque, hay que mirar la plantilla ANTES de decidir qué está pendiente.
+  const activeQuestionnaireIds = useMemo(
+    () => [...new Set(assignments.filter(a => a.active).map(a => a.questionnaireId))],
+    [assignments],
+  );
+  const questionnaireQueries = useQueries({
+    queries: activeQuestionnaireIds.map(id => ({
+      queryKey: ['questionnaireById', id],
+      queryFn: (): Promise<Questionnaire | null> => getQuestionnaireById(id),
+    })),
+  });
+  const templates = useMemo(() => {
+    const mapa = new Map<string, Questionnaire>();
+    for (const q of questionnaireQueries) {
+      const t = q.data as Questionnaire | null | undefined;
+      if (t) mapa.set(t.id, t);
+    }
+    return mapa;
+  }, [questionnaireQueries]);
+  const cuestionariosDeCierre = useMemo(() => idsDeCuestionariosDeCierre(templates.values()), [templates]);
+
   const scheduleCtx: ScheduleContext = useMemo(
-    () => ({ mesocycles, diaRevision, pausa: pausaRevisiones }),
-    [mesocycles, diaRevision, pausaRevisiones],
+    () => ({ mesocycles, diaRevision, pausa: pausaRevisiones, cuestionariosDeCierre }),
+    [mesocycles, diaRevision, pausaRevisiones, cuestionariosDeCierre],
   );
 
   // Las de ciclo (revisión, cuestionario, foto) caducan solas a la semana;
@@ -99,18 +127,9 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
     [assignments, responses, scheduleCtx]
   );
 
-  // One cache entry per questionnaire id (['questionnaireById', id]) so this
-  // reuses/gets reused by CheckInScreen and ProfileScreen's own lookups of
-  // the same questionnaire instead of each fetching it independently.
-  const questionnaireQueries = useQueries({
-    queries: due.map(a => ({
-      queryKey: ['questionnaireById', a.questionnaireId],
-      queryFn: (): Promise<Questionnaire | null> => getQuestionnaireById(a.questionnaireId),
-    })),
-  });
-  const pendingQuestionnaires = due.map((a, i) => ({
+  const pendingQuestionnaires = due.map(a => ({
     id: a.id,
-    title: (questionnaireQueries[i]?.data as Questionnaire | null | undefined)?.title ?? 'Cuestionario',
+    title: templates.get(a.questionnaireId)?.title ?? 'Cuestionario',
   }));
 
   // Sin asignación explícita del coach: por defecto se piden las 3 vistas
@@ -136,7 +155,7 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
   }));
 
   const loading = loadingTasks || loadingAssignments || loadingResponses || loadingPhotoAssignments || loadingPhotos
-    || (due.length > 0 && questionnaireQueries.some(q => q.isPending));
+    || (activeQuestionnaireIds.length > 0 && questionnaireQueries.some(q => q.isPending));
 
   // "Revisión próxima": último check-in pendiente de feedback, o sin check-in en 7+ días.
   const lastCheckinMs = checkins.reduce<number | null>((best, c) => {

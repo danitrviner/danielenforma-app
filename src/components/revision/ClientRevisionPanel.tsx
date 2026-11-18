@@ -8,7 +8,7 @@ import { Sexo } from '../../utils/athleteProfileSignals';
 import { getVolumeLandmarks } from '../../db/coachSettings';
 import {
   getDietCompletionLogsForAthlete, getDietsForAthlete, getCardioSessionsForAthlete,
-  getNutritionProgram,
+  getNutritionProgram, getWorkouts, getStepsForAthlete, getAthleteNutritionConfig, getAssignmentsForAthlete,
 } from '../../dbService';
 import {
   buildRevisionCoach, PeriodoRevision, mesoActivo, pesoVsSemanaPasada, fechaDeLaUltimaRevision,
@@ -16,7 +16,7 @@ import {
 import { computeActivePhase } from '../../utils/fasesNutricion';
 import { construirComidaDeLaSemana } from '../../utils/comidaDeLaSemana';
 import { construirCardioDeLaVentana } from '../../utils/cardioDeLaVentana';
-import { hoyIsoLocal } from '../../utils/trainingWeek';
+import { addDays, hoyIsoLocal } from '../../utils/trainingWeek';
 import { useModoPresentacion } from '../../hooks/useModoPresentacion';
 import { HubTab } from '../ClientHub';
 import RevisionCabecera from './RevisionCabecera';
@@ -45,7 +45,27 @@ import BloqueCambios from './BloqueCambios';
 import CierreDeBloque from './CierreDeBloque';
 import { nombreDeMeso } from '../../utils/nombresMeso';
 import LineaDeTiempoAsistente from '../autopiloto/LineaDeTiempoAsistente';
-import { Card, Button, Icon, SegmentedControl } from '../ui';
+import { Card, Button, Icon, SegmentedControl, Collapsible } from '../ui';
+import { getHipotesis } from '../../db/hipotesis';
+import { getCambiosAtleta } from '../../db/cambios';
+import { useMotorCdg } from '../../hooks/useMotorCdg';
+import { semaforoDelBloque, type FilaDeSemaforo } from '../../utils/hipotesisDeBloque/semaforoDeHipotesis';
+import { progresoDelObjetivo, mesoDelObjetivo } from '../../utils/progresoDelObjetivo';
+import { cicloDiasDeMeso } from '../../utils/asignacionMesociclo';
+import { mesocycleWeekNumber, vueltasDelCiclo } from '../../utils/progression';
+import { proximaOcurrencia } from '../../utils/scheduleEngine';
+import { fijarAlViernes } from '../../utils/questionnaireSchedule';
+import {
+  vistazoDeLaSemana, loQueMeContaste, hayAlgoQueContar, ejerciciosDeLaSemana, semanaQueViene,
+  loQuePideDecision, hayMedidaNueva, fraseDelRitmo,
+} from '../../utils/revisionDeLaSemana';
+import VistazoDeLaSemana, { type VarianteSemana } from './VistazoDeLaSemana';
+import LoQueMeContaste from './LoQueMeContaste';
+import ComoVas from './ComoVas';
+import SemanaQueViene from './SemanaQueViene';
+import LoQuePideDecision from './LoQuePideDecision';
+import BodyMeasurementsPanel from '../BodyMeasurementsPanel';
+import ComparadorFotos from './ComparadorFotos';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    REVISIÓN — la pantalla de un vistazo.
@@ -73,6 +93,20 @@ import { Card, Button, Icon, SegmentedControl } from '../ui';
    bloque propio. Solo Reportes sigue siendo pestaña, porque Revisión es MIRAR y
    Reportes es ENVIAR.
 
+   ── Preparar y presentar (18-11-2026) ─────────────────────────────────────
+   Dani graba esta pantalla y se la manda al atleta: es el guion del vídeo y se
+   mira semana a semana. Dos caras:
+     · PREPARAR (modo normal, solo coach): arriba del todo «Lo que pide
+       decisión», los mensajes y el día de revisión.
+     · PRESENTAR (tecla P): lo que sale en el vídeo, en orden de relato —
+       1) tu semana de un vistazo, 2) lo que me contaste, 3) cómo vas, 4) lo
+       que cambio y por qué, 5) la semana que viene— y detrás el resto de
+       bloques, plegados («Desplegar todo» los abre). La lista de comidas día a
+       día se queda a la vista.
+   «La semana» son los 7 días que acaban el último día de la ventana elegida,
+   siempre comparados con los 7 de antes (utils/revisionDeLaSemana). La
+   ventana del selector sigue mandando en los bloques de detalle.
+
    Sobre las consultas: el panel solo se monta cuando la pestaña está activa, así
    que montarse ES el `enabled` — el mismo patrón que ClientSetupPanel. Lo caro
    (logs, ejercicios, mesociclos) llega por props porque ClientHub ya lo tiene.
@@ -93,6 +127,9 @@ interface Props {
   /** Asignaciones de entreno — las necesita la serie de adherencia semanal. */
   assignments: WorkoutAssignment[];
   onGoToTab: (tab: HubTab) => void;
+  /** Versión de la parte nueva de arriba (18-11-2026, elige Dani): «a»
+   *  cifras en tarjetas, «b» barras y citas. Solo el banco la cambia. */
+  variante?: VarianteSemana;
 }
 
 /**
@@ -104,14 +141,35 @@ interface Props {
  * —el cardio solo sale si hay cardio— directamente no había número correcto
  * que escribir.
  */
-function Seccion({ n, titulo, children, accion, presentando = false }: {
+function Seccion({ n, titulo, children, accion, presentando = false, plegada = false, abierta = false }: {
   n?: number; titulo: string; children: React.ReactNode; accion?: React.ReactNode;
   /** En presentación se cae la acción: es un botón que el atleta no puede pulsar. */
   presentando?: boolean;
+  /** Bloque de detalle: va plegado detrás del relato (18-11-2026). */
+  plegada?: boolean;
+  /** «Desplegar todo». */
+  abierta?: boolean;
 }) {
+  const t = n != null ? `${n}. ${titulo}` : titulo;
+  if (plegada) {
+    return (
+      <Card className="space-y-3" padding="m">
+        <Collapsible
+          key={`${titulo}-${abierta}`}
+          defaultOpen={abierta}
+          trigger={<span className="font-sans text-title-s font-bold text-ink">{t}</span>}
+        >
+          <div className="space-y-3 pt-2">
+            {!presentando && accion && <div className="flex justify-end">{accion}</div>}
+            {children}
+          </div>
+        </Collapsible>
+      </Card>
+    );
+  }
   return (
     <Card
-      title={n != null ? `${n}. ${titulo}` : titulo}
+      title={t}
       action={presentando ? undefined : accion}
       className="space-y-3"
     >
@@ -124,8 +182,12 @@ function Seccion({ n, titulo, children, accion, presentando = false }: {
  *  pintan, y les pasa `presentando`: antes iba a mano en las once, y cada
  *  bloque nuevo tenía que acordarse o su botón se colaba en el modo
  *  presentación. */
-function Secciones({ children, presentando }: { children: React.ReactNode; presentando: boolean }) {
-  let n = 0;
+function Secciones({ children, presentando, inicio = 0 }: {
+  children: React.ReactNode; presentando: boolean;
+  /** Secciones ya numeradas antes (el detalle sigue la cuenta del relato). */
+  inicio?: number;
+}) {
+  let n = inicio;
   return (
     <>
       {React.Children.map(children, hijo => {
@@ -140,6 +202,7 @@ function Secciones({ children, presentando }: { children: React.ReactNode; prese
 export default function ClientRevisionPanel({
   athlete, logs, exercises, mesocycles,
   photos, bodyweightLogs, sexo, checkins, questionnaires, responses, assignments, onGoToTab,
+  variante = 'a',
 }: Props) {
   const hoy = hoyIsoLocal();
 
@@ -178,11 +241,19 @@ export default function ClientRevisionPanel({
     queryFn: getVolumeLandmarks,
   });
 
+  // Rutinas: clave compartida con el Hub (ya en caché). Dan el nombre de cada
+  // sesión, lo programado para la semana que viene y el semáforo del bloque.
+  const { data: workouts = [] } = useQuery({ queryKey: ['workouts'], queryFn: getWorkouts });
+  const nombreDeSesion = useMemo(() => {
+    const porId = new Map(workouts.map(w => [w.id, w.name]));
+    return (id: string) => porId.get(id);
+  }, [workouts]);
+
   const revision = useMemo(
     () => buildRevisionCoach({
-      logs, exercises, mesocycles, periodo, landmarks, hoy, responses, questionnaires, checkins,
+      logs, exercises, mesocycles, periodo, landmarks, hoy, responses, questionnaires, checkins, nombreDeSesion,
     }),
-    [logs, exercises, mesocycles, periodo, landmarks, hoy, responses, questionnaires, checkins],
+    [logs, exercises, mesocycles, periodo, landmarks, hoy, responses, questionnaires, checkins, nombreDeSesion],
   );
   const ultimaRevision = useMemo(() => fechaDeLaUltimaRevision(checkins), [checkins]);
 
@@ -218,10 +289,11 @@ export default function ClientRevisionPanel({
   // texto que Dani ve en «Cierre de bloque» y en el editor del mesociclo, con
   // el peso corporal y las sesiones dichas una sola vez. Las medidas se piden
   // con la misma clave que usa esa pantalla.
+  // Siempre: «Cómo vas» enseña las medidas la semana que hay alguna nueva. Es
+  // la misma clave que el panel de perímetros de «El cuerpo».
   const { data: medidasDelAtleta } = useQuery({
     queryKey: bodyMeasurementsForAthleteKey(athlete.email),
     queryFn: () => getBodyMeasurementsForAthlete(athlete.email),
-    enabled: !!recienCerrado,
   });
   const cierrePorFirmar = useMemo<CierrePorFirmar | null>(() => {
     if (!recienCerrado) return null;
@@ -238,9 +310,15 @@ export default function ClientRevisionPanel({
   // atleta de un año son 365 lecturas para enseñar siete. La clave lleva el
   // `desde` para no pisar la caché de las pantallas que sí piden el historial
   // completo (Análisis nutricional, la periodización).
+  // Desde lo que llegue antes: la ventana elegida o la semana anterior a la
+  // de la revisión (la comparación fija de «Tu semana de un vistazo»).
+  const desdeComida = useMemo(() => {
+    const antes = addDays(ventana.hasta, -13);
+    return antes < ventana.desde ? antes : ventana.desde;
+  }, [ventana.desde, ventana.hasta]);
   const { data: registrosDeComida = [] } = useQuery({
-    queryKey: ['dietCompletionLogsForAthlete', athlete.email, ventana.desde],
-    queryFn: () => getDietCompletionLogsForAthlete(athlete.email, ventana.desde),
+    queryKey: ['dietCompletionLogsForAthlete', athlete.email, desdeComida],
+    queryFn: () => getDietCompletionLogsForAthlete(athlete.email, desdeComida),
   });
   // Solo hacen falta para los días anteriores a 09-2026, que no congelaron sus
   // comidas en el propio registro. Clave compartida con el resto del Hub.
@@ -270,6 +348,116 @@ export default function ClientRevisionPanel({
     }),
     [sesionesCardio, ventana.desde, ventana.hasta],
   );
+
+  // ── La semana de la revisión (18-11-2026) ──────────────────────────────────
+  // Todo lo de aquí abajo sale de consultas que el Hub o los bloques de esta
+  // pantalla ya hacen con la misma clave: pasos y su objetivo (Adherencia),
+  // cuestionarios asignados (Revisiones), hipótesis y cambios (Lo que he
+  // cambiado). Ninguna lectura nueva cuando la caché está caliente.
+  const { data: pasos = [] } = useQuery({
+    queryKey: ['stepsForAthlete', athlete.email],
+    queryFn: () => getStepsForAthlete(athlete.email),
+  });
+  const { data: configNutricion } = useQuery({
+    queryKey: ['athleteNutritionConfig', athlete.email],
+    queryFn: () => getAthleteNutritionConfig(athlete.email).catch(() => null),
+  });
+  const { data: asignacionesCuestionario = [] } = useQuery({
+    queryKey: ['assignmentsForAthlete', athlete.email],
+    queryFn: () => getAssignmentsForAthlete(athlete.email),
+  });
+  const { data: hipotesisDeCambios = [] } = useQuery({
+    queryKey: ['hipotesis', athlete.email],
+    queryFn: () => getHipotesis(athlete.email),
+    staleTime: 60_000,
+  });
+  const { data: cambiosDelAtleta = [] } = useQuery({
+    queryKey: ['cambiosAtleta', athlete.email],
+    queryFn: () => getCambiosAtleta(athlete.email),
+    staleTime: 60_000,
+  });
+
+  const mesoDeLaSemana = useMemo(() => mesoDelObjetivo(mesocycles, ventana.hasta), [mesocycles, ventana.hasta]);
+  const vistazo = useMemo(
+    () => vistazoDeLaSemana({
+      hasta: ventana.hasta, logs, assignments, meso: mesoDeLaSemana,
+      registros: registrosDeComida, dietas, pasos, objetivoPasos: configNutricion?.stepGoal ?? null,
+      pesos: bodyweightLogs, programa: programaNutricion,
+    }),
+    [ventana.hasta, logs, assignments, mesoDeLaSemana, registrosDeComida, dietas, pasos, configNutricion, bodyweightLogs, programaNutricion],
+  );
+  const contado = useMemo(
+    () => loQueMeContaste({
+      hasta: ventana.hasta, responses, questionnaires, asignaciones: asignacionesCuestionario,
+      checkins, logs, nombreDeSesion,
+    }),
+    [ventana.hasta, responses, questionnaires, asignacionesCuestionario, checkins, logs, nombreDeSesion],
+  );
+  const ejerciciosSemana = useMemo(
+    () => ejerciciosDeLaSemana({ logs, exercises, mesocycles, semana: vistazo.semana, pesoCorporalKg: athlete.actualWeight ?? null }),
+    [logs, exercises, mesocycles, vistazo.semana, athlete.actualWeight],
+  );
+  // Las dos de abajo leen rutinas enteras: si una viene mal formada, se cae
+  // su sección, no la pantalla.
+  const objetivoDelBloque = useMemo(() => {
+    try {
+      return progresoDelObjetivo({
+        meso: mesoDelObjetivo(mesocycles, hoy), logs, exercises, workouts, assignments, hoy,
+        pesoCorporalKg: athlete.actualWeight ?? null,
+      });
+    } catch (err) {
+      console.error('ClientRevisionPanel: no se pudo calcular el objetivo del bloque', err);
+      return null;
+    }
+  }, [mesocycles, logs, exercises, workouts, assignments, hoy, athlete.actualWeight]);
+  const medidasNuevas = useMemo(
+    () => hayMedidaNueva({ medidas: medidasDelAtleta, fotos: photos, semana: vistazo.semana }),
+    [medidasDelAtleta, photos, vistazo.semana],
+  );
+  // La semana que viene se mira desde HOY: es lo que el atleta tiene por delante.
+  const queViene = useMemo(() => {
+    const ctx = { mesocycles, diaRevision: athlete.diaRevision, pausa: athlete.pausaRevisiones };
+    try {
+      return semanaQueViene({
+        hoy, mesocycles, workouts, exercises, logs,
+        asignaciones: asignacionesCuestionario, cuestionarios: questionnaires,
+        proximaDe: a => proximaOcurrencia(fijarAlViernes(a, athlete.diaRevision), ctx),
+      });
+    } catch (err) {
+      console.error('ClientRevisionPanel: no se pudo calcular la semana que viene', err);
+      return null;
+    }
+  }, [hoy, mesocycles, workouts, exercises, logs, asignacionesCuestionario, questionnaires, athlete.diaRevision, athlete.pausaRevisiones]);
+
+  // ── Lo que pide decisión (solo coach) ────────────────────────────────────
+  // El semáforo de las hipótesis del bloque es el mismo que el del Seguimiento
+  // (`semaforoDelBloque`): el catálogo CDG ya lo carga esta pantalla para el
+  // estímulo por semana. Sin catálogo o sin hipótesis, no sale.
+  const { motor } = useMotorCdg();
+  const mesoHoy = useMemo(() => mesoDelObjetivo(mesocycles, hoy), [mesocycles, hoy]);
+  const semaforo = useMemo<FilaDeSemaforo[]>(() => {
+    if (!motor || !mesoHoy || Object.keys(mesoHoy.hipotesis ?? {}).length === 0) return [];
+    try {
+      const ciclo = cicloDiasDeMeso(mesoHoy);
+      return semaforoDelBloque({
+        motor, meso: mesoHoy, logs, exercises,
+        programados: workouts.filter(w => w.mesocycleId === mesoHoy.id).flatMap(w => w.exercises ?? []),
+        semanaActual: mesocycleWeekNumber(mesoHoy.startDate, hoy, ciclo),
+        vueltas: vueltasDelCiclo(mesoHoy.weeks, ciclo),
+        hoy, pesoCorporalKg: athlete.actualWeight ?? null,
+      });
+    } catch (err) {
+      console.error('ClientRevisionPanel: no se pudo calcular el semáforo del bloque', err);
+      return [];
+    }
+  }, [motor, mesoHoy, logs, exercises, workouts, hoy, athlete.actualWeight]);
+  const avisos = useMemo(() => {
+    const nombres = new Map(exercises.map(e => [e.id, e.name]));
+    return loQuePideDecision({
+      revision, nombreDe: id => nombres.get(id) ?? 'Un ejercicio', ritmo: vistazo.peso?.ritmo,
+      hipotesis: hipotesisDeCambios, cambios: cambiosDelAtleta, logs, hoy,
+    });
+  }, [revision, exercises, vistazo.peso, hipotesisDeCambios, cambiosDelAtleta, logs, hoy]);
 
   return (
     // El agrandado vive en `.revision-presentando` (src/index.css), no aquí:
@@ -375,28 +563,111 @@ export default function ClientRevisionPanel({
         </div>
       </div>
 
-      <RevisionCabecera
-        athlete={athlete}
-        ventana={ventana}
-        informe={informe}
-        peso={peso}
-        faseNutricional={faseActiva?.name ?? null}
-        pesoObjetivo={athlete.targetWeight}
-      />
+      {/* ── PREPARAR (solo coach) ────────────────────────────────────────
+          Arriba del todo lo que pide decisión esta semana; luego el canal de
+          mensajes y las cifras de la ventana elegida. Nada de esto sale en el
+          vídeo. */}
+      {!presentando && (
+        <>
+          <LoQuePideDecision
+            avisos={avisos}
+            semaforo={semaforo}
+            hayBloque={!!mesoHoy}
+            onAbrirSeguimiento={() => onGoToTab('entrenamientos')}
+          />
+          <MensajesCoachPanel athlete={athlete} cierre={cierrePorFirmar} />
+          <RevisionCabecera
+            athlete={athlete}
+            ventana={ventana}
+            informe={informe}
+            peso={peso}
+            faseNutricional={faseActiva?.name ?? null}
+            pesoObjetivo={athlete.targetWeight}
+          />
+        </>
+      )}
 
-      {/* El canal de mensajes (29-10): lo que hay por firmar, los cambios sin
-          contar y lo que el atleta contó, antes de los números. Oculto al
-          presentar: es trabajo del coach, no parte del vídeo. */}
-      {!presentando && <MensajesCoachPanel athlete={athlete} cierre={cierrePorFirmar} />}
-
-      {/* Peso corporal arriba del todo, justo bajo la cabecera: la misma
-          gráfica y registro que en Atleta › Cuerpo. */}
-      <div className="bg-surface border border-hairline rounded-surface p-5">
-        <BodyweightPanel athleteEmail={athlete.email} readOnly />
-      </div>
+      {/* ── PRESENTAR: el relato del vídeo, en orden ─────────────────────── */}
+      {presentando && (
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h2 className="font-sans font-bold text-title-m text-ink">{athlete.displayName}</h2>
+          {objetivoDelBloque?.semanaTexto && mesoHoy && (
+            <span className="font-mono text-caption text-ink-2">{nombreDeMeso(mesoHoy)} · {objetivoDelBloque.semanaTexto}</span>
+          )}
+        </div>
+      )}
 
       <Secciones presentando={presentando}>
-        <Seccion titulo="Cómo va cada patrón">
+        <Seccion titulo="Tu semana de un vistazo">
+          <VistazoDeLaSemana vistazo={vistazo} variante={variante} />
+        </Seccion>
+
+        {hayAlgoQueContar(contado) && (
+          <Seccion
+            titulo="Lo que me contaste"
+            accion={
+              <Button variant="ghost" onClick={() => onGoToTab('revisiones')}>
+                Ir a Revisiones
+              </Button>
+            }
+          >
+            <LoQueMeContaste contado={contado} variante={variante} />
+          </Seccion>
+        )}
+
+        <Seccion
+          titulo="Cómo vas"
+          accion={
+            <Button variant="ghost" onClick={() => onGoToTab('cuerpo')}>
+              Ver todo el seguimiento
+            </Button>
+          }
+        >
+          <ComoVas
+            fraseDelPeso={vistazo.peso?.ritmo ? fraseDelRitmo(vistazo.peso.ritmo) : null}
+            grafica={<BodyweightPanel athleteEmail={athlete.email} readOnly />}
+            semana={ejerciciosSemana}
+            periodo={{ suben: revision.suben, bajan: revision.bajan, etiqueta: ventana.etiqueta, comparacion: ventana.etiquetaComparacion }}
+            objetivo={objetivoDelBloque}
+            medidas={(medidasNuevas.medidas || medidasNuevas.fotos) ? (
+              <div className="space-y-4">
+                {medidasNuevas.medidas && (
+                  <BodyMeasurementsPanel athleteEmail={athlete.email} sexo={sexo} pesoKg={athlete.actualWeight ?? null} audiencia="coach" soloPerimetros />
+                )}
+                {medidasNuevas.fotos && (
+                  <ComparadorFotos photos={photos} athleteEmail={athlete.email} bodyweightLogs={bodyweightLogs} />
+                )}
+              </div>
+            ) : null}
+          />
+        </Seccion>
+
+        <Seccion titulo="Lo que cambio y por qué">
+          <BloqueCambios
+            athleteEmail={athlete.email}
+            desde={vistazo.semana.desde}
+            hasta={vistazo.semana.hasta}
+            todoAbierto={todoAbierto}
+            logs={logs}
+            exercises={exercises}
+            presentando={presentando}
+          />
+        </Seccion>
+
+        {queViene && (
+          <Seccion titulo="La semana que viene">
+            <SemanaQueViene semana={queViene} />
+          </Seccion>
+        )}
+      </Secciones>
+
+      {/* ── El detalle, plegado detrás del relato ────────────────────────── */}
+      <div className="space-y-3">
+        <p className="font-mono text-caption text-ink-3 uppercase tracking-[.1em]">
+          El detalle · {ventana.etiqueta.toLowerCase()} {ventana.etiquetaComparacion}
+        </p>
+      <Secciones presentando={presentando} inicio={3 + (hayAlgoQueContar(contado) ? 1 : 0) + (queViene ? 1 : 0)}>
+        <Seccion titulo="Cómo va cada patrón" plegada abierta={todoAbierto}>
           <BloquePatrones
             patrones={revision.patrones}
             ejerciciosPorPatron={revision.ejerciciosPorPatron}
@@ -412,6 +683,7 @@ export default function ClientRevisionPanel({
 
         <Seccion
           titulo="Lo que sube y lo que baja"
+          plegada abierta={todoAbierto}
           accion={
             <Button variant="ghost" onClick={() => onGoToTab('entrenamientos')}>
               Ver historial de cargas
@@ -426,7 +698,8 @@ export default function ClientRevisionPanel({
         </Seccion>
 
         <Seccion
-          titulo="Estímulo por semana (IEM)"
+          titulo="Estímulo por semana"
+          plegada abierta={todoAbierto}
           accion={
             <Button variant="ghost" onClick={() => onGoToTab('entrenamientos')}>
               Ajustar el bloque
@@ -442,26 +715,18 @@ export default function ClientRevisionPanel({
           />
         </Seccion>
 
-        {/* Solo si hay cardio del que hablar. Un bloque vacío en un atleta que
-            solo hace pesas ocupa sitio en el vídeo y no dice nada; y en cuanto
-            registre una sesión, aparece solo. */}
+        {/* Solo si hay cardio del que hablar. */}
         {(cardio.sesiones > 0 || cardio.ultimaSesion) && (
-          <Seccion titulo="El cardio">
+          <Seccion titulo="El cardio" plegada abierta={todoAbierto}>
             <BloqueCardio cardio={cardio} onGoToTab={onGoToTab} todoAbierto={todoAbierto} />
           </Seccion>
         )}
 
-        {/* Va pegado al volumen a propósito: cuando el volumen está puesto y aun
-            así no sube nada, la respuesta casi siempre está aquí —duerme poco,
-            arrastra estrés, o hay un grupo con agujetas que no se van—. Es la
-            explicación del bloque de arriba, no una sección independiente. */}
-        <Seccion titulo="Cómo ha llegado">
+        <Seccion titulo="Cómo ha llegado" plegada abierta={todoAbierto}>
           <BloqueBienestar bienestar={revision.bienestar} todoAbierto={todoAbierto} />
         </Seccion>
 
-        {/* Va entre el entrenamiento y el cuerpo a propósito: primero qué ha
-            hecho, luego qué ha comido, y solo entonces qué ha pasado con su
-            cuerpo — que es la consecuencia de los dos anteriores. */}
+        {/* La lista de comidas día a día se queda A LA VISTA (Dani, 18-11). */}
         <Seccion
           titulo="Qué ha comido"
           accion={
@@ -473,11 +738,9 @@ export default function ClientRevisionPanel({
           <BloqueQueHaComido comida={comida} todoAbierto={todoAbierto} />
         </Seccion>
 
-        {/* Qué eligió comer (bloque 4) y cuánto de lo pautado cumplió (este) son
-            preguntas distintas y van seguidas: el coach cuenta primero la
-            selección y luego el número. Los dos leen la misma ventana. */}
         <Seccion
           titulo="Adherencia y hábitos"
+          plegada abierta={todoAbierto}
           accion={
             <Button variant="ghost" onClick={() => onGoToTab('reportes')}>
               Convertir en reporte
@@ -497,6 +760,7 @@ export default function ClientRevisionPanel({
 
         <Seccion
           titulo="El cuerpo"
+          plegada abierta={todoAbierto}
           accion={
             <Button variant="ghost" onClick={() => onGoToTab('cuerpo')}>
               Ver todo el seguimiento
@@ -520,6 +784,7 @@ export default function ClientRevisionPanel({
 
         <Seccion
           titulo="Lo que te ha mandado"
+          plegada abierta={todoAbierto}
           accion={
             <Button variant="ghost" onClick={() => onGoToTab('revisiones')}>
               Ir a Revisiones
@@ -535,12 +800,7 @@ export default function ClientRevisionPanel({
           />
         </Seccion>
 
-        {/* Detrás de «lo que te ha mandado» porque también es algo que viene de
-            su lado: el reto es lo único de la app que le pide algo concreto cada
-            semana, y el peldaño es la promesa a medio plazo. */}
-        <Seccion
-          titulo="Retos y nivel"
-        >
+        <Seccion titulo="Retos y nivel" plegada abierta={todoAbierto}>
           <BloqueRetosNivel
             athleteEmail={athlete.email}
             initialWeight={athlete.initialWeight}
@@ -555,38 +815,27 @@ export default function ClientRevisionPanel({
           />
         </Seccion>
 
-        {/* Antes de «Lo que he cambiado» porque son las dos mitades de la misma
-            pregunta: qué le tocó la máquina y qué le toqué yo. */}
-        <Seccion titulo="Lo que ha hecho el asistente">
+        <Seccion titulo="Lo que ha hecho el asistente" plegada abierta={todoAbierto}>
           <LineaDeTiempoAsistente athlete={athlete} presentando={presentando} />
         </Seccion>
 
-        <Seccion titulo="Lo que he cambiado">
-          <BloqueCambios
-            athleteEmail={athlete.email}
-            desde={ventana.desde}
-            hasta={ventana.hasta}
-            todoAbierto={todoAbierto}
-            logs={logs}
-            exercises={exercises}
-            presentando={presentando}
-          />
-        </Seccion>
-
-        {/* Va el último porque es la conclusión: los bloques de arriba son la
-            prueba, y este es lo que se le dice. */}
-        <Seccion titulo="Cierre de la revisión">
-          <BloqueCierre
-            athleteEmail={athlete.email}
-            athleteName={athlete.displayName}
-            revision={revision}
-            comida={comida}
-            peso={peso}
-            onGoToTab={onGoToTab}
-            presentando={presentando}
-          />
-        </Seccion>
+        {/* Los titulares y el borrador del mensaje son del coach (voz de
+            coach, jerga): fuera del vídeo. */}
+        {!presentando && (
+          <Seccion titulo="Cierre de la revisión" plegada abierta={todoAbierto}>
+            <BloqueCierre
+              athleteEmail={athlete.email}
+              athleteName={athlete.displayName}
+              revision={revision}
+              comida={comida}
+              peso={peso}
+              onGoToTab={onGoToTab}
+              presentando={presentando}
+            />
+          </Seccion>
+        )}
       </Secciones>
+      </div>
       </>
       )}
     </div>

@@ -6,7 +6,7 @@ import {
 import {
   resolverPeriodoRevision, buildRevisionCoach, agruparEjerciciosPorPatron,
   mejoresYPeores, mesoActivo, semanasDeVentana, pesoVsSemanaPasada, construirBienestar,
-  fechaDeLaUltimaRevision, curvasDeLaVentana, senalesDelProtocolo,
+  fechaDeLaUltimaRevision, curvasDeLaVentana, senalesDelProtocolo, resumenDelPatron,
 } from './revisionCoach';
 
 const HOY = '2026-09-14'; // lunes
@@ -648,5 +648,16 @@ describe('curvasDeLaVentana', () => {
     const r = curvasDeLaVentana([{ exerciseId: 'nunca', name: 'Nada' } as never], []);
     expect(r.curvaPorEjercicio.nunca).toBeUndefined();
     expect(r.ultimaSesionPorEjercicio.nunca).toBeUndefined();
+  });
+});
+
+describe('resumenDelPatron (18-11-2026: sin % agregado del patrón)', () => {
+  it('cuenta ejercicios que suben, bajan o se mantienen con el umbral del ruido', () => {
+    expect(resumenDelPatron([
+      { deltaOrmPct: 16.7 }, { deltaOrmPct: 3 }, { deltaOrmPct: -2.9 }, { deltaOrmPct: -3 }, { deltaOrmPct: null },
+    ])).toEqual({ suben: 2, bajan: 1, seMantienen: 1 });
+  });
+  it('un patrón sin nada que comparar sale a cero', () => {
+    expect(resumenDelPatron([])).toEqual({ suben: 0, bajan: 0, seMantienen: 0 });
   });
 });

@@ -78,9 +78,11 @@ const Q_CIERRE: Questionnaire = (() => {
 })();
 const PLANTILLAS = [Q_SEMANAL, Q_DOMS, Q_MEDICIONES, Q_CIERRE];
 
-// Un bloque de 6 semanas que acaba dentro de dos: su cierre cae la semana que viene.
+// Un bloque de 6 semanas que acaba dentro de dos, con el cuestionario de cierre
+// adelantado a la semana 5 (18-11): el cierre cae esta semana y las mediciones
+// del bloque, la que viene (siempre al final).
 const MESOS: Mesocycle[] = [
-  { id: 'meso_dev', athleteId: EMAIL, number: 3, weeks: 6, startDate: haceDias(28), objective: 'Hipertrofia', daysPerWeek: 4 } as Mesocycle,
+  { id: 'meso_dev', athleteId: EMAIL, number: 3, weeks: 6, startDate: haceDias(28), objective: 'Hipertrofia', daysPerWeek: 4, semanaDeCierre: 5 } as Mesocycle,
 ];
 
 const ASIGNACIONES: QuestionnaireAssignment[] = [
@@ -90,6 +92,7 @@ const ASIGNACIONES: QuestionnaireAssignment[] = [
     excepciones: [{ nuevaFecha: haceDias(1) }],
   },
   { id: 'as_cierre', questionnaireId: 'q_cierre', athleteId: EMAIL, schedule: { type: 'mesocycle_week', semanaDelBloque: 'ultima' }, startDate: haceDias(90), active: true, createdAt: haceDias(90) },
+  { id: 'as_medic_bloque', questionnaireId: 'q_medic', athleteId: EMAIL, schedule: { type: 'mesocycle_week', semanaDelBloque: 'ultima' }, startDate: haceDias(90), active: true, createdAt: haceDias(90) },
   {
     id: 'as_doms', questionnaireId: 'q_doms', athleteId: EMAIL,
     schedule: { type: 'interval', intervalDays: 14 }, startDate: haceDias(56), active: true, createdAt: haceDias(56),

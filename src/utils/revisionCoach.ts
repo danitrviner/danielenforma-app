@@ -648,6 +648,29 @@ export function agruparEjerciciosPorPatron(
   return { porPatron, sinPatron };
 }
 
+/**
+ * Cuántos ejercicios de un patrón suben, bajan o se mantienen (18-11-2026).
+ *
+ * Sustituye al % agregado del patrón en su cabecera: cuando mezcla ejercicios
+ * distintos, la media de sus RM no es de ninguno —en el banco «Empujes torso
+ * −17,1 %» con sus dos ejercicios subiendo, porque entraba uno nuevo con menos
+ * kilos—. Contar ejercicios no engaña. Mismo umbral que «lo que sube y lo que
+ * baja» (`RUIDO_RM_PCT`); los que no tienen con qué compararse no cuentan.
+ */
+export function resumenDelPatron(
+  ejercicios: readonly Pick<ExercisePerf, 'deltaOrmPct'>[],
+  umbralPct: number = RUIDO_RM_PCT,
+): { suben: number; bajan: number; seMantienen: number } {
+  let suben = 0; let bajan = 0; let seMantienen = 0;
+  for (const e of ejercicios) {
+    if (e.deltaOrmPct == null) continue;
+    if (e.deltaOrmPct >= umbralPct) suben++;
+    else if (e.deltaOrmPct <= -umbralPct) bajan++;
+    else seMantienen++;
+  }
+  return { suben, bajan, seMantienen };
+}
+
 export interface OpcionesMejoresYPeores {
   /** Cuántos devolver de cada lado. */
   n?: number;

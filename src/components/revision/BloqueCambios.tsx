@@ -22,6 +22,11 @@ import HipotesisDeCambio, { type EjercicioParaMirar } from './HipotesisDeCambio'
    revisión ya toca se enseña SIEMPRE, aunque se hiciera antes del periodo que
    se está mirando: si no, vencería sin que nadie lo viera. En presentación no
    sale nada de esto: son notas de trabajo del coach.
+
+   18-11-2026 · «Lo que cambio y por qué» en el vídeo: al presentar, cada
+   cambio con hipótesis dice lo que se busca con él («Lo que busco: …», las
+   palabras del coach), sin fechas ni antes/después; y las áreas sin cambios no
+   salen (en su lugar, una línea si no se ha tocado nada).
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const VISIBLES = 4;
@@ -36,7 +41,7 @@ function fecha(at: string): string {
   return new Date(at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
-const Entrada: React.FC<{ c: CambioAtleta; abierta: boolean; children?: React.ReactNode }> = ({ c, abierta, children }) => {
+const Entrada: React.FC<{ c: CambioAtleta; abierta: boolean; porQue?: string; children?: React.ReactNode }> = ({ c, abierta, porQue, children }) => {
   const lineas = abierta ? c.lineas : c.lineas.slice(0, LINEAS_POR_CAMBIO);
   const resto = c.lineas.length - lineas.length;
   return (
@@ -51,6 +56,11 @@ const Entrada: React.FC<{ c: CambioAtleta; abierta: boolean; children?: React.Re
         ))}
         {resto > 0 && <li className="font-mono text-caption text-ink-3">+{resto} más</li>}
       </ul>
+      {porQue && (
+        <p className="mt-1 font-sans text-label text-ink text-pretty">
+          <span className="text-ink-3">Lo que busco: </span>«{porQue}»
+        </p>
+      )}
       {children}
     </li>
   );
@@ -70,7 +80,9 @@ const Widget: React.FC<{
     hoy: string;
     onGuardar: (h: Hipotesis) => void;
   };
-}> = ({ cfg, cambios, desde, hasta, todoAbierto, hipotesis }) => {
+  /** Al presentar: lo que se busca con cada cambio, si tiene hipótesis. */
+  porQueDe?: (c: CambioAtleta) => string | undefined;
+}> = ({ cfg, cambios, desde, hasta, todoAbierto, hipotesis, porQueDe }) => {
   const [verTodos, setVerTodos] = useState(false);
   const delPeriodo = (c: CambioAtleta) => {
     const dia = c.at.slice(0, 10);
@@ -102,7 +114,7 @@ const Widget: React.FC<{
       ) : (
         <ul className="m-0 p-0 list-none">
           {lista.map(c => (
-            <Entrada key={c.id} c={c} abierta={abierto}>
+            <Entrada key={c.id} c={c} abierta={abierto} porQue={porQueDe?.(c)}>
               {hipotesis && (
                 <HipotesisDeCambio
                   cambio={c}
@@ -127,7 +139,7 @@ const Widget: React.FC<{
           {verTodos ? 'Ver menos' : `Ver los ${enPeriodo.length - VISIBLES} anteriores`}
         </button>
       )}
-      {anteriores > 0 && (
+      {anteriores > 0 && !porQueDe && (
         <p className="font-mono text-caption text-ink-4">
           {anteriores} {anteriores === 1 ? 'cambio' : 'cambios'} más fuera de este periodo.
         </p>
@@ -156,10 +168,11 @@ export default function BloqueCambios({ athleteEmail, desde, hasta, todoAbierto,
   const { showToast } = useToast();
   const hoy = hoyIsoLocal();
   const conHipotesis = !presentando && !!logs && !!exercises;
+  // También al presentar: de ahí sale el «por qué» de cada cambio.
   const { data: hipotesis = [] } = useQuery({
     queryKey: ['hipotesis', athleteEmail],
     queryFn: () => getHipotesis(athleteEmail),
-    enabled: conHipotesis,
+    enabled: conHipotesis || presentando,
     staleTime: 60_000,
   });
   const ejercicios = useMemo<EjercicioParaMirar[]>(() => {
@@ -189,9 +202,19 @@ export default function BloqueCambios({ athleteEmail, desde, hasta, todoAbierto,
     return <p className="font-sans text-label text-ink-3">No se ha podido cargar el historial de cambios.</p>;
   }
 
+  const delPeriodo = (c: CambioAtleta) => c.at.slice(0, 10) >= desde && c.at.slice(0, 10) <= hasta;
+  // Al presentar, solo las áreas con algún cambio en el periodo.
+  const areas = presentando ? AREAS.filter(cfg => data.some(c => c.area === cfg.area && delPeriodo(c))) : AREAS;
+  if (areas.length === 0) {
+    return <p className="font-sans text-label text-ink-2">Esta semana no he cambiado nada: seguimos con el plan.</p>;
+  }
+  const porQueDe = presentando
+    ? (c: CambioAtleta) => hipotesis.find(h => h.id === c.id || h.cambioId === c.id)?.espero?.trim() || undefined
+    : undefined;
+
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      {AREAS.map(cfg => (
+      {areas.map(cfg => (
         <Widget
           key={cfg.area}
           cfg={cfg}
@@ -200,6 +223,7 @@ export default function BloqueCambios({ athleteEmail, desde, hasta, todoAbierto,
           hasta={hasta}
           todoAbierto={todoAbierto}
           hipotesis={conHipotesis && cfg.area === 'entreno' ? { lista: hipotesis, logs: logs!, ejercicios, hoy, onGuardar: guardar } : undefined}
+          porQueDe={porQueDe}
         />
       ))}
     </div>

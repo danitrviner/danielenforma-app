@@ -2,11 +2,11 @@ import { QuestionnaireAssignment, QuestionnaireResponse, ExcepcionDeFecha } from
 import { isoLocal, addDays } from './trainingWeek.js';
 import {
   todayStr, isDueToday, isUpcoming, ScheduleContext,
-  startOfDay, planWeekDueDate, mesocycleEndDate,
+  startOfDay, planWeekDueDate, mesocycleEndDate, fechasDeBloque,
 } from './scheduleEngine.js';
 import {
   DIA_REVISION_POR_DEFECTO, diasDelCiclo, aperturaDelCiclo, caducidadDelCiclo, aperturaDesde,
-  enPausa, fechasSemanaDelBloque,
+  enPausa,
 } from './cicloRevision.js';
 
 // Shared "is this recurring questionnaire due, and has the athlete already answered
@@ -36,7 +36,7 @@ export function martesDeCaducidad(apertura: string): string {
   return caducidadDelCiclo(apertura);
 }
 
-type ConCalendario = Pick<QuestionnaireAssignment, 'schedule' | 'startDate'>;
+type ConCalendario = Pick<QuestionnaireAssignment, 'schedule' | 'startDate'> & Partial<Pick<QuestionnaireAssignment, 'questionnaireId'>>;
 
 function fijarAlDiaCon<T extends ConCalendario>(a: T, apertura: number, anclar: (iso: string) => string): T {
   const s = a.schedule;
@@ -98,7 +98,7 @@ function ultimoPulso(a: ConCalendario, today: string): Date | null {
 
 /** Fecha en que tocó el último 'mesocycle_week' (hoy incluido), o null. */
 function ultimaSemanaDelBloque(a: ConCalendario, ctx: ScheduleContext | undefined, today: string): string | null {
-  const pasadas = fechasSemanaDelBloque(a.schedule, ctx?.mesocycles ?? [], ctx?.diaRevision).filter(f => f <= today);
+  const pasadas = fechasDeBloque(a, ctx).filter(f => f <= today);
   return pasadas.length > 0 ? pasadas[pasadas.length - 1] : null;
 }
 
@@ -349,4 +349,29 @@ function ocasionesConExcepciones(original: QuestionnaireAssignment, ctx?: Schedu
     ocasiones.push({ desde: e.nuevaFecha, abierta: fin == null || hoy < fin });
   }
   return ocasiones;
+}
+
+/* ── ¿Se le abre hoy? (18-11-2026) ───────────────────────────────────────────
+   Para avisar al atleta de que tiene un cuestionario nuevo: una ocasión que
+   empieza HOY, sea una extra («Mandar ahora»), una fecha movida a hoy o la de
+   la cadencia (si no se ha movido). */
+
+/** Las cadencias que se repiten más de una vez por semana: avisar cada vez
+ *  sería ruido. Sus excepciones sí avisan. */
+function repiteVariasVecesPorSemana(a: Pick<QuestionnaireAssignment, 'schedule'>): boolean {
+  const s = a.schedule;
+  if (s?.type === 'weekdays') return (s.weekdays ?? []).length > 1;
+  if (s?.type === 'interval') return (s.intervalDays ?? 7) < 7;
+  return false;
+}
+
+export function seAbreHoy(original: QuestionnaireAssignment, ctx: ScheduleContext | undefined, hoy: string = todayStr()): boolean {
+  if (!original.schedule) return false;
+  const excepciones = original.excepciones ?? [];
+  if (excepciones.some(e => e.nuevaFecha === hoy)) return true;
+  if (repiteVariasVecesPorSemana(original)) return false;
+  const normal = ultimaOcasionDeCadencia(conDiaDelAtleta(original, ctx), ctx, hoy, original.startDate);
+  if (!normal || normal.desde !== hoy) return false;
+  if (enPausa(normal.desde, ctx?.pausa)) return false;
+  return !excepciones.some(e => e.ocurrencia === normal.clave);
 }

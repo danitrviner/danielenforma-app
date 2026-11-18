@@ -94,7 +94,9 @@ const TITULARES: { id: string; mejorSiSube: boolean | null }[] = [
   { id: 'bw_weekly',          mejorSiSube: null },
   { id: 'irc',                mejorSiSube: true },
   { id: 'adherence_weekly',   mejorSiSube: true },
-  { id: 'irp',                mejorSiSube: true },
+  // Fuera del resumen (Dani, 18-11-2026): el IRP («disposición para entrenar»,
+  // no lo usa y no tiene escala) y el «1RM: <ejercicio>» suelto que iba
+  // detrás. Los dos siguen en «Explorar los datos».
 ];
 
 const TONO_DIRECCION: Record<ResumenMetrica['direccion'], string> = {
@@ -439,17 +441,8 @@ export default function CorrelationPanel({
       if (r) out.push(r);
     }
 
-    // Fuerza: el ejercicio con más sesiones registradas, que ya viene primero
-    // en las variantes. Es el que mejor cuenta la progresión sin pedirle al
-    // coach que elija nada antes de enseñar la pantalla.
-    const ormFam = familias.find(f => f.id === 'orm');
-    if (ormFam) {
-      const v = ormFam.variantes[0];
-      const r = resumirSerie({ id: 'orm_destacado', label: `1RM: ${v.label}`, unit: 'kg', points: v.points, mejorSiSube: true });
-      if (r) out.push(r);
-    }
     return out;
-  }, [allSeries, familias]);
+  }, [allSeries]);
 
   const toggleSeries = (id: string) => {
     setSelectedIds(prev => {

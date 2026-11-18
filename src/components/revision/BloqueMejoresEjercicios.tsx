@@ -54,11 +54,11 @@ export default function BloqueMejoresEjercicios({ suben, bajan, comparacion }: P
       <div className="flex flex-wrap gap-3">
         <Columna
           titulo="Va a más" icono="trending_up" tono="var(--color-success)" filas={suben}
-          vacio="Nada sube por encima del 2 % en esta ventana."
+          vacio="Nada sube más de un 3 % en esta ventana."
         />
         <Columna
           titulo="Va a menos" icono="trending_down" tono="var(--color-danger)" filas={bajan}
-          vacio="Nada baja por encima del 2 %. Buena señal."
+          vacio="Nada baja más de un 3 %. Buena señal."
         />
       </div>
       <p className="font-mono text-caption text-ink-3">

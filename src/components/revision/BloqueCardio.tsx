@@ -1,9 +1,8 @@
 import React from 'react';
 import { CardioDeLaVentana } from '../../utils/cardioDeLaVentana';
-import { TrainingLoadState } from '../../utils/cardioMetrics';
 import { fechaCorta } from '../../utils/trainingWeek';
 import { HubTab } from '../ClientHub';
-import { Sparkline, Badge, Button, Collapsible } from '../ui';
+import { Sparkline, Button, Collapsible } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Bloque — El cardio.
@@ -13,30 +12,15 @@ import { Sparkline, Badge, Button, Collapsible } from '../ui';
    acumulando más carga de la que asimila, el coach tenía que abrir la pestaña
    de Cardio y sumar sesiones a ojo.
 
-   Lo que de verdad decide aquí es el cociente de carga (ATL ÷ CTL): lo de esta
-   semana contra la base de las últimas seis. Por debajo de 0,8 se está
-   desentrenando; por encima de 1,5 está en la zona en la que aparecen las
-   lesiones. Es el dato que explica por qué alguien que «entrena igual que
-   siempre» ha dejado de progresar en la sala.
+   El dato central es el cociente de carga (ATL ÷ CTL): lo de esta semana
+   contra la base de las últimas seis. 1 es lo de siempre; por encima, más de
+   lo que tiene asimilado; por debajo, menos. Sin diagnóstico: el dato se
+   enseña y el coach lo lee con el resto de la semana.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-// El estado no es bueno-malo en línea recta: «óptimo» es lo que se busca, pero
-// «pico» es lo que toca antes de una competición y solo preocupa si se queda.
-const TONO_ESTADO: Record<TrainingLoadState, 'success' | 'warning' | 'danger' | 'neutral'> = {
-  undertraining: 'neutral',
-  optimal: 'success',
-  peaking: 'warning',
-  overreaching: 'warning',
-  at_risk: 'danger',
-};
-
-const TEXTO_ESTADO: Record<TrainingLoadState, string> = {
-  undertraining: 'Está haciendo menos de lo que su base aguanta: hay sitio para subir.',
-  optimal: 'La carga de esta semana va con su base. Es donde se progresa.',
-  peaking: 'Ha apretado por encima de su base. Bien si es a propósito y por poco tiempo.',
-  overreaching: 'Lleva bastante más carga de la que tiene asimilada. Conviene una semana suave.',
-  at_risk: 'Muy por encima de su base: es el rango donde aparecen las lesiones y el estancamiento.',
-};
+// 18-11-2026 (Dani): fuera la etiqueta de diagnóstico («OVERREACHING»,
+// «ÓPTIMO»…) y la frase que la acompañaba. Se queda el dato con su cuenta y
+// una línea neutra para leerlo: qué hacer con él lo decide el coach.
 
 interface Props {
   cardio: CardioDeLaVentana;
@@ -71,18 +55,17 @@ export default function BloqueCardio({ cardio, onGoToTab, todoAbierto = false }:
               <span className="font-mono text-caption text-ink-3 uppercase tracking-[.08em] block">
                 Carga aguda frente a su base
               </span>
-              <span className="flex items-baseline gap-2">
-                <span className="font-sans font-bold text-title-l text-ink tabular-nums">
-                  {carga.tlr.toFixed(2).replace('.', ',')}
-                </span>
-                <Badge tone={TONO_ESTADO[carga.estado]}>{carga.estadoLabel}</Badge>
+              <span className="font-sans font-bold text-title-l text-ink tabular-nums">
+                {carga.tlr.toFixed(2).replace('.', ',')}
               </span>
             </div>
             {carga.serieTlr.length > 1 && (
               <Sparkline values={carga.serieTlr} label="Evolución de la carga de entrenamiento" />
             )}
           </div>
-          <p className="font-sans text-label text-ink-2 leading-relaxed">{TEXTO_ESTADO[carga.estado]}</p>
+          <p className="font-sans text-label text-ink-2 leading-relaxed">
+            1 es lo de siempre: por encima, más carga de la que tiene asimilada; por debajo, menos.
+          </p>
           <p className="font-mono text-caption text-ink-3">
             {carga.atl.toFixed(1).replace('.', ',')} de los últimos 7 días ÷{' '}
             {carga.ctl.toFixed(1).replace('.', ',')} de las últimas 6 semanas

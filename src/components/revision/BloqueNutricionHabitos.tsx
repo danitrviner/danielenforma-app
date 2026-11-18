@@ -5,7 +5,7 @@ import {
   getAthleteDietConfig, getStepsForAthlete, getOnboarding,
   getAthleteNutritionConfig, saveAthleteNutritionConfig,
 } from '../../dbService';
-import { buildNutritionReport, DEFAULT_THRESHOLDS } from '../../utils/nutritionAnalysis';
+import { buildNutritionReport, detectDeficitsExcesses, DEFAULT_THRESHOLDS } from '../../utils/nutritionAnalysis';
 import { computeActivePhase } from '../../utils/fasesNutricion';
 import { dietaDeReferencia } from '../../utils/objetivoDelDia';
 import { getNutritionProgram } from '../../dbService';
@@ -20,11 +20,15 @@ import { Button, Skeleton, Icon } from '../ui';
    revisa lo que ya pasó — ver MicronutrientesPanel).
 
    Va justo detrás de «Qué ha comido» y contesta a otra pregunta: aquel bloque
-   enseña QUÉ eligió comer, este cuánto de lo pautado cumplió, cuánto anduvo y
-   si el plan que tiene puesto cuadra con su objetivo. Los dos leen la MISMA
+   enseña QUÉ eligió comer, este cuánto de lo pautado cumplió y cuánto anduvo.
+   Los dos leen la MISMA
    ventana que el selector de arriba —por eso el motor recibe `ventana`— para
    que el coach no lea en la misma pantalla un «14 días» al lado de un «bloque
    entero» y los compare sin darse cuenta.
+
+   18-11-2026 (Dani): fuera «Macros del plan vs objetivo» y su alerta. Es del
+   plan, no de la semana, y se revisa en Dietas. Las alertas que quedan son
+   las de lo que hizo (adherencia baja).
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const DEFAULT_STEP_GOAL = 8000;
@@ -91,7 +95,7 @@ export default function BloqueNutricionHabitos({
   const informe = useMemo(() => {
     if (cargando) return null;
     try {
-      return buildNutritionReport({
+      const r = buildNutritionReport({
         completionLogs: registros,
         diets: coachDiets,
         activeDiet,
@@ -103,6 +107,8 @@ export default function BloqueNutricionHabitos({
         faseActiva,
         thresholds: { ...DEFAULT_THRESHOLDS, ventana: { desde: ventana.desde, hasta: ventana.hasta } },
       });
+      // Sin las alertas de macros del plan: solo las de lo que hizo esta semana.
+      return { ...r, flags: detectDeficitsExcesses(r.adherence, [], DEFAULT_THRESHOLDS) };
     } catch (err) {
       console.error('BloqueNutricionHabitos: no se pudo construir el informe', err);
       return null;
@@ -156,7 +162,7 @@ export default function BloqueNutricionHabitos({
     );
   }
 
-  const { adherence, steps, weightTrend, macroDeviation, flags } = informe;
+  const { adherence, steps, weightTrend, flags } = informe;
 
   return (
     <div className="space-y-4">
@@ -185,27 +191,6 @@ export default function BloqueNutricionHabitos({
             : 'sin datos'}
         />
       </div>
-
-      {macroDeviation.length > 0 && (
-        <div>
-          <span className="font-mono text-caption text-ink-3 uppercase tracking-[.08em] block mb-2">
-            Macros del plan vs objetivo{faseActiva ? ` de «${faseActiva.name}»` : ' del alta'}
-          </span>
-          <div className="grid grid-cols-3 gap-3">
-            {macroDeviation.map(m => (
-              <div key={m.category}>
-                <span className="block font-sans text-caption text-ink-2">{m.category}</span>
-                <span className={`block font-mono text-body-s font-bold ${Math.abs(m.deviationPct) > DEFAULT_THRESHOLDS.macroDeviationOkPct ? 'text-danger' : 'text-success'}`}>
-                  {m.planGrams}g / {m.targetGrams}g
-                </span>
-                <span className="block font-mono text-caption text-ink-2">
-                  {m.deviationPct > 0 ? '+' : ''}{m.deviationPct}%
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {flags.length > 0 && (
         <div className="border border-warning/30 bg-warning/10 rounded-surface p-4 space-y-1">

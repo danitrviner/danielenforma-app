@@ -11,6 +11,9 @@ export interface Scheduled {
   startDate: string; // YYYY-MM-DD
   /** Fechas movidas y ocasiones extra (ver utils/excepcionesCuestionario.ts). */
   excepciones?: ExcepcionDeFecha[];
+  /** El cuestionario (solo las asignaciones de cuestionario): dice si es el de
+   *  cierre de bloque (ver `ScheduleContext.cuestionariosDeCierre`). */
+  questionnaireId?: string;
 }
 
 /* ── Excepciones (18-11-2026) ────────────────────────────────────────────────
@@ -32,11 +35,22 @@ export interface ScheduleContext {
   diaRevision?: number;
   /** Vacaciones o pausa: los ciclos que se abren dentro no se piden. */
   pausa?: PausaRevisiones;
+  /** Ids de los cuestionarios de cierre de bloque (18-11-2026,
+   *  `idsDeCuestionariosDeCierre` en utils/cicloRevision.ts). Solo esos siguen
+   *  la semana de cierre elegida en el bloque (`Mesocycle.semanaDeCierre`); el
+   *  resto de «última semana» (las mediciones) va a la última de verdad. Sin
+   *  esto, ninguno se mueve. */
+  cuestionariosDeCierre?: ReadonlySet<string>;
+}
+
+/** ¿Esta asignación es la del cuestionario de cierre de bloque? */
+export function esAsignacionDeCierre(a: { questionnaireId?: string }, ctx?: ScheduleContext): boolean {
+  return !!a.questionnaireId && !!ctx?.cuestionariosDeCierre?.has(a.questionnaireId);
 }
 
 /** Fechas de un 'mesocycle_week' para el contexto dado. */
-function fechasDeBloque(schedule: QSchedule, ctx?: ScheduleContext): string[] {
-  return fechasSemanaDelBloque(schedule, ctx?.mesocycles ?? [], ctx?.diaRevision);
+export function fechasDeBloque(a: Pick<Scheduled, 'schedule' | 'questionnaireId'>, ctx?: ScheduleContext): string[] {
+  return fechasSemanaDelBloque(a.schedule, ctx?.mesocycles ?? [], ctx?.diaRevision, { conElCierre: esAsignacionDeCierre(a, ctx) });
 }
 
 /* Era `hoyIsoLocal()`, o sea el día en UTC. El resto
@@ -114,7 +128,7 @@ function tocaHoySegunCadencia(a: Scheduled, ctx?: ScheduleContext): boolean {
     const offset = a.schedule.mesocycleOffsetDays ?? 0;
     return (ctx?.mesocycles ?? []).some(m => mesocycleEndDate(m, offset).getTime() === today.getTime());
   }
-  if (type === 'mesocycle_week') return fechasDeBloque(a.schedule, ctx).includes(todayStr());
+  if (type === 'mesocycle_week') return fechasDeBloque(a, ctx).includes(todayStr());
   return false;
 }
 
@@ -134,7 +148,7 @@ export function isUpcoming(a: Scheduled, ctx?: ScheduleContext): boolean {
     const offset = a.schedule.mesocycleOffsetDays ?? 0;
     return (ctx?.mesocycles ?? []).some(m => mesocycleEndDate(m, offset).getTime() > today.getTime());
   }
-  if (type === 'mesocycle_week') return fechasDeBloque(a.schedule, ctx).some(f => f > todayStr());
+  if (type === 'mesocycle_week') return fechasDeBloque(a, ctx).some(f => f > todayStr());
   return today <= start || type !== 'once';
 }
 
@@ -343,7 +357,7 @@ function proximaSegunCadencia(a: Scheduled, ctx: ScheduleContext | undefined, ho
     }
 
     case 'mesocycle_week':
-      return fechasDeBloque(a.schedule, ctx).find(f => f >= ymdLocal(hoy)) ?? null;
+      return fechasDeBloque(a, ctx).find(f => f >= ymdLocal(hoy)) ?? null;
 
     default:
       return null;

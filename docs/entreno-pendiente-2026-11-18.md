@@ -28,11 +28,12 @@ Idea (de la formación de Heracles): al cerrar un bloque, ver si al atleta le va
 
 ## 2. Cuestionario de cierre: semana a elegir, mandar ahora y mover fechas — HECHO (18-11, sin commitear)
 
-- Semana del cierre: `Mesocycle.semanaDeCierre` (semana de ciclo, como la descarga; sin valor = la última), campo «Cuestionario de cierre en la semana [N]» en la cabecera del bloque. Lo lee `semanaPedida` (`utils/cicloRevision.ts`) para TODAS las asignaciones «semana del bloque = última» (cierre y mediciones). Además `QSchedule.semanaNumero` (semana de calendario concreta en la asignación), ofrecida en `ScheduleFields` («Una semana de cada bloque»); `claveDeItem` ya la distingue.
+- Semana del cierre: `Mesocycle.semanaDeCierre` (semana de ciclo, como la descarga; sin valor = la última), campo «Cuestionario de cierre en la semana [N]» en la cabecera del bloque. Solo mueve el cuestionario de CIERRE (señales `meso_end.*` o título «Cierre de bloque»: `esCuestionarioDeCierre`, vía `ScheduleContext.cuestionariosDeCierre`); las mediciones siguen en la última semana (Dani, 18-11). Todo contexto de calendario debe llevar esos ids (hoy: `useRevisionDeLaSemana`, `PendingTasksPanel`, Asignadas y el latido); sin ellos no se mueve ninguno. Además `QSchedule.semanaNumero` (semana de calendario concreta en la asignación), ofrecida en `ScheduleFields` («Una semana de cada bloque»); `claveDeItem` ya la distingue.
 - Mandar ahora y Cambiar esta fecha: `QuestionnaireAssignment.excepciones` (`{ ocurrencia?, nuevaFecha }`), aplicadas en `isOverdue`, `hasAnsweredThisOccurrence`, `isDueToday`, `isUpcoming` y `proximaOcurrencia`; funciones puras en `utils/excepcionesCuestionario.ts` (con limpieza de las pasadas) y escritura en `db/questionnaires.ts` (`guardarExcepcionDeFecha`, `quitarExcepcionDeFecha`). Botones en Cliente › Revisiones › Asignadas, con «Deshacer». Sin reglas nuevas.
 - Preguntas nuevas del paquete oficial: `utils/preguntasDelPaquete.ts` + aviso «Añadirlas» en el editor de cuestionarios. **Lo pulsa Dani después de desplegar.**
 - Banco: `/dev/asignados` (Asignadas) y `/dev/asignados?pantalla=cuestionarios` (aviso).
-- Falta: QA real con sesión de coach y de atleta; las acciones de Asignadas van en una sola versión (sin variantes).
+- Aviso de cuestionario nuevo (18-11, sin commitear): tipo `cuestionario_nuevo` en la campana de la app (no es push: no hay FCM ni web push). Lo deja el coach al pulsar «Mandar ahora», al mover una fecha a hoy o al asignar uno que ya toca; y el latido nocturno, el día que se abre una ocasión fuera del día de apertura (misma clave, no se duplica). El día de apertura, «Tu revisión ya está abierta» nombra lo no semanal (cierre, mediciones, hitos). Funciones en `utils/recordatoriosRevision.ts` (`seAbreHoy` en `questionnaireSchedule.ts`). Necesita desplegar `api/latido-diario.ts` (sin reglas ni índices nuevos).
+- Falta: QA real con sesión de coach y de atleta; las acciones de Asignadas van en una sola versión (sin variantes); push real al móvil (ver informe del 18-11).
 
 ## 3. Revisión semanal del cliente, pensada para el vídeo
 
@@ -45,6 +46,8 @@ Dani graba un vídeo sobre Cliente › Revisión y se lo manda al atleta: la pan
 - Fuera lo de grupos musculares (el aviso de «no llegan al mínimo efectivo», restos del mapa de calor). Las estadísticas se quedan.
 - También propuesto y sin objeción: quitar el % agregado por patrón cuando mezcla ejercicios, la proyección de peso por fórmula cuando hay gasto real medido, los macros del plan contra el objetivo, el «1RM de curl» de El cuerpo y la etiqueta «OVERREACHING» del cardio; comparación fija semana contra semana anterior.
 - Siguiente paso: maquetas en 2-3 versiones calcando la pantalla real (`/dev/revision-coach`), y luego construir.
+
+**Hecho (18-11, sin commitear):** lógica pura y probada en `src/utils/revisionDeLaSemana/` (vistazo, lo que me contaste, cómo vas, la semana que viene, lo que pide decisión); componentes nuevos en `src/components/revision/` (`LoQuePideDecision`, `VistazoDeLaSemana`, `LoQueMeContaste`, `ComoVas`, `SemanaQueViene`); `ClientRevisionPanel` reordenado (preparar arriba, relato 1-5, detalle plegado salvo «Qué ha comido»). Quitados: grupos y disposición en titulares, IRP y 1RM del resumen de El cuerpo, % agregado del patrón (ahora suben/bajan/se mantienen), macros del plan, OVERREACHING y la proyección por fórmula con gasto real. Dos versiones de la parte de arriba (`variante` a/b; banco: conmutador o `?variante=b`). **Falta:** que Dani elija versión; QA real; `src/ai/tools/lectores.ts` 1275-1285 sigue mandando al asistente el % por patrón, `volumenPorGrupo` y `disposicion`; `revisionCoach.ts` 505 sigue usando el IRP por dentro (estancamiento y descarga).
 
 ## 4. Elecciones
 

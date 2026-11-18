@@ -11,7 +11,7 @@ import NutritionPerformanceDashboard from '../NutritionPerformanceDashboard';
 import BodyMeasurementsPanel from '../BodyMeasurementsPanel';
 import CorrelationPanel from '../CorrelationPanel';
 import ComparadorFotos from './ComparadorFotos';
-import GastoReal from './GastoReal';
+import GastoReal, { useGastoReal } from './GastoReal';
 import { Skeleton, Collapsible, Button, Icon, Sheet } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -33,13 +33,20 @@ import { Skeleton, Collapsible, Button, Icon, Sheet } from '../ui';
    que se abre.
 
    ── Lo que se tragó de «Análisis › Correlaciones» ──────────────────────────
-   Los titulares (%grasa, masa magra, cintura, peso, IRC, adherencia, IRP y el
-   1RM del ejercicio más registrado, cada uno con su cambio y su sparkline) eran
+   Los titulares (%grasa, masa magra, cintura, peso, IRC y adherencia, cada
+   uno con su cambio y su sparkline; el IRP y el «1RM: <ejercicio>» suelto se
+   quitaron el 18-11-2026 a petición de Dani) eran
    la mitad «Resumen» de aquella pestaña, y son exactamente lo que se cuenta en
    el vídeo: entran aquí, arriba del todo, sin cabecera propia. La otra mitad
    —elegir series, cruzarlas, mirar el Pearson— pide clicar y comparar, así que
    se queda a un botón de distancia en una hoja: no corta el scroll de la
    grabación, pero sigue estando cuando el número raro obliga a bajar a mirar.
+
+   ── Gasto real antes que fórmula (18-11-2026) ──────────────────────────────
+   Con gasto real medido, la proyección de peso por fórmula (Mifflin y 7.700
+   kcal/kg) no sale: decía «+9,6 kg por encima del plan» y un déficit de 1.095
+   kcal/día que el gasto real (2.250 frente a 2.731) desmentía. Solo sale si no
+   hay gasto real, y con el nombre de lo que es: una estimación.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
@@ -68,6 +75,8 @@ export default function BloqueCuerpo({
     queryKey: ['nutritionProgram', athlete.email],
     queryFn: () => getNutritionProgram(athlete.email),
   });
+  // Mismas consultas que la tarjeta de gasto real: sale de la caché.
+  const { esReal, cargando: cargandoGasto } = useGastoReal(athlete.email);
 
   return (
     <div className="space-y-4">
@@ -93,18 +102,17 @@ export default function BloqueCuerpo({
 
       <GastoReal athleteEmail={athlete.email} />
 
-      {/* ── Detalle técnico: la proyección por kcal de la periodización ───── */}
-      {/* Plegado: la tarjeta de objetivo ya da el veredicto. Esto es el «por
-          qué» (curva según fórmula, según adherencia, gasto estimado) para
-          cuando el veredicto sorprende. Montado solo al abrir: son seis
-          consultas, dos de ellas colecciones de un documento por día. */}
-      {isPending ? (
+      {/* ── Estimación por fórmula: solo si no hay gasto real ────────────── */}
+      {/* Plegado y montado solo al abrir: son seis consultas, dos de ellas
+          colecciones de un documento por día. Con gasto real medido no sale:
+          manda lo medido (ver la cabecera del fichero). */}
+      {isPending || cargandoGasto ? (
         <Skeleton className="w-full h-12 rounded-surface" />
-      ) : programa ? (
+      ) : programa && !esReal ? (
         <Collapsible
           key={`detalle-${todoAbierto}`}
           defaultOpen={todoAbierto}
-          trigger={<span className="font-sans font-bold text-label text-ink">Detalle técnico · proyección por kcal</span>}
+          trigger={<span className="font-sans font-bold text-label text-ink">Estimación por fórmula · sin gasto real todavía</span>}
         >
           <NutritionPerformanceDashboard
             athleteEmail={athlete.email}

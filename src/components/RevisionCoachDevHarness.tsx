@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   UserProfile, Exercise, Mesocycle, MuscleGroup, MuscleGroupConfig, WorkoutLog,
@@ -18,6 +18,11 @@ import SeguimientoCdg from './mesociclo/SeguimientoCdg';
 import DossierPanel from './DossierPanel';
 import { DOSSIER_VACIO } from '../db/dossier';
 import { EscriturasDelCierreContext, type EscriturasDelCierre } from './cierre/escriturasDelCierre';
+import type { QuestionnaireAssignment } from '../types';
+import type { CambioAtleta } from '../utils/cambiosAtleta';
+import type { Hipotesis } from '../utils/hipotesis';
+import type { VarianteSemana } from './revision/VistazoDeLaSemana';
+import { SegmentedControl } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Banco de pruebas de Cliente › Revisión — ruta `/dev/revision-coach`, solo en
@@ -34,9 +39,15 @@ import { EscriturasDelCierreContext, type EscriturasDelCierre } from './cierre/e
 
    El fixture no es decorativo, ejercita los casos que el motor tiene que
    resolver bien: un bloque EN CURSO (para que la normalización por semanas
-   transcurridas se vea), un grupo prioritario al que no se le está dando
-   volumen, un ejercicio que se estrena (no debe salir como «el que más sube»)
-   y otro que baja.
+   transcurridas se vea), un ejercicio que se estrena (no debe salir como «el
+   que más sube») y otro que baja.
+
+   Revisión de la semana (18-11-2026): `?variante=b` (o el conmutador de
+   arriba) cambia la versión de «Tu semana de un vistazo» y «Lo que me
+   contaste». Para «La semana que viene» hay un cambio programado en la semana
+   4 (sentadilla 3 → 4 series), cargas pautadas con rango y un cuestionario
+   semanal asignado; para «Lo que pide decisión», cambios con hipótesis (uno
+   ya por mirar) y el peso yendo más lento de lo que pide la fase.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const EMAIL = 'dev.coach@example.com';
@@ -493,13 +504,21 @@ const CARDIO: CardioSession[] = (() => {
 // caso que el repaso de «Antes de publicar» tiene que cazar, porque está hecho
 // —la sesión existe y la checklist la da por buena— y el atleta se la encuentra
 // en blanco.
+// Con rango y RIR pautados (18-11-2026): de ahí sale el siguiente paso de carga
+// de «La semana que viene». La sentadilla sube a 4 series en la semana 4: es el
+// cambio programado que esa sección tiene que contar.
+const pauta = (exerciseId: string, order: number, reps: string, extra: Record<string, unknown> = {}) =>
+  ({ exerciseId, order, sets: 3, reps, rir: 2, restSeconds: 120, ...extra });
 const RUTINAS: Workout[] = [
   { id: 'w_1', ownerId: 'coach', name: 'Día 1 · Torso', mesocycleId: 'meso_2', dayIndex: 0,
-    exercises: [{ exerciseId: 'press_banca', sets: 3 }, { exerciseId: 'remo_barra', sets: 3 }] },
+    exercises: [pauta('press_banca', 0, '6-8'), pauta('remo_barra', 1, '8-10')] },
   { id: 'w_2', ownerId: 'coach', name: 'Día 2 · Pierna', mesocycleId: 'meso_2', dayIndex: 1,
-    exercises: [{ exerciseId: 'sentadilla', sets: 3 }, { exerciseId: 'peso_muerto_rumano', sets: 3 }] },
+    exercises: [
+      pauta('sentadilla', 0, '6-8', { weeklyProgression: [{ atWeek: 4, cambios: { sets: 4 } }] }),
+      pauta('peso_muerto_rumano', 1, '8-10'),
+    ] },
   { id: 'w_3', ownerId: 'coach', name: 'Día 3 · Empuje', mesocycleId: 'meso_2', dayIndex: 2,
-    exercises: [{ exerciseId: 'press_inclinado', sets: 3 }] },
+    exercises: [pauta('press_inclinado', 0, '8-10')] },
   { id: 'w_4', ownerId: 'coach', name: 'Día 4 · Tirón', mesocycleId: 'meso_2', dayIndex: 3,
     exercises: [] },
 ] as unknown as Workout[];
@@ -533,6 +552,8 @@ const Q_SEMANAL: Questionnaire = {
     { id: 'q4', label: 'Agujetas · Pecho', type: 'scale', required: false, scaleMin: 0, scaleMax: 10, signalKey: 'doms.pecho' },
     { id: 'q5', label: 'Agujetas · Dorsal', type: 'scale', required: false, scaleMin: 0, scaleMax: 10, signalKey: 'doms.dorsal' },
     { id: 'q6', label: 'Agujetas · Cuádriceps', type: 'scale', required: false, scaleMin: 0, scaleMax: 10, signalKey: 'doms.cuadriceps' },
+    // Texto libre (18-11-2026): «Lo que me contaste» busca el día que nombra.
+    { id: 'q7', label: '¿Algo que contarme de la semana?', type: 'text', required: false },
   ],
 };
 
@@ -550,8 +571,31 @@ const RESPUESTAS: QuestionnaireResponse[] = [35, 28, 21, 14, 7].map((d, i) => ({
     { questionId: 'q4', value: [7, 6, 5, 4, 3][i] },
     { questionId: 'q5', value: [5, 4, 4, 3, 3][i] },
     { questionId: 'q6', value: [7, 8, 8, 7, 8][i] },
+    ...(i === 4 ? [{ questionId: 'q7', value: 'El jueves salí reventado de pierna, el resto bien.' }] : []),
   ],
 }));
+
+// El cuestionario semanal asignado: «La semana que viene» dice cuándo le toca.
+const ASIGNACIONES_Q: QuestionnaireAssignment[] = [{
+  id: 'as_semanal', questionnaireId: 'q_semanal', athleteId: EMAIL,
+  schedule: { type: 'weekdays', weekdays: [5] }, startDate: haceDias(60), active: true, createdAt: haceDias(60),
+} as QuestionnaireAssignment];
+
+// Lo que he cambiado (18-11-2026): uno de hace diez días con su hipótesis ya
+// por mirar (sale en «Lo que pide decisión»), y dos de esta semana, uno con lo
+// que se busca (sale como «por qué» al presentar).
+const CAMBIOS: CambioAtleta[] = [
+  { id: 'c_1', athleteId: EMAIL, area: 'entreno', objeto: 'rutina:w_1', titulo: 'Día 1 · Torso',
+    lineas: ['Press banca: descanso 2:00 → 2:30'], at: `${haceDias(10)}T10:00:00.000Z`, autor: 'coach' },
+  { id: 'c_2', athleteId: EMAIL, area: 'nutricion', objeto: 'dieta:d_deficit', titulo: 'Dieta «Déficit»',
+    lineas: ['Kcal 2.100 → 2.050'], at: `${haceDias(3)}T10:00:00.000Z`, autor: 'coach' },
+  { id: 'c_3', athleteId: EMAIL, area: 'entreno', objeto: 'meso:meso_2', titulo: 'Hipertrofia otoño',
+    lineas: ['Sentadilla: 3 → 4 series desde la semana 4'], at: `${haceDias(2)}T10:00:00.000Z`, autor: 'coach' },
+];
+const HIPOTESIS: Hipotesis[] = [
+  { id: 'c_1', espero: 'Que la 2.ª serie de press no se caiga tanto', exerciseId: 'press_banca', desde: haceDias(10), revisarEl: haceDias(1) },
+  { id: 'c_3', espero: 'Más estímulo de cuádriceps sin pasar de 7 de cansancio', exerciseId: 'sentadilla', desde: haceDias(2), revisarEl: haceDias(-14) },
+];
 
 // Lo que el cierre de bloque escribe (firmar veredictos, crear el bloque
 // siguiente) se queda aquí, en la consola: sin sesión de coach Firestore lo
@@ -588,6 +632,10 @@ export default function RevisionCoachDevHarness() {
   const casoParam = new URLSearchParams(window.location.search).get('caso');
   const caso: CasoDeHipotesis = casoParam === 'parcial' || casoParam === 'deficit' || casoParam === 'primer' ? casoParam : null;
   const mesoActual = useMemo(() => mesoActualDe(caso), [caso]);
+  // Versión de la parte nueva de arriba de la revisión semanal (18-11-2026).
+  const [variante, setVariante] = useState<VarianteSemana>(
+    () => (new URLSearchParams(window.location.search).get('variante') === 'b' ? 'b' : 'a'),
+  );
   // En un primer bloque no hay bloque anterior.
   const bloques = useMemo(() => (caso === 'primer' ? [mesoActual] : [MESO_ANTERIOR, mesoActual]), [caso, mesoActual]);
   const logs = caso === 'primer' ? LOGS_PRIMER : LOGS;
@@ -647,6 +695,9 @@ export default function RevisionCoachDevHarness() {
     qc.setQueryData(['weeklyChallengesForAthlete', EMAIL], RETOS);
     qc.setQueryData(['cardioSessions', EMAIL], CARDIO);
     qc.setQueryData(['workouts'], RUTINAS);
+    qc.setQueryData(['assignmentsForAthlete', EMAIL], ASIGNACIONES_Q);
+    qc.setQueryData(['cambiosAtleta', EMAIL], CAMBIOS);
+    qc.setQueryData(['hipotesis', EMAIL], HIPOTESIS);
     // Implantación.
     qc.setQueryData(['roadmap', EMAIL], null);
     qc.setQueryData(cdgCatalogoKey, JSON.stringify(catalogoCdgPrueba));
@@ -720,7 +771,16 @@ export default function RevisionCoachDevHarness() {
             />
           ) : (
           <EscriturasDelCierreContext.Provider value={ESCRITURAS_DE_MENTIRA}>
+          <div className="mb-4">
+            <SegmentedControl
+              label="Versión de «Tu semana» y «Lo que me contaste»"
+              value={variante}
+              onChange={v => setVariante(v as VarianteSemana)}
+              options={[{ value: 'a', label: 'A · Cifras' }, { value: 'b', label: 'B · Barras y citas' }]}
+            />
+          </div>
           <ClientRevisionPanel
+            variante={variante}
             athlete={PERFIL}
             logs={anatomia ? LOGS_ANATOMIA : logs}
             exercises={anatomia ? EJERCICIOS_ANATOMIA : EJERCICIOS}

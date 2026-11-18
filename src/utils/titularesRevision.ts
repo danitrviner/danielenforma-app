@@ -74,7 +74,7 @@ export function construirTitulares(params: {
   athleteName?: string;
 }): TitularesDeLaRevision {
   const { revision, comida = null, peso = null } = params;
-  const { informe, mapa, suben, bajan, bienestar, ventana } = revision;
+  const { informe, suben, bajan, bienestar, ventana } = revision;
   const t: Titular[] = [];
 
   // ── Ha entrenado o no ────────────────────────────────────────────────────
@@ -91,33 +91,12 @@ export function construirTitulares(params: {
     });
   }
 
-  // ── Grupos prioritarios a los que no se les está dando volumen ───────────
-  const abandonados = mapa.filter(
-    c => c.prioridad === 'alta' && (c.zona === 'sin_volumen' || c.zona === 'mev'),
-  );
-  if (abandonados.length > 0) {
-    t.push({
-      id: 'prioritarios_sin_volumen', tono: 'alarma',
-      texto: `${listar(abandonados.map(c => c.label))} ${abandonados.length === 1 ? 'es prioridad alta y no llega' : 'son prioridad alta y no llegan'} al mínimo efectivo.`,
-      // Del coach: el atleta no decide el volumen, lo ajusto yo.
-    });
-  }
-
   // ── Agujetas que no se van ───────────────────────────────────────────────
   if (bienestar.domsCronico.length > 0) {
     t.push({
       id: 'doms_cronico', tono: 'alarma',
       texto: `Arrastra agujetas en ${listar(bienestar.domsCronico.map(d => MUSCLE_LABELS[d.grupo].toLowerCase()))} desde hace semanas.`,
       paraCliente: `Llevas semanas con agujetas en ${listar(bienestar.domsCronico.map(d => MUSCLE_LABELS[d.grupo].toLowerCase()))}: vamos a ajustarlo.`,
-    });
-  }
-
-  // ── Disposición en negativo ──────────────────────────────────────────────
-  if (bienestar.irp.valor != null && bienestar.irp.valor <= 0) {
-    t.push({
-      id: 'irp_negativo', tono: 'alarma',
-      texto: 'Entre el estrés y las agujetas no le queda margen de recuperación: ahora mismo no es momento de subirle carga.',
-      paraCliente: 'Vienes justo de descanso y de recuperación, así que esta vuelta toca aflojar antes que apretar.',
     });
   }
 

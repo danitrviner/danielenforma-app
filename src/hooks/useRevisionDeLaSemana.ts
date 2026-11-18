@@ -9,7 +9,7 @@ import { todayStr, type ScheduleContext } from '../utils/questionnaireSchedule';
 import { revisionDeLaSemana, pasosQueFaltan } from '../utils/revisionSemanal';
 import { pesoUltimoKey } from './useAthleteWeight';
 import { useProgresoRevision } from './useProgresoRevision';
-import type { AjustesRevision } from '../utils/cicloRevision';
+import { idsDeCuestionariosDeCierre, type AjustesRevision } from '../utils/cicloRevision';
 
 /**
  * La revisión de ESTA semana y todo lo que hace falta para calcularla: un solo
@@ -73,9 +73,11 @@ export function useRevisionDeLaSemana(email: string, cargar = true, ajustes: Aju
     enabled: habilitado,
   });
   const { diaRevision, pausa } = ajustes;
+  // Solo el cuestionario de cierre sigue la semana de cierre del bloque (18-11).
+  const cuestionariosDeCierre = useMemo(() => idsDeCuestionariosDeCierre(templates.values()), [templates]);
   const scheduleCtx: ScheduleContext = useMemo(
-    () => ({ mesocycles: mesocyclesQ ?? [], diaRevision, pausa }),
-    [mesocyclesQ, diaRevision, pausa],
+    () => ({ mesocycles: mesocyclesQ ?? [], diaRevision, pausa, cuestionariosDeCierre }),
+    [mesocyclesQ, diaRevision, pausa, cuestionariosDeCierre],
   );
 
   const loadingQ = loadingAssignments || loadingResponses

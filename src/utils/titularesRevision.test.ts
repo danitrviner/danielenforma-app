@@ -22,7 +22,7 @@ describe('construirTitulares', () => {
   it('las alarmas van antes que lo que va bien, y lo neutro al final', () => {
     const r = construirTitulares({
       revision: revision({
-        mapa: [{ label: 'Pecho', prioridad: 'alta', zona: 'sin_volumen' }],
+        bajan: [{ exerciseId: 'remo', name: 'Remo', deltaOrmPct: -5 }],
         suben: [{ name: 'Press banca', deltaOrmPct: 6 }],
         informe: {
           sessions: 4, comparisonLabel: 'vs la semana anterior',
@@ -33,8 +33,20 @@ describe('construirTitulares', () => {
     const tonos = r.titulares.map(t => t.tono);
     expect(tonos).toEqual([...tonos].sort((a, b) =>
       ({ alarma: 0, bien: 1, neutro: 2 })[a] - ({ alarma: 0, bien: 1, neutro: 2 })[b]));
-    expect(ids(r)).toContain('prioritarios_sin_volumen');
+    expect(ids(r)).toContain('baja');
     expect(ids(r)).toContain('records');
+  });
+
+  it('ya no habla de grupos musculares ni de la disposición para entrenar (Dani, 18-11-2026)', () => {
+    const r = construirTitulares({
+      revision: revision({
+        mapa: [{ label: 'Pecho', prioridad: 'alta', zona: 'sin_volumen' }],
+        bienestar: { irp: { valor: -0.6 }, domsCronico: [] },
+      }),
+    });
+    expect(ids(r)).not.toContain('prioritarios_sin_volumen');
+    expect(ids(r)).not.toContain('irp_negativo');
+    expect(r.titulares.map(t => t.texto).join(' ')).not.toMatch(/mínimo efectivo|margen de recuperación/);
   });
 
   it('sin sesiones lo canta como alarma', () => {
@@ -120,18 +132,18 @@ describe('el borrador solo dice lo que se le puede decir al atleta', () => {
     const r = construirTitulares({
       revision: {
         ventana: { etiqueta: 'Últimos 7 días' },
-        informe: { sessions: 3, comparisonLabel: 'vs la semana anterior', perExercise: [] },
+        informe: { sessions: 3, comparisonLabel: 'vs la semana anterior', perExercise: [{ exerciseId: 'press', name: 'Press banca' }] },
         // Este titular es una decisión de programación: no tiene versión para él.
-        mapa: [{ label: 'Pecho', prioridad: 'alta', zona: 'sin_volumen' }],
-        suben: [], bajan: [],
+        limitantes: [{ exerciseId: 'press', motivo: 'agarre', veces: 3, de: 4, arreglo: 'usa straps' }],
+        mapa: [], suben: [], bajan: [],
         bienestar: { irp: { valor: 4 }, domsCronico: [] },
       } as unknown as RevisionDelAtleta,
     });
-    const coach = r.titulares.find(t => t.id === 'prioritarios_sin_volumen');
+    const coach = r.titulares.find(t => t.id === 'limitante_press');
     expect(coach).toBeDefined();
     expect(coach?.paraCliente).toBeUndefined();
-    expect(r.resumenParaCliente).not.toContain('mínimo efectivo');
-    expect(r.resumenParaCliente).not.toContain('prioridad alta');
+    expect(r.resumenParaCliente).not.toContain('agarre');
+    expect(r.resumenParaCliente).not.toContain('straps');
   });
 
   it('los que sí la tienen aparecen en segunda persona', () => {

@@ -1,4 +1,4 @@
-import type { Mesocycle, QSchedule } from '../types.js';
+import type { Mesocycle, QSchedule, Questionnaire } from '../types.js';
 import { addDays } from './trainingWeek.js';
 import { cicloDiasDeMeso } from './asignacionMesociclo.js';
 import { vueltasDelCiclo } from './progression.js';
@@ -106,13 +106,49 @@ export function semanaDeCierreEnCalendario(m: BloqueDelCalendario): number | nul
   return Math.min(semanas, Math.floor((vuelta * ciclo - 1) / 7) + 1);
 }
 
+/* ── El cuestionario de cierre (18-11-2026) ─────────────────────────────────
+   La semana elegida en la cabecera del bloque (`semanaDeCierre`) solo mueve el
+   cuestionario de CIERRE de bloque. Las mediciones y cualquier otro «última
+   semana» siguen en la última semana real del bloque (Dani: «que se hagan al
+   finalizar el mesociclo»).
+
+   El calendario de las dos asignaciones es idéntico ('mesocycle_week',
+   'ultima'), así que se distingue por el cuestionario: es de cierre el que
+   lleva alguna pregunta con señal `meso_end.*` (las que leen el cierre del
+   bloque y la hipótesis), o el que se llama como la plantilla oficial. */
+
+export const TITULO_CIERRE_DE_BLOQUE = 'Cierre de bloque';
+
+/** ¿Es un cuestionario de cierre de bloque? */
+export function esCuestionarioDeCierre(q: Pick<Questionnaire, 'title' | 'questions'>): boolean {
+  return q.title === TITULO_CIERRE_DE_BLOQUE
+    || (q.questions ?? []).some(p => typeof p.signalKey === 'string' && p.signalKey.startsWith('meso_end.'));
+}
+
+/** Los ids de los cuestionarios de cierre de entre las plantillas dadas
+ *  (para `ScheduleContext.cuestionariosDeCierre`). */
+export function idsDeCuestionariosDeCierre(
+  plantillas: Iterable<Pick<Questionnaire, 'id' | 'title' | 'questions'> | null | undefined>,
+): Set<string> {
+  const ids = new Set<string>();
+  for (const q of plantillas) if (q && esCuestionarioDeCierre(q)) ids.add(q.id);
+  return ids;
+}
+
+export interface OpcionesDeSemana {
+  /** La asignación es la del cuestionario de cierre: su «última» es la semana
+   *  elegida en el bloque (`semanaDeCierre`). Sin esto, la última de verdad. */
+  conElCierre?: boolean;
+}
+
 /** Semana (1-indexada) del bloque que pide el calendario, o null si en ese
  *  bloque no toca (descarga, o más corto que `minSemanasBloque`).
  *
  *  Por orden: una semana concreta de la asignación (`semanaNumero`), y si no,
- *  primera, mitad o última. La última es la del cierre: si el bloque eligió
- *  otra semana para el cierre (`semanaDeCierre`), esa. */
-export function semanaPedida(s: QSchedule, m: BloqueDelCalendario): number | null {
+ *  primera, mitad o última. La última es la última del bloque, salvo para el
+ *  cuestionario de cierre (`conElCierre`) si el bloque eligió otra semana para
+ *  el cierre (`semanaDeCierre`). */
+export function semanaPedida(s: QSchedule, m: BloqueDelCalendario, opciones?: OpcionesDeSemana): number | null {
   if (esBloqueDeDescarga(m)) return null;
   if (s.minSemanasBloque && m.weeks < s.minSemanasBloque) return null;
   const semanas = Math.max(1, m.weeks);
@@ -122,15 +158,17 @@ export function semanaPedida(s: QSchedule, m: BloqueDelCalendario): number | nul
   switch (s.semanaDelBloque ?? 'ultima') {
     case 'primera': return 1;
     case 'mitad': return Math.ceil(semanas / 2);
-    default: return semanaDeCierreEnCalendario(m) ?? semanas;
+    default: return (opciones?.conElCierre ? semanaDeCierreEnCalendario(m) : null) ?? semanas;
   }
 }
 
 /** Fecha (apertura del ciclo de revisión) en que toca en un bloque concreto.
  *  Es la apertura del ciclo que contiene el último día de esa semana del
  *  bloque, sin salirse del bloque por delante. */
-export function fechaSemanaDelBloque(s: QSchedule, m: BloqueDelCalendario & Pick<Mesocycle, 'startDate'>, diaRevision?: number | null): string | null {
-  const semana = semanaPedida(s, m);
+export function fechaSemanaDelBloque(
+  s: QSchedule, m: BloqueDelCalendario & Pick<Mesocycle, 'startDate'>, diaRevision?: number | null, opciones?: OpcionesDeSemana,
+): string | null {
+  const semana = semanaPedida(s, m, opciones);
   if (semana == null) return null;
   const ultimoDiaDeLaSemana = addDays(m.startDate.slice(0, 10), semana * 7 - 1);
   const apertura = aperturaDelCiclo(ultimoDiaDeLaSemana, diaRevision);
@@ -138,9 +176,11 @@ export function fechaSemanaDelBloque(s: QSchedule, m: BloqueDelCalendario & Pick
 }
 
 /** Todas las fechas en que toca un 'mesocycle_week', una por bloque, ordenadas. */
-export function fechasSemanaDelBloque(s: QSchedule, mesos: (BloqueDelCalendario & Pick<Mesocycle, 'startDate'>)[], diaRevision?: number | null): string[] {
+export function fechasSemanaDelBloque(
+  s: QSchedule, mesos: (BloqueDelCalendario & Pick<Mesocycle, 'startDate'>)[], diaRevision?: number | null, opciones?: OpcionesDeSemana,
+): string[] {
   return mesos
-    .map(m => fechaSemanaDelBloque(s, m, diaRevision))
+    .map(m => fechaSemanaDelBloque(s, m, diaRevision, opciones))
     .filter((f): f is string => !!f)
     .sort();
 }

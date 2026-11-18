@@ -8,11 +8,13 @@ import {
 import {
   assignQuestionnaire, assignQuestionnairesBatch, deactivateAssignment, createQuestionnaire,
   getQuestionnairePacksByCoach, createQuestionnairePack, updateQuestionnairePack, deleteQuestionnairePack,
-  getMesocycles,
+  getMesocycles, createNotificationDeduped,
 } from '../dbService';
-import { fijarAlViernes, fijarAlViernesAlCrear, type ScheduleContext } from '../utils/questionnaireSchedule';
+import { fijarAlViernes, fijarAlViernesAlCrear, isOverdue, type ScheduleContext } from '../utils/questionnaireSchedule';
 import { guardarExcepcionDeFecha, quitarExcepcionDeFecha } from '../db/questionnaires';
 import { extrasVigentes } from '../utils/excepcionesCuestionario';
+import { idsDeCuestionariosDeCierre } from '../utils/cicloRevision';
+import { avisoDeCuestionarioNuevo } from '../utils/recordatoriosRevision';
 import DiaRevisionAtleta from './revision/DiaRevisionAtleta';
 import { crearPaqueteOficial, itemsPendientes } from '../utils/paqueteOficial';
 import { PAQUETE_OFICIAL } from '../data/questionnairePresets';
@@ -75,7 +77,12 @@ export default function AssignedQuestionnairesPanel({
     queryFn: () => getMesocycles(athlete.email),
     enabled: !!athlete.email,
   });
-  const ctxAtleta: ScheduleContext = useMemo(() => ({ mesocycles, diaRevision }), [mesocycles, diaRevision]);
+  // Solo el cuestionario de cierre sigue la semana de cierre del bloque (18-11).
+  const cuestionariosDeCierre = useMemo(() => idsDeCuestionariosDeCierre(coachQuestionnaires), [coachQuestionnaires]);
+  const ctxAtleta: ScheduleContext = useMemo(
+    () => ({ mesocycles, diaRevision, pausa: athlete.pausaRevisiones, cuestionariosDeCierre }),
+    [mesocycles, diaRevision, athlete.pausaRevisiones, cuestionariosDeCierre],
+  );
   const proximaDe = (a: Parameters<typeof proximaOcurrencia>[0]) =>
     etiquetaFechaCorta(proximaOcurrencia(fijarAlViernes(a, diaRevision), ctxAtleta));
 
@@ -94,15 +101,31 @@ export default function AssignedQuestionnairesPanel({
   const [fechaEditando, setFechaEditando] = useState<{ id: string; ocurrencia: string; valor: string } | null>(null);
   const [guardandoExcepcion, setGuardandoExcepcion] = useState<string | null>(null);
 
+  /** Aviso en la campana de su app (18-11-2026): el mismo canal que el resto
+   *  de avisos del coach. Misma clave que el latido del servidor, así que no
+   *  le llegan dos. Si falla, el cuestionario ya está mandado: solo se dice. */
+  const avisarDelNuevo = async (a: QuestionnaireAssignment, titulo: string | null, desde: string): Promise<boolean> => {
+    const aviso = avisoDeCuestionarioNuevo({ email: athlete.email, assignmentId: a.id, desde, titulo });
+    try {
+      await createNotificationDeduped(aviso.dedupeKey, aviso.notificacion);
+      return true;
+    } catch (err) {
+      console.warn('avisarDelNuevo:', err);
+      return false;
+    }
+  };
+
   const guardarExcepciones = async (
     a: QuestionnaireAssignment, accion: () => Promise<ExcepcionDeFecha[]>, hecho: string, queHacia: string,
+    despues?: () => Promise<string>,
   ) => {
     setGuardandoExcepcion(a.id);
     try {
       const lista = await accion();
       setAthleteQAssignments(prev => prev.map(x => x.id === a.id ? { ...x, excepciones: lista.length > 0 ? lista : undefined } : x));
       setFechaEditando(null);
-      showToast(hecho, 'success');
+      const mas = despues ? await despues() : '';
+      showToast(`${hecho}${mas}`, 'success');
     } catch (err) {
       console.error(err);
       showToast(mensajeDeErrorFirestore(err, queHacia));
@@ -111,15 +134,25 @@ export default function AssignedQuestionnairesPanel({
     }
   };
 
+  const tituloDe = (a: QuestionnaireAssignment) => coachQuestionnaires.find(q => q.id === a.questionnaireId)?.title ?? null;
+  const conAviso = (a: QuestionnaireAssignment, desde: string) => async () =>
+    (await avisarDelNuevo(a, tituloDe(a), desde))
+      ? ' Le queda un aviso en la campana de su app.'
+      : ' No se ha podido dejarle el aviso en la app: díselo tú.';
+
   const mandarAhora = (a: QuestionnaireAssignment, titulo: string) => guardarExcepciones(
     a, () => guardarExcepcionDeFecha(a, { nuevaFecha: hoy }, ctxAtleta, hoy),
     `«${titulo}» le sale hoy a ${nombreAtleta}: pendiente 7 días o hasta que lo conteste.`,
     'mandarlo ahora',
+    conAviso(a, hoy),
   );
+  // Movida a hoy: se le abre ya, así que avisa igual. A otro día, avisa el
+  // latido del servidor la mañana de ese día.
   const cambiarFecha = (a: QuestionnaireAssignment, ocurrencia: string, nuevaFecha: string) => guardarExcepciones(
     a, () => guardarExcepcionDeFecha(a, { ocurrencia, nuevaFecha }, ctxAtleta, hoy),
     nuevaFecha === ocurrencia ? 'Vuelve a su fecha.' : `Esa vez le sale ${elDia(nuevaFecha)}; las demás no cambian.`,
     'cambiar la fecha',
+    nuevaFecha === hoy && nuevaFecha !== ocurrencia ? conAviso(a, hoy) : undefined,
   );
   const deshacer = (a: QuestionnaireAssignment, e: ExcepcionDeFecha) => guardarExcepciones(
     a, () => quitarExcepcionDeFecha(a, e, ctxAtleta, hoy),
@@ -329,6 +362,12 @@ export default function AssignedQuestionnairesPanel({
         overrides,
       });
       setAthleteQAssignments(prev => [...prev, a]);
+      // Si ya le toca (una sola vez hoy, un hito ya pasado…), se le abre ahora:
+      // aviso en su app como con «Mandar ahora» (18-11-2026).
+      if (isOverdue(a, ctxAtleta)) {
+        const avisado = await avisarDelNuevo(a, tituloDe(a), hoy);
+        showToast(avisado ? 'Asignado. Ya le sale pendiente y le queda un aviso en la campana de su app.' : 'Asignado. Ya le sale pendiente.', 'success');
+      }
       setAssignQId('');
       setAssignSchedType('once');
       setAssignWeekdays([]);

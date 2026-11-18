@@ -285,7 +285,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           leerRespuestasDeCuestionarios(db, email, addDays(hoy, -21)),
           leerMesociclos(db, email),
         ]);
-        const avisos = recordatoriosDeRevision({ hoy, perfil, asignaciones: cuestionarios, respuestas, mesociclos });
+        // Con las plantillas: el cierre de bloque va en la semana elegida en el
+        // bloque y los cuestionarios que se abren otro día avisan (18-11).
+        const avisos = recordatoriosDeRevision({ hoy, perfil, asignaciones: cuestionarios, respuestas, mesociclos, plantillas });
         if (!enSeco) for (const r of avisos) await crearAvisoUnaVez(db, r.dedupeKey, r.notificacion);
         if (avisos.length > 0) hecho.push(`recordatorio de revisión: ${avisos.length}`);
 

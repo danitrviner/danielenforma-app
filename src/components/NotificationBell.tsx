@@ -42,6 +42,7 @@ const TYPE_ICON: Record<AppNotification['type'], string> = {
   revision_recordatorio:   'alarm',
   revision_alerta:         'warning',
   revision_respondida:     'sticky_note_2',
+  cuestionario_nuevo:      'assignment_late',
   coach_mensaje:           'chat',
 };
 
