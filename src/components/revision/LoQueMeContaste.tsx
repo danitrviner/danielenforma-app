@@ -1,8 +1,7 @@
 import React from 'react';
-import type { LoQueMeContaste as Contado, RespuestaContada, DatoAlLado } from '../../utils/revisionDeLaSemana';
+import type { LoQueMeContaste as Contado, RespuestaContada } from '../../utils/revisionDeLaSemana';
 import { fechaCorta } from '../../utils/trainingWeek';
 import { Icon } from '../ui';
-import type { VarianteSemana } from './VistazoDeLaSemana';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    2 · Lo que me contaste (18-11-2026)
@@ -13,48 +12,16 @@ import type { VarianteSemana } from './VistazoDeLaSemana';
    reventado» con la sesión de ese jueves. La lógica está en
    utils/revisionDeLaSemana/loQueMeContaste.ts; aquí solo se pinta.
 
-   Dos versiones, como «Tu semana de un vistazo»:
-     · A «Cifras»: pregunta y respuesta a la izquierda, el dato en una caja a
-       la derecha (debajo en el móvil).
-     · B «Barras» (citas): la respuesta grande, entre comillas si es texto, y
-       el dato debajo con una flecha.
+   La respuesta grande, entre comillas si es texto, y el dato debajo con una
+   flecha (versión «Barras y citas», elegida por Dani el 18-11-2026).
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
   contado: Contado;
-  variante: VarianteSemana;
-}
-
-function Dato({ dato }: { dato: DatoAlLado }) {
-  return (
-    <span className="flex items-start gap-1.5 font-sans text-label text-ink-2 text-pretty">
-      <Icon name="insights" size="s" className="text-accent-ink shrink-0 mt-0.5" />
-      <span>{dato.texto}</span>
-    </span>
-  );
 }
 
 // `key` a mano: sin `@types/react` TS no lo excluye solo (como en Chip).
-function RespuestaA({ r }: { r: RespuestaContada; key?: React.Key }) {
-  return (
-    <li className="py-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:gap-4 items-start">
-      <div className="min-w-0">
-        <p className="font-mono text-caption text-ink-3">{r.pregunta}</p>
-        <p className={r.esTexto ? 'font-sans text-body-s text-ink text-pretty' : 'font-sans font-bold text-title-s text-ink tabular-nums'}>
-          {r.esTexto ? `«${r.respuesta}»` : r.respuesta}
-          {r.anterior && <span className="font-mono font-normal text-caption text-ink-3 ml-2">antes {r.anterior}</span>}
-        </p>
-      </div>
-      {r.dato && (
-        <div className="bg-raised border border-hairline rounded-surface px-3 py-2">
-          <Dato dato={r.dato} />
-        </div>
-      )}
-    </li>
-  );
-}
-
-function RespuestaB({ r }: { r: RespuestaContada; key?: React.Key }) {
+function Respuesta({ r }: { r: RespuestaContada; key?: React.Key }) {
   return (
     <li className="py-3 space-y-1">
       <p className="font-mono text-caption text-ink-3 uppercase tracking-[.08em]">{r.pregunta}</p>
@@ -72,8 +39,7 @@ function RespuestaB({ r }: { r: RespuestaContada; key?: React.Key }) {
   );
 }
 
-export default function LoQueMeContaste({ contado, variante }: Props) {
-  const Respuesta = variante === 'b' ? RespuestaB : RespuestaA;
+export default function LoQueMeContaste({ contado }: Props) {
   const { checkin } = contado;
   return (
     <div className="space-y-4">

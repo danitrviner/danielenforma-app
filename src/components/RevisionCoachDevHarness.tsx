@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   UserProfile, Exercise, Mesocycle, MuscleGroup, MuscleGroupConfig, WorkoutLog,
@@ -21,8 +21,6 @@ import { EscriturasDelCierreContext, type EscriturasDelCierre } from './cierre/e
 import type { QuestionnaireAssignment } from '../types';
 import type { CambioAtleta } from '../utils/cambiosAtleta';
 import type { Hipotesis } from '../utils/hipotesis';
-import type { VarianteSemana } from './revision/VistazoDeLaSemana';
-import { SegmentedControl } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Banco de pruebas de Cliente › Revisión — ruta `/dev/revision-coach`, solo en
@@ -42,9 +40,7 @@ import { SegmentedControl } from './ui';
    transcurridas se vea), un ejercicio que se estrena (no debe salir como «el
    que más sube») y otro que baja.
 
-   Revisión de la semana (18-11-2026): `?variante=b` (o el conmutador de
-   arriba) cambia la versión de «Tu semana de un vistazo» y «Lo que me
-   contaste». Para «La semana que viene» hay un cambio programado en la semana
+   Revisión de la semana (18-11-2026). Para «La semana que viene» hay un cambio programado en la semana
    4 (sentadilla 3 → 4 series), cargas pautadas con rango y un cuestionario
    semanal asignado; para «Lo que pide decisión», cambios con hipótesis (uno
    ya por mirar) y el peso yendo más lento de lo que pide la fase.
@@ -632,10 +628,6 @@ export default function RevisionCoachDevHarness() {
   const casoParam = new URLSearchParams(window.location.search).get('caso');
   const caso: CasoDeHipotesis = casoParam === 'parcial' || casoParam === 'deficit' || casoParam === 'primer' ? casoParam : null;
   const mesoActual = useMemo(() => mesoActualDe(caso), [caso]);
-  // Versión de la parte nueva de arriba de la revisión semanal (18-11-2026).
-  const [variante, setVariante] = useState<VarianteSemana>(
-    () => (new URLSearchParams(window.location.search).get('variante') === 'b' ? 'b' : 'a'),
-  );
   // En un primer bloque no hay bloque anterior.
   const bloques = useMemo(() => (caso === 'primer' ? [mesoActual] : [MESO_ANTERIOR, mesoActual]), [caso, mesoActual]);
   const logs = caso === 'primer' ? LOGS_PRIMER : LOGS;
@@ -771,16 +763,7 @@ export default function RevisionCoachDevHarness() {
             />
           ) : (
           <EscriturasDelCierreContext.Provider value={ESCRITURAS_DE_MENTIRA}>
-          <div className="mb-4">
-            <SegmentedControl
-              label="Versión de «Tu semana» y «Lo que me contaste»"
-              value={variante}
-              onChange={v => setVariante(v as VarianteSemana)}
-              options={[{ value: 'a', label: 'A · Cifras' }, { value: 'b', label: 'B · Barras y citas' }]}
-            />
-          </div>
           <ClientRevisionPanel
-            variante={variante}
             athlete={PERFIL}
             logs={anatomia ? LOGS_ANATOMIA : logs}
             exercises={anatomia ? EJERCICIOS_ANATOMIA : EJERCICIOS}

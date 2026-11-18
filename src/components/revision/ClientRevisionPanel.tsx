@@ -59,7 +59,7 @@ import {
   vistazoDeLaSemana, loQueMeContaste, hayAlgoQueContar, ejerciciosDeLaSemana, semanaQueViene,
   loQuePideDecision, hayMedidaNueva, fraseDelRitmo,
 } from '../../utils/revisionDeLaSemana';
-import VistazoDeLaSemana, { type VarianteSemana } from './VistazoDeLaSemana';
+import VistazoDeLaSemana from './VistazoDeLaSemana';
 import LoQueMeContaste from './LoQueMeContaste';
 import ComoVas from './ComoVas';
 import SemanaQueViene from './SemanaQueViene';
@@ -127,9 +127,6 @@ interface Props {
   /** Asignaciones de entreno — las necesita la serie de adherencia semanal. */
   assignments: WorkoutAssignment[];
   onGoToTab: (tab: HubTab) => void;
-  /** Versión de la parte nueva de arriba (18-11-2026, elige Dani): «a»
-   *  cifras en tarjetas, «b» barras y citas. Solo el banco la cambia. */
-  variante?: VarianteSemana;
 }
 
 /**
@@ -202,7 +199,6 @@ function Secciones({ children, presentando, inicio = 0 }: {
 export default function ClientRevisionPanel({
   athlete, logs, exercises, mesocycles,
   photos, bodyweightLogs, sexo, checkins, questionnaires, responses, assignments, onGoToTab,
-  variante = 'a',
 }: Props) {
   const hoy = hoyIsoLocal();
 
@@ -599,7 +595,7 @@ export default function ClientRevisionPanel({
 
       <Secciones presentando={presentando}>
         <Seccion titulo="Tu semana de un vistazo">
-          <VistazoDeLaSemana vistazo={vistazo} variante={variante} />
+          <VistazoDeLaSemana vistazo={vistazo} />
         </Seccion>
 
         {hayAlgoQueContar(contado) && (
@@ -611,7 +607,7 @@ export default function ClientRevisionPanel({
               </Button>
             }
           >
-            <LoQueMeContaste contado={contado} variante={variante} />
+            <LoQueMeContaste contado={contado} />
           </Seccion>
         )}
 

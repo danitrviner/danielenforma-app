@@ -11,18 +11,13 @@ import { ProgressBar } from '../ui';
    media frente a su objetivo, los pasos y el peso con su ritmo frente al de la
    fase. Cada cifra con la semana anterior al lado (la comparación fija).
 
-   Dos versiones para que Dani elija (`variante`), con los mismos datos:
-     · A «Cifras»: cuatro tarjetas en fila, como las de la cabecera de siempre.
-     · B «Barras»: una línea por cosa, con una barra de lo hecho frente a lo
-       que tocaba y la semana pasada a la derecha.
-   Lo que no tiene dato no se pinta.
+   Una línea por cosa, con una barra de lo hecho frente a lo que tocaba y la
+   semana pasada a la derecha (Dani eligió esta versión, «Barras y citas», el
+   18-11-2026). Lo que no tiene dato no se pinta.
    ═══════════════════════════════════════════════════════════════════════════ */
-
-export type VarianteSemana = 'a' | 'b';
 
 interface Props {
   vistazo: Vistazo;
-  variante: VarianteSemana;
 }
 
 interface Fila {
@@ -86,12 +81,11 @@ function filas(v: Vistazo): Fila[] {
   return out;
 }
 
-export default function VistazoDeLaSemana({ vistazo, variante }: Props) {
+export default function VistazoDeLaSemana({ vistazo }: Props) {
   const lista = filas(vistazo);
   const rango = `${fechaCorta(vistazo.semana.desde)} → ${fechaCorta(vistazo.semana.hasta)}`;
 
-  if (variante === 'b') {
-    return (
+  return (
       <div className="space-y-1">
         <p className="font-mono text-caption text-ink-3">{rango}</p>
         <ul className="m-0 p-0 list-none divide-y divide-hairline">
@@ -113,29 +107,5 @@ export default function VistazoDeLaSemana({ vistazo, variante }: Props) {
           ))}
         </ul>
       </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      <p className="font-mono text-caption text-ink-3">{rango}</p>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        {lista.map(f => (
-          <div key={f.id} className="bg-raised border border-hairline rounded-surface px-4 py-3 min-w-0 flex flex-col gap-0.5">
-            <span className="font-mono text-caption text-ink-2 uppercase tracking-[.1em]">{f.etiqueta}</span>
-            {/* La cifra sola en su línea: en el móvil (dos columnas y el zoom de
-                presentar) «1.980 kcal de 2.096» en una línea se partía a trozos. */}
-            <span className="font-mono font-semibold text-title-m sm:text-title-l tabular-nums leading-tight text-ink whitespace-nowrap">
-              {f.valor}
-            </span>
-            {f.deCuanto && <span className="font-sans text-label text-ink-2">{f.deCuanto}</span>}
-            {f.detalle && <span className="font-sans text-caption text-ink-2 text-pretty">{f.detalle}</span>}
-            <span className="font-mono text-caption text-ink-3 mt-1">
-              {f.anterior != null ? `semana pasada: ${f.anterior}` : 'sin semana previa'}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
