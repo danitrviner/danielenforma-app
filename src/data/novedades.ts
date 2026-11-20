@@ -23,6 +23,20 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: '2026-11-clase-nutricion-nevera',
+    fecha: '2026-11-20',
+    titulo: 'Nueva clase de nutrición en el Training Lab',
+    puntos: [
+      {
+        titulo: 'Qué meter en la nevera y qué evitar',
+        texto:
+          'Ya tienes en el Training Lab una clase nueva: alimentos saludables para tu nevera, cómo leer las ' +
+          'etiquetas y cómo no dejarte engañar por el marketing de los envases. Búscala en el curso ' +
+          '«Nutrición para rendimiento y salud».',
+      },
+    ],
+  },
+  {
     id: '2026-11-menu-a-tu-medida',
     fecha: '2026-11-16',
     titulo: 'Tu menú, a tu medida',
