@@ -92,8 +92,8 @@ import ComparadorFotos from './ComparadorFotos';
    Desde el 16-09 ya no se suma: absorbe. La zona «Análisis» del Hub desaparece
    y su contenido vive aquí — los titulares de progreso y el explorador de
    series dentro del bloque del cuerpo, la adherencia/pasos/macros/alertas como
-   bloque propio. Solo Reportes sigue siendo pestaña, porque Revisión es MIRAR y
-   Reportes es ENVIAR.
+   bloque propio. (Reportes, que seguía siendo pestaña para ENVIAR, se retiró
+   el 23-11-2026: su hueco en «Hoy» lo ocupa Objetivo.)
 
    ── Preparar y presentar (18-11-2026) ─────────────────────────────────────
    Dani graba esta pantalla y se la manda al atleta: es el guion del vídeo y se
@@ -761,11 +761,6 @@ export default function ClientRevisionPanel({
         <Seccion
           titulo="Adherencia y hábitos"
           plegada abierta={todoAbierto}
-          accion={
-            <Button variant="ghost" onClick={() => onGoToTab('reportes')}>
-              Convertir en reporte
-            </Button>
-          }
         >
           <BloqueNutricionHabitos
             athleteEmail={athlete.email}
@@ -849,7 +844,6 @@ export default function ClientRevisionPanel({
               revision={revision}
               comida={comida}
               peso={peso}
-              onGoToTab={onGoToTab}
               presentando={presentando}
             />
           </Seccion>

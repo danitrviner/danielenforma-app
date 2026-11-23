@@ -8,7 +8,6 @@ import { RevisionDelAtleta } from '../../utils/revisionCoach';
 import { ComidaDeLaSemana } from '../../utils/comidaDeLaSemana';
 import { PesoVsSemanaPasada } from '../../utils/revisionCoach';
 import { useToast } from '../../hooks/useToast';
-import { HubTab } from '../ClientHub';
 import { Button, Icon } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -21,9 +20,8 @@ import { Button, Icon } from '../ui';
    hay titular— porque un «sigue igual» de relleno es una afirmación disfrazada
    de silencio.
 
-   Tres salidas, y ninguna manda nada sola:
+   Dos salidas, y ninguna manda nada sola:
      · Copiar el borrador — texto en segunda persona, para pegarlo y editarlo.
-     · Convertir en reporte — abre Reportes, que es la pantalla que SÍ envía.
      · Pedírselo al asistente — precarga el chat con los titulares ya
        calculados, para que redacte encima de datos y no de su imaginación.
 
@@ -46,13 +44,12 @@ interface Props {
   revision: RevisionDelAtleta;
   comida: ComidaDeLaSemana | null;
   peso: PesoVsSemanaPasada | null;
-  onGoToTab: (tab: HubTab) => void;
   /** En presentación se cae todo lo accionable: es una pantalla para mirar. */
   presentando?: boolean;
 }
 
 export default function BloqueCierre({
-  athleteEmail, athleteName, revision, comida, peso, onGoToTab, presentando = false,
+  athleteEmail, athleteName, revision, comida, peso, presentando = false,
 }: Props) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -141,9 +138,6 @@ export default function BloqueCierre({
                 <Button variant="ghost" onClick={copiar}>
                   <Icon name={copiado ? 'check' : 'content_copy'} size="s" />
                   {copiado ? 'Copiado' : 'Copiar'}
-                </Button>
-                <Button variant="ghost" onClick={() => onGoToTab('reportes')}>
-                  Convertir en reporte
                 </Button>
                 <Button variant="ghost" onClick={pedirAlAsistente}>
                   <Icon name="auto_awesome" size="s" />
