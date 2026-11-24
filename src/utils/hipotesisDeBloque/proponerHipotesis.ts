@@ -7,6 +7,7 @@ import {
   RM_OBJETIVO_PRINCIPIANTE_PCT, redondearIem,
 } from './cifras.js';
 import type { EstadoDeZona, EstadoDelBloque } from './estadoDelBloqueAnterior.js';
+import type { ReferenciaPropia } from './referenciaPropia.js';
 import { seguidosAlFinal, veredictosDeLaZona, type BloqueConCierre } from './historial.js';
 import { PALANCAS, PALANCA_POR_DEFECTO, otraPalanca } from './palancas.js';
 import { fotosDeLosBloques, indicioParaLaZona, indiciosDeRespuesta, type IndicioDeRespuesta } from './respuestaADosis.js';
@@ -44,7 +45,9 @@ import { TIPOS_DE_BLOQUE, avisoDeEstrellas, modoPorZonaDe, nombreCortoDeZona } f
    semana las agujetas y el contexto deciden si se sube.
 
    Sin bloque anterior no hay cifras de IEM: solo palanca y objetivo de
-   resultado.
+   resultado. Salvo que el bloque ya lleve dos semanas entrenadas: entonces
+   esas semanas hacen de referencia (23-11-2026, `referenciaPropia.ts`) y la
+   hipótesis sale con sus cifras y `semanasDeReferencia`.
 
    A qué responde (18-11-2026, `respuestaADosis.ts`): si en la MISMA zona se
    repite que le fue mejor con más volumen o más cerca del fallo, se dice en
@@ -104,14 +107,18 @@ export function cifrasDeHipotesis(o: {
   enDeficit?: boolean;
   rmObjetivoPct?: number;
   limite?: string;
+  /** Referencia propia (`referenciaPropia.ts`): `estado` no es el bloque anterior sino las primeras
+   *  semanas de este, y son estas. El bloque ya ha empezado, así que la semana 1 reducida no aplica. */
+  semanasDeReferencia?: number;
 }): HipotesisDeZona {
   const { palanca, estado } = o;
+  const propia = o.semanasDeReferencia != null && o.semanasDeReferencia > 0 ? { semanasDeReferencia: Math.round(o.semanasDeReferencia) } : {};
   const rmObjetivoPct = o.rmObjetivoPct ?? rmObjetivoPorDefecto({ palanca, nivel: o.nivel, enDeficit: o.enDeficit });
   const limite = o.limite?.trim() ? { limite: o.limite.trim() } : {};
   if (!estado || !(estado.iemFinal > 0.005)) return { palanca, rmObjetivoPct, ...limite };
 
   const { iemMedio: media, iemFinal: final } = estado;
-  const base = { palanca, iemMedioAnterior: redondearIem(media), iemFinalAnterior: redondearIem(final) };
+  const base = { palanca, iemMedioAnterior: redondearIem(media), iemFinalAnterior: redondearIem(final), ...propia };
   if (palanca === 'recuperar') {
     const mitad = redondearIem(final * FRACCION_DE_MANTENER);
     return { ...base, iemArranque: mitad, iemTecho: mitad, rmObjetivoPct, ...limite };
@@ -119,7 +126,7 @@ export function cifrasDeHipotesis(o: {
   const sube = PALANCAS[palanca].sube && o.subir !== false && !o.enDeficit && !esZonaAlta(final);
   const escalon = pctDeVelocidad(o.velocidad ?? 'suave') * ESCALONES_DE_TECHO;
   const techo = sube ? final * (1 + escalon / 100) : final;
-  const arranque = o.semana1Reducida ? final * (1 - REDUCCION_SEMANA_1_PCT / 100) : final;
+  const arranque = o.semana1Reducida && !('semanasDeReferencia' in propia) ? final * (1 - REDUCCION_SEMANA_1_PCT / 100) : final;
   // La referencia es donde ACABÓ, no la media: con un bloque anterior en rampa
   // la media queda muy por debajo del arranque y el objetivo nacía cumplido.
   const objetivo = sube ? Math.min(final * (1 + (escalon * FRACCION_DE_ESCALON_DE_PROCESO) / 100), techo) : final * FRACCION_DE_SOSTENER;
@@ -140,8 +147,13 @@ export interface EntradaDeHipotesis {
   /** Por defecto, la del tipo de bloque (suave). */
   velocidad?: Velocidad;
   semana1Reducida?: boolean;
-  /** Cómo acabó el bloque anterior. Sin él (primer bloque), no hay cifras de IEM. */
+  /** Cómo acabó el bloque anterior. Sin él (primer bloque), no hay cifras de IEM
+   *  salvo que se pase `referenciaPropia`. */
   anterior?: Pick<EstadoDelBloque, 'porZona'> | null;
+  /** Las primeras semanas del PROPIO bloque (`referenciaPropia.ts`): de ahí
+   *  salen las cifras de las zonas que el bloque anterior no tiene (todas, en
+   *  un primer bloque). El anterior manda donde lo hay. */
+  referenciaPropia?: Pick<ReferenciaPropia, 'semanas' | 'porZona'> | null;
   /** Los bloques anteriores del atleta con su cierre firmado, en cualquier orden. */
   historial?: readonly BloqueConCierre[];
   /** Palanca que el coach ya ha elegido a mano para alguna zona: manda. */
@@ -216,7 +228,9 @@ export function proponerHipotesis(e: EntradaDeHipotesis): PropuestaDeHipotesis {
   for (const zona of estrellas) {
     const veredictos = veredictosDeLaZona(historial, zona).map(v => v.veredicto);
     const ultimo = veredictos[veredictos.length - 1];
-    const estado = e.anterior?.porZona[zona];
+    const delAnterior = e.anterior?.porZona[zona];
+    const estado = delAnterior ?? e.referenciaPropia?.porZona[zona];
+    const semanasDeReferencia = !delAnterior && estado ? e.referenciaPropia!.semanas : undefined;
     const alta = esZonaAlta(estado?.iemFinal);
     let palanca: PalancaDeHipotesis = PALANCA_POR_DEFECTO;
     let subir = true;
@@ -274,7 +288,7 @@ export function proponerHipotesis(e: EntradaDeHipotesis): PropuestaDeHipotesis {
     if (alta && palanca !== 'recuperar') {
       notasDeZona.push({
         clave: 'zona_alta',
-        texto: `Zona ya alta: acabó en ${fmtIem(estado!.iemFinal)} de IEM y de ${IEM_ZONA_ALTA} en adelante se va con cuidado. `
+        texto: `Zona ya alta: ${semanasDeReferencia ? 'arrancó' : 'acabó'} en ${fmtIem(estado!.iemFinal)} de IEM y de ${IEM_ZONA_ALTA} en adelante se va con cuidado. `
           + `El techo no sube${dejaElVolumen ? ` y la apuesta deja de ser volumen (pasa a ${PALANCAS[palanca].etiqueta})` : ''}.`,
       });
     }
@@ -282,7 +296,7 @@ export function proponerHipotesis(e: EntradaDeHipotesis): PropuestaDeHipotesis {
 
     const h = cifrasDeHipotesis({
       palanca, estado, velocidad, semana1Reducida: e.semana1Reducida, subir, limite: e.limites?.[zona],
-      nivel: e.nivel, enDeficit,
+      nivel: e.nivel, enDeficit, semanasDeReferencia,
     });
     hipotesis[zona] = h;
     porQue[zona] = indicio.texto ? `${motivo} A qué responde: ${indicio.texto}` : motivo;

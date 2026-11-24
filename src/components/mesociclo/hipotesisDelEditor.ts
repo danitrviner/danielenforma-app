@@ -148,7 +148,9 @@ function estadoGuardado(h: HipotesisDeZona): Pick<EstadoDeZona, 'iemMedio' | 'ie
 export function referenciaDeProceso(h: Pick<HipotesisDeZona, 'iemMedioObjetivo' | 'iemFinalAnterior'>): { sube: boolean; texto: string } | null {
   if (h.iemMedioObjetivo == null || !(h.iemFinalAnterior != null && h.iemFinalAnterior > 0.005)) return null;
   const razon = h.iemMedioObjetivo / h.iemFinalAnterior;
-  const pct = Math.round(Math.abs(razon - 1) * 1000) / 10;
+  // A medio punto: las cifras van redondeadas a un decimal y con un IEM bajo
+  // (41,2 → 43,3) el 5 % de la regla saldría como «5,1 %».
+  const pct = Math.round(Math.abs(razon - 1) * 200) / 2;
   if (razon > 1.0005) return { sube: true, texto: `un ${fmtCifra(pct)} % más` };
   if (razon >= 0.9995) return { sube: false, texto: 'sostenerlo' };
   return { sube: false, texto: `sostenerlo, con un ${fmtCifra(pct)} % de margen` };
@@ -192,6 +194,8 @@ export function conPalanca(
   return cifrasDeHipotesis({
     palanca,
     estado: o.estado ?? estadoGuardado(h),
+    // Con referencia propia las cifras salen de lo guardado en la ficha: la referencia va con ellas.
+    semanasDeReferencia: o.estado ? undefined : h.semanasDeReferencia,
     velocidad: o.velocidad,
     semana1Reducida: o.semana1Reducida,
     limite: h.limite,
@@ -251,7 +255,8 @@ export function alCambiarSemana1(meso: Pick<Mesocycle, 'hipotesis' | 'semana1Red
   const guardadas = meso.hipotesis ?? {};
   let tocada = false;
   const hipotesis = Object.fromEntries(Object.entries(guardadas).map(([zona, h]) => {
-    if (!h || h.palanca === 'recuperar' || h.iemFinalAnterior == null || h.iemArranque !== arranque(h.iemFinalAnterior, antes)) return [zona, h];
+    // Con referencia propia el bloque ya ha empezado: su arranque no depende de la semana 1 reducida.
+    if (!h || h.palanca === 'recuperar' || h.semanasDeReferencia || h.iemFinalAnterior == null || h.iemArranque !== arranque(h.iemFinalAnterior, antes)) return [zona, h];
     const nuevo = arranque(h.iemFinalAnterior, activa);
     if (nuevo === h.iemArranque) return [zona, h];
     tocada = true;

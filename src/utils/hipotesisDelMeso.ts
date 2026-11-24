@@ -4,6 +4,8 @@ import { proponerHipotesis, type PropuestaDeHipotesis, type TratoDelResto } from
 import { TIPOS_DE_BLOQUE, avisoDeEstrellas, estrellasDe, modoPorZonaDe, objetivoDerivado, type AvisoDeEstrellas } from './hipotesisDeBloque/tiposDeBloque.js';
 import { FRACCION_DE_MANTENER } from './hipotesisDeBloque/cifras.js';
 import type { EstadoDelBloque } from './hipotesisDeBloque/estadoDelBloqueAnterior.js';
+import type { ReferenciaPropia } from './hipotesisDeBloque/referenciaPropia.js';
+import type { PendienteDeHipotesis } from './hipotesisDeBloque/avisoDePendientes.js';
 import type { BloqueConCierre } from './hipotesisDeBloque/historial.js';
 import type { Velocidad } from './cdg/agujetas.js';
 import { procesoEnCurso } from './hipotesisDeBloque/procesoEnCurso.js';
@@ -225,6 +227,8 @@ export function propuestaDelMeso(o: {
   nivel?: ExperienceLevel;
   /** El bloque cae mayoritariamente en déficit (`bloqueEnDeficit`): no perder y techo sin subir. */
   enDeficit?: boolean;
+  /** Las primeras semanas de este bloque, si ya las tiene (`referenciaPropia.ts`): referencia de las zonas sin anterior. */
+  referenciaPropia?: Pick<ReferenciaPropia, 'semanas' | 'porZona'> | null;
 }): PropuestaDeHipotesis {
   const { meso } = o;
   const guardadas = meso.hipotesis ?? {};
@@ -241,6 +245,7 @@ export function propuestaDelMeso(o: {
     velocidad: meso.cdgVelocidad as Velocidad | undefined,
     semana1Reducida: !!meso.semana1Reducida,
     anterior: o.anterior,
+    referenciaPropia: o.referenciaPropia,
     historial: o.historial,
     palancas,
     limites,
@@ -260,6 +265,50 @@ export function hipotesisEnPantalla(meso: MesoParaHipotesis, propuesta: Pick<Pro
   for (const z of zonasConEstrella(meso.groups)) {
     const h = meso.hipotesis?.[z] ?? propuesta.hipotesis[z];
     if (h) out[z] = h;
+  }
+  return out;
+}
+
+/**
+ * Qué le falta a una zona con estrella y la propuesta ya puede dar.
+ * `hipotesis`: la zona lleva estrella y no tiene hipótesis guardada.
+ * `cifras`: la tiene, pero sin cifras de proceso, y ya hay de dónde sacarlas
+ * (el primer bloque terminó sus dos primeras semanas: `referenciaPropia.ts`).
+ */
+export type HipotesisPendiente = PendienteDeHipotesis;
+
+/**
+ * Las zonas con estrella a las que les falta algo (23-11-2026): el bloque se
+ * creó antes de las hipótesis, o se confirmó cuando aún no había cifras. Sin
+ * hipótesis guardada no hay semáforo en el Seguimiento ni veredicto al cerrar;
+ * de aquí sale el aviso de la revisión semanal.
+ */
+export function hipotesisPendientes(meso: MesoParaHipotesis, propuesta: Pick<PropuestaDeHipotesis, 'hipotesis'>): HipotesisPendiente[] {
+  return zonasConEstrella(meso.groups).flatMap((zona): HipotesisPendiente[] => {
+    const guardada = meso.hipotesis?.[zona];
+    if (!guardada) return [{ zona, falta: 'hipotesis' }];
+    const p = propuesta.hipotesis[zona];
+    const sinCifras = guardada.iemFinalAnterior == null && guardada.iemMedioObjetivo == null && guardada.iemTecho == null;
+    return sinCifras && p?.iemFinalAnterior != null && p.palanca === guardada.palanca ? [{ zona, falta: 'cifras' }] : [];
+  });
+}
+
+/**
+ * Las hipótesis del bloque con lo pendiente completado desde la propuesta. Lo
+ * guardado manda: una hipótesis con cifras no se toca, y a la que le faltan
+ * se le ponen sin cambiarle la palanca, el límite ni el objetivo de RM que el
+ * coach ya confirmó. Es lo que se pasa a `camposAlConfirmar`.
+ */
+export function completarHipotesis(meso: MesoParaHipotesis, propuesta: Pick<PropuestaDeHipotesis, 'hipotesis'>): Partial<Record<ZonaIem, HipotesisDeZona>> {
+  const out = hipotesisEnPantalla(meso, propuesta);
+  for (const { zona, falta } of hipotesisPendientes(meso, propuesta)) {
+    if (falta !== 'cifras') continue;
+    const guardada = meso.hipotesis![zona]!;
+    out[zona] = {
+      ...propuesta.hipotesis[zona]!,
+      ...(guardada.rmObjetivoPct != null ? { rmObjetivoPct: guardada.rmObjetivoPct } : {}),
+      ...(guardada.limite ? { limite: guardada.limite } : {}),
+    };
   }
   return out;
 }

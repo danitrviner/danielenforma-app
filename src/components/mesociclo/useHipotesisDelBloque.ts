@@ -8,6 +8,7 @@ import {
   estadoDelBloqueAnterior, iniciosDeSemanaDelBloque, type EstadoDelBloque,
 } from '../../utils/hipotesisDeBloque/estadoDelBloqueAnterior';
 import { bloqueEnDeficit } from '../../utils/hipotesisDeBloque/bloqueEnDeficit';
+import { referenciaPropia, type ReferenciaPropia } from '../../utils/hipotesisDeBloque/referenciaPropia';
 import { finDeBloque } from '../../utils/finDeBloque';
 import { mapaDeRespuesta, type MapaDeRespuesta } from '../../utils/hipotesisDeBloque/mapaDeRespuesta';
 import type { PropuestaDeHipotesis } from '../../utils/hipotesisDeBloque/proponerHipotesis';
@@ -28,6 +29,11 @@ import { hoyIsoLocal } from '../../utils/trainingWeek';
 
    Sin bloque anterior, sin registros o sin catálogo CDG no hay cifras de
    proceso: `motivoSinCifras` dice cuál de las tres, para que la ficha lo diga.
+
+   23-11-2026 (referencia propia): un primer bloque ya no se queda sin cifras.
+   En cuanto termina sus dos primeras semanas entrenadas, esas semanas hacen
+   de «donde acabó el anterior» (`referenciaPropia.ts`). Vale también para las
+   zonas que el bloque anterior no entrenó.
 
    La sugerencia de «semana 1 reducida» cuenta los ejercicios nuevos con la
    misma norma que les pone la entrada de repeticiones (`rampaDeEjercicioNuevo`:
@@ -54,6 +60,10 @@ export interface HipotesisDelBloque {
   anterior: EstadoDelBloque | null;
   /** Por qué no hay cifras de proceso, en una frase; `null` si las hay. */
   motivoSinCifras: string | null;
+  /** Cómo va ESTE bloque hasta hoy, por zona (sin la semana en curso). `null` si no ha empezado, sin registros o sin catálogo. */
+  enCurso: EstadoDelBloque | null;
+  /** Sus dos primeras semanas entrenadas: la referencia de las zonas sin bloque anterior (`referenciaPropia.ts`). `null` hasta que las termine. */
+  referencia: ReferenciaPropia | null;
   /** Lo que propone el motor para las estrellas de este bloque. */
   propuesta: PropuestaDeHipotesis;
   /** Qué le funciona a cada zona, de los cierres firmados anteriores. `null` sin ninguno. */
@@ -128,6 +138,26 @@ export function useHipotesisDelBloque(o: {
     return Object.keys(estado.porZona).length > 0 ? estado : null;
   }, [activo, motor, mesoAnterior, logs, exercises]);
 
+  // Este mismo bloque hasta hoy: de sus dos primeras semanas sale la
+  // referencia de las zonas que el bloque anterior no tiene (todas, en un
+  // primer bloque) y, de las siguientes, la media que lleva (23-11-2026).
+  const mesoId = meso?.id;
+  const inicio = meso?.startDate;
+  const enCurso = useMemo(() => {
+    if (!activo || !motor || !meso || !mesoId || !inicio || !logs) return null;
+    const hoy = hoyIsoLocal();
+    if (inicio > hoy) return null;
+    const fin = finDeBloque(meso);
+    const porId = new Map(exercises.map(e => [e.id, e]));
+    const suyos = logs.filter(l => l.date <= fin && (l.mesocycleId ? l.mesocycleId === mesoId : l.date >= inicio));
+    const hasta = hoy <= fin ? hoy : undefined;
+    const iem = iemSemanalPorZona(motor, suyos, id => porId.get(id)?.cdgNombre, iniciosDeSemanaDelBloque(meso, hasta ?? fin), hasta);
+    return estadoDelBloqueAnterior({ iem, meso });
+    // Solo las piezas del bloque que mueven el cálculo: `meso` cambia de identidad con cada tecla del editor.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activo, motor, mesoId, inicio, meso?.weeks, meso?.daysPerWeek, meso?.cycleDays, meso?.semanasDescarga, meso?.semanasPivot, meso?.semanasTest, meso?.vuelveDeParon, logs, exercises]);
+  const referencia = useMemo(() => referenciaPropia(enCurso), [enCurso]);
+
   const anteriores = useMemo(
     () => (meso ? mesocycles.filter(m => m.id !== meso.id && m.startDate <= meso.startDate) : []),
     [meso, mesocycles],
@@ -135,8 +165,8 @@ export function useHipotesisDelBloque(o: {
 
   const propuesta = useMemo<PropuestaDeHipotesis>(() => {
     if (!meso) return { hipotesis: {}, cdgObjetivosIem: {}, cdgModoPorZona: {} as PropuestaDeHipotesis['cdgModoPorZona'], iemDelResto: {}, porQue: {}, notas: {}, enDeficit: false, avisos: [] };
-    return propuestaDelMeso({ meso, anterior, historial: anteriores, nivel, enDeficit });
-  }, [meso, anterior, anteriores, nivel, enDeficit]);
+    return propuestaDelMeso({ meso, anterior, referenciaPropia: referencia, historial: anteriores, nivel, enDeficit });
+  }, [meso, anterior, referencia, anteriores, nivel, enDeficit]);
 
   const mapa = useMemo(() => {
     const m = mapaDeRespuesta(anteriores);
@@ -148,11 +178,11 @@ export function useHipotesisDelBloque(o: {
     diasDeParon: meso && logs ? diasDeParon(logs, meso.startDate) : null,
   }), [o.ejerciciosDelBloque, meso, logs]);
 
-  const motivoSinCifras = anterior ? null
-    : !mesoAnterior ? 'Es el primer bloque del atleta: no hay bloque anterior del que sacar las cifras de proceso.'
+  const motivoSinCifras = anterior || referencia ? null
+    : !mesoAnterior ? 'Es el primer bloque del atleta: las cifras de proceso saldrán de sus dos primeras semanas entrenadas, cuando las termine.'
     : cargando ? null
     : noSubido || !motor ? 'Sin el catálogo del Índice de Hipertrofia no se puede calcular el estímulo del bloque anterior.'
     : 'El bloque anterior no tiene registros con ejercicios vinculados al catálogo: sin ellos no hay cifras de proceso.';
 
-  return { cargando, mesoAnterior, anterior, motivoSinCifras, propuesta, mapa, sugerenciaSemana1, enDeficit };
+  return { cargando, mesoAnterior, anterior, motivoSinCifras, enCurso, referencia, propuesta, mapa, sugerenciaSemana1, enDeficit };
 }

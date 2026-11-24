@@ -345,6 +345,8 @@ export function lecturaDeVeredicto(v: VeredictoParaLeer, o: {
   semanasFrenadas?: number;
   /** Duración media de las sesiones del bloque, en minutos. */
   duracionMediaMin?: number | null;
+  /** `HipotesisDeZona.semanasDeReferencia`: la media se contó sin esas semanas del arranque. */
+  semanasDeReferencia?: number;
 } = {}): LecturaDeVeredicto {
   const zona = v.zona as ZonaIem;
   const nombre = ZONAS_IEM.some(z => z.clave === zona) ? nombreCortoDeZona(zona) : v.zona;
@@ -365,7 +367,8 @@ export function lecturaDeVeredicto(v: VeredictoParaLeer, o: {
     proceso = {
       estado: v.procesoCumplido ? 'Cumplido.' : 'No cumplido.',
       tono: v.procesoCumplido ? 'bien' : 'atencion',
-      texto: `IEM medio ${fmt(v.iemMedio)}${pedia ? ` (${pedia})` : ''}.${extras ? ` ${extras}` : ''}`,
+      texto: `IEM medio ${o.semanasDeReferencia ? `desde la semana ${o.semanasDeReferencia + 1} ` : ''}${fmt(v.iemMedio)}${pedia ? ` (${pedia})` : ''}.`
+        + `${o.semanasDeReferencia ? ` La referencia fueron sus primeras ${o.semanasDeReferencia} semanas.` : ''}${extras ? ` ${extras}` : ''}`,
     };
   }
 

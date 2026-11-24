@@ -50,6 +50,8 @@ export interface HipotesisParaElAsistente {
      *  zona. 0 = no perder (zona que se recupera o bloque en déficit). */
     rmObjetivoPct: number;
     iemMedioAnterior?: number; iemFinalAnterior?: number; iemMedioObjetivo?: number; iemArranque?: number; iemTecho?: number;
+    /** Referencia propia: sin bloque anterior, la referencia son estas primeras semanas del propio bloque. */
+    semanasDeReferencia?: number;
     limite?: string;
   }>;
   /** Grupos que el bloque ignora (0 series, fuera de sugerencias y avisos). */
@@ -86,6 +88,7 @@ export function hipotesisParaElAsistente(
       ...(h.iemMedioObjetivo != null ? { iemMedioObjetivo: h.iemMedioObjetivo } : {}),
       ...(h.iemArranque != null ? { iemArranque: h.iemArranque } : {}),
       ...(h.iemTecho != null ? { iemTecho: h.iemTecho } : {}),
+      ...(h.semanasDeReferencia ? { semanasDeReferencia: h.semanasDeReferencia } : {}),
       ...(h.limite?.trim() ? { limite: h.limite.trim() } : {}),
     };
   });
@@ -118,6 +121,7 @@ export function hipotesisParaElAsistente(
 export const NOTA_DE_HIPOTESIS = [
   'tipoBloque e hipotesis: a qué se apostó en cada zona prioritaria y con qué % de RM se da por buena (rmObjetivoPct: 5 por defecto, 8 en un principiante, 0 = no perder, que es lo que se pide a una zona que se recupera o con el bloque en déficit).',
   'iemMedioObjetivo es el PROCESO: el IEM medio del bloque que hay que alcanzar, calculado sobre donde ACABÓ el bloque anterior (iemFinalAnterior) y no sobre su media; si la zona no sube, es sostener ese nivel.',
+  'semanasDeReferencia (solo si viene): la zona no tenía bloque anterior y la referencia son esas primeras semanas de ESTE bloque; iemFinalAnterior es entonces su estímulo en ellas, y el IEM medio del proceso se cuenta desde la semana siguiente, sin ellas.',
   `iemTecho igual a iemFinalAnterior significa que la zona NO sube este bloque (déficit, respondió con menos, mejoró menos de lo buscado o zona ya alta: ${IEM_ZONA_ALTA} de IEM o más).`,
   `cierreDeHipotesis (si Dani lo ha firmado): qué pasó con cada apuesta. Lecturas: confirmada (se hizo y sirvió); mejora_parcial (se hizo y el RM mejora más que el ruido de medida, ${RM_RUIDO_PCT} %, sin llegar al objetivo: NO es «no responde», se sigue la misma línea sin subir el techo y no se cambia de palanca ni se mueve la estrella); no_responde (se hizo y el RM no supera el ruido: cambia la palanca y, a la segunda seguida, la estrella pasa a otra zona); responde_con_menos (no se llegó al estímulo y aun así mejora: no subir); sin_probar (no se hizo o no se pudo medir: no dice nada de la zona).`,
   'mapaDeRespuesta: qué le funciona a cada zona en todos sus bloques; el bloque siguiente parte de ahí.',

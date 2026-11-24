@@ -4115,6 +4115,8 @@ export default function MesocycleManager({
                   propuesta={hipotesisDelBloque.propuesta}
                   mesoAnterior={hipotesisDelBloque.mesoAnterior}
                   anterior={hipotesisDelBloque.anterior}
+                  enCurso={hipotesisDelBloque.enCurso}
+                  referencia={hipotesisDelBloque.referencia}
                   cargando={hipotesisDelBloque.cargando}
                   motivoSinCifras={hipotesisDelBloque.motivoSinCifras}
                   mapa={hipotesisDelBloque.mapa}
