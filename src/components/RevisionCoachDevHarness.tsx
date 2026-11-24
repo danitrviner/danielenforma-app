@@ -18,7 +18,7 @@ import SeguimientoCdg from './mesociclo/SeguimientoCdg';
 import DossierPanel from './DossierPanel';
 import { DOSSIER_VACIO } from '../db/dossier';
 import { EscriturasDelCierreContext, type EscriturasDelCierre } from './cierre/escriturasDelCierre';
-import type { QuestionnaireAssignment } from '../types';
+import type { DietItem, QuestionnaireAssignment } from '../types';
 import type { CambioAtleta } from '../utils/cambiosAtleta';
 import type { Hipotesis } from '../utils/hipotesis';
 
@@ -363,6 +363,24 @@ function diaDeComida(hace: number, variante: number) {
       { cat: 'HC', label: hidratoCena, q: 3 },
     ]),
   ];
+  // Un producto escaneado se guarda en una línea por categoría enlazadas por
+  // `lineaId`: el pan tostado de Open Food Facts son «1 HC» con sus gramos y
+  // kcal + «0,5 GRASA» de continuación (copiado de un registro real, 20-11).
+  // El bloque tiene que pintarlo como UNA fila con sus gramos, no dos «×1» y
+  // «×0,5» sueltos. Y la ración extra del menú trae `baseGrams` sin gramos en
+  // el nombre: tiene que salir «80 g», no «×2».
+  if (variante % 2 === 0) {
+    const ln = `ln_pan_${hace}`;
+    const off = { tipo: 'off' as const, codigo: '20303488' };
+    (meals[0].items as DietItem[]).splice(0, 1,
+      { category: 'HC', foodLabel: 'Pan Tostado con harina de trigo y integral de trigo', quantity: 1, lineaId: ln, gramos: 37.5, marca: 'Hacendado', origen: off, nutrientes: { kcal: 150, p: 4.1, hc: 23.3, g: 3.4 } },
+      { category: 'GRASA', foodLabel: 'Pan Tostado con harina de trigo y integral de trigo', quantity: 0.5, lineaId: ln, origen: off },
+    );
+  } else {
+    (meals[0].items as DietItem[]).splice(0, 1,
+      { category: 'HC', foodLabel: 'pan (ración extra)', quantity: 2, baseGrams: 40, origenMenu: `dia_m1_${hace}` },
+    );
+  }
   // Casi todo marcado, como en la vida real; un día deja la cena sin marcar
   // para que se vea la diferencia entre lo puesto y lo comido.
   const marcados: string[] = [];

@@ -1,7 +1,9 @@
-import type { Diet, DietCompletionLog, DietItem, FoodCategory, Macros } from '../types.js';
+import type { Diet, DietCompletionLog, DietItem, DietMeal, FoodCategory, Macros } from '../types.js';
 import { comidasDelDia, cupoDelDia, toleranciaDelDiaKcal, BANDA_EN_OBJETIVO_MIN_KCAL } from './diaDeDieta.js';
-import { itemWeightLabel, foodNameShort, round2 } from './exchangeHelpers.js';
-import { macrosDeIntercambios, macrosDeLinea, macrosDeLineas, objetivoDelRegistro } from './macrosLegado.js';
+import { foodNameShort, round2 } from './exchangeHelpers.js';
+import { macrosDeIntercambios, macrosDeLineas, objetivoDelRegistro } from './macrosLegado.js';
+import { pesoDeItem } from './conversionNutricional.js';
+import { lineasDelDiario, type LineaDiario } from './diarioCalorias.js';
 import { MACROS_CERO, redondearMacros, sumarMacros } from './macros.js';
 import { addDays, diasEntreFechas } from './trainingWeek.js';
 import { slotPercents } from './slotWeights.js';
@@ -32,17 +34,37 @@ import { slotPercents } from './slotWeights.js';
 /** De dónde salió una línea del día. Contesta «¿sigue el plan o se lo monta él?». */
 export type OrigenItem = 'receta' | 'menu' | 'mano';
 
+/**
+ * Un alimento del día tal y como lo apuntó el atleta: UNA fila por alimento.
+ *
+ * Un producto con gramos (escaneado, del catálogo «listo», personal) se guarda
+ * en varias líneas por categoría enlazadas por `lineaId` —el pan tostado son
+ * «1 HC» con sus 38 g y 150 kcal + «0,5 GRASA» de continuación— y un plato del
+ * recetario, en una por categoría con el mismo `originRecipeId`. Pintarlas
+ * sueltas era lo que enseñaba «Pan tostado ×1» y «Pan tostado ×0,5» sin gramos
+ * (Dani, 24-11-2026). Se agrupan con `lineasDelDiario`, el mismo criterio con
+ * el que el atleta ve su diario, así que los dos miran la misma fila.
+ */
 export interface ItemComido {
   /** Nombre corto, sin los gramos incrustados ni la coletilla entre paréntesis. */
   etiqueta: string;
   /** Etiqueta completa, por si hace falta el detalle. */
   etiquetaCompleta: string;
-  /** «150g» cuando el alimento trae su peso base; si no, «×2». */
+  marca?: string;
+  /** La cantidad, lista para pintar: «38 g», «1,2 kg», «1 ración», «1,5 raciones»,
+   *  o «×2» solo si es una medida casera sin gramos. Vacía si no se sabe. */
   peso: string;
+  /** Gramos de la fila, o null si no se pueden saber sin inventarlos. */
+  gramos: number | null;
   categoria: FoodCategory;
-  cantidad: number;
-  /** kcal de la línea (las de su etiqueta, o por sus intercambios). */
-  kcal: number;
+  tipo: LineaDiario['tipo'];
+  /** kcal de la fila (las de su etiqueta, o por sus intercambios). null = el
+   *  producto no declara sus nutrientes: «sin datos», no cero. */
+  kcal: number | null;
+  /** Gramos de macro de la fila. null igual que `kcal`. */
+  macros: { p: number; hc: number; g: number } | null;
+  /** Sale de intercambios del banco, no de datos declarados. */
+  aproximado: boolean;
   marcado: boolean;
   origen: OrigenItem;
 }
@@ -71,7 +93,8 @@ export interface DiaComido {
   kcalCupo: number;
   /** kcal comidas − kcal del objetivo. Positivo = se pasó. */
   desvio: number;
-  /** Cuántos items hay y cuántos están marcados — para poder decir «12 de 14». */
+  /** Cuántos alimentos (filas, no líneas por categoría) hay y cuántos están
+   *  marcados — para poder decir «12 de 14». */
   items: number;
   itemsMarcados: number;
 }
@@ -111,10 +134,58 @@ function fechasDeLaVentana(desde: string, hasta: string): string[] {
   return Array.from({ length: dias + 1 }, (_, i) => addDays(desde, i));
 }
 
-function origenDe(item: { originRecipeId?: string; origenMenu?: string }): OrigenItem {
+function origenDe(item: { originRecipeId?: string; origenMenu?: string; receta?: unknown }): OrigenItem {
   if (item.origenMenu) return 'menu';
-  if (item.originRecipeId) return 'receta';
+  if (item.originRecipeId || item.receta) return 'receta';
   return 'mano';
+}
+
+const numEs = (n: number) => n.toLocaleString('es-ES', { maximumFractionDigits: 1 });
+
+function textoDeGramos(g: number): string {
+  return g >= 1000 ? `${numEs(g / 1000)} kg` : `${numEs(g)} g`;
+}
+
+/** Una fila agrupada del día → lo que enseña la Revisión. */
+function itemDeLinea(meal: DietMeal, linea: LineaDiario, marcados: ReadonlySet<string>): ItemComido {
+  const lineas = linea.idxs.map(i => meal.items[i]);
+  const primera = lineas[0];
+
+  // Los gramos: los que guardó la fila; si es una línea vieja del banco sin
+  // `baseGrams`, los de su etiqueta («40g pan» × 2 = 80 g), igual que al
+  // abrir su ficha en «Mi plan».
+  const gramos = linea.gramos ?? (linea.tipo === 'alimento' ? pesoDeItem(primera).gramos : null);
+
+  let peso = '';
+  if (gramos != null && gramos > 0) peso = textoDeGramos(gramos);
+  else if (linea.tipo === 'plato') {
+    const raciones = primera.escala && primera.escala > 0 ? primera.escala : 1;
+    peso = `${numEs(raciones)} ${raciones === 1 ? 'ración' : 'raciones'}`;
+  } else if (linea.tipo === 'alimento' && primera.quantity !== 1) {
+    // Medida casera sin gramos («2 huevos L»): el multiplicador es la cantidad.
+    peso = `×${numEs(primera.quantity)}`;
+  }
+
+  // kcal y macros con la misma cuenta que los totales del día (`macrosDeLineas`),
+  // para que las filas de una comida sumen lo que dice su cabecera. Un producto
+  // sin nutrientes declarados no suma: se dice «sin datos», no «0 kcal».
+  const sinDatos = linea.tipo === 'producto' && !lineas.some(l => l.nutrientes);
+  const m = redondearMacros(macrosDeLineas(lineas));
+
+  return {
+    etiqueta: foodNameShort(linea.nombre),
+    etiquetaCompleta: linea.nombre,
+    ...(linea.marca ? { marca: linea.marca } : {}),
+    peso,
+    gramos: gramos != null && gramos > 0 ? gramos : null,
+    categoria: primera.category,
+    tipo: linea.tipo,
+    kcal: sinDatos ? null : m.kcal,
+    macros: sinDatos ? null : { p: m.p, hc: m.hc, g: m.g },
+    aproximado: !sinDatos && lineas.every(l => l.nutrientes === undefined),
+    marcado: linea.idxs.every(i => marcados.has(`${meal.id}_${i}`)),
+    origen: origenDe(primera),
+  };
 }
 
 /** El día tal y como quedó registrado, o un día vacío si no hay registro. */
@@ -139,28 +210,22 @@ function construirDia(fecha: string, log: DietCompletionLog | undefined, diets: 
 
   for (const meal of comidasDelDia(log, diets)) {
     const comidosAqui: DietItem[] = [];
-    const lineas: ItemComido[] = meal.items.map((item, idx) => {
+    meal.items.forEach((item, idx) => {
       // La clave de «marcado» es posicional (`${mealId}_${idx}`) — es la misma
       // que escribe el tracker del atleta, así que se replica tal cual.
-      const marcado = marcados.has(`${meal.id}_${idx}`);
-      items++;
       todosPuestos.push(item);
-      if (marcado) {
-        itemsMarcados++;
+      if (marcados.has(`${meal.id}_${idx}`)) {
         todosComidos.push(item);
         comidosAqui.push(item);
       }
-      return {
-        etiqueta: foodNameShort(item.foodLabel),
-        etiquetaCompleta: item.foodLabel,
-        peso: itemWeightLabel(item.foodLabel, item.quantity),
-        categoria: item.category,
-        cantidad: item.quantity,
-        kcal: Math.round(macrosDeLinea(item).kcal),
-        marcado,
-        origen: origenDe(item),
-      };
     });
+    // Las filas, agrupadas como las ve el atleta. `lineasDelDiario` solo mira
+    // lo que le digas que está hecho: se le pasa todo para que agrupe también
+    // lo puesto sin marcar, y la marca se decide fila a fila.
+    const todas = new Set(meal.items.map((_, i) => `${meal.id}_${i}`));
+    const lineas = lineasDelDiario(meal, todas).map(l => itemDeLinea(meal, l, marcados));
+    items += lineas.length;
+    itemsMarcados += lineas.filter(l => l.marcado).length;
     comidas.push({ id: meal.id, nombre: meal.name, slot: meal.slot, items: lineas, comido: redondearMacros(macrosDeLineas(comidosAqui)) });
   }
 
