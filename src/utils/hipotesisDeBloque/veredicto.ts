@@ -14,6 +14,7 @@ import type { EstadoDeEjercicio, EstadoDelBloque } from './estadoDelBloqueAnteri
 import { textoDeVigilar } from './estresArticular.js';
 import { seguidosAlFinal, veredictosDeLaZona, type BloqueConCierre } from './historial.js';
 import { PALANCAS, otraPalanca } from './palancas.js';
+import { estadoParaElProceso } from './referenciaPropia.js';
 import { nombreCortoDeZona } from './tiposDeBloque.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -448,7 +449,8 @@ export function veredictosDelBloque(o: {
     const frenadas = o.semanasFrenadasPorZona?.[z.clave];
     return [veredictoDeHipotesis({
       zona: z.clave, hipotesis: h,
-      iemMedio: o.estado.porZona[z.clave]?.iemMedio ?? null,
+      // Con referencia propia, sin las semanas de referencia (`referenciaPropia.ts`).
+      iemMedio: estadoParaElProceso(o.estado.porZona[z.clave], h).iemMedio,
       rm: rmDeLaZona({ zona: z.clave, ejercicios: o.progresion, zonaDe: o.zonaDe }),
       limites: { cansancioMedio: o.cansancioMedio, ...(o.ejercicios ? molestiasDeLaZona(o.ejercicios, o.zonaDe, z.clave) : {}) },
       nivel: o.nivel,

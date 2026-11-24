@@ -179,7 +179,8 @@ export default function VeredictosDeHipotesis({
                 iemFinal: calculo.estado?.porZona[zona]?.iemFinal,
                 semanasFrenadas: calculo.semanasFrenadasPorZona[zona],
                 duracionMediaMin,
-              } : { techo: h?.iemTecho });
+                semanasDeReferencia: h?.semanasDeReferencia,
+              } : { techo: h?.iemTecho, semanasDeReferencia: h?.semanasDeReferencia });
               return (
                 <FichaDeZona
                   key={v.zona}

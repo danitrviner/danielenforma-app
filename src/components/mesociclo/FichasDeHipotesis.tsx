@@ -13,8 +13,9 @@ import { objetivoDelMesoParaElAtleta } from '../../utils/hipotesisDeBloque/objet
 import { PALANCAS } from '../../utils/hipotesisDeBloque/palancas';
 import type { NotaDeHipotesis, PropuestaDeHipotesis } from '../../utils/hipotesisDeBloque/proponerHipotesis';
 import { TIPOS_DE_BLOQUE, enLista, nombreCortoDeZona } from '../../utils/hipotesisDeBloque/tiposDeBloque';
+import { estadoParaElProceso, type ReferenciaPropia } from '../../utils/hipotesisDeBloque/referenciaPropia';
 import {
-  PRIORIDAD, camposAlConfirmar, hayCambiosSinGuardar, hipotesisEnPantalla, restoPorNivel, seriesDeZona,
+  PRIORIDAD, camposAlConfirmar, completarHipotesis, hayCambiosSinGuardar, hipotesisEnPantalla, hipotesisPendientes, restoPorNivel, seriesDeZona,
 } from '../../utils/hipotesisDelMeso';
 import { nombreDeMeso } from '../../utils/nombresMeso';
 import { Badge, Button, Chip, Icon, Skeleton } from '../ui';
@@ -37,6 +38,13 @@ import {
    es la de siempre (bloque en déficit, zona ya alta) la ficha lo explica en
    una línea; sigue siendo una propuesta y todas las cifras se editan.
 
+   23-11-2026 (referencia propia): en una zona sin bloque anterior la fila
+   «Proceso» ya no dice «sin cifras». Con las dos primeras semanas del bloque
+   terminadas, esas semanas son la referencia y la media se pide desde la
+   siguiente (utils/hipotesisDeBloque/referenciaPropia.ts). La ficha lo dice
+   y enseña la media que lleva hasta hoy. Una hipótesis confirmada antes de
+   tener esas cifras las recibe con «Poner las cifras de sus primeras semanas».
+
    Lo que se ve es lo guardado y, para una estrella recién puesta, la
    propuesta del motor (marcada «Propuesta» hasta que el coach confirma).
    Cualquier edición confirma: escribe `hipotesis` y, a juego, el techo en
@@ -54,6 +62,10 @@ interface Props {
   propuesta: PropuestaDeHipotesis;
   mesoAnterior: Mesocycle | null;
   anterior: EstadoDelBloque | null;
+  /** Cómo va este bloque hasta hoy (`useHipotesisDelBloque().enCurso`). */
+  enCurso?: EstadoDelBloque | null;
+  /** Sus dos primeras semanas entrenadas, si ya las tiene: referencia de las zonas sin anterior. */
+  referencia?: ReferenciaPropia | null;
   cargando?: boolean;
   /** Por qué no hay cifras de proceso; `null` si las hay. */
   motivoSinCifras: string | null;
@@ -91,8 +103,8 @@ function Cifra({ valor, etiqueta, onGuardar }: { valor: number | undefined; etiq
 }
 
 /** Una cifra del bloque anterior: es una foto, no se edita. */
-function Foto({ valor }: { valor: number | undefined }) {
-  return <span className={`${CAJA} border-dashed border-strong text-ink-2`} title="Del bloque anterior: no se edita">{fmtCifra(valor) || '—'}</span>;
+function Foto({ valor, titulo = 'Del bloque anterior: no se edita' }: { valor: number | undefined | null; titulo?: string }) {
+  return <span className={`${CAJA} border-dashed border-strong text-ink-2`} title={titulo}>{fmtCifra(valor ?? undefined) || '—'}</span>;
 }
 
 function Fila({ titulo, children }: { titulo: string; children: React.ReactNode }) {
@@ -104,7 +116,7 @@ function Fila({ titulo, children }: { titulo: string; children: React.ReactNode 
   );
 }
 
-function Ficha({ zona, h, propuesta, meso, mesoAnterior, anterior, porQue, notas, enDeficit, motivoSinCifras, ejercicios, minutosDeSesion, nivel, onEditar }: {
+function Ficha({ zona, h, propuesta, meso, mesoAnterior, anterior, enCurso, porQue, notas, enDeficit, motivoSinCifras, ejercicios, minutosDeSesion, nivel, onEditar }: {
   key?: React.Key;
   zona: ZonaIem;
   h: HipotesisDeZona;
@@ -112,6 +124,8 @@ function Ficha({ zona, h, propuesta, meso, mesoAnterior, anterior, porQue, notas
   meso: Mesocycle;
   mesoAnterior: Mesocycle | null;
   anterior: EstadoDelBloque | null;
+  /** Cómo va este bloque hasta hoy (para la media que lleva una zona con referencia propia). */
+  enCurso?: EstadoDelBloque | null;
   porQue?: string;
   /** Por qué la propuesta no es la de siempre (déficit, zona ya alta). */
   notas?: readonly NotaDeHipotesis[];
@@ -134,6 +148,10 @@ function Ficha({ zona, h, propuesta, meso, mesoAnterior, anterior, porQue, notas
     nivel, enDeficit,
   }));
   const conCifras = h.iemFinalAnterior != null;
+  // Referencia propia: las primeras semanas de este bloque hacen de «anterior».
+  const propias = h.semanasDeReferencia && h.semanasDeReferencia > 0 ? h.semanasDeReferencia : 0;
+  const deSusSemanas = `De sus primeras ${propias} semanas en este bloque: no se edita`;
+  const medido = propias ? estadoParaElProceso(enCurso?.porZona[zona], h) : null;
   const referencia = referenciaDeProceso(h);
   const noPerder = pideNoPerder(h);
   const lineas = notasDeLaFicha(h, notas);
@@ -172,7 +190,29 @@ function Ficha({ zona, h, propuesta, meso, mesoAnterior, anterior, porQue, notas
       ))}
 
       <Fila titulo="Proceso">
-        {conCifras && h.palanca === 'recuperar' ? (
+        {conCifras && propias > 0 && h.palanca === 'recuperar' ? (
+          <>
+            Sin bloque anterior, la referencia son sus primeras {propias} semanas de este bloque,<Foto valor={h.iemFinalAnterior} titulo={deSusSemanas} />.
+            Desde la semana {propias + 1} baja a{cifra('iemArranque', 'IEM de arranque')}(la mitad) y no pasa de{cifra('iemTecho', 'techo de IEM')}.{' '}
+            {medido?.iemMedio != null && <>Desde entonces lleva<Foto valor={medido.iemMedio} titulo="Lo realizado hasta hoy: no se edita" />de media. </>}
+            {seriesAhora > 0 && <>Series: {seriesAhora} por semana.</>}
+          </>
+        ) : conCifras && propias > 0 ? (
+          <>
+            IEM medio de la semana {propias + 1} en adelante:{cifra('iemMedioObjetivo', 'IEM medio objetivo')}o más. Sin bloque anterior, la
+            referencia son sus primeras {propias} semanas de este bloque,<Foto valor={h.iemFinalAnterior} titulo={deSusSemanas} />
+            {referencia ? <>: se pide {referencia.texto}.</> : '.'}{' '}
+            {subida != null && subida > 0 ? 'Sube por escalones hasta un techo de' : 'Con un techo de'}{cifra('iemTecho', 'techo de IEM')}
+            {subida != null && subida !== 0 && (
+              <span className={`font-mono text-caption font-bold ${subida > 0 ? 'text-success' : 'text-ink-3'}`}>{subida > 0 ? '+' : '−'}{Math.abs(subida)} %</span>
+            )}
+            .{' '}
+            {medido?.iemMedio != null
+              ? <>Desde entonces lleva<Foto valor={medido.iemMedio} titulo="Lo realizado hasta hoy: no se edita" />de media ({medido.porSemana.length} {medido.porSemana.length === 1 ? 'semana' : 'semanas'}). </>
+              : enCurso ? 'Aún no hay semanas terminadas después de la referencia. ' : ''}
+            {seriesAhora > 0 && <>Series: {seriesAhora} por semana.</>}
+          </>
+        ) : conCifras && h.palanca === 'recuperar' ? (
           <>
             Venía de un IEM medio de<Foto valor={h.iemMedioAnterior} />. Este bloque baja a{cifra('iemArranque', 'IEM de arranque')}
             (la mitad de donde acabó:<Foto valor={h.iemFinalAnterior} />) y no pasa de{cifra('iemTecho', 'techo de IEM')}.{' '}
@@ -234,12 +274,15 @@ function Ficha({ zona, h, propuesta, meso, mesoAnterior, anterior, porQue, notas
 }
 
 export default function FichasDeHipotesis({
-  meso, propuesta, mesoAnterior, anterior, cargando, motivoSinCifras, mapa, ejerciciosDeZona, minutosDeSesion, nivel, nombreAtleta, onCambiar,
+  meso, propuesta, mesoAnterior, anterior, enCurso, referencia, cargando, motivoSinCifras, mapa, ejerciciosDeZona, minutosDeSesion, nivel, nombreAtleta, onCambiar,
 }: Props) {
   const tipo = meso.tipoBloque ?? 'desarrollo';
   const enPantalla = hipotesisEnPantalla(meso, propuesta);
   const zonas = Object.keys(enPantalla) as ZonaIem[];
   const sinConfirmar = hayCambiosSinGuardar(meso, enPantalla);
+  // Hipótesis confirmadas cuando aún no había cifras y que ya pueden tenerlas.
+  const sinCifras = hipotesisPendientes(meso, propuesta).filter(p => p.falta === 'cifras');
+  const semanasDeReferencia = referencia ? enLista(referencia.semanasUsadas.map(String)) : null;
   const guardar = (nuevas: Partial<Record<ZonaIem, HipotesisDeZona>>) => onCambiar(camposAlConfirmar(meso, nuevas));
   const resto = restoPorNivel(meso.groups, mesoAnterior?.groups);
   const fraseDelAtleta = objetivoDelMesoParaElAtleta({ weeks: meso.weeks, tipoBloque: meso.tipoBloque, hipotesis: enPantalla }, propuesta.nivel ?? nivel);
@@ -254,8 +297,15 @@ export default function FichasDeHipotesis({
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-mono text-caption text-ink-3">
-            {mesoAnterior ? `propuestas desde ${nombreDeMeso(mesoAnterior)} · tú confirmas` : 'sin bloque anterior · tú confirmas'}
+            {mesoAnterior ? `propuestas desde ${nombreDeMeso(mesoAnterior)} · tú confirmas`
+              : semanasDeReferencia ? `sin bloque anterior · referencia: sus semanas ${semanasDeReferencia} · tú confirmas`
+                : 'sin bloque anterior · tú confirmas'}
           </span>
+          {sinCifras.length > 0 && (
+            <Button size="s" variant="secondary" icon="history" disabled={cargando} onClick={() => guardar(completarHipotesis(meso, propuesta))}>
+              Poner las cifras de sus primeras semanas
+            </Button>
+          )}
           {mesoAnterior && zonas.length > 0 && (
             <Button size="s" variant="secondary" icon="history" disabled={cargando} onClick={() => guardar(propuesta.hipotesis)}>
               Proponer desde el bloque anterior
@@ -283,7 +333,7 @@ export default function FichasDeHipotesis({
           {zonas.map(z => (
             <Ficha
               key={z} zona={z} h={enPantalla[z]!} propuesta={!meso.hipotesis?.[z]}
-              meso={meso} mesoAnterior={mesoAnterior} anterior={anterior}
+              meso={meso} mesoAnterior={mesoAnterior} anterior={anterior} enCurso={enCurso}
               porQue={propuesta.porQue[z]} notas={propuesta.notas?.[z]} enDeficit={propuesta.enDeficit}
               motivoSinCifras={motivoSinCifras}
               ejercicios={ejerciciosDeZona?.(z) ?? []} minutosDeSesion={minutosDeSesion} nivel={propuesta.nivel ?? nivel}

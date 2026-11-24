@@ -598,6 +598,7 @@ const HIPOTESIS: Hipotesis[] = [
 // rechazaría y no se podría ver ni el cierre firmado ni el bloque creado.
 const ESCRITURAS_DE_MENTIRA: EscriturasDelCierre = {
   guardarCierre: async (mesoId, cierre) => { console.info('[harness] guardarCierre', mesoId, cierre); },
+  guardarHipotesis: async (mesoId, campos) => { console.info('[harness] guardarHipotesis', mesoId, campos); },
   crearMesociclo: async meso => { console.info('[harness] crearMesociclo', meso); return { ...meso, id: 'meso_nuevo' }; },
   crearRutina: async rutina => { console.info('[harness] crearRutina', rutina); return { ...rutina, id: `w_nueva_${rutina.dayIndex}` }; },
   alAbrirEditor: email => console.info('[harness] abrir el editor de', email),

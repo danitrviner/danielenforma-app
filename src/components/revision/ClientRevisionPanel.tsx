@@ -64,6 +64,7 @@ import LoQueMeContaste from './LoQueMeContaste';
 import ComoVas from './ComoVas';
 import SemanaQueViene from './SemanaQueViene';
 import LoQuePideDecision from './LoQuePideDecision';
+import { usePendientesDeHipotesis } from './usePendientesDeHipotesis';
 import BodyMeasurementsPanel from '../BodyMeasurementsPanel';
 import ComparadorFotos from './ComparadorFotos';
 
@@ -431,6 +432,10 @@ export default function ClientRevisionPanel({
   // estímulo por semana. Sin catálogo o sin hipótesis, no sale.
   const { motor } = useMotorCdg();
   const mesoHoy = useMemo(() => mesoDelObjetivo(mesocycles, hoy), [mesocycles, hoy]);
+  // Estrellas sin hipótesis (o sin cifras): se avisa aquí y se confirman con un toque.
+  const pendientesDeHipotesis = usePendientesDeHipotesis({
+    athleteEmail: athlete.email, meso: mesoHoy, mesocycles, logs, exercises, hoy, programaNutricion,
+  });
   const semaforo = useMemo<FilaDeSemaforo[]>(() => {
     if (!motor || !mesoHoy || Object.keys(mesoHoy.hipotesis ?? {}).length === 0) return [];
     try {
@@ -568,6 +573,7 @@ export default function ClientRevisionPanel({
           <LoQuePideDecision
             avisos={avisos}
             semaforo={semaforo}
+            pendientes={pendientesDeHipotesis}
             hayBloque={!!mesoHoy}
             onAbrirSeguimiento={() => onGoToTab('entrenamientos')}
           />

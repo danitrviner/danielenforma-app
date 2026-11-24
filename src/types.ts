@@ -2775,6 +2775,14 @@ export interface HipotesisDeZona {
   iemMedioAnterior?: number;
   /** IEM semanal con el que acabó el bloque anterior. */
   iemFinalAnterior?: number;
+  /** Referencia PROPIA (23-11-2026): la zona no tiene bloque anterior del que
+   *  partir y la referencia son las primeras semanas de ESTE bloque. Es cuántas
+   *  semanas que cuentan del arranque la forman (hasta la 2.ª en la que entrenó:
+   *  normalmente 2); su estímulo va en `iemFinalAnterior` e `iemMedioAnterior`
+   *  y esas semanas NO entran en la media del proceso, que se mide desde la
+   *  siguiente (utils/hipotesisDeBloque/referenciaPropia.ts). Ausente = la
+   *  referencia es el bloque anterior. */
+  semanasDeReferencia?: number;
   /** PROCESO: IEM medio semanal que se quiere en este bloque. Es el umbral tal
    *  cual, sin tolerancia (auditoría de cifras, 17-11-2026): por defecto, donde
    *  ACABÓ el anterior + medio escalón de la velocidad (un 5 % en suave); si la

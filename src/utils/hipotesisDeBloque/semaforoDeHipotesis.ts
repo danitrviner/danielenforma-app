@@ -12,6 +12,7 @@ import type { EstadoDelBloque } from './estadoDelBloqueAnterior.js';
 import { PALANCAS } from './palancas.js';
 import { estadoDelBloqueAnterior, iniciosDeSemanaDelBloque, semanasFueraDelBloque } from './estadoDelBloqueAnterior.js';
 import { procesoEnCurso, type RitmoDeProceso } from './procesoEnCurso.js';
+import { estadoParaElProceso } from './referenciaPropia.js';
 import { estrellasDe, nombreCortoDeZona } from './tiposDeBloque.js';
 import { franjaDeResultado, rmDeLaZona, zonaPrincipalDeEjercicios } from './veredicto.js';
 import { logsDelBloque } from './veredictosDelCierre.js';
@@ -98,8 +99,9 @@ export function semaforoDeHipotesis(o: {
     const h = o.hipotesis?.[z.clave];
     if (!h) return [];
     const zona = z.clave;
-    const medio = o.estado?.porZona[zona]?.iemMedio;
-    const iemMedio = medio == null ? null : redondearIem(medio);
+    // Con referencia propia, la media se cuenta sin las semanas de referencia.
+    const medido = estadoParaElProceso(o.estado?.porZona[zona], h);
+    const iemMedio = medido.iemMedio == null ? null : redondearIem(medido.iemMedio);
     const recuperar = h.palanca === 'recuperar';
     const iemMedioObjetivo = h.iemMedioObjetivo ?? null;
     const techo = h.iemTecho ?? null;
@@ -110,8 +112,10 @@ export function semaforoDeHipotesis(o: {
     if (iemMedio != null) {
       if (recuperar && techo != null) proceso = iemMedio <= techo * (2 - FRACCION_DE_SOSTENER) ? 'en_camino' : 'por_detras';
       else if (!recuperar && iemMedioObjetivo != null && iemMedioObjetivo > 0) {
-        const porSemana = o.estado?.porZona[zona]?.porSemana ?? [];
-        const p = procesoEnCurso({ objetivo: iemMedioObjetivo, techo, porSemana, semanasTotales: o.semanasQueCuentan ?? o.semanasTotales });
+        const p = procesoEnCurso({
+          objetivo: iemMedioObjetivo, techo, porSemana: medido.porSemana,
+          semanasTotales: Math.max(1, (o.semanasQueCuentan ?? o.semanasTotales) - medido.semanasDeReferencia),
+        });
         if (p) {
           ritmo = p.ritmo;
           proceso = p.ritmo === 'tarde' ? 'por_detras' : 'en_camino';
@@ -145,9 +149,9 @@ export function semaforoDeHipotesis(o: {
     const s = o.subidas?.[zona];
     const semanasDesdeLaSubida = s?.semanasSostenidas ?? null;
     const partes = [
-      iemMedio == null ? 'IEM medio sin dato'
+      iemMedio == null ? (medido.semanasDeReferencia > 0 ? 'IEM medio aún sin semanas tras la referencia' : 'IEM medio sin dato')
         : recuperar ? `IEM medio ${fmt(iemMedio)}${techo != null ? ` (tope ${fmt(techo)})` : ''}`
-          : `IEM medio ${fmt(iemMedio)}${iemMedioObjetivo != null ? ` de ${fmt(iemMedioObjetivo)}` : ''}${notaDeProceso}`,
+          : `IEM medio ${medido.semanasDeReferencia > 0 ? 'tras la referencia ' : ''}${fmt(iemMedio)}${iemMedioObjetivo != null ? ` de ${fmt(iemMedioObjetivo)}` : ''}${notaDeProceso}`,
       !recuperar && techo != null ? `techo ${fmt(techo)}` : null,
       semanasDesdeLaSubida == null ? 'sin subidas todavía'
         : semanasDesdeLaSubida <= 1 ? 'subió esta semana' : `${semanasDesdeLaSubida} semanas desde la última subida`,

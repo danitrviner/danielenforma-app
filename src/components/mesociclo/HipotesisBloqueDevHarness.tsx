@@ -3,6 +3,7 @@ import { MUSCLE_LABELS, MUSCLE_ORDER, type Mesocycle, type MuscleGroup, type Mus
 import type { ZonaIem } from '../../utils/cdg/zonas';
 import type { EstadoDelBloque } from '../../utils/hipotesisDeBloque/estadoDelBloqueAnterior';
 import { mapaDeRespuesta } from '../../utils/hipotesisDeBloque/mapaDeRespuesta';
+import { referenciaPropia } from '../../utils/hipotesisDeBloque/referenciaPropia';
 import { sugerirSemana1Reducida } from '../../utils/hipotesisDeBloque/tiposDeBloque';
 import { PRIORIDAD, avisoDeEstrellasDelMeso, propuestaDelMeso, siguientePrioridad } from '../../utils/hipotesisDelMeso';
 import { planDeSemana1Reducida } from '../../utils/progression';
@@ -29,6 +30,11 @@ import { alBajarAMantener, alCambiarSemana1, camposDeBloqueNuevo, elegirTipoDeBl
    desarrollar para ver la recomendación «Bajarlos a mantener» y su Deshacer
    (aquí, una pila en memoria como la del editor); y «Primer bloque» es el de
    un atleta sin bloques: nace como primer bloque de 8 semanas.
+
+   23-11-2026 (referencia propia): «Primer bloque en marcha» es un bloque sin
+   anterior que va por la semana 6 de 10 con dos estrellas y sin hipótesis: la
+   ficha saca las cifras de sus dos primeras semanas y enseña la media que
+   lleva desde la tercera.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const HOY = '2026-11-17';
@@ -82,6 +88,17 @@ const ESTADO: EstadoDelBloque = {
   },
 };
 
+/** Un primer bloque que va por la semana 6: cinco semanas terminadas, sin bloque anterior. */
+const EN_MARCHA: EstadoDelBloque = {
+  mesocycleId: 'h2', semanasQueCuentan: 5, semanasSinEntrenar: 0,
+  semanas: [1, 2, 3, 4, 5].map(n => ({ semana: n, inicio: '', cuenta: true, motivo: null, entrenada: true })),
+  porZona: {
+    pectoral: { zona: 'pectoral', iemMedio: 42.7, iemFinal: 44, porSemana: [40.8, 41.6, 43, 44, 44] },
+    cuadriceps: { zona: 'cuadriceps', iemMedio: 30.8, iemFinal: 31.5, porSemana: [30, 30, 31, 31, 32] },
+  },
+};
+const REFERENCIA_EN_MARCHA = referenciaPropia(EN_MARCHA);
+
 /** El pectoral ya alto: acabó en 82 de IEM (de 80 en adelante el techo no sube). */
 const ESTADO_ALTO: EstadoDelBloque = { ...ESTADO, porZona: { ...ESTADO.porZona, pectoral: zona('pectoral', 76, 82) } };
 
@@ -94,7 +111,7 @@ const RUTINAS: { exercises: WorkoutExercise[] }[] = [
 ];
 const GRUPOS_DE_ZONA: Partial<Record<ZonaIem, MuscleGroup[]>> = { pectoral: ['pecho'], deltoides: ['deltoide_ant', 'deltoide_lat', 'deltoide_post'], dorsal: ['dorsal'] };
 
-type Escenario = 'con' | 'firmado' | 'cuatro' | 'especializacion' | 'parcial' | 'deficit' | 'alta' | 'principiante' | 'sin' | 'antiguo';
+type Escenario = 'con' | 'firmado' | 'cuatro' | 'especializacion' | 'parcial' | 'deficit' | 'alta' | 'principiante' | 'sin' | 'marcha' | 'antiguo';
 const ESCENARIOS: { value: Escenario; label: string }[] = [
   { value: 'con', label: 'Con bloque anterior' },
   { value: 'firmado', label: 'Anterior firmado' },
@@ -105,11 +122,12 @@ const ESCENARIOS: { value: Escenario; label: string }[] = [
   { value: 'alta', label: 'Zona alta' },
   { value: 'principiante', label: 'Principiante' },
   { value: 'sin', label: 'Primer bloque' },
+  { value: 'marcha', label: 'Primer bloque en marcha' },
   { value: 'antiguo', label: 'Bloque sin tipo' },
 ];
 
 function partida(e: Escenario): { meso: Mesocycle; mesos: Mesocycle[]; anterior: Mesocycle | null } {
-  const anterior = e === 'sin' ? null : e === 'firmado' ? ANTERIOR_FIRMADO : e === 'parcial' ? ANTERIOR_PARCIAL : ANTERIOR;
+  const anterior = e === 'sin' || e === 'marcha' ? null : e === 'firmado' ? ANTERIOR_FIRMADO : e === 'parcial' ? ANTERIOR_PARCIAL : ANTERIOR;
   const mesos = anterior ? [anterior] : [];
   // Las estrellas de partida de cada caso: cuatro zonas para ver el aviso; una
   // sola y el resto en desarrollar para ver la recomendación de mantener; y
@@ -118,13 +136,16 @@ function partida(e: Escenario): { meso: Mesocycle; mesos: Mesocycle[]; anterior:
     ? { ...PRIORIDADES_DE_PARTIDA, dorsal: 'alta', cuadriceps: 'alta' }
     : e === 'especializacion' ? { pecho: 'alta', gemelo: 'ignorar' }
       : e === 'sin' ? { gemelo: 'ignorar' }
-        : PRIORIDADES_DE_PARTIDA;
+        : e === 'marcha' ? { pecho: 'alta', cuadriceps: 'alta', gemelo: 'ignorar' }
+          : PRIORIDADES_DE_PARTIDA;
   const base: Mesocycle = {
     id: 'h2', athleteId: 'dani@enforma.app', number: anterior ? 4 : 1, name: anterior ? 'Hipertrofia 2' : 'Primer bloque', daysPerWeek: 4,
     groups: grupos(SERIES, prioridades),
     ...(e === 'antiguo'
       ? { weeks: 10, startDate: '2026-11-30', objective: 'Hipertrofia tren superior' }
-      : camposDeBloqueNuevo(mesos, HOY)),
+      : e === 'marcha'
+        ? { weeks: 10, startDate: '2026-10-12', tipoBloque: 'desarrollo' as const, objective: 'Desarrollo: pectoral y cuádriceps' }
+        : camposDeBloqueNuevo(mesos, HOY)),
   };
   // Especialización: elegida como en el editor, que no toca los grupos.
   const meso = e === 'especializacion' ? { ...base, ...elegirTipoDeBloque(base, 'especializacion').cambios } : base;
@@ -156,9 +177,10 @@ export default function HipotesisBloqueDevHarness() {
   const estado = !anterior ? null : escenario === 'alta' ? ESTADO_ALTO : ESTADO;
   const nivel = escenario === 'principiante' ? 'principiante' : 'intermedio';
   const enDeficit = escenario === 'deficit';
+  const enMarcha = escenario === 'marcha';
   const propuesta = useMemo(
-    () => propuestaDelMeso({ meso, anterior: estado, historial: mesos, nivel, enDeficit }),
-    [meso, estado, mesos, nivel, enDeficit],
+    () => propuestaDelMeso({ meso, anterior: estado, referenciaPropia: enMarcha ? REFERENCIA_EN_MARCHA : null, historial: mesos, nivel, enDeficit }),
+    [meso, estado, enMarcha, mesos, nivel, enDeficit],
   );
   const mapa = useMemo(() => { const m = mapaDeRespuesta(mesos); return m.zonas.length ? m : null; }, [mesos]);
   const recorte = useMemo(() => planDeSemana1Reducida(RUTINAS, meso.groups), [meso.groups]);
@@ -190,7 +212,9 @@ export default function HipotesisBloqueDevHarness() {
             propuesta={propuesta}
             mesoAnterior={anterior}
             anterior={estado}
-            motivoSinCifras={estado ? null : 'Es el primer bloque del atleta: no hay bloque anterior del que sacar las cifras de proceso.'}
+            enCurso={enMarcha ? EN_MARCHA : null}
+            referencia={enMarcha ? REFERENCIA_EN_MARCHA : null}
+            motivoSinCifras={estado || enMarcha ? null : 'Es el primer bloque del atleta: las cifras de proceso saldrán de sus dos primeras semanas entrenadas, cuando las termine.'}
             mapa={mapa}
             ejerciciosDeZona={z => [...new Set(RUTINAS.flatMap(r => r.exercises).filter(e => GRUPOS_DE_ZONA[z]?.includes(e.muscleGroup!)).map(e => e.exerciseId))]}
             minutosDeSesion={75}
