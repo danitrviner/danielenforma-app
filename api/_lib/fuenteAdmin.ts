@@ -271,9 +271,15 @@ export async function leerDoctrina(db: Firestore, defaults: { entrenamiento: str
   return { entrenamiento: texto(e, defaults.entrenamiento), nutricion: texto(n, defaults.nutricion) };
 }
 
-/** Instrucciones fijas de Dani para el asistente (coachSettings/instructions). */
+/** Instrucciones fijas de Dani para el asistente: `coachSettings/main`, el
+ *  MISMO documento que escribe la app (`COACH_INSTRUCTIONS_DOC_ID` en
+ *  src/db/coachSettings.ts). Hasta el 25-11-2026 aquí se leía
+ *  `coachSettings/instructions`, que no existe: las reglas que Dani pusiera en
+ *  el panel —las que mandan sobre todo lo demás— el autopiloto no las veía.
+ *  Un test compara los dos ids para que no vuelvan a separarse. */
+export const DOC_INSTRUCCIONES_FIJAS = 'main';
 export async function leerInstruccionesFijas(db: Firestore): Promise<string> {
-  const s = await db.collection('coachSettings').doc('instructions').get();
+  const s = await db.collection('coachSettings').doc(DOC_INSTRUCCIONES_FIJAS).get();
   return s.exists ? ((s.data() as { text?: string }).text ?? '') : '';
 }
 

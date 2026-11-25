@@ -105,15 +105,46 @@ describe('ejecutarRonda', () => {
     expect(r.episodio.estado).toBe('escalado');
   });
 
-  it('un corte por longitud o un rechazo cierran el episodio como fallido con el historial saneado', async () => {
-    const c = cliente([{ content: [toolUse('t9', 'get_client_brief', { athlete_email: 'ana@x.com' })], stop_reason: 'max_tokens' }]);
-    const r = await ejecutarRonda({ episodio: episodio(), modelo: 'claude-sonnet-5-5', cliente: c, sistema, alias: 'Ana G.', ahora: AHORA });
-    expect(r.episodio.estado).toBe('fallido');
-    expect(r.episodio.error).toMatch(/longitud/);
+  // 25-11-2026: un corte por longitud mataba el episodio a la primera. Ahora la
+  // ronda se repite con la salida ampliada y solo el segundo corte lo cierra.
+  it('un corte por longitud repite la ronda con más salida; si se vuelve a cortar, fallido con el historial saneado', async () => {
+    const cortada = { content: [toolUse('t9', 'get_client_brief', { athlete_email: 'ana@x.com' })], stop_reason: 'max_tokens' };
+    const c = cliente([cortada, { ...cortada }]);
+    const r1 = await ejecutarRonda({ episodio: episodio(), modelo: 'claude-sonnet-5-5', cliente: c, sistema, alias: 'Ana G.', ahora: AHORA });
+    expect((c.llamadas[0] as { max_tokens: number }).max_tokens).toBe(8000);
+    expect(r1.episodio.estado).toBe('en_curso');
+    expect(r1.episodio.salidaAmpliada).toBe(true);
+    // La respuesta cortada no entra en el historial (puede traer un tool_use a medias), pero su gasto sí cuenta.
+    expect(r1.episodio.historial).toBeUndefined();
+    expect(r1.episodio.coste.llamadas).toBe(1);
+    expect(r1.episodio.ronda).toBe(1);
+
+    const r2 = await ejecutarRonda({ episodio: r1.episodio, modelo: 'claude-sonnet-5-5', cliente: c, sistema, alias: 'Ana G.', ahora: AHORA });
+    const params2 = c.llamadas[1] as { max_tokens: number; messages: unknown[] };
+    expect(params2.max_tokens).toBe(16000);
+    expect(params2.messages).toHaveLength(1); // la misma ronda, desde el guion
+    expect(r2.episodio.estado).toBe('fallido');
+    expect(r2.episodio.error).toMatch(/longitud/);
     // El tool_use sin resultado se cierra con un «interrumpido»: el historial sigue siendo válido.
-    const ultimo = r.episodio.historial!.at(-1)!;
+    const ultimo = r2.episodio.historial!.at(-1)!;
     expect(ultimo.role).toBe('user');
     expect((ultimo.content[0] as { type: string }).type).toBe('tool_result');
+  });
+
+  it('un rechazo del modelo cierra el episodio como fallido', async () => {
+    const c = cliente([{ content: [texto('No puedo ayudar con esto.')], stop_reason: 'refusal' }]);
+    const r = await ejecutarRonda({ episodio: episodio(), modelo: 'claude-sonnet-5-5', cliente: c, sistema, alias: 'Ana G.', ahora: AHORA });
+    expect(r.episodio.estado).toBe('fallido');
+    expect(r.episodio.error).toMatch(/rechazó/);
+  });
+
+  it('una ronda buena borra el rastro de los fallos transitorios anteriores', async () => {
+    const c = cliente([{ content: [texto('PARA DANI: hecho.')], stop_reason: 'end_turn' }]);
+    const conFallo = { ...episodio(), intentos: 2, error: 'Intento 2 de 3 fallido…' };
+    const r = await ejecutarRonda({ episodio: conFallo, modelo: 'claude-sonnet-5-5', cliente: c, sistema, alias: 'Ana G.', ahora: AHORA });
+    expect(r.episodio.estado).toBe('hecho');
+    expect(r.episodio.intentos).toBeUndefined();
+    expect(r.episodio.error).toBeUndefined();
   });
 
   it('un episodio ya cerrado o sin presupuesto no llama al modelo', async () => {
@@ -125,6 +156,54 @@ describe('ejecutarRonda', () => {
     expect(r.episodio.estado).toBe('fallido');
     expect(r.episodio.error).toMatch(/Tope de gasto/);
     expect(c.llamadas).toHaveLength(0);
+  });
+});
+
+describe('ejecutarRonda · lo que lleva cada llamada', () => {
+  const pesado = (tipo: 'alta_completada' | 'fin_de_bloque' | 'revision'): Episodio => nuevoEpisodio({
+    tipo, athleteId: 'ana@x.com', clave: 'ana@x.com', disparador: { fuente: 'onboarding', fecha: '2026-10-29' }, politica: 'sombra', ahora: AHORA,
+  });
+  const fin = { content: [texto('PARA DANI: x')], stop_reason: 'end_turn' };
+
+  it('los ligeros van con 8.000 tokens y esfuerzo bajo; alta, revisión y fin de bloque con 16.000 y esfuerzo medio', async () => {
+    const c = cliente([fin, { ...fin }, { ...fin }, { ...fin }]);
+    await ejecutarRonda({ episodio: episodio(), modelo: 'm', cliente: c, sistema, alias: 'A', ahora: AHORA });
+    for (const tipo of ['alta_completada', 'fin_de_bloque', 'revision'] as const) {
+      await ejecutarRonda({ episodio: pesado(tipo), modelo: 'm', cliente: c, sistema, alias: 'A', ahora: AHORA });
+    }
+    const ajustes = (c.llamadas as { max_tokens: number; output_config: { effort: string } }[]).map(p => [p.max_tokens, p.output_config.effort]);
+    expect(ajustes).toEqual([[8000, 'low'], [16000, 'medium'], [16000, 'medium'], [16000, 'medium']]);
+  });
+
+  it('el sistema lleva los mismos cuatro bloques que el chat: prompt, doctrina con SU tabla de volumen, cómo programa Dani y el sufijo', async () => {
+    const c = cliente([fin]);
+    const landmarks = { pecho: { mv: 6, mev: 9, mavMin: 11, mavMax: 17, mrv: 21 } };
+    await ejecutarRonda({
+      episodio: pesado('alta_completada'), modelo: 'm', cliente: c, alias: 'A', ahora: AHORA,
+      sistema: { ...sistema, volumeLandmarks: landmarks, perfilProgramacion: '# CÓMO PROGRAMA DANI (sus 3 rutinas)\nPecho: Press banca (×3; 3×8-10 · RIR 2)', instruccionesFijas: 'Nunca peso muerto convencional.' },
+    });
+    const system = (c.llamadas[0] as { system: { text: string; cache_control?: unknown }[] }).system;
+    expect(system).toHaveLength(4);
+    expect(system[1].text).toContain('CRITERIO DEL COACH');
+    expect(system[1].text).toMatch(/pecho[^\n]*\b17\b/i); // el mavMax de la tabla de Dani, no el de fábrica
+    expect(system[2].text).toMatch(/^# CÓMO PROGRAMA DANI/);
+    expect(system.slice(0, 3).every(b => !!b.cache_control)).toBe(true);
+    expect(system[3].text).toContain('Nunca peso muerto convencional.');
+    expect(system[3].cache_control).toBeUndefined();
+  });
+
+  it('sin rutinas no hay bloque de perfil: el sistema se queda en tres', async () => {
+    const c = cliente([fin]);
+    await ejecutarRonda({ episodio: episodio(), modelo: 'm', cliente: c, sistema: { ...sistema, perfilProgramacion: '' }, alias: 'A', ahora: AHORA });
+    expect((c.llamadas[0] as { system: unknown[] }).system).toHaveLength(3);
+  });
+
+  it('la señal de corte por tiempo llega a la llamada al modelo', async () => {
+    const señales: (AbortSignal | undefined)[] = [];
+    const c: ClienteModelo = { crear: async (_p, o) => { señales.push(o?.signal); return { ...fin, usage: uso() }; } };
+    const corte = new AbortController();
+    await ejecutarRonda({ episodio: episodio(), modelo: 'm', cliente: c, sistema, alias: 'A', ahora: AHORA, signal: corte.signal });
+    expect(señales).toEqual([corte.signal]);
   });
 });
 

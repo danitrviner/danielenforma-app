@@ -4,7 +4,7 @@
 // llega al atleta sin aprobación.
 import { appendDossierFacts, coachActual, createAiProposal, updateAiProposal, getAiProposalsForAthlete, createCoachClientTask, getAthleteNutritionConfig, getBodyweightForAthlete, getCoachClientTasks, getDietCompletionLogsForAthlete, getDietsForAthlete, getExercises, getMesocycles, getNutritionProgram, getQuestionnairesByCoach, getResponsesForAthlete, getRoadmap, getWeeklyChallenge, getWeeklyChallengesForAthlete, getWorkoutAssignments, getWorkoutLogs, getWorkouts, saveCoachReport } from './datos.js';
 import { sesionesDeMesociclo, fechasDelMesociclo, cicloDiasDeMeso } from '../../utils/asignacionMesociclo.js';
-import { vueltasDelCiclo } from '../../utils/progression.js';
+import { vueltasDelCiclo, mesocycleWeekNumber } from '../../utils/progression.js';
 import { repartoDesdeAsistente, sesionesDelReparto } from '../repartoAsistente.js';
 import { camposDeCalendario } from '../../utils/reordenarMeso.js';
 import { distribucionDeMeso } from '../../utils/distribucionDeMeso.js';
@@ -312,6 +312,7 @@ export async function proposeWeekPlan(
     if (!meso) return toResult({ error: 'El atleta no tiene mesociclos: crea el mesociclo antes de programar sus semanas.' });
     const vueltas = vueltasDelCiclo(meso.weeks, cicloDiasDeMeso(meso));
     const fuera = (s: number) => s < 1 || s > vueltas;
+    const semanaEnCurso = meso.startDate ? Math.min(vueltas, mesocycleWeekNumber(meso.startDate, hoy, cicloDiasDeMeso(meso))) : NaN;
     payload.mesocycleId = meso.id;
     payload.mesocycleName = nombreDeMeso(meso);
     const desc = numeros(input.semanas_descarga);
@@ -336,7 +337,8 @@ export async function proposeWeekPlan(
       payload.cambios = [];
       for (const c of input.cambios as Record<string, unknown>[]) {
         const buscado = typeof c.ejercicio === 'string' ? normTexto(c.ejercicio) : '';
-        const semana = typeof c.semana === 'number' ? Math.round(c.semana) : NaN;
+        // Sin semana: la que está en curso (el cambio por una molestia es «desde ya»).
+        const semana = typeof c.semana === 'number' ? Math.round(c.semana) : semanaEnCurso;
         if (!buscado || !Number.isFinite(semana) || fuera(semana)) { errores.push(`Cambio mal formado o fuera del mesociclo: ${JSON.stringify(c)}`); continue; }
         let encontrado: { workoutId: string; exerciseId: string } | null = null;
         for (const w of delMeso) {
@@ -344,6 +346,16 @@ export async function proposeWeekPlan(
           if (we) { encontrado = { workoutId: w.id, exerciseId: we.exerciseId }; break; }
         }
         if (!encontrado) { errores.push(`«${c.ejercicio}» no está en las rutinas de ${nombreDeMeso(meso)}.`); continue; }
+        // Sustituto: nombre EXACTO del catálogo (como en propose_workout_days). Un
+        // nombre aproximado aquí cambiaría el ejercicio del atleta por otro distinto.
+        let sustituto: { sustitutoId: string; sustituto: string } | null = null;
+        if (typeof c.sustituto === 'string' && c.sustituto.trim()) {
+          const clave = claveDeEjercicio(c.sustituto);
+          const nuevo = catalogo.find(e => claveDeEjercicio(e.name) === clave);
+          if (!nuevo) { errores.push(`El sustituto «${c.sustituto}» no está en el catálogo con ese nombre: usa uno de get_alternativas_ejercicio, tal cual.`); continue; }
+          if (nuevo.id === encontrado.exerciseId) { errores.push(`El sustituto de «${c.ejercicio}» es el mismo ejercicio.`); continue; }
+          sustituto = { sustitutoId: nuevo.id, sustituto: nuevo.name };
+        }
         const bloques = Array.isArray(c.bloques)
           ? (c.bloques as Record<string, unknown>[]).map(b => ({
               ...(typeof b.etiqueta === 'string' ? { label: b.etiqueta } : {}),
@@ -358,6 +370,7 @@ export async function proposeWeekPlan(
           ...(typeof c.rir === 'number' ? { rir: Math.round(c.rir) } : {}),
           ...(typeof c.descanso_seg === 'number' ? { restSeconds: Math.round(c.descanso_seg) } : {}),
           ...(bloques?.length ? { bloques } : {}),
+          ...(sustituto ?? {}),
         });
       }
       if (payload.cambios.length) partes.push(`${payload.cambios.length} cambio${payload.cambios.length === 1 ? '' : 's'} de ejercicio`);

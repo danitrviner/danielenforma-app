@@ -3400,6 +3400,10 @@ export interface WeekPlanProposalPayload {
   cambios?: {
     workoutId: string; exerciseId: string; ejercicio: string; semana: number; solo?: boolean;
     sets?: number; reps?: string; rir?: number; restSeconds?: number; bloques?: WorkoutSetGroup[];
+    /** Ejercicio que lo SUSTITUYE desde esa semana (molestia, material): id del
+     *  catálogo y su nombre para la tarjeta. Se guarda como `cambios.exerciseId`
+     *  en la regla de la semana, igual que desde la barra del mesociclo. */
+    sustitutoId?: string; sustituto?: string;
   }[];
   /** Los cambios los calculó el protocolo CDG (propose_progresion_iem): política `progresion_iem`. */
   origenIem?: boolean;

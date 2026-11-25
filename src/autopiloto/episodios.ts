@@ -53,6 +53,12 @@ export interface Episodio {
   actualizadoEn: string;
   cerradoEn?: string;
   error?: string;
+  /** Fallos TRANSITORIOS seguidos de la ronda en curso (API caída, 429, plazo
+   *  agotado). El episodio sigue en cola y se reintenta en la siguiente pasada;
+   *  al tercero se da por fallido. Una ronda buena lo pone a cero. */
+  intentos?: number;
+  /** La ronda anterior se cortó por longitud: la siguiente va con la salida ampliada. */
+  salidaAmpliada?: boolean;
 }
 
 /** Orden de cola: lo que no puede esperar primero. */
@@ -70,6 +76,52 @@ export const TOPE_USD_POR_EPISODIO: Record<TipoEpisodio, number> = {
 };
 
 export const MAX_RONDAS_POR_EPISODIO = 20;
+
+/** Cuántos fallos transitorios seguidos aguanta un episodio antes de darse por fallido. */
+export const MAX_INTENTOS_TRANSITORIOS = 3;
+
+/** Los episodios que MONTAN o REHACEN plan: el alta entera, el bloque nuevo y la
+ *  revisión de medio/fin de bloque. Son los que deciden series, ejercicios y
+ *  kcal, y los que escriben propuestas largas (un mes de sesiones no cabe en
+ *  8.000 tokens: al chat del coach hubo que subirle el tope a 16.000 por eso). */
+export const EPISODIOS_PESADOS: ReadonlySet<TipoEpisodio> = new Set<TipoEpisodio>(['alta_completada', 'fin_de_bloque', 'revision']);
+export const esEpisodioPesado = (tipo: TipoEpisodio): boolean => EPISODIOS_PESADOS.has(tipo);
+
+export const MAX_TOKENS_LIGERO = 8000;
+export const MAX_TOKENS_PESADO = 16000;
+
+/** Tope de salida y esfuerzo de la llamada al modelo para este episodio.
+ *  Ligeros (un mensaje, una nota): 8.000 y esfuerzo bajo, como hasta ahora.
+ *  Pesados: 16.000 y esfuerzo medio. Un ligero que se cortó por longitud
+ *  repite la ronda con el tope de los pesados (`salidaAmpliada`). */
+export function ajustesDeLlamada(ep: Pick<Episodio, 'tipo' | 'salidaAmpliada'>): { maxTokens: number; effort: 'low' | 'medium' } {
+  const pesado = esEpisodioPesado(ep.tipo);
+  return {
+    maxTokens: pesado || ep.salidaAmpliada ? MAX_TOKENS_PESADO : MAX_TOKENS_LIGERO,
+    effort: pesado ? 'medium' : 'low',
+  };
+}
+
+/** ¿Merece reintento? Lo que se arregla solo esperando: sin conexión, plazo
+ *  agotado, 408/409/429 y cualquier 5xx (incluido el 529 de saturación). Un 400
+ *  o un 401 no cambian por repetir: esos fallan a la primera. */
+export function esFalloTransitorio(err: unknown): boolean {
+  const e = (err ?? {}) as { status?: unknown; name?: unknown; code?: unknown; message?: unknown };
+  if (typeof e.status === 'number') return e.status === 408 || e.status === 409 || e.status === 429 || e.status >= 500;
+  const texto = `${typeof e.name === 'string' ? e.name : ''} ${typeof e.code === 'string' ? e.code : ''} ${typeof e.message === 'string' ? e.message : ''}`;
+  return /APIConnection|Timeout|Abort|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|socket hang up|fetch failed|timed out|aborted/i.test(texto);
+}
+
+/** El episodio después de que una ronda lance. Transitorio y con intentos por
+ *  gastar: se queda en cola como estaba, con el intento apuntado. Si no, fallido. */
+export function trasFalloDeRonda(ep: Episodio, err: unknown, ahora: string): Episodio {
+  const mensaje = (err as { message?: string } | null)?.message ?? String(err);
+  const intentos = (ep.intentos ?? 0) + 1;
+  if (esFalloTransitorio(err) && intentos < MAX_INTENTOS_TRANSITORIOS) {
+    return { ...ep, intentos, error: `Intento ${intentos} de ${MAX_INTENTOS_TRANSITORIOS} fallido, se reintenta en la siguiente pasada: ${mensaje}`, actualizadoEn: ahora };
+  }
+  return { ...ep, estado: 'fallido', intentos, error: mensaje, actualizadoEn: ahora, cerradoEn: ahora };
+}
 
 export const idDeEpisodio = (tipo: TipoEpisodio, clave: string) => `${tipo}_${clave}`;
 
@@ -107,7 +159,7 @@ export function promptDeEpisodio(ep: Episodio, ctx: { alias: string }): string {
         ? `\n\nALERTAS detectadas al recibirla (motor, no tú): ${ep.alertas.join(' · ')}. Con una alerta NO le contestas tú: deja una nota con add_coach_task que empiece por «Revisar ya:» con la alerta y lo que ves en el brief, y cierra. Es de Dani.`
         : '';
       return `EPISODIO: ha llegado la revisión (cuestionario) de ${ctx.alias} (${ep.athleteId}), enviada el ${ep.disparador.fecha}${ep.disparador.docId ? ` (id ${ep.disparador.docId})` : ''}.\n`
-        + `Empieza por get_client_brief con tarea "revision" y después get_revision_engine con periodo "semana": ahí están sus titulares con \`paraCliente\`, lo que ha comido, el peso y lo que contestó. No pidas nada más de lectura.${alertas}\n\n`
+        + `Empieza por get_client_brief con tarea "revision" y después get_revision_engine con periodo "7d": ahí están sus titulares con \`paraCliente\`, lo que ha comido, el peso y lo que contestó. No pidas nada más de lectura.${alertas}\n\n`
         + `Si NO hay alertas, redacta la respuesta a su revisión con propose_respuesta_revision (response_id es el id de arriba): uno o dos párrafos, en segunda persona, como si la escribiera Dani en primera persona (él la firma), hablando de SU semana con SUS números — solo lo que venga en \`paraCliente\` de los titulares y lo que él mismo contó. Sin consejos médicos, sin prometer resultados, sin mencionar al asistente.\n`
         + `Si ves un desvío (peso fuera del rango de su fase dos semanas seguidas, adherencia por kcal por debajo del 70 % dos semanas, tres sesiones perdidas en catorce días), NO toques kcal, sesiones ni reparto: la respuesta al atleta lo reconoce en una frase sin anunciar cambios, y se lo dices a Dani en la línea final.\n`
         + `Si el brief trae lo que Dani esperaba ver (expediente de propuestas anteriores), di en la línea final si se está cumpliendo.\n${cierre}`;
@@ -153,7 +205,7 @@ export function promptDeEpisodio(ep: Episodio, ctx: { alias: string }): string {
           + `\nALERTA CLÍNICA (motor): ${ep.alertas!.join(' · ')}. Esto lo decide Dani, no tú: NO propongas cambios de sesiones ni mensajes. Deja una nota con add_coach_task que empiece por «Revisar ya:» con el texto literal del atleta, el ejercicio o zona, lo que declara el alta y qué alternativas hay (get_alternativas_ejercicio con evitar_articulacion), y cierra.\n${cierre}`;
       }
       return cabecera
-        + `\nMolestia leve y sin lesión declarada. Tu trabajo: (1) deducir la articulación o zona del texto; (2) get_alternativas_ejercicio con evitar_articulacion para cada ejercicio implicado; (3) proponer el cambio desde esta semana con propose_week_plan (cambios con solo=false, mismo número de series) eligiendo entre las alternativas del motor; (4) propose_mensaje_atleta (motivo "dolor"): «he cambiado X por Y esta semana; si sigue, me lo dices», sin diagnóstico ni consejo médico; (5) SIEMPRE add_coach_task «Revisar ya:» con el texto literal y lo que has cambiado.\n`
+        + `\nMolestia leve y sin lesión declarada. Tu trabajo: (1) deducir la articulación o zona del texto; (2) get_alternativas_ejercicio con evitar_articulacion para cada ejercicio implicado; (3) proponer el cambio desde esta semana con propose_week_plan: un \`cambios\` por ejercicio con \`ejercicio\` (el que sale), \`sustituto\` (el nombre EXACTO de una de las alternativas del motor), solo=false y SIN semana (entra en la semana en curso); sin series ni reps conserva las que tenía; (4) propose_mensaje_atleta (motivo "dolor"): «he cambiado X por Y esta semana; si sigue, me lo dices», sin diagnóstico ni consejo médico; (5) SIEMPRE add_coach_task «Revisar ya:» con el texto literal y lo que has cambiado.\n`
         + `Nada de kcal ni reparto. Si el texto habla de dolor en reposo, de semanas o de médico, trátalo como clínico: solo la nota.\n${cierre}`;
     }
     case 'perdidas': {
@@ -167,7 +219,7 @@ export function promptDeEpisodio(ep: Episodio, ctx: { alias: string }): string {
     }
     case 'desvio_peso': {
       return `EPISODIO: el peso de ${ctx.alias} (${ep.athleteId}) va fuera del rango de su fase dos semanas seguidas (${ep.disparador.fecha}). MOTOR: ${ep.paraDani || 'ver brief'}.\n`
-        + `Empieza por get_client_brief con tarea "revision" (trae el análisis de nutrición, el gasto real y lo que Dani corrige). El ajuste de kcal es el ORIENTATIVO del motor que va arriba: no otro número, salvo para redondearlo a 50. Suelo 1.400 kcal, paso 50, nunca más de 400 de golpe. Proteína fija (2 g/kg del alta); 100 g de HC fijos en mantenimiento.\n`
+        + `Empieza por get_client_brief con tarea "revision" (trae el análisis de nutrición y lo que Dani corrige). El ajuste de kcal es el ORIENTATIVO del motor que va arriba: no otro número, salvo para redondearlo a 50. Suelo 1.400 kcal, paso 50, nunca más de 400 de golpe. Proteína fija (2 g/kg del alta); 100 g de HC fijos en mantenimiento.\n`
         + `Si la adherencia de las dos semanas es ≥ 70 %, propón el ajuste con propose_diet_update sobre la dieta activa (objetivo en gramos de P/HC/G, no alimentos) y un mensaje con propose_mensaje_atleta (motivo "otro") que diga qué cambia y por qué con SU dato. Si no llega al 70 %, no toques kcal: dilo en la línea final.\n`
         + `Ritmo «rápido» en déficit: sube kcal, no bajes. Ritmo «contrario»: comprueba primero pasos y registros antes de tocar nada.\n${cierre}`;
     }

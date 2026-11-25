@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { readFileSync } from 'node:fs';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El consumidor del autopiloto de punta a punta, contra un Firestore y un
@@ -87,13 +88,14 @@ const peticion = (query: Record<string, string> = {}) => ({
 } as unknown as VercelRequest);
 
 /** Lo que «contesta» el modelo en cada llamada, en orden. */
-type Turno = { tool?: { name: string; input: Record<string, unknown> }; texto?: string };
+type Turno = { tool?: { name: string; input: Record<string, unknown> }; texto?: string; lanza?: { status?: number; message: string } };
 function modeloGuionado(turnos: Turno[]) {
   const llamadas: { messages: unknown[]; system: unknown }[] = [];
   let i = 0;
   const create = async (params: { messages: unknown[]; system: unknown }) => {
     llamadas.push(params);
     const t = turnos[Math.min(i++, turnos.length - 1)];
+    if (t.lanza) throw Object.assign(new Error(t.lanza.message), t.lanza.status ? { status: t.lanza.status } : {});
     const usage = { input_tokens: 1000, output_tokens: 200, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
     if (t.tool) return { content: [{ type: 'tool_use', id: `tu_${i}`, name: t.tool.name, input: t.tool.input }], stop_reason: 'tool_use', usage };
     return { content: [{ type: 'text', text: t.texto ?? 'PARA DANI: nada que hacer.' }], stop_reason: 'end_turn', usage };
@@ -273,5 +275,70 @@ describe('api/autopiloto · de punta a punta', () => {
     // La tool del atleta sin consentimiento devuelve error al modelo (no escribe), pero el episodio sigue y cierra.
     expect(db.escrituras.filter(e => e.coleccion === 'coachClientTasks')).toHaveLength(0);
     expect((db.datos.episodios.ep1 as { estado: string }).estado).toBe('hecho');
+  });
+});
+
+/* Tanda rápida del 25-11-2026: reintentos y el mismo contexto que el chat. */
+describe('api/autopiloto · fallos transitorios y contexto', () => {
+  it('con la API saturada el episodio NO muere: sigue en cola con el intento apuntado, los demás corren y la pasada siguiente lo termina', async () => {
+    const datos = datosBase({ ep1: episodio('ep1', { prioridad: 1 }), ep2: episodio('ep2', { prioridad: 5 }) });
+    const db = firestoreFalso(datos);
+    const r = await ejecutar(db, modeloGuionado([{ lanza: { status: 529, message: 'Overloaded' } }, { texto: 'PARA DANI: nada que hacer.' }]));
+    expect(r.code).toBe(200);
+    const ep1 = db.datos.episodios.ep1 as { estado: string; intentos?: number; error?: string; cerradoEn?: string };
+    expect(ep1).toMatchObject({ estado: 'pendiente', intentos: 1 });
+    expect(ep1.error).toMatch(/Intento 1 de 3.*Overloaded/);
+    expect(ep1.cerradoEn).toBeUndefined();
+    expect((db.datos.episodios.ep2 as { estado: string }).estado).toBe('hecho');
+    expect(r.body).toMatchObject({ episodios: 2, hechos: 1, fallidos: 0, reintentar: 1 });
+
+    // Siguiente pasada, con la API ya bien: el mismo episodio se retoma y cierra limpio.
+    const r2 = await ejecutar(db, modeloGuionado([{ texto: 'PARA DANI: hecho a la segunda.' }]));
+    expect(r2.body).toMatchObject({ episodios: 1, hechos: 1 });
+    const cerrado = db.datos.episodios.ep1 as { estado: string; intentos?: number; error?: string; paraDani: string };
+    expect(cerrado.estado).toBe('hecho');
+    expect(cerrado.paraDani).toBe('hecho a la segunda.');
+    expect(cerrado.intentos).toBeUndefined();
+    expect(cerrado.error).toBeUndefined();
+  });
+
+  it('tres pasadas seguidas fallando lo dan por fallido; un error que repetir no arregla falla a la primera', async () => {
+    const db = firestoreFalso(datosBase({ ep1: episodio('ep1') }));
+    const caida = () => modeloGuionado([{ lanza: { status: 503, message: 'Service Unavailable' } }]);
+    await ejecutar(db, caida());
+    await ejecutar(db, caida());
+    expect((db.datos.episodios.ep1 as { estado: string; intentos: number })).toMatchObject({ estado: 'pendiente', intentos: 2 });
+    const r3 = await ejecutar(db, caida());
+    expect((db.datos.episodios.ep1 as { estado: string }).estado).toBe('fallido');
+    expect(r3.body.fallidos).toBe(1);
+
+    const db2 = firestoreFalso(datosBase({ ep1: episodio('ep1') }));
+    await ejecutar(db2, modeloGuionado([{ lanza: { status: 400, message: 'invalid_request_error' } }]));
+    expect((db2.datos.episodios.ep1 as { estado: string; intentos: number })).toMatchObject({ estado: 'fallido', intentos: 1 });
+  });
+
+  it('el modelo recibe lo mismo que en el chat: tabla de volumen de Dani, «cómo programa Dani» y sus instrucciones fijas', async () => {
+    const datos = datosBase({ ep1: episodio('ep1') });
+    datos.coachSettings.main = { text: 'Nunca peso muerto convencional.' };
+    datos.coachSettings.volumeLandmarks = { table: { pecho: { mv: 6, mev: 9, mavMin: 11, mavMax: 17, mrv: 21 } } };
+    datos.exercises = { banca: { name: 'Press banca', muscleGroup: 'pecho', type: 'fuerza' } };
+    datos.workouts = { w1: { ownerId: 'coach-uid', name: 'Torso', exercises: [{ exerciseId: 'banca', order: 0, sets: 3, reps: '8-10', rir: 2, restSeconds: 120 }] } };
+    const db = firestoreFalso(datos);
+    const modelo = modeloGuionado([{ texto: 'PARA DANI: nada.' }]);
+    await ejecutar(db, modelo);
+    const system = modelo.llamadas[0].system as { text: string }[];
+    expect(system).toHaveLength(4);
+    expect(system[1].text).toMatch(/pecho: MV 6 · MEV 9 · MAV 11-17 · MRV 21/);
+    expect(system[2].text).toMatch(/^# CÓMO PROGRAMA DANI \(sus 1 rutinas\)/);
+    expect(system[2].text).toContain('Press banca');
+    expect(system[3].text).toContain('Nunca peso muerto convencional.');
+  });
+
+  it('las instrucciones fijas se leen del mismo documento que escribe la app', async () => {
+    const { DOC_INSTRUCCIONES_FIJAS } = await import('../_lib/fuenteAdmin');
+    const fuenteDeLaApp = readFileSync(new URL('../../src/db/coachSettings.ts', import.meta.url), 'utf8');
+    const enLaApp = /const COACH_INSTRUCTIONS_DOC_ID = '([^']+)'/.exec(fuenteDeLaApp)?.[1];
+    expect(enLaApp).toBeTruthy();
+    expect(DOC_INSTRUCCIONES_FIJAS).toBe(enLaApp);
   });
 });
