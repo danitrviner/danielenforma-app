@@ -11,6 +11,12 @@
 // AI_DAILY_USD_LIMIT); tope por episodio (episodios.ts); tope de rondas; tope de
 // tiempo. `?seco=1` lista lo que correría sin llamar al modelo ni escribir.
 //
+// Fallos (25-11-2026): una ronda que lanza por algo transitorio —API caída o
+// saturada, 429, plazo agotado— ya no mata el episodio: se queda en cola con el
+// intento apuntado y la siguiente pasada lo retoma; al tercero seguido, fallido
+// (`trasFalloDeRonda`). Antes cualquier excepción lo dejaba `fallido` para
+// siempre, y como el id es determinista nadie podía volver a encolarlo.
+//
 // Modo sombra: los episodios llevan `politica: 'sombra'` y las propuestas que
 // crean quedan con `status: 'sombra'` (fuenteAdmin.createAiProposal): se
 // comparan con lo que hizo Dani, no se aprueban.
@@ -27,14 +33,23 @@ import { usarFuenteDeDatos } from '../src/ai/tools.server.js';
 import { DOCTRINA_DEFAULTS } from '../src/ai/doctrina.js';
 import { aliasDeAtleta } from '../src/ai/consentimientoIA.js';
 import { MODELO_POR_DEFECTO } from '../src/ai/costes.js';
+import { renderPerfilProgramacion } from '../src/ai/perfilProgramacion.js';
 import { hoyIsoLocal } from '../src/utils/trainingWeek.js';
-import type { Episodio } from '../src/autopiloto/episodios.js';
+import { MAX_TOKENS_LIGERO, ajustesDeLlamada, esEpisodioPesado, trasFalloDeRonda, type Episodio } from '../src/autopiloto/episodios.js';
 import type { AiContentBlock } from '../src/types.js';
 import { autopilotoCubre } from '../src/autopiloto/politica.js';
 
 export const config = { maxDuration: 300 };
-/** Margen para guardar y responder antes de que la plataforma corte. */
-const TIEMPO_MAX_MS = 230_000;
+/** Hasta aquí se espera la respuesta del modelo. Pasado este punto la llamada se
+ *  corta: quedan 30 s para ejecutar sus tools, guardar el episodio y responder
+ *  antes de que la plataforma mate la función a los 300 (y una función muerta
+ *  entre las tools y el guardado repite la ronda y duplica propuestas). */
+const LIMITE_RESPUESTA_MS = 270_000;
+/** Lo que tiene que quedar para EMPEZAR una ronda. Una ligera es medio minuto;
+ *  una con la salida ampliada puede escribir un mes de sesiones (16.000 tokens
+ *  a ~85/s son más de tres minutos en el peor caso; lo normal es mucho menos). */
+const MARGEN_RONDA_MS = { ligera: 40_000, amplia: 110_000 };
+const margenParaEmpezar = (ep: Episodio) => (ajustesDeLlamada(ep).maxTokens > MAX_TOKENS_LIGERO ? MARGEN_RONDA_MS.amplia : MARGEN_RONDA_MS.ligera);
 /** Episodios por invocación: los que quepan en el tiempo, hasta este tope. */
 const EPISODIOS_POR_PASADA = 5;
 const DAILY_USD_LIMIT = Number(process.env.AI_DAILY_USD_LIMIT) || 0;
@@ -49,8 +64,8 @@ function secretoValido(recibido: string | undefined, esperado: string): boolean 
 function clienteAnthropic(apiKey: string): ClienteModelo {
   const anthropic = new Anthropic({ apiKey });
   return {
-    crear: async params => {
-      const m = await anthropic.messages.create(params as never);
+    crear: async (params, opciones) => {
+      const m = await anthropic.messages.create(params as never, opciones?.signal ? { signal: opciones.signal } : undefined);
       return { content: m.content as unknown as AiContentBlock[], stop_reason: m.stop_reason, usage: m.usage };
     },
   };
@@ -100,23 +115,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const coachUid = await uidDelCoach(db);
   const fuente = fuenteAdmin(db, coachUid);
   usarFuenteDeDatos(fuente);
-  const [doctrina, instruccionesFijas, perfiles] = await Promise.all([
+  // Lo mismo que lleva el chat del coach en su prompt (AiChatPanel → aiClient):
+  // la tabla de volumen de Dani dentro de la doctrina y «cómo programa Dani»,
+  // sacado de sus rutinas. Sin episodios que correr no se leen las rutinas.
+  const hayTrabajo = pendientes.length > 0;
+  const [doctrina, instruccionesFijas, perfiles, volumeLandmarks, rutinas, ejercicios] = await Promise.all([
     leerDoctrina(db, DOCTRINA_DEFAULTS),
     leerInstruccionesFijas(db),
     db.collection('user_profiles').where('role', '==', 'client').get().then(s => s.docs.map(d => d.data() as { email?: string; displayName?: string })),
+    fuente.getVolumeLandmarks(),
+    hayTrabajo ? fuente.getWorkouts() : Promise.resolve([]),
+    hayTrabajo ? fuente.getExercises() : Promise.resolve([]),
   ]);
+  const sistema = { doctrina, volumeLandmarks, perfilProgramacion: renderPerfilProgramacion(rutinas, ejercicios), instruccionesFijas };
   const aliasDe = (email: string) => aliasDeAtleta(perfiles.find(p => p.email === email)?.displayName, email);
   const cliente = clienteAnthropic(process.env.ANTHROPIC_API_KEY);
-  const modelo = MODELO_POR_DEFECTO.episodioLigero;
+  const modeloDe = (ep: Episodio) => (esEpisodioPesado(ep.tipo) ? MODELO_POR_DEFECTO.episodioPesado : MODELO_POR_DEFECTO.episodioLigero);
 
   const procesados: { id: string; tipo: string; estado: string; rondas: number; usd: number; paraDani?: string; error?: string }[] = [];
   let paradoPor: string | null = null;
 
   for (const inicial of pendientes) {
-    if (Date.now() - comenzoEn > TIEMPO_MAX_MS) { paradoPor = 'tiempo'; break; }
     let ep: Episodio = inicial;
+    let tocado = false;
     // Rondas encadenadas mientras el episodio siga vivo y quede tiempo.
-    while ((ep.estado === 'pendiente' || ep.estado === 'en_curso') && Date.now() - comenzoEn < TIEMPO_MAX_MS) {
+    while (ep.estado === 'pendiente' || ep.estado === 'en_curso') {
+      const restanteMs = LIMITE_RESPUESTA_MS - (Date.now() - comenzoEn);
+      if (restanteMs < margenParaEmpezar(ep)) { paradoPor = 'tiempo'; break; }
       // Presupuesto diario, compartido con el chat del coach.
       const uso = await db.collection('aiUsage').doc(`daily_${hoy}`).get();
       const gastoHoy = (uso.data()?.gastoUsd as number | undefined) ?? 0;
@@ -127,16 +152,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (tope > 0 && gastoHoy >= tope) { paradoPor = `presupuesto diario (${gastoHoy.toFixed(2)} $ de ${tope} $)`; break; }
 
       const ahora = new Date().toISOString();
+      tocado = true;
       let resultado;
       try {
         const alertas = ep.alertas;
         resultado = await ejecutarRonda({
-          episodio: ep, modelo, cliente, sistema: { doctrina, instruccionesFijas }, alias: aliasDe(ep.athleteId), ahora,
+          episodio: ep, modelo: modeloDe(ep), cliente, sistema, alias: aliasDe(ep.athleteId), ahora,
           aplicar: id => aplicarPropuestaEnServidor(db, fuente, id, { politica, alertas, coachUid, ahora: new Date().toISOString() }),
+          signal: AbortSignal.timeout(restanteMs),
         });
       } catch (err) {
-        ep = { ...ep, estado: 'fallido', error: (err as Error)?.message ?? String(err), actualizadoEn: ahora, cerradoEn: ahora };
+        // Transitorio: sigue en cola para la siguiente pasada. Si no, fallido.
+        ep = trasFalloDeRonda(ep, err, ahora);
         await guardarEpisodio(db, ep);
+        if (Date.now() - comenzoEn >= LIMITE_RESPUESTA_MS) paradoPor = 'tiempo';
         break;
       }
       ep = resultado.episodio;
@@ -154,7 +183,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ]);
       }
     }
-    procesados.push({ id: ep.id, tipo: ep.tipo, estado: ep.estado, rondas: ep.ronda, usd: Math.round(ep.coste.usd * 10000) / 10000, ...(ep.paraDani ? { paraDani: ep.paraDani } : {}), ...(ep.error ? { error: ep.error } : {}) });
+    if (tocado) procesados.push({ id: ep.id, tipo: ep.tipo, estado: ep.estado, rondas: ep.ronda, usd: Math.round(ep.coste.usd * 10000) / 10000, ...(ep.paraDani ? { paraDani: ep.paraDani } : {}), ...(ep.error ? { error: ep.error } : {}) });
     if (paradoPor) break;
   }
 
@@ -163,7 +192,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     fecha: hoy, ejecutadoEn: new Date().toISOString(), coach: COACH_EMAIL === 'danitrviner@gmail.com',
     episodios: procesados.length, hechos: procesados.filter(p => p.estado === 'hecho').length,
     escalados: procesados.filter(p => p.estado === 'escalado').length, fallidos: procesados.filter(p => p.estado === 'fallido').length,
-    enCurso: procesados.filter(p => p.estado === 'en_curso').length, esperando: procesados.filter(p => p.estado === 'escalado').length, reanudados, usd: procesados.reduce((s, p) => s + p.usd, 0),
+    enCurso: procesados.filter(p => p.estado === 'en_curso' || p.estado === 'pendiente').length, reintentar: procesados.filter(p => p.error && p.estado !== 'fallido').length, esperando: procesados.filter(p => p.estado === 'escalado').length, reanudados, usd: procesados.reduce((s, p) => s + p.usd, 0),
     duracionMs: Date.now() - comenzoEn, paradoPor,
   };
   try { await db.collection('autopiloto').doc(`${hoy}_${Date.now()}`).set(registro); } catch (err) { console.warn('autopiloto: no se pudo guardar el resumen', err); }

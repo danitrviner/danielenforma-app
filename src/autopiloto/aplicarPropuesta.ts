@@ -316,6 +316,9 @@ export async function aplicarPropuesta(
                 ...(c.rir !== undefined ? { rir: c.rir } : {}),
                 ...(c.restSeconds !== undefined ? { restSeconds: c.restSeconds } : {}),
                 ...(c.bloques ? { setGroups: c.bloques } : {}),
+                // Sustitución: la regla de esa semana lleva el ejercicio nuevo y la
+                // sesión del atleta lo resuelve con `resolveExerciseForWeek`.
+                ...(c.sustitutoId ? { exerciseId: c.sustitutoId } : {}),
               })) };
             }
             return we;

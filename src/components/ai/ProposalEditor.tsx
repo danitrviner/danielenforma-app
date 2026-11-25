@@ -498,11 +498,15 @@ export default function ProposalEditor({ proposal: p, payload, onChange }: Props
       ...(v.semanasTest?.length ? [`Semana de test (AMRAP): ${v.semanasTest.map(s => `S${s}`).join(', ')}`] : []),
       ...(v.rir ? [`RIR de ${v.rir.desde} a ${v.rir.hasta} a lo largo del bloque`] : []),
       ...(v.series ? [`+1 serie cada ${v.series.cada} semanas hasta la S${v.series.hasta}`] : []),
-      ...(v.cambios ?? []).map(c => `${c.solo ? 'Solo' : 'Desde'} S${c.semana} · ${c.ejercicio}: ${[
-        c.bloques?.length ? c.bloques.map(b => `${b.label ? b.label + ' ' : ''}${b.sets}×${b.reps}`).join(' + ') : null,
-        c.sets !== undefined ? `${c.sets} series` : null, c.reps ? `reps ${c.reps}` : null,
-        c.rir !== undefined ? `RIR ${c.rir}` : null, c.restSeconds !== undefined ? `descanso ${c.restSeconds} s` : null,
-      ].filter(Boolean).join(' · ')}`),
+      ...(v.cambios ?? []).map(c => {
+        const detalle = [
+          c.bloques?.length ? c.bloques.map(b => `${b.label ? b.label + ' ' : ''}${b.sets}×${b.reps}`).join(' + ') : null,
+          c.sets !== undefined ? `${c.sets} series` : null, c.reps ? `reps ${c.reps}` : null,
+          c.rir !== undefined ? `RIR ${c.rir}` : null, c.restSeconds !== undefined ? `descanso ${c.restSeconds} s` : null,
+        ].filter(Boolean).join(' · ');
+        // Una sustitución sin más cambios no lleva detalle: se queda en «X → Y».
+        return `${c.solo ? 'Solo' : 'Desde'} S${c.semana} · ${c.ejercicio}${c.sustituto ? ` → ${c.sustituto}` : ''}${detalle ? `: ${detalle}` : ''}`;
+      }),
       ...(v.nutricion?.ajustes ?? []).map(a => `${a.solo ? 'Solo' : 'Desde'} S${a.semana} · ${a.slot ? ['', 'Desayuno', 'Media mañana', 'Comida', 'Merienda', 'Cena'][a.slot] : 'Comida con más'} ${gramosDeAjuste(a) > 0 ? '+' : ''}${Math.round(gramosDeAjuste(a))} g de ${({ HC: 'hidratos', PROT: 'proteína', GRASA: 'grasa' } as const)[a.cat]}`),
       ...(v.nutricion?.semanasMantenimiento?.length ? [`Mantenimiento: ${v.nutricion.semanasMantenimiento.map(s => `S${s}`).join(', ')}`] : []),
       ...(v.nutricion?.suplementos ?? []).map(x => `Suplemento: ${[x.nombre, x.dosis, x.momento].filter(Boolean).join(' · ')}${x.desde ? ` desde S${x.desde}` : ''}`),

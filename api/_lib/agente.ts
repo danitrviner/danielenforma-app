@@ -19,7 +19,7 @@ import { sanearHistorial, cierreDeToolUse } from '../../src/ai/historial.js';
 import { conMarcaDeCacheAlFinal, CACHE_1H } from '../../src/ai/cache.js';
 import { calcularCosteUsd, type UsoDeTokens } from '../../src/ai/costes.js';
 import {
-  MAX_RONDAS_POR_EPISODIO, TOPE_USD_POR_EPISODIO, extraerParaDani, promptDeEpisodio, type Episodio,
+  MAX_RONDAS_POR_EPISODIO, MAX_TOKENS_PESADO, TOPE_USD_POR_EPISODIO, ajustesDeLlamada, extraerParaDani, promptDeEpisodio, type Episodio,
 } from '../../src/autopiloto/episodios.js';
 import type { AiChatMessage, AiContentBlock, AiToolUseBlock } from '../../src/types.js';
 import { fijarContextoDeEpisodio } from './fuenteAdmin.js';
@@ -30,12 +30,16 @@ export interface ClienteModelo {
   crear(params: {
     model: string; max_tokens: number; system: unknown; messages: AiChatMessage[]; tools: unknown;
     output_config: { effort: 'low' | 'medium' | 'high' };
-  }): Promise<{ content: AiContentBlock[]; stop_reason: string | null; usage: UsoDeTokens }>;
+  }, opciones?: { signal?: AbortSignal }): Promise<{ content: AiContentBlock[]; stop_reason: string | null; usage: UsoDeTokens }>;
 }
 
 export interface SistemaDelEpisodio {
   doctrina: { entrenamiento: string; nutricion: string };
   volumeLandmarks?: Record<string, { mv: number; mev: number; mavMin: number; mavMax: number; mrv: number }>;
+  /** «CÓMO PROGRAMA DANI» ya renderizado (src/ai/perfilProgramacion.ts): el
+   *  catálogo por defecto de propose_workout_days. Sin él, el autopiloto elegía
+   *  ejercicios sin saber cuáles pone Dani ni con qué series, reps y RIR. */
+  perfilProgramacion?: string;
   instruccionesFijas: string;
 }
 
@@ -50,6 +54,9 @@ export interface EntradaRonda {
   /** Qué hacer con cada propuesta que una tool acabe de crear: aplicarla si la
    *  política lo permite, o dejarla. Inyectable; sin él, nada se aplica. */
   aplicar?: (propuestaId: string) => Promise<{ resultado: 'aplicada' | 'dejada' | 'fallida' } | void>;
+  /** Corta la llamada al modelo cuando a la función ya no le queda tiempo para
+   *  ejecutar las tools y guardar. Un corte lanza: quien llama decide el reintento. */
+  signal?: AbortSignal;
 }
 
 export interface Auditoria {
@@ -62,8 +69,6 @@ export interface ResultadoRonda {
   episodio: Episodio;
   auditoria: Auditoria | null;
 }
-
-const MAX_TOKENS = 8000;
 
 function cerrar(ep: Episodio, estado: Episodio['estado'], ahora: string, extra: Partial<Episodio> = {}): Episodio {
   return { ...ep, ...extra, estado, actualizadoEn: ahora, cerradoEn: ahora };
@@ -85,23 +90,28 @@ export async function ejecutarRonda(e: EntradaRonda): Promise<ResultadoRonda> {
     ? sanearHistorial(ep.historial)
     : [{ role: 'user', content: [{ type: 'text', text: promptDeEpisodio(ep, { alias: e.alias }) }] }];
 
-  // Mismos cuatro bloques y mismo orden que el navegador, para compartir caché
-  // con el chat del coach cuando coinciden en el tiempo.
+  // Mismos cuatro bloques y mismo orden que el navegador (aiClient.ts), para
+  // compartir caché con el chat del coach cuando coinciden en el tiempo y, sobre
+  // todo, para decidir con el mismo criterio: prompt, doctrina con SU tabla de
+  // volumen, cómo programa Dani, y el sufijo volátil.
   const doctrinaBlock = buildDoctrinaBlock(e.sistema.doctrina.entrenamiento, e.sistema.doctrina.nutricion, e.sistema.volumeLandmarks);
+  const perfilBlock = e.sistema.perfilProgramacion?.trim() ?? '';
   const system = [
     { type: 'text', text: SYSTEM_PROMPT, cache_control: CACHE_1H },
     ...(doctrinaBlock ? [{ type: 'text', text: doctrinaBlock, cache_control: CACHE_1H }] : []),
+    ...(perfilBlock ? [{ type: 'text', text: perfilBlock, cache_control: CACHE_1H }] : []),
     { type: 'text', text: `${buildContextSuffix(undefined, e.sistema.instruccionesFijas)}\nEstás en un EPISODIO del autopiloto, sin Dani delante: no preguntes, decide con lo que hay y escala lo que no puedas decidir con add_coach_task.` },
   ];
 
+  const ajustes = ajustesDeLlamada(ep);
   const respuesta = await e.cliente.crear({
     model: e.modelo,
-    max_tokens: MAX_TOKENS,
+    max_tokens: ajustes.maxTokens,
     system,
     messages: conMarcaDeCacheAlFinal(historial),
     tools: TOOL_DEFINITIONS,
-    output_config: { effort: 'low' },
-  });
+    output_config: { effort: ajustes.effort },
+  }, e.signal ? { signal: e.signal } : undefined);
 
   const costoUsd = calcularCosteUsd(e.modelo, respuesta.usage);
   const toolUses = respuesta.content.filter((b): b is AiToolUseBlock => b.type === 'tool_use');
@@ -115,8 +125,10 @@ export async function ejecutarRonda(e: EntradaRonda): Promise<ResultadoRonda> {
   };
 
   const mensajes: AiChatMessage[] = [...historial, { role: 'assistant', content: respuesta.content }];
+  // El modelo ha contestado: los fallos transitorios anteriores quedan atrás.
+  const { intentos: _intentos, error: _error, ...sinRastroDeFallo } = ep;
   ep = {
-    ...ep,
+    ...sinRastroDeFallo,
     estado: 'en_curso',
     ronda: ep.ronda + 1,
     coste: { usd: ep.coste.usd + costoUsd, llamadas: ep.coste.llamadas + 1, modelo: e.modelo },
@@ -128,6 +140,12 @@ export async function ejecutarRonda(e: EntradaRonda): Promise<ResultadoRonda> {
     return { episodio: cerrar(ep, 'fallido', ahora, { historial: cierre ? [...mensajes, cierre] : mensajes, error: 'El modelo rechazó la petición.' }), auditoria };
   }
   if (respuesta.stop_reason === 'max_tokens') {
+    // Una respuesta cortada puede traer un tool_use a medias, así que no se
+    // aprovecha: la ronda se REPITE con más margen (el historial no cambia; el
+    // gasto y la ronda sí cuentan). Solo si ya iba con el tope ampliado se rinde.
+    if (ajustes.maxTokens < MAX_TOKENS_PESADO) {
+      return { episodio: { ...ep, salidaAmpliada: true }, auditoria };
+    }
     const cierre = cierreDeToolUse(respuesta.content);
     return { episodio: cerrar(ep, 'fallido', ahora, { historial: cierre ? [...mensajes, cierre] : mensajes, error: 'La respuesta se cortó por longitud.' }), auditoria };
   }

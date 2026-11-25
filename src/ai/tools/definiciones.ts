@@ -758,7 +758,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'propose_week_plan',
     description:
-      'PROPONE la programación SEMANA A SEMANA de un mesociclo ya creado (con sus sesiones) y/o de la periodización nutricional: semanas de descarga (series a la mitad), semanas de test (AMRAP), RIR que baja a lo largo del bloque, +1 serie cada N semanas, cambios de un ejercicio desde una semana (p. ej. pasar a top set + back-off), y en nutrición ± gramos de un macro desde una semana, semanas de mantenimiento, suplementación y pasos por semana. Las semanas del mesociclo son semanas DE CICLO (vueltas del microciclo); las de nutrición, semanas del programa desde su inicio. Úsala después de propose_mesocycle/propose_workout_days y propose_nutrition_program, no en su lugar.',
+      'PROPONE la programación SEMANA A SEMANA de un mesociclo ya creado (con sus sesiones) y/o de la periodización nutricional: semanas de descarga (series a la mitad), semanas de test (AMRAP), RIR que baja a lo largo del bloque, +1 serie cada N semanas, cambios de un ejercicio desde una semana (p. ej. pasar a top set + back-off, o SUSTITUIRLO por otro con `sustituto` cuando hay una molestia leve), y en nutrición ± gramos de un macro desde una semana, semanas de mantenimiento, suplementación y pasos por semana. Las semanas del mesociclo son semanas DE CICLO (vueltas del microciclo); las de nutrición, semanas del programa desde su inicio. Úsala después de propose_mesocycle/propose_workout_days y propose_nutrition_program, no en su lugar.',
     input_schema: {
       type: 'object',
       properties: {
@@ -770,17 +770,18 @@ export const TOOL_DEFINITIONS = [
         series: { type: 'object', properties: { cada: { type: 'number' }, hasta: { type: 'number' } }, description: '+1 serie cada `cada` semanas hasta la semana `hasta`' },
         cambios: {
           type: 'array',
-          description: 'Cambios de un ejercicio concreto desde una semana (o solo esa, con solo=true)',
+          description: 'Cambios de un ejercicio concreto desde una semana (o solo esa, con solo=true): su prescripción y/o el ejercicio que lo sustituye',
           items: {
             type: 'object',
             properties: {
               ejercicio: { type: 'string', description: 'Nombre del ejercicio tal y como está en las rutinas del mesociclo' },
-              semana: { type: 'number' },
+              semana: { type: 'number', description: 'Semana de ciclo desde la que vale. Si la omites, la semana en curso del mesociclo.' },
               solo: { type: 'boolean' },
+              sustituto: { type: 'string', description: 'Ejercicio que lo SUSTITUYE desde esa semana (molestia leve, material): nombre EXACTO del catálogo, elegido entre los que devuelve get_alternativas_ejercicio. Sin series/reps/RIR conserva los del ejercicio que sale.' },
               series: { type: 'number' }, reps: { type: 'string' }, rir: { type: 'number' }, descanso_seg: { type: 'number' },
               bloques: { type: 'array', items: { type: 'object', properties: { etiqueta: { type: 'string' }, series: { type: 'number' }, reps: { type: 'string' }, rir: { type: 'number' } }, required: ['series', 'reps', 'rir'] } },
             },
-            required: ['ejercicio', 'semana'],
+            required: ['ejercicio'],
           },
         },
         nutricion: {

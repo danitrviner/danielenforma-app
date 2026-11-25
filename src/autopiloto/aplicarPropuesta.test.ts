@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { aplicarPropuesta, resolverReferencias, esCreacion, type LectorAplicacion, type Operacion } from './aplicarPropuesta';
 import type { AiProposal, Diet, Mesocycle, NutritionProgram, Roadmap, UserProfile, Workout, WorkoutAssignment } from '../types';
+import { resolveExerciseForWeek } from '../utils/progression';
 
 /* Lo que antes solo se podía probar aprobando de verdad en la app. Cada caso
    construye una propuesta como las que crea el asistente y comprueba QUÉ se
@@ -207,6 +208,22 @@ describe('aplicarPropuesta · configuración, road map, semana', () => {
     expect(rutinas).toHaveLength(2);
     expect(r.operaciones.at(-1)?.tipo).toBe('actualizarMesociclo');
     expect(r.snapshotAntes.map(f => `${f.coleccion}/${f.id}`)).toEqual(['workouts/w0', 'workouts/w1', 'mesocycles/meso1']);
+  });
+
+  // 25-11-2026: el guion de molestia pedía sustituir el ejercicio con el plan
+  // semanal y `cambios` solo sabía tocar series, reps y RIR.
+  it('un cambio con sustituto pone el ejercicio nuevo desde esa semana y deja las anteriores como estaban', async () => {
+    const r = ok(await aplicarPropuesta(propuesta('weekPlan', { mesocycleId: 'meso1', cambios: [
+      { workoutId: 'w0', exerciseId: 'ex1', ejercicio: 'Press banca', semana: 3, sustitutoId: 'ex9', sustituto: 'Press inclinado' },
+    ] }), lector(), OPC));
+    const rutinas = r.operaciones.filter((o): o is Extract<Operacion, { tipo: 'actualizarRutina' }> => o.tipo === 'actualizarRutina');
+    expect(rutinas.map(o => o.id)).toEqual(['w0']);
+    const we = rutinas[0].cambios.exercises![0];
+    expect(we.exerciseId).toBe('ex1'); // la base no se toca: el cambio es una regla de la semana
+    expect(resolveExerciseForWeek(we, 2).exerciseId).toBe('ex1');
+    expect(resolveExerciseForWeek(we, 3)).toMatchObject({ exerciseId: 'ex9', sets: 3, reps: '8-10', rir: 2 });
+    expect(resolveExerciseForWeek(we, 6).exerciseId).toBe('ex9');
+    expect(r.snapshotAntes.map(f => `${f.coleccion}/${f.id}`)).toContain('workouts/w0');
   });
 
   it('el bloque con revisiones crea el mesociclo y una tarea por revisión', async () => {
