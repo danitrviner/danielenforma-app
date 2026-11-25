@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   guardarSesion, cargarSesion, borrarSesion, formaDeSesion, tieneSeriesHechas,
   limpiarSesionesCaducadas, seriesHechasEnBorrador, SerieBorrador, SesionEnCurso,
-  guardarDescanso, cargarDescanso, borrarDescanso,
+  guardarDescanso, cargarDescanso, borrarDescanso, guardarInicioSesion, cargarInicioSesion, retomarSesion,
 } from './sesionEnCurso';
 
 /* Las pruebas corren en Node, sin DOM, así que localStorage no existe: se
@@ -275,5 +275,37 @@ describe('descanso en curso', () => {
     guardarDescanso(ATLETA, 'a1', descanso(Date.now() - 60 * 60 * 1000));
     limpiarSesionesCaducadas(ATLETA);
     expect(cargarSesion(ATLETA, 'a1', 'w1', [2, 1])).not.toBeNull();
+  });
+});
+
+describe('salir y volver a la sesión (Dani, 25-11)', () => {
+  const AHORA = Date.parse('2026-11-25T18:00:00Z');
+
+  it('el autoguardado sin series marcadas no se lleva el inicio', () => {
+    guardarInicioSesion(ATLETA, 'a1', AHORA - 60_000);
+    borrarSesion(ATLETA, 'a1', { conservarInicio: true });
+    expect(cargarInicioSesion(ATLETA, 'a1')).toBe(AHORA - 60_000);
+    // Terminar o saltar la sesión sí lo borra.
+    borrarSesion(ATLETA, 'a1');
+    expect(cargarInicioSesion(ATLETA, 'a1')).toBeNull();
+  });
+
+  it('con series marcadas sigue el cronómetro y no vuelve a preguntar cómo llega', () => {
+    const r = retomarSesion(sesion({ comoLlega: 'bien', comoLlegaNota: 8 }), AHORA - 20 * 60_000, AHORA);
+    expect(r).toEqual({ iniciadaEn: AHORA - 20 * 60_000, retomada: true, comoLlega: 'bien', comoLlegaNota: 8 });
+  });
+
+  it('si entró, contestó y salió sin marcar nada, no cuenta: cronómetro de cero y se pregunta otra vez', () => {
+    const sinNada = sesion({ playerSets: [[serie(), serie()]], comoLlega: 'justo', comoLlegaNota: 3 });
+    expect(retomarSesion(sinNada, AHORA - 8 * 3600_000, AHORA)).toEqual({ iniciadaEn: AHORA, retomada: false });
+    expect(retomarSesion(null, null, AHORA)).toEqual({ iniciadaEn: AHORA, retomada: false });
+  });
+
+  it('borrador sin inicio (los de antes del arreglo): cuenta desde la primera serie marcada', () => {
+    const primera = { ...serie(true), hechaEn: new Date(AHORA - 30 * 60_000).toISOString() };
+    const segunda = { ...serie(true), hechaEn: new Date(AHORA - 10 * 60_000).toISOString() };
+    expect(retomarSesion(sesion({ playerSets: [[segunda, primera], [serie()]] }), null, AHORA).iniciadaEn).toBe(AHORA - 30 * 60_000);
+    // Sin hora en las series, desde ahora.
+    expect(retomarSesion(sesion(), null, AHORA).iniciadaEn).toBe(AHORA);
   });
 });

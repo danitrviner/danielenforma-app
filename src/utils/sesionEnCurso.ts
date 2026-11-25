@@ -58,6 +58,8 @@ export interface SesionEnCurso {
   molestias?: (number | null)[];
   /** D4: «¿cómo llegas hoy?». */
   comoLlega?: string;
+  /** La nota del 1 al 10 de esa misma pregunta (opcional: borradores de antes). */
+  comoLlegaNota?: number;
   /** «Hoy entreno fuera de mi gimnasio» (utils/sesionFuera.ts). Ausente en los
    *  borradores de antes: ahí se decide como al abrir (semana fuera o no). */
   fuera?: boolean;
@@ -150,7 +152,15 @@ export function cargarSesion(
   }
 }
 
-export function borrarSesion(athleteEmail: string, assignmentId: string): void {
+export function borrarSesion(
+  athleteEmail: string, assignmentId: string,
+  /** `conservarInicio`: solo se tiran las series (el autoguardado con la tabla
+   *  aún sin nada marcado). Antes se llevaba también el inicio que se acababa
+   *  de guardar al abrir, así que al marcar la primera serie el borrador ya no
+   *  tenía inicio y, al salir y volver, el cronómetro empezaba de cero (Dani,
+   *  25-11). */
+  opciones: { conservarInicio?: boolean } = {},
+): void {
   try {
     localStorage.removeItem(clave(athleteEmail, assignmentId));
   } catch {
@@ -160,13 +170,48 @@ export function borrarSesion(athleteEmail: string, assignmentId: string): void {
   // con las mismas reglas que el borrador — si el borrador se tira, el
   // instante de inicio no debe sobrevivirlo: la próxima apertura es, a todos
   // los efectos, una sesión nueva.
-  borrarInicioSesion(athleteEmail, assignmentId);
+  if (!opciones.conservarInicio) borrarInicioSesion(athleteEmail, assignmentId);
 }
 
 /** ¿Tiene el borrador alguna serie marcada? Un borrador sin nada hecho no
  *  merece ni restaurarse ni avisar de nada. */
 export function tieneSeriesHechas(sesion: SesionEnCurso): boolean {
   return sesion.playerSets.some(ex => ex.some(s => s.done));
+}
+
+/** Lo que se recupera al volver a abrir la sesión. */
+export interface SesionRetomada {
+  /** Epoch ms desde el que cuenta el cronómetro. */
+  iniciadaEn: number;
+  comoLlega?: string;
+  comoLlegaNota?: number;
+  /** Había series marcadas: se sigue donde se dejó. */
+  retomada: boolean;
+}
+
+/**
+ * Qué pasa al abrir una sesión (Dani, 25-11): si ya había empezado a
+ * registrar —alguna serie marcada—, se sigue donde lo dejó: el cronómetro
+ * desde que empezó y sin volver a preguntar «¿cómo llegas hoy?». Si solo
+ * entró, contestó y salió, no cuenta nada: cronómetro de cero y se pregunta
+ * otra vez (abrir por la mañana para mirar y entrenar por la tarde no suma
+ * las horas de en medio).
+ *
+ * Sin inicio guardado (borradores de antes del arreglo, que lo perdían), el
+ * cronómetro cuenta desde la primera serie marcada: mejor eso que de cero.
+ */
+export function retomarSesion(borrador: SesionEnCurso | null, inicioGuardado: number | null, ahora: number): SesionRetomada {
+  if (!borrador || !tieneSeriesHechas(borrador)) return { iniciadaEn: ahora, retomada: false };
+  const primeraSerie = Math.min(...borrador.playerSets.flat()
+    .map(serie => (serie.done && serie.hechaEn ? Date.parse(serie.hechaEn) : NaN))
+    .filter(ms => Number.isFinite(ms) && ms <= ahora));
+  const iniciadaEn = inicioGuardado ?? (Number.isFinite(primeraSerie) ? primeraSerie : ahora);
+  return {
+    iniciadaEn,
+    retomada: true,
+    ...(borrador.comoLlega ? { comoLlega: borrador.comoLlega } : {}),
+    ...(typeof borrador.comoLlegaNota === 'number' ? { comoLlegaNota: borrador.comoLlegaNota } : {}),
+  };
 }
 
 /**
