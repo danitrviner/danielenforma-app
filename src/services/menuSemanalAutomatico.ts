@@ -7,7 +7,7 @@ import {
 import { conIngestasAMedida, idsCerrados } from '../utils/ingestaPersonalizada';
 import { generateWeek, slotsFromOnboarding, recipeMatchesSlot, filtroDuro, type GeneratorPrefs } from '../utils/menuEngine';
 import { listaDeMenuVigente } from '../utils/accesoARecetas';
-import { recetasFijasDelMenu, tambienEnLaMuestra } from '../utils/seleccionDeRecetas';
+import { favoritasConLasSuyas, recetasFijasDelMenu, tambienEnLaMuestra } from '../utils/seleccionDeRecetas';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import { senalesDeCambios } from '../utils/gustosDelAtleta';
@@ -27,7 +27,8 @@ import { hoyIsoLocal } from '../utils/trainingWeek';
 const MARCA = 'enforma_menus_auto_revisado_v1';
 
 /** Genera el borrador del atleta si toca. Devuelve la semana generada o null. */
-export async function generarMenuSiToca(athleteEmail: string, coachId: string, coachEmail: string): Promise<number | null> {
+/** `athleteUid`: sus recetas propias (las del diario) entran como favoritas. */
+export async function generarMenuSiToca(athleteEmail: string, coachId: string, coachEmail: string, athleteUid?: string): Promise<number | null> {
   const hoy = hoyIsoLocal();
   const [program, publicado] = await Promise.all([getNutritionProgram(athleteEmail), getPublishedMenu(athleteEmail)]);
   if (!program || !publicado) return null;
@@ -41,6 +42,8 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
     getOnboarding(athleteEmail), getRecipeFavorites(athleteEmail), getRecipes({ ownerId: coachId }), getFoodItems(),
     getCatalogoAlimentos(),
   ]);
+  // Las que se ha creado en su diario: favoritas y siempre en su plan.
+  const suyas = athleteUid ? await getRecipes({ ownerId: athleteUid }).catch(() => [] as Recipe[]) : [];
   // Lo que el coach ha escondido a este atleta. Sin lectura posible (red, permisos)
   // se genera sin reglas: un menú sin ellas es mejor que ninguno.
   const reglas = await getReglasDeReceta(athleteEmail);
@@ -66,7 +69,7 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
     cookingMaxTime: nutritionConfig?.cookingMaxTime ?? onboarding?.cookingMaxTime,
     quiereRapidas: nutritionConfig?.quiereRapidas ?? onboarding?.quiereRapidas,
     variety: publicado.varietyLevel,
-    favoriteRecipeIds: favoritos.recipeIds,
+    favoriteRecipeIds: favoritasConLasSuyas(favoritos.recipeIds, suyas),
     arranque: favoritos.arranque,
     dislikedRecipeIds: favoritos.dislikedIds ?? [],
     preferredDishTypes: (nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],
@@ -85,8 +88,9 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
   const tambien = tambienEnLaMuestra(prefs.seleccion, prefs.paquetes, [...recetasFijasDelMenu(prefs), ...cerradas]);
   const pools: Record<number, Recipe[]> = {};
   for (const slot of Array.from(new Set<number>(slots.map(s => s.slot)))) {
-    const recetas = await queryRecetasForGenerator(slot, 300, prefs.listaMenu, tambien, filtroDuro(prefs));
-    pools[slot] = [...recetas, ...delCoach.filter(r => recipeMatchesSlot(r, slot))];
+    const fijas = slots.filter(sl => sl.slot === slot).flatMap(sl => idsCerrados(sl.recetas, prefs.paquetes) ?? []);
+    const recetas = await queryRecetasForGenerator(slot, 300, prefs.listaMenu, tambien, filtroDuro(prefs), fijas);
+    pools[slot] = [...recetas, ...delCoach.filter(r => recipeMatchesSlot(r, slot)), ...suyas.filter(r => recipeMatchesSlot(r, slot))];
   }
   const days = generateWeek({
     schedule, diets: dietas, slots, pools, foods: alimentos, prefs, catalogo,
@@ -124,7 +128,7 @@ export async function revisarMenusAutomaticos(athletes: UserProfile[], coachId: 
   try { localStorage.setItem(MARCA, hoy); } catch { /* idem */ }
   for (const a of athletes) {
     try {
-      await generarMenuSiToca(a.email, coachId, coachEmail);
+      await generarMenuSiToca(a.email, coachId, coachEmail, a.userId);
     } catch (err) {
       console.warn('Menú automático: no se pudo generar para', a.email, err);
     }

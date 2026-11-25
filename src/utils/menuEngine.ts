@@ -594,8 +594,10 @@ export interface RankOptions {
   // Dish types already placed (per day and/or week) with how many times — used to
   // penalize serving the same *kind* of meal repeatedly (the "always a batido" fix).
   usedDishTypes?: ReadonlyMap<DishType, number>;
-  /** Ingesta con recetas cerradas por el coach (`cerradasDe`): solo estas. Si
-   *  ninguna sirve, se elige como siempre. */
+  /** Ingesta con recetas cerradas por el coach (`cerradasDe`): solo estas, y
+   *  aunque no cuadren de kcal (a la escala más cercana). Solo si ninguna puede
+   *  salir (alergia, salud, tipo de dieta, o no están en la muestra) se elige
+   *  como siempre. */
   soloEstas?: ReadonlySet<string>;
   /** Veces que ha salido ya cada receta cerrada esta semana: así rotan. */
   veces?: ReadonlyMap<string, number>;
@@ -627,6 +629,21 @@ export function filtroDuro(prefs: PrefsDeFiltroDuro): (r: Recipe) => boolean {
 /** Una vez servida pesa más que cualquier diferencia de encaje: en una lista
  *  cerrada manda la rotación. */
 const CASTIGO_POR_VEZ_CERRADA = 1e5;
+/** Cerrada que ni a la escala más extrema cuadra: sale igual (la eligió el
+ *  coach), pero solo si ninguna de las suyas cuadra, aunque ya se haya servido. */
+const CASTIGO_CERRADA_SIN_ENCAJE = 1e7;
+
+/** La escala más cercana a la que haría falta, sin topes. Solo para las
+ *  cerradas: antes, si ninguna cuadraba, la comida salía de la lista general
+ *  (Dani, 25-11: «si pongo una comida a medida, eso tiene prioridad sobre todo»). */
+function encajeForzado(recipe: Recipe, target: Macros, mode: DietMode): { scale: number; macros: Macros; score: number; ajuste?: AjusteDeReceta } | null {
+  const base = macrosBaseDeReceta(recipe, mode);
+  if (!base || base.kcal <= 0) return null;
+  const ideal = target.kcal > 0 ? target.kcal / base.kcal : 0;
+  const scale = MENU_SCALES.reduce<number>((mejor, s) => (Math.abs(s - ideal) < Math.abs(mejor - ideal) ? s : mejor), MENU_SCALES[0]);
+  const macros = redondearMacros(escalarMacros(base, scale));
+  return { scale, macros, score: CASTIGO_CERRADA_SIN_ENCAJE + errorPonderado(target, macros) };
+}
 
 /** Recetas entre las que elige esa ingesta si el coach la cerró. */
 export function cerradasDe(slot: Pick<MealSlotSpec, 'recetas'>, prefs: Pick<GeneratorPrefs, 'paquetes'>): ReadonlySet<string> | undefined {
@@ -648,7 +665,7 @@ function rankCerradas(pool: Recipe[], target: Macros, prefs: GeneratorPrefs, use
     if (prefs.allergies.some(f => ingredientMatch(recipe, f))
       || violatesHealthConditions(recipe, prefs.conditions)
       || violatesDietType(recipe, prefs.dietType)) continue;
-    const fit = bestScaleFit(recipe, target, mode);
+    const fit = bestScaleFit(recipe, target, mode) ?? encajeForzado(recipe, target, mode);
     if (!fit) continue;
     const veces = opts.veces?.get(recipe.id) ?? (usedIds.has(recipe.id) ? 1 : 0);
     const score = fit.score + CASTIGO_POR_VEZ_CERRADA * veces + (prefs.azar ? AZAR_EN_BANDA * prefs.azar() : 0);

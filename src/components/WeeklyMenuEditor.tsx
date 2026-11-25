@@ -1,9 +1,10 @@
 import { useReglasDeReceta, useListaDeMenu, useSeleccionDeRecetas, useIngestasAMedida, useTopeDeFrutas, reglasDeRecetaKey } from '../hooks/useReglasDeReceta';
-import { conIngestasAMedida, idsCerrados, ingestasDeSlots } from '../utils/ingestaPersonalizada';
+import { conIngestasAMedida, idsCerrados, ingestasDeSlots, type GustosParaMarcar } from '../utils/ingestaPersonalizada';
 import { useToast } from '../hooks/useToast';
 import { recetasFijasDelMenu, tambienEnLaMuestra } from '../utils/seleccionDeRecetas';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRecetasDelAtleta, cargarRecetasDelAtleta, favoritasConLasSuyas } from '../hooks/useRecetasDelAtleta';
 import {
   OnboardingData, Diet, AthleteDietConfig, AthleteNutritionConfig, Recipe, RecipeFavorites,
   MealItem, WeeklyMenu, MenuDay, WeekDay, FoodCategory, DietMode,
@@ -45,6 +46,8 @@ const CAT_LABEL: Record<FoodCategory, string> = { HC: 'HC', PROT: 'PROT', GRASA:
 
 interface Props {
   athleteEmail: string;
+  /** UID del atleta: sus recetas propias (las del diario) entran como favoritas. */
+  athleteUid?: string;
   /** UID del coach — el dueño de las recetas del constructor que puede usar el
    *  menú. Sin él, `getRecipes` traía las de todo el mundo (ver db/recipes). */
   coachId: string;
@@ -94,7 +97,7 @@ function devBadge(day: MenuDay): { label: string; cls: string } {
   return { label, cls };
 }
 
-export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, diets, dietConfig, nutritionConfig, initialMenu, onSaved, onCancel }: Props) {
+export default function WeeklyMenuEditor({ athleteEmail, athleteUid, coachId, onboarding, diets, dietConfig, nutritionConfig, initialMenu, onSaved, onCancel }: Props) {
   const today = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
 
   const [step, setStep] = useState<Step>(initialMenu ? 'review' : 'config');
@@ -205,6 +208,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   const kcalDelDiaTipo = dietaTipo ? kcalDeDieta(dietaTipo) : null;
 
   const recetasOcultas = useReglasDeReceta(athleteEmail);
+  const recetasDelAtleta = useRecetasDelAtleta(athleteUid);
   const listaMenu = useListaDeMenu(athleteEmail);
   const { seleccion, paquetes, favoritasDelCoach } = useSeleccionDeRecetas(athleteEmail);
   const prefs: GeneratorPrefs = useMemo(() => ({
@@ -218,7 +222,8 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     cookingMaxTime: nutritionConfig?.cookingMaxTime ?? onboarding?.cookingMaxTime,
     quiereRapidas: nutritionConfig?.quiereRapidas ?? onboarding?.quiereRapidas,
     variety,
-    favoriteRecipeIds: favorites.recipeIds,
+    // Las que se ha creado él cuentan como favoritas y siempre en su plan.
+    favoriteRecipeIds: favoritasConLasSuyas(favorites.recipeIds, recetasDelAtleta),
     arranque: favorites.arranque,
     dislikedRecipeIds: favorites.dislikedIds ?? [],
     preferredDishTypes: preferredDish as DishType[],
@@ -232,7 +237,14 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     azar: Math.random,
     cambios,
     ...(topeDeFrutas ? { topeDeFrutas } : {}),
-  }), [onboarding, nutritionConfig, variety, favorites, preferredDish, excludedDish, recetasOcultas, listaMenu, seleccion, paquetes, favoritasDelCoach, cambios, topeDeFrutas]);
+  }), [onboarding, nutritionConfig, variety, favorites, preferredDish, excludedDish, recetasOcultas, listaMenu, seleccion, paquetes, favoritasDelCoach, cambios, topeDeFrutas, recetasDelAtleta]);
+  // Lo que no le gusta o no puede comer: al elegir recetas a mano salen en rojo.
+  const gustosParaMarcar: GustosParaMarcar = useMemo(() => ({
+    noGustan: prefs.disliked, alergias: prefs.allergies, condiciones: prefs.conditions,
+    dietType: prefs.dietType, recetasQueNo: prefs.dislikedRecipeIds,
+  }), [prefs.disliked, prefs.allergies, prefs.conditions, prefs.dietType, prefs.dislikedRecipeIds]);
+  // El buscador de «A medida» parte de «En su plan» con sus filtros duros.
+  const filtroDelAtleta = useMemo(() => filtroDuro(prefs), [prefs]);
 
   function cycleDishType(id: string) {
     if (preferredDish.includes(id)) { setPreferredDish(p => p.filter(x => x !== id)); setExcludedDish(e => [...e, id]); }
@@ -293,13 +305,17 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   const { data: catalogo = [] } = useQuery({ queryKey: ['catalogoAlimentos'], queryFn: getCatalogoAlimentos, staleTime: 60 * 60_000 });
 
   async function ensurePool(slot: number): Promise<Recipe[]> {
+    // Las recetas a medida de esta comida entran siempre en la muestra, por id:
+    // si no, podían quedarse fuera (al azar, por el tiempo de cocina o porque la
+    // receta ya no está asignada a esta comida) y la comida salía de la lista.
+    const fijas = slots.filter(sl => sl.slot === slot).flatMap(sl => idsCerrados(sl.recetas, paquetes) ?? []);
     const cached = pools[slot];
-    if (cached) return cached;
-    // Las recetas cerradas de alguna ingesta entran siempre en la muestra: si
-    // no, podían quedarse fuera de las 300 al azar y la ingesta salía de la lista.
+    // Si desde la última vez se han elegido otras, se vuelve a hacer la muestra.
+    if (cached && fijas.every(id => cached.some(r => r.id === id))) return cached;
     const cerradas = slots.flatMap(sl => idsCerrados(sl.recetas, paquetes) ?? []);
-    const [recetas, builder] = await Promise.all([queryRecetasForGenerator(slot, 300, listaMenu, tambienEnLaMuestra(seleccion, paquetes, [...recetasFijasDelMenu(prefs), ...cerradas]), filtroDuro(prefs)), ensureBuilderRecipes()]);
-    const combined = [...recetas, ...builder.filter(r => recipeMatchesSlot(r, slot))];
+    const [recetas, builder] = await Promise.all([queryRecetasForGenerator(slot, 300, listaMenu, tambienEnLaMuestra(seleccion, paquetes, [...recetasFijasDelMenu(prefs), ...cerradas]), filtroDuro(prefs), fijas), ensureBuilderRecipes()]);
+    const suyas = await cargarRecetasDelAtleta(queryClient, athleteUid);
+    const combined = [...recetas, ...builder.filter(r => recipeMatchesSlot(r, slot)), ...suyas.filter(r => recipeMatchesSlot(r, slot))];
     setPools(prev => ({ ...prev, [slot]: combined }));
     return combined;
   }
@@ -331,7 +347,10 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     }
     const foodList = await ensureFoods();
     setGenPhase('Generando el menú de la semana…');
-    const days = generateWeek({ schedule, diets: dietasDeLaSemana, slots, pools: nextPools, foods: foodList, prefs, batch, mode: dietMode, catalogo });
+    // Por si sus recetas aún no habían llegado al montar: cuentan como favoritas.
+    const suyas = await cargarRecetasDelAtleta(queryClient, athleteUid);
+    const prefsDeHoy = { ...prefs, favoriteRecipeIds: favoritasConLasSuyas(prefs.favoriteRecipeIds, suyas) };
+    const days = generateWeek({ schedule, diets: dietasDeLaSemana, slots, pools: nextPools, foods: foodList, prefs: prefsDeHoy, batch, mode: dietMode, catalogo });
     const draft: Omit<WeeklyMenu, 'id'> = {
       athleteId: athleteEmail,
       status: 'draft',
@@ -597,6 +616,10 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
           diasConDieta={WEEK_DAYS.filter(d => schedule[d])}
           rotan={!batch && variety > 2}
           caprichosDelAtleta={onboarding?.caprichos ?? []}
+          gustos={gustosParaMarcar}
+          listaDelAtleta={listaMenu}
+          filtroDelAtleta={filtroDelAtleta}
+          recetasDelAtleta={recetasDelAtleta}
         />
 
         {/* Batch cooking — supersedes variety when on */}

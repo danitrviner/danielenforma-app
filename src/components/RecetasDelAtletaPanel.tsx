@@ -8,6 +8,7 @@ import {
 import { accesoGlobalKey, reglasDeRecetaKey } from '../hooks/useReglasDeReceta';
 import { useToast } from '../hooks/useToast';
 import { useConfirm } from '../hooks/useConfirm';
+import { useRecetasDelAtleta } from '../hooks/useRecetasDelAtleta';
 import { esPlatoDelRecetario } from '../db/recetasHidratacion';
 import { athleteConditions, HEALTH_CONDITIONS, restrictionLabel } from '../utils/dietaryRestrictions';
 import { dietTypeVigente, ingredientMatch } from '../utils/foodPrefs';
@@ -47,6 +48,8 @@ import ReglasDeRecetasPanel from './ReglasDeRecetasPanel';
 
 interface Props {
   athleteEmail: string;
+  /** UID del atleta: sus recetas del diario salen en «En su plan» como favoritas. */
+  athleteUid?: string;
   diets: Diet[];
   dietConfig: AthleteDietConfig | null;
   onboarding: OnboardingData | null;
@@ -178,7 +181,7 @@ const Seccion: React.FC<{ titulo: string; sub: string; children: React.ReactNode
   );
 };
 
-export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig, onboarding, nutritionConfig }: Props) {
+export default function RecetasDelAtletaPanel({ athleteEmail, athleteUid, diets, dietConfig, onboarding, nutritionConfig }: Props) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
@@ -202,6 +205,8 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
     queryKey: ['recipeFavorites', athleteEmail],
     queryFn: () => getRecipeFavorites(athleteEmail),
   });
+  // Las que se ha creado en su diario: siempre en su plan y como favoritas.
+  const suyas = useRecetasDelAtleta(athleteUid);
 
   const paquetes = global?.paquetes ?? SIN_PAQUETES;
   const recsGuardadas = doc?.recomendadas ?? SIN_IDS;
@@ -771,6 +776,27 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
           <p className="font-sans text-caption text-ink-2">
             {propia || planBorrador ? 'Su plan propio.' : 'Empieza con tu plantilla.'} La estrella la pone arriba en su recetario.
           </p>
+
+          {suyas.length > 0 && (
+            <div className="space-y-1.5 rounded-control border border-accent-line bg-accent/5 p-3">
+              <p className="flex items-center gap-1 font-sans text-caption font-bold text-ink">
+                <Icon name="favorite" size="s" filled className="text-accent-ink" />
+                Creadas por él en su diario <span className="font-mono font-normal text-ink-3">{suyas.length}</span>
+              </p>
+              <p className="font-sans text-caption text-ink-2">Siempre en su plan y como favoritas: el menú las tiene en cuenta.</p>
+              <ul className="m-0 p-0 list-none space-y-1">
+                {suyas.map(r => (
+                  <li key={r.id} className="flex items-center justify-between gap-2 rounded-control bg-bg px-2.5 py-1.5">
+                    <span className="min-w-0 truncate font-sans text-label text-ink">{r.name}</span>
+                    <span className="flex-shrink-0 font-mono text-caption text-ink-3">
+                      {(r.intakeTypes ?? []).length > 0 ? r.intakeTypes!.map(t => NOMBRE_FRANJA[t] ?? `Comida ${t}`).join(', ') : 'Cualquier comida'}
+                      {r.kcal ? ` · ${Math.round(r.kcal).toLocaleString('es-ES')} kcal` : ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {recuento.length > 0 && (
             <div className="grid gap-1.5 grid-cols-[repeat(auto-fit,minmax(88px,1fr))]">

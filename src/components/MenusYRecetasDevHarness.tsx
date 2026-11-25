@@ -30,6 +30,9 @@ const ALTA = {
     { intakeType: 4, name: 'Merienda', needsTupper: false },
     { intakeType: 5, name: 'Cena', needsTupper: false },
   ],
+  // Para ver en rojo las recetas que chocan al elegirlas a mano (25-11).
+  dislikedFoods: ['champiñón', 'brócoli'],
+  allergies: ['gamba'],
   // Lo que apuntaría el atleta en Perfil › Preferencias › Mis caprichos.
   caprichos: [
     { id: 'c1', nombre: 'Helado de vainilla', nota: 'el finde después de cenar', creadoEn: '2026-11-16',
@@ -79,7 +82,7 @@ export default function MenusYRecetasDevHarness() {
             <SegmentedControl label="Qué pantalla ver" value={vista} onChange={v => setVista(v as 'menu' | 'recetas' | 'caprichos')}
               options={[{ value: 'menu', label: 'Creador de menús' }, { value: 'recetas', label: 'Biblioteca › Recetas' }, { value: 'caprichos', label: 'Mis caprichos (atleta)' }]} />
             {vista === 'menu'
-              ? <WeeklyMenuEditor athleteEmail={EMAIL} coachId="dev-coach" onboarding={{ ...ALTA, caprichos }} diets={[DIETA]} dietConfig={PROGRAMACION} nutritionConfig={null} onSaved={() => {}} onCancel={() => {}} />
+              ? <WeeklyMenuEditor athleteEmail={EMAIL} athleteUid="dev-atleta-uid" coachId="dev-coach" onboarding={{ ...ALTA, caprichos }} diets={[DIETA]} dietConfig={PROGRAMACION} nutritionConfig={null} onSaved={() => {}} onCancel={() => {}} />
               : vista === 'caprichos'
                 ? <div className="max-w-md rounded-surface border border-hairline bg-surface p-5"><MisCaprichosPanel athleteEmail={EMAIL} caprichos={caprichos} onSaved={setCaprichos} /></div>
                 : <RecipeBuilderScreen coachId="dev-coach" />}

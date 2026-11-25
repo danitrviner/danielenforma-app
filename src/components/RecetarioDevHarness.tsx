@@ -118,6 +118,7 @@ export default function RecetarioDevHarness() {
           : modo === 'selector' ? <SelectorDeComida />
           : <RecetasDelAtletaPanel
               athleteEmail={EMAIL}
+              athleteUid="dev-atleta-uid"
               diets={[DIETA]}
               dietConfig={{ athleteId: EMAIL, activeDietIds: [DIETA.id] } as AthleteDietConfig}
               onboarding={ONBOARDING}
