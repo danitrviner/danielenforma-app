@@ -1,5 +1,7 @@
-import type { FoodCategory, Macros, MenuComplement, WeekDay } from '../types.js';
+import type { DietType, FoodCategory, Macros, MenuComplement, Recipe, WeekDay } from '../types.js';
 import { nombreDeAlimento, type AlimentoCatalogo } from './catalogoAlimentos.js';
+import { violatesHealthConditions } from './dietaryRestrictions.js';
+import { ingredientMatch, violatesDietType } from './foodPrefs.js';
 import { familiaDeExtra } from './extrasDelCatalogo.js';
 import type { FrutaEnIngesta, MealSlotSpec } from './menuEngine.js';
 import type { PaqueteDeRecetas } from './seleccionDeRecetas.js';
@@ -186,6 +188,41 @@ export function idsCerrados(r: RecetasDeIngesta | undefined, paquetes: readonly 
   const modo = modoDeRecetas(r);
   const ids = modo === 'paquete' ? paquetes.find(p => p.id === r!.paqueteId)?.recipeIds : modo === 'estas' ? r!.recetas!.map(x => x.id) : undefined;
   return ids && ids.length > 0 ? ids : null;
+}
+
+/* ── Recetas que chocan con el atleta (25-11) ──────────────────────────────── */
+
+/** Lo del atleta que hay que mirar al elegir a mano las recetas de una comida. */
+export interface GustosParaMarcar {
+  /** Alimentos «no me gusta» de su ficha (`dislikedFoods`). */
+  noGustan: readonly string[];
+  alergias: readonly string[];
+  condiciones?: readonly number[];
+  dietType?: DietType;
+  /** Recetas que marcó «no me gusta» (`RecipeFavorites.dislikedIds`). */
+  recetasQueNo?: readonly string[];
+}
+
+export interface PegaDeReceta {
+  /** Alergia, salud o tipo de dieta: el generador la quita aunque esté elegida. */
+  grave: boolean;
+  texto: string;
+}
+
+/** Por qué una receta no le va al atleta, o null si no hay nada. Dani (25-11):
+ *  «si hay alguna receta con algún ingrediente que no le gusta, que salga en
+ *  rojo». Las graves se dicen igual porque el motor las descarta en silencio
+ *  (`rankCerradas`): el coach la elige y nunca sale. Lo que no le gusta, en
+ *  cambio, sí sale si el coach la deja: es su decisión. */
+export function pegaDeReceta(r: Recipe, g: GustosParaMarcar): PegaDeReceta | null {
+  const alergias = g.alergias.filter(f => ingredientMatch(r, f));
+  if (alergias.length > 0) return { grave: true, texto: `Alergia: ${alergias.join(', ')} · no saldrá en el menú` };
+  if (violatesHealthConditions(r, g.condiciones)) return { grave: true, texto: 'No apta por su salud · no saldrá en el menú' };
+  if (violatesDietType(r, g.dietType)) return { grave: true, texto: 'No va con su tipo de dieta · no saldrá en el menú' };
+  const noGustan = g.noGustan.filter(f => ingredientMatch(r, f));
+  if (noGustan.length > 0) return { grave: false, texto: `No le gusta: ${noGustan.join(', ')}` };
+  if (g.recetasQueNo?.includes(r.id)) return { grave: false, texto: 'La marcó como «no me gusta»' };
+  return null;
 }
 
 /* ── Lo que se guarda por atleta ───────────────────────────────────────────── */

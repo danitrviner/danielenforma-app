@@ -271,13 +271,14 @@ function ScreenFallback() {
 // redirigen a donde vive hoy su contenido — misma convención que las rutas
 // legacy de /training, /nutrition, /academy, /cardio más abajo.
 const ANALISIS_SUBTAB_TO_HUBTAB: Record<string, string> = {
-  reportes: 'reportes',
+  // Reportes se retiró el 23-11-2026: su sitio lo ocupa Objetivo.
+  reportes: 'objetivo',
   nutricion: 'revision',
   correlaciones: 'revision',
 };
 function AnalisisSubTabRedirect() {
   const { athleteId, subTab } = useParams<{ athleteId: string; subTab: string }>();
-  const target = (subTab && ANALISIS_SUBTAB_TO_HUBTAB[subTab]) ?? 'reportes';
+  const target = (subTab && ANALISIS_SUBTAB_TO_HUBTAB[subTab]) ?? 'revision';
   return <Navigate to={`/clients/${athleteId}/${target}`} replace />;
 }
 

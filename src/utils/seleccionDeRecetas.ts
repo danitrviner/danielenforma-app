@@ -158,6 +158,12 @@ export function recetasFijasDelMenu(prefs: Pick<ConSeleccion, 'favoritasDelCoach
   return [...new Set([...(prefs.favoritasDelCoach ?? []), ...(prefs.favoriteRecipeIds ?? [])])];
 }
 
+/** Sus favoritas más las que se ha creado él en el diario (25-11): las suyas
+ *  cuentan como favoritas, así que la lista del coach no las deja fuera. */
+export function favoritasConLasSuyas(favoritas: readonly string[] | undefined, suyas: readonly { id: string }[]): string[] {
+  return [...new Set([...(favoritas ?? []), ...suyas.map(r => r.id)])];
+}
+
 /**
  * Recetas de las que puede tirar el generador para una dieta y unos días.
  *

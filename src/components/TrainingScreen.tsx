@@ -30,7 +30,7 @@ import { Skeleton } from './ui';
 import { useBotonAtras } from '../services/botonAtras';
 import {
   guardarSesion, cargarSesion, borrarSesion, borrarDescanso, formaDeSesion, tieneSeriesHechas,
-  limpiarSesionesCaducadas, seriesHechasEnBorrador, cargarInicioSesion, guardarInicioSesion,
+  limpiarSesionesCaducadas, seriesHechasEnBorrador, cargarInicioSesion, guardarInicioSesion, retomarSesion,
 } from '../utils/sesionEnCurso';
 import { segundosTranscurridos } from '../utils/duracionSesion';
 import { haptics } from '../services/haptics';
@@ -110,6 +110,9 @@ const ESTADO_CIRCULO: Record<EstadoDeDia, string> = {
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
+
+/** Lo que trae el borrador (texto libre en JSON) solo vale si es una de las tres. */
+const esComoLlega = (v: unknown): v is NonNullable<WorkoutLog['comoLlega']> => v === 'bien' || v === 'normal' || v === 'justo';
 
 export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const { showToast } = useToast();
@@ -500,14 +503,12 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     // 01-10): abrir la sesión por la mañana solo para mirarla y entrenar por
     // la tarde sumaba las horas de en medio. Mientras no haya trabajo hecho,
     // cada apertura vuelve a empezar de cero.
-    let iniciadaEn = borrador && tieneSeriesHechas(borrador)
-      ? cargarInicioSesion(profile.email, assignment.id)
-      : null;
-    if (iniciadaEn == null) {
-      iniciadaEn = Date.now();
-      guardarInicioSesion(profile.email, assignment.id, iniciadaEn);
-    }
-    setSessionStartedAt(iniciadaEn);
+    //
+    // «¿Cómo llegas hoy?» sigue la misma regla (Dani, 25-11): con series
+    // marcadas no se vuelve a preguntar; si solo entró, contestó y salió, sí.
+    const retomada = retomarSesion(borrador, cargarInicioSesion(profile.email, assignment.id), Date.now());
+    guardarInicioSesion(profile.email, assignment.id, retomada.iniciadaEn);
+    setSessionStartedAt(retomada.iniciadaEn);
 
     setActiveAssignment(assignment);
     setActiveWorkout(wo);
@@ -529,10 +530,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     setQuePararon(Array.isArray(borrador?.quePararon)
       ? borrador.quePararon.map(m => (esMotivoDeParada(m) ? m : undefined)) : []);
     setMolestias(Array.isArray(borrador?.molestias) ? borrador.molestias.map(m => m ?? undefined) : []);
-    // «¿Cómo llegas hoy?» se contesta en CADA apertura (Dani, 18-11): si la
-    // cierra y la vuelve a abrir, lo de antes se borra y se pregunta de nuevo.
-    setComoLlega(undefined);
-    setComoLlegaNota(undefined);
+    setComoLlega(esComoLlega(retomada.comoLlega) ? retomada.comoLlega : undefined);
+    setComoLlegaNota(retomada.comoLlegaNota);
     setWorkoutNoteInput(borrador?.workoutNoteInput ?? '');
     setCelebration(null);
     setPrevEntries(entries);
@@ -767,7 +766,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     // cierra sin entrenar. Y si el atleta desmarca todo, el borrador se va con
     // ello en vez de quedarse resucitando series que él mismo quitó.
     if (!hayTrabajo) {
-      borrarSesion(profile.email, activeAssignment.id);
+      // El inicio se queda: si luego marca una serie, el cronómetro sigue
+      // contando desde que abrió (al reabrir sin series se pone de cero igual).
+      borrarSesion(profile.email, activeAssignment.id, { conservarInicio: true });
       return;
     }
 
@@ -781,13 +782,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       quePararon:        quePararon.map(m => m ?? null),
       molestias:         molestias.map(m => m ?? null),
       comoLlega,
+      ...(comoLlegaNota != null ? { comoLlegaNota } : {}),
       fuera,
       workoutNoteInput,
       guardadoEn:        new Date().toISOString(),
       formaPrescrita:    formaPrescritaRef.current,
     });
   }, [activeAssignment, activeWorkout, playerSets, exerciseNoteInputs, referenciasNuevas, quePararon, molestias, comoLlega, fuera, workoutNoteInput,
-      celebration, canFinish, profile.email]);
+      celebration, canFinish, profile.email, comoLlegaNota]);
 
   const handleFinish = async () => {
     if (!activeAssignment || !activeWorkout || !canFinish) return;

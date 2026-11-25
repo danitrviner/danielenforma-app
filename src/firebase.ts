@@ -24,6 +24,7 @@ import {
   runTransaction,
   waitForPendingWrites,
   onSnapshot,
+  arrayUnion,
   // 03-5. Cerrar sesión tiene que poder vaciar la caché persistente: ahí viven
   // peso, perímetros, cuestionarios, dietas y notas del coach del usuario que
   // se va. Ver utils/cierreDeSesion.ts.
@@ -258,6 +259,7 @@ export {
   runTransaction,
   waitForPendingWrites,
   onSnapshot,
+  arrayUnion,
   terminate,
   clearIndexedDbPersistence
 };

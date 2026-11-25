@@ -63,29 +63,49 @@ function CeldaMacro({ label, comido, cupo }: { label: string; comido: number; cu
 
 /* Sin `@types/react` en el repo, TS no excluye `key` por su cuenta — mismo
    apaño que Badge/ListRow y el resto de los bloques de Revisión. */
+const num1 = (n: number) => n.toLocaleString('es-ES', { maximumFractionDigits: 1 });
+
+/* Una fila por alimento, con lo que comió de verdad: cuánto (gramos, o
+   raciones si es un plato entero), sus kcal y sus macros. Antes cada línea
+   por categoría salía suelta y sin gramos —«Pan tostado ×1», «Pan tostado
+   ×0,5»— y no se podía saber cuánto pan era (Dani, 24-11-2026). */
 function Linea({ item }: { item: ItemComido; key?: React.Key }) {
   const origen = ORIGEN_META[item.origen];
+  const macros = item.macros && `P ${num1(item.macros.p)} · HC ${num1(item.macros.hc)} · G ${num1(item.macros.g)}`;
+  const titulo = item.marca ? `${item.etiquetaCompleta} · ${item.marca}` : item.etiquetaCompleta;
   return (
-    <li className="flex items-baseline gap-2 py-1">
+    <li className="flex items-start gap-2 py-1.5">
       <Icon
         name={item.marcado ? 'check_circle' : 'radio_button_unchecked'}
         size="s"
-        className="shrink-0 translate-y-0.5"
+        className="shrink-0 mt-0.5"
         style={{ color: item.marcado ? 'var(--color-success)' : 'var(--color-ink-4)' }}
         label={item.marcado ? 'Marcado como comido' : 'Sin marcar'}
       />
-      <span className="font-sans text-label text-ink min-w-0 flex-1 truncate" title={item.etiquetaCompleta}>
-        {item.etiqueta}
-      </span>
-      {origen && (
-        <span className="font-mono text-caption text-ink-3 shrink-0 hidden sm:inline-flex items-center gap-1">
-          <Icon name={origen.icon} size="s" />{origen.label}
-        </span>
-      )}
-      <span className="font-mono text-caption text-ink-2 tabular-nums shrink-0 w-14 text-right">{item.peso}</span>
-      <span className="font-mono text-caption text-ink-3 tabular-nums shrink-0 w-16 text-right">
-        {item.kcal.toLocaleString('es-ES')} kcal
-      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2">
+          <span className="font-sans text-label text-ink min-w-0 flex-1 truncate" title={titulo}>
+            {item.etiqueta}
+            {item.marca && <span className="text-ink-3"> · {item.marca}</span>}
+          </span>
+          <span className="font-mono text-label text-ink tabular-nums shrink-0 min-w-[56px] text-right whitespace-nowrap">
+            {item.peso}
+          </span>
+          <span className="font-mono text-caption text-ink-2 tabular-nums shrink-0 w-[68px] text-right whitespace-nowrap">
+            {item.kcal == null ? 'sin datos' : `${item.kcal.toLocaleString('es-ES')} kcal`}
+          </span>
+        </div>
+        {(macros || origen) && (
+          <div className="flex flex-wrap items-center gap-x-3 font-mono text-caption text-ink-3">
+            {macros && <span className="tabular-nums">{macros}</span>}
+            {origen && (
+              <span className="inline-flex items-center gap-1">
+                <Icon name={origen.icon} size="s" />{origen.label}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
     </li>
   );
 }

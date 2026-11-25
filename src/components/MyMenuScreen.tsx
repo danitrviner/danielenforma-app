@@ -549,16 +549,17 @@ export default function MyMenuScreen({ profile, onAddToPlan, guardarArranque, gu
       // aquí no ahorraba nada y sí escondía opciones: con un día de 2.200 kcal,
       // de las ~660 alternativas válidas que hay para la comida, la muestra de
       // 300 solo contenía ~40, y de esas se enseñaban 5.
+      // Si el coach cerró las recetas de esta comida, solo se ofrecen esas, y
+      // entran por id aunque ya no estén asignadas a esta comida en el recetario.
+      const cerradas = idsCerrados(ingestasAMedida?.[claveDeIngesta(meal, day.meals.findIndex(m => m.id === meal.id))]?.recetas, paquetes);
       const [recetas, builder] = await Promise.all([
-        queryClient.fetchQuery({ queryKey: ['recetasDeFranja', meal.slot], queryFn: () => queryRecetasForGenerator(meal.slot, Infinity), staleTime: 5 * 60_000 }),
+        queryClient.fetchQuery({ queryKey: ['recetasDeFranja', meal.slot, cerradas ?? []], queryFn: () => queryRecetasForGenerator(meal.slot, Infinity, undefined, undefined, undefined, cerradas ?? undefined), staleTime: 5 * 60_000 }),
         queryClient.fetchQuery({ queryKey: ['recipes', profile.userId], queryFn: () => getRecipes({ ownerId: profile.userId }), staleTime: 5 * 60_000 }),
       ]).catch(() => [[], []] as [Recipe[], Recipe[]]);
       const pool = [...recetas, ...builder.filter(r => recipeMatchesSlot(r, meal.slot))];
       // `foodList` y el modo van hasta el final: con ellos, cada alternativa se
       // evalúa con las raciones extra que le tocarían a ELLA, no con el plato
       // pelado (ver `findSwapAlternatives`).
-      // Si el coach cerró las recetas de esta comida, solo se ofrecen esas.
-      const cerradas = idsCerrados(ingestasAMedida?.[claveDeIngesta(meal, day.meals.findIndex(m => m.id === meal.id))]?.recetas, paquetes);
       setSwapCandidates(findSwapAlternatives(day, meal.id, pool, prefs, Infinity, dietMode, foodList, cerradas ? new Set(cerradas) : undefined));
     }
     setSwapLoading(false);

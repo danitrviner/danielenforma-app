@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Recipe, WeekDay } from '../types';
 import { cargarIndiceRecetas } from '../dbService';
@@ -9,10 +9,11 @@ import { nombreDeAlimento, type AlimentoCatalogo } from '../utils/catalogoAlimen
 import {
   DIAS_SEMANA, INICIAL_DE_DIA, avisoDeRecetas, conCantidad, conDiaAlternado, extraDeAlimento,
   kcalDeExtra, modoDeRecetas, pasoDeExtra, resumenDeRecetas, resumenDeFrutas, conFrutaAlternada, frutasDelCatalogo,
-  extrasDeIngesta, resumenDeExtras, textoDeDias, tocaElDia,
-  type ExtraFijo, type RecetaDeIngesta, type RecetasDeIngesta,
+  extrasDeIngesta, resumenDeExtras, textoDeDias, tocaElDia, claveDeIngesta, pegaDeReceta,
+  type ExtraFijo, type GustosParaMarcar, type PegaDeReceta, type RecetaDeIngesta, type RecetasDeIngesta,
 } from '../utils/ingestaPersonalizada';
-import { coincideBusqueda } from '../utils/busqueda';
+import { coincideBusqueda, relevanciaDeBusqueda } from '../utils/busqueda';
+import { estaEnSuPlan, type ListaDeMenu } from '../utils/accesoARecetas';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import { macrosDeReceta } from '../utils/macrosDeReceta';
 import { etiquetaDeTiempo } from '../utils/tiempoDeReceta';
@@ -43,6 +44,15 @@ interface Props {
   rotan: boolean;
   /** Los que apunta el atleta en Perfil › Preferencias (`OnboardingData.caprichos`). */
   caprichosDelAtleta?: CaprichoDelAtleta[];
+  /** Lo que no le gusta o no puede comer: esas recetas salen en rojo al elegir. */
+  gustos?: GustosParaMarcar;
+  /** «En su plan» de Dietas › Información › Recetas del atleta (`listaMenu`):
+   *  de ahí parte el buscador de recetas a medida. Ausente = todo el recetario. */
+  listaDelAtleta?: ListaDeMenu;
+  /** Sus filtros duros (`filtroDuro`): lo que no pasa no sale en «En su plan». */
+  filtroDelAtleta?: (r: Recipe) => boolean;
+  /** Las que se ha creado él en el diario: siempre en su plan (useRecetasDelAtleta). */
+  recetasDelAtleta?: Recipe[];
 }
 
 /** Lo que puede llevar cada ingesta del menú (MealSlotSpec.fruta). */
@@ -63,10 +73,20 @@ const fmt = (n: number) => n.toLocaleString('es-ES');
 
 type Vista = 'resumen' | 'recetas' | 'extra' | 'frutas';
 
-export default function IngestasDelMenu({ slots, onChange, paquetes, catalogo, kcalDelDia, diasConDieta, rotan, caprichosDelAtleta = [] }: Props) {
+export default function IngestasDelMenu({ slots, onChange, paquetes, catalogo, kcalDelDia, diasConDieta, rotan, caprichosDelAtleta = [], gustos, listaDelAtleta, filtroDelAtleta, recetasDelAtleta = SIN_RECETAS }: Props) {
   const pctSum = slots.reduce((s, sl) => s + sl.pct, 0);
   const [panel, setPanel] = useState<{ i: number; vista: Vista; raiz: Vista } | null>(null);
   const cambiar = (i: number, parche: Partial<MealSlotSpec>) => onChange(slots.map((s, idx) => (idx === i ? { ...s, ...parche } : s)));
+  /* Las elegidas a mano se apartan al pasar a «De su lista» o a un paquete, y
+     vuelven si el coach regresa a «Solo las que yo elija». Antes se perdían
+     todas al cambiar de modo (Dani, 25-11). Clave: la de cada ingesta. */
+  const apartadas = useRef<Record<string, RecetaDeIngesta[]>>({});
+  const cambiarRecetas = (i: number, recetas: RecetasDeIngesta | undefined) => {
+    const antes = slots[i].recetas;
+    if (modoDeRecetas(antes) === 'estas' && modoDeRecetas(recetas) !== 'estas') apartadas.current[claveDeIngesta(slots[i], i)] = antes?.recetas ?? [];
+    cambiar(i, { recetas });
+  };
+  const recuperarElegidas = (i: number) => cambiarRecetas(i, { recetas: apartadas.current[claveDeIngesta(slots[i], i)] ?? [] });
   const nombreDePaquete = (id: string) => paquetes.find(p => p.id === id)?.nombre;
   const nombreDeFruta = (id: string) => catalogo.find(a => a.id === id)?.nombre;
   const kcalDe = (sl: MealSlotSpec) => (kcalDelDia ? Math.round((kcalDelDia * sl.pct) / 100) : null);
@@ -163,8 +183,9 @@ export default function IngestasDelMenu({ slots, onChange, paquetes, catalogo, k
               <>
                 {delPanel.fruta !== 'solo' && (
                   <>
-                    <BloqueRecetas sl={delPanel} paquetes={paquetes} dias={diasConDieta.length} rotan={rotan}
-                      onChange={recetas => cambiar(panel.i, { recetas })} onAbrir={() => setPanel({ ...panel, vista: 'recetas' })} />
+                    <BloqueRecetas sl={delPanel} paquetes={paquetes} dias={diasConDieta.length} rotan={rotan} gustos={gustos} suyas={recetasDelAtleta}
+                      onChange={recetas => cambiarRecetas(panel.i, recetas)} onElegirAMano={() => recuperarElegidas(panel.i)}
+                      onAbrir={() => setPanel({ ...panel, vista: 'recetas' })} />
                     <div className="border-t border-hairline" />
                   </>
                 )}
@@ -186,7 +207,8 @@ export default function IngestasDelMenu({ slots, onChange, paquetes, catalogo, k
                 onAlternar={id => cambiar(panel.i, { frutas: conFrutaAlternada(delPanel.frutas, id) })} />
             )}
             {panel.vista === 'recetas' && (
-              <BuscadorDeRecetas slot={delPanel.slot} elegidas={delPanel.recetas?.recetas ?? []}
+              <BuscadorDeRecetas slot={delPanel.slot} elegidas={delPanel.recetas?.recetas ?? []} gustos={gustos}
+                plan={listaDelAtleta} filtro={filtroDelAtleta} suyas={recetasDelAtleta}
                 onAlternar={r => {
                   const actuales = delPanel.recetas?.recetas ?? [];
                   const recetas = actuales.some(x => x.id === r.id) ? actuales.filter(x => x.id !== r.id) : [...actuales, r];
@@ -221,13 +243,14 @@ export default function IngestasDelMenu({ slots, onChange, paquetes, catalogo, k
 
 /* ── De qué recetas tira la comida ─────────────────────────────────────────── */
 
-function BloqueRecetas({ sl, paquetes, dias, rotan, onChange, onAbrir }: {
-  sl: MealSlotSpec; paquetes: PaqueteDeRecetas[]; dias: number; rotan: boolean;
-  onChange: (r: RecetasDeIngesta | undefined) => void; onAbrir: () => void;
+function BloqueRecetas({ sl, paquetes, dias, rotan, gustos, suyas, onChange, onElegirAMano, onAbrir }: {
+  sl: MealSlotSpec; paquetes: PaqueteDeRecetas[]; dias: number; rotan: boolean; gustos?: GustosParaMarcar; suyas: Recipe[];
+  onChange: (r: RecetasDeIngesta | undefined) => void; onElegirAMano: () => void; onAbrir: () => void;
 }) {
   const modo = modoDeRecetas(sl.recetas);
   const elegidas = sl.recetas?.recetas ?? [];
   const aviso = avisoDeRecetas(sl.recetas, dias, rotan);
+  const pegaDe = usePegas(gustos, suyas);
   return (
     <div className="min-w-0 space-y-2">
       <p className={TITULILLO}>Recetas de {sl.name.toLowerCase()}</p>
@@ -235,7 +258,7 @@ function BloqueRecetas({ sl, paquetes, dias, rotan, onChange, onAbrir }: {
         <button type="button" role="radio" aria-checked={modo === 'lista'} onClick={() => onChange(undefined)} className={pildora(modo === 'lista')}>
           De su lista
         </button>
-        <button type="button" role="radio" aria-checked={modo === 'estas'} onClick={() => { if (modo !== 'estas') onChange({ recetas: [] }); }} className={pildora(modo === 'estas')}>
+        <button type="button" role="radio" aria-checked={modo === 'estas'} onClick={() => { if (modo !== 'estas') onElegirAMano(); }} className={pildora(modo === 'estas')}>
           Solo las que yo elija
         </button>
         {paquetes.map(p => {
@@ -253,18 +276,24 @@ function BloqueRecetas({ sl, paquetes, dias, rotan, onChange, onAbrir }: {
         <>
           {elegidas.length > 0 && (
             <ul className="space-y-1">
-              {elegidas.map(r => (
-                <li key={r.id} className="flex items-center gap-2 rounded-control border border-hairline bg-bg py-1 pl-1 pr-2">
-                  <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-control bg-raised">
-                    <FotoDeReceta src={r.foto} alt="" className="h-full w-full object-cover"
-                      fallback={<div className="flex h-full w-full items-center justify-center"><Icon name="skillet" size="s" className="text-ink-3" /></div>} />
-                  </div>
-                  <span className="min-w-0 flex-1 truncate font-sans text-label text-ink">{r.nombre}</span>
-                  {r.kcal ? <span className="flex-shrink-0 font-mono text-caption text-ink-3">{fmt(r.kcal)} kcal</span> : null}
-                  <button type="button" aria-label={`Quitar ${r.nombre}`} onClick={() => onChange({ recetas: elegidas.filter(x => x.id !== r.id) })}
-                    className="flex-shrink-0 text-ink-3 hover:text-ink"><Icon name="close" size="s" /></button>
-                </li>
-              ))}
+              {elegidas.map(r => {
+                const pega = pegaDe(r.id);
+                return (
+                  <li key={r.id} className={`flex items-center gap-2 rounded-control border py-1 pl-1 pr-2 ${pega ? 'border-danger/40 bg-danger/10' : 'border-hairline bg-bg'}`}>
+                    <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-control bg-raised">
+                      <FotoDeReceta src={r.foto} alt="" className="h-full w-full object-cover"
+                        fallback={<div className="flex h-full w-full items-center justify-center"><Icon name="skillet" size="s" className="text-ink-3" /></div>} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={`truncate font-sans text-label ${pega ? 'text-danger' : 'text-ink'}`}>{r.nombre}</p>
+                      {pega && <LineaDePega pega={pega} />}
+                    </div>
+                    {r.kcal ? <span className="flex-shrink-0 font-mono text-caption text-ink-3">{fmt(r.kcal)} kcal</span> : null}
+                    <button type="button" aria-label={`Quitar ${r.nombre}`} onClick={() => onChange({ recetas: elegidas.filter(x => x.id !== r.id) })}
+                      className="flex-shrink-0 text-ink-3 hover:text-ink"><Icon name="close" size="s" /></button>
+                  </li>
+                );
+              })}
             </ul>
           )}
           <button type="button" onClick={onAbrir} className="flex items-center gap-1 font-sans text-caption font-bold text-accent-ink hover:text-ink">
@@ -396,42 +425,140 @@ const aRecetaDeIngesta = (r: Recipe): RecetaDeIngesta => {
   return { id: r.id, nombre: r.name, kcal: Math.round(macrosDeReceta(r).kcal), ...(foto ? { foto } : {}) };
 };
 
-function BuscadorDeRecetas({ slot, elegidas, onAlternar }: {
+const SIN_RECETAS: Recipe[] = [];
+
+/** La pega de cada receta elegida, mirada en el índice (que trae los ingredientes). */
+function usePegas(gustos: GustosParaMarcar | undefined, suyas: Recipe[]): (id: string) => PegaDeReceta | null {
+  const { data: indice = SIN_RECETAS } = useQuery({ queryKey: ['indiceRecetas'], queryFn: cargarIndiceRecetas, staleTime: Infinity, enabled: !!gustos });
+  return useMemo(() => {
+    if (!gustos) return () => null;
+    const porId = new Map([...indice, ...suyas].map(r => [r.id, r]));
+    return (id: string) => {
+      const r = porId.get(id);
+      return r ? pegaDeReceta(r, gustos) : null;
+    };
+  }, [indice, suyas, gustos]);
+}
+
+function LineaDePega({ pega }: { pega: PegaDeReceta }) {
+  return (
+    <p className="flex items-start gap-1 font-sans text-caption font-bold text-danger">
+      <Icon name={pega.grave ? 'block' : 'thumb_down'} size="s" className="mt-px flex-shrink-0" />
+      <span className="min-w-0">{pega.texto}</span>
+    </p>
+  );
+}
+
+const TOPE_DE_FILAS = 60;
+/** Lo que pesa en la relevancia ser de otra comida: unas pocas posiciones,
+ *  no tanto como para esconder unos huevos revueltos al buscar «huevo». */
+const CASTIGO_OTRA_COMIDA = 15;
+const NOMBRE_DE_COMIDA: Record<number, string> = { 1: 'desayuno', 2: 'media mañana', 3: 'comida', 4: 'merienda', 5: 'cena' };
+/** «comida y cena», «merienda». */
+function comidasDeLaReceta(r: Recipe): string {
+  const nombres = (r.intakeTypes ?? []).map(t => NOMBRE_DE_COMIDA[t] ?? `comida ${t}`);
+  if (nombres.length === 0) return 'otra comida';
+  return nombres.length === 1 ? nombres[0] : `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`;
+}
+
+/* El buscador parte de «En su plan» (Recetas del atleta, ya con sus filtros):
+   el embudo es recetario → su plan → a medida (Dani, 25-11). «Todo el
+   recetario» queda a un toque para buscar algo concreto. */
+function BuscadorDeRecetas({ slot, elegidas, gustos, plan, filtro, suyas, onAlternar }: {
   /** Franja de la comida. */
   slot: number;
   elegidas: RecetaDeIngesta[];
+  gustos?: GustosParaMarcar;
+  plan?: ListaDeMenu;
+  filtro?: (r: Recipe) => boolean;
+  suyas: Recipe[];
   onAlternar: (r: RecetaDeIngesta) => void;
 }) {
-  const { data: indice = [], isLoading } = useQuery({ queryKey: ['indiceRecetas'], queryFn: cargarIndiceRecetas, staleTime: Infinity });
+  const { data: indice = SIN_RECETAS, isLoading } = useQuery({ queryKey: ['indiceRecetas'], queryFn: cargarIndiceRecetas, staleTime: Infinity });
   const [q, setQ] = useState('');
+  const conPlan = !!plan && plan.length > 0;
+  const [ambito, setAmbito] = useState<'plan' | 'todo'>(conPlan ? 'plan' : 'todo');
   const ids = new Set(elegidas.map(r => r.id));
-  const lista = useMemo(
-    () => indice.filter(r => esPlatoDelRecetario(r) && recipeMatchesSlot(r, slot) && coincideBusqueda(r.name, q)).slice(0, 40),
-    [indice, slot, q],
+  // Las suyas (las del diario) van primero y están siempre en su plan.
+  const idsSuyas = useMemo(() => new Set(suyas.map(r => r.id)), [suyas]);
+  // De CUALQUIER comida: buscando se puede elegir una de otra (Dani, 25-11:
+  // unos huevos revueltos con jamón, que son «de tupper», para desayunar).
+  // Sin escribir nada se ven solo las de esta comida.
+  const todas = useMemo(() => [...suyas, ...indice.filter(esPlatoDelRecetario)], [suyas, indice]);
+  const todasDelPlan = useMemo(
+    () => (conPlan ? todas.filter(r => idsSuyas.has(r.id) || (estaEnSuPlan(r, plan) && (!filtro || filtro(r)))) : todas),
+    [todas, idsSuyas, conPlan, plan, filtro],
   );
+  const delPlanEnEstaComida = useMemo(() => todasDelPlan.filter(r => recipeMatchesSlot(r, slot)), [todasDelPlan, slot]);
+  const enPlan = useMemo(() => new Set(todasDelPlan.map(r => r.id)), [todasDelPlan]);
+  const buscando = q.trim() !== '';
+  const coinciden = useMemo(() => {
+    const base = ambito === 'plan' ? todasDelPlan : todas;
+    const candidatas = buscando ? base.filter(r => coincideBusqueda(r.name, q)) : base.filter(r => recipeMatchesSlot(r, slot));
+    const filas = candidatas.map(r => {
+      const otraComida = !recipeMatchesSlot(r, slot);
+      // Lo que ES lo buscado primero; las de otra comida, un poco detrás.
+      const orden = buscando ? relevanciaDeBusqueda(r.name, q) + (otraComida ? CASTIGO_OTRA_COMIDA : 0) : 0;
+      return { r, otraComida, orden, pega: gustos ? pegaDeReceta(r, gustos) : null };
+    });
+    if (buscando) filas.sort((a, b) => a.orden - b.orden);
+    // Las que chocan con el atleta, al final.
+    return [...filas.filter(f => !f.pega), ...filas.filter(f => f.pega)];
+  }, [ambito, todasDelPlan, todas, buscando, q, slot, gustos]);
+  const filas = coinciden.slice(0, TOPE_DE_FILAS);
   return (
     <div className="space-y-2">
-      <SearchField label="Buscar receta" placeholder="Buscar receta…" value={q} onChange={setQ} onCancel={() => setQ('')} />
+      {conPlan && (
+        <div role="radiogroup" aria-label="Dónde buscar" className="flex flex-wrap gap-1.5">
+          <button type="button" role="radio" aria-checked={ambito === 'plan'} onClick={() => setAmbito('plan')} className={pildora(ambito === 'plan')}>
+            <Icon name="checklist" size="s" />En su plan{isLoading ? '' : ` · ${fmt(delPlanEnEstaComida.length)}`}
+          </button>
+          <button type="button" role="radio" aria-checked={ambito === 'todo'} onClick={() => setAmbito('todo')} className={pildora(ambito === 'todo')}>
+            <Icon name="menu_book" size="s" />Todo el recetario
+          </button>
+        </div>
+      )}
+      <SearchField label="Buscar receta" placeholder={ambito === 'plan' ? 'Buscar en su plan…' : 'Buscar en todo el recetario…'} value={q} onChange={setQ} onCancel={() => setQ('')} />
+      {!buscando && !isLoading && (
+        <p className="font-sans text-caption text-ink-3">Escribe para buscar también entre las recetas de otras comidas.</p>
+      )}
       {isLoading ? (
         <p className="py-6 text-center font-sans text-caption text-ink-3">Cargando el recetario…</p>
-      ) : lista.length === 0 ? (
-        <p className="py-6 text-center font-sans text-caption text-ink-3">Ninguna receta con ese nombre para esta comida.</p>
+      ) : filas.length === 0 ? (
+        <div className="space-y-2 py-6 text-center">
+          <p className="font-sans text-caption text-ink-3">
+            {ambito === 'plan' ? 'Nada con ese nombre en su plan.' : 'Ninguna receta con ese nombre.'}
+          </p>
+          {ambito === 'plan' && (
+            <button type="button" onClick={() => setAmbito('todo')} className="font-sans text-caption font-bold text-accent-ink hover:text-ink">
+              Buscar en todo el recetario
+            </button>
+          )}
+        </div>
       ) : (
         <ul className="space-y-0.5">
-          {lista.map(r => {
+          {filas.map(({ r, pega, otraComida }) => {
             const dentro = ids.has(r.id);
             const kcal = Math.round(macrosDeReceta(r).kcal);
+            const fondo = dentro ? 'bg-accent/10' : pega ? 'bg-danger/10' : 'hover:bg-surface';
             return (
               <li key={r.id}>
                 <button type="button" aria-pressed={dentro} onClick={() => onAlternar(aRecetaDeIngesta(r))}
-                  className={`flex w-full items-center gap-3 rounded-control px-2 py-2 text-left transition-colors ${dentro ? 'bg-accent/10' : 'hover:bg-surface'}`}>
+                  className={`flex w-full items-center gap-3 rounded-control px-2 py-2 text-left transition-colors ${fondo} ${pega ? 'ring-1 ring-inset ring-danger/40' : ''}`}>
                   <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-control bg-surface">
                     <FotoDeReceta src={fotoDeReceta(r)} alt="" className="h-full w-full object-cover"
                       fallback={<div className="flex h-full w-full items-center justify-center"><Icon name="skillet" size="m" className="text-ink-3" /></div>} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-sans text-label text-ink">{r.name}</p>
-                    <p className="font-mono text-caption text-ink-3">{kcal > 0 ? `${fmt(kcal)} kcal · ` : ''}{etiquetaDeTiempo(r)}</p>
+                    <p className={`truncate font-sans text-label ${pega ? 'text-danger' : 'text-ink'}`}>{r.name}</p>
+                    <p className="font-mono text-caption text-ink-3">
+                      {kcal > 0 ? `${fmt(kcal)} kcal · ` : ''}{etiquetaDeTiempo(r)}
+                      {idsSuyas.has(r.id)
+                        ? <span className="font-sans font-bold text-accent-ink"> · suya, de su diario</span>
+                        : ambito === 'todo' && conPlan && enPlan.has(r.id) && <span className="font-sans font-bold text-accent-ink"> · en su plan</span>}
+                    </p>
+                    {otraComida && <p className="font-sans text-caption text-ink-2">Es de {comidasDeLaReceta(r)} · sirve igual aquí</p>}
+                    {pega && <LineaDePega pega={pega} />}
                   </div>
                   <Icon name={dentro ? 'check_circle' : 'radio_button_unchecked'} size="m" filled={dentro} className={dentro ? 'text-accent-ink' : 'text-ink-3'} />
                 </button>
@@ -439,6 +566,11 @@ function BuscadorDeRecetas({ slot, elegidas, onAlternar }: {
             );
           })}
         </ul>
+      )}
+      {coinciden.length > filas.length && (
+        <p className="py-2 text-center font-sans text-caption text-ink-3">
+          Hay {fmt(coinciden.length)}; se ven {filas.length}. Escribe para afinar.
+        </p>
       )}
     </div>
   );
