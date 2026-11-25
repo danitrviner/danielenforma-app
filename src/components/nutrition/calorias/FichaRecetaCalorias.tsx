@@ -8,6 +8,7 @@ import { macrosDeLineas } from '../../../utils/macrosLegado';
 import { escalarMacros } from '../../../utils/macros';
 import { recetaDesglosada } from '../../../utils/recetaDesglosada';
 import { MARGEN_KCAL, acotarRacion, racionQueCabe, ingredientesDeFicha, conRetoques } from '../../../utils/usarReceta';
+import { nombreCorto } from '../../../utils/editarRecetaPropia';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Ficha de una receta ANTES de apuntarla en el diario (11-2026)
@@ -36,6 +37,9 @@ export interface FichaRecetaProps {
   /** Lo que le toca a esta comida de lo que queda del día. */
   hueco: Macros;
   onAnadir: (items: DietItem[], escala: number) => void;
+  /** Una receta suya con gramos retocados se puede dejar así para siempre
+   *  (25-11-2026). Recibe los gramos de cada ingrediente para una ración. */
+  onGuardarEnReceta?: (gramosPorIngrediente: number[]) => Promise<void>;
   onClose: () => void;
   // El repo no tiene `@types/react`: TS no excluye `key` de las props (ver Badge.tsx).
   key?: React.Key;
@@ -56,9 +60,11 @@ function pasoDe(gramos: number): number {
 }
 
 export default function FichaRecetaCalorias({
-  receta, nombre, cargando = false, catalogo, enabledModes, nuevoLineaId, nombreComida, hueco, onAnadir, onClose,
+  receta, nombre, cargando = false, catalogo, enabledModes, nuevoLineaId, nombreComida, hueco, onAnadir, onGuardarEnReceta, onClose,
 }: FichaRecetaProps) {
   const [escala, setEscala] = useState(1);
+  const [guardandoEnReceta, setGuardandoEnReceta] = useState(false);
+  const [guardadaEnReceta, setGuardadaEnReceta] = useState(false);
   /** Retoque de cada ingrediente sobre la ración elegida (1 = sin tocar). */
   const [ratios, setRatios] = useState<Record<number, number>>({});
   const [verPasos, setVerPasos] = useState(false);
@@ -119,7 +125,22 @@ export default function FichaRecetaCalorias({
   const retocar = (n: number, gramosNuevos: number) => {
     const deBase = ingsBase[n]?.gramos;
     if (!deBase || !(gramosNuevos > 0)) return;
+    setGuardadaEnReceta(false);
     setRatios(prev => ({ ...prev, [n]: gramosNuevos / deBase }));
+  };
+  const guardarEnReceta = async () => {
+    if (!onGuardarEnReceta) return;
+    setGuardandoEnReceta(true);
+    try {
+      // Por ración: si la está viendo a ×2, la receta guarda la mitad.
+      await onGuardarEnReceta(ings.map(i => Math.round((i.gramos ?? 0) / escala)));
+      setRatios({});
+      setGuardadaEnReceta(true);
+    } catch {
+      // El aviso de error ya lo da quien guarda; los gramos se quedan para reintentar.
+    } finally {
+      setGuardandoEnReceta(false);
+    }
   };
 
   const chipDeRacion = (r: number, texto: string) => {
@@ -189,7 +210,8 @@ export default function FichaRecetaCalorias({
               return (
                 <li key={n} className="flex items-center gap-3 border-b border-hairline py-2.5 last:border-0">
                   <div className="min-w-0 flex-1">
-                    <span className="block truncate font-sans text-body-s text-ink">{ing.nombre}</span>
+                    {/* Los del banco traen la etiqueta entera («30g queso (curado…)»). */}
+                    <span className="block truncate font-sans text-body-s text-ink">{/^\d/.test(ing.nombre) ? nombreCorto(ing.nombre) : ing.nombre}</span>
                     {ing.kcal != null && <span className="block font-mono text-caption text-ink-3">{kc(ing.kcal)} kcal</span>}
                   </div>
                   {ing.gramos !== undefined && (
@@ -211,6 +233,17 @@ export default function FichaRecetaCalorias({
           </ul>
           {sinContar.length > 0 && (
             <p className="mt-2 font-sans text-caption text-ink-3">También lleva: {sinContar.join(', ').toLowerCase()}.</p>
+          )}
+          {onGuardarEnReceta && (retocada || guardadaEnReceta) && (
+            <div className="mt-3 flex items-center gap-3 rounded-control border border-accent-line bg-accent-bg px-3 py-2.5">
+              <Icon name={guardadaEnReceta ? 'check_circle' : 'bookmark'} size="m" className="flex-none text-accent-ink" />
+              <p className="min-w-0 flex-1 font-sans text-body-s text-ink-2">
+                {guardadaEnReceta ? <>Guardado. Tu receta ya va con estos gramos.</> : <>¿Siempre así? Guárdalo en tu receta.</>}
+              </p>
+              {!guardadaEnReceta && (
+                <Button variant="secondary" size="s" onClick={() => void guardarEnReceta()} loading={guardandoEnReceta}>Guardar</Button>
+              )}
+            </div>
           )}
         </div>
 
