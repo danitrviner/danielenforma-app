@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import type { WeekDay } from '../types';
+import type { Recipe, WeekDay } from '../types';
 import {
   avisoDeRecetas, conCantidad, conDiaAlternado, extraDeAlimento, kcalDeExtra, modoDeRecetas,
-  resumenDeRecetas, textoDeDias, textoDeExtraFijo, tocaElDia, type ExtraFijo,
+  pegaDeReceta, resumenDeRecetas, textoDeDias, textoDeExtraFijo, tocaElDia, type ExtraFijo,
 } from './ingestaPersonalizada';
 
 const TODOS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -93,5 +93,29 @@ describe('lo que se guarda por atleta', () => {
     expect(idsCerrados({ recetas: [] })).toBeNull();
     expect(idsCerrados({ paqueteId: 'p' }, [{ id: 'p', nombre: 'P', recipeIds: ['a', 'b'] }])).toEqual(['a', 'b']);
     expect(complementoDeExtraFijo(extra)).toMatchObject({ foodLabel: 'Chocolate negro 85 %', alimentoId: 'choc', gramos: 10, piezas: 1, unidad: 'onza', obligatoria: true, fijo: true, category: 'GRASA', macros: { kcal: 60, g: 5 } });
+  });
+});
+
+describe('pegaDeReceta (25-11)', () => {
+  const receta = (id: string, ingredientes: string[], restrictions?: number[]) =>
+    ({ id, name: id, ingredientsText: ingredientes.map(name => ({ name })), ...(restrictions ? { restrictions } : {}) }) as unknown as Recipe;
+  const gustos = { noGustan: ['champiñón', 'brócoli'], alergias: ['gamba'], recetasQueNo: ['odiada'] };
+
+  it('sin nada que choque no hay pega', () => {
+    expect(pegaDeReceta(receta('ok', ['Pechuga de pollo', 'Arroz']), gustos)).toBeNull();
+  });
+  it('dice qué ingredientes no le gustan, sin mirar tildes', () => {
+    expect(pegaDeReceta(receta('r', ['Champiñones laminados', 'Brocoli', 'Ajo']), gustos))
+      .toEqual({ grave: false, texto: 'No le gusta: champiñón, brócoli' });
+  });
+  it('la alergia es grave y avisa de que no saldrá, aunque además no le guste', () => {
+    expect(pegaDeReceta(receta('r', ['Gambas peladas', 'Brócoli']), gustos))
+      .toEqual({ grave: true, texto: 'Alergia: gamba · no saldrá en el menú' });
+  });
+  it('la receta marcada «no me gusta» también sale', () => {
+    expect(pegaDeReceta(receta('odiada', ['Pavo']), gustos)).toEqual({ grave: false, texto: 'La marcó como «no me gusta»' });
+  });
+  it('salud: sin el dato de restricciones no es apta', () => {
+    expect(pegaDeReceta(receta('r', ['Pan']), { ...gustos, condiciones: [55] })?.grave).toBe(true);
   });
 });

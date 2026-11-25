@@ -1,4 +1,4 @@
-import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, deleteField, documentId, query, where } from '../firebase';
+import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, deleteField, documentId, query, where, arrayUnion } from '../firebase';
 import { Recipe, RecipeFavorites } from '../types';
 import type { ReglasDeReceta } from '../utils/reglasDeReceta';
 import { filtrarPorLista, type AccesoGlobalARecetas, type ListaDeMenu } from '../utils/accesoARecetas';
@@ -477,6 +477,23 @@ export async function getRecipeFavorites(athleteEmail: string): Promise<RecipeFa
   }
 }
 
+/** Añade una favorita SIN reescribir el resto (`arrayUnion`): si la lectura
+ *  de sus favoritas hubiera fallado, guardar la lista entera las borraría.
+ *  Para la receta que el atleta se crea en el diario (25-11). */
+export async function anadirFavorita(athleteEmail: string, recipeId: string): Promise<void> {
+  const localKey = `enforma_recipe_favorites_${athleteEmail}`;
+  const enLocal = () => {
+    try {
+      const raw = localStorage.getItem(localKey);
+      const favs: RecipeFavorites = raw ? JSON.parse(raw) : { athleteId: athleteEmail, recipeIds: [] };
+      if (!favs.recipeIds.includes(recipeId)) escribirLocal(localKey, JSON.stringify({ ...favs, recipeIds: [...favs.recipeIds, recipeId] }));
+    } catch { /* sin almacenamiento: no pasa nada */ }
+  };
+  if (forceLocalOnly) { enLocal(); return; }
+  await setDoc(doc(db, 'recipeFavorites', athleteEmail), { athleteId: athleteEmail, recipeIds: arrayUnion(recipeId) }, { merge: true });
+  enLocal();
+}
+
 export async function saveRecipeFavorites(favs: RecipeFavorites): Promise<void> {
   const localKey = `enforma_recipe_favorites_${favs.athleteId}`;
   if (forceLocalOnly) { escribirLocal(localKey, JSON.stringify(favs)); return; }
@@ -517,6 +534,11 @@ export async function queryRecetasForGenerator(
   /** Filtros duros del atleta (`filtroDuro(prefs)` en menuEngine): se aplican
    *  ANTES del recorte, para que a un vegano no le queden 20 recetas de 300. */
   filtro?: (r: Recipe) => boolean,
+  /** Las recetas «a medida» de esta comida (`idsCerrados`): entran SIEMPRE, por
+   *  id, aunque ya no estén en la franja, superen el tiempo de cocina o no estén
+   *  en su lista. Las ha elegido el coach; el motor solo les aplica alergias,
+   *  salud y tipo de dieta (`rankCerradas`). */
+  fijas?: readonly string[],
 ): Promise<Recipe[]> {
   let franja = recetasGeneratorCache.get(intakeType);
   if (!franja) {
@@ -531,9 +553,17 @@ export async function queryRecetasForGenerator(
   // azar podían no incluir ninguna de las suyas y la lista no tenía efecto.
   const delaLista = filtrarPorLista(filtro ? franja.filter(filtro) : franja, lista);
   const muestra = maxResults >= delaLista.length ? delaLista : delaLista.slice(0, maxResults);
-  if (!tambien) return muestra;
-  const ya = new Set(muestra.map(r => r.id));
-  const extra = franja.filter(r => !ya.has(r.id) && tambien(r) && (!filtro || filtro(r)));
-  return [...muestra, ...(maxResults >= extra.length ? extra : extra.slice(0, maxResults))];
+  let out = muestra;
+  if (tambien) {
+    const ya = new Set(muestra.map(r => r.id));
+    const extra = franja.filter(r => !ya.has(r.id) && tambien(r) && (!filtro || filtro(r)));
+    out = [...muestra, ...(maxResults >= extra.length ? extra : extra.slice(0, maxResults))];
+  }
+  if (!fijas || fijas.length === 0) return out;
+  const ya = new Set(out.map(r => r.id));
+  const faltan = new Set(fijas.filter(id => !ya.has(id)));
+  if (faltan.size === 0) return out;
+  const indice = await cargarIndiceRecetas();
+  return [...out, ...indice.filter(r => faltan.has(r.id))];
 }
 

@@ -1101,6 +1101,23 @@ describe('ingesta a medida: recetas cerradas y extra fijo (Dani, 11-2026)', () =
     expect(day.meals[0].recipeId).not.toBe('');
   });
 
+  it('a medida manda: aunque no cuadre de kcal, sale la elegida y no una de la lista (25-11)', () => {
+    // Plato enorme: ni a media ración cabe en un desayuno pequeño.
+    const enorme = recipe({ id: 'enorme', name: 'Enorme', exchanges: { HC: 12, PROT: 10, GRASA: 6 } });
+    const objetivo = mx({ HC: 2, PROT: 1, GRASA: 1 });
+    const ranked = rankCandidates([enorme, plato('x'), plato('y')], objetivo, basePrefs, new Set(), { soloEstas: new Set(['enorme']) });
+    expect(ranked.map(c => c.recipe.id)).toEqual(['enorme']);
+    expect(ranked[0].scale).toBe(0.5);
+  });
+
+  it('entre las elegidas, gana siempre una que cuadre, aunque ya haya salido', () => {
+    const enorme = recipe({ id: 'enorme', name: 'Enorme', exchanges: { HC: 12, PROT: 10, GRASA: 6 } });
+    const ranked = rankCandidates([enorme, plato('a')], mx({ HC: 2, PROT: 2, GRASA: 1 }), basePrefs, new Set(['a']), {
+      soloEstas: new Set(['enorme', 'a']), veces: new Map([['a', 3]]),
+    });
+    expect(ranked[0].recipe.id).toBe('a');
+  });
+
   it('las cerradas se saltan los gustos, pero no las alergias', () => {
     const conNueces = recipe({ id: 'nueces', name: 'Bol con nueces', exchanges: { HC: 2, PROT: 2, GRASA: 1 }, ingredientsText: [{ name: 'nueces' }] as Recipe['ingredientsText'] });
     const soloEstas = new Set(['nueces', 'a']);

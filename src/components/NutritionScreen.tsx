@@ -14,7 +14,7 @@ import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem
 import { macrosDeIntercambios, objetivoDelRegistro, intercambiosDeMacros, macrosDeLineas, objetivoDeDieta } from '../utils/macrosLegado';
 import { sonMacrosVacios, sinNegativos, restarMacros, escalarMacros, redondearMacros } from '../utils/macros';
 import { macrosDeReceta, ordenarPorLoQueQueda } from '../utils/macrosDeReceta';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, getCatalogoAlimentos, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal, getDietCompletionLogsForAthlete, guardarRacionPropia } from '../dbService';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, anadirFavorita, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, getCatalogoAlimentos, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal, getDietCompletionLogsForAthlete, guardarRacionPropia } from '../dbService';
 import { esPlatoDelRecetario } from '../db/recetasHidratacion';
 import RecetarioDescubrir from './RecetarioDescubrir';
 import { BUDGET_CATS, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems } from '../utils/exchangeHelpers';
@@ -1302,10 +1302,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const ingredients: Recipe['ingredients'] = items.map(item => ({
         foodLabel: item.foodLabel, category: item.category, mode: activeDietMode, quantity: item.quantity,
       }));
+      // La comida de la que sale (desayuno, cena…): el menú la propone ahí.
+      const comidas = selectedDiet?.meals ?? [];
+      const franja = resolveSlots(comidas)[comidas.findIndex(m => m.id === meal.id)];
       const saved = await createRecipe({
         ownerId: profile.userId,
         name,
         categories: [],
+        ...(franja ? { intakeTypes: [franja] } : {}),
         ingredients,
         extras: [],
         steps: [],
@@ -1315,7 +1319,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         kcal: Math.round(macrosComida.kcal),
       });
       setRecipes(prev => [...prev, saved]);
-      showToast(`"${name}" guardada como receta — ya está disponible en Recetas.`, 'success');
+      // Dani (25-11): la que se crea él va directa a su plan como favorita.
+      // Si no se puede marcar, la receta queda guardada igual.
+      // Se suma sin reescribir sus favoritas (`anadirFavorita`), para no pisar ninguna.
+      void anadirFavorita(profile.email, saved.id)
+        .then(() => queryClient.invalidateQueries({ queryKey: ['recipeFavorites', profile.email] }))
+        .catch(() => {});
+      void queryClient.invalidateQueries({ queryKey: ['recipes', profile.userId] });
+      showToast(`"${name}" guardada en tus recetas y en favoritas: te puede salir en tu menú.`, 'success');
       setSavingMealAsRecipeId(null);
     } finally {
       setSavingRecipe(false);

@@ -134,6 +134,12 @@ describe('queryRecetasForGenerator', () => {
     expect(recetas.map(r => r.id)).not.toContain('a');
   });
 
+  it('las recetas a medida entran siempre, aunque sean de otra comida o no pasen el filtro (25-11)', async () => {
+    const recetas = await queryRecetasForGenerator(2, 1, undefined, undefined, r => r.id !== 'a', ['a']);
+    expect(recetas.map(r => r.id)).toContain('a');
+    expect(recetas).toHaveLength(2);
+  });
+
   it('devuelve lista vacía si ningún plato encaja, sin reventar el generador', async () => {
     expect(await queryRecetasForGenerator(99, 10)).toEqual([]);
   });

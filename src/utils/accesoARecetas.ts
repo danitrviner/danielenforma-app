@@ -97,6 +97,13 @@ export function filtrarPorLista<T extends { id: string; basica?: boolean }>(
   return dentro.length >= MIN_RECETAS_DE_LISTA ? dentro : pool;
 }
 
+/** ¿Está en «En su plan»? Sin el respaldo de `filtrarPorLista` (que devuelve
+ *  todo si la lista se queda corta): aquí se pregunta por la receta, no por la franja. */
+export function estaEnSuPlan(r: { id: string; basica?: boolean }, lista: ListaDeMenu | undefined): boolean {
+  if (!lista || lista.length === 0) return true;
+  return lista === 'rapidas' ? r.basica === true : lista.includes(r.id);
+}
+
 /**
  * ¿Entra esta receta en el recetario del atleta? En modo «recomendadas» solo
  * las que el coach le recomienda; sin ninguna recomendada no se oculta nada

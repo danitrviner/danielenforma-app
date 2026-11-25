@@ -177,6 +177,7 @@ export default function ClientDietsPanel({
     <RespuestasDelAlta onboarding={onboardingData} tema="nutricion" />
     <WeeklyMenuEditor
       athleteEmail={athlete.email}
+      athleteUid={athlete.userId}
       coachId={coachId}
       onboarding={onboardingData}
       diets={athleteDiets}
@@ -413,6 +414,7 @@ export default function ClientDietsPanel({
       {subView === 'info' && (
         <RecetasDelAtletaPanel
           athleteEmail={athlete.email}
+          athleteUid={athlete.userId}
           diets={athleteDiets}
           dietConfig={athleteDietConfig}
           onboarding={onboardingData}

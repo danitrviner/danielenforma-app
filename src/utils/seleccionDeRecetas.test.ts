@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Recipe } from '../types';
 import {
-  aplicarSeleccion, compilarFiltro, conDiasConTiempo, conFiltro, esDiaConTiempo, filtroDeDieta, filtroVacio,
+  aplicarSeleccion, compilarFiltro, favoritasConLasSuyas, conDiasConTiempo, conFiltro, esDiaConTiempo, filtroDeDieta, filtroVacio,
   idDePaquete, llevaAlimento, quiereAlgunaDieta, tambienEnLaMuestra, resumenDeFiltro, sumarFiltro, TODAS_LAS_DIETAS,
   type PaqueteDeRecetas, type SeleccionDeRecetas,
 } from './seleccionDeRecetas';
@@ -202,5 +202,21 @@ describe('tambienEnLaMuestra', () => {
     const t = tambienEnLaMuestra(undefined, [], ['fav'])!;
     expect(t({ id: 'fav' } as Recipe)).toBe(true);
     expect(t({ id: 'otra' } as Recipe)).toBe(false);
+  });
+});
+
+describe('las recetas que se crea el atleta en el diario (25-11)', () => {
+  it('cuentan como favoritas, sin repetir', () => {
+    expect(favoritasConLasSuyas(['a', 'b'], [{ id: 'b' }, { id: 'suya' }])).toEqual(['a', 'b', 'suya']);
+    expect(favoritasConLasSuyas(undefined, [{ id: 'suya' }])).toEqual(['suya']);
+  });
+
+  it('su plan no las deja fuera aunque no estén en la lista del coach', () => {
+    const lista = Array.from({ length: 12 }, (_, i) => receta(`l${i}`));
+    const suya = receta('suya', { ownerId: 'uid-atleta' });
+    const prefs = { listaMenu: lista.map(r => r.id), favoriteRecipeIds: favoritasConLasSuyas([], [suya]) };
+    const { pool } = aplicarSeleccion([...lista, suya, receta('otra')], prefs, {});
+    expect(pool.map(r => r.id)).toContain('suya');
+    expect(pool.map(r => r.id)).not.toContain('otra');
   });
 });

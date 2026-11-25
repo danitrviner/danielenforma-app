@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizarTexto, coincideBusqueda } from './busqueda';
+import { normalizarTexto, coincideBusqueda, relevanciaDeBusqueda } from './busqueda';
 
 describe('búsqueda por texto', () => {
   // El caso real: las 8 recetas de sándwich con jamón serrano del catálogo se
@@ -57,5 +57,33 @@ describe('búsqueda por varias palabras', () => {
 
   it('los espacios de más no cuentan como palabra', () => {
     expect(coincideBusqueda(receta, '  granola   chocolate  ')).toBe(true);
+  });
+});
+
+describe('relevanciaDeBusqueda (25-11)', () => {
+  const ordenar = (nombres: string[], q: string) => [...nombres].sort((a, b) => relevanciaDeBusqueda(a, q) - relevanciaDeBusqueda(b, q));
+
+  it('buscando «huevo», primero lo que ES huevo y no lo que lleva medio', () => {
+    const nombres = [
+      'Bocadillo de jamón cocido con rúcula, guisantes y medio huevo revuelto',
+      'Huevos revueltos con jamón',
+      'Tostada de aguacate con huevo',
+      'Revuelto de huevo y espárragos',
+    ];
+    expect(ordenar(nombres, 'huevo')).toEqual([
+      'Huevos revueltos con jamón',
+      'Revuelto de huevo y espárragos',
+      'Tostada de aguacate con huevo',
+      'Bocadillo de jamón cocido con rúcula, guisantes y medio huevo revuelto',
+    ]);
+  });
+
+  it('sin tildes y con varias palabras', () => {
+    expect(relevanciaDeBusqueda('Atún con tomate', 'atun')).toBeLessThan(relevanciaDeBusqueda('Ensalada de atún', 'atun'));
+    expect(relevanciaDeBusqueda('Huevos con jamón', 'jamon huevo')).toBeLessThan(relevanciaDeBusqueda('Pan con jamón, queso, rúcula y huevo duro', 'jamon huevo'));
+  });
+
+  it('palabra entera gana a trozo de palabra', () => {
+    expect(relevanciaDeBusqueda('Pan de pasas', 'pan')).toBeLessThan(relevanciaDeBusqueda('Empanada', 'pan'));
   });
 });
