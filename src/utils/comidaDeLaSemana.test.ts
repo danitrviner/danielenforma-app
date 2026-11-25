@@ -87,9 +87,63 @@ describe('construirComidaDeLaSemana', () => {
       logs: [diaTipo('2026-09-14', [])], diets: [], desde: '2026-09-14', hasta: '2026-09-14',
     });
     const pan = r.dias[0].comidas[0].items[0];
-    expect(pan.peso).toBe('80g');             // 40g × 2 intercambios
+    expect(pan.peso).toBe('80 g');            // 40g × 2 intercambios
+    expect(pan.gramos).toBe(80);
     expect(pan.etiqueta).toBe('pan');          // sin gramos ni paréntesis
     expect(pan.etiquetaCompleta).toContain('40g pan');
+    expect(pan.macros).toEqual({ p: 0, hc: 50, g: 0 });
+  });
+
+  /* Dani, 24-11-2026: «pan tostado» salía dos veces, con «×1» y «×0,5» y sin
+     gramos. Es un producto de Open Food Facts guardado en dos líneas por
+     categoría enlazadas por `lineaId` (copiado de un registro real). */
+  it('un producto repartido en categorías sale en UNA fila, con sus gramos y sus kcal', () => {
+    const ln = 'ln_mwotmisf_vudme';
+    const off = { tipo: 'off' as const, codigo: '20303488' };
+    const log: DietCompletionLog = {
+      id: 'l', athleteId: 'ana@x.com', date: '2026-11-20', dietId: 'd1',
+      doneItemIds: ['m1_0', 'm1_1', 'm1_2'],
+      budget: CUPO,
+      meals: [comida('m1', 'Desayuno', [
+        { category: 'HC', foodLabel: 'Pan Tostado con harina de trigo y integral de trigo', quantity: 1, origen: off, lineaId: ln, gramos: 37.5, marca: 'Hacendado', nutrientes: { kcal: 150, p: 4.1, hc: 23.3, g: 3.4 } },
+        { category: 'GRASA', foodLabel: 'Pan Tostado con harina de trigo y integral de trigo', quantity: 0.5, origen: off, lineaId: ln },
+        { category: 'HC', foodLabel: 'pan (ración extra)', quantity: 5, baseGrams: 40, origenMenu: 'thu_thu_m3' },
+      ])],
+    };
+    const r = construirComidaDeLaSemana({ logs: [log], diets: [], desde: '2026-11-20', hasta: '2026-11-20' });
+    const dia = r.dias[0];
+    const [tostado, extra] = dia.comidas[0].items;
+
+    expect(dia.comidas[0].items).toHaveLength(2);
+    expect(tostado).toMatchObject({
+      etiqueta: 'Pan Tostado con harina de trigo y integral de trigo',
+      marca: 'Hacendado', peso: '38 g', gramos: 38, kcal: 150,
+      macros: { p: 4.1, hc: 23.3, g: 3.4 }, marcado: true, tipo: 'producto',
+    });
+    // La ración extra del menú no lleva gramos en el nombre: salen de `baseGrams`.
+    expect(extra).toMatchObject({ peso: '200 g', gramos: 200, origen: 'menu' });
+    // Las filas suman lo que dice la cabecera de la comida.
+    expect(dia.comidas[0].items.reduce((s, i) => s + (i.kcal ?? 0), 0)).toBe(dia.comidas[0].comido.kcal);
+    expect(dia.items).toBe(2);
+    expect(dia.itemsMarcados).toBe(2);
+  });
+
+  it('un plato entero del recetario dice sus raciones, y un producto sin datos no se pinta como 0 kcal', () => {
+    const log: DietCompletionLog = {
+      id: 'l', athleteId: 'ana@x.com', date: '2026-11-20', dietId: 'd1',
+      doneItemIds: ['m1_0', 'm1_1', 'm1_2'],
+      budget: CUPO,
+      meals: [comida('m1', 'Cena', [
+        { category: 'HC', foodLabel: 'Pollo al curry', quantity: 3, originRecipeId: 'r1', escala: 1.5 },
+        { category: 'PROT', foodLabel: 'Pollo al curry', quantity: 3, originRecipeId: 'r1', escala: 1.5 },
+        { category: 'PROT', foodLabel: 'Panini', quantity: 1, lineaId: 'ln_x', origen: { tipo: 'off', codigo: '1' }, gramos: 90, nutrientes: null },
+      ])],
+    };
+    const [plato, panini] = construirComidaDeLaSemana({ logs: [log], diets: [], desde: '2026-11-20', hasta: '2026-11-20' })
+      .dias[0].comidas[0].items;
+    expect(plato).toMatchObject({ etiqueta: 'Pollo al curry', peso: '1,5 raciones', tipo: 'plato', origen: 'receta' });
+    expect(plato.kcal).toBeGreaterThan(0);
+    expect(panini).toMatchObject({ peso: '90 g', kcal: null, macros: null });
   });
 
   it('un día sin cupo no cuenta como pasado ni como corto', () => {
