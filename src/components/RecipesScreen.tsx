@@ -9,7 +9,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, Recipe, RecipeFavorites, FoodCategory, DietMode, RecetaPendiente } from '../types';
 import {
-  getRecipes, getRecipeFavorites, saveRecipeFavorites, deleteRecipe,
+  getRecipes, getRecipeFavorites, saveRecipeFavorites, deleteRecipe, updateRecipe,
   getAthleteNutritionConfig, cargarIndiceRecetas, getOnboarding,
   getDietsForAthlete, getAthleteDietConfig, OWNER_RECETARIO_TODOS, getRecipeById,
   getDietCompletionLogsForAthlete, getNutritionProgram,
@@ -30,6 +30,7 @@ import { objetivoDelDia } from '../utils/objetivoDelDia';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import { escalarRecetaEntera } from '../utils/escalarRecetaEntera';
 import FotoDeReceta from './FotoDeReceta';
+import { ingredientesEditables, macrosConGramos, cambiosConGramos, kcalDeIngrediente } from '../utils/editarRecetaPropia';
 import { Skeleton } from './ui';
 import { EmptyState, Badge, Chip, Button, ListRow } from './ui';
 import { pulsable } from '../utils/a11y';
@@ -210,20 +211,52 @@ interface DetailProps {
   /** Para mirarla desde otra pantalla (el tablero de recetas del coach): sin
    *  barra de volver, favorita, «no me gusta» ni borrar. */
   soloLectura?: boolean;
+  /** Con él, una receta propia con gramos lleva «Editar» (25-11-2026). */
+  onGuardarCambios?: (id: string, cambios: Partial<Recipe>) => Promise<void>;
+}
+
+/** Paso de gramos de un ingrediente según lo que pesa (igual que en la ficha del diario). */
+function pasoDeIngrediente(gramos: number): number {
+  if (gramos < 30) return 1;
+  if (gramos < 100) return 5;
+  if (gramos < 300) return 10;
+  return 25;
 }
 
 
-export function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFav, deletingOwn, dailyBudgetTotal, onBack, onToggleFav, onToggleDislike, onDelete, onAddToIntercambios, soloLectura = false }: DetailProps) {
+export function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFav, deletingOwn, dailyBudgetTotal, onBack, onToggleFav, onToggleDislike, onDelete, onAddToIntercambios, soloLectura = false, onGuardarCambios }: DetailProps) {
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({});
   const [scale, setScale] = useState(1);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  /* Editar una receta suya: los gramos de cada ingrediente y el nombre. */
+  const editables = useMemo(() => ingredientesEditables(recipe), [recipe]);
+  const puedeEditar = isOwn && !!onGuardarCambios && editables.length > 0;
+  const [editando, setEditando] = useState(false);
+  const [gramosEd, setGramosEd] = useState<Record<number, number>>({});
+  const [nombreEd, setNombreEd] = useState(recipe.name);
+  const [guardandoEd, setGuardandoEd] = useState(false);
+  const empezarAEditar = () => { setGramosEd({}); setNombreEd(recipe.name); setScale(1); setEditando(true); };
+  const tocadoEd = Object.keys(gramosEd).length > 0 || nombreEd.trim() !== recipe.name;
+  const guardarEdicion = async () => {
+    if (!onGuardarCambios) return;
+    setGuardandoEd(true);
+    try {
+      await onGuardarCambios(recipe.id, cambiosConGramos(recipe, gramosEd, nombreEd));
+      setEditando(false);
+    } catch {
+      // El aviso de error ya lo da quien guarda; se sigue editando para reintentar.
+    } finally {
+      setGuardandoEd(false);
+    }
+  };
   // Antes solo comparaba contra 'recetas' — las recetas importadas con el
   // ownerId heredado 'indya' (miles de ellas, ver comentario en db/recipes.ts)
   // caían por el hueco y se trataban como receta propia sin ingredientes.
   const isRecetas = OWNER_RECETARIO_TODOS.includes(recipe.ownerId);
   const scaledRecipe = useMemo(() => escalarRecetaEntera(recipe, scale), [recipe, scale]);
   // kcal y gramos de la ración elegida (utils/macrosDeReceta.ts).
-  const m = macrosDeReceta(scaledRecipe);
+  const mReceta = macrosDeReceta(scaledRecipe);
+  const m = editando ? macrosConGramos(recipe, gramosEd) : mReceta;
   const fitsBudget = dailyBudgetTotal == null || m.kcal <= dailyBudgetTotal;
   const photo = fotoDeReceta(recipe);
 
@@ -267,7 +300,7 @@ export function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, s
               style={{ fontVariationSettings: isDisliked ? "'FILL' 1" : "'FILL' 0" }}
             >thumb_down</span>
           </button>
-          {isOwn && !confirmingDelete && (
+          {isOwn && !confirmingDelete && !editando && (
             <button
               onClick={() => setConfirmingDelete(true)}
               title="Eliminar esta receta"
@@ -317,7 +350,17 @@ export function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, s
 
       {/* Title + metadata */}
       <div className="space-y-3">
-        <h1 className="font-sans font-bold text-title-l text-ink tracking-tight">{recipe.name}</h1>
+        {editando ? (
+          <input
+            type="text"
+            value={nombreEd}
+            onChange={e => setNombreEd(e.target.value)}
+            aria-label="Nombre de la receta"
+            className="w-full rounded-control border border-control-line bg-field px-3 py-2 font-sans text-title-m font-bold text-ink focus:border-accent focus:outline-none"
+          />
+        ) : (
+          <h1 className="font-sans font-bold text-title-l text-ink tracking-tight">{recipe.name}</h1>
+        )}
 
         {/* Recetas metadata row */}
         {isRecetas && (
@@ -383,10 +426,10 @@ export function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, s
             quedan juntas, en vez de una viva y otra congelada en la ración
             original. */}
         <div className="flex flex-wrap gap-2">
-          {scaledRecipe.kcal != null && (
+          {(editando || scaledRecipe.kcal != null) && (
             <span className="flex items-center gap-1 px-3 py-1 rounded-surface border font-mono text-label font-bold text-accent-ink border-accent/30 bg-accent/10">
               <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>local_fire_department</span>
-              {scaledRecipe.kcal} kcal
+              {editando ? Math.round(m.kcal) : scaledRecipe.kcal} kcal
             </span>
           )}
           {([['P', m.p, 'PROT'], ['HC', m.hc, 'HC'], ['G', m.g, 'GRASA']] as const)
@@ -399,7 +442,7 @@ export function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, s
         </div>
 
         {/* Escala — panel 03 del handoff: ×0,25–×3, recalcula en vivo */}
-        {(recipe.macros || recipe.exchanges || (recipe.ingredients?.length ?? 0) > 0) && (
+        {!editando && (recipe.macros || recipe.exchanges || (recipe.ingredients?.length ?? 0) > 0 || editables.length > 0) && (
           <div className="bg-surface border border-hairline rounded-surface p-4">
             <div className="flex items-baseline justify-between">
               <span className="font-mono text-caption font-semibold tracking-[.14em] text-ink-3">ESCALA</span>
@@ -463,12 +506,82 @@ export function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, s
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Ingredients */}
         <section className="bg-raised border border-hairline rounded-surface p-5 space-y-3">
-          <h2 className="font-sans font-bold text-body-s text-ink uppercase tracking-wider flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent-ink text-title-s">grocery</span>
-            Ingredientes
-          </h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-sans font-bold text-body-s text-ink uppercase tracking-wider flex items-center gap-2">
+              <span className="material-symbols-outlined text-accent-ink text-title-s">grocery</span>
+              Ingredientes
+            </h2>
+            {puedeEditar && !editando && (
+              <button
+                type="button"
+                onClick={empezarAEditar}
+                className="flex min-h-[44px] items-center gap-1.5 font-sans text-body-s font-bold text-accent-ink hover:text-ink transition-colors"
+              >
+                <span className="material-symbols-outlined text-title-s">edit</span>
+                Editar
+              </button>
+            )}
+          </div>
 
-          {isRecetas && scaledRecipe.ingredientsText && scaledRecipe.ingredientsText.length > 0 ? (
+          {editando ? (
+            <>
+              <ul>
+                {editables.map(ing => {
+                  const g = gramosEd[ing.n] ?? ing.gramos;
+                  const quitado = g <= 0;
+                  const paso = pasoDeIngrediente(ing.gramos);
+                  const tocado = gramosEd[ing.n] != null && gramosEd[ing.n] !== ing.gramos;
+                  const poner = (v: number) => setGramosEd(prev => ({ ...prev, [ing.n]: Math.max(0, v) }));
+                  return (
+                    <li key={ing.n} className="flex items-center gap-2 border-b border-hairline py-2.5 last:border-0">
+                      <div className="min-w-0 flex-1">
+                        <span className={`block truncate font-sans text-body-s ${quitado ? 'text-ink-4 line-through' : 'text-ink'}`}>{ing.nombre}</span>
+                        <span className="block font-mono text-caption text-ink-3">
+                          {quitado ? 'Quitado' : `${kcalDeIngrediente(recipe, ing.n, g)} kcal`}
+                        </span>
+                      </div>
+                      {quitado ? (
+                        <button type="button" onClick={() => poner(ing.gramos)} className="font-sans text-body-s font-bold text-accent-ink">Deshacer</button>
+                      ) : (
+                        <>
+                          <div className="flex flex-none items-center gap-1.5" role="group" aria-label={`Gramos de ${ing.nombre}`}>
+                            <button type="button" onClick={() => poner(g - paso)} disabled={g - paso <= 0} aria-label={`Menos ${ing.nombre}`}
+                              className="flex h-10 w-10 items-center justify-center rounded-field border border-control-line bg-field text-ink-2 hover:text-ink disabled:opacity-30">
+                              <span className="material-symbols-outlined text-title-s">remove</span>
+                            </button>
+                            <span className={`w-14 text-center font-mono text-body-s font-bold ${tocado ? 'text-accent-ink' : 'text-ink'}`}>{g} g</span>
+                            <button type="button" onClick={() => poner(g + paso)} aria-label={`Más ${ing.nombre}`}
+                              className="flex h-10 w-10 items-center justify-center rounded-field border border-control-line bg-field text-ink-2 hover:text-ink">
+                              <span className="material-symbols-outlined text-title-s">add</span>
+                            </button>
+                          </div>
+                          <button type="button" onClick={() => poner(0)} aria-label={`Quitar ${ing.nombre}`} className="flex h-10 w-8 flex-none items-center justify-center text-ink-3 hover:text-danger">
+                            <span className="material-symbols-outlined text-title-s">close</span>
+                          </button>
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="font-sans text-caption text-ink-3">Lo que ya apuntaste en otros días no cambia.</p>
+              <div className="flex gap-2 pt-1">
+                <Button variant="ghost" onClick={() => setEditando(false)} disabled={guardandoEd}>Cancelar</Button>
+                <Button variant="primary" fullWidth onClick={() => void guardarEdicion()} loading={guardandoEd} disabled={!tocadoEd}>
+                  Guardar cambios
+                </Button>
+              </div>
+            </>
+          ) : isOwn && editables.length > 0 ? (
+            <ul className="space-y-2">
+              {editables.map(ing => (
+                <li key={ing.n} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
+                  <span className="text-label text-ink font-sans flex-1 pr-2 leading-relaxed">{ing.nombre}</span>
+                  <span className="font-mono text-caption text-ink-2 shrink-0">{ing.gramos}g</span>
+                </li>
+              ))}
+            </ul>
+          ) : isRecetas && scaledRecipe.ingredientsText && scaledRecipe.ingredientsText.length > 0 ? (
             <ul className="space-y-2">
               {scaledRecipe.ingredientsText.map((ing, idx) => (
                 <li key={idx} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
@@ -873,6 +986,19 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     }
   };
 
+  /** Editar una receta suya: se guarda y se ve al momento, sin recargar. */
+  const handleGuardarCambios = async (recipeId: string, cambios: Partial<Recipe>) => {
+    try {
+      await updateRecipe(recipeId, cambios);
+    } catch {
+      showToast('No se pudo guardar la receta. Prueba otra vez.', 'error');
+      throw new Error('updateRecipe');
+    }
+    queryClient.setQueryData<Recipe[]>(['recipes', profile.userId], prev => prev?.map(r => (r.id === recipeId ? { ...r, ...cambios } : r)));
+    setActiveRecipe(prev => (prev?.id === recipeId ? { ...prev, ...cambios } : prev));
+    showToast('Receta guardada.', 'success');
+  };
+
   // ── Detail view ─────────────────────────────────────────────────────────────
 
   const detalle = activeRecipe && (
@@ -890,6 +1016,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       onToggleDislike={toggleDislike}
       onDelete={handleDeleteRecipe}
       onAddToIntercambios={onAddToIntercambios}
+      onGuardarCambios={handleGuardarCambios}
     />
   );
 

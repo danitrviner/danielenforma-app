@@ -4,7 +4,9 @@ import type { UserProfile, Diet, MealItem, Recipe, DietCompletionLog, AthleteDie
 import type { AlimentoCatalogo } from '../utils/catalogoAlimentos';
 import type { EntradaIndiceOff } from '../utils/productoOff';
 import { reglasDeRecetaKey, accesoGlobalKey } from '../hooks/useReglasDeReceta';
+import { macrosConGramos } from '../utils/editarRecetaPropia';
 import NutritionScreen from './NutritionScreen';
+import RecipesScreen from './RecipesScreen';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Banco de pruebas del Diario de nutrición del ATLETA — ruta `/dev/nutricion`,
@@ -94,6 +96,25 @@ const RECETAS: Recipe[] = [
   },
 ];
 
+/* «Editar receta» (25-11-2026): una receta creada por el atleta, como la de
+   Angel. Se edita en `?pantalla=recetas` o desde «···» › Usar receta. */
+const CABRA: Recipe = {
+  // Como las que guardan hoy los atletas con «Guardar como receta»: alimentos del banco con su cantidad.
+  id: 'r_cabra', ownerId: 'dev', name: 'Ensalada de queso de cabra y nueces', categories: [], extras: [], steps: [],
+  ingredients: [
+    { foodLabel: '30g queso (curado, semicurado, cabra, mozzarella...)', category: 'MIX_GRASA', mode: 'OMNIVORO', quantity: 2.67 },
+    { foodLabel: '15g frutos secos sin freír (cualquier fruto seco)', category: 'GRASA', mode: 'OMNIVORO', quantity: 1.33 },
+    { foodLabel: '10ml (1 cuchara) aceite (preferible AOVE)', category: 'GRASA', mode: 'OMNIVORO', quantity: 1 },
+    { foodLabel: '40g pan (de molde, tostado, con o sin semillas...)', category: 'HC', mode: 'OMNIVORO', quantity: 1.5 },
+  ],
+};
+{
+  const m = macrosConGramos(CABRA, {});
+  CABRA.kcal = Math.round(m.kcal);
+  CABRA.macros = { carb: Math.round(m.hc), prot: Math.round(m.p), fat: Math.round(m.g) };
+}
+RECETAS.push(CABRA);
+
 const CATALOGO: AlimentoCatalogo[] = [
   { id: 'arroz', nombre: 'Arroz blanco', estado: 'cocido', porCien: { kcal: 130, p: 2.7, hc: 28, g: 0.3, fibra: 0.4 }, fuente: 'BEDCA' },
   { id: 'platano', nombre: 'Plátano', porCien: { kcal: 94, p: 1.2, hc: 20, g: 0.3, fibra: 2.6, azucares: 17 }, unidad: { nombre: 'unidad mediana', gramos: 120 }, fuente: 'BEDCA' },
@@ -142,10 +163,12 @@ export default function NutricionDevHarness() {
     sembrar(c);
     return c;
   }, []);
+  // `?pantalla=recetas`: la pestaña Recetas del atleta (para «Editar» una receta suya).
+  const recetas = new URLSearchParams(window.location.search).get('pantalla') === 'recetas';
   return (
     <QueryClientProvider client={qc}>
       <div className="mx-auto min-h-screen max-w-xl space-y-4 bg-bg px-4 py-4 text-ink">
-        <NutritionScreen profile={PERFIL} />
+        {recetas ? <RecipesScreen profile={PERFIL} /> : <NutritionScreen profile={PERFIL} />}
       </div>
     </QueryClientProvider>
   );

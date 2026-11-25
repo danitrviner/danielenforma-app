@@ -14,7 +14,7 @@ import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem
 import { macrosDeIntercambios, objetivoDelRegistro, intercambiosDeMacros, macrosDeLineas, objetivoDeDieta } from '../utils/macrosLegado';
 import { sonMacrosVacios, sinNegativos, restarMacros, escalarMacros, redondearMacros } from '../utils/macros';
 import { macrosDeReceta, ordenarPorLoQueQueda } from '../utils/macrosDeReceta';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, getCatalogoAlimentos, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal, getDietCompletionLogsForAthlete, guardarRacionPropia } from '../dbService';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, getCatalogoAlimentos, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal, getDietCompletionLogsForAthlete, guardarRacionPropia, updateRecipe } from '../dbService';
 import { esPlatoDelRecetario } from '../db/recetasHidratacion';
 import RecetarioDescubrir from './RecetarioDescubrir';
 import { BUDGET_CATS, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems } from '../utils/exchangeHelpers';
@@ -36,6 +36,7 @@ import { haptics } from '../services/haptics';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
+import { sePuedeEditar, ingredientesEditables, cambiosConGramos, gramosParaGuardar } from '../utils/editarRecetaPropia';
 import FotoDeReceta from './FotoDeReceta';
 import { Skeleton } from './ui';
 import { EmptyState, Sheet, Icon, Button, Dialog, ListRow, Input, SegmentedControl } from './ui';
@@ -1302,6 +1303,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const ingredients: Recipe['ingredients'] = items.map(item => ({
         foodLabel: item.foodLabel, category: item.category, mode: activeDietMode, quantity: item.quantity,
       }));
+      // También sus gramos, para poder editarla luego (utils/editarRecetaPropia.ts).
+      const hechos = new Set(meal.items.map((_, i) => `${meal.id}_${i}`).filter(k => itemStates[k]?.done));
+      // Las líneas viejas del banco no traen `gramos`: salen de su etiqueta.
+      const lineas = lineasDelDiario(meal, hechos, nombreDeReceta).map(l => (
+        l.gramos || l.tipo !== 'alimento' ? l : { ...l, gramos: pesoDeItem(meal.items[l.idxs[0]]).gramos ?? undefined }
+      ));
+      const conGramos = gramosParaGuardar(lineas, hoyIsoLocal());
       const saved = await createRecipe({
         ownerId: profile.userId,
         name,
@@ -1313,6 +1321,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         exchanges,
         macros: { prot: macrosComida.p, carb: macrosComida.hc, fat: macrosComida.g },
         kcal: Math.round(macrosComida.kcal),
+        ...(conGramos ?? {}),
       });
       setRecipes(prev => [...prev, saved]);
       showToast(`"${name}" guardada como receta — ya está disponible en Recetas.`, 'success');
@@ -1334,6 +1343,23 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     void getRecipeById(recipe.id).catch(() => null).then(completa => {
       setRecetaPorUsar(prev => (prev && prev.recipe.id === recipe.id ? { ...prev, completa: completa ?? recipe, cargando: false } : prev));
     });
+  };
+
+  /* Editar una receta suya desde el diario (cliente, 17-11-2026: «¿no puedo
+     editar una receta? ¿tengo que eliminarla y volverla a hacer?»): los gramos
+     retocados en la ficha de «Usar receta» se pueden guardar en la receta.
+     También se edita desde Recetas (RecipesScreen). Dani eligió las dos. */
+  const guardarRecetaPropia = async (recipe: Recipe, gramos: Record<number, number>) => {
+    const cambios = cambiosConGramos(recipe, gramos);
+    try {
+      await updateRecipe(recipe.id, cambios);
+    } catch (err) {
+      showToast('No se pudo guardar la receta. Prueba otra vez.', 'error');
+      throw err;
+    }
+    setRecipes(prev => prev.map(r => (r.id === recipe.id ? { ...r, ...cambios } : r)));
+    setRecetaPorUsar(prev => (prev && prev.recipe.id === recipe.id && prev.completa ? { ...prev, completa: { ...prev.completa, ...cambios } } : prev));
+    showToast(`«${recipe.name}» guardada con los gramos nuevos.`, 'success');
   };
 
   /** Confirmar la ficha: se apunta lo que se ve en ella, ya con su ración. */
@@ -3443,6 +3469,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             nombreComida={meal ? mealLabel(meal.name, idx + 1) : 'esta comida'}
             hueco={huecoDeComida(recetaPorUsar.mealId)}
             onAnadir={confirmarRecetaPorUsar}
+            onGuardarEnReceta={sePuedeEditar(recetaPorUsar.completa, profile.userId)
+              ? async gramos => {
+                const r = recetaPorUsar.completa!;
+                await guardarRecetaPropia(r, Object.fromEntries(ingredientesEditables(r).map((ing, k) => [ing.n, gramos[k] ?? ing.gramos])));
+              }
+              : undefined}
             onClose={() => setRecetaPorUsar(null)}
           />
         );
