@@ -51,7 +51,6 @@ import {
 const ClientRoadmapPanel = pantallaDiferida('ClientRoadmapPanel', () => import('./ClientRoadmapPanel'));
 const ClientFichaPanel = pantallaDiferida('ClientFichaPanel', () => import('./ClientFichaPanel'));
 const ClientBodyPanel = pantallaDiferida('ClientBodyPanel', () => import('./ClientBodyPanel'));
-const ReportsPanel = pantallaDiferida('ReportsPanel', () => import('./ReportsPanel'));
 const ClientDietsPanel = pantallaDiferida('ClientDietsPanel', () => import('./ClientDietsPanel'));
 const SeguimientoPlanPanel = pantallaDiferida('SeguimientoPlanPanel', () => import('./plan/SeguimientoPlanPanel'));
 const HojaDePeriodizacion = pantallaDiferida('HojaDePeriodizacion', () => import('./plan/HojaDePeriodizacion'));
@@ -67,11 +66,11 @@ import { coincideBusqueda } from '../utils/busqueda';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 
 export type HubTab =
-  | 'revision' | 'setup' | 'revisiones' | 'reportes'
+  | 'revision' | 'setup' | 'revisiones'
   | 'ficha' | 'cuerpo'
   | 'entrenamientos' | 'cardio' | 'dietas' | 'objetivo' | 'fases' | 'roadmap';
 export const HUB_TABS: readonly HubTab[] = [
-  'revision', 'revisiones', 'reportes', 'setup', 'ficha', 'cuerpo',
+  'revision', 'revisiones', 'setup', 'ficha', 'cuerpo',
   'entrenamientos', 'cardio', 'dietas', 'objetivo', 'fases', 'roadmap',
 ];
 
@@ -86,6 +85,9 @@ export const PESTANAS_RETIRADAS: Record<string, HubTab> = {
   'analisis-nutricion': 'revision',
   correlaciones: 'revision',
   analisis: 'revision',
+  // Reportes se retiró el 23-11-2026 (Dani): su sitio en «Hoy» lo ocupa
+  // Objetivo. Un enlace viejo abre Objetivo.
+  reportes: 'objetivo',
 };
 
 // Las 10 pestañas se agrupan en 3 zonas para responder a una pregunta distinta
@@ -101,11 +103,15 @@ export const PESTANAS_RETIRADAS: Record<string, HubTab> = {
 // adherencia (revisión) con verduras y micronutrientes (configuración de la
 // dieta). Cada mitad se ha ido con su pregunta: los titulares y el explorador a
 // Revisión › El cuerpo, la adherencia a Revisión › Adherencia y hábitos, los
-// micronutrientes a Dietas. Reportes NO se absorbe y sube a «Hoy»: Revisión es
-// mirar, Reportes es enviar, y van seguidos en la misma sesión de trabajo.
+// micronutrientes a Dietas.
+//
+// 23-11-2026 (Dani): Reportes sale del Hub y su hueco en «Hoy» lo ocupa
+// Objetivo, que SIGUE también en «Plan»: el mismo panel en las dos zonas. Por
+// eso la zona activa ya no se deduce solo de la pestaña (ver `tabEnZona`): si
+// abres Objetivo desde Hoy, te quedas en Hoy.
 type Zone = 'hoy' | 'atleta' | 'plan';
 const ZONE_TABS: Record<Zone, HubTab[]> = {
-  hoy: ['revision', 'revisiones', 'reportes', 'setup'],
+  hoy: ['revision', 'revisiones', 'objetivo', 'setup'],
   atleta: ['ficha', 'cuerpo'],
   // Road map vive DENTRO de Objetivo (Dani, 28-10-2026: «objetivo es lo
   // principal para programar; el road map sale de los objetivos»). Su id de
@@ -132,8 +138,13 @@ const TAB_META: Record<HubTab, { label: string; icon: string }> = {
   objetivo:             { label: 'Objetivo',       icon: 'timeline' },
   fases:                { label: 'Plan',           icon: 'tune' },
   roadmap:              { label: 'Road map',       icon: 'map' },
-  reportes:             { label: 'Reportes',       icon: 'analytics' },
 };
+/** ¿Se puede ver `tab` sin salir de `zone`? Plan y Road map son secciones de
+ *  Objetivo: valen en cualquier zona que tenga Objetivo. */
+function tabEnZona(tab: HubTab, zone: Zone): boolean {
+  if (ZONE_TABS[zone].includes(tab)) return true;
+  return (tab === 'fases' || tab === 'roadmap') && ZONE_TABS[zone].includes('objetivo');
+}
 function zoneOf(tab: HubTab): Zone {
   if (tab === 'roadmap' || tab === 'fases') return 'plan';
   return (Object.keys(ZONE_TABS) as Zone[]).find(z => ZONE_TABS[z].includes(tab)) ?? 'hoy';
@@ -329,14 +340,21 @@ export default function ClientHub({
   // saltar entre zonas y volver no te devuelva siempre a la primera pestaña.
   const [activeZone, setActiveZone] = useState<Zone>(() => zoneOf(activeTab));
   const [lastTabByZone, setLastTabByZone] = useState<Partial<Record<Zone, HubTab>>>({});
+  // Una pestaña que está en la zona activa (Objetivo, en Hoy y en Plan) no
+  // te cambia de zona; si no está, se salta a la suya.
   useEffect(() => {
-    const z = zoneOf(activeTab);
+    const z = tabEnZona(activeTab, activeZone) ? activeZone : zoneOf(activeTab);
     setActiveZone(z);
     setLastTabByZone(prev => ({ ...prev, [z]: activeTab }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al cambiar de pestaña
   }, [activeTab]);
   const goToZone = (zone: Zone) => {
     if (zone === activeZone) return;
-    guardedTabChange(lastTabByZone[zone] ?? ZONE_TABS[zone][0]);
+    if (!confirmDiscardPlanChanges()) return;
+    // La zona se fija aquí y no en el efecto: con Objetivo en dos zonas, la
+    // pestaña puede ser la misma y entonces el efecto no salta.
+    setActiveZone(zone);
+    onTabChange(lastTabByZone[zone] ?? ZONE_TABS[zone][0]);
   };
 
   // Altura real del bloque sticky de pestañas (nav de zona + sub-pestañas si
@@ -413,8 +431,8 @@ export default function ClientHub({
     [athleteQResponses, coachQuestionnaires],
   );
 
-  // Reportes del atleta — solo se usa aquí para el recordatorio en PendingTray
-  // (ReportsPanel mantiene su propia copia con más detalle cuando esa pestaña está abierta).
+  // Reportes ya enviados al atleta (la pestaña se retiró el 23-11-2026): la
+  // Ficha sigue enseñando cuándo se mandó el último.
   const { data: coachReports = [] } = useQuery({
     queryKey: ['coachReportsForAthlete', athlete.email],
     queryFn: () => getCoachReportsForAthlete(athlete.email),
@@ -798,21 +816,6 @@ export default function ClientHub({
         </div>
       );
 
-      /* ── Tab: Reportes ────────────────────────────────────────────────── */
-      case 'reportes':
-        return (
-        <ReportsPanel
-          athleteEmail={athlete.email}
-          athleteName={athlete.displayName}
-          coachId={coachId}
-          logs={athleteLogs}
-          exercises={exercises}
-          assignments={assignments}
-          bodyweightLogs={bodyweightLogs}
-          targetWeight={athlete.targetWeight}
-        />
-      );
-
       default:
         return null;
     }
@@ -870,10 +873,8 @@ export default function ClientHub({
       <PendingTray
         athleteLogs={athleteLogs}
         getWorkout={getWorkout}
-        coachReports={coachReports}
         aiProposals={aiProposals}
         onGoToNotes={() => { setActiveZone('plan'); guardedTabChange('entrenamientos'); }}
-        onGoToReports={() => { setActiveZone('hoy'); guardedTabChange('reportes'); }}
         onGoToAiProposals={() => navigate('/propuestas')}
       />
 

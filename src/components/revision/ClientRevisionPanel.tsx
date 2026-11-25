@@ -32,6 +32,8 @@ import SelectorPeriodoRevision from './SelectorPeriodoRevision';
 import BloquePatrones from './BloquePatrones';
 import BloqueMejoresEjercicios from './BloqueMejoresEjercicios';
 import BloqueEstimuloSemanal from './BloqueEstimuloSemanal';
+import BloqueEjercicioSemana from './BloqueEjercicioSemana';
+import { semanaASemanaDelBloque } from '../../utils/semanaASemanaDelBloque';
 import { semanasDeLaRevision } from '../../utils/cdg/iemSemanal';
 import BloqueCuerpo from './BloqueCuerpo';
 import BloqueCardio from './BloqueCardio';
@@ -91,8 +93,8 @@ import ComparadorFotos from './ComparadorFotos';
    Desde el 16-09 ya no se suma: absorbe. La zona «Análisis» del Hub desaparece
    y su contenido vive aquí — los titulares de progreso y el explorador de
    series dentro del bloque del cuerpo, la adherencia/pasos/macros/alertas como
-   bloque propio. Solo Reportes sigue siendo pestaña, porque Revisión es MIRAR y
-   Reportes es ENVIAR.
+   bloque propio. (Reportes, que seguía siendo pestaña para ENVIAR, se retiró
+   el 23-11-2026: su hueco en «Hoy» lo ocupa Objetivo.)
 
    ── Preparar y presentar (18-11-2026) ─────────────────────────────────────
    Dani graba esta pantalla y se la manda al atleta: es el guion del vídeo y se
@@ -253,6 +255,21 @@ export default function ClientRevisionPanel({
     [logs, exercises, mesocycles, periodo, landmarks, hoy, responses, questionnaires, checkins, nombreDeSesion],
   );
   const ultimaRevision = useMemo(() => fechaDeLaUltimaRevision(checkins), [checkins]);
+
+  // ── Cada ejercicio, semana a semana (23-11-2026) ───────────────────────────
+  // Solo con «Bloque» elegido: lo planificado y lo hecho (kg × reps de cada
+  // serie) de todos los ejercicios en todas las semanas del bloque.
+  const ejercicioASemana = useMemo(() => {
+    if (periodo.tipo !== 'meso') return null;
+    const meso = mesocycles.find(m => m.id === periodo.mesoId);
+    if (!meso) return null;
+    try {
+      return semanaASemanaDelBloque({ meso, workouts, logs, exercises, hoy });
+    } catch (err) {
+      console.error('ClientRevisionPanel: no se pudo calcular cada ejercicio semana a semana', err);
+      return null;
+    }
+  }, [periodo, mesocycles, workouts, logs, exercises, hoy]);
 
   const { ventana, informe } = revision;
   // Semanas del bloque «Estímulo por semana»: las del bloque si se está mirando
@@ -669,6 +686,13 @@ export default function ClientRevisionPanel({
           El detalle · {ventana.etiqueta.toLowerCase()} {ventana.etiquetaComparacion}
         </p>
       <Secciones presentando={presentando} inicio={3 + (hayAlgoQueContar(contado) ? 1 : 0) + (queViene ? 1 : 0)}>
+        {/* A la vista, no plegada: es lo que se mira al elegir un bloque. */}
+        {ejercicioASemana && (
+          <Seccion titulo="Cada ejercicio, semana a semana">
+            <BloqueEjercicioSemana datos={ejercicioASemana} />
+          </Seccion>
+        )}
+
         <Seccion titulo="Cómo va cada patrón" plegada abierta={todoAbierto}>
           <BloquePatrones
             patrones={revision.patrones}
@@ -743,11 +767,6 @@ export default function ClientRevisionPanel({
         <Seccion
           titulo="Adherencia y hábitos"
           plegada abierta={todoAbierto}
-          accion={
-            <Button variant="ghost" onClick={() => onGoToTab('reportes')}>
-              Convertir en reporte
-            </Button>
-          }
         >
           <BloqueNutricionHabitos
             athleteEmail={athlete.email}
@@ -831,7 +850,6 @@ export default function ClientRevisionPanel({
               revision={revision}
               comida={comida}
               peso={peso}
-              onGoToTab={onGoToTab}
               presentando={presentando}
             />
           </Seccion>
